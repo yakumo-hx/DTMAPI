@@ -1,0 +1,7291 @@
+[
+  {
+    "id": "barrel",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncBarrel",
+      "capacity": 60
+    },
+    "processors": [
+      {
+        "$type": "WDP_ScorchSun_IWaterContainer",
+        "evaporation": 4
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "farm_light",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_farm_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFarmLight",
+      "horizontal_range": 6,
+      "vertical_range_top": 2,
+      "vertical_range_bottom": 2,
+      "work_interval": 10,
+      "lamp": "farm_light",
+      "off_sprite": {
+        "url": ""
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "manual_sprinkler",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_manual_sprinkler"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSprinklerManual",
+      "horizontal_range": 3,
+      "vertical_range_top": 1,
+      "vertical_range_bottom": 0,
+      "work_interval": 10,
+      "effect_offset": {
+        "x": 0,
+        "y": 2.375329
+      },
+      "sprinkler_cost": 2
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_tree",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_tree"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasinTree",
+      "fertilizer_offset": 0
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 3,
+        "pixel_pivot": {
+          "x": 22,
+          "y": 34
+        }
+      }
+    ]
+  },
+  {
+    "id": "well",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_well"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 1,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSimpleWell",
+      "capacity": 100,
+      "adder": 10
+    },
+    "processors": [
+      {
+        "$type": "WDP_ScorchSun_IWaterContainer",
+        "evaporation": 4
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "seed_compacting_machine",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_seed_compacting_machine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSeedCompressor",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "seed_compacting_machine",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 5
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "gene_extractor",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_gene_extractor"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGeneExtractor",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "gene_extractor",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 2.5
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "gene_incubator",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_gene_incubator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGeneIncubator",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "total_capacity": 9,
+      "line_capacity": 3,
+      "incubation_threshold": 288
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 0.5
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "gene_replicator",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_gene_replicator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGeneReplicator",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "total_capacity": 20,
+      "line_capacity": 5,
+      "copy_interval": 144,
+      "clear_interval": 1
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 2
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "gene_synthesizer",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_gene_synthesizer"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGeneSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "interval": 2,
+      "allow_cross_species": true,
+      "default_capsule_item": "gene_capsule"
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 5
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "resin_collector",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_resin_collector"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 2,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncResinCollector",
+      "default_output": "resin",
+      "interval": 288,
+      "capacity": 3
+    },
+    "processors": [],
+    "fit_slot_datas": [
+      {
+        "slot_type": 3,
+        "pixel_pivot": {
+          "x": 10,
+          "y": 14
+        }
+      }
+    ],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wood_generator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_wood_generator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPowerGeneratorFuel"
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorFuel",
+      "efficiency": 2,
+      "fuel_capacity": 600,
+      "rate": 2,
+      "exceed_fuel_capacity": 20
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PowerGenerator",
+        "durationTu": 1,
+        "couldInteract": true
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "coal_generator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_coal_generator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPowerGeneratorFuel"
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorFuel",
+      "efficiency": 3,
+      "fuel_capacity": 1800,
+      "rate": 3,
+      "exceed_fuel_capacity": 20
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PowerGenerator",
+        "durationTu": 1,
+        "couldInteract": true
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "modified_fuel_generator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_modified_fuel_generator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPowerGeneratorFuel"
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorFuel",
+      "efficiency": 4,
+      "fuel_capacity": 4800,
+      "rate": 4,
+      "exceed_fuel_capacity": 20
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PowerGenerator",
+        "durationTu": 1,
+        "couldInteract": true
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "solar_generator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_solar_generator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorSolar",
+      "efficiency": 2
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "storage_battery",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_storage_battery"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncBattery",
+      "appearance": {
+        "array": [
+          {
+            "url": "sprite_equipment_storage_battery"
+          },
+          {
+            "url": "sprite_equipment_storage_battery_0"
+          },
+          {
+            "url": "sprite_equipment_storage_battery_1"
+          },
+          {
+            "url": "sprite_equipment_storage_battery_2"
+          },
+          {
+            "url": "sprite_equipment_storage_battery_3"
+          },
+          {
+            "url": "sprite_equipment_storage_battery_4"
+          }
+        ]
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoBattery",
+      "voltage": 1,
+      "capacity": 300
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_battery",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_large_battery"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncBattery",
+      "appearance": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoBattery",
+      "voltage": 1,
+      "capacity": 1500
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "equipment_workbench",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_equipment_workbench"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncEquipmentWorkbench",
+      "recipe_group_name": "equipment_workbench"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "lightning_arrester",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_lightning_arrester"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncLightningArrester",
+      "horizontal_range": 7,
+      "vertical_range_top": 1,
+      "vertical_range_bottom": 12,
+      "work_interval": 1,
+      "power": 5
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorCustom",
+      "efficiency": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "lightning_arrester_big",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_lightning_arrester_big"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLightningArrester",
+      "horizontal_range": 16,
+      "vertical_range_top": 1,
+      "vertical_range_bottom": 18,
+      "work_interval": 1,
+      "power": 10
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorCustom",
+      "efficiency": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "weather_regulator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_weather_regulator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncWeatherRegulator",
+      "cdDuration": 7
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "scarecrow",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_scarecrow"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "potted_mushroom",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_potted_mushroom"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_bathtub",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_bathtub"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_big_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_big_table"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_table"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "nature_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_nature_table"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "terrarium",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_terrarium"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_terrarium_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "kasia_artificial_flower",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_kasia_artificial_flower"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "statuette",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_statuette"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_display_cup",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_display_cup"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "iron_display_cup",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_iron_display_cup"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "gold_display_cup",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_gold_display_cup"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_mountain_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_low_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_low_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_mountain_low_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_coffee_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_coffee_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_coffee_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_dressing_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_dressing_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_dressing_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_low_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_low_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_low_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_long_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_long_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plain_long_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_sunmao_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_tree",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_tree"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_case",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_case"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 20,
+      "line_capacity": 10,
+      "place_condition": "",
+      "label_offset": {
+        "x": 14,
+        "y": 13
+      },
+      "automate_types": [
+        "active",
+        "material",
+        "farm",
+        "husbandry",
+        "product",
+        "construction",
+        "food",
+        "other"
+      ],
+      "skin_color": [
+        {
+          "hex": "#8E684A"
+        },
+        {
+          "hex": "#759513"
+        },
+        {
+          "hex": "#C73E53"
+        },
+        {
+          "hex": "#0761FF"
+        },
+        {
+          "hex": "#FF84A4"
+        },
+        {
+          "hex": "#545454"
+        }
+      ],
+      "skin_sprite": [
+        {
+          "url": "sprite_equipment_wooden_case"
+        },
+        {
+          "url": "sprite_equipment_wooden_case_0"
+        },
+        {
+          "url": "sprite_equipment_wooden_case_1"
+        },
+        {
+          "url": "sprite_equipment_wooden_case_2"
+        },
+        {
+          "url": "sprite_equipment_wooden_case_3"
+        },
+        {
+          "url": "sprite_equipment_wooden_case_4"
+        }
+      ]
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 5,
+        "pixel_pivot": {
+          "x": 0,
+          "y": 13
+        }
+      }
+    ]
+  },
+  {
+    "id": "large_wooden_case",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_large_wooden_case"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 40,
+      "line_capacity": 10,
+      "place_condition": "",
+      "label_offset": {
+        "x": 14,
+        "y": 19
+      },
+      "automate_types": [
+        "active",
+        "material",
+        "farm",
+        "husbandry",
+        "product",
+        "construction",
+        "food",
+        "other"
+      ],
+      "skin_color": [
+        {
+          "hex": "#8E684A"
+        },
+        {
+          "hex": "#759513"
+        },
+        {
+          "hex": "#C73E53"
+        },
+        {
+          "hex": "#0761FF"
+        },
+        {
+          "hex": "#FF84A4"
+        },
+        {
+          "hex": "#545454"
+        }
+      ],
+      "skin_sprite": [
+        {
+          "url": "sprite_equipment_large_wooden_case"
+        },
+        {
+          "url": "sprite_equipment_large_wooden_case_0"
+        },
+        {
+          "url": "sprite_equipment_large_wooden_case_1"
+        },
+        {
+          "url": "sprite_equipment_large_wooden_case_2"
+        },
+        {
+          "url": "sprite_equipment_large_wooden_case_3"
+        },
+        {
+          "url": "sprite_equipment_large_wooden_case_4"
+        }
+      ]
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 5,
+        "pixel_pivot": {
+          "x": 2,
+          "y": 19
+        }
+      }
+    ]
+  },
+  {
+    "id": "shabby_wooden_cabinet",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_shabby_wooden_cabinet"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_shabby_wooden_cabinet_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 4,
+      "line_capacity": 4,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "nature_shelf",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_nature_shelf"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 4,
+      "line_capacity": 4,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "islands_bookcase",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_islands_bookcase"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 6,
+      "line_capacity": 6,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_cabinet",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_cabinet"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_cabinet_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 4,
+      "line_capacity": 4,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_low_cabinet",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_low_cabinet"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_low_cabinet_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 4,
+      "line_capacity": 4,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_wardrobe",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_wardrobe"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_wardrobe_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 20,
+      "line_capacity": 10,
+      "place_condition": "hat_only",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_curio_shelf",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_curio_shelf"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 6,
+      "line_capacity": 6,
+      "place_condition": "",
+      "label_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "automate_types": [],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "bed",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_bed"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_bed_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncBed"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_bed",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_bed"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncBed"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plank_bed",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plank_bed"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plank_bed_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncBed"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_bed",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_bed"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_mountain_bed_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncBed"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_tent",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_tent"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plain_tent_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncBed"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "trampoline",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_trampoline"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncTrampolineEquipment"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "manual_workbench",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_manual_workbench"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncWorkbench",
+      "recipe_group_name": "manual_workbench"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "ground_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_ground_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "ground_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "old_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_old_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "old_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "simple_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_simple_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "simple_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wired_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wired_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "wired_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "wooden_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "nature_light",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_nature_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "nature_light"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "electric_torch",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_electric_torch"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "electric_torch"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "palm_floor_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_palm_floor_lamp"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "palm_floor_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_floor_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_floor_lamp"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "mountain_floor_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_ambience_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_ambience_lamp"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "mountain_ambience_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_floor_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_floor_lamp"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_floor_lamp_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "copper_floor_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "horned_floor_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_horned_floor_lamp"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "horned_floor_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_floor_lamp",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_floor_lamp"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plain_floor_lamp_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "plain_floor_lamp"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_lamp_stand",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_lamp_stand"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLamp",
+      "lamp": "sunmao_lamp_stand"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mailbox",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mailbox"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncMailBox",
+      "tip_offset": {
+        "x": -2.2,
+        "y": 5.5
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "showcase",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_showcase"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncShowCase",
+      "icon_offset": {
+        "x": 0,
+        "y": -1
+      },
+      "use_effects": true,
+      "foreground_sprite": {
+        "url": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_showcase",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_showcase"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncShowCase",
+      "icon_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "use_effects": true,
+      "foreground_sprite": {
+        "url": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_showcase",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_showcase"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncShowCase",
+      "icon_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "use_effects": true,
+      "foreground_sprite": {
+        "url": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_showcase",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_showcase"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncShowCase",
+      "icon_offset": {
+        "x": 0,
+        "y": -1
+      },
+      "use_effects": true,
+      "foreground_sprite": {
+        "url": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "flower_pot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_flower_pot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFlowerPot"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "porcelain_flower_pot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_porcelain_flower_pot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFlowerPot"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "case_locator",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_case_locator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 2,
+    "cover_size": {
+      "x": 1,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCaseLocator",
+      "lamp": "case_locator"
+    },
+    "processors": [],
+    "fit_slot_datas": [
+      {
+        "slot_type": 5,
+        "pixel_pivot": {
+          "x": 1,
+          "y": 8
+        }
+      }
+    ],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_chair"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 14,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 14,
+        "y": 8
+      },
+      "chair": "wooden_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_stool",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_stool"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 7,
+        "y": 6
+      },
+      "sit_offset_flip": {
+        "x": 7,
+        "y": 6
+      },
+      "chair": "wooden_stool"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "comfortable_armchair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_comfortable_armchair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_comfortable_armchair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 16,
+        "y": 4
+      },
+      "sit_offset_flip": {
+        "x": 19,
+        "y": 4
+      },
+      "chair": "comfortable_armchair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "lounge_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_lounge_chair"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 25,
+        "y": 5
+      },
+      "sit_offset_flip": {
+        "x": 25,
+        "y": 5
+      },
+      "chair": "lounge_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "nature_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_nature_chair"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 10,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 10,
+        "y": 8
+      },
+      "chair": "nature_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wooden_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wooden_sofa"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 27,
+        "y": 9
+      },
+      "sit_offset_flip": {
+        "x": 27,
+        "y": 9
+      },
+      "chair": "wooden_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "nature_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_nature_sofa"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 27,
+        "y": 6
+      },
+      "sit_offset_flip": {
+        "x": 27,
+        "y": 6
+      },
+      "chair": "nature_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "islands_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_islands_chair"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 11,
+        "y": 5
+      },
+      "sit_offset_flip": {
+        "x": 11,
+        "y": 5
+      },
+      "chair": "islands_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "islands_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_islands_sofa"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 17,
+        "y": 6
+      },
+      "sit_offset_flip": {
+        "x": 17,
+        "y": 6
+      },
+      "chair": "islands_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "shabby_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_shabby_sofa"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_shabby_sofa_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 22,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 27,
+        "y": 8
+      },
+      "chair": "shabby_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_chair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_mountain_chair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 15,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 10,
+        "y": 8
+      },
+      "chair": "mountain_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mountain_two_seater_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mountain_two_seater_sofa"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_mountain_two_seater_sofa_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 24,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 24,
+        "y": 8
+      },
+      "chair": "mountain_two_seater_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_sofa",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_sofa"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_sofa_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 25,
+        "y": 9
+      },
+      "sit_offset_flip": {
+        "x": 25,
+        "y": 9
+      },
+      "chair": "copper_sofa"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "copper_armchair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_copper_armchair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_copper_armchair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 13,
+        "y": 7
+      },
+      "sit_offset_flip": {
+        "x": 11,
+        "y": 7
+      },
+      "chair": "copper_armchair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_armchair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_armchair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_armchair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 19,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 18,
+        "y": 8
+      },
+      "chair": "grassland_armchair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_bedside_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_bedside_table"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_bedside_table_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 32,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 30,
+        "y": 8
+      },
+      "chair": "grassland_bedside_table"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grassland_hu_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grassland_hu_chair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_grassland_hu_chair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 13,
+        "y": 10
+      },
+      "sit_offset_flip": {
+        "x": 12,
+        "y": 10
+      },
+      "chair": "grassland_hu_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_low_stool",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_low_stool"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plain_low_stool_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 13,
+        "y": 8
+      },
+      "sit_offset_flip": {
+        "x": 12,
+        "y": 8
+      },
+      "chair": "plain_low_stool"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plain_armchair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_plain_armchair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_plain_armchair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 12,
+        "y": 4
+      },
+      "sit_offset_flip": {
+        "x": 13,
+        "y": 4
+      },
+      "chair": "plain_armchair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_chair",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_chair"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_sunmao_chair_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncChair",
+      "sit_offset": {
+        "x": 14,
+        "y": 6
+      },
+      "sit_offset_flip": {
+        "x": 10,
+        "y": 6
+      },
+      "chair": "sunmao_chair"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_grass",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_grass"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasinGrass",
+      "grass_count": 3,
+      "crop_name": "seed_alfalfa",
+      "crop_skin_index": 1,
+      "update_interval": 2
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "herding_bell",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_herding_bell"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncAnimalStation"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "salt_lick",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_salt_lick"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncAnimalDecorator",
+      "mood_contribution": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "animaldoll_brown",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_animaldoll_brown"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncAnimalDecorator",
+      "mood_contribution": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "animaldoll_white",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_animaldoll_white"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncAnimalDecorator",
+      "mood_contribution": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "animaldoll_panda",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_animaldoll_panda"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncAnimalDecorator",
+      "mood_contribution": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "automatic_fish_feeder",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_automatic_fish_feeder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 2,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishTankExtension",
+      "metabolism_increase": 0,
+      "energy_increase": 500
+    },
+    "processors": [],
+    "fit_slot_datas": [
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 9,
+          "y": 28
+        }
+      }
+    ],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "oxygenation_pump",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_oxygenation_pump"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 2,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishTankExtension",
+      "metabolism_increase": 5,
+      "energy_increase": 0
+    },
+    "processors": [],
+    "fit_slot_datas": [
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 9,
+          "y": 28
+        }
+      }
+    ],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "leather_calendar",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_leather_calendar"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_leather_calendar_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "object_calendar",
+      "tip_text": {
+        "key": "",
+        "text": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "weather_station",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_weather_station"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "equipment_weather_station",
+      "tip_text": {
+        "key": "",
+        "text": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "mini_computer",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_mini_computer"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "equipment_computer",
+      "tip_text": {
+        "key": "",
+        "text": ""
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "audio_totem",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_audio_totem"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_audio_totem_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "object_speaker",
+      "tip_text": {
+        "key": "ui_text_tip_audio_totem",
+        "text": "换一首"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "morin_khuur_speaker",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_morin_khuur_speaker"
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_morin_khuur_speaker_flip"
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "object_speaker",
+      "tip_text": {
+        "key": "ui_text_tip_audio_totem",
+        "text": "换一首"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sound",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_sound"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncEquipmentAnimation",
+      "dialogue_node": "object_speaker",
+      "tip_text": {
+        "key": "ui_text_tip_audio_totem",
+        "text": "换一首"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plant_data_analyzer",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plant_data_analyzer"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "plant_data_analyzer",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "compost_barrel",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_compost_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 0,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_compost_barrel_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "compost_barrel",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "tree_compost_barrel",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_tree_compost_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 0,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_tree_compost_barrel_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "tree_compost_barrel",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "compost_grinder",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_compost_grinder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "compost_grinder",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "resin_compacting_machine",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_resin_compacting_machine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "resin_compacting_machine",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "assemble_molding_machine",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_assemble_molding_machine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "assemble_molding_machine",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "charcoal_kiln",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_charcoal_kiln"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_charcoal_kiln_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "charcoal_kiln",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "charger",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_charger"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "charger",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "garbage_collector",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_garbage_collector"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "garbage_collector",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "smelter",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_smelter"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "smelter",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_smelter",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_large_smelter"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_smelter",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 2
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "rock_grinder",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_rock_grinder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "rock_grinder",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "brewing_barrel",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_brewing_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 4,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_brewing_barrel_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "brewing_barrel",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "high_purity_brewing_barrel",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_high_purity_brewing_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "brewing_barrel",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_brewing_barrel",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_large_brewing_barrel"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 4,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_brewing_barrel",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "pot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_pot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "pot",
+      "dish_group_name": "pot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_pot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_large_pot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_pot",
+      "dish_group_name": "large_pot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_large_pot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_large_pot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "large_pot",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_pot",
+      "dish_group_name": "large_pot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "teapot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_teapot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "teapot",
+      "dish_group_name": "teapot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_teapot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_large_teapot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_teapot",
+      "dish_group_name": "large_teapot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sunmao_large_teapot",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_large_teapot"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "large_teapot",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_teapot",
+      "dish_group_name": "large_teapot",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "grinder",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_grinder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_grinder_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": "sprite_equipment_grinder_full"
+      },
+      "recipe_group_name": "grinder",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "oven",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_oven"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "oven",
+      "dish_group_name": "oven",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_oven",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_large_oven"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "large_oven",
+      "dish_group_name": "large_oven",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "pickled_jar",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_pickled_jar"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "pickled_jar",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "air_drying_box",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_air_drying_box"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "air_drying_box",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "loom",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_loom"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "loom",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "pickled_jar_big",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_pickled_jar_big"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "pickled_jar_big",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "air_drying_box_big",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_air_drying_box_big"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "air_drying_box_big",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "brewing_rack",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_brewing_rack"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 0,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_brewing_rack"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_0"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_1"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_2"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_3"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_4"
+          },
+          {
+            "url": "sprite_equipment_brewing_rack_full_5"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "brewing_rack",
+      "dish_group_name": "",
+      "use_conversion_mode": true
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "feed_machine",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_feed_machine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_feed_machine_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "feed_machine",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "sprinkler",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_sprinkler"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncSprinkler",
+      "horizontal_range": 4,
+      "vertical_range_top": 2,
+      "vertical_range_bottom": 1,
+      "work_interval": 144,
+      "effect_offset": {
+        "x": 0,
+        "y": 2.375329
+      },
+      "off_sprite": {
+        "url": "sprite_equipment_sprinkler_closed"
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_basic",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_basic"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasinSimple",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 1,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_basic_wet"
+      },
+      "use_times": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_wooden",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_wooden"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_wooden_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_foam",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_foam"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_foam_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_iron",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_iron"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_iron_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_tyre",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_tyre"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_tyre_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_paper",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_paper"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_paper_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_pottery",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_pottery"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_pottery_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_eggshell",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_eggshell"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_eggshell_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_mountain",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_mountain"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "universal",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_mountain_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      },
+      {
+        "$type": "WDP_ScorchSun_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_fungus",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_fungus"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "fungus",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": -1.5,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_fungus_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_vine",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_vine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "vine",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_vine_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "porcelain_vat",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_porcelain_vat"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "vine",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_porcelain_vat_wet"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_shrub",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_shrub"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "shrub",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_shrub_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "plantbasin_shrub_plain",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_plantbasin_shrub_plain"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "plantbasin_shrub",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncPlantBasin",
+      "seed_type": "shrub",
+      "supply_capacity": {
+        "x": 288,
+        "y": 288
+      },
+      "center_offset": {
+        "x": 0,
+        "y": 0
+      },
+      "sprite_wet_asset": {
+        "url": "sprite_equipment_plantbasin_shrub_plain_wet"
+      }
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_PlantBasin"
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "crop_traffic_light",
+    "menu_type": 0,
+    "scene_asset": {
+      "url": "sprite_equipment_crop_traffic_light"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncCropTrafficLight",
+      "mask_sprite": {
+        "url": "sprite_equipment_crop_traffic_light_mask"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "garbage_shredder",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_garbage_shredder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGarbageShredder",
+      "worker_renderer_name": 0,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "in_farm": true,
+      "gold_cost": 0,
+      "recycle_factor": 0.5,
+      "recipe_group_name": "garbage_shredder",
+      "interval": 12
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "storage_shelf",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_storage_shelf"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncStorageShelf",
+      "total_capacity": 6,
+      "line_capacity": 2,
+      "appearance": {
+        "array": [
+          {
+            "url": "sprite_equipment_storage_shelf_full_0"
+          },
+          {
+            "url": "sprite_equipment_storage_shelf_full_3"
+          },
+          {
+            "url": "sprite_equipment_storage_shelf_full_1"
+          },
+          {
+            "url": "sprite_equipment_storage_shelf_full_4"
+          },
+          {
+            "url": "sprite_equipment_storage_shelf_full_2"
+          },
+          {
+            "url": "sprite_equipment_storage_shelf_full_5"
+          }
+        ]
+      },
+      "full_ui_icon": {
+        "url": "icon_item_storage_shelf_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 5,
+        "pixel_pivot": {
+          "x": 0,
+          "y": 27
+        }
+      }
+    ]
+  },
+  {
+    "id": "sunmao_shelf",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_sunmao_shelf"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 5
+    },
+    "base_equipment": "storage_shelf",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncStorageShelf",
+      "total_capacity": 6,
+      "line_capacity": 2,
+      "appearance": {
+        "array": [
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_0"
+          },
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_3"
+          },
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_1"
+          },
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_4"
+          },
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_2"
+          },
+          {
+            "url": "sprite_equipment_sunmao_shelf_full_5"
+          }
+        ]
+      },
+      "full_ui_icon": {
+        "url": "icon_item_sunmao_shelf_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "parking_apron",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_parking_apron"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncParkingApron",
+      "total_capacity": 12,
+      "line_capacity": 4,
+      "store_name": "parking_apron",
+      "price_increased_months": [
+        4
+      ],
+      "express_drone_asset": {
+        "url": "sprite_equipment_parking_apron_drone"
+      },
+      "express_drone_offset": -1.5,
+      "signal_light_asset": {
+        "url": "parking_apron_signal_light"
+      },
+      "signal_light_mask": {
+        "url": "parking_apron_signal_light_mask"
+      },
+      "signal_light_offset": 2.4375,
+      "goods_sprite_lvs": [
+        {
+          "count_threshold": 0,
+          "sprite_asset": {
+            "url": "sprite_equipment_parking_apron_items_0"
+          }
+        },
+        {
+          "count_threshold": 4,
+          "sprite_asset": {
+            "url": "sprite_equipment_parking_apron_items_1"
+          }
+        },
+        {
+          "count_threshold": 8,
+          "sprite_asset": {
+            "url": "sprite_equipment_parking_apron_items_2"
+          }
+        }
+      ],
+      "goods_duration_lvs": [
+        {
+          "money_threshold": 0,
+          "duration": 12
+        },
+        {
+          "money_threshold": 1000,
+          "duration": 24
+        },
+        {
+          "money_threshold": 5000,
+          "duration": 48
+        },
+        {
+          "money_threshold": 10000,
+          "duration": 72
+        },
+        {
+          "money_threshold": 50000,
+          "duration": 96
+        },
+        {
+          "money_threshold": 100000,
+          "duration": 144
+        }
+      ]
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "shower_room",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_shower_room"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncShowerRoom",
+      "water_cost": 10,
+      "buff_id": "immune_acid_rain_lv1",
+      "health_recv": 0.3,
+      "energy_recv": 0.3,
+      "mask": {
+        "url": "sprite_equipment_shower_room_mask"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "islands_tv",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_islands_tv"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncTelevision",
+      "screen_mask": {
+        "url": "sprite_equipment_islands_tv_mask"
+      },
+      "screen_sprite": {
+        "url": "sprite_equipment_islands_tv_no_signal"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "feeder",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_feeder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFeeder",
+      "capacity": 600,
+      "full_sprite": {
+        "url": "sprite_equipment_feeder_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_feeder",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_large_feeder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFeeder",
+      "capacity": 1500,
+      "full_sprite": {
+        "url": "sprite_equipment_large_feeder_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "toilet",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_toilet"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncToilet",
+      "capacity": 8,
+      "full_sprite": {
+        "url": "sprite_equipment_toilet_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "large_toilet",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_large_toilet"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncToilet",
+      "capacity": 20,
+      "full_sprite": {
+        "url": "sprite_equipment_large_toilet_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "livestock_nursery",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_livestock_nursery"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncLivestockNursery",
+      "sprite_in_use": {
+        "url": "sprite_equipment_livestock_nursery_full"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "chicken_nest",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_chicken_nest"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 1
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncChickenNest",
+      "capacity": 10,
+      "sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_chicken_nest_full_0"
+          },
+          {
+            "url": "sprite_equipment_chicken_nest_full_1"
+          }
+        ]
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "fence",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_fence"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 1,
+      "y": 2
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFence"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "honey_comb",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_honey_comb"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncHoneyComb",
+      "capacity": 10,
+      "half_sprite": {
+        "url": "sprite_equipment_honey_comb_full_0"
+      },
+      "full_sprite": {
+        "url": "sprite_equipment_honey_comb_full_1"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "lint_roller",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_lint_roller"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncLintRoller",
+      "capacity": 20,
+      "half_sprite": {
+        "url": "sprite_equipment_lint_roller_full_0"
+      },
+      "full_sprite": {
+        "url": "sprite_equipment_lint_roller_full_1"
+      }
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "milking_machine",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_milking_machine"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 1,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 4,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncMilkingMachine",
+      "capacity": 20,
+      "half_sprite": {
+        "url": "sprite_equipment_milking_machine_full_0"
+      },
+      "full_sprite": {
+        "url": "sprite_equipment_milking_machine_full_1"
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 2
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "fish_tank",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_fish_tank"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishTank",
+      "total_capacity": 6,
+      "line_capacity": 6,
+      "metabolism_threshold": 1000,
+      "update_interval": 6,
+      "product_capacity": 2,
+      "alpha_mask": {
+        "url": "sprite_equipment_fish_tank_mask"
+      },
+      "energy_capacity": 1000
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 7,
+          "y": 36
+        }
+      }
+    ]
+  },
+  {
+    "id": "large_fish_tank",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_large_fish_tank"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 8,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishTank",
+      "total_capacity": 12,
+      "line_capacity": 6,
+      "metabolism_threshold": 1000,
+      "update_interval": 6,
+      "product_capacity": 5,
+      "alpha_mask": {
+        "url": "sprite_equipment_large_fish_tank_mask"
+      },
+      "energy_capacity": 3000
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 15,
+          "y": 58
+        }
+      },
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 27,
+          "y": 58
+        }
+      },
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 39,
+          "y": 58
+        }
+      }
+    ]
+  },
+  {
+    "id": "ecological_fish_tank",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_ecological_fish_tank"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 5,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishTankEcological",
+      "total_capacity": 6,
+      "line_capacity": 6,
+      "metabolism_threshold": 1000,
+      "update_interval": 6,
+      "product_capacity": 2,
+      "alpha_mask": {
+        "url": "sprite_equipment_ecological_fish_tank_mask"
+      },
+      "work_duration": 6
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": [
+      {
+        "slot_type": 4,
+        "pixel_pivot": {
+          "x": 6,
+          "y": 35
+        }
+      }
+    ]
+  },
+  {
+    "id": "fish_incubator",
+    "menu_type": 3,
+    "scene_asset": {
+      "url": "sprite_equipment_fish_incubator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncFishIncubator",
+      "total_capacity": 16,
+      "line_capacity": 4,
+      "work_interval": 5,
+      "mask_sprite": {
+        "url": "sprite_equipment_fish_incubator_mask"
+      },
+      "emission_sprite": {
+        "url": "sprite_equipment_fish_incubator_emission"
+      }
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 2
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wind_generator",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_wind_generator"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": "game_anim_equipment_wind_generator"
+    },
+    "env_type": 2,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 3,
+      "y": 6
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncPowerGeneratorWind"
+    },
+    "electronic_component": {
+      "$type": "EComProtoGeneratorWind",
+      "efficiency": 2
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "locked_equipment",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wine_mix_table"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "merlin_smelter",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_merlin_smelter"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 2,
+      "y": 3
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncSynthesizer",
+      "worker_renderer_name": 1,
+      "worker_renderer_name_ex": 2,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          {
+            "url": "sprite_equipment_merlin_smelter_full"
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "recipe_group_name": "merlin_smelter",
+      "dish_group_name": "",
+      "use_conversion_mode": false
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "garbage_shredder_city",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_garbage_shredder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncGarbageShredder",
+      "worker_renderer_name": 0,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "in_farm": false,
+      "gold_cost": 20,
+      "recycle_factor": 0.5,
+      "recipe_group_name": "garbage_shredder_city",
+      "interval": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "garbage_shredder_city_upgrade",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_garbage_shredder"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncGarbageShredder",
+      "worker_renderer_name": 0,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 0,
+      "work_sprites": {
+        "array": [
+          {
+            "url": ""
+          }
+        ]
+      },
+      "idle_sprite": {
+        "url": ""
+      },
+      "in_farm": false,
+      "gold_cost": 0,
+      "recycle_factor": 0.6,
+      "recipe_group_name": "garbage_shredder_city_upgrade",
+      "interval": 1
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "distillation_flask",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_distillation_flask"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 5
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  },
+  {
+    "id": "wine_mix_table",
+    "menu_type": 2,
+    "scene_asset": {
+      "url": "sprite_equipment_wine_mix_table"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": {
+      "x": 6,
+      "y": 4
+    },
+    "base_equipment": "",
+    "display_lock": false,
+    "show_complete_info_lock": false,
+    "function": {
+      "$type": "EquipmentFuncDecorator"
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  }
+]

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.BepInExBootstrap</AssemblyName>
+    <RootNamespace>DTMAPI.BepInExBootstrap</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="..\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="..\DTMAPI.BepInExStubs\DTMAPI.BepInExStubs.csproj" Private="false" />
+  </ItemGroup>
+</Project>

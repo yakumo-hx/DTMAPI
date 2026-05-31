@@ -1,0 +1,14 @@
+﻿{
+    "game":  "Doloc Town",
+    "branch":  "workshop",
+    "steam_build":  "23465763",
+    "research_date":  "2026-05-29 19:40:21 +08:00",
+    "assembly":  {
+                     "path":  "E:\\Python_project\\DLK\\research\\reverse\\builds\\23465763_workshop_38581E\\input\\Assembly-CSharp.dll",
+                     "sha256":  "38581EE024D3808D4D73098E10E5A122F93AC31BEDE9961D709A0B68571D7228",
+                     "length":  5991424,
+                     "name":  "Assembly-CSharp",
+                     "version":  "0.0.0.0"
+                 },
+    "managed_dir":  "D:\\Steam\\steamapps\\common\\Doloc Town\\DolocTown_Data\\Managed"
+}

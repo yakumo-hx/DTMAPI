@@ -1,0 +1,23 @@
+{
+  "name": "动作加速（DTMAPI）",
+  "author": "Yuuka",
+  "version": "0.0.0",
+  "description": "DTMAPI 迁移版动作加速功能 Mod。启用/禁用请使用 Doloc Town 官方 Mod 界面；配置请从标题页左上角 DTMAPI 设置进入。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "动作加速（DTMAPI）",
+    "tchinese": "動作加速（DTMAPI）",
+    "english": "Action Speed (DTMAPI)"
+  },
+  "localized_description": {
+    "schinese": "DTMAPI 迁移版动作加速功能 Mod。启用/禁用请使用 Doloc Town 官方 Mod 界面；配置请从标题页左上角 DTMAPI 设置进入。",
+    "tchinese": "DTMAPI 遷移版動作加速功能 Mod。啟用/禁用請使用 Doloc Town 官方 Mod 介面；設定請從標題頁左上角 DTMAPI 設定進入。",
+    "english": "DTMAPI migration of Action Speed. Enable or disable it through Doloc Town's official Mod UI; configure it from the top-left DTMAPI Settings button on the title screen."
+  }
+}

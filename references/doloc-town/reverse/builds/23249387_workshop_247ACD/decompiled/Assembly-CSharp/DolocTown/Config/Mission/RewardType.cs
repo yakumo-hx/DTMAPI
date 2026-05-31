@@ -1,0 +1,13 @@
+namespace DolocTown.Config.Mission;
+
+public enum RewardType
+{
+	NONE,
+	GOLD,
+	ITEM,
+	RECIPE_UNLOCK,
+	PLATFORM_UNLOCK,
+	BUILDING_UNLOCK,
+	INTERACTABLE_UNLOCK,
+	FAVORABILITY
+}

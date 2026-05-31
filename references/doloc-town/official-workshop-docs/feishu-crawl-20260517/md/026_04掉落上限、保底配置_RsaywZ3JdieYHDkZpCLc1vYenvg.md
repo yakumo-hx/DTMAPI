@@ -1,0 +1,90 @@
+# 04掉落上限、保底配置
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg
+
+04 掉落上限、保底配置
+用户4888
+4月22日修改
+一、配置示例及数据结构说明
+resource_tbglobalguaranteed.json
+1.
+资源采集掉落
+•
+给树种
+增加掉落保底：
+每砍2棵树，必然掉落1个树种。
+上限/保底信息-配置示例
+JSON
+[
+{
+"type":
+0
+, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+"spawn_id": "
+seed_tree
+", // 目标道具ID
+"global_limit": 0, // 全局数量上限（0则无上限）
+"default_locked": false,
+//是否需要解锁，填false
+"viewable": true, //是否显示在图鉴的资源掉落物品清单上
+"active_count": 0,//保底生效次数（0则不限制次数）
+"should_consume_guarantee": false, //正常刷出，是否消耗保底次数
+"guarantee_threshold":
+2
+//保底阈值：多少次必出
+}
+]
+2.
+怪物掉落
+•
+给罐头
+增加掉落保底
+：每击杀2个掉落库里包含罐头的怪物，必然掉落1个罐头。
+上限/保底信息-配置示例
+JSON
+[
+{
+"type":
+1
+, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+"spawn_id": "
+can
+", // 目标道具ID
+"global_limit": 0, // 不生效
+"default_locked": false, //不生效
+"viewable": false, //不生效
+"active_count":
+0
+,//保底生效次数（0则不限制次数）
+"should_consume_guarantee": true, //正常刷出，是否消耗保底次数
+"guarantee_threshold":
+2
+//保底阈值：多少次必出
+}
+]
+3.
+钓鱼掉落
+•
+给垃圾
+增加全局数量上限
+：从水里钓起1个垃圾后，就再也钓不到垃圾了。
+上限/保底信息-配置示例
+JSON
+[
+{
+"type":
+2
+, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+"spawn_id": "
+rubbish
+", // 目标道具ID
+"global_limit":
+1
+, // 全局数量上限（0则无上限）
+"default_locked": false, //不生效
+"viewable": false, //不生效
+"active_count": 0,//不生效
+"should_consume_guarantee": false, //不生效
+"guarantee_threshold": 0 //不生效
+}
+]

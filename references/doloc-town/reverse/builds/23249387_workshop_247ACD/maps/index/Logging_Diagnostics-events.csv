@@ -1,0 +1,5 @@
+﻿"type","name","event_type","add_method","remove_method","token"
+"RedSaw.CommandLineInterface.LinearSelector","OnSelectionChanged","System.Action`1<System.Int32>","add_OnSelectionChanged","remove_OnSelectionChanged","0x14000002"
+"RedSaw.CommandLineInterface.LogManager`1","OnReceivedMessage","System.Action`1<RedSaw.CommandLineInterface.LogManager`1/Log<T>>","add_OnReceivedMessage","remove_OnReceivedMessage","0x14000003"
+"RedSaw.CommandLineInterface.ConsoleController`1","OnFocusOut","System.Action","add_OnFocusOut","remove_OnFocusOut","0x14000004"
+"RedSaw.CommandLineInterface.ConsoleController`1","OnFocus","System.Action","add_OnFocus","remove_OnFocus","0x14000005"

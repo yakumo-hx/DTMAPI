@@ -1,0 +1,206 @@
+[
+  {
+    "id": "none",
+    "main_type": "none",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_none",
+      "text": "无"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_none",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_none",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "food",
+    "main_type": "food",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_food",
+      "text": "食材"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_food",
+      "text": "{0}食谱"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_food",
+      "text": "上面记录了{0}的详细做法。"
+    }
+  },
+  {
+    "id": "cook",
+    "main_type": "food",
+    "cookable": true,
+    "title": {
+      "key": "recipe_sub_type_title_cook",
+      "text": "烹煮"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_cook",
+      "text": "{0}食谱"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_cook",
+      "text": "上面记录了{0}的详细做法。"
+    }
+  },
+  {
+    "id": "bake",
+    "main_type": "food",
+    "cookable": true,
+    "title": {
+      "key": "recipe_sub_type_title_bake",
+      "text": "烘焙"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_bake",
+      "text": "{0}食谱"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_bake",
+      "text": "上面记录了{0}的详细做法。"
+    }
+  },
+  {
+    "id": "drink",
+    "main_type": "food",
+    "cookable": true,
+    "title": {
+      "key": "recipe_sub_type_title_drink",
+      "text": "饮品"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_drink",
+      "text": "{0}食谱"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_drink",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "brewing",
+    "main_type": "food",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_brewing",
+      "text": "酿制"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_brewing",
+      "text": "{0}食谱"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_brewing",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "ingot",
+    "main_type": "industry",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_ingot",
+      "text": "矿锭"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_ingot",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_ingot",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "fuel",
+    "main_type": "industry",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_fuel",
+      "text": "燃料"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_fuel",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_fuel",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "basis",
+    "main_type": "industry",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_basis",
+      "text": "基础素材"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_basis",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_basis",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "ware",
+    "main_type": "industry",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_ware",
+      "text": "加工品"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_ware",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_ware",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "seed",
+    "main_type": "farm",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_seed",
+      "text": "种子"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_seed",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_seed",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  },
+  {
+    "id": "cultivate",
+    "main_type": "farm",
+    "cookable": false,
+    "title": {
+      "key": "recipe_sub_type_title_cultivate",
+      "text": "培育材料"
+    },
+    "item_title_format": {
+      "key": "recipe_item_title_format_cultivate",
+      "text": "{0}配方"
+    },
+    "item_desc_format": {
+      "key": "recipe_item_desc_format_cultivate",
+      "text": "上面记录了{0}的制作方法。"
+    }
+  }
+]

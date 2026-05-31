@@ -1,0 +1,8 @@
+{
+  "Name": "Broken Manifest Mod",
+  "Author": "DTMAPI",
+  "Version": "0.1.0",
+  "Description": "Intentional broken manifest sample for diagnostics.",
+  "EntryDll": "BrokenManifestMod.dll",
+  "Type": "CodeMod"
+}

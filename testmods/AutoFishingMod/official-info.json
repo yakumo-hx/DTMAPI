@@ -1,0 +1,23 @@
+{
+  "name": "自动钓鱼（DTMAPI）",
+  "author": "Yuuka",
+  "version": "0.0.0",
+  "description": "DTMAPI 迁移版自动钓鱼功能 Mod。默认安全配置；启用/禁用走官方 Mod 界面。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "自动钓鱼（DTMAPI）",
+    "tchinese": "自動釣魚（DTMAPI）",
+    "english": "Auto Fishing (DTMAPI)"
+  },
+  "localized_description": {
+    "schinese": "DTMAPI 迁移版自动钓鱼功能 Mod。默认安全配置；启用/禁用走官方 Mod 界面。",
+    "tchinese": "DTMAPI 遷移版自動釣魚功能 Mod。預設安全設定；啟用/禁用走官方 Mod 介面。",
+    "english": "DTMAPI migration of Auto Fishing. Defaults are conservative; enable or disable it through the official Mod UI."
+  }
+}

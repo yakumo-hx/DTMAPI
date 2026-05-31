@@ -1,0 +1,86 @@
+{
+  "config_tables": [],
+  "findings": [
+    {
+      "confidence": "high",
+      "evidence": "info.json",
+      "id": "DOCTOR-001",
+      "location": "info.json",
+      "problem": "根目录缺少 info.json",
+      "reason": "游戏只会把包含 info.json 的目录识别为本地/创意工坊模组。",
+      "rule_id": "missing_info_json",
+      "severity": "error",
+      "suggestion": "在模组根目录创建 info.json。"
+    },
+    {
+      "confidence": "high",
+      "evidence": "Content",
+      "id": "DOCTOR-002",
+      "location": "Content",
+      "problem": "根目录缺少 Content 文件夹",
+      "reason": "官方 ModInfo.UpdateCache 只扫描根目录下的 Content。",
+      "rule_id": "missing_content_dir",
+      "severity": "error",
+      "suggestion": "创建 Content 文件夹并放入 JSON/PNG/DLL 内容。"
+    },
+    {
+      "confidence": "high",
+      "evidence": "",
+      "id": "DOCTOR-003",
+      "location": "icon.png",
+      "problem": "根目录缺少 icon.png",
+      "reason": "游戏内模组列表和创意工坊展示通常需要图标。",
+      "rule_id": "missing_icon_png",
+      "severity": "warning",
+      "suggestion": "添加根目录 icon.png。"
+    },
+    {
+      "confidence": "high",
+      "evidence": "",
+      "id": "DOCTOR-004",
+      "location": "preview.png",
+      "problem": "根目录缺少 preview.png",
+      "reason": "创意工坊展示通常需要预览图。",
+      "rule_id": "missing_preview_png",
+      "severity": "warning",
+      "suggestion": "添加根目录 preview.png。"
+    }
+  ],
+  "out_dir": "E:\\Python_project\\DLK\\src\\mods\\OneActionCompleteMod\\_mod_doctor_report",
+  "reference_meta": {
+    "config_bundle": "D:\\Steam\\steamapps\\common\\Doloc Town\\DolocTown_Data\\StreamingAssets\\aa\\StandaloneWindows64\\configs_assets_all_123ad2cd11ad9f06678a92b963418d1c.bundle",
+    "game_dir": "D:\\Steam\\steamapps\\common\\Doloc Town",
+    "generated_at": "2026-05-19T22:45:57",
+    "source": "game config bundle",
+    "tool": "DolocTownModDoctor"
+  },
+  "root": {
+    "has_content": false,
+    "has_icon": false,
+    "has_info_json": false,
+    "has_preview": false,
+    "has_workshop_json": false,
+    "manifest": null
+  },
+  "smapi": {
+    "dll_count": 0,
+    "dlls": [],
+    "has_smapi_manifest": false
+  },
+  "summary": {
+    "config_json_count": 0,
+    "dll_count": 0,
+    "findings": {
+      "error": 2,
+      "warning": 2
+    },
+    "generated_at": "2026-05-19T22:45:57",
+    "has_errors": true,
+    "mod_dir": "E:\\Python_project\\DLK\\src\\mods\\OneActionCompleteMod",
+    "mod_type": "空包/未识别",
+    "png_count": 0,
+    "reference_mode": "game",
+    "reference_warning": "",
+    "tool_version": "0.1.0"
+  }
+}

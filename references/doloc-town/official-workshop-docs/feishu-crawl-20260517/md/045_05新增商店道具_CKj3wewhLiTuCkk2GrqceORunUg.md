@@ -1,0 +1,94 @@
+# 05新增商店道具
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/CKj3wewhLiTuCkk2GrqceORunUg
+
+05 新增商店道具
+05 新增
+商店道具
+用户4888
+用户5525
+用户2854
+4月20日修改
+一、整体说明
+•
+创意工坊版本更新后，电话亭里新增了两个商店，分别是 ‘工坊贸易部’（一般商店）与 ‘工坊兑换部’（兑换商店）。
+(两个商店仅在玩家订阅并启用相关模组后才可见)
+•
+‘工坊贸易部’类似普通NPC商店，可以买卖，但仅可通过金币购买。‘工坊兑换部’则类似兑换商店，仅供物品兑换。玩家可以通过创意工坊将物品配置进两个商店中供玩家兑换或购买。
+•
+一般商店配方模组由【1个】json文件组成，即：
+◦
+一般商店的商品信息
+mod_tbmodstoreextension.json
+•
+兑换商店配方模组由【1个】json文件组成，即：
+◦
+兑换商店的商品信息
+mod_tbmodexchangestoreextension.json
+•
+Content文件夹内必须包含上述至少【1个】文件。
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+•
+需要【第二天】商店刷新后，才会出现新道具。
+二、配置示例及数据结构说明
+1.
+一般商店
+mod_tbmodstoreextension.json
+•
+电话亭
+商店
+：
+工坊贸易部
+（phone_booth_shop）上架道具：
+垃圾盆栽
+（equipment0）。
+一般商店商品信息-配置示例
+JSON
+[
+{
+"id": "
+phone_booth_shop
+", //
+一般商店ID
+"extra_items": [
+{
+"item_name": "
+equipment0
+", //商品ID
+"storage": 0, //商品全局存量，即整局游戏最多能卖多少个（0则无存量上限）
+"default_unlock": true, //是否默认解锁
+"season_spawn_data": [ //以下分别为四个月份的商品属性
+{
+"count_range": {
+"min_count": 1, //单次出现最小数量：一月
+"max_count": 1 //单次出现最大数量：一月
+},
+"spawn_weight": 0 //商品刷新权重：一月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 1, //单次出现最小数量数量：二月
+"max_count": 1 //单次出现最大数量：二月
+},
+"spawn_weight": 0 //商品刷新权重：二月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 1, //单次出现最小数量数量：三月
+"max_count": 1 //单次出现最大数量：三月
+},
+"spawn_weight": 0 //商品刷新权重：三月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 1, //单次出现最小数量数量：四月
+"max_count": 1 //单次出现最大数量：四月
+},
+"spawn_weight": 0 //商品刷新权重：四月（0则固定刷新）
+}
+]
+}
+]
+}
+]

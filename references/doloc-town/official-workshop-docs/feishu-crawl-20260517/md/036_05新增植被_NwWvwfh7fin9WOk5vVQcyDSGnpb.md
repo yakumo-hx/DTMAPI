@@ -1,0 +1,121 @@
+# 05新增植被
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb
+
+05 新增植被
+05 新增
+植被
+用户4888
+用户5525
+用户2854
+4月21日修改
+一、整体说明
+•
+植被模组由【4个】json文件组成，分别是：
+◦
+植被信息
+resource_tbvegetation.json
+◦
+植被生成信息（决定植被在哪些场景生成）
+mod_tbmodvegetationspawnextension.json
+◦
+掉落物道具信息
+item_tbitemspawn.json
+◦
+掉落库信息（决定资源掉落什么道具）
+item_tbitemspawn.json
+•
+Content文件夹内必须包含上述【4个】文件
+◦
+（若掉落物并非新增物品，则无需包含
+item_tbitemspawn.json
+）
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+•
+植被掉落物的
+加工方式、植被图鉴
+等等【配套设施
+】
+需要通过【其他模组
+】
+实现。详见
+08 综合案例三（新增资源）
+。
+二、配置示例及数据结构说明
+1.
+resource_tbvegetation.json
+•
+添加多阶段植被
+硫化菌
+（toadstool）的相关信息。
+植被信息-配置示例
+JSON
+[
+{
+"id": "
+toadstool
+", //资源ID
+"type":
+2
+, //植被类型，详见对照表
+"default_unlock": true, //是否默认解锁
+"size": {
+"x":
+2
+, //占地格子数：宽
+"y":
+3
+//占地格子数：高
+},
+"spawn_months": [], //出现月份（为空表示没有限制）
+"growing_months": [],  //生长月份（为空表示没有限制）
+"tool_constraints": [], //可采集工具信息，一般为空
+"drop_spawn_entry": {
+"spawn_lut": "
+toadstool_drop
+", //掉落库ID
+"count_range": {
+"min_count":
+1
+, //最小掉落数量
+"max_count":
+1
+//最大掉落数量
+}
+},
+"function": {
+"$type": "VegetationFuncCrop",  //功能类型为作物植被，不修改
+"growth_value": {
+"x":
+288
+, //每阶段最小生长值（1天=288）
+"y":
+288
+//每阶段最小生长值（1天=288）
+},
+"level_sprites": {
+"array": [
+{
+"url": "
+sprite_resource_toadstool_0
+" //阶段0贴图，格式为：sprite_resource_[植被ID]_[阶段数]，下同
+},
+{
+"url": "
+sprite_resource_toadstool_1
+" //阶段1贴图
+},
+{
+"url": "
+sprite_resource_toadstool_2
+" //阶段2贴图
+},
+{
+"url": "
+sprite_resource_toadstool_3
+" //阶段3贴图
+}
+]
+}
+]

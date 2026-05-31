@@ -1,0 +1,14 @@
+{
+  "mod.name": "Animal Husbandry Progress (DTMAPI)",
+  "config.section.main": "Animal viewer",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Show special-produce progress in the animal bell viewer.",
+  "config.progressLabel.name": "Progress label",
+  "config.progressLabel.tooltip": "Label for the appended progress bar.",
+  "config.fillColor.name": "Fill color",
+  "config.fillColor.tooltip": "Hex RGB color, for example FF942E.",
+  "config.cacheSeconds.name": "Cache seconds",
+  "config.cacheSeconds.tooltip": "Cache animal viewer data before recomputing.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency viewer diagnostics."
+}

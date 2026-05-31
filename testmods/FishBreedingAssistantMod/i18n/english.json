@@ -1,0 +1,14 @@
+{
+  "mod.name": "Fish Breeding Assistant (DTMAPI)",
+  "config.section.main": "Fish roe tooltip",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Master switch for fish roe display.",
+  "config.labelTitle.name": "Label title",
+  "config.labelTitle.tooltip": "Append the hatch fish name to roe titles.",
+  "config.labelDetails.name": "Label details",
+  "config.labelDetails.tooltip": "Append incubation and growth details.",
+  "config.cacheSeconds.name": "Cache seconds",
+  "config.cacheSeconds.tooltip": "Cache fish lookup results for tooltip hooks.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency cache diagnostics."
+}

@@ -1,0 +1,21 @@
+# 06ID对照表（资源&植被）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud
+
+06 ID对照表（资源&植被）
+06 ID对照表（资源
+&植被
+）
+用户4888
+用户5525
+4月21日修改
+1.
+资源ID对照表
+2.
+资源&植被类型ID对照表
+3.
+资源
+&植被
+生成表ID对照表
+4.
+资源掉落库ID对照表

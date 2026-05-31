@@ -1,0 +1,2 @@
+﻿"type","name","event_type","add_method","remove_method","token"
+"DolocTown.FishRodHook","OnHooked","System.Action`1<DolocTown.FishingPool>","add_OnHooked","remove_OnHooked","0x14000012"

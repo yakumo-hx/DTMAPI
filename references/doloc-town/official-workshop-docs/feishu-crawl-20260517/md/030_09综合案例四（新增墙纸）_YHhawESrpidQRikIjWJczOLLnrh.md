@@ -1,0 +1,158 @@
+# 09综合案例四（新增墙纸）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/YHhawESrpidQRikIjWJczOLLnrh
+
+09 综合案例四（新增墙纸）
+用户4888
+用户5525
+5月9日修改
+一、整体说明
+•
+建筑
+外部墙纸
+模组由【2个】json文件组成，分别是：
+◦
+外部墙纸道具信息
+item_tbitem.json
+◦
+外部墙纸贴图信息
+building_tbbuildingexterior.json
+•
+建筑
+内部墙纸
+模组由【2个】json文件组成，分别是：
+◦
+内部墙纸道具信息
+item_tbitem.json
+◦
+内部墙纸贴图信息
+building_tbbuildingwallpaper.json
+•
+在上述模组的基础上，配置上道具的
+获取方式
+（如：商店
+mod_tbmodstoreextension.json
+），即可实现
+新增并获取
+墙纸道具全流程。
+•
+游戏内操作指南：
+◦
+直接购买新增墙纸道具：
+▪
+去
+电话亭，
+选择
+工坊贸易部
+，购买
+内部墙纸（贴纸）、外部墙纸（绿色涂装）
+。
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+二、配置示例及数据结构说明
+1.
+外部墙纸
+1.1
+item_tbitem.json
+•
+新增道具：
+外部墙纸（绿色涂装）（exterior0）。
+道具信息-配置示例
+JSON
+[
+{
+"id": "
+exterior0
+", //道具ID
+"sub_type": "special_other", //子道具类型
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": true, //是否为消耗品
+"cookable": false, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": false, //是否显示在图鉴
+"source": [], //获取途径（显示在图鉴）
+"selling_price": 300, //售出价格
+"buying_price": 600, //购买价格
+"overlay": 999, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_exterior0
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_exterior0
+", //道具标题ID，格式为：item_道具ID
+"text": "
+外部墙纸（绿色涂装）
+" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_exterior0_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "
+刷上绿色油漆
+！
+" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionBuildingExterior", //功能类型
+"exterior_id": "
+exterior0
+"
+}
+]
+1.2
+building_tbbuildingexterior.json
+•
+新增墙纸：
+外部墙纸（绿色涂装）（exterior0）。
+墙纸信息-配置示例
+JSON
+[
+{
+"id": "
+exterior0
+", //外部墙纸ID
+"exterior_datas": [
+{
+"building_id": "
+small_container
+", //建筑ID
+"override_item_icon": {
+"url": "
+icon_building_small_container_exterior0
+" //
+（可以为空）
+道具图标覆盖（仅在建造模式出现），格式为：icon_building_[building_id]_[exterior_id]
+},
+"closed_sprite_group": { //场景贴图组（关门）
+"scene_sprite": {
+"url": "
+sprite_building_external_small_container_exterior0
+" //场景贴图，格式为：sprite_building_external_[building_id]_[exterior_id]
+},
+"door_sprite": {
+"url": "
+sprite_building_external_door_small_container_exterior0
+" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]
+}
+},
+"opened_sprite_group": { //
+（可以为空）
+场景贴图组（开门）
+"scene_sprite": {
+"url": "
+sprite_building_external_small_container_exterior0_opened
+" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]_opened
+},
+"door_sprite": {
+"url": "
+sprite_building_external_door_small_container_exterior0_opened
+" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]_opened
+}
+]
+}
+]

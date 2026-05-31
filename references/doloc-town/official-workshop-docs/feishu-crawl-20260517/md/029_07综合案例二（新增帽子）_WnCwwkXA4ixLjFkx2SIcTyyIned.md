@@ -1,0 +1,190 @@
+# 07综合案例二（新增帽子）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/WnCwwkXA4ixLjFkx2SIcTyyIned
+
+07 综合案例二（新增帽子）
+0
+7
+综合案例二（新增帽子）
+用户4888
+用户5525
+用户2854
+4月22日修改
+一、整体说明
+•
+通过以下【3个】json文件的配合，实现
+新增并获取
+帽子道具的全流程：
+◦
+道具信息
+item_tbitem.json
+◦
+帽子信息
+player_tbhat.json
+◦
+兑换商店信息
+mod_tbmodexchangestoreextension.json
+•
+游戏内操作指南：
+◦
+去
+电话亭，
+选择
+工坊兑换部
+，兑换帕伊雅的头饰/
+墨镜/丸子造型
+。
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+二、配置示例及数据结构说明
+item_tbitem.json
+•
+新增道具：
+帕伊雅的头饰、
+墨镜、丸子造型
+。
+道具信息-配置示例（添加单个道具）
+JSON
+[
+//以下为新增道具：帕伊雅的头饰
+{
+"id": "
+hat0
+", //道具ID
+"sub_type": "kit_hat", //子道具类型，无特殊情况不修改
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": false, //是否为消耗品
+"cookable": false, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": false, //是否显示在图鉴
+"source": [], //获取途径（显示在图鉴）
+"selling_price":
+250
+,  //售出价格
+"buying_price":
+500
+, //购买价格
+"overlay": 1, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_hat0
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_hat0
+", //道具标题ID，格式为：item_道具ID
+"text": "
+帕伊雅的头饰
+" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_hat0_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "
+可爱的小花发卡，帕伊雅同款。
+" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionHat", //功能类型，ItemFunctionHat为帽子道具
+"hat_id": "
+hat0
+"//帽子ID，同道具ID
+}
+},
+//以下为新增道具：
+墨镜
+{
+"id": "
+hat1
+", //道具ID
+"sub_type": "kit_hat", //子道具类型，无特殊情况不修改
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": false, //是否为消耗品
+"cookable": false, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": false, //是否显示在图鉴
+"source": [], //获取途径（显示在图鉴）
+"selling_price":
+250
+,  //售出价格
+"buying_price":
+500
+, //购买价格
+"overlay": 1, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_hat1
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_hat1
+", //道具标题ID，格式为：item_道具ID
+"text": "
+墨镜
+" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_hat1_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "
+扮得酷酷的
+！
+" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionHat", //功能类型，ItemFunctionHat为帽子道具
+"hat_id": "
+hat1
+"//帽子ID，同道具ID
+}
+,
+//以下为新增道具：丸子造型
+{
+"id": "
+hat2
+", //道具ID
+"sub_type": "kit_hat", //子道具类型，无特殊情况不修改
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": false, //是否为消耗品
+"cookable": false, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": false, //是否显示在图鉴
+"source": [], //获取途径（显示在图鉴）
+"selling_price":
+250
+,  //售出价格
+"buying_price":
+500
+, //购买价格
+"overlay": 1, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_hat2
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_hat2
+", //道具标题ID，格式为：item_道具ID
+"text": "丸子造型" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_hat2_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "把头发扎好缀上流苏的喜庆造型，不能捏！" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionHat", //功能类型，ItemFunctionHat为帽子道具
+"hat_id": "
+hat2
+"//帽子ID，同道具ID
+}
+]

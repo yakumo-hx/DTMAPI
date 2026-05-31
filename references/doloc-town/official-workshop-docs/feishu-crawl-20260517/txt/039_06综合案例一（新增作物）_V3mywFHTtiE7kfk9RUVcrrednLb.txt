@@ -1,0 +1,170 @@
+06 综合案例一（新增作物）
+用户5525
+用户4888
+用户2854
+4月22日修改
+一、整体说明
+•
+在
+01 新增作物
+的
+基础上新增：
+◦
+商店获取
+mod_tbmodstoreextension.json
+◦
+作物基因信息
+plant_tbcropgenematrix.json
+◦
+相关配方：
+▪
+种子压缩机、
+基因读取器、
+植物分析仪（果实、母本）
+recipe_tbrecipe.json
+▪
+把配方加入配方组
+mod_tbmodrecipegroupextension.json
+◦
+档案馆提交
+archives_tbplantdocument.json
+◦
+添加进食材组
+mod_tbmodingredientgroupextension.json
+◦
+鱼缸喂食
+fishing_tbfishfeed.json
+◦
+畜牧饱食度
+animal_tbfeed.json
+◦
+畜牧贡献值
+animal_tbhusbandryenergy.json
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+二、配置示例及数据结构说明
+1.
+item_tbitem.json
+•
+新增道具：
+艳丽红菌种子、艳丽红菌。
+•
+见
+01 新增作物（种子+果实）
+。
+2.
+plant_tbseed.json
+•
+新增作物：
+艳丽红菌。
+•
+见
+01 新增作物（种子+果实）
+。
+3.
+mod_tbmodstoreextension.json
+•
+种子商店
+（villain_shop）、
+全季种子商店
+（seasonseed_villain_shop）上架道具：
+艳丽红菌种子
+（seed_crop0）。
+道具信息-配置示例
+JSON
+[
+//以下为在种子商店上架种子
+{
+"id": "
+villain_shop
+", //商店ID
+"extra_items": [
+{
+"item_name": "
+seed_crop0
+", //商品ID
+"storage": 0, //商品全局存量，即整局游戏最多能卖多少个（0则无存量上限）
+"default_unlock": true, //是否默认解锁
+"season_spawn_data": [ //以下分别为四个月份的商品属性
+{
+"count_range": {
+"min_count": 0, //单次出现最小数量：一月
+"max_count": 0 //单次出现最大数量：一月
+},
+"spawn_weight": 0 //商品刷新权重：一月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count":
+999
+, //单次出现最小数量数量：二月
+"max_count":
+999
+//单次出现最大数量：二月
+},
+"spawn_weight": 0 //商品刷新权重：二月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 0, //单次出现最小数量数量：三月
+"max_count": 0 //单次出现最大数量：三月
+},
+"spawn_weight": 0 //商品刷新权重：三月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 0, //单次出现最小数量数量：四月
+"max_count": 0 //单次出现最大数量：四月
+},
+"spawn_weight": 0 //商品刷新权重：四月（0则固定刷新）
+}
+]
+}
+]
+},
+//以下为在全季种子商店上架种子
+{
+"id": "
+seasonseed_villain_shop
+", //商店ID
+"extra_items": [
+{
+"item_name": "
+seed_crop0
+", //商品ID
+"storage": 0, //商品全局存量，即整局游戏最多能卖多少个（0则无存量上限）
+"default_unlock": true, //是否默认解锁
+"season_spawn_data": [ //以下分别为四个月份的商品属性
+{
+"count_range": {
+"min_count": 999, //单次出现最小数量：一月
+"max_count": 999 //单次出现最大数量：一月
+},
+"spawn_weight": 0 //商品刷新权重：一月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 999, //单次出现最小数量数量：二月
+"max_count": 999 //单次出现最大数量：二月
+},
+"spawn_weight": 0 //商品刷新权重：二月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 999, //单次出现最小数量数量：三月
+"max_count": 999 //单次出现最大数量：三月
+},
+"spawn_weight": 0 //商品刷新权重：三月（0则固定刷新）
+},
+{
+"count_range": {
+"min_count": 999, //单次出现最小数量数量：四月
+"max_count": 999 //单次出现最大数量：四月
+},
+"spawn_weight": 0 //商品刷新权重：四月（0则固定刷新）
+}
+]
+}
+]
+}
+]

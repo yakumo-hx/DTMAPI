@@ -1,0 +1,6 @@
+"namespace","name","full_name","kind","visibility","base_type","interfaces","is_abstract","is_sealed","declaring_type","methods","fields","properties","events","token"
+"DolocTown.Config.Equipment","ItemPlaceConditionInfo","DolocTown.Config.Equipment.ItemPlaceConditionInfo","class","public","Bright.Config.BeanBase","","False","True","","22","8","7","0","0x02000CED"
+"DolocTown.Config.Equipment","TbItemPlaceCondition","DolocTown.Config.Equipment.TbItemPlaceCondition","class","public","System.Object","","False","True","","8","2","3","0","0x02000CF1"
+"","<>c__DisplayClass575_0","DolocTown.Config.Tables/<>c__DisplayClass575_0","class","private","System.Object","","False","True","DolocTown.Config.Tables","3","1","0","0","0x02001268"
+"","<>c__DisplayClass576_0","DolocTown.Config.Tables/<>c__DisplayClass576_0","class","private","System.Object","","False","True","DolocTown.Config.Tables","3","1","0","0","0x02001269"
+"","<>c__DisplayClass577_0","DolocTown.Config.Tables/<>c__DisplayClass577_0","class","private","System.Object","","False","True","DolocTown.Config.Tables","3","1","0","0","0x0200126A"

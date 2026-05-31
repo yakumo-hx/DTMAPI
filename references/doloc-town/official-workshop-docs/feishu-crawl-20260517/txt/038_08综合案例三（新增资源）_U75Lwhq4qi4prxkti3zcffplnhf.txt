@@ -1,0 +1,151 @@
+08 综合案例三（新增资源）
+用户4888
+用户5525
+用户2854
+4月17日修改
+一、整体说明
+•
+在
+04 新增资源
+的基础上新增：
+◦
+新道具的加工途径（配方）
+recipe_tbrecipe.json
+、
+mod_tbmodrecipegroupextension.json
+◦
+资源图鉴
+resource_tbresourcedocument.json
+•
+植被
+也可以通过上述json文件增加对应功能。
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+二、配置示例及数据结构说明
+1.
+resource_tbresource.json
+•
+添加单阶段资源
+沃土堆（fertile_soil）的相关信息。
+•
+见
+04 新增资源
+。
+2.
+mod_tbmodresourcespawnextension.json
+•
+在小林地（doloc_town_forest）
+有概率生成
+沃土堆（fertile_soil）。
+•
+见
+04 新增资源
+。
+3.
+item_tbitem.json
+•
+添加掉落物
+沃土块（fertile_soil）的相关道具信息。
+•
+见
+04 新增资源
+。
+4.
+item_tbitemspawn.json
+•
+采集资源
+沃土堆，会根据
+掉落库
+fertile_soil_drop，
+掉落道具
+沃土块（fertile_soil）。
+•
+见
+04 新增资源
+。
+5.
+recipe_tbrecipe.json
+•
+新增配方：
+◦
+3*有机肥料（organic_fertilizer） =  1*沃土块（fertile_soil）
+◦
+3*有机树肥（organic_fertilizer_tree） =  1*沃土块（fertile_soil）
+配方信息-配置示例
+JSON
+[
+{
+"id": "
+fertilizer_fertile_soil
+", //配方ID
+"default_unlock": true, //是否默认解锁
+"title": {
+"key": "", //配方标题（为空则根据输出道具自动生成）
+"text": "" //配方文本（为空则根据输出道具自动生成）
+},
+"cost_time":
+72
+, //制作时间（单位为TU，即游戏内5min）
+"output_item": {
+"item_name": "
+organic_fertilizer
+", //输出道具的道具ID
+"min_count":
+3
+, //最小输出数量
+"max_count":
+3
+//最大输出数量
+},
+"input_items": [
+{
+"item_name": "
+fertile_soil
+", //消耗道具的道具ID
+"item_count":
+1
+//消耗道具数量
+}
+],
+"recipe_sub_type": "cultivate", //配方小类，用于自动化
+"tech_point": 1, //完成配方增加的科技点数
+"show_in_handbook": true //配方是否显示在图鉴
+},
+{
+"id": "
+fertilizer_tree_fertile_soil
+", //配方ID
+"default_unlock": true, //是否默认解锁
+"title": {
+"key": "", //配方标题（为空则根据输出道具自动生成）
+"text": "" //配方文本（为空则根据输出道具自动生成）
+},
+"cost_time":
+144
+, //制作时间（单位为TU，即游戏内5min）
+"output_item": {
+"item_name": "
+organic_fertilizer_tree
+", //输出道具的道具ID
+"min_count":
+3
+, //最小输出数量
+"max_count":
+3
+//最大输出数量
+},
+"input_items": [
+{
+"item_name": "
+fertile_soil
+", //消耗道具的道具ID
+"item_count":
+1
+//消耗道具数量
+}
+],
+"recipe_sub_type": "cultivate", //配方小类，用于自动化
+"tech_point": 1, //完成配方增加的科技点数
+"show_in_handbook": true //配方是否显示在图鉴
+}
+]

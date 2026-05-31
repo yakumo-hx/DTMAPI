@@ -1,0 +1,5 @@
+﻿id,severity,rule_id,confidence,location,problem,reason,evidence,suggestion
+DOCTOR-001,error,missing_info_json,high,info.json,根目录缺少 info.json,游戏只会把包含 info.json 的目录识别为本地/创意工坊模组。,info.json,在模组根目录创建 info.json。
+DOCTOR-002,error,missing_content_dir,high,Content,根目录缺少 Content 文件夹,官方 ModInfo.UpdateCache 只扫描根目录下的 Content。,Content,创建 Content 文件夹并放入 JSON/PNG/DLL 内容。
+DOCTOR-003,warning,missing_icon_png,high,icon.png,根目录缺少 icon.png,游戏内模组列表和创意工坊展示通常需要图标。,,添加根目录 icon.png。
+DOCTOR-004,warning,missing_preview_png,high,preview.png,根目录缺少 preview.png,创意工坊展示通常需要预览图。,,添加根目录 preview.png。

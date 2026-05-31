@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DTMAPI.UnitTests</AssemblyName>
+    <RootNamespace>DTMAPI.UnitTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
+  </ItemGroup>
+</Project>

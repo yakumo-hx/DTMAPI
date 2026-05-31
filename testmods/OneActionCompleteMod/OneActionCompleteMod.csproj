@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>OneActionCompleteMod</AssemblyName>
+    <RootNamespace>OneActionCompleteMod</RootNamespace>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="i18n\*.json" CopyToOutputDirectory="PreserveNewest" TargetPath="i18n\%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

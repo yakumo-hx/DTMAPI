@@ -1,0 +1,11 @@
+# 11ID对照表（料理）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb
+
+11 ID对照表（料理）
+用户4888
+4月14日修改
+1.
+食材组ID对照表
+2.
+BUFF ID 对照表

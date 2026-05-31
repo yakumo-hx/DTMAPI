@@ -1,0 +1,147 @@
+01 新增作物（种子+果实）
+01 新增
+作物
+（种子+果实）
+用户4888
+用户5525
+用户2854
+4月15日修改
+一、整体说明
+•
+作物模组由【2个】json文件组成，分别是：
+◦
+道具信息
+item_tbitem.json
+◦
+作物信息
+plant_tbseed.json
+•
+Content文件夹内必须包含上述【2个】文件。
+•
+配置示例中，标黄的字段为【需要修改的字段】。
+•
+新增作物的获取方式、基因词条、加工途径等【配套设施
+】
+需要通过【其他模组
+】
+实现。详见
+06 综合案例一（新增作物）
+。
+•
+注意作物分作物种子（种植时使用的）和作物果实（种植获取的果实），需要配置两个不同的物品
+二、配置示例及数据结构说明
+1.
+item_tbitem.json
+•
+新增道具：
+艳丽红菌种子、艳丽红菌。
+道具信息-配置示例
+JSON
+[
+//以下为新增道具 艳丽红菌种子
+{
+"id": "
+seed_crop0
+", //道具ID
+"sub_type": "
+farm_seed
+", //子道具类型，farm_seed为种子
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": false, //是否为消耗品
+"cookable": false, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": true, //是否显示在图鉴
+"source": [
+"swap"  //获取途径（显示在图鉴）
+],
+"selling_price":
+4
+, //售出价格
+"buying_price":
+20
+, //购买价格
+"overlay": 999, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_seed_crop0
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_seed_crop0
+", //道具标题ID，格式为：item_道具ID
+"text": "
+艳丽红菌种子
+" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_seed_crop0_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "
+真菌作物，约1天成熟，只能在极为湿润的月份种植，色彩异常鲜艳。
+" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionSeed" , //功能类型，ItemFunctionSeed为种子道具
+"seed_id": "
+seed_crop0
+" //种子ID
+}
+},
+//以下为新增道具 艳丽红菌
+{
+"id": "
+crop0
+", //道具ID
+"sub_type": "
+farm_crop
+", //子道具类型，farm_seed为种子
+"salable": true, //是否允许出售
+"disposable": true, //是否允许丢失
+"consumable": false, //是否为消耗品
+"cookable": true, //是否允许烹饪
+"electric_energy": 0, //提供发电量(0则不发电)
+"viewable": true, //是否显示在图鉴
+"source": [
+"plant",  //获取途径（显示在图鉴）
+"swap"
+],
+"selling_price":
+25
+, //售出价格
+"buying_price":
+50
+, //购买价格
+"overlay": 999, //堆叠上限
+"ui_sprite_asset": {
+"url": "
+icon_item_crop0
+" //道具图标，格式为：icon_item_道具ID
+},
+"title": {
+"key": "
+item_crop0
+", //道具标题ID，格式为：item_道具ID
+"text": "
+艳丽红菌
+" //道具标题文本
+},
+"description_basic": {
+"key": "
+item_crop0_desc
+", //道具描述ID，格式为：item_道具ID_desc
+"text": "
+异常艳丽，但意外地可以吃？
+" //道具描述文本
+},
+"function": {
+"$type": "ItemFunctionCrop" , //功能类型，ItemFunctionCrop为作物道具
+"seed_item": "
+seed_crop0
+", //种子ID
+"eating_effect": ""  //食用效果ID
+}
+},
+]

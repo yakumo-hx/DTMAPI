@@ -1,0 +1,10 @@
+﻿{
+    "type_count":  4794,
+    "method_count":  42925,
+    "field_count":  19541,
+    "property_count":  12315,
+    "event_count":  19,
+    "call_count":  173424,
+    "string_occurrence_count":  20404,
+    "unique_string_count":  7963
+}

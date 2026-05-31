@@ -1,0 +1,10 @@
+{
+  "Name": "配置菜单示例（开发者）",
+  "Author": "DTMAPI",
+  "Version": "0.1.0",
+  "Description": "开发者专用配置菜单覆盖示例，不随正式安装启用。",
+  "UniqueID": "DTMAPI.ConfigMenuExample",
+  "EntryDll": "ConfigMenuExample.dll",
+  "MinimumDTMApiVersion": "0.1.0",
+  "Type": "CodeMod"
+}

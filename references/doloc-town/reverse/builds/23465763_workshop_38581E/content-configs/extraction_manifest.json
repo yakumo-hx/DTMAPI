@@ -1,0 +1,57 @@
+{
+  "game_data": "D:\\Steam\\steamapps\\common\\Doloc Town\\DolocTown_Data",
+  "catalog": "D:\\Steam\\steamapps\\common\\Doloc Town\\DolocTown_Data\\StreamingAssets\\aa\\catalog.json",
+  "configs_bundle": "D:\\Steam\\steamapps\\common\\Doloc Town\\DolocTown_Data\\StreamingAssets\\aa\\StandaloneWindows64\\configs_assets_all_9282bb512cecc61b446affb71132c485.bundle",
+  "assets": [
+    {
+      "asset_path": "Assets/Configs/GenDatas/equipment_tbitemplacecondition.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\equipment_tbitemplacecondition.json",
+      "rows": 1
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/equipment_tbequipment.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\equipment_tbequipment.json",
+      "rows": 188
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/recipe_tbrecipesubtype.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\recipe_tbrecipesubtype.json",
+      "rows": 12
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/recipe_tbrecipe.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\recipe_tbrecipe.json",
+      "rows": 444
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/store_tbstore.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\store_tbstore.json",
+      "rows": 25
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/store_tbstoreitemlist.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\store_tbstoreitemlist.json",
+      "rows": 25
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/building_tbbuildingwallpaper.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\building_tbbuildingwallpaper.json",
+      "rows": 2
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/building_tbbuildingexterior.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\building_tbbuildingexterior.json",
+      "rows": 2
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/item_tbitem.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\item_tbitem.json",
+      "rows": 797
+    },
+    {
+      "asset_path": "Assets/Configs/GenDatas/localization_tbstatictext.json",
+      "output": "research\\reverse\\builds\\23465763_workshop_38581E\\content-configs\\localization_tbstatictext.json",
+      "rows": 1
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+﻿"type","name","event_type","add_method","remove_method","token"
+"DolocTown.DolocUserInput","OnInputDeviceChanged","System.Action`1<DolocTown.DolocInputDeviceType>","add_OnInputDeviceChanged","remove_OnInputDeviceChanged","0x14000013"

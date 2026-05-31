@@ -1,0 +1,10 @@
+{
+  "Name": "DTMAPI Hook Probe",
+  "Author": "DTMAPI",
+  "Version": "0.1.0",
+  "Description": "Runtime probe mod that logs hook evidence for smoke tests.",
+  "UniqueID": "DTMAPI.HookProbeMod",
+  "EntryDll": "HookProbeMod.dll",
+  "MinimumDTMApiVersion": "0.1.0",
+  "Type": "CodeMod"
+}

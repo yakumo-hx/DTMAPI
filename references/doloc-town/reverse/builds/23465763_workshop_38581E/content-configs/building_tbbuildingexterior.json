@@ -1,0 +1,298 @@
+[
+  {
+    "id": "exterior_default",
+    "exterior_datas": [
+      {
+        "building_id": "tent",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_tent"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_tent"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "small_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_small_container"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_container"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "medium_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_medium_container"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_medium_container"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "large_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_large_container"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_large_container"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "plant_greenhouse",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_plant_greenhouse"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_plant_greenhouse"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "greenhouse",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_greenhouse"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_greenhouse"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "power_control_compartment",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_power_control_compartment"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_power_control_compartment"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "small_barn",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_small_barn"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_barn"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_small_barn_opened"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_barn_opened"
+          }
+        }
+      },
+      {
+        "building_id": "large_barn",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_large_barn"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_large_barn"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_large_barn_opened"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_large_barn_opened"
+          }
+        }
+      },
+      {
+        "building_id": "cellar",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_cellar"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_cellar"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "exterior_white",
+    "exterior_datas": [
+      {
+        "building_id": "small_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_small_container_exterior_white"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_container_exterior_white"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "medium_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_medium_container_exterior_white"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_medium_container_exterior_white"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      },
+      {
+        "building_id": "large_container",
+        "override_item_icon": {
+          "url": ""
+        },
+        "closed_sprite_group": {
+          "scene_sprite": {
+            "url": "sprite_building_external_large_container_exterior_white"
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_large_container_exterior_white"
+          }
+        },
+        "opened_sprite_group": {
+          "scene_sprite": {
+            "url": ""
+          },
+          "door_sprite": {
+            "url": ""
+          }
+        }
+      }
+    ]
+  }
+]

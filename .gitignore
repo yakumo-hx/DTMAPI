@@ -1,0 +1,32 @@
+# Local toolchains and editor state
+.tools/
+.vs/
+.idea/
+.vscode/
+
+# Build outputs
+**/bin/
+**/obj/
+TestResults/
+
+# Runtime/debug artifacts that are recorded in docs but too large/noisy for Git
+docs/debug/evidence/
+*.log
+*.tmp
+*.cache
+*.bak
+
+# Binary/package artifacts and copied reference binaries
+*.dll
+*.exe
+*.pdb
+*.zip
+*.7z
+*.rar
+*.nupkg
+
+# Official game assembly inputs must remain local reference material only
+references/doloc-town/reverse/builds/*/input/
+
+# Copied external runtime/reference installs
+references/stardew-smapi/installed/

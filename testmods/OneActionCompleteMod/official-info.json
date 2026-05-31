@@ -1,0 +1,23 @@
+{
+  "name": "一键完成（DTMAPI）",
+  "author": "Yuuka",
+  "version": "0.0.0",
+  "description": "DTMAPI 迁移版一键完成资源/加料功能 Mod。默认关闭高影响行为；启用/禁用走官方 Mod 界面。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "一键完成（DTMAPI）",
+    "tchinese": "一鍵完成（DTMAPI）",
+    "english": "One Action Complete (DTMAPI)"
+  },
+  "localized_description": {
+    "schinese": "DTMAPI 迁移版一键完成资源/加料功能 Mod。默认关闭高影响行为；启用/禁用走官方 Mod 界面。",
+    "tchinese": "DTMAPI 遷移版一鍵完成資源/加料功能 Mod。預設關閉高影響行為；啟用/禁用走官方 Mod 介面。",
+    "english": "DTMAPI migration of One Action Complete. High-impact behavior stays off by default; enable or disable it through the official Mod UI."
+  }
+}
