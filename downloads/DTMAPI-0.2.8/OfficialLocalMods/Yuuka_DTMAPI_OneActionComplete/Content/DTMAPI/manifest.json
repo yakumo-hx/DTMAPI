@@ -1,0 +1,22 @@
+{
+  "Name": "One Action Complete",
+  "Author": "Yuuka",
+  "Version": "1.1.2-dtmapi",
+  "Description": "DTMAPI migration of the OneActionComplete configuration and GameBridge policy shell.",
+  "UniqueID": "Yuuka.DTMAPI.OneActionComplete",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.OneActionComplete.dll",
+  "MinimumDTMApiVersion": "0.2.8",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.2.8",
+      "Required": true
+    },
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.2.8",
+      "Required": true
+    }
+  ]
+}

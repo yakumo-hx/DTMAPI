@@ -1,0 +1,23 @@
+{
+  "mod.name": "一键完成（资源/加料已验证）",
+  "config.section.main": "一键完成（资源/加料已验证）",
+  "config.status.experimental": "资源/工具命中路径、树木/矿石/垃圾/杂草错工具矩阵、燃料机器和饲料槽 native 消耗/填充均已验证。蒲公英/植被已记录为游戏原生工具约束例外路径，不属于 DungeonResource 一键完成路径。",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "一键完成所有行为的总开关。",
+  "config.trees.name": "树木",
+  "config.trees.tooltip": "普通工具命中一次后完成树木资源。",
+  "config.ores.name": "矿石",
+  "config.ores.tooltip": "普通工具命中一次后完成矿石资源。",
+  "config.garbage.name": "垃圾",
+  "config.garbage.tooltip": "普通镐子命中一次后完成垃圾资源。",
+  "config.weeds.name": "杂草",
+  "config.weeds.tooltip": "普通工具命中一次后完成草和杂草。",
+  "config.fuel.name": "燃料机器",
+  "config.fuel.tooltip": "直接加料交互一次后填满燃料机器。",
+  "config.feeders.name": "饲料槽",
+  "config.feeders.tooltip": "直接加料交互一次后填满饲料槽。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "写入低频迁移诊断日志。",
+  "config.menuKey.name": "菜单按键",
+  "config.menuKey.tooltip": "打开此 DTMAPI 配置页。"
+}
