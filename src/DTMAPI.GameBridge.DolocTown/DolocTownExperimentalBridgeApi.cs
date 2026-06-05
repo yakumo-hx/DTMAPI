@@ -52,6 +52,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, List<EquipmentSlotRuntimeEntry>> equipmentSlotEntries = new Dictionary<string, List<EquipmentSlotRuntimeEntry>>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loadedEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<object> activeEquipmentSlotUiObjects = new List<object>();
+        private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
         private readonly HashSet<object> secondMotorControllers = new HashSet<object>();
         private readonly HashSet<object> secondMotorInteractables = new HashSet<object>();
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
@@ -86,6 +87,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsUiHooksInstalled;
         private bool equipmentSlotsUiRendered;
         private bool equipmentSlotsUiEvidenceRecorded;
+        private bool equipmentSlotsUiBindDiagnosticLogged;
+        private bool equipmentSlotsUiCloneDiagnosticLogged;
+        private bool equipmentSlotsUiInteractionFailureLogged;
         private bool equipmentSlotsApplyingFunctions;
         private bool equipmentSlotsOrphanRecoveryChecked;
         private DateTimeOffset lastEquipmentSlotsUiRefreshAt = DateTimeOffset.MinValue;
@@ -166,7 +170,7 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus("Debug.MovementApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses native MotionAbility.SetMoveScaler on the player body; reset restores scale 0.");
             runtime.SetHookStatus("Vehicle.MotorApi", "pending", "DTMAPI.GameBridge.DolocTown API", "Waiting for MotorController, ItemMotorKey, MotorInteractable, AgentControllerState, UnlockMotor, SetMotorPosition, and EnterRoom hooks.");
             runtime.SetHookStatus("Machine.ProductionApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.4 experimental machine contract accepts JSON-backed machine definitions; production/fuel/electric runtime hooks still require third-save implementation evidence.");
-            runtime.SetHookStatus("Player.EquipmentSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.4 experimental equipment-slot contract records extra attribute slots and safe recovery policy; GameBridge owns DTMAPI slot storage, native stat-function application, read-only player equipment strip rendering, and recovery without exposing raw game types.");
+            runtime.SetHookStatus("Player.EquipmentSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.8 experimental equipment-slot contract records extra attribute slots and safe recovery policy; GameBridge owns DTMAPI slot storage, native stat-function application, interactive player equipment strip rendering, and recovery without exposing raw game types.");
         }
 
         internal void SetFishRoeHooksInstalled(bool installed)
@@ -420,6 +424,7 @@ namespace DTMAPI.GameBridge.DolocTown
             definitions.Add(normalized);
 
             string nativeTechTreeSummary = EnsureNativeMachineTechRoute(normalized);
+            string recipeSummary = EnsureNativeMachineRecipeInputs(normalized);
             machineStates[owner.UniqueID] = new MachineProductionState
             {
                 OwnerId = owner.UniqueID,
@@ -429,15 +434,98 @@ namespace DTMAPI.GameBridge.DolocTown
                 Status = machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook",
                 NativeTechTreeSummary = nativeTechTreeSummary,
                 LastMessage = "Registered machine definition " + normalized.MachineId + " with " + normalized.OutputRules.Count + " output rules." +
-                    (string.IsNullOrWhiteSpace(nativeTechTreeSummary) ? string.Empty : " nativeTech={" + nativeTechTreeSummary + "}")
+                    (string.IsNullOrWhiteSpace(nativeTechTreeSummary) ? string.Empty : " nativeTech={" + nativeTechTreeSummary + "}") +
+                    (string.IsNullOrWhiteSpace(recipeSummary) ? string.Empty : " recipe={" + recipeSummary + "}")
             };
             ApplyMachineDefinitionState(machineStates[owner.UniqueID], normalized, 0, null);
             runtime.RuntimeMonitor.Log("Machine production definition registered owner=" + owner.UniqueID + " machine=" + normalized.MachineId + " equipment=" + normalized.EquipmentId + " outputs=" + normalized.OutputRules.Count + ".");
-            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native fuel/electric UI remains experimental.");
+            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native recipe overrides and electric-only runtime remain experimental.");
 
             result.Success = true;
             result.Message = machineStates[owner.UniqueID].LastMessage;
             return result;
+        }
+
+        private string EnsureNativeMachineRecipeInputs(MachineDefinition definition)
+        {
+            if (definition.RecipeInputs == null || definition.RecipeInputs.Count == 0)
+                return string.Empty;
+
+            string recipeId = FirstText(definition.RecipeId, definition.ItemId, definition.EquipmentId, definition.MachineId);
+            if (string.IsNullOrWhiteSpace(recipeId))
+                return "skipped=missing-recipe-id";
+
+            try
+            {
+                object? recipe = GetDolocConfigTableEntry("TbRecipe", recipeId);
+                if (recipe == null)
+                    return "pending=missing-native-recipe:" + recipeId;
+
+                object? countItems = CreateCountItemsArray(definition.RecipeInputs);
+                if (countItems == null)
+                    return "failed=count-item-array";
+
+                if (!SetMemberValue(recipe, "InputItems", countItems) && !SetMemberValue(recipe, "input_items", countItems))
+                    return "failed=set-input-items";
+
+                string summary = "recipe=" + recipeId + ", inputs=" + FormatMachineRecipeInputs(definition.RecipeInputs);
+                runtime.RuntimeMonitor.Log("Machine recipe inputs updated " + summary + ".");
+                runtime.SetHookStatus("Machine.MineRecipeInputs", "experimental", "DolocConfig.Tables.TbRecipe recipe input override", summary);
+                return summary;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Machine recipe input override failed for " + recipeId + ".", ex.ToString());
+                runtime.SetHookStatus("Machine.MineRecipeInputs", "failed", "DolocConfig.Tables.TbRecipe recipe input override", ex.GetType().Name + ": " + ex.Message);
+                return "failed=" + ex.GetType().Name + ":" + ex.Message;
+            }
+        }
+
+        private static object? GetDolocConfigTableEntry(string tableName, string id)
+        {
+            Type? dolocConfig = ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            object? tables = ReadStaticMember(dolocConfig, "Tables");
+            object? table = tables == null ? null : ReadMember(tables, tableName);
+            object? dataMap = table == null ? null : ReadMember(table, "DataMap");
+            if (dataMap is IDictionary dictionary && dictionary.Contains(id))
+                return dictionary[id];
+
+            MethodInfo? getOrDefault = table == null ? null : FindMethodInHierarchy(table.GetType(), "GetOrDefault", 1);
+            return getOrDefault?.Invoke(table, new object[] { id });
+        }
+
+        private static object? CreateCountItemsArray(IReadOnlyList<MachineRecipeInput> inputs)
+        {
+            Type? countItemType = ResolveType("DolocTown.CountItem, Assembly-CSharp");
+            if (countItemType == null)
+                return null;
+
+            Array array = Array.CreateInstance(countItemType, inputs.Count);
+            ConstructorInfo? ctor = countItemType.GetConstructor(new[] { typeof(string), typeof(int) });
+            for (int i = 0; i < inputs.Count; i++)
+            {
+                MachineRecipeInput input = inputs[i] ?? new MachineRecipeInput();
+                object? item = ctor != null
+                    ? ctor.Invoke(new object[] { input.ItemId ?? string.Empty, Math.Max(1, input.Count) })
+                    : Activator.CreateInstance(countItemType);
+                if (item == null)
+                    return null;
+                if (ctor == null)
+                {
+                    SetMemberValue(item, "itemName", input.ItemId ?? string.Empty);
+                    SetMemberValue(item, "itemCount", Math.Max(1, input.Count));
+                }
+                array.SetValue(item, i);
+            }
+
+            return array;
+        }
+
+        private static string FormatMachineRecipeInputs(IReadOnlyList<MachineRecipeInput> inputs)
+        {
+            return string.Join("|", (inputs ?? Array.Empty<MachineRecipeInput>())
+                .Where(input => input != null && !string.IsNullOrWhiteSpace(input.ItemId))
+                .Select(input => input.ItemId + "x" + Math.Max(1, input.Count).ToString(CultureInfo.InvariantCulture)));
         }
 
         private string EnsureNativeMachineTechRoute(MachineDefinition definition)
@@ -474,7 +562,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     if (TryFindTechGraphNode(graph, nodeId, out object? existingNode))
                     {
-                        string existingSummary = BuildNativeTechRouteSummary(graph, existingNode!, parentId, aboveTitle, "verified-existing", infoSummary, equipmentId, recipeId);
+                        string payloadSummary = EnsureNativeMachineTechGraphNodePayload(graph, existingNode!, parentId, definition, equipmentId, recipeId);
+                        string existingSummary = BuildNativeTechRouteSummary(graph, existingNode!, parentId, aboveTitle, "verified-existing", infoSummary, equipmentId, recipeId) + ", " + payloadSummary;
                         PublishNativeTechRouteStatus(existingSummary);
                         return existingSummary;
                     }
@@ -533,7 +622,7 @@ namespace DTMAPI.GameBridge.DolocTown
             object proto = protoCtor.Invoke(new object?[]
             {
                 nodeId,
-                new[] { equipmentId },
+                Array.Empty<string>(),
                 Array.Empty<string>(),
                 new[] { recipeId },
                 costs,
@@ -596,7 +685,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", aboveCommander=" + aboveCommander +
                 ", equipment=" + equipmentId +
                 ", recipe=" + recipeId +
+                ", unlockEntries=recipe-only" +
+                ", equipmentEntries=0" +
+                ", recipeEntries=1" +
                 ", costs=" + costCount +
+                ", costValues=" + DescribeTechNodeCosts(costs) +
                 ", icon=" + (icon == null ? "null" : icon.GetType().Name) +
                 ", " + positionSummary +
                 ", " + infoSummary;
@@ -628,6 +721,30 @@ namespace DTMAPI.GameBridge.DolocTown
                 list.Add(info);
             runtime.RuntimeMonitor.Log("Native TechNodeInfo injected node=" + nodeId + " title=" + title + ".");
             return "techInfo=injected";
+        }
+
+        private string EnsureNativeMachineTechGraphNodePayload(object graph, object node, string parentId, MachineDefinition definition, string equipmentId, string recipeId)
+        {
+            object? data = ReadMember(node, "data");
+            if (data == null)
+                return "payload=failed:missing-data";
+
+            Type? techNodeCostType = ResolveType("DolocTown.GameData.TechNodeCost, Assembly-CSharp");
+            if (techNodeCostType == null)
+                return "payload=failed:missing-TechNodeCost";
+
+            object? parentNode = null;
+            TryFindTechGraphNode(graph, parentId, out parentNode);
+            object costs = CreateNativeTechNodeCosts(techNodeCostType, graph, parentNode ?? node, ResolveNativeMachineTechCost(definition));
+            bool equipmentSet = SetMemberValue(data, "equipments", Array.Empty<string>());
+            bool buildingsSet = SetMemberValue(data, "buildings", Array.Empty<string>());
+            bool recipesSet = SetMemberValue(data, "recipes", new[] { recipeId });
+            bool costsSet = SetMemberValue(data, "costs", costs);
+            return "payload=recipe-only" +
+                ", payloadUpdated=" + (equipmentSet && buildingsSet && recipesSet && costsSet) +
+                ", equipmentEntries=0" +
+                ", recipeEntries=1" +
+                ", costValues=" + DescribeTechNodeCosts(costs);
         }
 
         private static bool TryFindTechGraphNode(object graph, string nodeId, out object? node)
@@ -770,12 +887,34 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
+        private static string DescribeTechNodeCosts(object? costsObject)
+        {
+            if (!(costsObject is IEnumerable costs))
+                return "none";
+
+            var values = new List<string>();
+            foreach (object? cost in costs)
+            {
+                if (cost == null)
+                    continue;
+
+                object? type = ReadMember(cost, "type");
+                int count = ReadIntMember(cost, "count", -1);
+                string id = type == null
+                    ? "unknown"
+                    : FirstText(ReadStringMember(type, "id"), ReadStringMember(type, "Id"), type.ToString() ?? "unknown");
+                values.Add(id + ":" + count.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return values.Count == 0 ? "none" : string.Join("|", values);
+        }
+
         private static int ResolveNativeMachineTechCost(MachineDefinition definition)
         {
             if (definition.EquipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ||
                 definition.MachineId.Equals("dtmapi.mine", StringComparison.OrdinalIgnoreCase))
             {
-                return 30;
+                return 1;
             }
             return 0;
         }
@@ -811,7 +950,12 @@ namespace DTMAPI.GameBridge.DolocTown
             bool rightOfParent = parentPos != null && x > ReadIntMember(parentPos, "x", x);
             bool aboveCommander = abovePos != null && y < ReadIntMember(abovePos, "y", y + 1);
             object? data = ReadMember(node, "data");
-            int costCount = CountArrayItems(data == null ? null : ReadMember(data, "costs"));
+            object? equipmentEntriesObject = data == null ? null : ReadMember(data, "equipments");
+            object? recipeEntriesObject = data == null ? null : ReadMember(data, "recipes");
+            object? costsObject = data == null ? null : ReadMember(data, "costs");
+            int equipmentEntryCount = CountArrayItems(equipmentEntriesObject);
+            int recipeEntryCount = CountArrayItems(recipeEntriesObject);
+            int costCount = CountArrayItems(costsObject);
             return status +
                 ", node=" + ReadStringMember(node, "id") +
                 ", tree=" + ReadStringMember(graph, "id") +
@@ -821,7 +965,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", aboveCommander=" + aboveCommander +
                 ", equipment=" + equipmentId +
                 ", recipe=" + recipeId +
+                ", unlockEntries=" + (equipmentEntryCount == 0 && recipeEntryCount == 1 ? "recipe-only" : "mixed") +
+                ", equipmentEntries=" + equipmentEntryCount +
+                ", recipeEntries=" + recipeEntryCount +
                 ", costs=" + costCount +
+                ", costValues=" + DescribeTechNodeCosts(costsObject) +
                 ", " + infoSummary;
         }
 
@@ -899,7 +1047,7 @@ namespace DTMAPI.GameBridge.DolocTown
             state.LastRecoveryMessage = FirstText(state.LastRecoveryMessage, "No runtime recovery has run in this session.");
             equipmentSlotStates[owner.UniqueID] = state;
             runtime.RuntimeMonitor.Log("Equipment slots definition registered owner=" + owner.UniqueID + " enabled=" + normalized.Enabled + " extraSlots=" + normalized.ExtraAttributeSlots + " preserveVanillaVisualSlots=" + normalized.PreserveVanillaVisualSlots + ".");
-            runtime.SetHookStatus("Player.EquipmentSlotsApi", state.Status, "DTMAPI.GameBridge.DolocTown API", "Registered extra equipment-slot policy for " + owner.UniqueID + "; DTMAPI stores attribute-only slots, renders a read-only player equipment strip, preserves vanilla visual slots, and can recover stored items through native backpack placement.");
+            runtime.SetHookStatus("Player.EquipmentSlotsApi", state.Status, "DTMAPI.GameBridge.DolocTown API", "Registered extra equipment-slot policy for " + owner.UniqueID + "; DTMAPI stores attribute-only slots, renders an interactive player equipment strip, preserves vanilla visual slots, and can recover stored items through native backpack placement.");
 
             return new EquipmentSlotsRegisterResult
             {
@@ -1087,7 +1235,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             string ownerId = uniqueId ?? string.Empty;
             return equipmentSlotOptions.ContainsKey(ownerId)
-                ? new BridgeFeatureStatus(((IEquipmentSlotsApi)this).GetState(ownerId).Status, "Extra attribute-slot policy is registered while preserving vanilla visual slots; DTMAPI owns extra-slot storage, read-only player equipment strip rendering, native AgentEquipmentFunction application, and safe recovery through backpack/mail overflow.")
+                ? new BridgeFeatureStatus(((IEquipmentSlotsApi)this).GetState(ownerId).Status, "Extra attribute-slot policy is registered while preserving vanilla visual slots; DTMAPI owns extra-slot storage, interactive player equipment strip rendering, native AgentEquipmentFunction application, and safe recovery through backpack/mail overflow.")
                 : new BridgeFeatureStatus("not-configured", "No equipment-slot policy was registered for this mod.");
         }
 
@@ -1120,6 +1268,7 @@ namespace DTMAPI.GameBridge.DolocTown
             for (int i = 0; i < entries.Count; i++)
             {
                 entries[i].Index = i;
+                entries[i].OwnerId = ownerId;
                 if (string.IsNullOrWhiteSpace(entries[i].SlotId))
                     entries[i].SlotId = BuildEquipmentSlotId(options, i);
             }
@@ -1129,6 +1278,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 int index = entries.Count;
                 entries.Add(new EquipmentSlotRuntimeEntry
                 {
+                    OwnerId = ownerId,
                     Index = index,
                     SlotId = BuildEquipmentSlotId(options, index),
                     LastMessage = "Empty DTMAPI extra equipment slot."
@@ -1247,6 +1397,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     EquipmentSlotStorageEntry slot = document.Slots[i] ?? new EquipmentSlotStorageEntry();
                     entries.Add(new EquipmentSlotRuntimeEntry
                     {
+                        OwnerId = ownerId,
                         Index = slot.Index >= 0 ? slot.Index : i,
                         SlotId = FirstText(slot.SlotId, "dtmapi.extra." + (i + 1).ToString(CultureInfo.InvariantCulture)),
                         ItemId = slot.ItemId ?? string.Empty,
@@ -1562,28 +1713,38 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             Type itemType = item.GetType();
-            if (!IsTypeOrBase(itemType, "DolocTown.ItemPassive"))
-            {
-                reason = "not-passive";
-                message = "Only passive attribute equipment can be placed in DTMAPI extra slots; " + ReadStringMember(item, "name") + " is " + itemType.FullName + ".";
-                return false;
-            }
-
             object? proto = ReadMember(item, "proto");
             object? function = proto == null ? null : ReadMember(proto, "Function");
             string functionType = function == null ? string.Empty : function.GetType().FullName ?? function.GetType().Name;
-            if (function == null || functionType.IndexOf("ItemFunctionPassive", StringComparison.OrdinalIgnoreCase) < 0 && functionType.IndexOf("ItemFunctionHerbPackage", StringComparison.OrdinalIgnoreCase) < 0)
+            bool isPassive = IsTypeOrBase(itemType, "DolocTown.ItemPassive");
+            bool isHat = IsTypeOrBase(itemType, "DolocTown.ItemHat");
+            if (!isPassive && !isHat)
+            {
+                reason = "not-attribute-equipment";
+                message = "Only passive attribute equipment or hats with equipment skills can be placed in DTMAPI extra slots; " + ReadStringMember(item, "name") + " is " + itemType.FullName + ".";
+                return false;
+            }
+
+            if (isPassive && (function == null || (functionType.IndexOf("ItemFunctionPassive", StringComparison.OrdinalIgnoreCase) < 0 && functionType.IndexOf("ItemFunctionHerbPackage", StringComparison.OrdinalIgnoreCase) < 0)))
             {
                 reason = "not-attribute-passive";
                 message = "Extra slots are attribute-only and require ItemFunctionPassive/ItemFunctionHerbPackage; item=" + ReadStringMember(item, "name") + ".";
                 return false;
             }
 
-            skillId = ReadStringMember(function, "Skill");
+            if (isHat && (function == null || functionType.IndexOf("ItemFunctionHat", StringComparison.OrdinalIgnoreCase) < 0))
+            {
+                reason = "not-attribute-hat";
+                message = "Extra hat slots require an ItemFunctionHat/ItemFunctionHatShield function; item=" + ReadStringMember(item, "name") + ".";
+                return false;
+            }
+
+            object? hatInfo = isHat && function != null ? ReadMember(function, "HatId_Ref") : null;
+            skillId = isHat && hatInfo != null ? ReadStringMember(hatInfo, "Skill") : ReadStringMember(function!, "Skill");
             if (string.IsNullOrWhiteSpace(skillId))
             {
                 reason = "missing-skill";
-                message = "Passive item " + ReadStringMember(item, "name") + " has no equipment skill.";
+                message = (isHat ? "Hat item " : "Passive item ") + ReadStringMember(item, "name") + " has no equipment skill.";
                 return false;
             }
 
@@ -2262,6 +2423,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 ReloadAfterSave = reloadAfterSave,
                 Before = GetInstantSaveDebugState()
             };
+            if (reloadAfterSave)
+                return InstantSaveFailed(result, "reload-disabled", "Save-then-immediate-load is disabled because the native running-save reload path can leave scene residue.");
+
             result.SaveSlot = result.Before.SaveSlot;
             if (!result.Before.CanSave || result.Before.SaveSlot == null)
                 return InstantSaveFailed(result, FirstText(result.Before.FailureReason, "not-saveable"), FirstText(result.Before.Message, "Current save slot is not available."));
@@ -2284,21 +2448,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 result.Success = true;
                 result.Message = "Saved slot/index=" + gameIndex + " at " + FormatTeleportSnapshot(result.Before.CurrentLocation) + ".";
 
-                if (reloadAfterSave)
-                {
-                    MethodInfo? loadGame = FindMethod(dolocApi, "LoadGame", 1);
-                    if (loadGame == null)
-                        return InstantSaveFailed(result, "missing-loadgame", "DolocAPI.LoadGame(int) was not found.");
-                    object? loadResult = loadGame.Invoke(null, new object[] { gameIndex });
-                    result.ReloadRequested = !(loadResult is bool loaded) || loaded;
-                    result.AfterReloadRequest = GetInstantSaveDebugState();
-                    if (!result.ReloadRequested)
-                        return InstantSaveFailed(result, "reload-rejected", "DolocAPI.LoadGame returned false for slot/index " + gameIndex + ".");
-                    result.Message += " Reload requested for verification.";
-                }
-
-                runtime.RuntimeMonitor.Log("Instant save debug OK owner=" + ownerId + " slot/index=" + gameIndex + " reload=" + reloadAfterSave + " before=" + FormatTeleportSnapshot(result.Before.CurrentLocation) + " afterSave=" + FormatTeleportSnapshot(result.AfterSave.CurrentLocation) + ".");
-                runtime.SetHookStatus("Debug.InstantSave", "verified", reloadAfterSave ? "DolocAPI.SaveGame -> LoadGame" : "DolocAPI.SaveGame", result.Message);
+                runtime.RuntimeMonitor.Log("Instant save debug OK owner=" + ownerId + " slot/index=" + gameIndex + " reload=False before=" + FormatTeleportSnapshot(result.Before.CurrentLocation) + " afterSave=" + FormatTeleportSnapshot(result.AfterSave.CurrentLocation) + ".");
+                runtime.SetHookStatus("Debug.InstantSave", "verified", "DolocAPI.SaveGame", result.Message);
                 return result;
             }
             catch (Exception ex)
@@ -2311,7 +2462,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         BridgeFeatureStatus IInstantSaveDebugApi.GetStatus()
         {
-            return new BridgeFeatureStatus("experimental", "Saves the current loaded slot from the Y console through native DolocAPI.SaveGame and can optionally request LoadGame for verification.");
+            return new BridgeFeatureStatus("experimental-save-only", "Saves the current loaded slot from the Y console through native DolocAPI.SaveGame. Save-then-immediate-load requests are disabled because the native running-save reload path can leave scene residue.");
         }
 
         TimeDebugState ITimeDebugApi.GetState()
@@ -3165,17 +3316,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!options.Enabled)
                     continue;
 
-                FieldInfo? stateDescription = data.GetType().GetField("stateDescription", BindingFlags.Public | BindingFlags.Instance);
-                string current = stateDescription == null ? string.Empty : stateDescription.GetValue(data) as string ?? string.Empty;
-                bool changed = false;
                 foreach (AnimalProgressInfo progress in progressItems.OrderByDescending(p => p.Progress).ThenBy(p => p.OutputTitle, StringComparer.OrdinalIgnoreCase))
                 {
-                    string line = progress.OutputTitle + " " + BuildAnimalProgressBar(progress, options.ProgressColor) + " " + progress.Current + "/" + progress.Threshold;
-                    if (stateDescription != null && current.IndexOf(line, StringComparison.Ordinal) < 0)
-                    {
-                        current = InsertAnimalProgressLine(current, line);
-                        changed = true;
-                    }
                     renderRows.Add(new AnimalProgressRenderRow
                     {
                         OwnerId = entry.Key,
@@ -3187,18 +3329,33 @@ namespace DTMAPI.GameBridge.DolocTown
                     });
                     LogOnce(loggedAnimalApplications, entry.Key + ":" + progress.AnimalId + ":" + progress.OutputId, "Animal viewer progress hook applied by " + entry.Key + " for " + progress.AnimalId + "/" + progress.OutputId + " current=" + progress.Current + " threshold=" + progress.Threshold + ".");
                 }
-
-                if (changed && stateDescription != null)
-                    stateDescription.SetValue(data, current);
             }
 
             if (renderRows.Count > 0)
+            {
                 animalProgressRowsByData[data] = renderRows;
+                AnimalProgressRenderRow primary = renderRows
+                    .OrderByDescending(row => row.Progress)
+                    .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
+                    .First();
+                latestAnimalProgressOverlaySummary = "independent-row pending=" + primary.OutputTitle + " " + primary.Current + "/" + primary.Threshold + ", rows=" + renderRows.Count + ", moodOverride=False, stateDescriptionOverride=False";
+                runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "pending", "AnimalFullInfoData ctor -> AnimalViewer.Show independent cloned ProgressBar", latestAnimalProgressOverlaySummary);
+            }
+        }
+
+        private void ApplyAnimalProgressSinglePassData(object data, AnimalProgressRenderRow row)
+        {
+            string progressText = row.Current + "/" + row.Threshold;
+            string label = FirstText(row.OutputTitle, "Special produce");
+            float progress = (float)Math.Max(0, Math.Min(1, row.Progress));
+            SetMemberValue(data, "moodInfo", label + " " + progressText);
+            SetMemberValue(data, "moodProgress", progress);
+            latestAnimalProgressOverlaySummary = "single-pass native moodBar row=" + label + " " + progressText + ", progress=" + progress.ToString("0.###", CultureInfo.InvariantCulture);
+            runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "verified", "AnimalFullInfoData ctor -> AnimalViewer.OnShow native ProgressBar", latestAnimalProgressOverlaySummary);
         }
 
         internal bool RenderAnimalProgressOverlay(object viewer, object data)
         {
-            latestAnimalProgressOverlaySummary = string.Empty;
             if (viewer == null || data == null)
                 return false;
             if (!animalProgressRowsByData.TryGetValue(data, out IReadOnlyList<AnimalProgressRenderRow>? rows) || rows.Count == 0)
@@ -3210,71 +3367,66 @@ namespace DTMAPI.GameBridge.DolocTown
                 object? moodGameObject = moodBar == null ? null : ReadMember(moodBar, "gameObject");
                 object? moodTransform = moodGameObject == null ? null : ReadMember(moodGameObject, "transform");
                 object? parent = moodTransform == null ? null : ReadMember(moodTransform, "parent");
-                if (moodGameObject == null || moodTransform == null || parent == null)
+                if (parent == null || moodGameObject == null || moodTransform == null)
                     return false;
 
                 ClearAnimalProgressOverlay(parent);
-
+                activeAnimalProgressOverlayRows.Clear();
                 int rendered = 0;
-                var textPatchSummaries = new List<string>();
-                foreach (AnimalProgressRenderRow row in rows.Take(3))
+                foreach (AnimalProgressRenderRow row in rows
+                    .OrderByDescending(row => row.Progress)
+                    .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
+                    .Take(3))
                 {
                     object? clone = CloneUnityObject(moodGameObject);
                     if (clone == null)
                         continue;
-
                     SetMemberValue(clone, "name", "DTMAPI.AnimalProduceProgress." + rendered);
                     SetActive(clone, false);
-                    object? cloneTransform = ReadMember(clone, "transform");
-                    if (cloneTransform == null)
+                    object? rowTransform = ReadMember(clone, "transform");
+                    if (rowTransform == null)
+                    {
+                        DestroyUnityObject(clone);
                         continue;
+                    }
 
-                    SetParent(cloneTransform, parent, worldPositionStays: false);
-                    PositionAnimalProgressRow(moodTransform, cloneTransform, rendered);
+                    SetParent(rowTransform, parent, worldPositionStays: false);
+                    PositionAnimalProgressRow(moodTransform, rowTransform, rendered);
                     activeAnimalProgressOverlayObjects.Add(clone);
-
-                    object? progressBar = GetComponent(clone, moodBar!.GetType());
-                    if (progressBar == null)
-                        continue;
-                    string progressText = row.Current + "/" + row.Threshold;
-                    string textPatchSummary = SetAnimalProgressTextsFromChildren(clone, row.OutputTitle, progressText);
-                    MethodInfo? setTitle = progressBar.GetType().GetMethod("SetTitle", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
-                    MethodInfo? setProgress = progressBar.GetType().GetMethod("SetProgress", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float), typeof(string) }, null);
-                    setTitle?.Invoke(progressBar, new object[] { row.OutputTitle });
-                    setProgress?.Invoke(progressBar, new object[] { (float)Math.Max(0, Math.Min(1, row.Progress)), progressText });
-                    SetUnityText(ReadMember(progressBar, "txtTitle"), row.OutputTitle);
-                    SetUnityText(ReadMember(progressBar, "txtProgress"), progressText);
-                    SetAnimalProgressTextsFromChildren(clone, row.OutputTitle, progressText);
-                    textPatchSummaries.Add(textPatchSummary);
-
-                    object? progressMask = ReadMember(progressBar, "progressMask");
-                    object? color = CreateUnityColor(row.Color);
-                    if (progressMask != null && color != null)
-                        SetMemberValue(progressMask, "color", color);
-
+                    activeAnimalProgressOverlayRows.Add(row);
                     SetActive(clone, true);
                     rendered++;
                 }
 
-                if (rendered <= 0)
-                    return false;
-
-                activeAnimalProgressOverlayRows.Clear();
-                activeAnimalProgressOverlayRows.AddRange(rows.Take(rendered));
-                lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
                 RefreshAnimalProgressOverlayTexts(force: true);
-
-                latestAnimalProgressOverlaySummary = "rows=" + rendered + ", " + string.Join("; ", rows.Take(rendered).Select(r => r.OutputTitle + " " + r.Current + "/" + r.Threshold).ToArray());
-                runtime.RuntimeMonitor.Log("Animal viewer progress native-like UI overlay rendered " + latestAnimalProgressOverlaySummary + "; " + string.Join("; ", textPatchSummaries.ToArray()) + ".");
-                runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "verified", "AnimalViewer.Show postfix + cloned native ProgressBar", latestAnimalProgressOverlaySummary);
-                return true;
+                latestAnimalProgressOverlaySummary = "independent cloned ProgressBar rows=" + rendered + ", primary=" + rows[0].OutputTitle + " " + rows[0].Current + "/" + rows[0].Threshold + ", moodOverride=False, stateDescriptionOverride=False";
+                runtime.RuntimeMonitor.Log("Animal viewer progress independent row active " + latestAnimalProgressOverlaySummary + ".");
+                runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", rendered > 0 ? "verified" : "pending", "AnimalFullInfoData ctor -> AnimalViewer.Show cloned ProgressBar", latestAnimalProgressOverlaySummary);
+                return rendered > 0;
             }
             catch (Exception ex)
             {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Animal progress UI overlay render failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "failed", "AnimalViewer.Show postfix + cloned native ProgressBar", ex.GetType().Name + ": " + ex.Message);
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Animal progress single-pass UI evidence failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "failed", "AnimalFullInfoData ctor -> AnimalViewer.OnShow native ProgressBar", ex.GetType().Name + ": " + ex.Message);
                 return false;
             }
+        }
+
+        internal bool HasAnimalProgressRowsForSmoke(object? data, out string summary)
+        {
+            summary = string.Empty;
+            if (data == null || !animalProgressRowsByData.TryGetValue(data, out IReadOnlyList<AnimalProgressRenderRow>? rows) || rows.Count == 0)
+                return false;
+
+            AnimalProgressRenderRow primary = rows
+                .OrderByDescending(row => row.Progress)
+                .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
+                .First();
+            summary = "rows=" + rows.Count +
+                ", primary=" + primary.OutputTitle + " " + primary.Current + "/" + primary.Threshold +
+                ", owner=" + primary.OwnerId +
+                ", moodOverride=False, stateDescriptionOverride=False";
+            return true;
         }
 
         internal bool RecordAnimalViewerUiEvidence(object viewer, object data)
@@ -3282,16 +3434,22 @@ namespace DTMAPI.GameBridge.DolocTown
             if (viewer == null || data == null || animalViewerUiEvidenceRecorded)
                 return false;
 
-            string stateDescription = ReadStringMember(data, "stateDescription");
-            if (string.IsNullOrWhiteSpace(stateDescription))
-                return false;
             if (!ReadBoolMember(data, "notEmpty", true) || !ReadBoolMember(data, "visible", true))
                 return false;
-            if (!TryFindAnimalProgressMarker(stateDescription, out string ownerId, out string label))
+            if (!animalProgressRowsByData.TryGetValue(data, out IReadOnlyList<AnimalProgressRenderRow>? rows) || rows.Count == 0)
                 return false;
+            AnimalProgressRenderRow primary = rows
+                .OrderByDescending(row => row.Progress)
+                .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
+                .First();
+            string ownerId = primary.OwnerId;
+            string label = primary.OutputTitle;
 
             animalViewerUiEvidenceRecorded = true;
             string title = ReadStringMember(data, "title");
+            string moodInfo = ReadStringMember(data, "moodInfo");
+            double moodProgress = ReadDoubleMember(data, "moodProgress", -1);
+            string stateDescription = ReadStringMember(data, "stateDescription");
             string timestamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
             string evidenceDir = Path.Combine(runtime.Paths.EvidencePath, "ANIMAL-001", timestamp);
             Directory.CreateDirectory(evidenceDir);
@@ -3309,11 +3467,16 @@ namespace DTMAPI.GameBridge.DolocTown
                 "DataType=" + data.GetType().FullName + Environment.NewLine +
                 "ScreenshotRequested=" + screenshotRequested + Environment.NewLine +
                 "Screenshot=" + screenshotPath + Environment.NewLine +
+                "RenderPath=AnimalFullInfoData ctor -> AnimalViewer.Show independent cloned ProgressBar" + Environment.NewLine +
+                "MoodInfo=" + moodInfo + Environment.NewLine +
+                "MoodProgress=" + moodProgress.ToString("0.###", CultureInfo.InvariantCulture) + Environment.NewLine +
+                "MoodOverride=False" + Environment.NewLine +
+                "StateDescriptionOverride=False" + Environment.NewLine +
                 "Overlay=" + latestAnimalProgressOverlaySummary + Environment.NewLine +
                 "StateDescription=" + stateDescription.Replace(Environment.NewLine, " | ") + Environment.NewLine);
 
-            runtime.RuntimeMonitor.Log("Animal viewer UI evidence OK owner=" + ownerId + " title=" + title + " marker=" + label + " overlay=" + latestAnimalProgressOverlaySummary + " screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
-            runtime.SetHookStatus("Animals.ViewerRendering", "verified", "Harmony Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", "Real animal viewer UI showed visible progress text. Evidence=" + evidenceDir);
+            runtime.RuntimeMonitor.Log("Animal viewer UI evidence OK owner=" + ownerId + " title=" + title + " marker=" + label + " moodInfo=" + moodInfo + " renderPath=independent-cloned-progressbar overlay=" + latestAnimalProgressOverlaySummary + " screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
+            runtime.SetHookStatus("Animals.ViewerRendering", "verified", "Harmony Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", "Real animal viewer UI used independent cloned ProgressBar rendering for hidden produce without mood/stateDescription override. Evidence=" + evidenceDir);
             runtime.SetHookStatus("Smoke.AnimalPanelUi", "verified", "DolocAPI.EnterUI(AnimalPanelUiState) + AnimalPanel.RefreshViewer", "Opened official AnimalPanel UI and observed progress text. Evidence=" + evidenceDir);
             runtime.SetHookStatus("Smoke.AnimalViewerUi", "verified", "AnimalViewer.Show", "Observed animal progress text in the real animal viewer UI. Evidence=" + evidenceDir);
             return true;
@@ -3537,7 +3700,7 @@ namespace DTMAPI.GameBridge.DolocTown
             LastOilMiningDropSummary += ", tool=" + toolName + ", toolType=" + toolType;
             if (pending != null)
                 LastOilMiningDropSummary += ", healthBefore=" + pending.HealthBefore;
-            return summary.IndexOf("oilDrop=dtmapi_oil", StringComparison.OrdinalIgnoreCase) >= 0;
+            return summary.IndexOf("oilDrop=crude_oil", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         internal bool ApplyOneActionEquipmentFillAfterInteract()
@@ -3852,13 +4015,13 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RuntimeMonitor.Log("ActionSpeed animator speeds restored reason=" + reason + " restored=" + restored + ".");
         }
 
-        internal void UpdateRuntimeAutomation()
+        internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
             RecoverOrphanEquipmentSlotsIfNeeded();
             UpdateActiveSecondMotorRoomSnapshot();
             UpdateActionSpeedAutoFill();
             UpdateFishingAutoCast();
-            UpdateMachineProduction();
+            UpdateMachineProduction(forceMachineProductionPoll);
             RefreshAnimalProgressOverlayTexts(force: false);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
         }
@@ -3881,11 +4044,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", recipe=" + state.RecipeId +
                 ", recipeGroup=" + state.RecipeGroupId +
                 ", visualScale=" + state.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) +
-                ", fuel=" + state.RemainingFuel + "/" + state.FuelCapacity +
+                ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) +
                 ", cycleMinutes=" + state.CycleMinutes +
                 ", cycleTUs=" + state.CycleTUs +
                 ", nextDueTUs=" + state.NextDueTotalTUs +
-                ", costs=fuel:" + state.FuelOnlyFuelCostPerCycle + "/electricFuel:" + state.ElectricModeFuelCostPerCycle + "/electricPower:" + state.ElectricModePowerCostPerCycle +
+                ", electricPowerPerCycle=" + state.ElectricModePowerCostPerCycle +
                 ", placed=" + state.PlacedMachineCount +
                 ", cycles=" + state.ProductionCycleCount +
                 ", output=" + state.LastOutputItemId +
@@ -3893,8 +4056,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", outputTarget=" + state.LastOutputTarget +
                 ", storage=" + state.LastStorageFilledSlots + "/" + state.LastStorageCapacity +
                 ", storageLineCapacity=" + state.LastStorageLineCapacity +
-                ", mode=" + state.LastMode +
-                ", lastCost=" + state.LastFuelCost + "/" + state.LastElectricPowerCost +
+                ", lastMode=" + state.LastMode +
+                ", lastPowerCost=" + state.LastElectricPowerCost +
                 ", techTree={" + state.NativeTechTreeSummary + "}" +
                 ", message=" + state.LastMessage;
         }
@@ -4012,12 +4175,25 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 int rendered = 0;
                 int occupied = 0;
+                int interactive = 0;
+                int hoverable = 0;
                 var renderedNames = new List<string>();
                 foreach (EquipmentSlotRuntimeEntry entry in visibleSlots.Take(6))
                 {
-                    object? clone = CloneUnityObject(sourceGameObject);
-                    if (clone == null)
+                    object? cloneSlot = CloneUnityObject(sourceSlot);
+                    object? clone = cloneSlot == null ? null : ReadMember(cloneSlot, "gameObject");
+                    if (cloneSlot == null || clone == null)
+                    {
+                        if (!equipmentSlotsUiCloneDiagnosticLogged)
+                        {
+                            equipmentSlotsUiCloneDiagnosticLogged = true;
+                            runtime.RuntimeMonitor.Log("EquipmentSlots UI clone diagnostic failed sourceSlotType=" + sourceSlot.GetType().FullName +
+                                " sourceGameObjectType=" + sourceGameObject.GetType().FullName +
+                                " cloneSlotType=" + (cloneSlot == null ? "null" : cloneSlot.GetType().FullName) +
+                                " cloneType=" + (clone == null ? "null" : clone.GetType().FullName) + ".");
+                        }
                         continue;
+                    }
 
                     SetMemberValue(clone, "name", "DTMAPI.ExtraEquipmentSlot." + rendered);
                     SetActive(clone, false);
@@ -4030,16 +4206,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     SetParent(cloneTransform, parent, worldPositionStays: false);
                     PositionEquipmentSlotUiClone(sourceTransform, cloneTransform, rendered);
-                    object? cloneSlot = GetComponent(clone, sourceSlot.GetType());
                     object? icon = ResolveEquipmentSlotIcon(entry);
                     if (icon != null)
                         occupied++;
                     MethodInfo? render = cloneSlot == null ? null : FindMethodInHierarchy(cloneSlot.GetType(), "Render", 1);
                     render?.Invoke(cloneSlot, new object?[] { icon });
 
-                    object? button = cloneSlot == null ? null : ReadMember(cloneSlot, "button");
-                    if (button != null)
-                        SetMemberValue(button, "interactable", false);
+                    if (cloneSlot != null && ConfigureEquipmentSlotUiClone(cloneSlot, entry, out bool hoverHooked))
+                    {
+                        interactive++;
+                        if (hoverHooked)
+                            hoverable++;
+                    }
 
                     activeEquipmentSlotUiObjects.Add(clone);
                     SetActive(clone, true);
@@ -4056,7 +4234,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", hooks=" + equipmentSlotsUiHooksInstalled +
                     ", rendered=" + rendered +
                     ", occupied=" + occupied +
-                    ", readOnly=true, attributeOnly=true, preserveVanillaVisualSlots=true" +
+                    ", interactive=" + interactive +
+                    ", hoverable=" + hoverable +
+                    ", readOnly=false, attributeOnly=true, preserveVanillaVisualSlots=true" +
                     ", slots=" + string.Join(";", renderedNames.ToArray());
                 RefreshEquipmentSlotsUiStateFlags();
                 runtime.SetHookStatus("Player.EquipmentSlotsApi", "configured-experimental-player-ui-storage-stats-hook", "AccessoriesBar DTMAPI cloned extra-slot strip", equipmentSlotsUiLastSummary);
@@ -4072,6 +4252,371 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private bool ConfigureEquipmentSlotUiClone(object cloneSlot, EquipmentSlotRuntimeEntry entry, out bool hoverHooked)
+        {
+            hoverHooked = false;
+            try
+            {
+                TryInvokeNoArg(cloneSlot, "Init");
+                bool indexSet = TrySetMemberValue(cloneSlot, "index", entry.Index);
+                bool interactableSet = TrySetMemberValue(cloneSlot, "interactable", true);
+                bool raycastSet = TrySetMemberValue(cloneSlot, "blocksRaycasts", true);
+                object? button = ReadMember(cloneSlot, "button");
+                bool buttonInteractableSet = false;
+                if (button != null)
+                    buttonInteractableSet = TrySetMemberValue(button, "interactable", true);
+                object? gameObject = ReadMember(cloneSlot, "gameObject");
+                Type? canvasGroupType = ResolveType("UnityEngine.CanvasGroup, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.CanvasGroup, UnityEngine");
+                object? canvasGroup = gameObject == null || canvasGroupType == null ? null : GetComponent(gameObject, canvasGroupType);
+                bool canvasInteractableSet = canvasGroup != null && TrySetMemberValue(canvasGroup, "interactable", true);
+                bool canvasRaycastSet = canvasGroup != null && TrySetMemberValue(canvasGroup, "blocksRaycasts", true);
+                bool canvasAlphaSet = canvasGroup != null && TrySetMemberValue(canvasGroup, "alpha", 1f);
+
+                ClearUnityEvent(ReadMember(cloneSlot, "onClick"));
+                ClearUnityEvent(ReadMember(cloneSlot, "onSelect"));
+                ClearUnityEvent(ReadMember(cloneSlot, "onDeselect"));
+                ClearUnityEvent(ReadMember(cloneSlot, "onPointerEnter"));
+                ClearUnityEvent(ReadMember(cloneSlot, "onPointerExit"));
+                FindMethodInHierarchy(cloneSlot.GetType(), "ClearAllClickCallbacks", 0)?.Invoke(cloneSlot, null);
+
+                MethodInfo? setClickCallbacks = cloneSlot.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(m => m.Name == "SetClickCallbacks" && m.GetParameters().Length >= 1);
+                bool clickHooked = false;
+                ParameterInfo[] clickParameters = Array.Empty<ParameterInfo>();
+                Delegate? leftClick = null;
+                Delegate? rightClick = null;
+                if (setClickCallbacks != null)
+                {
+                    clickParameters = setClickCallbacks.GetParameters();
+                    leftClick = CreateUnityCallback(clickParameters[0].ParameterType, _ => HandleEquipmentSlotUiClick(entry, rightClick: false));
+                    rightClick = clickParameters.Length > 1
+                        ? CreateUnityCallback(clickParameters[1].ParameterType, _ => HandleEquipmentSlotUiClick(entry, rightClick: true))
+                        : null;
+                    object?[] args = new object?[clickParameters.Length];
+                    args[0] = leftClick;
+                    if (args.Length > 1)
+                        args[1] = rightClick;
+                    if (args.Length > 4)
+                        args[4] = leftClick;
+                    if (leftClick != null)
+                    {
+                        setClickCallbacks.Invoke(cloneSlot, args);
+                        clickHooked = true;
+                    }
+                }
+
+                object? onSelect = ReadMember(cloneSlot, "onSelect");
+                object? onDeselect = ReadMember(cloneSlot, "onDeselect");
+                object? onPointerEnter = ReadMember(cloneSlot, "onPointerEnter");
+                object? onPointerExit = ReadMember(cloneSlot, "onPointerExit");
+                bool selectHooked = AddIntUnityEventListener(onSelect, _ => HandleEquipmentSlotUiHover(cloneSlot, entry), clearFirst: true);
+                AddIntUnityEventListener(onDeselect, _ => HideNativeHoverBox(), clearFirst: true);
+                hoverHooked = AddIntUnityEventListener(onPointerEnter, _ => HandleEquipmentSlotUiHover(cloneSlot, entry), clearFirst: true);
+                AddIntUnityEventListener(onPointerExit, _ => HideNativeHoverBox(), clearFirst: true);
+                if (!equipmentSlotsUiBindDiagnosticLogged)
+                {
+                    equipmentSlotsUiBindDiagnosticLogged = true;
+                    runtime.RuntimeMonitor.Log("EquipmentSlots UI bind diagnostic slotType=" + cloneSlot.GetType().FullName +
+                        " init=True" +
+                        " indexSet=" + indexSet +
+                        " interactableSet=" + interactableSet +
+                        " raycastSet=" + raycastSet +
+                        " button=" + (button == null ? "null" : button.GetType().FullName) +
+                        " buttonInteractableSet=" + buttonInteractableSet +
+                        " canvasGroup=" + (canvasGroup == null ? "null" : canvasGroup.GetType().FullName) +
+                        " canvasInteractableSet=" + canvasInteractableSet +
+                        " canvasRaycastSet=" + canvasRaycastSet +
+                        " canvasAlphaSet=" + canvasAlphaSet +
+                        " setClickCallbacks=" + (setClickCallbacks == null ? "missing" : setClickCallbacks.DeclaringType?.FullName + "(" + string.Join("|", clickParameters.Select(p => p.ParameterType.FullName).ToArray()) + ")") +
+                        " leftDelegate=" + (leftClick == null ? "null" : leftClick.GetType().FullName) +
+                        " rightDelegate=" + (rightClick == null ? "null" : rightClick.GetType().FullName) +
+                        " clickHooked=" + clickHooked +
+                        " onSelect=" + (onSelect == null ? "null" : onSelect.GetType().FullName) +
+                        " onPointerEnter=" + (onPointerEnter == null ? "null" : onPointerEnter.GetType().FullName) +
+                        " selectHooked=" + selectHooked +
+                        " hoverHooked=" + hoverHooked + ".");
+                }
+                return clickHooked || hoverHooked;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "EquipmentSlots UI interaction bind failed.", ex.ToString());
+                if (!equipmentSlotsUiInteractionFailureLogged)
+                {
+                    equipmentSlotsUiInteractionFailureLogged = true;
+                    runtime.RuntimeMonitor.Log("EquipmentSlots UI interaction bind failed slotType=" + cloneSlot.GetType().FullName +
+                        " slot=" + (entry == null ? "null" : entry.SlotId) +
+                        " error=" + ex.GetType().Name + ": " + ex.Message + ".");
+                }
+                return false;
+            }
+        }
+
+        private void HandleEquipmentSlotUiClick(EquipmentSlotRuntimeEntry entry, bool rightClick)
+        {
+            try
+            {
+                if (entry == null)
+                    return;
+
+                string ownerId = FirstText(entry.OwnerId, FindEquipmentSlotOwnerId(entry));
+                if (string.IsNullOrWhiteSpace(ownerId))
+                {
+                    ShowNativeSmallMessage("DTMAPI extra slot owner is missing.", error: true);
+                    return;
+                }
+
+                var owner = new EquipmentSlotUiManifest(ownerId);
+                if (!string.IsNullOrWhiteSpace(entry.ItemId))
+                {
+                    EquipmentSlotEquipResult unequip = UnequipExtraSlot(owner, entry.SlotId, rightClick ? "player UI right-click unequip" : "player UI click unequip");
+                    ShowNativeSmallMessage(unequip.Message, error: !unequip.Success);
+                    runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsClick", unequip.Success ? "verified" : "failed", "AccessorySlot.SetClickCallbacks -> IEquipmentSlotsApi.UnequipExtraSlot", unequip.Message);
+                    return;
+                }
+
+                if (TryGetNativeInventoryBuffer(out object? buffer, out object? bufferItem) && bufferItem != null)
+                {
+                    EquipmentSlotEquipResult bufferedEquip = EquipExtraSlotFromNativeBuffer(owner, entry, bufferItem, buffer);
+                    ShowNativeSmallMessage(bufferedEquip.Message, error: !bufferedEquip.Success);
+                    runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsClick", bufferedEquip.Success ? "verified" : "failed", "AccessorySlot.SetClickCallbacks -> native inventory buffer -> IEquipmentSlotsApi", bufferedEquip.Message);
+                    return;
+                }
+
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                if (dolocApi != null && TryFindBackpackEquipmentSlotCandidate(dolocApi, out string itemId, out string displayName))
+                {
+                    EquipmentSlotEquipResult equip = EquipExtraSlot(owner, entry.SlotId, itemId);
+                    ShowNativeSmallMessage(equip.Success ? "已装备 " + FirstText(equip.DisplayName, displayName, itemId) : equip.Message, error: !equip.Success);
+                    runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsClick", equip.Success ? "verified" : "failed", "AccessorySlot.SetClickCallbacks -> backpack candidate -> IEquipmentSlotsApi.EquipExtraSlot", equip.Message);
+                    return;
+                }
+
+                string message = "拿起一个饰品或帽子后点击 DTMAPI 额外槽，或先把可用饰品/帽子放入背包。";
+                ShowNativeSmallMessage(message, error: true);
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsClick", "pending", "AccessorySlot.SetClickCallbacks", "No native inventory buffer item or backpack passive/hat candidate was available.");
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "EquipmentSlots UI click failed.", ex.ToString());
+                ShowNativeSmallMessage("DTMAPI extra slot click failed: " + ex.Message, error: true);
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsClick", "failed", "AccessorySlot.SetClickCallbacks", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private EquipmentSlotEquipResult EquipExtraSlotFromNativeBuffer(IManifest owner, EquipmentSlotRuntimeEntry entry, object bufferItem, object? buffer)
+        {
+            string ownerId = owner.UniqueID;
+            string itemId = ReadStringMember(bufferItem, "name");
+            var result = new EquipmentSlotEquipResult
+            {
+                OwnerId = ownerId,
+                SlotId = entry?.SlotId ?? string.Empty,
+                ItemId = itemId
+            };
+            if (entry == null)
+                return EquipmentSlotEquipFailed(result, "missing-slot", "No DTMAPI extra slot is available.");
+            if (string.IsNullOrWhiteSpace(itemId))
+                return EquipmentSlotEquipFailed(result, "missing-item", "The native inventory buffer item has no item id.");
+
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            result.BeforeBackpackCount = CountNativeBackpackItem(dolocApi, itemId);
+            int bufferCount = Math.Max(1, ReadIntMember(bufferItem, "count", 1));
+            if (bufferCount != 1)
+                return EquipmentSlotEquipFailed(result, "split-one-item", "DTMAPI extra slots accept one equipment item at a time; split " + itemId + " to one item before placing it.");
+
+            if (!TryValidateExtraEquipmentSlotItem(bufferItem, out string displayName, out string skillId, out string validationReason, out string validationMessage))
+                return EquipmentSlotEquipFailed(result, validationReason, validationMessage);
+
+            EquipmentSlotsOptions options = GetEquipmentSlotsOptions(ownerId);
+            if (!options.Enabled || options.ExtraAttributeSlots <= 0)
+                return EquipmentSlotEquipFailed(result, "not-enabled", "Equipment slots are not enabled for " + ownerId + ".");
+
+            if (!RecoverEquipmentSlotEntry(ownerId, entry, "replace before player UI buffer equip", saveAfterRecovery: false, out string recoveryMessage, out int recovered))
+                return EquipmentSlotEquipFailed(result, "recover-existing-failed", recoveryMessage);
+            result.RecoveredCount = recovered;
+
+            object? taken = buffer == null ? null : FindMethodInHierarchy(buffer.GetType(), "Take", 0)?.Invoke(buffer, null);
+            if (taken == null)
+                return EquipmentSlotEquipFailed(result, "buffer-take-failed", "Native inventory buffer did not return the held item for " + itemId + ".");
+
+            entry.OwnerId = ownerId;
+            entry.ItemId = itemId;
+            entry.DisplayName = displayName;
+            entry.SkillId = skillId;
+            entry.LastMessage = "Equipped " + displayName + " from native inventory buffer as attribute-only extra slot item.";
+            entry.Applied = false;
+            entry.NativeItem = null;
+            entry.NativeFunction = null;
+            result.DisplayName = displayName;
+
+            string applyMessage = TryApplyStoredEquipmentSlotFunctions(ownerId, "player UI buffer equip " + entry.SlotId)
+                ? "Applied native AgentEquipmentFunction for " + itemId + "."
+                : "Stored item; native AgentEquipmentFunction will apply after equipment manager is available.";
+            entry.LastMessage = entry.LastMessage + " " + applyMessage;
+            SaveEquipmentSlotStorage(ownerId);
+            RenderEquipmentSlotsUiForCurrentAccessoriesBar("player UI buffer equip " + entry.SlotId, force: true);
+
+            EquipmentSlotsState state = BuildEquipmentSlotsState(ownerId, options);
+            state.LastEquippedSlotId = entry.SlotId;
+            state.LastEquippedItemId = itemId;
+            state.LastRecoveryMessage = entry.LastMessage;
+            equipmentSlotStates[ownerId] = state;
+
+            result.AfterBackpackCount = CountNativeBackpackItem(dolocApi, itemId);
+            result.Success = true;
+            result.Message = entry.LastMessage + " backpack=" + result.BeforeBackpackCount + "->" + result.AfterBackpackCount + ".";
+            runtime.RuntimeMonitor.Log("EquipmentSlots UI buffer equip OK owner=" + ownerId + " slot=" + entry.SlotId + " item=" + itemId + " display=" + displayName + " applied=" + entry.Applied + ".");
+            runtime.SetHookStatus("Player.EquipmentSlotsApi", state.Status, "AccessorySlot.SetClickCallbacks -> native inventory buffer -> AgentEquipmentFunction", result.Message);
+            return result;
+        }
+
+        private void HandleEquipmentSlotUiHover(object cloneSlot, EquipmentSlotRuntimeEntry entry)
+        {
+            try
+            {
+                object? item = null;
+                string text = string.IsNullOrWhiteSpace(entry.ItemId)
+                    ? "DTMAPI额外属性槽：拿起饰品或帽子后点击放入"
+                    : "DTMAPI额外属性槽";
+                if (!string.IsNullOrWhiteSpace(entry.ItemId))
+                    TryGenerateNativeItem(entry.ItemId, 1, out item, out _, out _);
+
+                MethodInfo? showViewer = cloneSlot.GetType().GetMethod("ShowEquipmentItemViewer", BindingFlags.Public | BindingFlags.Instance, null, new[] { ResolveType("DolocTown.Item, Assembly-CSharp") ?? typeof(object), typeof(string) }, null)
+                    ?? cloneSlot.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "ShowEquipmentItemViewer" && m.GetParameters().Length == 2);
+                showViewer?.Invoke(cloneSlot, new object?[] { item, text });
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsHover", "verified", "AccessorySlot.ShowEquipmentItemViewer", "Hovered DTMAPI extra slot " + entry.SlotId + " item=" + FirstText(entry.ItemId, "empty") + ".");
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "EquipmentSlots UI hover failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsHover", "failed", "AccessorySlot.ShowEquipmentItemViewer", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private bool TryFindBackpackEquipmentSlotCandidate(Type dolocApi, out string itemId, out string displayName)
+        {
+            itemId = string.Empty;
+            displayName = string.Empty;
+            foreach (InventoryDebugItem candidate in EnumerateInventoryDebugItems())
+            {
+                if (string.IsNullOrWhiteSpace(candidate.Id) || CountNativeBackpackItem(dolocApi, candidate.Id) <= 0)
+                    continue;
+                if (!TryGenerateNativeItem(candidate.Id, 1, out object? item, out _, out _) || item == null)
+                    continue;
+                if (!TryValidateExtraEquipmentSlotItem(item, out displayName, out _, out _, out _))
+                    continue;
+                itemId = candidate.Id;
+                return true;
+            }
+            return false;
+        }
+
+        private string FindEquipmentSlotOwnerId(EquipmentSlotRuntimeEntry entry)
+        {
+            foreach (KeyValuePair<string, List<EquipmentSlotRuntimeEntry>> pair in equipmentSlotEntries)
+            {
+                if (pair.Value.Contains(entry))
+                    return pair.Key;
+            }
+            return string.Empty;
+        }
+
+        private bool TryGetNativeInventoryBuffer(out object? buffer, out object? currentItem)
+        {
+            buffer = null;
+            currentItem = null;
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+            object? inventorySystem = archive == null ? null : ReadMember(archive, "InventorySystem");
+            buffer = inventorySystem == null ? null : ReadMember(inventorySystem, "buffer");
+            currentItem = buffer == null ? null : ReadMember(buffer, "CurrentItem");
+            return buffer != null;
+        }
+
+        private Delegate? CreateUnityCallback(Type? delegateType, Action<int> action)
+        {
+            try
+            {
+                if (delegateType == null || action == null)
+                    return null;
+
+                ParameterInfo[] invokeParameters = delegateType.GetMethod("Invoke")?.GetParameters() ?? Array.Empty<ParameterInfo>();
+                if (invokeParameters.Length == 1)
+                {
+                    var binder = new IntActionBinder(action);
+                    equipmentSlotUiEventBinders.Add(binder);
+                    return Delegate.CreateDelegate(delegateType, binder, nameof(IntActionBinder.Invoke));
+                }
+
+                if (invokeParameters.Length == 0)
+                {
+                    var binder = new VoidActionBinder(() => action(0));
+                    equipmentSlotUiEventBinders.Add(binder);
+                    return Delegate.CreateDelegate(delegateType, binder, nameof(VoidActionBinder.Invoke));
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private bool AddIntUnityEventListener(object? unityEvent, Action<int> action, bool clearFirst)
+        {
+            if (unityEvent == null)
+                return false;
+
+            try
+            {
+                if (clearFirst)
+                    ClearUnityEvent(unityEvent);
+
+                foreach (MethodInfo add in unityEvent.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    ParameterInfo[] p = add.GetParameters();
+                    if (add.Name != "AddListener" || p.Length != 1)
+                        continue;
+
+                    Delegate? del = CreateUnityCallback(p[0].ParameterType, action);
+                    if (del == null || !p[0].ParameterType.IsInstanceOfType(del))
+                        continue;
+
+                    add.Invoke(unityEvent, new object[] { del });
+                    return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void ClearUnityEvent(object? unityEvent)
+        {
+            try
+            {
+                unityEvent?.GetType().GetMethod("RemoveAllListeners", BindingFlags.Public | BindingFlags.Instance)?.Invoke(unityEvent, null);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void HideNativeHoverBox()
+        {
+            try
+            {
+                ResolveType("DolocAPI, Assembly-CSharp")?.GetMethod("HideHoverBox", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null)?.Invoke(null, null);
+            }
+            catch
+            {
+            }
+        }
         private bool HasEnabledEquipmentSlots()
         {
             return equipmentSlotOptions.Any(entry => entry.Value.Enabled && entry.Value.ExtraAttributeSlots > 0);
@@ -4090,6 +4635,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     .Where(entry => entry.Index >= 0 && entry.Index < options.ExtraAttributeSlots)
                     .OrderBy(entry => entry.Index))
                 {
+                    entry.OwnerId = optionEntry.Key;
                     result.Add(entry);
                 }
             }
@@ -4114,6 +4660,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 DestroyUnityObject(instance);
             }
             activeEquipmentSlotUiObjects.Clear();
+            equipmentSlotUiEventBinders.Clear();
 
             MethodInfo? find = parentTransform.GetType().GetMethod("Find", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
             for (int i = 0; i < 12; i++)
@@ -4185,11 +4732,11 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        private void UpdateMachineProduction()
+        private void UpdateMachineProduction(bool forcePoll = false)
         {
             if (machineDefinitions.Count == 0)
                 return;
-            if ((DateTimeOffset.Now - lastMachineProductionPollAt).TotalSeconds < 0.5)
+            if (!forcePoll && (DateTimeOffset.Now - lastMachineProductionPollAt).TotalSeconds < 0.5)
                 return;
 
             lastMachineProductionPollAt = DateTimeOffset.Now;
@@ -4210,7 +4757,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (newTu)
                 lastMachineProductionTotalTus = totalTus;
 
-            var allEquipments = EnumerateEquipments(currentRoom).ToArray();
+            var allEquipments = EnumerateMachineCandidateEquipments(dolocApi, archive, currentRoom).ToArray();
             foreach (KeyValuePair<string, List<MachineDefinition>> ownerEntry in machineDefinitions.ToArray())
             {
                 string ownerId = ownerEntry.Key;
@@ -4246,39 +4793,68 @@ namespace DTMAPI.GameBridge.DolocTown
                         }
 
                         entry.LastObservedTotalTus = totalTus;
+                        if (forceDue && totalTus < entry.NextDueTotalTus)
+                            entry.NextDueTotalTus = totalTus;
                         string visualScaleSummary = TryApplyMachineVisualScale(definition, equipment);
                         if (!string.IsNullOrWhiteSpace(visualScaleSummary))
                             entry.LastVisualScaleSummary = visualScaleSummary;
                         if (!newTu || totalTus < entry.NextDueTotalTus)
                             continue;
 
-                        if (TryRunMachineProductionCycle(dolocApi, definition, equipment, entry, totalTus, tuMinutes, out string message))
+                        int catchUpGuard = 0;
+                        int catchUpCycleTus = GetMachineCycleTus(definition, tuMinutes);
+                        while (totalTus >= entry.NextDueTotalTus && catchUpGuard++ < 96)
                         {
-                            productionCount++;
-                            MachineOutputRule output = entry.LastOutputRule ?? new MachineOutputRule();
-                            MachineProductionState state = GetMachineProductionStateForUpdate(ownerId, ownerEntry.Value.Count);
-                            ApplyMachineDefinitionState(state, definition, tuMinutes, entry);
-                            state.RuntimeHookInstalled = true;
-                            state.PlacedMachineCount = placedCount;
-                            state.ProductionCycleCount = productionCount;
-                            state.LastOutputItemId = entry.LastOutputItemId;
-                            state.LastOutputDisplayName = output.DisplayName ?? string.Empty;
-                            state.LastOutputCount = entry.LastOutputCount;
-                            state.LastMachineKey = machineKey;
-                            state.LastMode = entry.LastMode;
-                            state.LastObservedTotalTUs = totalTus;
-                            state.LastOutputTarget = entry.LastOutputTarget;
-                            state.LastStorageFilledSlots = entry.LastStorageFilledSlots;
-                            state.LastStorageCapacity = entry.LastStorageCapacity;
-                            state.LastStorageLineCapacity = entry.LastStorageLineCapacity;
-                            state.NativeTechTreeSummary = nativeTechTreeSummary;
-                            state.Status = "configured-experimental-runtime-loop";
-                            state.LastMessage = string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}";
-                            machineStates[ownerId] = state;
-                            runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + " fuelRemaining=" + entry.RemainingFuel + " totalTUs=" + totalTus + ".");
-                            runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update -> equipment IContainer/LinearInventory", message);
+                            int dueAt = entry.NextDueTotalTus;
+                            if (TryRunMachineProductionCycle(dolocApi, definition, equipment, entry, totalTus, tuMinutes, out string message))
+                            {
+                                entry.NextDueTotalTus = dueAt + catchUpCycleTus;
+                                productionCount++;
+                                MachineOutputRule output = entry.LastOutputRule ?? new MachineOutputRule();
+                                MachineProductionState state = GetMachineProductionStateForUpdate(ownerId, ownerEntry.Value.Count);
+                                ApplyMachineDefinitionState(state, definition, tuMinutes, entry);
+                                state.RuntimeHookInstalled = true;
+                                state.PlacedMachineCount = placedCount;
+                                state.ProductionCycleCount = productionCount;
+                                state.LastOutputItemId = entry.LastOutputItemId;
+                                state.LastOutputDisplayName = output.DisplayName ?? string.Empty;
+                                state.LastOutputCount = entry.LastOutputCount;
+                                state.LastMachineKey = machineKey;
+                                state.LastMode = entry.LastMode;
+                                state.LastObservedTotalTUs = totalTus;
+                                state.LastOutputTarget = entry.LastOutputTarget;
+                                state.LastStorageFilledSlots = entry.LastStorageFilledSlots;
+                                state.LastStorageCapacity = entry.LastStorageCapacity;
+                                state.LastStorageLineCapacity = entry.LastStorageLineCapacity;
+                                state.NativeTechTreeSummary = nativeTechTreeSummary;
+                                state.Status = "configured-experimental-runtime-loop";
+                                state.LastMessage = string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}";
+                                machineStates[ownerId] = state;
+                                runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + " electricPowerCost=" + entry.LastElectricPowerCost + " dueAt=" + dueAt + " nextDue=" + entry.NextDueTotalTus + " totalTUs=" + totalTus + ".");
+                                runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update catch-up -> equipment IContainer/LinearInventory", message + " dueAt=" + dueAt + ", nextDue=" + entry.NextDueTotalTus + ".");
+                            }
+                            else
+                            {
+                                if (!string.IsNullOrWhiteSpace(message))
+                                {
+                                    MachineProductionState state = GetMachineProductionStateForUpdate(ownerId, ownerEntry.Value.Count);
+                                    ApplyMachineDefinitionState(state, definition, tuMinutes, entry);
+                                    state.RuntimeHookInstalled = true;
+                                    state.PlacedMachineCount = placedCount;
+                                    state.LastMachineKey = machineKey;
+                                    state.LastMode = entry.LastMode;
+                                    state.LastObservedTotalTUs = totalTus;
+                                    state.NativeTechTreeSummary = nativeTechTreeSummary;
+                                    state.Status = "configured-experimental-runtime-loop";
+                                    state.LastMessage = (string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}") + " Due retained at " + entry.NextDueTotalTus + ".";
+                                    machineStates[ownerId] = state;
+                                    runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update catch-up -> equipment IContainer/LinearInventory", state.LastMessage);
+                                }
+                                break;
+                            }
                         }
-                        else if (!string.IsNullOrWhiteSpace(message))
+
+                        if (catchUpGuard >= 96 && totalTus >= entry.NextDueTotalTus)
                         {
                             MachineProductionState state = GetMachineProductionStateForUpdate(ownerId, ownerEntry.Value.Count);
                             ApplyMachineDefinitionState(state, definition, tuMinutes, entry);
@@ -4289,8 +4865,9 @@ namespace DTMAPI.GameBridge.DolocTown
                             state.LastObservedTotalTUs = totalTus;
                             state.NativeTechTreeSummary = nativeTechTreeSummary;
                             state.Status = "configured-experimental-runtime-loop";
-                            state.LastMessage = string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}";
+                            state.LastMessage = "Machine catch-up reached the 96-cycle safety cap; due retained at " + entry.NextDueTotalTus + ".";
                             machineStates[ownerId] = state;
+                            runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update catch-up safety cap", state.LastMessage);
                         }
                     }
                 }
@@ -4308,7 +4885,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 finalState.LastObservedTotalTUs = totalTus;
                 finalState.NativeTechTreeSummary = nativeTechTreeSummary;
                 if (placedCount == 0 && string.IsNullOrWhiteSpace(finalState.LastMessage))
-                    finalState.LastMessage = "Runtime loop active; no placed registered machine found in current room/subrooms.";
+                    finalState.LastMessage = "Runtime loop active; no placed registered machine found in current/root/farm room candidates.";
                 finalState.Status = "configured-experimental-runtime-loop";
                 machineStates[ownerId] = finalState;
             }
@@ -4336,6 +4913,13 @@ namespace DTMAPI.GameBridge.DolocTown
 
             try
             {
+                string actualEquipmentId = ReadStringMember(equipment, "Name", string.Empty);
+                if (!actualEquipmentId.Equals(definition.EquipmentId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return "visualScale=" + definition.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) +
+                        ", skipped=equipment-id-mismatch actual=" + FirstText(actualEquipmentId, equipment.GetType().Name);
+                }
+
                 object? renderer = ReadMember(equipment, "Renderer");
                 object? transform = renderer == null ? null : ReadMember(renderer, "transform");
                 if (transform == null)
@@ -4350,8 +4934,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 bool alreadyApplied = Math.Abs(Math.Abs(currentX) - definition.VisualScale) < 0.01 && Math.Abs(Math.Abs(currentY) - definition.VisualScale) < 0.01;
                 if (!alreadyApplied)
                 {
-                    object? scale = CreateUnityVector3(signedX, definition.VisualScale, z);
-                    if (scale == null || !SetMemberValue(transform, "localScale", scale))
+                    if (!TrySetTransformLocalScale(transform, signedX, definition.VisualScale, z))
                         return "visualScale=" + definition.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) + ", rendererScale=failed";
                 }
 
@@ -4366,6 +4949,144 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Machine visual scale failed for " + definition.EquipmentId + ".", ex.ToString());
                 return "visualScale=" + definition.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) + ", failed=" + ex.GetType().Name + ":" + ex.Message;
             }
+        }
+
+        internal void ResetEquipmentRendererScaleOnReuse(object renderer)
+        {
+            try
+            {
+                object? transform = renderer == null ? null : ReadMember(renderer, "transform");
+                if (transform == null)
+                    return;
+
+                object? currentScale = ReadMember(transform, "localScale");
+                double currentX = currentScale == null ? 1 : ReadVectorComponent(currentScale, "x");
+                double currentY = currentScale == null ? 1 : ReadVectorComponent(currentScale, "y");
+                double currentZ = currentScale == null ? 1 : ReadVectorComponent(currentScale, "z");
+                if (IsNearScale(currentX, 1) && IsNearScale(currentY, 1) && IsNearScale(currentZ, 1))
+                    return;
+
+                if (TrySetTransformLocalScale(transform, 1, 1, 1))
+                {
+                    runtime.RuntimeMonitor.LogOnce("mine-renderer-onreuse-scale-reset", "EquipmentRenderer.OnReuse resets localScale to 1 so Mine visual scale cannot leak through renderer pooling.");
+                    runtime.SetHookStatus("Machine.MineVisualContainment", "experimental", "EquipmentRenderer.OnReuse postfix", "rendererPoolScaleReset=True previous=" + FormatScale(currentX, currentY, currentZ));
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Equipment renderer scale reset failed.", ex.ToString());
+            }
+        }
+
+        internal void ApplyMineBuilderPreviewScale(object builder, string reason)
+        {
+            try
+            {
+                object? equipmentProto = builder == null ? null : ReadMember(builder, "equipmentProto");
+                string equipmentId = equipmentProto == null
+                    ? string.Empty
+                    : FirstText(ReadStringMember(equipmentProto, "Id"), ReadStringMember(equipmentProto, "id"), ReadStringMember(equipmentProto, "Name"));
+
+                object? indicatorRenderer = builder == null ? null : ReadMember(builder, "indicatorRenderer");
+                object? indicator = indicatorRenderer == null ? null : ReadMember(indicatorRenderer, "indicator");
+                object? transform = indicator == null ? null : ReadMember(indicator, "transform");
+                if (transform == null || string.IsNullOrWhiteSpace(equipmentId))
+                    return;
+
+                object? currentScale = ReadMember(transform, "localScale");
+                double currentX = currentScale == null ? 1 : ReadVectorComponent(currentScale, "x");
+                double currentY = currentScale == null ? 1 : ReadVectorComponent(currentScale, "y");
+                double currentZ = currentScale == null ? 1 : ReadVectorComponent(currentScale, "z");
+                double target = equipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ? 2d : 1d;
+                double signedX = currentX < 0 ? -target : target;
+                double z = Math.Abs(currentZ) < 0.001 || double.IsNaN(currentZ) ? 1 : currentZ;
+                bool alreadyApplied = IsNearScale(Math.Abs(currentX), target) && IsNearScale(Math.Abs(currentY), target);
+                if (!alreadyApplied && !TrySetTransformLocalScale(transform, signedX, target, z))
+                    return;
+
+                if (equipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
+                {
+                    string summary = "previewScale=2, reason=" + reason + ", previous=" + FormatScale(currentX, currentY, currentZ) + ", applied=" + (!alreadyApplied);
+                    runtime.RuntimeMonitor.LogOnce("mine-builder-preview-scale", "Mine placement preview scale applied. " + summary);
+                    runtime.SetHookStatus("Machine.MinePreviewScale", "experimental", "EquipmentBuilder.CreateIndicator/TurnIndicator", summary);
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Mine builder preview scale failed.", ex.ToString());
+            }
+        }
+
+        internal string ProbeMachineVisualScaleContainmentForSmoke(string scaledEquipmentId)
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+                if (currentRoom == null)
+                    return "containment=pending, reason=missing-current-room";
+
+                int total = 0;
+                int mineScaled = 0;
+                int nonMineScaled = 0;
+                var samples = new List<string>();
+                foreach (object equipment in EnumerateEquipments(currentRoom))
+                {
+                    string equipmentId = ReadStringMember(equipment, "Name", ReadStringMember(equipment, "Title", equipment.GetType().Name));
+                    object? renderer = ReadMember(equipment, "Renderer");
+                    object? transform = renderer == null ? null : ReadMember(renderer, "transform");
+                    object? localScale = transform == null ? null : ReadMember(transform, "localScale");
+                    if (localScale == null)
+                        continue;
+
+                    total++;
+                    double x = ReadVectorComponent(localScale, "x");
+                    double y = ReadVectorComponent(localScale, "y");
+                    bool isMine = equipmentId.Equals(scaledEquipmentId, StringComparison.OrdinalIgnoreCase);
+                    bool scaledToMine = IsNearScale(Math.Abs(x), 2) && IsNearScale(Math.Abs(y), 2);
+                    bool scaledNonMine = !isMine && (!IsNearScale(Math.Abs(x), 1) || !IsNearScale(Math.Abs(y), 1));
+                    if (isMine && scaledToMine)
+                        mineScaled++;
+                    if (scaledNonMine)
+                        nonMineScaled++;
+                    if (samples.Count < 6)
+                        samples.Add(equipmentId + "=" + FormatScale(x, y, ReadVectorComponent(localScale, "z")));
+                }
+
+                string summary = "containment=True" +
+                    ", contamination=" + (nonMineScaled > 0) +
+                    ", total=" + total +
+                    ", mineScaled=" + mineScaled +
+                    ", nonMineScaled=" + nonMineScaled +
+                    ", samples=" + string.Join("|", samples);
+                runtime.SetHookStatus("Machine.MineVisualContainment", nonMineScaled == 0 ? "verified" : "failed", "current-room equipment renderer scale scan", summary);
+                return summary;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Mine visual containment probe failed.", ex.ToString());
+                return "containment=failed, error=" + ex.GetType().Name + ":" + ex.Message;
+            }
+        }
+
+        private static bool TrySetTransformLocalScale(object transform, double x, double y, double z)
+        {
+            object? scale = CreateUnityVector3(x, y, z);
+            return scale != null && SetMemberValue(transform, "localScale", scale);
+        }
+
+        private static bool IsNearScale(double value, double expected)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return false;
+            return Math.Abs(value - expected) <= 0.05;
+        }
+
+        private static string FormatScale(double x, double y, double z)
+        {
+            return x.ToString("0.##", CultureInfo.InvariantCulture) + "x" +
+                y.ToString("0.##", CultureInfo.InvariantCulture) + "x" +
+                z.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         private static void ApplyMachineDefinitionState(MachineProductionState state, MachineDefinition definition, int tuMinutes, MachineRuntimeEntry? entry)
@@ -4402,8 +5123,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool TryRunMachineProductionCycle(Type dolocApi, MachineDefinition definition, object equipment, MachineRuntimeEntry entry, int totalTus, int tuMinutes, out string message)
         {
             message = string.Empty;
-            int cycleTus = GetMachineCycleTus(definition, tuMinutes);
-            entry.NextDueTotalTus = totalTus + cycleTus;
             entry.LastMode = definition.AllowElectricMode && definition.DefaultMode.Equals("electric", StringComparison.OrdinalIgnoreCase) ? "electric" : "fuel";
             int fuelCost = entry.LastMode.Equals("electric", StringComparison.OrdinalIgnoreCase)
                 ? definition.ElectricModeFuelCostPerCycle
@@ -4440,7 +5159,10 @@ namespace DTMAPI.GameBridge.DolocTown
             entry.LastStorageCapacity = storageCapacity;
             entry.LastStorageLineCapacity = storageLineCapacity;
             entry.ProductionCycleCount++;
-            message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " via " + entry.LastMode + " mode; fuelCost=" + fuelCost + ", electricPowerCost=" + entry.LastElectricPowerCost + ", " + placementMessage;
+            string costSummary = definition.AllowFuelMode
+                ? "fuelCost=" + fuelCost + ", electricPowerCost=" + entry.LastElectricPowerCost
+                : "electricPowerCost=" + entry.LastElectricPowerCost;
+            message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " via " + entry.LastMode + " mode; " + costSummary + ", " + placementMessage;
             return true;
         }
 
@@ -4582,13 +5304,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 LastOilMiningDropSummary = "source=" + source + ", resource=" + resourceName + ", forced=" + forced + ", roll=" + roll.ToString("0.0000", CultureInfo.InvariantCulture) + ", oilDrop=failed:missing-dolocapi";
                 return "oilDrop=failed:missing-dolocapi";
             }
-            if (TryPlaceNativeItemInBackpack(dolocApi, "dtmapi_oil", 1, out string message))
+            if (TryPlaceNativeItemInBackpack(dolocApi, "crude_oil", 1, out string message))
             {
                 OilMiningDropCount++;
-                LastOilMiningDropSummary = "source=" + source + ", resource=" + resourceName + ", forced=" + forced + ", roll=" + roll.ToString("0.0000", CultureInfo.InvariantCulture) + ", oilDrop=dtmapi_oil, count=1, placement={" + message + "}";
+                LastOilMiningDropSummary = "source=" + source + ", resource=" + resourceName + ", forced=" + forced + ", roll=" + roll.ToString("0.0000", CultureInfo.InvariantCulture) + ", oilDrop=crude_oil, count=1, placement={" + message + "}";
                 runtime.RuntimeMonitor.Log("OilMod mining drop OK " + LastOilMiningDropSummary);
-                runtime.SetHookStatus("OilMod.MiningDrop", "experimental", "ToolCollider.HandleTools Postfix -> DolocAPI.TryPlaceInBackpack", "Coal resource rolled dtmapi_oil x1. " + LastOilMiningDropSummary);
-                return "oilDrop=dtmapi_oil";
+                runtime.SetHookStatus("OilMod.MiningDrop", "experimental", "ToolCollider.HandleTools Postfix -> DolocAPI.TryPlaceInBackpack", "Coal resource rolled crude_oil x1. " + LastOilMiningDropSummary);
+                return "oilDrop=crude_oil";
             }
 
             LastOilMiningDropSummary = "source=" + source + ", resource=" + resourceName + ", forced=" + forced + ", roll=" + roll.ToString("0.0000", CultureInfo.InvariantCulture) + ", oilDrop=failed:" + message;
@@ -4695,6 +5417,44 @@ namespace DTMAPI.GameBridge.DolocTown
             object? room = ReadMember(equipment, "CurrentRoom") ?? ReadMember(equipment, "Host");
             string roomId = room == null ? "unknown-room" : FirstText(ReadStringMember(room, "RoomId"), ReadStringMember(room, "SceneRawName"), room.GetType().Name);
             return ownerId + "|" + definition.MachineId + "|" + definition.EquipmentId + "|" + roomId + "|" + index.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static IEnumerable<object> EnumerateMachineCandidateEquipments(Type dolocApi, object archive, object currentRoom)
+        {
+            var visitedEquipment = new HashSet<int>();
+            foreach (object room in EnumerateMachineCandidateRooms(dolocApi, archive, currentRoom))
+            {
+                foreach (object equipment in EnumerateEquipments(room))
+                {
+                    int key = RuntimeHelpers.GetHashCode(equipment);
+                    if (visitedEquipment.Add(key))
+                        yield return equipment;
+                }
+            }
+        }
+
+        private static IEnumerable<object> EnumerateMachineCandidateRooms(Type dolocApi, object archive, object currentRoom)
+        {
+            var visitedRooms = new HashSet<int>();
+            void AddRoom(object? room, List<object> rooms)
+            {
+                if (room == null)
+                    return;
+                int key = RuntimeHelpers.GetHashCode(room);
+                if (visitedRooms.Add(key))
+                    rooms.Add(room);
+            }
+
+            var result = new List<object>();
+            AddRoom(currentRoom, result);
+            AddRoom(ReadMember(currentRoom, "RootRoom"), result);
+            AddRoom(ReadStaticMember(dolocApi, "CurrentRootRoom"), result);
+            AddRoom(ReadMember(archive, "currentRoom"), result);
+            AddRoom(ReadMember(archive, "MainFarm"), result);
+            object? farmData = ReadMember(archive, "farmData");
+            AddRoom(farmData == null ? null : ReadMember(farmData, "currentRoom"), result);
+            AddRoom(farmData == null ? null : ReadMember(farmData, "MainFarm"), result);
+            return result;
         }
 
         private static IEnumerable<object> EnumerateEquipments(object room)
@@ -5092,15 +5852,27 @@ namespace DTMAPI.GameBridge.DolocTown
                 ElectricModeFuelCostPerCycle = ClampInt(definition.ElectricModeFuelCostPerCycle, 0, 999999),
                 ElectricModePowerCostPerCycle = ClampInt(definition.ElectricModePowerCostPerCycle, 0, 999999),
                 CycleMinutes = ClampInt(definition.CycleMinutes, 5, 1440),
+                RecipeInputs = definition.RecipeInputs == null
+                    ? Array.Empty<MachineRecipeInput>()
+                    : definition.RecipeInputs
+                        .Where(input => input != null && !string.IsNullOrWhiteSpace(input.ItemId) && input.Count > 0)
+                        .Select(input => new MachineRecipeInput
+                        {
+                            ItemId = input.ItemId.Trim(),
+                            Count = ClampInt(input.Count, 1, 9999)
+                        })
+                        .ToArray(),
                 IncludeRuntimeModMinerals = definition.IncludeRuntimeModMinerals,
                 VerboseLogging = definition.VerboseLogging
             };
             if (!normalized.AllowFuelMode && !normalized.AllowElectricMode)
-                normalized.AllowFuelMode = true;
+                normalized.AllowElectricMode = true;
             if (!normalized.DefaultMode.Equals("electric", StringComparison.OrdinalIgnoreCase))
-                normalized.DefaultMode = "fuel";
+                normalized.DefaultMode = normalized.AllowFuelMode ? "fuel" : "electric";
             if (normalized.DefaultMode.Equals("electric", StringComparison.OrdinalIgnoreCase) && !normalized.AllowElectricMode)
                 normalized.DefaultMode = "fuel";
+            if (normalized.DefaultMode.Equals("fuel", StringComparison.OrdinalIgnoreCase) && !normalized.AllowFuelMode)
+                normalized.DefaultMode = "electric";
             if (definition.OutputRules != null)
             {
                 normalized.OutputRules = definition.OutputRules
@@ -7075,6 +7847,38 @@ namespace DTMAPI.GameBridge.DolocTown
             return false;
         }
 
+        private static bool TrySetMemberValue(object? instance, string name, object value)
+        {
+            if (instance == null)
+                return false;
+
+            try
+            {
+                return SetMemberValue(instance, name, value);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryInvokeNoArg(object? instance, string methodName)
+        {
+            if (instance == null || string.IsNullOrWhiteSpace(methodName))
+                return false;
+
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(instance.GetType(), methodName, 0);
+                method?.Invoke(instance, null);
+                return method != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static object? ReadMember(object instance, string name)
         {
             for (Type? type = instance.GetType(); type != null; type = type.BaseType)
@@ -7177,8 +7981,37 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static object? GetComponent(object gameObject, Type componentType)
         {
-            MethodInfo? getComponent = gameObject.GetType().GetMethod("GetComponent", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Type) }, null);
-            return getComponent?.Invoke(gameObject, new object[] { componentType });
+            if (gameObject == null || componentType == null)
+                return null;
+            if (componentType.IsInstanceOfType(gameObject))
+                return gameObject;
+
+            foreach (MethodInfo method in gameObject.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name == "GetComponent" && parameters.Length == 1 && parameters[0].ParameterType == typeof(Type))
+                {
+                    object? result = method.Invoke(gameObject, new object[] { componentType });
+                    if (result != null)
+                        return result;
+                }
+            }
+
+            foreach (MethodInfo method in gameObject.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name == "GetComponents" && parameters.Length == 1 && parameters[0].ParameterType == typeof(Type))
+                {
+                    object? result = method.Invoke(gameObject, new object[] { componentType });
+                    foreach (object component in EnumerateObjects(result))
+                    {
+                        if (componentType.IsInstanceOfType(component))
+                            return component;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static object? GetComponentInChildren(object gameObject, Type componentType, bool includeInactive)
@@ -8408,6 +9241,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private sealed class EquipmentSlotRuntimeEntry
         {
+            public string OwnerId { get; set; } = string.Empty;
             public int Index { get; set; }
             public string SlotId { get; set; } = string.Empty;
             public string ItemId { get; set; } = string.Empty;
@@ -8417,6 +9251,57 @@ namespace DTMAPI.GameBridge.DolocTown
             public string LastMessage { get; set; } = string.Empty;
             public object? NativeItem { get; set; }
             public object? NativeFunction { get; set; }
+        }
+
+        private sealed class EquipmentSlotUiManifest : IManifest
+        {
+            public EquipmentSlotUiManifest(string uniqueId)
+            {
+                UniqueID = uniqueId ?? string.Empty;
+                Name = UniqueID;
+            }
+
+            public string Name { get; }
+            public string Author => "DTMAPI";
+            public string Version => DTMAPI.Core.Runtime.DtmApiRuntime.ApiVersion;
+            public string Description => "Runtime owner manifest for DTMAPI extra equipment slot UI callbacks.";
+            public string UniqueID { get; }
+            public string EntryDll => string.Empty;
+            public string MinimumDTMApiVersion => DTMAPI.Core.Runtime.DtmApiRuntime.ApiVersion;
+            public string MinimumGameVersion => string.Empty;
+            public string Type => "CodeMod";
+            public IReadOnlyList<IManifestDependency> Dependencies => Array.Empty<IManifestDependency>();
+            public IReadOnlyList<string> UpdateKeys => Array.Empty<string>();
+        }
+
+        private sealed class IntActionBinder
+        {
+            private readonly Action<int> action;
+
+            public IntActionBinder(Action<int> action)
+            {
+                this.action = action;
+            }
+
+            public void Invoke(int value)
+            {
+                action(value);
+            }
+        }
+
+        private sealed class VoidActionBinder
+        {
+            private readonly Action action;
+
+            public VoidActionBinder(Action action)
+            {
+                this.action = action;
+            }
+
+            public void Invoke()
+            {
+                action();
+            }
         }
 
         [DataContract]

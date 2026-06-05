@@ -3,5 +3,5 @@
   "mod.name": "DTMAPI 石油",
   "config.section.content": "官方 JSON 内容",
   "config.item": "物品={0}，燃料值={1}。",
-  "config.note": "物品本体由官方 item_tbitem.json 定义；采矿掉落和矿井产出由 DTMAPI API 处理。"
+  "config.note": "物品本体由官方 item_tbitem.json 定义；采矿掉落和矿井产出由 DTMAPI API 处理。旧测试物品 dtmapi_oil 不再作为活跃内容生成。"
 }

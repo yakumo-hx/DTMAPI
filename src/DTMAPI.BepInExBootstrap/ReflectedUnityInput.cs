@@ -16,6 +16,7 @@ namespace DTMAPI.BepInExBootstrap
         private static Type? mouseType;
         private static MethodInfo? getKeyDown;
         private static MethodInfo? getKey;
+        private static PropertyInfo? mousePositionProperty;
         private static PropertyInfo? keyboardCurrent;
         private static PropertyInfo? mouseCurrent;
         private static readonly Dictionary<string, string> KeyboardControlNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -64,6 +65,64 @@ namespace DTMAPI.BepInExBootstrap
             return InvokeLegacyKeyMethod(ref getKey, "GetKey", key) ||
                 InvokeInputSystemButton(key, "isPressed") ||
                 InvokeWin32Key(key);
+        }
+
+        public static bool TryGetMousePosition(out double x, out double y)
+        {
+            x = 0;
+            y = 0;
+            try
+            {
+                inputType ??= Type.GetType("UnityEngine.Input, UnityEngine.InputLegacyModule") ?? Type.GetType("UnityEngine.Input, UnityEngine");
+                mousePositionProperty ??= inputType?.GetProperty("mousePosition", BindingFlags.Static | BindingFlags.Public);
+                object? legacyPosition = mousePositionProperty?.GetValue(null, null);
+                if (legacyPosition != null && TryReadVector2(legacyPosition, out x, out y))
+                    return true;
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                mouseType ??= Type.GetType("UnityEngine.InputSystem.Mouse, Unity.InputSystem");
+                mouseCurrent ??= mouseType?.GetProperty("current", BindingFlags.Static | BindingFlags.Public);
+                object? mouse = mouseCurrent?.GetValue(null, null);
+                object? position = mouse == null ? null : mouseType?.GetProperty("position", BindingFlags.Instance | BindingFlags.Public)?.GetValue(mouse, null);
+                MethodInfo? readValue = position?.GetType().GetMethod("ReadValue", BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null);
+                object? inputSystemPosition = readValue?.Invoke(position, null);
+                if (inputSystemPosition != null && TryReadVector2(inputSystemPosition, out x, out y))
+                    return true;
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private static bool TryReadVector2(object value, out double x, out double y)
+        {
+            x = 0;
+            y = 0;
+            try
+            {
+                Type type = value.GetType();
+                object? xValue = type.GetField("x", BindingFlags.Public | BindingFlags.Instance)?.GetValue(value) ??
+                    type.GetProperty("x", BindingFlags.Public | BindingFlags.Instance)?.GetValue(value, null);
+                object? yValue = type.GetField("y", BindingFlags.Public | BindingFlags.Instance)?.GetValue(value) ??
+                    type.GetProperty("y", BindingFlags.Public | BindingFlags.Instance)?.GetValue(value, null);
+                if (xValue == null || yValue == null)
+                    return false;
+
+                x = Convert.ToDouble(xValue);
+                y = Convert.ToDouble(yValue);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool InvokeLegacyKeyMethod(ref MethodInfo? method, string methodName, string key)

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace DTMAPI.Core.Runtime
@@ -8,7 +9,12 @@ namespace DTMAPI.Core.Runtime
         {
             GamePath = Path.GetFullPath(gamePath);
             PluginPath = Path.GetFullPath(pluginPath);
-            DtmApiPath = Path.Combine(GamePath, "DTMAPI");
+            var runtimeDirectoryOverride =
+                Environment.GetEnvironmentVariable("DTMAPI_RUNTIME_DIR")
+                ?? Environment.GetEnvironmentVariable("DTMAPI_STATE_DIR");
+            DtmApiPath = string.IsNullOrWhiteSpace(runtimeDirectoryOverride)
+                ? Path.Combine(GamePath, "DTMAPI")
+                : Path.GetFullPath(runtimeDirectoryOverride);
             ModsPath = Path.Combine(GamePath, "Mods");
             LogsPath = Path.Combine(DtmApiPath, "logs");
             ReportsPath = Path.Combine(DtmApiPath, "reports");

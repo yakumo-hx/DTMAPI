@@ -10,8 +10,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
+$dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
 $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'STARTUP-OBSERVE'
-$logPath = Join-Path $gameDir 'DTMAPI\logs\latest.log'
+$logPath = Join-Path $dtmapiDir 'logs\latest.log'
 $bepInExLogPath = Join-Path $gameDir 'BepInEx\LogOutput.log'
 $startedAt = Get-Date
 $existingProcess = Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue
@@ -51,7 +52,7 @@ if ($resetLogs) {
     }
 }
 
-"Started=$($startedAt.ToString('o'))`nGameDir=$gameDir`nTimeoutSeconds=$TimeoutSeconds`nPollSeconds=$PollSeconds`nNoResetLogs=$NoResetLogs`nResetLogResult=$resetLogResult`nWaitForExitSeconds=$WaitForExitSeconds`nMode=ExternalObserved" |
+"Started=$($startedAt.ToString('o'))`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nTimeoutSeconds=$TimeoutSeconds`nPollSeconds=$PollSeconds`nNoResetLogs=$NoResetLogs`nResetLogResult=$resetLogResult`nWaitForExitSeconds=$WaitForExitSeconds`nMode=ExternalObserved" |
     Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
 
 $waitStartedAt = Get-Date

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
+using DTMAPI.GameBridge.DolocTown;
 
 namespace DTMAPI.BepInExBootstrap
 {
@@ -16,6 +17,7 @@ namespace DTMAPI.BepInExBootstrap
         private const string SourceFilterMods = "__mods";
         private readonly DtmApiRuntime runtime;
         private readonly List<object> eventBinders = new List<object>();
+        private readonly List<ItemCellHitTarget> itemCellHitTargets = new List<ItemCellHitTarget>();
         private DtmUiText text = new DtmUiText();
         private IInventoryDebugApi? inventoryApi;
         private IWeatherDebugApi? weatherApi;
@@ -75,8 +77,6 @@ namespace DTMAPI.BepInExBootstrap
         private bool screenshotRecorded;
         private bool screenshotHoverPrepared;
         private bool screenshotHoverStatusActive;
-        private InventoryDebugItem? rightClickTargetItem;
-        private DateTimeOffset rightClickTargetObservedAt;
         private DateTimeOffset lastRightClickGiveAt;
         private string screenshotHoverItem = string.Empty;
         private string screenshotHoverSourceKind = string.Empty;
@@ -153,6 +153,7 @@ namespace DTMAPI.BepInExBootstrap
             screenshotHoverWorkshopId = string.Empty;
             screenshotSearchText = string.Empty;
             runtime.UI.OpenCustomMenu(MenuId);
+            DolocTownHookCallbacks.DebugConsoleModalOpen = true;
             runtime.RuntimeMonitor.Log("Debug console opened owner=" + (owner?.UniqueID ?? ownerManifest?.UniqueID ?? "unknown") + " reason=" + (reason ?? string.Empty) + ".");
             runtime.RuntimeMonitor.Log("Debug console open lifecycle state searchText=" + FormatLifecycleValue(searchText) +
                 " category=" + FormatLifecycleValue(category) +
@@ -168,6 +169,7 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             IsOpen = false;
             dirty = true;
+            DolocTownHookCallbacks.DebugConsoleModalOpen = false;
             HideItemTooltip();
             if (runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase))
                 runtime.UI.Close();
@@ -195,7 +197,6 @@ namespace DTMAPI.BepInExBootstrap
             sourcePage = 0;
             weatherPage = 0;
             teleportPage = 0;
-            rightClickTargetItem = null;
             screenshotHoverPrepared = false;
             screenshotHoverStatusActive = false;
             screenshotSearchText = string.Empty;
@@ -213,6 +214,7 @@ namespace DTMAPI.BepInExBootstrap
         public void Update()
         {
             ConsumedInputThisFrame = false;
+            DolocTownHookCallbacks.DebugConsoleModalOpen = IsOpen;
             if (IsOpen)
             {
                 if (ReflectedUnityInput.GetKeyDown("Escape"))
@@ -227,7 +229,7 @@ namespace DTMAPI.BepInExBootstrap
                     Close(ownerManifest!, "Y");
                     return;
                 }
-                if (ReflectedUnityInput.GetKeyDown("Mouse1") && TryGiveTrackedRightClickTarget())
+                if (ReflectedUnityInput.GetKeyDown("Mouse1") && TryGivePointerHitItem())
                     ConsumedInputThisFrame = true;
             }
 
@@ -329,6 +331,7 @@ namespace DTMAPI.BepInExBootstrap
             hoverTooltipRoot = null;
             Destroy(panelRoot);
             eventBinders.Clear();
+            itemCellHitTargets.Clear();
             panelRoot = CreateUiObject("DTMAPI.DebugConsole.Panel", root);
             object image = AddComponent(panelRoot, imageType!);
             SetProperty(image, "color", Color(0.035f, 0.04f, 0.046f, 0.96f));
@@ -373,7 +376,7 @@ namespace DTMAPI.BepInExBootstrap
                 SourceId = sourceFilter,
                 IncludeUnavailable = true,
                 Page = itemPage,
-                PageSize = 25
+                PageSize = 35
             });
             itemPage = page.Page;
             AddText(panelRoot!, "DTMAPI.DebugConsole.Items.Count", string.Format(T("debug.items.count", "{0} items | page {1}/{2}"), page.TotalItems, page.Page + 1, page.TotalPages), 15, Color(0.78f, 0.82f, 0.84f, 1f), TextAnchorMiddleLeft, 520, -94, 360, 34);
@@ -434,7 +437,7 @@ namespace DTMAPI.BepInExBootstrap
             {
                 string selectedCat = cat;
                 bool selected = selectedCat.Equals(category, StringComparison.OrdinalIgnoreCase);
-                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Category." + catIndex, Truncate(selectedCat, 14), () =>
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Category." + catIndex, Truncate(FormatCategoryLabel(selectedCat), 14), () =>
                 {
                     category = selectedCat;
                     itemPage = 0;
@@ -462,7 +465,7 @@ namespace DTMAPI.BepInExBootstrap
             {
                 int col = index % 5;
                 int row = index / 5;
-                CreateItemCell(panelRoot!, item, index, gridX + col * 112, -150 - row * 104, 100, 96);
+                CreateItemCell(panelRoot!, item, index, gridX + col * 112, -150 - row * 78, 100, 74);
                 index++;
             }
 
@@ -470,13 +473,13 @@ namespace DTMAPI.BepInExBootstrap
             {
                 itemPage = Math.Max(0, itemPage - 1);
                 dirty = true;
-            }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), gridX + 358, -680, 46, 32);
-            AddText(panelRoot!, "DTMAPI.DebugConsole.Items.Page", (page.Page + 1) + "/" + page.TotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, gridX + 410, -680, 80, 32);
+            }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), gridX + 358, -780, 46, 32);
+            AddText(panelRoot!, "DTMAPI.DebugConsole.Items.Page", (page.Page + 1) + "/" + page.TotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, gridX + 410, -780, 80, 32);
             CreateButton(panelRoot!, "DTMAPI.DebugConsole.Items.Next", ">", () =>
             {
                 itemPage = Math.Min(page.TotalPages - 1, itemPage + 1);
                 dirty = true;
-            }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), gridX + 496, -680, 46, 32);
+            }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), gridX + 496, -780, 46, 32);
         }
 
         private void BuildDebugSidePanel()
@@ -498,15 +501,14 @@ namespace DTMAPI.BepInExBootstrap
                 if (instantSaveApi != null)
                 {
                     InstantSaveDebugState save = instantSaveApi.GetState();
-                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Save.Here", T("debug.save.here", "Save here"), () => SaveHere(reloadAfterSave: false), save.CanSave ? Color(0.12f, 0.40f, 0.30f, 1f) : Color(0.18f, 0.18f, 0.18f, 1f), save.CanSave ? Color(1f, 1f, 1f, 1f) : Color(0.55f, 0.60f, 0.62f, 1f), x + 330, -156, 92, 30);
-                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Save.Reload", T("debug.save.reload", "Reload"), () => SaveHere(reloadAfterSave: true), save.CanSave ? Color(0.22f, 0.26f, 0.46f, 1f) : Color(0.18f, 0.18f, 0.18f, 1f), save.CanSave ? Color(1f, 1f, 1f, 1f) : Color(0.55f, 0.60f, 0.62f, 1f), x + 428, -156, 70, 30);
+                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Save.Here", T("debug.save.here", "Save here"), SaveHere, save.CanSave ? Color(0.12f, 0.40f, 0.30f, 1f) : Color(0.18f, 0.18f, 0.18f, 1f), save.CanSave ? Color(1f, 1f, 1f, 1f) : Color(0.55f, 0.60f, 0.62f, 1f), x + 330, -156, 118, 30);
                 }
             }
 
             AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Speed.Title", T("debug.section.speed", "Move"), x, -206, 180, 28);
             MovementDebugState speed = movementApi == null ? new MovementDebugState() : movementApi.GetState();
             AddText(panelRoot!, "DTMAPI.DebugConsole.Speed.State", string.Format(T("debug.speed.state", "Speed {0:0.#}x"), speed.Multiplier), 15, Color(0.90f, 0.96f, 0.96f, 1f), TextAnchorMiddleLeft, x, -238, 150, 28);
-            double[] multipliers = { 0.5, 1, 2, 3, 4 };
+            double[] multipliers = { 1, 2, 3, 4 };
             for (int i = 0; i < multipliers.Length; i++)
             {
                 double value = multipliers[i];
@@ -521,7 +523,7 @@ namespace DTMAPI.BepInExBootstrap
             else
             {
                 WeatherDebugState state = weatherApi.GetState();
-                AddText(panelRoot!, "DTMAPI.DebugConsole.Weather.State", FirstText(state.CurrentWeatherName, T("debug.weather.unknown", "Weather")), 15, Color(0.90f, 0.96f, 0.96f, 1f), TextAnchorMiddleLeft, x, -322, 520, 28);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Weather.State", LocalizeWeatherName(state.CurrentWeatherId, FirstText(state.CurrentWeatherName, T("debug.weather.unknown", "Weather"))), 15, Color(0.90f, 0.96f, 0.96f, 1f), TextAnchorMiddleLeft, x, -322, 520, 28);
                 WeatherDebugOption[] weathers = weatherApi.GetAvailableWeathers().ToArray();
                 int pageSize = 8;
                 int totalPages = Math.Max(1, (int)Math.Ceiling(weathers.Length / (double)pageSize));
@@ -529,37 +531,35 @@ namespace DTMAPI.BepInExBootstrap
                 int i = 0;
                 foreach (WeatherDebugOption weather in weathers.Skip(weatherPage * pageSize).Take(pageSize))
                 {
-                    int col = i % 2;
-                    int row = i / 2;
-                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Weather.Set." + i, Truncate(FirstText(weather.DisplayName, T("debug.weather.unknown", "Weather")), 16), () => SetWeather(weather), weather.IsCurrent ? Color(0.10f, 0.36f, 0.34f, 1f) : Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + col * 238, -356 - row * 36, buttonW, 32);
+                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Weather.Set." + i, Truncate(LocalizeWeatherName(weather), 7), () => SetWeather(weather), weather.IsCurrent ? Color(0.10f, 0.36f, 0.34f, 1f) : Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + i * 58, -356, 54, 28);
                     i++;
                 }
                 if (totalPages > 1)
                 {
-                    AddText(panelRoot!, "DTMAPI.DebugConsole.Weather.Page", (weatherPage + 1) + "/" + totalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, x + 190, -502, 80, 28);
+                    AddText(panelRoot!, "DTMAPI.DebugConsole.Weather.Page", (weatherPage + 1) + "/" + totalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, x + 190, -394, 80, 28);
                     CreateButton(panelRoot!, "DTMAPI.DebugConsole.Weather.Prev", "<", () =>
                     {
                         weatherPage = Math.Max(0, weatherPage - 1);
                         dirty = true;
-                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 142, -502, 42, 30);
+                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 142, -394, 42, 30);
                     CreateButton(panelRoot!, "DTMAPI.DebugConsole.Weather.Next", ">", () =>
                     {
                         weatherPage = Math.Min(totalPages - 1, weatherPage + 1);
                         dirty = true;
-                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 282, -502, 42, 30);
+                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 282, -394, 42, 30);
                 }
             }
 
-            AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Teleport.Title", T("debug.section.teleport", "Teleport"), x, -544, 180, 28);
+            AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Teleport.Title", T("debug.section.teleport", "Teleport"), x, -424, 180, 28);
             if (teleportApi == null)
             {
-                AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.Missing", T("debug.missing.teleport", "Teleport debug API is not available."), 14, Color(1f, 0.72f, 0.55f, 1f), TextAnchorMiddleLeft, x, -574, 520, 26);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.Missing", T("debug.missing.teleport", "Teleport debug API is not available."), 14, Color(1f, 0.72f, 0.55f, 1f), TextAnchorMiddleLeft, x, -454, 520, 26);
             }
             else
             {
-                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.ExportCsv", T("debug.teleport.exportCsv", "Export CSV"), ExportTeleportCsv, Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + 356, -544, 118, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.ExportCsv", T("debug.teleport.exportCsv", "Export CSV"), ExportTeleportCsv, Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + 356, -424, 118, 28);
                 TeleportSnapshot snapshot = teleportApi.GetCurrentSnapshot();
-                AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.State", string.Format(T("debug.teleport.currentOnly", "Current: {0}"), DisplaySafeLocation(snapshot)), 15, Color(0.90f, 0.96f, 0.96f, 1f), TextAnchorMiddleLeft, x, -574, 520, 28);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.State", string.Format(T("debug.teleport.currentOnly", "Current: {0}"), DisplaySafeLocation(snapshot)), 15, Color(0.90f, 0.96f, 0.96f, 1f), TextAnchorMiddleLeft, x, -454, 520, 28);
                 TeleportDestination[] destinations = teleportApi.GetDestinations().ToArray();
                 int pageSize = 8;
                 int totalPages = Math.Max(1, (int)Math.Ceiling(destinations.Length / (double)pageSize));
@@ -569,22 +569,22 @@ namespace DTMAPI.BepInExBootstrap
                 {
                     int col = i % 2;
                     int row = i / 2;
-                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.Go." + i, Truncate(FirstText(destination.DisplayName, T("debug.teleport.place", "Place")), 18), () => Teleport(destination), Color(0.20f, 0.24f, 0.44f, 1f), Color(1f, 1f, 1f, 1f), x + col * 238, -608 - row * 36, buttonW, 32);
+                    CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.Go." + i, Truncate(LocalizeTeleportName(destination), 18), () => Teleport(destination), Color(0.20f, 0.24f, 0.44f, 1f), Color(1f, 1f, 1f, 1f), x + col * 238, -488 - row * 36, buttonW, 32);
                     i++;
                 }
                 if (totalPages > 1)
                 {
-                    AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.Page", (teleportPage + 1) + "/" + totalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, x + 190, -754, 80, 28);
+                    AddText(panelRoot!, "DTMAPI.DebugConsole.Teleport.Page", (teleportPage + 1) + "/" + totalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, x + 190, -634, 80, 28);
                     CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.Prev", "<", () =>
                     {
                         teleportPage = Math.Max(0, teleportPage - 1);
                         dirty = true;
-                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 142, -754, 42, 30);
+                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 142, -634, 42, 30);
                     CreateButton(panelRoot!, "DTMAPI.DebugConsole.Teleport.Next", ">", () =>
                     {
                         teleportPage = Math.Min(totalPages - 1, teleportPage + 1);
                         dirty = true;
-                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 282, -754, 42, 30);
+                    }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 282, -634, 42, 30);
                 }
             }
         }
@@ -603,7 +603,6 @@ namespace DTMAPI.BepInExBootstrap
                     SetStatusMessage(FormatItemHover(item), rebuild: false);
                     return;
                 }
-                TrackRightClickTarget(item);
                 GiveItem(item, 1);
             });
             object? sprite = ResolveItemSprite(item.Id);
@@ -629,17 +628,16 @@ namespace DTMAPI.BepInExBootstrap
             });
             AddPointerEventListener(go, "PointerEnter", _ =>
             {
-                TrackRightClickTarget(item);
                 SetStatusMessage(FormatItemHover(item), rebuild: false);
                 ShowItemTooltip(item, tooltipX, y);
             });
             AddPointerEventListener(go, "PointerExit", _ =>
             {
-                ClearRightClickTarget(item);
                 SetStatusMessage(string.Empty, rebuild: false);
                 HideItemTooltip();
             });
             SetRect(go, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(w, h));
+            itemCellHitTargets.Add(new ItemCellHitTarget(item, x, y, w, h));
             if (screenshotHoverStatusActive && item.Id.Equals(screenshotHoverItem, StringComparison.OrdinalIgnoreCase))
                 ShowItemTooltip(item, tooltipX, y);
         }
@@ -674,6 +672,7 @@ namespace DTMAPI.BepInExBootstrap
             SetProperty(image, "raycastTarget", false);
             AddText(hoverTooltipRoot, "DTMAPI.DebugConsole.ItemTooltip.Text", FormatItemTooltip(item), 12, Color(0.94f, 0.98f, 0.98f, 1f), TextAnchorUpperLeft, 10, -8, -20, -16, stretch: true);
             SetRect(hoverTooltipRoot, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(346, 150));
+            runtime.SetHookStatus("Smoke.DebugConsoleHoverTooltip", "verified", "Unity UI pointer hover", "item=" + item.Id + ", source=" + FirstText(item.SourceId, item.SourceKind) + ", searchText=" + FormatLifecycleValue(searchText) + ".");
         }
 
         private void HideItemTooltip()
@@ -701,7 +700,7 @@ namespace DTMAPI.BepInExBootstrap
         private string FormatItemTooltip(InventoryDebugItem item)
         {
             string name = FirstText(item.DisplayName, item.ChineseName, item.EnglishName, item.Id);
-            string categoryText = FirstText(item.SubCategory, item.Category, T("common.none", "(none)"));
+            string categoryText = FormatCategoryLabel(FirstText(item.SubCategory, item.Category, T("common.none", "(none)")));
             string sourceText = item.IsModItem
                 ? FirstText(item.SourceModTitle, item.SourceId, item.SourceKind)
                 : T("debug.items.sourceBase", "Base");
@@ -742,15 +741,15 @@ namespace DTMAPI.BepInExBootstrap
             dirty = true;
         }
 
-        private void SaveHere(bool reloadAfterSave)
+        private void SaveHere()
         {
             if (instantSaveApi == null || ownerManifest == null)
                 return;
-            InstantSaveDebugResult result = instantSaveApi.Save(ownerManifest, reloadAfterSave);
+            InstantSaveDebugResult result = instantSaveApi.Save(ownerManifest, reloadAfterSave: false);
             statusMessage = result.Success
                 ? string.Format(T("debug.save.saved", "Saved slot {0}"), result.SaveSlot?.ToString(CultureInfo.InvariantCulture) ?? "?")
                 : string.Format(T("debug.save.failed", "Save failed: {0}"), FirstText(result.FailureReason, result.Message));
-            dirty = !reloadAfterSave;
+            dirty = true;
         }
 
         private void ExportTeleportCsv()
@@ -777,27 +776,6 @@ namespace DTMAPI.BepInExBootstrap
             dirty = true;
         }
 
-        private void TrackRightClickTarget(InventoryDebugItem item)
-        {
-            rightClickTargetItem = item;
-            rightClickTargetObservedAt = DateTimeOffset.UtcNow;
-        }
-
-        private void ClearRightClickTarget(InventoryDebugItem item)
-        {
-            if (rightClickTargetItem != null && rightClickTargetItem.Id.Equals(item.Id, StringComparison.OrdinalIgnoreCase))
-                rightClickTargetItem = null;
-        }
-
-        private bool TryGiveTrackedRightClickTarget()
-        {
-            if (rightClickTargetItem == null || ownerManifest == null)
-                return false;
-            if ((DateTimeOffset.UtcNow - rightClickTargetObservedAt).TotalSeconds > 8)
-                return false;
-            return TryGiveRightClickItem(rightClickTargetItem, "mouse1-fallback");
-        }
-
         private bool TryGiveRightClickItem(InventoryDebugItem item, string source)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
@@ -811,17 +789,46 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             runtime.RuntimeMonitor.Log("Debug console right-click give source=" + source + " item=" + item.Id + ".");
-            GiveItem(item, 10);
+            GiveItem(item, 10, rightClick: true);
             return true;
         }
 
-        private void GiveItem(InventoryDebugItem item, int count)
+        private bool TryGivePointerHitItem()
+        {
+            if (ownerManifest == null || itemCellHitTargets.Count == 0)
+                return false;
+            if (!ReflectedUnityInput.TryGetMousePosition(out double mouseX, out double mouseY))
+                return false;
+            if (!TryGetScreenSize(out double screenWidth, out double screenHeight))
+                return false;
+
+            double panelLeft = Math.Max(0, (screenWidth - 1500d) / 2d);
+            double panelTop = Math.Max(0, (screenHeight - 900d) / 2d);
+            double mouseTopY = screenHeight - mouseY;
+            foreach (ItemCellHitTarget target in itemCellHitTargets)
+            {
+                double left = panelLeft + target.X;
+                double top = panelTop + Math.Abs(target.Y);
+                double right = left + target.Width;
+                double bottom = top + target.Height;
+                if (mouseX >= left && mouseX <= right && mouseTopY >= top && mouseTopY <= bottom)
+                {
+                    runtime.RuntimeMonitor.Log("Debug console right-click give hit-test item=" + target.Item.Id + " mouse=" + mouseX.ToString("0", CultureInfo.InvariantCulture) + "," + mouseTopY.ToString("0", CultureInfo.InvariantCulture) + " rect=" + left.ToString("0", CultureInfo.InvariantCulture) + "," + top.ToString("0", CultureInfo.InvariantCulture) + "," + right.ToString("0", CultureInfo.InvariantCulture) + "," + bottom.ToString("0", CultureInfo.InvariantCulture) + ".");
+                    return TryGiveRightClickItem(target.Item, "mouse1-hit-test");
+                }
+            }
+
+            runtime.SetHookStatus("UI.DebugConsoleRightClickTarget", "experimental", "Unity Input.mousePosition -> current item cell hit-test", "Right-click ignored because no current item cell was under the pointer. mouse=" + mouseX.ToString("0", CultureInfo.InvariantCulture) + "," + mouseTopY.ToString("0", CultureInfo.InvariantCulture) + ".");
+            return false;
+        }
+
+        private void GiveItem(InventoryDebugItem item, int count, bool rightClick = false)
         {
             if (inventoryApi == null || ownerManifest == null)
                 return;
             InventoryGiveResult result = inventoryApi.GiveItem(ownerManifest, item.Id, count);
             statusMessage = result.Success
-                ? string.Format(T("debug.items.gave", "Gave {0} x {1}"), result.GivenCount, FirstText(result.DisplayName, result.ItemId))
+                ? string.Format(T(rightClick ? "debug.items.gaveRightClick" : "debug.items.gave", rightClick ? "Right-click gave {0} x {1}" : "Gave {0} x {1}"), result.GivenCount, FirstText(result.DisplayName, result.ItemId))
                 : string.Format(T("debug.items.failed", "Give failed: {0}"), FirstText(result.FailureReason, result.Message));
             dirty = true;
         }
@@ -832,7 +839,7 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             WeatherSetResult result = weatherApi.SetWeather(ownerManifest, weather.Id, patchCurrentPeriod: true);
             statusMessage = result.Success
-                ? string.Format(T("debug.weather.changed.simple", "Weather: {0}"), FirstText(result.DisplayName, weather.DisplayName, weather.Id))
+                ? string.Format(T("debug.weather.changed.simple", "Weather: {0}"), LocalizeWeatherName(weather.Id, FirstText(result.DisplayName, weather.DisplayName, weather.Id)))
                 : string.Format(T("debug.weather.failed", "Weather failed: {0}"), FirstText(result.FailureReason, result.Message));
             dirty = true;
         }
@@ -843,7 +850,7 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             TeleportResult result = teleportApi.Teleport(ownerManifest, destination.Id);
             statusMessage = result.Success
-                ? string.Format(T("debug.teleport.requested", "Teleport requested: {0}"), FirstText(result.DestinationName, result.MarkPointId))
+                ? string.Format(T("debug.teleport.requested", "Teleport requested: {0}"), LocalizeTeleportName(FirstText(result.DestinationName, result.MarkPointId)))
                 : string.Format(T("debug.teleport.failed", "Teleport failed: {0}"), FirstText(result.FailureReason, result.Message));
             dirty = true;
         }
@@ -852,7 +859,100 @@ namespace DTMAPI.BepInExBootstrap
         {
             string fallback = T("debug.teleport.current", "Current location");
             string title = FirstText(snapshot == null ? string.Empty : snapshot.RoomTitle, string.Empty);
-            return LooksInternalLocationName(title) ? fallback : FirstText(title, fallback);
+            return LocalizeTeleportName(LooksInternalLocationName(title) ? fallback : FirstText(title, fallback));
+        }
+
+        private string LocalizeWeatherName(WeatherDebugOption weather)
+        {
+            return LocalizeWeatherName(weather.Id, FirstText(weather.DisplayName, weather.Id, T("debug.weather.unknown", "Weather")));
+        }
+
+        private string LocalizeWeatherName(string weatherId, string displayName)
+        {
+            string raw = FirstText(weatherId, displayName).Trim();
+            string normalized = raw.Replace("_", string.Empty).Replace("-", string.Empty).Replace(" ", string.Empty).ToLowerInvariant();
+            bool english = text.Language.Equals("english", StringComparison.OrdinalIgnoreCase);
+
+            if (ContainsIgnoreCase(normalized, "thunder") || ContainsIgnoreCase(displayName, "雷雨"))
+                return english ? "Thunder" : "雷雨";
+            if (ContainsIgnoreCase(normalized, "cloud") || ContainsIgnoreCase(displayName, "多云"))
+                return english ? "Cloudy" : "多云";
+            if (ContainsIgnoreCase(normalized, "wind") || ContainsIgnoreCase(displayName, "大风"))
+                return english ? "Wind" : "大风";
+            if (ContainsIgnoreCase(normalized, "acid") || ContainsIgnoreCase(displayName, "酸雨"))
+                return english ? "Acid" : "酸雨";
+            if (ContainsIgnoreCase(normalized, "rain") || ContainsIgnoreCase(displayName, "雨天"))
+                return english ? "Rain" : "雨天";
+            if (ContainsIgnoreCase(normalized, "scorch") || ContainsIgnoreCase(normalized, "hot") || ContainsIgnoreCase(displayName, "烈日"))
+                return english ? "Heat" : "烈日";
+            if (ContainsIgnoreCase(normalized, "sun") || ContainsIgnoreCase(normalized, "clear") || ContainsIgnoreCase(displayName, "晴天"))
+                return english ? "Sunny" : "晴天";
+
+            if (english && ContainsCjk(displayName))
+                return T("debug.weather.unknown", "Weather");
+            return FirstText(displayName, T("debug.weather.unknown", "Weather"));
+        }
+
+        private string LocalizeTeleportName(TeleportDestination destination)
+        {
+            return LocalizeTeleportName(FirstText(destination.DisplayName, destination.SuggestedDisplayName, destination.MarkPointId, destination.RoomId, T("debug.teleport.place", "Place")));
+        }
+
+        private string LocalizeTeleportName(string value)
+        {
+            string raw = FirstText(value, T("debug.teleport.place", "Place"));
+            bool english = text.Language.Equals("english", StringComparison.OrdinalIgnoreCase);
+            if (!english)
+                return raw;
+
+            string normalized = raw.Replace("_", " ").Replace(".", " ").Trim();
+            if (ContainsIgnoreCase(normalized, "farm") || ContainsIgnoreCase(raw, "农场"))
+                return ContainsIgnoreCase(raw, "车站") || ContainsIgnoreCase(raw, "公交") ? "Farm station" : "Farm";
+            if (ContainsIgnoreCase(normalized, "town hall") || ContainsIgnoreCase(raw, "市政厅"))
+                return "Town hall";
+            if (ContainsIgnoreCase(normalized, "research") || ContainsIgnoreCase(raw, "研究所"))
+                return "Research institute";
+            if (ContainsIgnoreCase(normalized, "bar") || ContainsIgnoreCase(raw, "酒吧"))
+                return "Bar";
+            if (ContainsIgnoreCase(normalized, "station") || ContainsIgnoreCase(raw, "车站") || ContainsIgnoreCase(raw, "公交"))
+                return ContainsIgnoreCase(raw, "城镇") ? "Town station" : "Station";
+            if (ContainsIgnoreCase(normalized, "town") || ContainsIgnoreCase(raw, "城镇"))
+                return "Town";
+            if (ContainsIgnoreCase(raw, "丘陵"))
+                return "Hills";
+            if (ContainsCjk(raw))
+                return T("debug.teleport.place", "Place");
+            return normalized.Length == 0 ? T("debug.teleport.place", "Place") : normalized;
+        }
+
+        private string FormatCategoryLabel(string value)
+        {
+            string raw = FirstText(value, T("common.none", "(none)"));
+            string normalized = raw.Trim().Replace("-", "_").ToLowerInvariant();
+            bool english = text.Language.Equals("english", StringComparison.OrdinalIgnoreCase);
+
+            if (normalized.StartsWith("construction", StringComparison.OrdinalIgnoreCase))
+                return english ? "Construction" : "建筑";
+            if (normalized.StartsWith("equipment", StringComparison.OrdinalIgnoreCase))
+                return english ? "Equipment" : "设备";
+            if (normalized.StartsWith("material_ore", StringComparison.OrdinalIgnoreCase) || normalized.Contains("_ore"))
+                return english ? "Ore" : "矿物";
+            if (normalized.StartsWith("material", StringComparison.OrdinalIgnoreCase))
+                return english ? "Material" : "材料";
+            if (normalized.StartsWith("food", StringComparison.OrdinalIgnoreCase))
+                return english ? "Food" : "食物";
+            if (normalized.StartsWith("seed", StringComparison.OrdinalIgnoreCase))
+                return english ? "Seed" : "种子";
+            if (normalized.StartsWith("tool", StringComparison.OrdinalIgnoreCase))
+                return english ? "Tool" : "工具";
+            if (normalized.StartsWith("weapon", StringComparison.OrdinalIgnoreCase))
+                return english ? "Weapon" : "武器";
+            if (normalized.StartsWith("furniture", StringComparison.OrdinalIgnoreCase) || normalized.StartsWith("ornament", StringComparison.OrdinalIgnoreCase))
+                return english ? "Decor" : "装饰";
+
+            if (english && ContainsCjk(raw))
+                return T("common.none", "(none)");
+            return raw.Replace("_", " ");
         }
 
         private static bool LooksInternalLocationName(string value)
@@ -932,13 +1032,6 @@ namespace DTMAPI.BepInExBootstrap
                 if (item == null)
                     return;
 
-                modItemsOnly = item.IsModItem;
-                sourceFilter = item.IsModItem ? FirstText(item.SourceId, SourceFilterMods) : SourceFilterBase;
-                category = string.Empty;
-                itemPage = 0;
-                sourcePage = 0;
-                categoryPage = 0;
-                searchText = BuildScreenshotSearchText(item);
                 screenshotSearchText = searchText;
                 screenshotHoverItem = item.Id;
                 screenshotHoverSourceKind = item.SourceKind;
@@ -957,6 +1050,25 @@ namespace DTMAPI.BepInExBootstrap
 
         private InventoryDebugItem? SelectScreenshotEvidenceItem()
         {
+            InventoryDebugPage currentPage = inventoryApi!.GetItems(new InventoryDebugQuery
+            {
+                SearchText = searchText,
+                Category = category,
+                SourceId = sourceFilter,
+                ModItemsOnly = modItemsOnly,
+                IncludeUnavailable = true,
+                Page = itemPage,
+                PageSize = 50
+            });
+
+            InventoryDebugItem? visibleItem = currentPage.Items
+                .Where(i => i.CanGive && i.RuntimeLoaded)
+                .OrderBy(i => i.RuntimeOrder)
+                .ThenBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault() ?? currentPage.Items.FirstOrDefault();
+            if (visibleItem != null)
+                return visibleItem;
+
             InventoryDebugPage modPage = inventoryApi!.GetItems(new InventoryDebugQuery
             {
                 ModItemsOnly = true,
@@ -1027,6 +1139,28 @@ namespace DTMAPI.BepInExBootstrap
                     return false;
                 capture.Invoke(null, new object[] { path });
                 return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryGetScreenSize(out double width, out double height)
+        {
+            width = 0;
+            height = 0;
+            try
+            {
+                Type? screen = ResolveRuntimeType("UnityEngine.Screen") ?? Type.GetType("UnityEngine.Screen, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Screen, UnityEngine");
+                object? widthValue = screen?.GetProperty("width", BindingFlags.Static | BindingFlags.Public)?.GetValue(null, null);
+                object? heightValue = screen?.GetProperty("height", BindingFlags.Static | BindingFlags.Public)?.GetValue(null, null);
+                if (widthValue == null || heightValue == null)
+                    return false;
+
+                width = Convert.ToDouble(widthValue);
+                height = Convert.ToDouble(heightValue);
+                return width > 0 && height > 0;
             }
             catch
             {
@@ -1364,9 +1498,39 @@ namespace DTMAPI.BepInExBootstrap
                 value.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        private static bool ContainsCjk(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+            foreach (char c in value)
+            {
+                if (c >= '\u4e00' && c <= '\u9fff')
+                    return true;
+            }
+            return false;
+        }
+
         private static string FormatLifecycleValue(string value)
         {
             return string.IsNullOrEmpty(value) ? "<empty>" : value;
+        }
+
+        private sealed class ItemCellHitTarget
+        {
+            public ItemCellHitTarget(InventoryDebugItem item, float x, float y, float width, float height)
+            {
+                Item = item;
+                X = x;
+                Y = y;
+                Width = width;
+                Height = height;
+            }
+
+            public InventoryDebugItem Item { get; }
+            public float X { get; }
+            public float Y { get; }
+            public float Width { get; }
+            public float Height { get; }
         }
 
         private const int TextAnchorMiddleLeft = 3;

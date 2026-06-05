@@ -12,6 +12,7 @@ namespace DTMAPI.BepInExBootstrap
     {
         private readonly DtmApiRuntime runtime;
         private readonly IDtmConfigMenuApi configMenu;
+        private readonly DtmUiText text = new DtmUiText();
         private Type? rectType;
         private Type? guiType;
         private Type? screenType;
@@ -268,7 +269,7 @@ namespace DTMAPI.BepInExBootstrap
                 int current = Math.Max(0, item.AllowedValues.ToList().FindIndex(v => v.Equals(item.PendingValue, StringComparison.OrdinalIgnoreCase)));
                 if (Button(controlX, y, 28, 24, "<"))
                     SetPending(item, item.AllowedValues[(current - 1 + item.AllowedValues.Count) % item.AllowedValues.Count]);
-                Label(controlX + 34, y, Math.Min(140, controlWidth - 68), 24, item.PendingValue);
+                Label(controlX + 34, y, Math.Min(140, controlWidth - 68), 24, text.DisplayLanguageName(item.PendingValue));
                 if (Button(controlX + 178, y, 28, 24, ">"))
                     SetPending(item, item.AllowedValues[(current + 1) % item.AllowedValues.Count]);
             }

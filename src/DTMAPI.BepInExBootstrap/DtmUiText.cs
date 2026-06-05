@@ -27,6 +27,18 @@ namespace DTMAPI.BepInExBootstrap
             return fallback;
         }
 
+        public string DisplayLanguageName(string value)
+        {
+            string normalized = (value ?? string.Empty).Trim().Replace('-', '_').ToLowerInvariant();
+            if (normalized == "auto" || normalized.Length == 0)
+                return Get("language.auto", "Auto");
+            if (normalized == "schinese" || normalized == "zh" || normalized == "zh_cn" || normalized == "chinese")
+                return Get("language.schinese", "Chinese");
+            if (normalized == "english" || normalized == "en" || normalized == "en_us" || normalized == "en_gb")
+                return Get("language.english", "English");
+            return value ?? string.Empty;
+        }
+
         public string TranslateEnablementReason(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
@@ -90,6 +102,9 @@ namespace DTMAPI.BepInExBootstrap
             ["tab.hooks"] = "Hook",
             ["tab.logs"] = "日志",
             ["config.empty"] = "当前没有已启用的 DTMAPI Mod 注册配置页。",
+            ["language.auto"] = "自动",
+            ["language.schinese"] = "中文",
+            ["language.english"] = "English",
             ["config.listTitle"] = "已启用的 DTMAPI Mod",
             ["config.lockedBadge"] = "锁定",
             ["config.lockedPrefix"] = "锁定：",
@@ -165,13 +180,13 @@ namespace DTMAPI.BepInExBootstrap
             ["debug.items.unavailable"] = "不可给予",
             ["debug.items.unspawnable"] = "不可生成",
             ["debug.items.gave"] = "已给予 {0} x {1}",
+            ["debug.items.gaveRightClick"] = "右键已给予 {0} x {1}",
             ["debug.items.failed"] = "给予失败：{0}",
             ["debug.time.state"] = "{0}/{1}/{2} {3:00}:{4:00}  {5}",
             ["debug.time.next"] = "下个时段",
             ["debug.time.skipped"] = "已推进到 {0:00}:00",
             ["debug.time.failed"] = "时间失败：{0}",
             ["debug.save.here"] = "存这里",
-            ["debug.save.reload"] = "重载",
             ["debug.save.saved"] = "已保存槽位 {0}",
             ["debug.save.failed"] = "保存失败：{0}",
             ["debug.speed.state"] = "移速 {0:0.#}x",
@@ -221,6 +236,9 @@ namespace DTMAPI.BepInExBootstrap
             ["tab.hooks"] = "Hooks",
             ["tab.logs"] = "Logs",
             ["config.empty"] = "No enabled DTMAPI mods have registered config pages.",
+            ["language.auto"] = "Auto",
+            ["language.schinese"] = "Chinese",
+            ["language.english"] = "English",
             ["config.listTitle"] = "Enabled DTMAPI mods",
             ["config.lockedBadge"] = "locked",
             ["config.lockedPrefix"] = "Locked: ",
@@ -296,13 +314,13 @@ namespace DTMAPI.BepInExBootstrap
             ["debug.items.unavailable"] = "unavailable",
             ["debug.items.unspawnable"] = "not spawnable",
             ["debug.items.gave"] = "Gave {0} x {1}",
+            ["debug.items.gaveRightClick"] = "Right-click gave {0} x {1}",
             ["debug.items.failed"] = "Give failed: {0}",
             ["debug.time.state"] = "{0}/{1}/{2} {3:00}:{4:00}  {5}",
             ["debug.time.next"] = "Next period",
             ["debug.time.skipped"] = "Advanced to {0:00}:00",
             ["debug.time.failed"] = "Time failed: {0}",
             ["debug.save.here"] = "Save here",
-            ["debug.save.reload"] = "Reload",
             ["debug.save.saved"] = "Saved slot {0}",
             ["debug.save.failed"] = "Save failed: {0}",
             ["debug.speed.state"] = "Speed {0:0.#}x",

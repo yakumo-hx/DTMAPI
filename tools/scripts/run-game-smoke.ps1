@@ -31,6 +31,8 @@ param(
     [switch] $AutoExerciseDebugMovement,
     [switch] $AutoExerciseVehicle,
     [switch] $AutoExerciseNewContentApis,
+    [switch] $AutoExerciseMineContentApis,
+    [switch] $DisableSecondMotorForSmoke,
     [int] $AutoExitAfterSecondsOverride = 0,
     [switch] $SkipBuild
 )
@@ -38,6 +40,74 @@ param(
 . "$PSScriptRoot\common.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
+
+function Get-DolocTownPersistentRootForSmoke {
+    if ($env:DTMAPI_DOLOC_PERSISTENT_ROOT) {
+        return [System.IO.Path]::GetFullPath($env:DTMAPI_DOLOC_PERSISTENT_ROOT)
+    }
+
+    return Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\RedSawGames\DolocTown'
+}
+
+function Write-SmokeJsonObject {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [Parameter(Mandatory = $true)] $Value
+    )
+
+    $json = $Value | ConvertTo-Json -Depth 10
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $json, $utf8NoBom)
+}
+
+function Set-SmokeOfficialLocalModEnabled {
+    param(
+        [Parameter(Mandatory = $true)] [string] $OfficialFolder,
+        [Parameter(Mandatory = $true)] [bool] $Enabled,
+        [Parameter(Mandatory = $true)] [string] $BackupPath,
+        [Parameter(Mandatory = $true)] [ref] $HadOriginal
+    )
+
+    $persistentRoot = Get-DolocTownPersistentRootForSmoke
+    $enablementPath = Join-Path $persistentRoot 'SAVE\mod_infos.json'
+    if (-not (Test-Path $enablementPath)) {
+        $HadOriginal.Value = $false
+        return $enablementPath
+    }
+
+    Copy-Item -Force -LiteralPath $enablementPath -Destination $BackupPath
+    $HadOriginal.Value = $true
+    $data = Get-Content -Raw -Encoding UTF8 -LiteralPath $enablementPath | ConvertFrom-Json
+    if ($null -eq $data.modInfos) {
+        return $enablementPath
+    }
+
+    $id = "Local.$OfficialFolder"
+    $property = $data.modInfos.PSObject.Properties[$id]
+    if ($property) {
+        if ($property.Value.PSObject.Properties['enabled']) {
+            $property.Value.enabled = $Enabled
+        }
+        else {
+            $property.Value | Add-Member -MemberType NoteProperty -Name 'enabled' -Value $Enabled -Force
+        }
+        Write-SmokeJsonObject -Path $enablementPath -Value $data
+    }
+
+    return $enablementPath
+}
+
+function Restore-SmokeSecondMotorEnablement {
+    if ($script:DisableSecondMotorForSmoke -and $script:secondMotorEnablementHadOriginal -and $script:secondMotorEnablementPath) {
+        Copy-Item -Force -LiteralPath $script:secondMotorEnablementBackup -Destination $script:secondMotorEnablementPath -ErrorAction SilentlyContinue
+    }
+}
+
+trap {
+    Restore-SmokeSecondMotorEnablement
+    throw
+}
+
 $launchViaSteam = [bool]$UseSteam -or -not [bool]$DirectExe
 $existingGameProcess = Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue
 if ($existingGameProcess) {
@@ -68,9 +138,15 @@ if ($installExit -ne 0) {
 }
 
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
-$dtmapiDir = Join-Path $gameDir 'DTMAPI'
+$dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
 New-Item -ItemType Directory -Force -Path $dtmapiDir | Out-Null
 $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
+$script:secondMotorEnablementBackup = Join-Path $evidence 'mod_infos.before-second-motor-smoke.json'
+$script:secondMotorEnablementPath = $null
+$script:secondMotorEnablementHadOriginal = $false
+if ($DisableSecondMotorForSmoke) {
+    $script:secondMotorEnablementPath = Set-SmokeOfficialLocalModEnabled -OfficialFolder 'DTMAPI_SecondMotor' -Enabled:$false -BackupPath $script:secondMotorEnablementBackup -HadOriginal ([ref]$script:secondMotorEnablementHadOriginal)
+}
 $oneActionConfigPath = Join-Path $dtmapiDir 'config\Yuuka.DTMAPI.OneActionComplete.json'
 $oneActionConfigBackup = Join-Path $evidence 'Yuuka.DTMAPI.OneActionComplete.before.json'
 $oneActionConfigHadOriginal = $false
@@ -700,6 +776,8 @@ $smokeSettings = @{
     AutoExerciseVehicleDelaySeconds = 8
     AutoExerciseNewContentApis = [bool]$AutoExerciseNewContentApis
     AutoExerciseNewContentApisDelaySeconds = 3
+    AutoExerciseMineContentApis = [bool]$AutoExerciseMineContentApis
+    AutoExerciseMineContentApisDelaySeconds = 3
     AutoFishingExternalHotkeyRequired = [bool]$AutoPressAutoFishingHotkey
     AutoOpenTitleSettingsMenu = [bool]$AutoOpenTitleSettingsMenu
     AutoOpenTitleSettingsDelaySeconds = 12
@@ -709,7 +787,7 @@ $smokeSettings = @{
     AutoOpenAnimalPanelDelaySeconds = 2
 } | ConvertTo-Json
 $smokeSettings | Set-Content -LiteralPath (Join-Path $dtmapiDir 'smoke-settings.json')
-$freshLogPath = Join-Path $gameDir 'DTMAPI\logs\latest.log'
+$freshLogPath = Join-Path $dtmapiDir 'logs\latest.log'
 $freshBepLogPath = Join-Path $gameDir 'BepInEx\LogOutput.log'
 if (Test-Path $freshLogPath) {
     Remove-Item -Force -LiteralPath $freshLogPath
@@ -718,7 +796,7 @@ if (Test-Path $freshBepLogPath) {
     Remove-Item -Force -LiteralPath $freshBepLogPath
 }
 
-"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
 
 $launchCommandStartedAt = Get-Date
 if ($launchViaSteam) {
@@ -751,7 +829,7 @@ $launchModeLabel = if ($launchViaSteam) { 'Steam' } else { 'DirectExe' }
 $startupOk = Wait-ForStartupLogWithTimeline -LogPath $logPath -Pattern 'DTMAPI runtime starting.' -TimeoutSeconds $startupTimeoutSeconds -EvidenceDir $evidence -LaunchCommandStartedAt $launchCommandStartedAt -LaunchCommandFinishedAt $launchCommandFinishedAt -LaunchMode $launchModeLabel
 $gameLaunchedOk = $false
 $probeOk = -not [bool]$IncludeHookProbe
-$saveLoadedOk = -not (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis))
+$saveLoadedOk = -not (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis))
 $titleLifecycleOk = -not [bool]$AutoExerciseTitleButtonLifecycle
 $titleButtonOk = -not [bool]$AutoOpenTitleSettingsMenu
 $titleButtonScreenshotOk = -not [bool]$AutoOpenTitleSettingsMenu
@@ -788,10 +866,12 @@ $debugTimeOk = -not [bool]$AutoExerciseDebugTime
 $debugMovementOk = -not [bool]$AutoExerciseDebugMovement
 $vehicleSecondMotorOk = -not [bool]$AutoExerciseVehicle
 $newContentApisOk = -not [bool]$AutoExerciseNewContentApis
+$newContentMineApisOk = -not [bool]$AutoExerciseMineContentApis
 $newContentOilItemMetadataOk = -not [bool]$AutoExerciseNewContentApis
 $newContentOilCoalDropOk = -not [bool]$AutoExerciseNewContentApis
-$newContentMineOfficialJsonOk = -not [bool]$AutoExerciseNewContentApis
-$newContentMineProductionOk = -not [bool]$AutoExerciseNewContentApis
+$newContentMineOfficialJsonOk = -not ([bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis)
+$newContentMineOfficialTechTreeUiOk = -not [bool]$AutoExerciseMineContentApis
+$newContentMineProductionOk = -not ([bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis)
 $newContentEquipmentSlotsOk = -not [bool]$AutoExerciseNewContentApis
 
 if ($startupOk) {
@@ -850,11 +930,11 @@ if ($startupOk) {
     elseif ($probeOk -and $AutoExerciseInstantSave -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
-    elseif ($probeOk -and ($requiresDebugConsoleKeySmoke -or $AutoExerciseDebugInventory -or $AutoExerciseDebugWeather -or $AutoExerciseDebugTeleport -or $AutoExerciseDebugTime -or $AutoExerciseDebugMovement -or $AutoExerciseVehicle -or $AutoExerciseNewContentApis) -and $SaveSlot -gt 0) {
+    elseif ($probeOk -and ($requiresDebugConsoleKeySmoke -or $AutoExerciseDebugInventory -or $AutoExerciseDebugWeather -or $AutoExerciseDebugTeleport -or $AutoExerciseDebugTime -or $AutoExerciseDebugMovement -or $AutoExerciseVehicle -or $AutoExerciseNewContentApis -or $AutoExerciseMineContentApis) -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
     if ($saveLoadedOk -and $AutoExerciseNewContentApis) {
-        $oilOk = Wait-ForLogLine -LogPath $logPath -Pattern 'OilMod content item=dtmapi_oil fuelEnergy=1500 officialJson=item_tbitem.json.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        $oilOk = Wait-ForLogLine -LogPath $logPath -Pattern 'OilMod content item=crude_oil fuelEnergy=1500 officialJson=item_tbitem.json.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         $mineOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Mine machine API register success=True reason=SaveLoaded' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         $equipmentSlotsOk = Wait-ForLogLine -LogPath $logPath -Pattern 'MoreEquipmentSlots API register success=True reason=SaveLoaded' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         $newContentOilItemMetadataOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise NewContentOilItemMetadata OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
@@ -863,6 +943,13 @@ if ($startupOk) {
         $newContentEquipmentSlotsOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise NewContentEquipmentSlots OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         $newContentMineProductionOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise NewContentMineProduction OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         $newContentApisOk = $oilOk -and $mineOk -and $equipmentSlotsOk -and $newContentOilItemMetadataOk -and $newContentOilCoalDropOk -and $newContentMineOfficialJsonOk -and $newContentEquipmentSlotsOk -and $newContentMineProductionOk
+    }
+    if ($saveLoadedOk -and $AutoExerciseMineContentApis) {
+        $mineOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Mine machine API register success=True reason=SaveLoaded' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        $newContentMineOfficialJsonOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise NewContentMineOfficialJson OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        $newContentMineOfficialTechTreeUiOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Mine official tech tree UI evidence OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        $newContentMineProductionOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise NewContentMineProduction OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        $newContentMineApisOk = $mineOk -and $newContentMineOfficialJsonOk -and $newContentMineOfficialTechTreeUiOk -and $newContentMineProductionOk
     }
     if ($saveLoadedOk -and $AutoOpenAnimalPanel) {
         $animalViewerUiOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Animal viewer UI evidence OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
@@ -1055,9 +1142,11 @@ if ($usesActionSpeedConfigSmoke) {
         Remove-Item -Force -LiteralPath $actionSpeedConfigPath -ErrorAction SilentlyContinue
     }
 }
+Restore-SmokeSecondMotorEnablement
 $titleButtonScreenshotFileOk = -not [bool]$AutoOpenTitleSettingsMenu
 $titleMenuScreenshotFileOk = -not [bool]$AutoOpenTitleSettingsMenu
 $officialModUiScreenshotFileOk = -not [bool]$AutoOpenOfficialModUi
+$newContentMineOfficialTechTreeUiScreenshotFileOk = -not [bool]$AutoExerciseMineContentApis
 if ($AutoOpenTitleSettingsMenu -and (Test-Path $logPath)) {
     $buttonScreenshotLine = Select-String -Path $logPath -Pattern 'Title settings button screenshot OK screenshot=' | Select-Object -Last 1
     if ($buttonScreenshotLine) {
@@ -1075,6 +1164,13 @@ if ($AutoOpenOfficialModUi -and (Test-Path $logPath)) {
     if ($officialScreenshotLine) {
         $officialScreenshotPath = $officialScreenshotLine.Line -replace '^.*screenshot=', '' -replace '\.$', ''
         $officialModUiScreenshotFileOk = Test-Path -LiteralPath $officialScreenshotPath
+    }
+}
+if ($AutoExerciseMineContentApis -and (Test-Path $logPath)) {
+    $mineTechTreeScreenshotLine = Select-String -Path $logPath -Pattern 'Mine official tech tree UI evidence OK .*screenshot=' | Select-Object -Last 1
+    if ($mineTechTreeScreenshotLine) {
+        $mineTechTreeScreenshotPath = $mineTechTreeScreenshotLine.Line -replace '^.*screenshot=', '' -replace ', close=.*$', '' -replace '\.$', ''
+        $newContentMineOfficialTechTreeUiScreenshotFileOk = Test-Path -LiteralPath $mineTechTreeScreenshotPath
     }
 }
 $result = @{
@@ -1121,9 +1217,12 @@ $result = @{
     DebugMovement = $debugMovementOk
     VehicleSecondMotor = $vehicleSecondMotorOk
     NewContentApis = $newContentApisOk
+    NewContentMineApis = $newContentMineApisOk
     NewContentOilItemMetadata = $newContentOilItemMetadataOk
     NewContentOilCoalDrop = $newContentOilCoalDropOk
     NewContentMineOfficialJson = $newContentMineOfficialJsonOk
+    NewContentMineOfficialTechTreeUi = $newContentMineOfficialTechTreeUiOk
+    NewContentMineOfficialTechTreeUiScreenshotFile = $newContentMineOfficialTechTreeUiScreenshotFileOk
     NewContentEquipmentSlots = $newContentEquipmentSlotsOk
     NewContentMineProduction = $newContentMineProductionOk
     NoFatalInstanceWindow = $fatalWindows.Count -eq 0
@@ -1139,7 +1238,7 @@ catch {
     $_ | Out-String | Set-Content -LiteralPath (Join-Path $evidence 'startup-analysis-error.txt')
 }
 
-if (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $vehicleSecondMotorOk -or -not $newContentApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $fatalWindows.Count -gt 0 -or $forcedClose -or $leftover) {
+if (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $vehicleSecondMotorOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $fatalWindows.Count -gt 0 -or $forcedClose -or $leftover) {
     Write-Error "Game smoke failed or left DolocTown.exe running. Evidence: $evidence"
     exit 1
 }

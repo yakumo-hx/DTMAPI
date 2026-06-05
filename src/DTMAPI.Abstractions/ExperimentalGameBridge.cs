@@ -512,10 +512,17 @@ namespace DTMAPI.Abstractions
         public int ElectricModeFuelCostPerCycle { get; set; } = 20;
         public int ElectricModePowerCostPerCycle { get; set; } = 10;
         public int CycleMinutes { get; set; } = 120;
+        public IReadOnlyList<MachineRecipeInput> RecipeInputs { get; set; } = Array.Empty<MachineRecipeInput>();
         public bool IncludeRuntimeModMinerals { get; set; } = true;
         public IReadOnlyList<MachineOutputRule> OutputRules { get; set; } = Array.Empty<MachineOutputRule>();
         public IReadOnlyDictionary<string, double> ProbabilityOverrides { get; set; } = new Dictionary<string, double>();
         public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class MachineRecipeInput
+    {
+        public string ItemId { get; set; } = string.Empty;
+        public int Count { get; set; }
     }
 
     public sealed class MachineOutputRule

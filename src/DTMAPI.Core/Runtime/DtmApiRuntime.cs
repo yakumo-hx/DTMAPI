@@ -14,7 +14,7 @@ namespace DTMAPI.Core.Runtime
 {
     public sealed class DtmApiRuntime
     {
-        public const string ApiVersion = "0.2.5";
+        public const string ApiVersion = "0.2.8";
 
         private readonly IRuntimeHost host;
         private readonly IDtmConfigMenuApi? configMenuApi;

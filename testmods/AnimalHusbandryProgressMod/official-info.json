@@ -1,7 +1,7 @@
 {
   "name": "牧铃隐藏产物进度（DTMAPI）",
   "author": "Yuuka",
-  "version": "0.0.0",
+  "version": "0.2.8-dtmapi",
   "description": "DTMAPI 迁移版牧铃信息 Mod，在动物查看界面显示隐藏特殊产物进度。",
   "tags": [
     "Mod",

@@ -14,16 +14,24 @@
     },
     "input_items": [
       {
-        "item_name": "dtmapi_oil",
+        "item_name": "metal_framework",
+        "item_count": 15
+      },
+      {
+        "item_name": "engine_core",
         "item_count": 10
       },
       {
         "item_name": "steel_ingot",
-        "item_count": 10
+        "item_count": 20
+      },
+      {
+        "item_name": "coal",
+        "item_count": 100
       }
     ],
     "recipe_sub_type": "none",
-    "tech_point": 30,
+    "tech_point": 1,
     "show_in_handbook": true
   }
 ]

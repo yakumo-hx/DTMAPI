@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 
 $repo = Get-RepoRoot
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
-$dtmapiDir = Join-Path $gameDir 'DTMAPI'
+$dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
 New-Item -ItemType Directory -Force -Path $dtmapiDir | Out-Null
 
 @{

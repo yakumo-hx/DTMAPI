@@ -1,19 +1,19 @@
 {
   "Name": "DTMAPI More Equipment Slots",
   "Author": "DTMAPI",
-  "Version": "0.2.5-dtmapi",
+  "Version": "0.2.8-dtmapi",
   "UniqueID": "DTMAPI.MoreEquipmentSlotsMod",
   "EntryDll": "MoreEquipmentSlotsMod.dll",
-  "MinimumDTMApiVersion": "0.2.5",
+  "MinimumDTMApiVersion": "0.2.8",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.2.5",
+      "MinimumVersion": "0.2.8",
       "IsRequired": false
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.2.5",
+      "MinimumVersion": "0.2.8",
       "IsRequired": true
     }
   ]

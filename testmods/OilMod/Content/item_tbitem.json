@@ -1,6 +1,6 @@
 [
   {
-    "id": "dtmapi_oil",
+    "id": "crude_oil",
     "sub_type": "material_ore",
     "salable": true,
     "disposable": true,
@@ -19,12 +19,12 @@
       "url": "icon_item_coal"
     },
     "title": {
-      "key": "item_dtmapi_oil",
-      "text": "石油"
+      "key": "item_crude_oil",
+      "text": "原油"
     },
     "description_basic": {
-      "key": "item_dtmapi_oil_desc",
-      "text": "浓稠的黑色燃料，燃料值高于当前本体燃料。DTMAPI 矿井可以消耗或产出它。"
+      "key": "item_crude_oil_desc",
+      "text": "浓稠的黑色燃料，燃料值高于当前本体燃料。矿井可以消耗或产出它。"
     },
     "function": {
       "$type": "ItemFunction"

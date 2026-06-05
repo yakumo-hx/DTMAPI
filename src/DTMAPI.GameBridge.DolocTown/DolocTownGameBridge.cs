@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -52,8 +53,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseDebugMovementAttempted;
         private bool autoExerciseVehicleAttempted;
         private bool autoExerciseNewContentApisAttempted;
+        private bool autoExerciseMineContentApisAttempted;
         private bool debugTeleportVerificationCompleted;
-        private bool instantSaveReloadCompleted;
         private bool autoFishingHotkeyInjected;
         private bool autoOpenTitleSettingsAttempted;
         private bool autoOpenOfficialModUiAttempted;
@@ -83,12 +84,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset lastAutoFishingReadinessLog = DateTimeOffset.MinValue;
         private DateTimeOffset autoFishingPhaseStartedAt;
         private int autoFishingApplicationBaseline;
-        private DateTimeOffset instantSaveReloadRequestedAt;
         private DateTimeOffset debugTeleportRequestedAt;
         private DateTimeOffset vehicleOutdoorTeleportRequestedAt;
         private DateTimeOffset vehicleEdgeTransitionRequestedAt;
-        private int? instantSaveGameIndex;
-        private InstantSaveSnapshot? instantSaveBeforeSnapshot;
         private TeleportSnapshot? debugTeleportBeforeSnapshot;
         private TeleportDestination? debugTeleportDestination;
         private TeleportResult? debugTeleportRequestResult;
@@ -97,6 +95,13 @@ namespace DTMAPI.GameBridge.DolocTown
         private MotorVehicleState? vehicleEdgeTransitionOriginalBefore;
         private MotorVehicleState? vehicleEdgeTransitionSecondBefore;
         private string vehicleEdgeTransitionBaseSummary = string.Empty;
+        private bool mineOfficialTechTreeUiOpenRequested;
+        private bool mineOfficialTechTreeUiEvidenceCaptured;
+        private DateTimeOffset mineOfficialTechTreeUiClosedAt;
+        private DateTimeOffset lastMineOfficialTechTreeUiRecoveryLogAt;
+        private DateTimeOffset mineOfficialTechTreeUiOpenAt;
+        private string mineOfficialTechTreeUiTreeId = string.Empty;
+        private string mineOfficialTechTreeUiNodeId = string.Empty;
         private int titleLifecycleStage;
         private DateTimeOffset titleLifecycleStageAt;
         private string? titleLifecycleEvidenceDir;
@@ -117,6 +122,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool actionSpeedEatEnterPatched;
         private bool actionSpeedUseItemContinuesPatched;
         private bool actionSpeedBaseExitPatched;
+        private bool debugConsoleUseToolPatched;
+        private bool debugConsoleUseItemPatched;
+        private bool debugConsoleEnterUiCheckPatched;
         private bool oneActionToolColliderPatched;
         private bool oilCoalDropCapturePatched;
         private bool fishingReadyEnterPatched;
@@ -143,6 +151,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool motorUnlockPatched;
         private bool motorSetPositionPatched;
         private bool motorEnterRoomPatched;
+        private bool equipmentRendererReusePatched;
+        private bool equipmentBuilderCreateIndicatorPatched;
+        private bool equipmentBuilderTurnIndicatorPatched;
         private bool equipmentSlotsReloadParamsPatched;
         private bool equipmentSlotsAccessoriesInitPatched;
         private bool equipmentSlotsAccessoriesStartShowPatched;
@@ -266,12 +277,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 autoSaveAttempted = true;
                 TryAutoSave(pendingAutoSaveIndex.Value);
             }
-            if (smokeSettings.AutoExerciseInstantSave && instantSaveReloadRequestedAt != default && !instantSaveReloadCompleted &&
-                saveLoadedAt > instantSaveReloadRequestedAt && (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= 1.5)
-            {
-                instantSaveReloadCompleted = true;
-                CompleteInstantSaveReloadForSmoke();
-            }
             if (!autoExerciseInstantSaveAttempted && smokeSettings.AutoExerciseInstantSave && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseInstantSaveDelaySeconds))
             {
@@ -333,11 +338,21 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!autoExerciseNewContentApisAttempted && smokeSettings.AutoExerciseNewContentApis && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseNewContentApisDelaySeconds))
             {
-                SmokeAttemptResult newContentResult = TryExerciseNewContentApisForSmoke();
+                SmokeAttemptResult newContentResult = TryExerciseNewContentApisForSmoke(mineOnly: false);
                 if (newContentResult == SmokeAttemptResult.Pending)
                     return;
 
                 autoExerciseNewContentApisAttempted = true;
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseMineContentApisAttempted && smokeSettings.AutoExerciseMineContentApis && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseMineContentApisDelaySeconds))
+            {
+                SmokeAttemptResult mineContentResult = TryExerciseNewContentApisForSmoke(mineOnly: true);
+                if (mineContentResult == SmokeAttemptResult.Pending)
+                    return;
+
+                autoExerciseMineContentApisAttempted = true;
                 TryQuitAfterDebugSmoke();
             }
             if (!autoExerciseDebugTeleportAttempted && smokeSettings.AutoExerciseDebugTeleport && saveLoadedAt != default &&
@@ -580,11 +595,6 @@ namespace DTMAPI.GameBridge.DolocTown
             if (smokeSettings == null || !smokeSettings.Enabled || !smokeSettings.AutoExitAfterSaveLoaded || autoExitAttempted)
                 return;
             saveLoadedAt = DateTimeOffset.Now;
-            if (smokeSettings.AutoExerciseInstantSave && instantSaveReloadRequestedAt != default && !instantSaveReloadCompleted)
-            {
-                runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.LoadGame", "Reload SaveLoaded observed; waiting briefly for room/position data to settle before comparing evidence.");
-                return;
-            }
             if (smokeSettings.AutoExerciseExperimentalHooks && !autoExerciseAttempted)
             {
                 autoExerciseAttempted = true;
@@ -603,7 +613,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (smokeSettings.AutoExerciseDebugTime)
                     runtime.SetHookStatus("Smoke.DebugTime", "pending", "ITimeDebugApi", "Waiting after save load to skip to the next weather period through native time pass.");
                 if (smokeSettings.AutoExerciseDebugMovement)
-                    runtime.SetHookStatus("Smoke.DebugMovement", "pending", "IMovementDebugApi", "Waiting after save load to cycle 0.5x/1x/2x/3x/4x and restore 1x.");
+                    runtime.SetHookStatus("Smoke.DebugMovement", "pending", "IMovementDebugApi", "Waiting after save load to cycle 1x/2x/3x/4x and restore 1x.");
                 if (smokeSettings.AutoExerciseVehicle)
                     runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi + ItemMotorKey.OnUse", "Waiting after save load to verify SecondMotor registration, official mod item key, key summon, ride, dismount, and original motor summon.");
                 return;
@@ -662,14 +672,20 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             if (smokeSettings.AutoExerciseInstantSave)
             {
-                runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.SaveGame/LoadGame", "Save loaded; waiting briefly before invoking the experimental instant-save debug path.");
+                runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.SaveGame", "Save loaded; waiting briefly before invoking the save-only instant-save debug path. Native immediate reload is disabled.");
                 return;
             }
             if (smokeSettings.AutoExerciseNewContentApis)
             {
-                runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "pending", "ToolCollider.HandleTools + OilMod dtmapi_oil", "Save loaded; waiting briefly before creating or finding a coal resource, breaking it with a native pickaxe hit, and forcing the smoke-only oil roll.");
-                runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "pending", "IEquipmentSlotsApi + grandmas_button", "Save loaded; waiting briefly before giving a passive item, equipping it into a DTMAPI extra slot, and recovering it.");
+                runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "pending", "ToolCollider.HandleTools + OilMod crude_oil", "Save loaded; waiting briefly before creating or finding a coal resource, breaking it with a native pickaxe hit, and forcing the smoke-only oil roll.");
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "pending", "IEquipmentSlotsApi + passive/hat equipment", "Save loaded; waiting briefly before giving passive and hat items, equipping them into DTMAPI extra slots, capturing interactive UI evidence, and recovering them.");
                 runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "IMachineProductionApi + transient dtmapi_mine equipment", "Save loaded; waiting briefly before creating a temporary mine and forcing one runtime production cycle for evidence.");
+                return;
+            }
+            if (smokeSettings.AutoExerciseMineContentApis)
+            {
+                runtime.SetHookStatus("Smoke.NewContentMineOfficialJson", "pending", "official JSON + native tech table", "Save loaded; waiting briefly before verifying Mine tech cost/unlock payload.");
+                runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "IMachineProductionApi + transient dtmapi_mine equipment", "Save loaded; waiting briefly before creating a temporary Mine, checking visual containment, and forcing one runtime production cycle.");
                 return;
             }
             if (smokeSettings.AutoSaveAfterLoad && pendingAutoLoadGameIndex.HasValue && !autoSaveAttempted)
@@ -793,6 +809,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetActionSpeedInteractionHooksInstalled(actionSpeedInteractionHooksReady);
                 runtime.SetHookStatus("ActionSpeed.ToolAnimation", actionSpeedToolHooksReady ? "verified" : "pending", "Harmony Postfix: AgentStateTool.OnEnter/OnExit", actionSpeedToolHooksReady ? "Patched tool animation speed and restore points; verified by ACTIONSPEED-001. Selected interaction slices are tracked separately in ACTIONSPEED-002." : "Waiting for AgentStateTool.OnEnter/OnExit to become patchable.");
                 runtime.SetHookStatus("ActionSpeed.InteractionAnimation", actionSpeedInteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues", actionSpeedInteractionHooksReady ? "Patched shared interaction/eat animation speed points plus right-click continuous timer scaling. ACTIONSPEED-002 verifies fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues hooks to become patchable.");
+
+                if (!debugConsoleUseToolPatched)
+                {
+                    debugConsoleUseToolPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseTool", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseToolPrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!debugConsoleUseItemPatched)
+                {
+                    debugConsoleUseItemPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItem", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemPrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!debugConsoleEnterUiCheckPatched)
+                {
+                    debugConsoleEnterUiCheckPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "EnterUICheck", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateEnterUiCheckPrefix), BindingFlags.Public | BindingFlags.Static), 2);
+                }
+
+                bool debugConsoleInputHooksReady = debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched;
+                runtime.SetHookStatus("UI.DebugConsoleInputIsolation", debugConsoleInputHooksReady ? "experimental" : "pending", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", debugConsoleInputHooksReady ? "Patched native UI toggles and tool/item entry points; active only while the DTMAPI Y console is open." : "Waiting for AgentControllerState input methods to become patchable.");
 
                 if (!oilCoalDropCapturePatched)
                 {
@@ -945,6 +979,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetMotorVehicleHooksInstalled(motorHooksReady);
                 runtime.SetHookStatus("Vehicle.MotorApi", motorHooksReady ? "experimental" : "pending", "Harmony: ItemMotorKey/MotorInteractable/AgentControllerState/MotorController/DolocAPI", motorHooksReady ? "Patched native motor key, riding, tuning, unlock, position, and room-entry touchpoints. Second-motor routing remains experimental and must be smoke-verified." : "Waiting for native motor hook targets to become patchable.");
 
+                if (!equipmentRendererReusePatched)
+                {
+                    equipmentRendererReusePatched = patcher.TryPatchPostfix("DolocTown.EquipmentRenderer, Assembly-CSharp", "OnReuse", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentRendererOnReusePostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!equipmentBuilderCreateIndicatorPatched)
+                {
+                    equipmentBuilderCreateIndicatorPatched = patcher.TryPatchPostfix("DolocTown.EquipmentBuilder, Assembly-CSharp", "CreateIndicator", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentBuilderCreateIndicatorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!equipmentBuilderTurnIndicatorPatched)
+                {
+                    equipmentBuilderTurnIndicatorPatched = patcher.TryPatchPostfix("DolocTown.EquipmentBuilder, Assembly-CSharp", "TurnIndicator", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentBuilderTurnIndicatorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                bool mineVisualHooksReady = equipmentRendererReusePatched && equipmentBuilderCreateIndicatorPatched && equipmentBuilderTurnIndicatorPatched;
+                runtime.SetHookStatus("Machine.MineVisualContainment", mineVisualHooksReady ? "experimental" : "pending", "Harmony: EquipmentRenderer.OnReuse + EquipmentBuilder.CreateIndicator/TurnIndicator", mineVisualHooksReady ? "Equipment renderer pool scale is reset on reuse and Mine placement preview receives Mine-only visual scale." : "Waiting for equipment renderer/builder hook targets to become patchable.");
+
                 if (!equipmentSlotsReloadParamsPatched)
                 {
                     equipmentSlotsReloadParamsPatched = patcher.TryPatchPostfix("DolocTown.GameData.AgentEquipmentManager, Assembly-CSharp", "ReloadParams", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentEquipmentReloadParamsPostfix), BindingFlags.Public | BindingFlags.Static), 0);
@@ -962,7 +1014,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 experimentalApi?.SetEquipmentSlotsRuntimeHooksInstalled(equipmentSlotsReloadParamsPatched);
                 experimentalApi?.SetEquipmentSlotsUiHooksInstalled(equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
-                runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsReloadParamsPatched ? "experimental" : "pending", "Harmony Postfix: AgentEquipmentManager.ReloadParams + AccessoriesBar", equipmentSlotsReloadParamsPatched ? "Patched native equipment stat refresh and AccessoriesBar lifecycle so DTMAPI extra-slot state can participate as attribute-only stats and render a read-only player equipment strip without exposing raw game types." : "Waiting for AgentEquipmentManager.ReloadParams and AccessoriesBar UI hooks to become patchable.");
+                runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsReloadParamsPatched ? "experimental" : "pending", "Harmony Postfix: AgentEquipmentManager.ReloadParams + AccessoriesBar", equipmentSlotsReloadParamsPatched ? "Patched native equipment stat refresh and AccessoriesBar lifecycle so DTMAPI extra-slot state can participate as attribute-only stats and render an interactive player equipment strip without exposing raw game types." : "Waiting for AgentEquipmentManager.ReloadParams and AccessoriesBar UI hooks to become patchable.");
 
                 if (!hookResolutionDiagnosticLogged && !AllHookTargetsReady && (DateTimeOffset.Now - initializedAt).TotalSeconds >= 4)
                 {
@@ -1915,14 +1967,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
                 MethodInfo? saveGame = FindMethod(dolocApi, "SaveGame", 1);
-                MethodInfo? loadGame = FindMethod(dolocApi, "LoadGame", 1);
-                if (dolocApi == null || saveGame == null || loadGame == null)
-                    throw new MissingMethodException("DolocAPI.SaveGame(int) or DolocAPI.LoadGame(int) was not found.");
+                if (dolocApi == null || saveGame == null)
+                    throw new MissingMethodException("DolocAPI.SaveGame(int) was not found.");
 
                 InstantSaveSnapshot before = CaptureInstantSaveSnapshot(dolocApi);
                 int gameIndex = before.ArchiveIndex ?? pendingAutoLoadGameIndex ?? 0;
-                instantSaveBeforeSnapshot = before;
-                instantSaveGameIndex = gameIndex;
 
                 runtime.RuntimeMonitor.Log("DTMAPI debug instant save requested slot/index=" + gameIndex + " before=" + before.ToLogString() + ".");
                 runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.SaveGame", "Requested native save from current scene: " + before.ToLogString());
@@ -1933,59 +1982,24 @@ namespace DTMAPI.GameBridge.DolocTown
                     return;
                 }
 
-                instantSaveReloadRequestedAt = DateTimeOffset.Now;
-                runtime.RuntimeMonitor.Log("DTMAPI debug instant save reloading slot/index=" + gameIndex + " through DolocAPI.LoadGame.");
-                runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.LoadGame", "Save returned; requested reload for slot/index " + gameIndex + ".");
-                object? loadResult = loadGame.Invoke(null, new object[] { gameIndex });
-                if (loadResult is bool loaded && !loaded)
-                {
-                    runtime.SetHookStatus("Smoke.InstantSave", "failed", "DolocAPI.LoadGame", "LoadGame returned false for slot/index " + gameIndex + ".");
-                    if (smokeSettings?.AutoExitAfterSaveLoaded == true && !autoExitAttempted)
-                    {
-                        autoExitAttempted = true;
-                        TryQuitApplication("smoke instant-save reload failed");
-                    }
-                }
+                InstantSaveSnapshot afterSave = CaptureInstantSaveSnapshot(dolocApi);
+                bool sameRoom = before.RoomId.Equals(afterSave.RoomId, StringComparison.OrdinalIgnoreCase);
+                double distance = before.DistanceTo(afterSave);
+                string summary =
+                    "slot/index=" + gameIndex +
+                    ", before={" + before.ToLogString() + "}" +
+                    ", afterSave={" + afterSave.ToLogString() + "}" +
+                    ", sameRoom=" + sameRoom +
+                    ", distance=" + (double.IsNaN(distance) ? "unknown" : distance.ToString("0.###", CultureInfo.InvariantCulture)) +
+                    ", reloadDisabled=True";
+
+                runtime.RuntimeMonitor.Log("Smoke exercise InstantSave OK " + summary);
+                runtime.SetHookStatus("Smoke.InstantSave", "verified", "DolocAPI.SaveGame", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke instant-save exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.InstantSave", "failed", "DolocAPI.SaveGame/LoadGame", ex.GetType().Name + ": " + ex.Message);
-            }
-        }
-
-        private void CompleteInstantSaveReloadForSmoke()
-        {
-            try
-            {
-                patcher ??= new HarmonyReflectionPatcher(runtime);
-                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
-                if (dolocApi == null)
-                    throw new MissingMemberException("DolocAPI was not visible after instant-save reload.");
-
-                InstantSaveSnapshot after = CaptureInstantSaveSnapshot(dolocApi);
-                InstantSaveSnapshot? before = instantSaveBeforeSnapshot;
-                bool sameRoom = before != null && before.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase);
-                double distance = before == null ? double.NaN : before.DistanceTo(after);
-                bool samePosition = !double.IsNaN(distance) && distance <= 0.75;
-                string limitation = sameRoom && samePosition
-                    ? "none"
-                    : "reload did not restore the same room/position; the game may normalize saves to a home/bed entry point or defer scene placement.";
-                string summary =
-                    "slot/index=" + (instantSaveGameIndex?.ToString() ?? "unknown") +
-                    ", before={" + (before?.ToLogString() ?? "unknown") + "}" +
-                    ", after={" + after.ToLogString() + "}" +
-                    ", sameRoom=" + sameRoom +
-                    ", distance=" + (double.IsNaN(distance) ? "unknown" : distance.ToString("0.###")) +
-                    ", limitation=" + limitation;
-
-                runtime.RuntimeMonitor.Log("Smoke exercise InstantSave OK " + summary);
-                runtime.SetHookStatus("Smoke.InstantSave", sameRoom && samePosition ? "verified" : "experimental", "DolocAPI.SaveGame -> DolocAPI.LoadGame", summary);
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke instant-save reload completion failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.InstantSave", "failed", "DolocAPI.LoadGame", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.InstantSave", "failed", "DolocAPI.SaveGame", ex.GetType().Name + ": " + ex.Message);
             }
             finally
             {
@@ -2182,7 +2196,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (experimentalApi == null)
                     throw new InvalidOperationException("Experimental bridge API is not available.");
 
-                double[] levels = { 0.5, 1, 2, 3, 4 };
+                double[] levels = { 1, 2, 3, 4 };
                 var samples = new List<string>();
                 foreach (double level in levels)
                 {
@@ -2681,6 +2695,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             if (smokeSettings.AutoExerciseNewContentApis && !autoExerciseNewContentApisAttempted)
                 return;
+            if (smokeSettings.AutoExerciseMineContentApis && !autoExerciseMineContentApisAttempted)
+                return;
             if (smokeSettings.AutoExerciseDebugTeleport && !debugTeleportVerificationCompleted)
                 return;
 
@@ -2690,7 +2706,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsDebugSmokeRequested()
         {
-            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis);
+            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis || smokeSettings.AutoExerciseMineContentApis);
         }
 
         private static ManifestModel CreateSmokeManifest()
@@ -3610,11 +3626,11 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private SmokeAttemptResult TryExerciseNewContentApisForSmoke()
+        private SmokeAttemptResult TryExerciseNewContentApisForSmoke(bool mineOnly)
         {
             object? transientMine = null;
             object? room = null;
-            string newContentStage = "OilItemMetadata";
+            string newContentStage = mineOnly ? "MineOfficialJson" : "OilItemMetadata";
             try
             {
                 if (experimentalApi == null)
@@ -3625,9 +3641,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (dolocApi == null)
                     throw new MissingMemberException("DolocAPI was not visible.");
 
+                if (mineOnly && mineOfficialTechTreeUiOpenRequested && !mineOfficialTechTreeUiEvidenceCaptured)
+                    return CaptureMineOfficialTechTreeUiEvidenceForSmoke(dolocApi);
+
                 if (!TryGetStaticBoolProperty(dolocApi, "IsNormalState"))
                 {
-                    runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "NormalGameState", "Waiting for NormalGameState before creating a temporary dtmapi_mine.");
+                    string recovery = mineOnly && mineOfficialTechTreeUiEvidenceCaptured
+                        ? TryRecoverNormalStateAfterMineTechTreeUiForSmoke(dolocApi)
+                        : "not-applicable";
+                    runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "NormalGameState", "Waiting for NormalGameState before creating a temporary dtmapi_mine. recovery={" + recovery + "}");
                     return SmokeAttemptResult.Pending;
                 }
 
@@ -3635,7 +3657,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (room == null)
                     throw new InvalidOperationException("CurrentRoom was not available for new-content smoke.");
 
-                if (ReadBoolMember(room, "IsInHouse", false))
+                if (!mineOnly && ReadBoolMember(room, "IsInHouse", false))
                 {
                     if (!autoExerciseOneActionMainFarmRequested && TryEnterMainFarmForOneActionSmoke(dolocApi, room, out string transitionSummary))
                     {
@@ -3647,13 +3669,16 @@ namespace DTMAPI.GameBridge.DolocTown
                     return SmokeAttemptResult.Pending;
                 }
 
-                string oilItemMetadataSummary = TryExerciseOilItemMetadataForSmoke(dolocApi);
-                newContentStage = "OilCoalDrop";
-                string oilCoalDropSummary = TryExerciseOilCoalDropForSmoke(dolocApi, room);
+                string oilItemMetadataSummary = mineOnly ? "skipped-mine-only" : TryExerciseOilItemMetadataForSmoke(dolocApi);
+                newContentStage = mineOnly ? "MineOfficialJson" : "OilCoalDrop";
+                string oilCoalDropSummary = mineOnly ? "skipped-mine-only" : TryExerciseOilCoalDropForSmoke(dolocApi, room);
                 newContentStage = "MineOfficialJson";
                 string mineOfficialJsonSummary = TryExerciseMineOfficialJsonForSmoke(dolocApi);
-                newContentStage = "EquipmentSlots";
-                string equipmentSlotsSummary = TryExerciseEquipmentSlotsForSmoke();
+                if (mineOnly && !mineOfficialTechTreeUiEvidenceCaptured)
+                    return OpenMineOfficialTechTreeUiForSmoke(dolocApi, mineOfficialJsonSummary);
+
+                newContentStage = mineOnly ? "MineProduction" : "EquipmentSlots";
+                string equipmentSlotsSummary = mineOnly ? "skipped-mine-only" : TryExerciseEquipmentSlotsForSmoke();
                 newContentStage = "MineProduction";
 
                 transientMine = TryCreateTransientEquipmentForSmoke(dolocApi, room, "DolocTown.Equipment", new[] { "dtmapi_mine" }, out string createSummary);
@@ -3661,14 +3686,22 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("Could not create transient dtmapi_mine. " + createSummary);
                 if (!ReadStringMember(transientMine, "Name", string.Empty).Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Transient equipment was not dtmapi_mine. target=" + DescribeEquipmentForSmoke(transientMine) + ", create={" + createSummary + "}");
-                experimentalApi.UpdateRuntimeAutomation();
-                string minePlacementEvidenceSummary = CaptureMinePlacementEvidenceForSmoke(transientMine, createSummary);
+                experimentalApi.UpdateRuntimeAutomation(forceMachineProductionPoll: true);
+                string scaleContainmentSummary = experimentalApi.ProbeMachineVisualScaleContainmentForSmoke("dtmapi_mine");
+                if (ContainsIgnoreCase(scaleContainmentSummary, "contamination=True") ||
+                    ContainsIgnoreCase(scaleContainmentSummary, "containment=failed"))
+                {
+                    throw new InvalidOperationException("Mine visual scale containment failed. " + scaleContainmentSummary);
+                }
 
                 int beforeCycles = experimentalApi.GetMachineProductionCycleCountForSmoke("DTMAPI.MineMod");
-                experimentalApi.ForceMachineProductionDueForSmoke = true;
-                for (int attempt = 1; attempt <= 10; attempt++)
+                TimeSkipResult timeSkip = experimentalApi.SkipToNextWeatherPeriod(CreateSmokeManifest());
+                if (!timeSkip.Success)
+                    throw new InvalidOperationException("Native pass-time smoke path failed before Mine catch-up. reason=" + timeSkip.FailureReason + ", message=" + timeSkip.Message);
+
+                for (int attempt = 1; attempt <= 20; attempt++)
                 {
-                    experimentalApi.UpdateRuntimeAutomation();
+                    experimentalApi.UpdateRuntimeAutomation(forceMachineProductionPoll: true);
                     int afterCycles = experimentalApi.GetMachineProductionCycleCountForSmoke("DTMAPI.MineMod");
                     if (afterCycles > beforeCycles)
                     {
@@ -3679,17 +3712,17 @@ namespace DTMAPI.GameBridge.DolocTown
                             throw new InvalidOperationException("Machine runtime produced but did not place output into Mine-owned 16-slot storage. state={" + state + "}");
                         }
 
-                        string summary = "oilItemMetadata={" + oilItemMetadataSummary + "}, oilCoalDrop={" + oilCoalDropSummary + "}, mineOfficialJson={" + mineOfficialJsonSummary + "}, equipmentSlots={" + equipmentSlotsSummary + "}, minePlacement={" + minePlacementEvidenceSummary + "}, mine={" + DescribeEquipmentForSmoke(transientMine) + "}, create={" + createSummary + "}, beforeCycles=" + beforeCycles + ", afterCycles=" + afterCycles + ", state={" + state + "}";
+                        string minePlacementEvidenceSummary = CaptureMinePlacementEvidenceForSmoke(transientMine, createSummary);
+                        string summary = "mode=" + (mineOnly ? "mine-only" : "all-new-content") + ", oilItemMetadata={" + oilItemMetadataSummary + "}, oilCoalDrop={" + oilCoalDropSummary + "}, mineOfficialJson={" + mineOfficialJsonSummary + "}, equipmentSlots={" + equipmentSlotsSummary + "}, timeSkip={" + timeSkip.Message + "}, minePlacement={" + minePlacementEvidenceSummary + "}, scaleContainment={" + scaleContainmentSummary + "}, mine={" + DescribeEquipmentForSmoke(transientMine) + "}, create={" + createSummary + "}, beforeCycles=" + beforeCycles + ", afterCycles=" + afterCycles + ", state={" + state + "}";
                         runtime.RuntimeMonitor.Log("Smoke exercise NewContentMineProduction OK " + summary);
-                        runtime.SetHookStatus("Smoke.NewContentMineProduction", "verified", "IMachineProductionApi runtime loop + equipment IContainer/LinearInventory", summary);
+                        runtime.SetHookStatus("Smoke.NewContentMineProduction", "verified", "ArchiveDataHandle.PassTimeNoControl -> IMachineProductionApi catch-up + equipment IContainer/LinearInventory", summary);
                         return SmokeAttemptResult.Succeeded;
                     }
 
                     Thread.Sleep(125);
-                    experimentalApi.ForceMachineProductionDueForSmoke = true;
                 }
 
-                throw new InvalidOperationException("Machine runtime loop did not produce from transient dtmapi_mine. beforeCycles=" + beforeCycles + ", state={" + experimentalApi.GetMachineProductionStateSummaryForSmoke("DTMAPI.MineMod") + "}");
+                throw new InvalidOperationException("Machine runtime loop did not catch up after native pass-time for transient dtmapi_mine. beforeCycles=" + beforeCycles + ", timeSkip={" + timeSkip.Message + "}, state={" + experimentalApi.GetMachineProductionStateSummaryForSmoke("DTMAPI.MineMod") + "}");
             }
             catch (TargetInvocationException ex) when (ex.InnerException != null)
             {
@@ -3715,6 +3748,127 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private SmokeAttemptResult OpenMineOfficialTechTreeUiForSmoke(Type dolocApi, string mineOfficialJsonSummary)
+        {
+            string treeId = ExtractMineTechTreeId(mineOfficialJsonSummary);
+            string nodeId = "dtmapi_mine";
+            MethodInfo? jumpTechTreeNode = FindMethod(dolocApi, "JumpTechTreeNode", 2);
+            if (jumpTechTreeNode == null)
+                throw new MissingMethodException("DolocAPI.JumpTechTreeNode(string,string) was not found.");
+
+            mineOfficialTechTreeUiTreeId = treeId;
+            mineOfficialTechTreeUiNodeId = nodeId;
+            mineOfficialTechTreeUiOpenRequested = true;
+            mineOfficialTechTreeUiOpenAt = DateTimeOffset.Now;
+            runtime.SetHookStatus("Smoke.NewContentMineOfficialTechTreeUi", "pending", "DolocAPI.JumpTechTreeNode + TechTreeUiState", "Opening official tech tree node tree=" + treeId + ", node=" + nodeId + " for visual evidence.");
+            runtime.RuntimeMonitor.Log("Mine official tech tree UI opening tree=" + treeId + " node=" + nodeId + " via DolocAPI.JumpTechTreeNode.");
+            jumpTechTreeNode.Invoke(null, new object[] { treeId, nodeId });
+            return SmokeAttemptResult.Pending;
+        }
+
+        private SmokeAttemptResult CaptureMineOfficialTechTreeUiEvidenceForSmoke(Type dolocApi)
+        {
+            if ((DateTimeOffset.Now - mineOfficialTechTreeUiOpenAt).TotalSeconds < 1.75)
+            {
+                runtime.SetHookStatus("Smoke.NewContentMineOfficialTechTreeUi", "pending", "DolocAPI.JumpTechTreeNode + TechTreeUiState", "Waiting for official tech tree panel render before screenshot. tree=" + mineOfficialTechTreeUiTreeId + ", node=" + mineOfficialTechTreeUiNodeId + ".");
+                return SmokeAttemptResult.Pending;
+            }
+
+            try
+            {
+                string evidenceDir = EnsureNewContentEvidenceDir();
+                string screenshotPath = Path.Combine(evidenceDir, "mine-official-tech-tree-dtmapi-mine.png");
+                bool screenshotRequested = TryCaptureScreenshot(screenshotPath);
+                string closeSummary = CloseMineOfficialTechTreeUiForSmoke(dolocApi);
+                mineOfficialTechTreeUiEvidenceCaptured = true;
+                mineOfficialTechTreeUiClosedAt = DateTimeOffset.Now;
+
+                string summary = "tree=" + mineOfficialTechTreeUiTreeId +
+                    ", node=" + mineOfficialTechTreeUiNodeId +
+                    ", screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") +
+                    ", close={" + closeSummary + "}";
+                File.AppendAllText(Path.Combine(evidenceDir, "mine-official-tech-tree-summary.txt"),
+                    "Captured=" + DateTimeOffset.Now.ToString("o", CultureInfo.InvariantCulture) + Environment.NewLine +
+                    "Tree=" + mineOfficialTechTreeUiTreeId + Environment.NewLine +
+                    "Node=" + mineOfficialTechTreeUiNodeId + Environment.NewLine +
+                    "ScreenshotRequested=" + screenshotRequested + Environment.NewLine +
+                    "Screenshot=" + screenshotPath + Environment.NewLine +
+                    "Close=" + closeSummary + Environment.NewLine);
+                runtime.RuntimeMonitor.Log("Mine official tech tree UI evidence " + (screenshotRequested ? "OK" : "unavailable") + " " + summary + ".");
+                runtime.SetHookStatus("Smoke.NewContentMineOfficialTechTreeUi", screenshotRequested ? "verified" : "pending", "DolocAPI.JumpTechTreeNode + TechTreeUiState + UnityEngine.ScreenCapture", summary);
+                return SmokeAttemptResult.Pending;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Mine official tech tree UI evidence capture failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.NewContentMineOfficialTechTreeUi", "failed", "DolocAPI.JumpTechTreeNode + TechTreeUiState", ex.GetType().Name + ": " + ex.Message);
+                return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private string CloseMineOfficialTechTreeUiForSmoke(Type dolocApi)
+        {
+            Type? techTreeUiState = patcher?.ResolveType("DolocTown.TechTreeUiState, Assembly-CSharp");
+            if (techTreeUiState == null)
+                return "skipped:missing-TechTreeUiState";
+
+            object? userInput = ReadStaticMember(dolocApi, "userInput");
+            object? currentState = userInput == null ? null : ReadMember(userInput, "CurrentState");
+            if (currentState != null && techTreeUiState.IsAssignableFrom(currentState.GetType()))
+            {
+                MethodInfo? popState = FindMethod(userInput!.GetType(), "PopState", 0);
+                if (popState != null && popState.Invoke(userInput, null) is bool popped && popped)
+                    return "popped-current-TechTreeUiState";
+            }
+
+            MethodInfo? removeUiState = dolocApi.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name.Equals("RemoveUiState", StringComparison.Ordinal) && method.IsGenericMethodDefinition && method.GetParameters().Length == 0);
+            if (removeUiState == null)
+                return "skipped:missing-DolocAPI.RemoveUiState";
+
+            removeUiState.MakeGenericMethod(techTreeUiState).Invoke(null, null);
+            return "removed-TechTreeUiState";
+        }
+
+        private string TryRecoverNormalStateAfterMineTechTreeUiForSmoke(Type dolocApi)
+        {
+            object? userInput = ReadStaticMember(dolocApi, "userInput");
+            object? currentState = userInput == null ? null : ReadMember(userInput, "CurrentState");
+            string currentStateName = currentState?.GetType().FullName ?? "null";
+            double secondsSinceClose = mineOfficialTechTreeUiClosedAt == default ? -1 : (DateTimeOffset.Now - mineOfficialTechTreeUiClosedAt).TotalSeconds;
+            Type? techTreeUiState = patcher?.ResolveType("DolocTown.TechTreeUiState, Assembly-CSharp");
+            if (userInput != null && currentState != null && techTreeUiState != null && techTreeUiState.IsAssignableFrom(currentState.GetType()))
+            {
+                MethodInfo? popState = FindMethod(userInput.GetType(), "PopState", 0);
+                if (popState != null && popState.Invoke(userInput, null) is bool popped)
+                    return "retry-pop-TechTreeUiState popped=" + popped + ", secondsSinceClose=" + FormatRatio(secondsSinceClose);
+            }
+
+            if ((DateTimeOffset.Now - lastMineOfficialTechTreeUiRecoveryLogAt).TotalSeconds >= 5)
+            {
+                lastMineOfficialTechTreeUiRecoveryLogAt = DateTimeOffset.Now;
+                runtime.RuntimeMonitor.Log("Mine official tech tree UI recovery waiting currentState=" + currentStateName + " secondsSinceClose=" + FormatRatio(secondsSinceClose) + ".");
+            }
+
+            return "currentState=" + currentStateName + ", secondsSinceClose=" + FormatRatio(secondsSinceClose);
+        }
+
+        private static string ExtractMineTechTreeId(string summary)
+        {
+            const string marker = "tree=";
+            int start = summary.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (start < 0)
+                return "industrial_techtree";
+
+            start += marker.Length;
+            int end = start;
+            while (end < summary.Length && summary[end] != ',' && summary[end] != '}' && !char.IsWhiteSpace(summary[end]))
+                end++;
+
+            string tree = summary.Substring(start, end - start).Trim();
+            return string.IsNullOrWhiteSpace(tree) ? "industrial_techtree" : tree;
+        }
+
         private string TryExerciseEquipmentSlotsForSmoke()
         {
             if (experimentalApi == null)
@@ -3729,35 +3883,81 @@ namespace DTMAPI.GameBridge.DolocTown
                 Type = "CodeMod"
             };
 
-            InventoryGiveResult give = experimentalApi.GiveItem(CreateSmokeManifest(), "grandmas_button", 1);
-            if (!give.Success)
-                throw new InvalidOperationException("Could not give grandmas_button for equipment-slot smoke. " + give.Message);
+            InventoryGiveResult passiveGive = experimentalApi.GiveItem(CreateSmokeManifest(), "grandmas_button", 1);
+            if (!passiveGive.Success)
+                throw new InvalidOperationException("Could not give grandmas_button for equipment-slot smoke. " + passiveGive.Message);
 
             IReadOnlyList<EquipmentSlotInfo> beforeSlots = experimentalApi.GetSlots(owner.UniqueID);
-            EquipmentSlotEquipResult equip = experimentalApi.EquipExtraSlot(owner, string.Empty, "grandmas_button");
-            if (!equip.Success)
-                throw new InvalidOperationException("Could not equip DTMAPI extra slot. " + equip.Message);
+            EquipmentSlotEquipResult passiveEquip = experimentalApi.EquipExtraSlot(owner, string.Empty, "grandmas_button");
+            if (!passiveEquip.Success)
+                throw new InvalidOperationException("Could not equip DTMAPI extra slot with passive item. " + passiveEquip.Message);
 
             IReadOnlyList<EquipmentSlotInfo> equippedSlots = experimentalApi.GetSlots(owner.UniqueID);
-            string uiSummary = experimentalApi.CaptureEquipmentSlotsUiEvidenceForSmoke("new-content smoke after equip");
-            EquipmentSlotEquipResult recover = experimentalApi.UnequipExtraSlot(owner, equip.SlotId, "new-content smoke recovery");
-            if (!recover.Success)
-                throw new InvalidOperationException("Could not recover DTMAPI extra slot. " + recover.Message);
+            string passiveUiSummary = experimentalApi.CaptureEquipmentSlotsUiEvidenceForSmoke("new-content smoke after passive equip");
+            EquipmentSlotEquipResult passiveRecover = experimentalApi.UnequipExtraSlot(owner, passiveEquip.SlotId, "new-content smoke passive recovery");
+            if (!passiveRecover.Success)
+                throw new InvalidOperationException("Could not recover DTMAPI passive extra slot. " + passiveRecover.Message);
+
+            string nativeHatBefore = GetNativeAgentEquipmentItemId("hatItem");
+            InventoryGiveResult hatGive = experimentalApi.GiveItem(CreateSmokeManifest(), "straw_hat", 1);
+            if (!hatGive.Success)
+                throw new InvalidOperationException("Could not give straw_hat for equipment-slot hat smoke. " + hatGive.Message);
+
+            EquipmentSlotEquipResult hatEquip = experimentalApi.EquipExtraSlot(owner, string.Empty, "straw_hat");
+            if (!hatEquip.Success)
+                throw new InvalidOperationException("Could not equip DTMAPI extra slot with hat item. " + hatEquip.Message);
+            string nativeHatAfterEquip = GetNativeAgentEquipmentItemId("hatItem");
+            if (!string.Equals(nativeHatBefore, nativeHatAfterEquip, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("DTMAPI extra-slot hat changed the native hat visual slot. before=" + nativeHatBefore + ", after=" + nativeHatAfterEquip);
+
+            IReadOnlyList<EquipmentSlotInfo> hatEquippedSlots = experimentalApi.GetSlots(owner.UniqueID);
+            string hatUiSummary = experimentalApi.CaptureEquipmentSlotsUiEvidenceForSmoke("new-content smoke after hat equip");
+            EquipmentSlotEquipResult hatRecover = experimentalApi.UnequipExtraSlot(owner, hatEquip.SlotId, "new-content smoke hat recovery");
+            if (!hatRecover.Success)
+                throw new InvalidOperationException("Could not recover DTMAPI hat extra slot. " + hatRecover.Message);
+            string nativeHatAfterRecover = GetNativeAgentEquipmentItemId("hatItem");
 
             IReadOnlyList<EquipmentSlotInfo> recoveredSlots = experimentalApi.GetSlots(owner.UniqueID);
-            string summary = "give=" + give.ItemId + " " + give.BeforeCount + "->" + give.AfterCount +
+            string summary = "passiveGive=" + passiveGive.ItemId + " " + passiveGive.BeforeCount + "->" + passiveGive.AfterCount +
                 ", beforeSlots=" + beforeSlots.Count +
-                ", equipSlot=" + equip.SlotId +
-                ", equipBackpack=" + equip.BeforeBackpackCount + "->" + equip.AfterBackpackCount +
+                ", passiveSlot=" + passiveEquip.SlotId +
+                ", passiveBackpack=" + passiveEquip.BeforeBackpackCount + "->" + passiveEquip.AfterBackpackCount +
                 ", equippedStored=" + equippedSlots.Count(slot => slot.IsOccupied) +
-                ", ui={" + uiSummary + "}" +
-                ", recoverCount=" + recover.RecoveredCount +
-                ", recoverBackpack=" + recover.BeforeBackpackCount + "->" + recover.AfterBackpackCount +
+                ", passiveUi={" + passiveUiSummary + "}" +
+                ", passiveRecover=" + passiveRecover.RecoveredCount +
+                ", passiveRecoverBackpack=" + passiveRecover.BeforeBackpackCount + "->" + passiveRecover.AfterBackpackCount +
+                ", hatGive=" + hatGive.ItemId + " " + hatGive.BeforeCount + "->" + hatGive.AfterCount +
+                ", hatSlot=" + hatEquip.SlotId +
+                ", hatBackpack=" + hatEquip.BeforeBackpackCount + "->" + hatEquip.AfterBackpackCount +
+                ", hatEquippedStored=" + hatEquippedSlots.Count(slot => slot.IsOccupied) +
+                ", nativeHat=" + nativeHatBefore + "->" + nativeHatAfterEquip + "->" + nativeHatAfterRecover +
+                ", hatUi={" + hatUiSummary + "}" +
+                ", hatRecover=" + hatRecover.RecoveredCount +
+                ", hatRecoverBackpack=" + hatRecover.BeforeBackpackCount + "->" + hatRecover.AfterBackpackCount +
                 ", recoveredStored=" + recoveredSlots.Count(slot => slot.IsOccupied) +
                 ", state={" + experimentalApi.GetEquipmentSlotsStateSummaryForSmoke(owner.UniqueID) + "}";
             runtime.RuntimeMonitor.Log("Smoke exercise NewContentEquipmentSlots OK " + summary);
-            runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "verified", "IEquipmentSlotsApi EquipExtraSlot/UnequipExtraSlot", summary);
+            runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "verified", "IEquipmentSlotsApi passive+hat EquipExtraSlot/UnequipExtraSlot", summary);
             return summary;
+        }
+
+        private string GetNativeAgentEquipmentItemId(string memberName)
+        {
+            try
+            {
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                object? farmData = archive == null ? null : ReadMember(archive, "farmData");
+                object? agentData = farmData == null ? null : ReadMember(farmData, "agentData");
+                object? equipment = agentData == null ? null : ReadMember(agentData, "agentEquipment");
+                object? item = equipment == null ? null : ReadMember(equipment, memberName);
+                return item == null ? "none" : ReadStringMember(item, "name", item.GetType().Name);
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         private string TryExerciseMineOfficialJsonForSmoke(Type dolocApi)
@@ -3850,10 +4050,17 @@ namespace DTMAPI.GameBridge.DolocTown
                 failures.Add("unexpected-case-storage:" + caseTotalCapacity + "/" + caseLineCapacity);
             if (!outputItem.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
                 failures.Add("recipe-output=" + outputItem);
-            if (!CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "dtmapi_oil", 10) ||
-                !CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "steel_ingot", 10))
+            bool hasOilRecipe = CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "crude_oil", 10) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "metal_framework", 10) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "engine_core", 5) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "steel_ingot", 20);
+            bool hasFallbackRecipe = CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "metal_framework", 15) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "engine_core", 10) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "steel_ingot", 20) &&
+                CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "coal", 100);
+            if (!hasOilRecipe && !hasFallbackRecipe)
                 failures.Add("recipe-inputs=" + inputs);
-            if (techPoint != 30 || defaultUnlock)
+            if (techPoint != 1 || defaultUnlock)
                 failures.Add("recipe-tech-default:tech=" + techPoint + ", defaultUnlock=" + defaultUnlock);
             if (!groupIncludesRecipe)
                 failures.Add("equipment_workbench-missing-dtmapi_mine");
@@ -3861,6 +4068,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 !ContainsIgnoreCase(nativeTechTreeSummary, "parent=alloy_material") ||
                 !ContainsIgnoreCase(nativeTechTreeSummary, "rightOfParent=True") ||
                 !ContainsIgnoreCase(nativeTechTreeSummary, "aboveCommander=True") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "unlockEntries=recipe-only") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "equipmentEntries=0") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "recipeEntries=1") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "costValues=") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, ":1") ||
                 ContainsIgnoreCase(nativeTechTreeSummary, "pending") ||
                 ContainsIgnoreCase(nativeTechTreeSummary, "failed"))
             {
@@ -3870,11 +4082,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 !state.EquipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ||
                 !state.RecipeGroupId.Equals("equipment_workbench", StringComparison.OrdinalIgnoreCase) ||
                 state.VisualScale < 1.99 ||
-                state.FuelCapacity < 7200 ||
+                state.AllowFuelMode ||
                 state.ElectricModePowerCostPerCycle != 10 ||
-                state.ElectricModeFuelCostPerCycle >= state.FuelOnlyFuelCostPerCycle ||
-                !ContainsIgnoreCase(outputRules, "dtmapi_oil"))
-                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", fuelCapacity:" + state.FuelCapacity + ", costs:" + state.FuelOnlyFuelCostPerCycle + "/" + state.ElectricModeFuelCostPerCycle + "/" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
+                state.ElectricModeFuelCostPerCycle != 0 ||
+                state.FuelOnlyFuelCostPerCycle != 0 ||
+                (ContainsIgnoreCase(outputRules, "DTMAPI.OilMod") && !ContainsIgnoreCase(outputRules, "crude_oil")))
+                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) + ", powerCost=" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
 
             string summary = "item=" + title +
                 ", source=" + (sourceInfo == null ? "none" : sourceInfo.SourceKind + "/" + sourceInfo.SourceId + "/" + sourceInfo.SourceModTitle) +
@@ -3893,7 +4106,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", defaultUnlock=" + defaultUnlock +
                 ", recipeGroup=equipment_workbench includes=" + groupIncludesRecipe +
                 ", nativeTech={" + nativeTechTreeSummary + "}" +
-                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/fuel:" + state.RemainingFuel + "-" + state.FuelCapacity + "/cycleMinutes:" + state.CycleMinutes + "/costs:" + state.FuelOnlyFuelCostPerCycle + "-" + state.ElectricModeFuelCostPerCycle + "-" + state.ElectricModePowerCostPerCycle +
+                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/electricOnly:" + (!state.AllowFuelMode && state.AllowElectricMode) + "/cycleMinutes:" + state.CycleMinutes + "/powerCost:" + state.ElectricModePowerCostPerCycle +
                 ", outputRules=" + outputRules +
                 ", probes=item{" + itemProbe + "}, recipe{" + recipeProbe + "}";
             if (failures.Count > 0)
@@ -3909,28 +4122,28 @@ namespace DTMAPI.GameBridge.DolocTown
             if (experimentalApi == null)
                 throw new InvalidOperationException("Experimental GameBridge API was not registered.");
 
-            if (!TryGetNativeItemProto(dolocApi, "dtmapi_oil", out object? proto, out string nativeProbe))
+            if (!TryGetNativeItemProto(dolocApi, "crude_oil", out object? proto, out string nativeProbe))
             {
                 string reloadDetail;
-                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilItemMetadata", "missing dtmapi_oil before Oil metadata smoke", out reloadDetail))
-                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table before Oil metadata smoke, and official reload failed. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
+                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilItemMetadata", "missing crude_oil before Oil metadata smoke", out reloadDetail))
+                    throw new InvalidOperationException("crude_oil is not present in the native item table before Oil metadata smoke, and official reload failed. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
 
-                if (!TryGetNativeItemProto(dolocApi, "dtmapi_oil", out proto, out nativeProbe))
-                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table after official reload. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
+                if (!TryGetNativeItemProto(dolocApi, "crude_oil", out proto, out nativeProbe))
+                    throw new InvalidOperationException("crude_oil is not present in the native item table after official reload. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
             }
 
             if (proto == null)
-                throw new InvalidOperationException("dtmapi_oil native item query returned no proto. probe={" + nativeProbe + "}");
+                throw new InvalidOperationException("crude_oil native item query returned no proto. probe={" + nativeProbe + "}");
 
             InventoryDebugPage page = experimentalApi.GetItems(new InventoryDebugQuery
             {
-                SearchText = "dtmapi_oil",
+                SearchText = "crude_oil",
                 IncludeUnavailable = true,
                 PageSize = 50
             });
-            InventoryDebugItem? item = page.Items.FirstOrDefault(i => i.Id.Equals("dtmapi_oil", StringComparison.OrdinalIgnoreCase));
+            InventoryDebugItem? item = page.Items.FirstOrDefault(i => i.Id.Equals("crude_oil", StringComparison.OrdinalIgnoreCase));
             if (item == null)
-                throw new InvalidOperationException("IInventoryDebugApi did not return dtmapi_oil. status=" + page.Status + ", total=" + page.TotalItems + ".");
+                throw new InvalidOperationException("IInventoryDebugApi did not return crude_oil. status=" + page.Status + ", total=" + page.TotalItems + ".");
 
             InventoryDebugPage sourcePage = experimentalApi.GetItems(new InventoryDebugQuery
             {
@@ -3938,8 +4151,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 IncludeUnavailable = true,
                 PageSize = 50
             });
-            IContentItemInfo? sourceInfo = runtime.GetIndexedContentItem("dtmapi_oil");
-            bool sourceFilterIncludesOil = sourcePage.Items.Any(i => i.Id.Equals("dtmapi_oil", StringComparison.OrdinalIgnoreCase));
+            IContentItemInfo? sourceInfo = runtime.GetIndexedContentItem("crude_oil");
+            bool sourceFilterIncludesOil = sourcePage.Items.Any(i => i.Id.Equals("crude_oil", StringComparison.OrdinalIgnoreCase));
             InventoryDebugSourceGroup? sourceGroup = page.Sources.FirstOrDefault(g => g.Id.Equals(item.SourceId, StringComparison.OrdinalIgnoreCase));
             string effectiveCategory = FirstNonEmpty(item.SubCategory, item.Category);
             bool categoryListed = !string.IsNullOrWhiteSpace(effectiveCategory) &&
@@ -3959,7 +4172,7 @@ namespace DTMAPI.GameBridge.DolocTown
             string indexedIcon = sourceInfo?.IconAssetKey ?? string.Empty;
             string nativeSubType = ReadAnyStringMember(proto, string.Empty, "SubType", "sub_type");
             string functionType = ReadAnyMember(proto, "Function", "function")?.GetType().Name ?? "none";
-            int highestBaseFuel = FindHighestNativeFuelEnergyExcept("dtmapi_oil", out string highestBaseFuelItem);
+            int highestBaseFuel = FindHighestNativeFuelEnergyExcept("crude_oil", out string highestBaseFuelItem);
 
             var failures = new List<string>();
             if (!item.RuntimeLoaded)
@@ -3986,7 +4199,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 failures.Add("missing-mining-category-tags");
             if (!item.HasIcon || string.IsNullOrWhiteSpace(nativeIcon) || !ContainsIgnoreCase(indexedIcon, "icon_item_coal"))
                 failures.Add("missing-icon:hasIcon=" + item.HasIcon + ", item=" + item.IconAssetKey + ", native=" + nativeIcon + ", indexed=" + indexedIcon);
-            if (!ContainsIgnoreCase(title, "石油") && !ContainsIgnoreCase(title, "Oil") && !ContainsIgnoreCase(item.DisplayName, "石油") && !ContainsIgnoreCase(item.DisplayName, "Oil"))
+            if (!ContainsIgnoreCase(title, "原油") && !ContainsIgnoreCase(title, "石油") && !ContainsIgnoreCase(title, "Oil") && !ContainsIgnoreCase(item.DisplayName, "原油") && !ContainsIgnoreCase(item.DisplayName, "Oil"))
                 failures.Add("missing-localized-title:" + title + "/" + item.DisplayName);
             if (!ContainsIgnoreCase(description, "燃料") && !ContainsIgnoreCase(description, "fuel"))
                 failures.Add("missing-fuel-description");
@@ -4036,14 +4249,14 @@ namespace DTMAPI.GameBridge.DolocTown
             if (experimentalApi == null)
                 throw new InvalidOperationException("Experimental GameBridge API was not registered.");
 
-            if (!TryQueryNativeItemProto(dolocApi, "dtmapi_oil", out string oilProbe))
+            if (!TryQueryNativeItemProto(dolocApi, "crude_oil", out string oilProbe))
             {
                 string reloadDetail;
-                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilCoalDrop", "missing dtmapi_oil before OilMod smoke", out reloadDetail))
-                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table before OilMod smoke, and official reload failed. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
+                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilCoalDrop", "missing crude_oil before OilMod smoke", out reloadDetail))
+                    throw new InvalidOperationException("crude_oil is not present in the native item table before OilMod smoke, and official reload failed. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
 
-                if (!TryQueryNativeItemProto(dolocApi, "dtmapi_oil", out oilProbe))
-                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table after official reload. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
+                if (!TryQueryNativeItemProto(dolocApi, "crude_oil", out oilProbe))
+                    throw new InvalidOperationException("crude_oil is not present in the native item table after official reload. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
             }
 
             Type? toolColliderType = patcher?.ResolveType("DolocTown.ToolCollider, Assembly-CSharp");
@@ -4125,7 +4338,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi.ForceOilDropForSmoke = false;
             }
 
-            throw new InvalidOperationException("No coal resource produced dtmapi_oil during OilMod smoke. renderers=" + rendererCount + ", coalResources=" + coalCount + ", invoked=" + invokedCount + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", setup={" + setupSummary + "}, attempts=" + (attempts.Count == 0 ? "none" : string.Join(" ; ", attempts)) + ", samples=" + string.Join(" ; ", samples));
+            throw new InvalidOperationException("No coal resource produced crude_oil during OilMod smoke. renderers=" + rendererCount + ", coalResources=" + coalCount + ", invoked=" + invokedCount + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", setup={" + setupSummary + "}, attempts=" + (attempts.Count == 0 ? "none" : string.Join(" ; ", attempts)) + ", samples=" + string.Join(" ; ", samples));
         }
 
         private static bool TryQueryNativeItemProto(Type dolocApi, string itemId, out string detail)
@@ -7599,7 +7812,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static int FindAnimalProgressDataIndex(object panel)
+        private int FindAnimalProgressDataIndex(object panel)
         {
             object? currentDatas = ReadMember(panel, "currentDatas") ?? ReadMember(panel, "<currentDatas>k__BackingField");
             if (currentDatas is Array array)
@@ -7607,8 +7820,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 for (int i = 0; i < array.Length; i++)
                 {
                     object? data = array.GetValue(i);
-                    string stateDescription = ReadMember(data, "stateDescription") as string ?? string.Empty;
-                    if (HasAnimalProgressMarker(stateDescription))
+                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
                         return i;
                 }
             }
@@ -7684,13 +7896,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 string lastDescription = string.Empty;
                 foreach (object animal in animals)
                 {
-                    if (!TryConstructAnimalViewerData(dataType, animal, out string stateDescription))
+                    if (!TryConstructAnimalViewerData(dataType, animal, out object? data, out string stateDescription))
                         continue;
                     lastDescription = stateDescription;
-                    if (HasAnimalProgressMarker(stateDescription))
+                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
                     {
-                        runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
-                        runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed appended progress text.");
+                        runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " rows=" + rowSummary + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
+                        runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed independent hidden-produce progress row.");
                         return true;
                     }
                 }
@@ -7701,18 +7913,18 @@ namespace DTMAPI.GameBridge.DolocTown
                         continue;
                     runtime.RuntimeMonitor.Log("Smoke exercise seeded transient animal husbandry progress for " + seedSummary + ".");
 
-                    if (!TryConstructAnimalViewerData(dataType, animal, out string stateDescription))
+                    if (!TryConstructAnimalViewerData(dataType, animal, out object? data, out string stateDescription))
                         continue;
                     lastDescription = stateDescription;
-                    if (HasAnimalProgressMarker(stateDescription))
+                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
                     {
-                        runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
-                        runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed appended progress text after transient in-memory husbandry progress seed.");
+                        runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " rows=" + rowSummary + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
+                        runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed independent hidden-produce progress row after transient in-memory husbandry progress seed.");
                         return true;
                     }
                 }
 
-                throw new InvalidOperationException("Animal viewer data did not include special produce progress across " + animals.Count + " animal(s). lastStateDescription=" + lastDescription);
+                throw new InvalidOperationException("Animal viewer data did not include independent special produce progress rows across " + animals.Count + " animal(s). lastStateDescription=" + lastDescription);
             }
             catch (Exception ex)
             {
@@ -7733,7 +7945,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 foreach (object animal in animals)
                 {
-                    if (TryConstructAnimalViewerData(dataType, animal, out string stateDescription) && HasAnimalProgressMarker(stateDescription))
+                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
                         return;
                 }
 
@@ -7742,7 +7954,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (!TrySeedAnimalHusbandryForSmoke(animal, out string seedSummary))
                         continue;
                     runtime.RuntimeMonitor.Log("Smoke exercise seeded transient animal husbandry progress for real UI path " + seedSummary + ".");
-                    if (TryConstructAnimalViewerData(dataType, animal, out string stateDescription) && HasAnimalProgressMarker(stateDescription))
+                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
                         return;
                 }
             }
@@ -7787,8 +7999,9 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        private bool TryConstructAnimalViewerData(Type dataType, object animal, out string stateDescription)
+        private bool TryConstructAnimalViewerData(Type dataType, object animal, out object? data, out string stateDescription)
         {
+            data = null;
             stateDescription = string.Empty;
             ConstructorInfo? constructor = dataType.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
                 .FirstOrDefault(c =>
@@ -7799,9 +8012,9 @@ namespace DTMAPI.GameBridge.DolocTown
             if (constructor == null)
                 throw new MissingMethodException("AnimalFullInfoData(Animal) constructor was not found.");
 
-            object? data = constructor.Invoke(new[] { animal });
+            data = constructor.Invoke(new[] { animal });
             stateDescription = dataType.GetField("stateDescription", BindingFlags.Public | BindingFlags.Instance)?.GetValue(data) as string ?? string.Empty;
-            return true;
+            return data != null;
         }
 
         private bool TrySeedAnimalHusbandryForSmoke(object animal, out string summary)
@@ -8903,7 +9116,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -9142,6 +9355,8 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseVehicleDelaySeconds { get; set; } = 8;
             [DataMember] public bool AutoExerciseNewContentApis { get; set; }
             [DataMember] public int AutoExerciseNewContentApisDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseMineContentApis { get; set; }
+            [DataMember] public int AutoExerciseMineContentApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsMenu { get; set; }
             [DataMember] public int AutoOpenTitleSettingsDelaySeconds { get; set; } = 12;

@@ -4,7 +4,7 @@ namespace OilMod
 {
     public sealed class ModEntry : DtmMod
     {
-        private const string OilItemId = "dtmapi_oil";
+        private const string OilItemId = "crude_oil";
         private const int OilEnergy = 1500;
         private IDtmHelper helper = null!;
 

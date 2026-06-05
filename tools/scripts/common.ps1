@@ -112,6 +112,22 @@ function Resolve-DolocTownGamePath {
     throw "Doloc Town game path not found. Set DTMAPI_GAME_DIR or create local.settings.json with { `"GameDir`": `"C:\\path\\to\\Doloc Town`" }."
 }
 
+function Resolve-DtmApiStateDir {
+    param(
+        [string] $GameDir
+    )
+
+    if ($env:DTMAPI_RUNTIME_DIR) {
+        return [System.IO.Path]::GetFullPath($env:DTMAPI_RUNTIME_DIR)
+    }
+
+    if ($env:DTMAPI_STATE_DIR) {
+        return [System.IO.Path]::GetFullPath($env:DTMAPI_STATE_DIR)
+    }
+
+    return Join-Path $GameDir 'DTMAPI'
+}
+
 function Get-DtmapiOutputDir {
     param(
         [string] $RepoRoot = (Get-RepoRoot),

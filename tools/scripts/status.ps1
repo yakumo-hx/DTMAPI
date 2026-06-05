@@ -8,8 +8,10 @@ Write-Host "dotnet: $dotnet"
 & $dotnet --list-sdks
 Write-Host "GameDir: $gameDir"
 if ($gameDir) {
-    $dtmLog = Join-Path $gameDir 'DTMAPI\logs\latest.log'
+    $dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
+    $dtmLog = Join-Path $dtmapiDir 'logs\latest.log'
     $bepLog = Join-Path $gameDir 'BepInEx\LogOutput.log'
+    Write-Host "DtmApiStateDir: $dtmapiDir"
     Write-Host "DTMAPI log exists: $(Test-Path $dtmLog)"
     Write-Host "BepInEx log exists: $(Test-Path $bepLog)"
 }

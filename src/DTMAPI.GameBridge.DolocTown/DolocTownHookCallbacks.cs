@@ -6,6 +6,8 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         public static DtmApiRuntime? Runtime { get; set; }
         public static DolocTownGameBridge? Bridge { get; set; }
+        public static bool DebugConsoleModalOpen { get; set; }
+        private static bool debugConsoleInputSuppressionLogged;
 
         public static void LoadGamePrefix(int index)
         {
@@ -122,6 +124,45 @@ namespace DTMAPI.GameBridge.DolocTown
             Bridge?.ExperimentalApi?.AdjustActionSpeedUseItemContinuesDelta(ref __0);
         }
 
+        public static bool AgentControllerStateUseToolPrefix()
+        {
+            return AllowNativeGameplayInput("UseTool");
+        }
+
+        public static bool AgentControllerStateUseItemPrefix()
+        {
+            return AllowNativeGameplayInput("UseItem");
+        }
+
+        public static bool AgentControllerStateEnterUiCheckPrefix(ref bool __result)
+        {
+            if (!DebugConsoleModalOpen)
+                return true;
+
+            __result = true;
+            if (!debugConsoleInputSuppressionLogged)
+            {
+                debugConsoleInputSuppressionLogged = true;
+                Runtime?.RuntimeMonitor.Log("Debug console native input isolation active: AgentControllerState.EnterUICheck suppressed while DTMAPI console is open.");
+                Runtime?.SetHookStatus("UI.DebugConsoleInputIsolation", "verified", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", "Native backpack/menu/tool/item input is swallowed while the DTMAPI Y console is open.");
+            }
+            return false;
+        }
+
+        private static bool AllowNativeGameplayInput(string source)
+        {
+            if (!DebugConsoleModalOpen)
+                return true;
+
+            if (!debugConsoleInputSuppressionLogged)
+            {
+                debugConsoleInputSuppressionLogged = true;
+                Runtime?.RuntimeMonitor.Log("Debug console native input isolation active: AgentControllerState." + source + " suppressed while DTMAPI console is open.");
+                Runtime?.SetHookStatus("UI.DebugConsoleInputIsolation", "verified", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", "Native backpack/menu/tool/item input is swallowed while the DTMAPI Y console is open.");
+            }
+            return false;
+        }
+
         public static void AgentStateBaseExitPostfix()
         {
             Bridge?.ExperimentalApi?.RestoreActionSpeed("AgentStateBase.OnExit");
@@ -215,6 +256,21 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void DolocApiEnterRoomPostfix(object __0, object __1, bool __result)
         {
             Bridge?.ExperimentalApi?.NotifyEnterRoomForActiveSecondMotor(__0, __1, __result);
+        }
+
+        public static void EquipmentRendererOnReusePostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ResetEquipmentRendererScaleOnReuse(__instance);
+        }
+
+        public static void EquipmentBuilderCreateIndicatorPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.CreateIndicator");
+        }
+
+        public static void EquipmentBuilderTurnIndicatorPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.TurnIndicator");
         }
 
         public static void AgentEquipmentReloadParamsPostfix(object __instance)

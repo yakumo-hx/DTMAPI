@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 更多装备栏位",
   "author": "DTMAPI",
-  "version": "0.2.5-dtmapi",
+  "version": "0.2.8-dtmapi",
   "description": "DTMAPI experimental 更多装备栏位包。通过 DTMAPI Equipment Slots API 声明额外仅属性栏位、默认外观栏位保留和禁用/卸载安全恢复策略。",
   "tags": [
     "Mod",

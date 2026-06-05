@@ -1,160 +1,281 @@
-# DTMAPI 0.2.6 Mine + Y Console Manual QA Goal
+# DTMAPI 0.2.9 Manual QA Follow-up Goal
 
-This file is the detailed task ledger for the next implementation Codex. The short `/goal` prompt must point here instead of embedding all details.
+This file is the current implementation ledger for the next DTMAPI round. It is based on the 0.2.8 user manual QA review, not on smoke results alone.
+
+## Current Status
+
+- Current implemented baseline: DTMAPI 0.2.8.
+- Latest implementation record: `docs/updates/2026/20260606-0002-028-readme-implementation.md`.
+- Latest review source: `docs/reviews/manual-qa/2026/20260606-0002-028-manual-qa-followup-review.md`.
+- Local recovery checkpoint exists on `master`.
+- Public GitHub preview branch was pushed to `https://github.com/yakumo-hx/DTMAPI.git` with only curated download/display content:
+  - DTMAPI runtime DLLs.
+  - Confirmed `ActionSpeed` and `OneActionComplete` official-local packages.
+  - Branding and public API summary.
+- Public branch intentionally excludes full source, reverse data, third-party samples, debug evidence, review records, unfinished experimental mods, and private research notes.
+- User-confirmed packages for public sync: ActionSpeed and OneActionComplete. Do not rework them in this goal unless the user reports a new regression.
 
 ## Manual Feedback Header
 
-- Time: 2026-06-05 +08:00
-- Source: user manual QA feedback with 4 screenshots after the 0.2.5 pass.
-- Scope: only two areas for this round: MineMod and the Y key debug console. Do not expand this goal to other mods even if nearby problems are tempting.
-- Current truth: 0.2.5 automated smoke evidence is useful history, but this 2026-06-05 manual QA is newer. Old smoke must not be used as proof that the issues below are fixed.
-- Forbidden: do not modify unrelated mods; do not copy old DLKsmapi code; do not mutate third-party Workshop content; do not keep the Y-console `reload` feature exposed; do not use telemetry-only scale proof when the player-visible sprite is wrong; do not mark complete if only automated API calls pass while manual UI paths fail.
+- Time: 2026-06-06 +08:00.
+- Source: user manual testing after 0.2.8 plus code-level review.
+- Scope: AnimalHusbandryProgress flicker, Y-console layout/icon centering, Mine preview/real electricity, MoreEquipmentSlots save safety/config cleanup, and a new More Saves mod.
+- Forbidden: do not copy old DLKsmapi code; do not reset/revert user or previous-Codex changes; do not publish or modify reverse/third-party reference files; do not count build/smoke as completion when user-visible QA points remain.
+- Version requirement: implementation must bump DTMAPI from 0.2.8 to 0.2.9 and update controlled version sources/manifests/docs consistently.
 
-## Per-Issue Manual QA Review
+## Per-Issue Manual QA Ledger
 
-### Issue 1: MineMod scaling pollution and duplicated research unlock
-
-Original feedback:
-
-- Mine initially appears as a normal icon after placement and then loads into an enlarged icon.
-- When holding the Mine and preparing to place it, the placement preview animation is not enlarged.
-- A more complex bug appears: many unrelated machines also randomly become enlarged. The user observed this on arbitrary equipment, chests, and indoor/outdoor objects including flower pots. The functional behavior does not change; only the sprites become enlarged. This is probably code pollution.
-- In the research UI, the `点亮此节点可解锁制作` section shows Mine twice.
-- The user suspects DTMAPI did not give this UI a way to choose one item instead of two.
-- The current research-point cost is fixed at 30. Change the Mine unlock cost to 1 research point.
-- Screenshot transcription: in an indoor container-like room, a central blue machine/producer sprite is visibly enlarged. Other equipment, chests, machines, and the Mine are nearby. Tooltip text shows `E 大木箱`.
-- Screenshot transcription: the official `科技树` industrial tab is open. The selected Mine node appears to the right of `合金材料` and above `指挥官`. The right panel title is `矿井`; under `点亮此节点可解锁制作:` it lists two separate Mine entries with the same icon/description and recipe `石油 x 10, 钢锭 x 10`. The bottom unlock button says `缺少解锁点数` and shows a cost of `x30`.
-
-Review record:
-
-- User-confirmed facts: Mine placement preview is not scaled; placed Mine scale changes after load; unrelated equipment/chests/pots randomly scale up; Mine unlock appears twice in the official tech UI; Mine research cost should be 1, not 30.
-- Screenshot observations: a non-Mine blue machine is visibly oversized; the tech UI shows duplicate Mine unlock entries and the cost icon/number indicates 30 points.
-- Codex inference: this is a high-risk global renderer/prefab/Decorator scaling pollution bug. The implementation likely scales a shared asset, shared prefab, common equipment renderer, or cached decorator path instead of only a Mine-owned instance. The preview object likely uses a separate placement ghost/preview path that was never scoped. Duplicate research unlocks may come from registering both an equipment item and a recipe/output unlock, or from duplicate official JSON extension rows.
-- Ownership: MineMod official content JSON; MineMod tech/recipe metadata; DTMAPI GameBridge equipment scale path; possible installer stale-content cleanup if old duplicated rows remain installed.
-- Required updates: debug issue for Mine scale pollution; update record; smoke matrix Mine/new-content rows; hook map for machine/equipment scaling; API matrix only if a safer scale/preview API is added.
-- Acceptance: third-save manual/smoke evidence proves Mine placement preview is 2x; placed Mine is 2x immediately without normal-size flash; unrelated machines, chests, and flower pots never become enlarged across repeated room loads, placement, save/load, and title return; official tech UI lists Mine exactly once; Mine research cost is 1 point.
-- Blocker rule: if instance-scoped scaling cannot be made safe, remove/disable the 2x runtime scaling rather than allowing global equipment sprite pollution. Do not mark complete while any unrelated equipment can enlarge.
-
-### Issue 2: Y console reload removal, localization, hover, weather layout, and search lifecycle
+### Issue 1: AnimalHusbandryProgress still flashes the native mood row
 
 Original feedback:
 
-- Trees appear in every room because the Y console provides a `重载` feature in addition to `存档`.
-- Clicking `重载` saves and immediately loads. This currently has severe problems.
-- The user's interpretation is that it was meant to act like loading the previous save point, but either the DTMAPI code is wrong or the official game does not support this kind of hot rollback.
-- Completely remove the `重载` feature.
-- Weather buttons should be uniformly smaller and arranged in one row.
-- The settings UI shows `Chinese` as `schinese`.
-- Weather names and teleport names are hard-coded Chinese and do not switch with language.
-- Mouse hover still has not been implemented.
-- The previous search-box issue probably still exists. First entering the save showed `石油`; after deleting it, entering/exiting the save did not show it; after typing `汉堡` and saving, entering/exiting did not show it; after restarting the game, `石油` appeared again.
-- Screenshot transcription: a room contains many tree sprites/wooden trunk sprites in unnatural indoor positions, consistent with scene residue after the Y-console reload path. The HUD shows normal gameplay, and the hotbar contains tools, a red/black key-like item, bottled water, feather, bucket, and ingots.
-- Screenshot transcription: the Y key console 0.2.5 is open. Top title says `Y键控制台 0.2.5`. Buttons include `下个时段`, `存这里`, and `重载`. Weather buttons are large and arranged as multiple rows: `雷雨`, `多云`, `晴天`, `大风`, `烈日`, `酸雨`, `雨天`. Teleport names are Chinese. Source/category lists include mixed Chinese and English/internal category text such as `construction_...`, `equipment_...`. The visible search box is empty in this screenshot, but the user reports `石油` reappears after game restart.
+- Animal hidden-product UI still shows `心情` once when switching animals.
+- Need detailed comparison with the older DLKsmapi animal bell implementation, which is currently reliable.
 
-Review record:
+Review facts:
 
-- User-confirmed facts: the reload button causes severe room sprite contamination; reload should be removed entirely; weather UI needs a compact one-line layout; language display is wrong; weather/teleport names are not localized; hover is still missing; search text can persist across full game restart.
-- Screenshot observations: the Y console still exposes `重载`; tree sprites appear in an indoor room; weather buttons take multiple rows; category labels include raw/internal English ids.
-- Codex inference: hot reload/save-then-load is not safe in this game path and should be deleted, not polished. The tree contamination suggests native room objects are not being fully torn down before reload or DTMAPI is replaying scene/object state incorrectly. Search text reappearing after restart means the term is likely persisted in config, PlayerPrefs, UI input state, smoke/default query data, or a stale installed config file, not just held in current save memory.
-- Ownership: DebugConsoleMod; DTMAPI Bootstrap reflected debug console UI; instant save/reload debug APIs; localization/translation helpers; weather/teleport debug APIs; installed config migration/cleanup.
-- Required updates: debug issue for Y-console reload scene contamination; update record; smoke matrix `DEBUGCONSOLE`, `SAVE`, `WEATHER`, `TELEPORT`; hook map for instant save/reload removal; API matrix if reload API is removed/deprecated or localization DTOs change.
-- Acceptance: Y console has no `重载` button or command; no code path performs save-then-immediate-load from the player console; repeated room entry, save, title return, and restart do not create tree/equipment sprite contamination; weather buttons are one compact row; language UI shows user-facing names such as `中文`/`English` rather than `schinese`; weather and teleport labels switch with language; item hover appears near the mouse/item with name, tags, source, and give eligibility; after full game restart, first open in a save has an empty search box.
-- Blocker rule: if official hot reload is unsafe, keep it removed permanently. Do not leave an experimental reload entry in player UI. If search state comes from old persisted config, add a migration/cleanup and prove `石油` no longer returns after restart.
+- DLKsmapi registers an animal viewer rendering event and applies progress bars through a runtime-managed prefix/postfix lifecycle.
+- Current DTMAPI stores render rows from `AnimalFullInfoData`, then in `AnimalViewer.Show` postfix clones or overlays progress rows.
+- This means the native mood row can be visible for at least one frame before DTMAPI replaces/adds the hidden-product row.
+- The likely failure layer is DTMAPI GameBridge/AnimalViewer lifecycle, not the AnimalHusbandryProgress mod data lookup.
+
+Required implementation:
+
+- Review DLKsmapi behavior only as a reference; do not copy its code.
+- Rework the DTMAPI AnimalViewer hook path so hidden-product rows are ready before the visible frame changes.
+- Avoid writing hidden-product data into native mood fields.
+- Keep hunger, mood, and hidden product as separate readable rows.
+- Preserve native-sized text where possible; do not shrink the row so much that readability suffers.
+
+Acceptance:
+
+- Third save, open animal bell UI and switch across at least five animals.
+- No first-frame `心情` flicker before hidden-product display.
+- Hidden product row remains readable and independent from mood.
+- Screenshot or short recording evidence captures the corrected behavior.
+
+Blocker:
+
+- If the native viewer cannot be safely intercepted before the first visible frame, report the exact hook path and leave the goal incomplete.
+
+### Issue 2: Y-console expanded item grid did not expand side filters, and item icons are off-center
+
+Original feedback:
+
+- Y-console item rows increased, but the left `来源` and `子分类` filter columns did not increase rows.
+- Item sprites are no longer visually centered in their grid cells.
+
+Review facts:
+
+- `ReflectedDebugConsoleUi` increased item `PageSize`, but source/category page-size constants remained smaller.
+- Item icons are placed with fixed coordinates inside a fixed cell, which is fragile when sprite transparent bounds differ.
+
+Required implementation:
+
+- Increase source and category filter row counts to visually match the taller item grid.
+- Keep filter pagination usable and aligned.
+- Re-center item sprites with a stable icon viewport or bounds-aware centering, not a one-off offset.
+- Preserve existing Y-console behavior: source/category filtering, search, hover, left/right give, weather, teleport, time, save, and input isolation.
+
+Acceptance:
+
+- Y-console screenshot shows the item grid and the two filter columns filling a coherent height.
+- At least ten visually different item sprites are centered in their cells.
+- No UI overlap with pagination or right-side controls.
+
+Blocker:
+
+- If sprite transparent bounds make generic centering impossible, document the fallback strategy and do not mark the item complete with only one tuned example.
+
+### Issue 3: Mine preview is still wrong and Mine does not use real official electricity
+
+Original feedback:
+
+- Mine placement preview still does not scale correctly.
+- Mine production default `120` minutes should mean every two in-game hours.
+- Sleeping or passing time sometimes does not produce; behavior is inconsistent by room/time-skip path.
+- Mine appears not to truly consume electricity: official power UI still shows no Mine load.
+
+Review facts:
+
+- MineMod passes electric configuration to DTMAPI Machine API.
+- Current GameBridge records internal machine fields such as last electric cost, but code review did not find clear integration with the official electric grid/battery load.
+- Current preview hook targets the equipment builder indicator path, but the user's held/placement preview uses a different visible object or timing.
+- Previous time-skip review found production can differ depending on whether the active room is the Mine room, another room, sleep, or Y-console time jump.
+
+Required implementation:
+
+- Identify the official electricity path used by native powered equipment.
+- Connect Mine to the real official load/consumption path, or explicitly block if unsafe.
+- Official power UI must include Mine load when Mine is placed and active.
+- No-power/insufficient-power states must stop production and show/log a reason.
+- Fix the held placement preview so it is 2x before placement, not only after placement.
+- Confirm the 120-minute default means every two in-game hours, including sleep/pass-time/cross-room paths.
+
+Acceptance:
+
+- Holding Mine before placement shows a 2x preview.
+- Placed Mine remains 2x without randomly scaling other objects.
+- Official power UI shows Mine electric load and/or battery consumption.
+- In third save, Mine produces after each expected two-hour interval across active-room pass-time, other-room pass-time, and sleep.
+- Logs identify production, skipped production, and power reason.
+
+Blocker:
+
+- If DTMAPI cannot safely register a custom machine with official electricity, leave Mine incomplete and report the exact official class/API boundary.
+
+### Issue 4: MoreEquipmentSlots must be save-safe and config-minimal
+
+Original feedback:
+
+- Extra equipment effects are now confirmed, but safety is not.
+- Config menu should remove everything except `启用`; safety recovery must be always on and not user-toggleable.
+- Serious safety issue: putting a hat into an extra slot without saving still persisted DTMAPI data; re-entering the save produced two hats.
+- Closing/disable behavior cannot rely on hot-disable; disabled mod recovery likely needs DTMAPI Core/GameBridge orphan recovery on next load.
+
+Review facts:
+
+- MoreEquipmentSlots currently exposes debug/action controls in config.
+- GameBridge writes extra-slot storage immediately to a DTMAPI config file.
+- Native backpack changes roll back if the game is not saved, but DTMAPI extra-slot storage does not roll back with the save transaction.
+- This transaction mismatch can duplicate or pollute items.
+
+Required implementation:
+
+- Config UI for MoreEquipmentSlots must expose only `启用`.
+- Force safe recovery on internally; remove the visible recovery toggle and debug buttons.
+- Bind extra-slot persistence to real game save transactions.
+- Do not persist slot storage if the player exits/reloads without saving.
+- Add orphan recovery handled by DTMAPI Core/GameBridge when the mod is disabled: recover extra-slot items to backpack or ground on next safe load.
+- Backpacks-full recovery must not delete items.
+- Hat slots must apply special effects only and must not duplicate visible hat equipment.
+
+Acceptance:
+
+- Put a hat/accessory into an extra slot, exit without saving, reload: no duplicate item and no stale extra-slot data.
+- Put a hat/accessory into an extra slot, save, reload: item remains in the extra slot and is not duplicated.
+- Disable MoreEquipmentSlots, reload/save path: stored extra-slot items return to backpack or ground safely.
+- Config page only shows `启用`.
+
+Blocker:
+
+- If extra-slot state cannot be made transaction-safe, disable extra-slot storage or leave the feature incomplete. Do not keep a duplication-prone implementation.
+
+### Issue 5: Add a More Saves mod through the official save UI path
+
+Original feedback:
+
+- Add a new More Saves mod.
+- Use the official path: only extend/paginate the official save UI and allow reading more local saves.
+- Disabling the mod must not delete local save files.
+- Saves must be runnable.
+
+Review facts:
+
+- Official decompiled code uses a fixed archive count, archive file naming, and a save UI panel that renders an array of archive info.
+- It may be feasible to expand the official archive count or `GetAllArchiveInfos` result while reusing the official save panel.
+- UI scrolling/paging for many slots still needs validation.
+
+Required implementation:
+
+- Create a DTMAPI official-local More Saves mod.
+- Prefer official save UI and official archive file format.
+- Add paging/scrolling only where needed; do not replace the whole save system.
+- Disabling the mod must leave extra save files untouched.
+- The first six vanilla slots must remain compatible.
+- Extra slots must support create, load, save, copy/delete if the official UI supports these actions safely.
+
+Acceptance:
+
+- Official save UI shows more than six saves with clear paging/scrolling.
+- Extra save slots can be created and loaded.
+- Disabling the mod hides/ignores extra slots without deleting files or breaking the first six slots.
+- Logs record slot count, file paths, and any unsupported action.
+
+Blocker:
+
+- If official save UI cannot safely handle more slots, report the exact UI/data path and stop before altering save files.
 
 ## Problem Grouping
 
-- MineMod visual contamination: instance scale is leaking into unrelated equipment/objects.
-- MineMod official research polish: duplicate unlock output and wrong point cost.
-- Y console unsafe feature: `重载` causes scene/object residue and must be removed.
-- Y console product UI: compact weather row, localized language/weather/teleport labels, working hover.
-- Y console lifecycle/persistence: search state must reset across full game restart and save-session boundaries.
+- UI: AnimalViewer first-frame flicker, Y-console filter height/icon centering, MoreEquipmentSlots config simplification, More Saves official save UI.
+- API/GameBridge: AnimalViewer lifecycle, Machine real electricity, EquipmentSlots save transaction/orphan recovery, Save UI/archive count.
+- Config/content: MoreEquipmentSlots only `Enabled`; Mine electric semantics must match official systems.
+- Testing/evidence: third-save screenshots/logs for all player-visible issues; save safety needs explicit no-save/reload and disable/reload checks.
 
 ## Boundary Constraints
 
 Must do:
 
-- Keep this goal limited to MineMod and Y console.
-- Fix or remove unsafe Mine runtime scaling so unrelated equipment never enlarges.
-- Include placement preview scale, not just placed equipment scale.
-- Remove Y-console `reload` entirely.
-- Clear any persisted stale search text such as `石油` on startup/save-load.
-- Verify with third-save in-game behavior and screenshots/logs.
+- Bump DTMAPI to 0.2.9.
+- Keep this round scoped to the five issues above.
+- Read the 20260606 follow-up review record before editing.
+- Update `docs/updates`, `docs/debug`, smoke matrix, hook map/API matrix when relevant.
+- Verify in the third local save unless testing the official save menu before save selection.
 
 Must not do:
 
-- Do not work on SecondMotor, AutoFishing, ActionSpeed, AnimalHusbandryProgress, MoreEquipmentSlots, or Oil except where Mine recipe/content references Oil.
-- Do not use DTMAPI custom research UI for Mine.
-- Do not rely on telemetry-only scale proof.
-- Do not keep reload as hidden/experimental UI.
-- Do not hard-code Chinese labels for weather or teleport.
+- Do not rework ActionSpeed or OneActionComplete unless a new regression is reported.
+- Do not publish or copy reverse/decompiled/reference code.
+- Do not treat internal Mine telemetry as real electricity.
+- Do not keep MoreEquipmentSlots storage that can persist outside game saves.
+- Do not delete extra save files when More Saves is disabled.
+- Do not mark complete with only final-state screenshots when the bug is flicker/lifecycle.
 
-Blocker conditions:
+## Implementation Tasks
 
-- If Mine 2x sprite cannot be scoped safely to Mine-only instances and previews, disable 2x scaling and report the blocker rather than polluting equipment globally.
-- If the game cannot safely hot-load a save from within a running save, remove the reload API/UI and report the official limitation.
+### Task A: Baseline and 0.2.9 version bump
 
-## Next Tasks A-G
+- Run `git status` first.
+- Preserve user/other-Codex changes.
+- Bump DTMAPI from 0.2.8 to 0.2.9 across controlled version sources and relevant official-local manifests.
+- Treat 0.2.8 smoke as historical evidence only where user manual QA contradicts it.
 
-### Task A: Baseline 0.2.6 focused manual QA and bump version
+### Task B: AnimalViewer lifecycle fix
 
-- Run `git status` first and preserve user/previous-Codex changes.
-- Treat this 2026-06-05 manual QA as newer than 0.2.5 smoke evidence.
-- Bump DTMAPI once, preferably from `0.2.5` to `0.2.6`, and update controlled version sources, UI title/version text, package metadata, and update record.
-- Record this as a focused two-area follow-up: MineMod and Y console only.
+- Compare DLKsmapi behavior as reference.
+- Fix DTMAPI AnimalViewer rendering so hidden-product rows appear without `心情` flicker and without mood-row hijacking.
 
-### Task B: Mine scale containment and preview scale
+### Task C: Y-console layout correction
 
-- Audit all Mine scaling code and remove any shared prefab/asset/global renderer mutation.
-- Make scaling instance-scoped to `dtmapi_mine` only.
-- Add placement preview/ghost scaling for the Mine.
-- Add cleanup/migration for stale globally scaled objects if possible.
-- Verify unrelated equipment, chests, flower pots, and indoor/outdoor machines do not enlarge across repeated room loads and saves.
+- Expand source/category filter rows with the item grid.
+- Re-center item icons robustly.
+- Preserve existing console functions and input isolation.
 
-### Task C: Mine official research duplicate and cost
+### Task D: Mine preview and real electricity
 
-- Remove duplicate Mine unlock output in the official tech UI.
-- Keep Mine under the official Industrial tech node route.
-- Set Mine research cost to 1 point.
-- Verify the right panel lists Mine once and the unlock button cost is 1.
+- Fix held placement preview scale.
+- Connect Mine to the official electricity system or report blocker.
+- Verify two-hour production across active room, other room, and sleep/pass-time paths.
 
-### Task D: Remove Y-console reload and prevent scene residue
+### Task E: MoreEquipmentSlots save-safety rewrite
 
-- Remove the `重载` button and any player-visible reload command.
-- Remove or disable save-then-immediate-load execution from the Y console.
-- Keep `存这里` if safe, but do not pair it with immediate reload.
-- Verify room/tree/equipment residue no longer appears after save, title return, restart, and room switching.
+- Reduce config to `Enabled`.
+- Make extra-slot persistence save-transaction-safe.
+- Implement forced safe recovery and orphan recovery for disabled mod states.
 
-### Task E: Y-console localization and compact weather row
+### Task F: More Saves official-path mod
 
-- Weather buttons must be smaller and fit on one row.
-- Language display must use player-facing names, not `schinese`.
-- Weather names and teleport names must localize with current language.
-- Avoid raw/internal category names where a localized display name is available.
+- Add a DTMAPI official-local More Saves mod using the official save UI/archive format.
+- Ensure disabling the mod never deletes local save files.
 
-### Task F: Y-console hover and search reset
+### Task G: Validation and documentation closeout
 
-- Implement real item hover near the mouse/item with name, tags, source, and give eligibility.
-- Search text must be empty on first save entry and after full game restart.
-- Same-save reopen may preserve the user's search.
-- Add migration/cleanup for stale persisted search values such as `石油`.
-
-### Task G: Verification and documentation closeout
-
-- Release build and unit tests pass with 0 errors.
-- Third-save game smoke is required.
-- Manual/visual evidence is required for Mine scaling, non-Mine non-scaling, research duplicate/cost, removed reload, weather row, localization, hover, and search reset after restart.
-- Exit check must show no leftover `DolocTown.exe` and no Steam waiting-for-exit regression.
-- Update `docs/updates`, `docs/debug`, smoke matrix, hook map, and API matrix.
+- Release build and UnitTests pass with 0 errors.
+- Third-save or official-save-menu smoke covers each player-visible issue.
+- Capture screenshots/logs for AnimalViewer, Y-console, Mine preview/electricity/production, MoreEquipmentSlots save safety, and More Saves.
+- Exit check shows no leftover `DolocTown.exe`.
+- Update docs/updates, docs/debug, smoke matrix, hook map, and API matrix.
 
 ## Completion Standard
 
-Only mark complete when Tasks A-G are player-visible and genuinely usable in game, with build, third-save smoke, restart/search evidence, Mine preview/placed/non-Mine scale evidence, official research UI evidence, Y-console UI evidence, exit cleanup, and documentation all complete.
+Only mark complete when Tasks A-G are player-visible and genuinely verified, with build, game smoke/save-menu smoke, logs/screenshots, exit cleanup, and documentation complete.
 
-Do not use these as substitutes for completion:
+Do not count as complete:
 
-- old 0.2.5 smoke evidence;
-- telemetry that says Mine scale is 2 while the preview is not scaled;
-- screenshot of one placed Mine without checking other equipment;
-- keeping reload hidden behind a different name;
-- hard-coded Chinese labels;
-- API-only hover/search tests that bypass the real Y-console UI.
+- old 0.2.8 smoke evidence without fresh reproduction;
+- Animal UI that eventually becomes correct but still flashes `心情`;
+- Y-console item grid expansion that leaves side filters short or icons off-center;
+- Mine internal telemetry without official electricity UI/load/consumption;
+- MoreEquipmentSlots that can duplicate items after no-save reload;
+- More Saves that works only by deleting, moving, or rewriting existing save files unsafely.

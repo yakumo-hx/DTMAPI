@@ -33,7 +33,8 @@ if ($smokeExit -ne 0) {
 }
 
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
-$logPath = Join-Path $gameDir 'DTMAPI\logs\latest.log'
+$dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
+$logPath = Join-Path $dtmapiDir 'logs\latest.log'
 $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'HOOK-PROBE'
 $checks = [ordered]@{
     Entry = Test-LogLine -LogPath $logPath -Pattern 'HookProbe Entry OK'
@@ -125,7 +126,7 @@ $checks | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'hook-c
 if (Test-Path $logPath) {
     Copy-Item -Force -LiteralPath $logPath -Destination (Join-Path $evidence 'DTMAPI-latest.log')
 }
-$latestReport = Join-Path $gameDir 'DTMAPI\reports\latest-report.txt'
+$latestReport = Join-Path $dtmapiDir 'reports\latest-report.txt'
 if (Test-Path $latestReport) {
     Copy-Item -Force -LiteralPath $latestReport -Destination (Join-Path $evidence 'latest-report.txt')
 }

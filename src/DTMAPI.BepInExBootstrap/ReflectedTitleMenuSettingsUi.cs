@@ -488,7 +488,7 @@ namespace DTMAPI.BepInExBootstrap
                 }
                 int current = Math.Max(0, item.AllowedValues.ToList().FindIndex(v => v.Equals(item.PendingValue, StringComparison.OrdinalIgnoreCase)));
                 CreateButton(panelContentRoot!, "DTMAPI.Item.ChoicePrev." + item.ItemId, "<", () => TrySetPending(item, item.AllowedValues[(current - 1 + item.AllowedValues.Count) % item.AllowedValues.Count]), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX, y, 30, 26);
-                AddText(panelContentRoot!, "DTMAPI.Item.ChoiceValue." + item.ItemId, item.PendingValue, 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleCenter, controlX + 36, y, 128, 26);
+                AddText(panelContentRoot!, "DTMAPI.Item.ChoiceValue." + item.ItemId, FormatChoiceDisplayValue(item.PendingValue), 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleCenter, controlX + 36, y, 128, 26);
                 CreateButton(panelContentRoot!, "DTMAPI.Item.ChoiceNext." + item.ItemId, ">", () => TrySetPending(item, item.AllowedValues[(current + 1) % item.AllowedValues.Count]), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 170, y, 30, 26);
             }
             else if (item.Kind == "ColorPreset")
@@ -668,6 +668,11 @@ namespace DTMAPI.BepInExBootstrap
                 statusMessage = string.Empty;
             inputValues[item.ItemId] = item.PendingValue;
             dirty = true;
+        }
+
+        private string FormatChoiceDisplayValue(string value)
+        {
+            return text.DisplayLanguageName(value);
         }
 
         private void TrySetCapturingKey(string key)

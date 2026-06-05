@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 矿井",
   "author": "DTMAPI",
-  "version": "0.2.5-dtmapi",
+  "version": "0.2.8-dtmapi",
   "description": "DTMAPI experimental 矿井内容包。新增矿井设备、设备工作台配方，并通过 DTMAPI Machine API 声明燃料/耗电/概率产矿方案。",
   "tags": [
     "Mod",

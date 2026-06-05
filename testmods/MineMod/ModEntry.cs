@@ -9,7 +9,7 @@ namespace MineMod
     {
         private const string MineMachineId = "dtmapi.mine";
         private const string MineItemId = "dtmapi_mine";
-        private const string OilItemId = "dtmapi_oil";
+        private const string OilItemId = "crude_oil";
 
         private IDtmHelper helper = null!;
         private MineModConfig config = new MineModConfig();
@@ -39,8 +39,8 @@ namespace MineMod
             menu.AddParagraph(helper.ModManifest, BuildStatusText);
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Registers the DTMAPI mine machine definition."), () => config.Enabled, value => config.Enabled = value);
             menu.AddNumberOption(helper.ModManifest, () => T("config.cycle.name", "Cycle minutes"), () => T("config.cycle.tooltip", "Game minutes per production cycle once runtime hooks are implemented."), () => config.CycleMinutes, value => config.CycleMinutes = (int)Math.Round(value), 5, 720, 5);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.fuelCapacity.name", "Fuel capacity"), () => T("config.fuelCapacity.tooltip", "Large machine fuel tank capacity."), () => config.FuelCapacity, value => config.FuelCapacity = (int)Math.Round(value), 100, 50000, 100);
-            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T("config.electric.name", "Electric mode"), () => T("config.electric.tooltip", "Electric mode should consume 10 power per cycle and less fuel."), () => config.AllowElectricMode, value => config.AllowElectricMode = value, () => config.ElectricPowerCostPerCycle, value => config.ElectricPowerCostPerCycle = (int)Math.Round(value), 0, 100, 1);
+            menu.AddNumberOption(helper.ModManifest, () => T("config.electricPower.name", "Power per cycle"), () => T("config.electricPower.tooltip", "Electric power consumed per production cycle."), () => config.ElectricPowerCostPerCycle, value => config.ElectricPowerCostPerCycle = (int)Math.Round(value), 0, 100, 1);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.oilRecipe.name", "Use Oil recipe"), () => T("config.oilRecipe.tooltip", "When OilMod is loaded, replace the fallback coal recipe with the oil recipe. Restart or reload official mods before crafting if this changes."), () => config.UseOilRecipeReplacement, value => config.UseOilRecipeReplacement = value);
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.outputs", "Output weights"));
             menu.AddNumberOption(helper.ModManifest, () => T("config.weight.coal", "Coal weight"), () => T("config.weight.tooltip", "Default probability weight."), () => config.CoalWeight, value => config.CoalWeight = value, 0, 100, 0.5);
             menu.AddNumberOption(helper.ModManifest, () => T("config.weight.copper", "Copper ore weight"), () => T("config.weight.tooltip", "Default probability weight."), () => config.CopperOreWeight, value => config.CopperOreWeight = value, 0, 100, 0.5);
@@ -72,42 +72,76 @@ namespace MineMod
                 RecipeId = MineItemId,
                 RecipeGroupId = "equipment_workbench",
                 VisualScale = 2,
-                AllowFuelMode = true,
-                AllowElectricMode = config.AllowElectricMode,
-                DefaultMode = config.AllowElectricMode ? "electric" : "fuel",
+                AllowFuelMode = false,
+                AllowElectricMode = true,
+                DefaultMode = "electric",
                 NativeTechNodeId = "dtmapi_mine",
                 NativeTechNodeTitle = T("tech.mine.title", "矿井"),
-                NativeTechNodeDescription = T("tech.mine.description", "解锁矿井制作配方。矿井消耗燃料或电力，并按游戏时间产出矿物到自己的储物格。"),
+                NativeTechNodeDescription = T("tech.mine.description", "解锁矿井制作配方。矿井只消耗电力，并按游戏时间产出矿物到自己的储物格。"),
                 NativeTechNodeParentId = "alloy_material",
                 NativeTechNodeAboveTitleContains = "指挥官",
-                FuelCapacity = config.FuelCapacity,
-                FuelOnlyFuelCostPerCycle = config.FuelOnlyFuelCostPerCycle,
-                ElectricModeFuelCostPerCycle = config.ElectricModeFuelCostPerCycle,
+                FuelCapacity = 0,
+                FuelOnlyFuelCostPerCycle = 0,
+                ElectricModeFuelCostPerCycle = 0,
                 ElectricModePowerCostPerCycle = config.ElectricPowerCostPerCycle,
                 CycleMinutes = config.CycleMinutes,
+                RecipeInputs = BuildRecipeInputs(),
                 IncludeRuntimeModMinerals = config.IncludeRuntimeModMinerals,
                 OutputRules = BuildOutputRules(),
-                ProbabilityOverrides = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
-                {
-                    { "coal", config.CoalWeight },
-                    { "copper_ore", config.CopperOreWeight },
-                    { "iron_ore", config.IronOreWeight },
-                    { OilItemId, config.OilWeight }
-                },
+                ProbabilityOverrides = BuildProbabilityOverrides(),
                 VerboseLogging = config.VerboseLogging
             };
         }
 
         private IReadOnlyList<MachineOutputRule> BuildOutputRules()
         {
-            return new[]
+            var rules = new List<MachineOutputRule>
             {
                 new MachineOutputRule { ItemId = "coal", DisplayName = T("output.coal", "Coal"), Weight = config.CoalWeight, MinCount = 1, MaxCount = 2, Source = "vanilla" },
                 new MachineOutputRule { ItemId = "copper_ore", DisplayName = T("output.copper", "Copper ore"), Weight = config.CopperOreWeight, MinCount = 1, MaxCount = 2, Source = "vanilla" },
-                new MachineOutputRule { ItemId = "iron_ore", DisplayName = T("output.iron", "Iron ore"), Weight = config.IronOreWeight, MinCount = 1, MaxCount = 1, Source = "vanilla" },
-                new MachineOutputRule { ItemId = OilItemId, DisplayName = T("output.oil", "Oil"), Weight = config.OilWeight, MinCount = 1, MaxCount = 1, Source = "DTMAPI.OilMod" }
+                new MachineOutputRule { ItemId = "iron_ore", DisplayName = T("output.iron", "Iron ore"), Weight = config.IronOreWeight, MinCount = 1, MaxCount = 1, Source = "vanilla" }
+            };
+            if (IsOilModAvailable())
+                rules.Add(new MachineOutputRule { ItemId = OilItemId, DisplayName = T("output.oil", "Oil"), Weight = config.OilWeight, MinCount = 1, MaxCount = 1, Source = "DTMAPI.OilMod" });
+            return rules;
+        }
+
+        private IReadOnlyDictionary<string, double> BuildProbabilityOverrides()
+        {
+            var weights = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "coal", config.CoalWeight },
+                { "copper_ore", config.CopperOreWeight },
+                { "iron_ore", config.IronOreWeight }
+            };
+            if (IsOilModAvailable())
+                weights[OilItemId] = config.OilWeight;
+            return weights;
+        }
+
+        private IReadOnlyList<MachineRecipeInput> BuildRecipeInputs()
+        {
+            if (config.UseOilRecipeReplacement && IsOilModAvailable())
+            {
+                return new[]
+                {
+                    new MachineRecipeInput { ItemId = "metal_framework", Count = 10 },
+                    new MachineRecipeInput { ItemId = "engine_core", Count = 5 },
+                    new MachineRecipeInput { ItemId = "steel_ingot", Count = 20 },
+                    new MachineRecipeInput { ItemId = OilItemId, Count = 10 }
+                };
+            }
+
+            return new[]
+            {
+                new MachineRecipeInput { ItemId = "metal_framework", Count = 15 },
+                new MachineRecipeInput { ItemId = "engine_core", Count = 10 },
+                new MachineRecipeInput { ItemId = "steel_ingot", Count = 20 },
+                new MachineRecipeInput { ItemId = "coal", Count = 100 }
             };
         }
+
+        private bool IsOilModAvailable() => helper.ModRegistry.IsLoaded("DTMAPI.OilMod");
 
         private string BuildStatusText()
         {
@@ -118,16 +152,15 @@ namespace MineMod
             string mode = string.IsNullOrWhiteSpace(state.LastMode) ? state.DefaultMode : state.LastMode;
             string output = string.IsNullOrWhiteSpace(state.LastOutputItemId) ? "none" : state.LastOutputItemId;
             return string.Format(
-                T("config.status", "Status={0}, registered={1}, placed={2}, mode={3}, fuel={4}/{5}, cycle={6}m/{7}TU, electric={8}/cycle, group={9}, scale={10:0.##}, last={11}x{12}, target={13}, storage={14}/{15}."),
+                T("config.status", "Status={0}, registered={1}, placed={2}, mode={3}, cycle={4}m/{5}TU, electric={6}/cycle, recipe={7}, group={8}, scale={9:0.##}, last={10}x{11}, target={12}, storage={13}/{14}."),
                 state.Status,
                 state.RegisteredMachineCount,
                 state.PlacedMachineCount,
                 string.IsNullOrWhiteSpace(mode) ? "unknown" : mode,
-                state.RemainingFuel,
-                state.FuelCapacity,
                 state.CycleMinutes,
                 state.CycleTUs,
                 state.ElectricModePowerCostPerCycle,
+                config.UseOilRecipeReplacement && IsOilModAvailable() ? "oil" : "coal",
                 state.RecipeGroupId,
                 state.VisualScale,
                 output,
@@ -153,9 +186,6 @@ namespace MineMod
         private void NormalizeConfig()
         {
             config.CycleMinutes = Math.Max(5, Math.Min(720, config.CycleMinutes));
-            config.FuelCapacity = Math.Max(100, Math.Min(50000, config.FuelCapacity));
-            config.FuelOnlyFuelCostPerCycle = Math.Max(0, config.FuelOnlyFuelCostPerCycle);
-            config.ElectricModeFuelCostPerCycle = Math.Max(0, config.ElectricModeFuelCostPerCycle);
             config.ElectricPowerCostPerCycle = Math.Max(0, config.ElectricPowerCostPerCycle);
             config.CoalWeight = Math.Max(0, config.CoalWeight);
             config.CopperOreWeight = Math.Max(0, config.CopperOreWeight);
@@ -169,12 +199,9 @@ namespace MineMod
         public sealed class MineModConfig
         {
             [DataMember] public bool Enabled { get; set; } = true;
-            [DataMember] public bool AllowElectricMode { get; set; } = true;
             [DataMember] public bool IncludeRuntimeModMinerals { get; set; } = true;
+            [DataMember] public bool UseOilRecipeReplacement { get; set; } = true;
             [DataMember] public int CycleMinutes { get; set; } = 120;
-            [DataMember] public int FuelCapacity { get; set; } = 7200;
-            [DataMember] public int FuelOnlyFuelCostPerCycle { get; set; } = 120;
-            [DataMember] public int ElectricModeFuelCostPerCycle { get; set; } = 20;
             [DataMember] public int ElectricPowerCostPerCycle { get; set; } = 10;
             [DataMember] public double CoalWeight { get; set; } = 18;
             [DataMember] public double CopperOreWeight { get; set; } = 10;

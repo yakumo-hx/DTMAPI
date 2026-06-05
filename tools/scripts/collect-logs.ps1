@@ -6,6 +6,7 @@ param(
 . "$PSScriptRoot\common.ps1"
 $repo = Get-RepoRoot
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
+$dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
 if ($OutputDirectory) {
     New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
     $evidence = (Resolve-Path -LiteralPath $OutputDirectory).Path
@@ -101,10 +102,10 @@ function Copy-SteamLaunchEvidence {
 }
 
 $paths = @(
-    @{ Path = Join-Path $gameDir 'DTMAPI\logs\latest.log'; Name = 'DTMAPI-latest.log' },
+    @{ Path = Join-Path $dtmapiDir 'logs\latest.log'; Name = 'DTMAPI-latest.log' },
     @{ Path = Join-Path $gameDir 'BepInEx\LogOutput.log'; Name = 'BepInEx-LogOutput.log' },
     @{ Path = Join-Path $env:USERPROFILE 'AppData\LocalLow\RedSawGames\DolocTown\Player.log'; Name = 'Unity-Player.log' },
-    @{ Path = Join-Path $gameDir 'DTMAPI\reports\latest-report.txt'; Name = 'latest-report.txt' }
+    @{ Path = Join-Path $dtmapiDir 'reports\latest-report.txt'; Name = 'latest-report.txt' }
 )
 
 foreach ($item in $paths) {
@@ -113,7 +114,7 @@ foreach ($item in $paths) {
     }
 }
 
-$gameEvidenceRoot = Join-Path $gameDir 'DTMAPI\evidence'
+$gameEvidenceRoot = Join-Path $dtmapiDir 'evidence'
 if (Test-Path $gameEvidenceRoot) {
     Copy-Item -Recurse -Force -LiteralPath $gameEvidenceRoot -Destination (Join-Path $evidence 'DTMAPI-evidence')
 }
@@ -122,7 +123,7 @@ Copy-SteamLaunchEvidence -GameDir $gameDir -Destination $evidence
 Write-ProcessCheck -Path (Join-Path $evidence 'process-check.txt')
 Write-FatalWindowCheck -Path (Join-Path $evidence 'fatal-window-check.txt')
 $summaryName = if (Test-Path -LiteralPath (Join-Path $evidence 'summary.txt')) { 'collect-summary.txt' } else { 'summary.txt' }
-"GameDir=$gameDir`nCollected=$(Get-Date -Format o)" | Set-Content -LiteralPath (Join-Path $evidence $summaryName)
+"GameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nCollected=$(Get-Date -Format o)" | Set-Content -LiteralPath (Join-Path $evidence $summaryName)
 try {
     & "$PSScriptRoot\analyze-startup-evidence.ps1" -EvidencePath $evidence -OutputDirectory $evidence -Quiet
 }

@@ -266,17 +266,17 @@ function Install-OfficialLocalDtmApiMod {
 
     $manifest = Get-Content -Raw -LiteralPath $sourceManifestPath | ConvertFrom-Json
     $manifest.EntryDll = "Content/DTMAPI/$($Mod.PackageDll)"
-    $manifest.MinimumDTMApiVersion = '0.2.5'
+    $manifest.MinimumDTMApiVersion = '0.2.8'
     if ($manifest.Dependencies) {
         foreach ($dependency in $manifest.Dependencies) {
             if ($dependency.UniqueID -eq 'DTMAPI.ModConfigMenu') {
-                $dependency.MinimumVersion = '0.2.5'
+                $dependency.MinimumVersion = '0.2.8'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.GameBridge.DolocTown') {
-                $dependency.MinimumVersion = '0.2.5'
+                $dependency.MinimumVersion = '0.2.8'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.DebugConsoleHost') {
-                $dependency.MinimumVersion = '0.2.5'
+                $dependency.MinimumVersion = '0.2.8'
             }
         }
     }
