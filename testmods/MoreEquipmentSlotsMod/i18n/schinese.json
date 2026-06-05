@@ -1,0 +1,20 @@
+{
+  "mod.name": "DTMAPI 更多装备栏位",
+  "mod.loaded": "DTMAPI 更多装备栏位已加载；experimental Equipment Slots API 负责运行时扩展策略。",
+  "mod.apiMissing": "Equipment Slots API 暂不可用。",
+  "config.section.slots": "装备栏位",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "注册额外的仅属性装备栏位。",
+  "config.extra.name": "额外栏位",
+  "config.extra.tooltip": "仅提供属性的额外栏位。默认外观栏位保留正常外显效果。",
+  "config.quickEquip.name": "装备物品 ID",
+  "config.quickEquip.tooltip": "要装备到第一个 DTMAPI 额外栏位的被动物品 ID。",
+  "config.equipFirst.name": "装备到空槽",
+  "config.equipFirst.tooltip": "从背包消耗一个匹配的被动物品，并作为仅属性额外栏位生效。",
+  "config.recover.name": "恢复全部额外槽",
+  "config.recover.tooltip": "安全卸下所有 DTMAPI 额外栏位装备并放回背包，使用原生溢出处理。",
+  "config.safeRecovery.name": "安全恢复",
+  "config.safeRecovery.tooltip": "禁用或缺少 Mod 时请求安全卸下/恢复额外栏位装备。",
+  "config.status.missing": "Equipment Slots API 暂不可用。",
+  "config.status": "状态={0}，额外栏位={1}，已存={2}，已生效={3}，UI={4}，不影响外观={5}。槽位：{6}"
+}

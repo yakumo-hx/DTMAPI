@@ -50,27 +50,17 @@ namespace ActionSpeedMod
             });
             menu.SetDisplayName(helper.ModManifest, () => T(helper, "mod.name", helper.ModManifest.Name));
             menu.AddSectionTitle(helper.ModManifest, () => T(helper, "config.section.main", "Action speed"));
-            menu.AddParagraph(helper.ModManifest, () => T(helper, "config.status.toolVerified", "Tool animation, fuel/feed add, eat/drink continuous use, IWaterContainer and in-water bottle fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest are verified in smoke."));
+            menu.AddParagraph(helper.ModManifest, () => T(helper, "config.status.toolVerified", "Tool animation, fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest are verified in smoke."));
             menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.enabled.name", "Enabled"), () => T(helper, "config.enabled.tooltip", "Master switch for all ActionSpeed behavior."), () => config.Enabled, value => config.Enabled = value);
-            menu.AddChoiceOption(helper.ModManifest, () => T(helper, "config.profile.name", "Profile"), () => T(helper, "config.profile.tooltip", "Preset label used by migration tests."), () => config.Profile, value => config.Profile = value, new[] { "Safe", "Fast", "Debug" });
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.toolSpeed.name", "Tool animation speed"), () => T(helper, "config.toolSpeed.tooltip", "Axe, pickaxe, and sickle animation speed hook target."), () => config.ToolSpeedEnabled, value => config.ToolSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.toolMultiplier.name", "Tool multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.ToolMultiplier, value => config.ToolMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.bottleFill.name", "Bottle fill speed"), () => T(helper, "config.bottleFill.tooltip", "Plastic-bottle water fill animation hook target."), () => config.BottleFillSpeedEnabled, value => config.BottleFillSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.bottleMultiplier.name", "Bottle multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.BottleFillMultiplier, value => config.BottleFillMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.eatDrink.name", "Eat/drink speed"), () => T(helper, "config.eatDrink.tooltip", "Eat and drink animation hook target."), () => config.EatDrinkSpeedEnabled, value => config.EatDrinkSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.eatDrinkMultiplier.name", "Eat/drink multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.EatDrinkMultiplier, value => config.EatDrinkMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.machineAdd.name", "Machine add speed"), () => T(helper, "config.machineAdd.tooltip", "Fuel/feed interaction animation hook target."), () => config.MachineAddSpeedEnabled, value => config.MachineAddSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.machineMultiplier.name", "Machine multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.MachineAddMultiplier, value => config.MachineAddMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.harvest.name", "Harvest speed"), () => T(helper, "config.harvest.tooltip", "Crop, forage, and resin interaction animation hook target."), () => config.HarvestSpeedEnabled, value => config.HarvestSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.harvestMultiplier.name", "Harvest multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.HarvestMultiplier, value => config.HarvestMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.plant.name", "Planting speed"), () => T(helper, "config.plant.tooltip", "Experimental: seed planting interaction animation hook target."), () => config.PlantSpeedEnabled, value => config.PlantSpeedEnabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.plantMultiplier.name", "Planting multiplier"), () => T(helper, "config.multiplier.tooltip", "Multiplier clamped to 1x-4x."), () => config.PlantMultiplier, value => config.PlantMultiplier = value, 1, 4, 0.5);
-            menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.autoFill.name", "Auto fill bottle"), () => T(helper, "config.autoFill.tooltip", "Automatically fill held bottles while in water once hooks are promoted."), () => config.AutoFillBottle, value => config.AutoFillBottle = value);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.toolSpeed.name", "Tool animation speed"), () => T(helper, "config.toolSpeed.tooltip", "Axe, pickaxe, and sickle animation speed hook target."), () => config.ToolSpeedEnabled, value => config.ToolSpeedEnabled = value, () => config.ToolMultiplier, value => config.ToolMultiplier = value, 1, 4, 0.5);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.bottleFill.name", "Bottle fill speed"), () => T(helper, "config.bottleFill.tooltip", "Plastic-bottle water fill animation hook target."), () => config.BottleFillSpeedEnabled, value => config.BottleFillSpeedEnabled = value, () => config.BottleFillMultiplier, value => config.BottleFillMultiplier = value, 1, 4, 0.5);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.eatDrink.name", "Eat/drink speed"), () => T(helper, "config.eatDrink.tooltip", "Eat and drink animation hook target."), () => config.EatDrinkSpeedEnabled, value => config.EatDrinkSpeedEnabled = value, () => config.EatDrinkMultiplier, value => config.EatDrinkMultiplier = value, 1, 4, 0.5);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.machineAdd.name", "Machine add speed"), () => T(helper, "config.machineAdd.tooltip", "Fuel/feed interaction animation hook target."), () => config.MachineAddSpeedEnabled, value => config.MachineAddSpeedEnabled = value, () => config.MachineAddMultiplier, value => config.MachineAddMultiplier = value, 1, 4, 0.5);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.harvest.name", "Harvest speed"), () => T(helper, "config.harvest.tooltip", "Crop, forage, and resin interaction animation hook target."), () => config.HarvestSpeedEnabled, value => config.HarvestSpeedEnabled = value, () => config.HarvestMultiplier, value => config.HarvestMultiplier = value, 1, 4, 0.5);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T(helper, "config.plant.name", "Planting speed"), () => T(helper, "config.plant.tooltip", "Experimental: seed planting interaction animation hook target."), () => config.PlantSpeedEnabled, value => config.PlantSpeedEnabled = value, () => config.PlantMultiplier, value => config.PlantMultiplier = value, 1, 4, 0.5);
+            menu.AddSectionTitle(helper.ModManifest, () => T(helper, "config.section.quick", "Quick bottle actions"));
+            menu.AddInlineBoolBoolOption(helper.ModManifest, () => T(helper, "config.autoFill.name", "Auto fill bottle"), () => T(helper, "config.autoFill.tooltip", "Automatically fill held bottles while in water once hooks are promoted."), () => config.AutoFillBottle, value => config.AutoFillBottle = value, () => T(helper, "config.autoFillStrong.name", "Strong auto fill"), () => T(helper, "config.autoFillStrong.tooltip", "Attempts the verified native bottle-fill path more frequently while auto fill is enabled."), () => config.AutoFillStrong, value => config.AutoFillStrong = value);
             menu.AddBoolOption(helper.ModManifest, () => T(helper, "config.rightClickDrink.name", "Right-click drink"), () => T(helper, "config.rightClickDrink.tooltip", "Continuous bottled-water drinking once input/action hooks are promoted."), () => config.ContinuousDrinkWithRightClick, value => config.ContinuousDrinkWithRightClick = value);
-            menu.AddNumberOption(helper.ModManifest, () => T(helper, "config.cooldown.name", "Auto-action cooldown"), () => T(helper, "config.cooldown.tooltip", "Minimum interval for automatic fill/drink attempts."), () => config.AutoActionCooldownSeconds, value => config.AutoActionCooldownSeconds = value, 0.05, 5, 0.05);
-            menu.AddKeybindOption(helper.ModManifest, () => T(helper, "config.menuKey.name", "Menu key"), () => T(helper, "config.menuKey.tooltip", "Opens this DTMAPI config page."), () => config.MenuKey, value => config.MenuKey = value);
-            menu.AddKeybindOption(helper.ModManifest, () => T(helper, "config.drinkHoldKey.name", "Drink hold key"), () => T(helper, "config.drinkHoldKey.tooltip", "Optional fallback continuous drink key. None disables it."), () => config.ContinuousDrinkHoldKey, value => config.ContinuousDrinkHoldKey = value);
-            menu.AddTextOption(helper.ModManifest, () => T(helper, "config.debugLabel.name", "Debug label"), () => T(helper, "config.debugLabel.tooltip", "Free text used to verify text editing."), () => config.DebugLabel, value => config.DebugLabel = value);
         }
 
         private void RegisterActionSpeedPolicy(string reason)
@@ -100,6 +90,9 @@ namespace ActionSpeedMod
                 PlantSpeedEnabled = config.PlantSpeedEnabled,
                 PlantMultiplier = config.PlantMultiplier,
                 AutoFillBottle = config.AutoFillBottle,
+                AutoFillStrong = config.AutoFillBottle && config.AutoFillStrong,
+                AutoFillCooldownSeconds = ResolveAutoFillCooldownSeconds(),
+                AutoFillStrongCooldownSeconds = ResolveAutoFillStrongCooldownSeconds(),
                 ContinuousDrinkWithRightClick = config.ContinuousDrinkWithRightClick,
                 VerboseLogging = config.Profile.Equals("Debug", StringComparison.OrdinalIgnoreCase)
             });
@@ -201,6 +194,8 @@ namespace ActionSpeedMod
             config.HarvestMultiplier = Clamp(config.HarvestMultiplier, 1, 4);
             config.PlantMultiplier = Clamp(config.PlantMultiplier, 1, 4);
             config.AutoActionCooldownSeconds = Clamp(config.AutoActionCooldownSeconds, 0.05, 5);
+            if (!config.AutoFillBottle)
+                config.AutoFillStrong = false;
             config.MenuKey = NormalizeKey(config.MenuKey);
             config.ContinuousDrinkHoldKey = NormalizeKey(config.ContinuousDrinkHoldKey);
             config.DebugLabel ??= string.Empty;
@@ -231,6 +226,22 @@ namespace ActionSpeedMod
 
         private static double Clamp(double value, double min, double max) => Math.Min(max, Math.Max(min, value));
 
+        private double ResolveAutoFillCooldownSeconds()
+        {
+            if (config.Profile.Equals("Debug", StringComparison.OrdinalIgnoreCase))
+                return 0.1;
+            if (config.Profile.Equals("Fast", StringComparison.OrdinalIgnoreCase))
+                return 0.18;
+            return config.AutoActionCooldownSeconds;
+        }
+
+        private double ResolveAutoFillStrongCooldownSeconds()
+        {
+            double normal = ResolveAutoFillCooldownSeconds();
+            double profileTarget = config.Profile.Equals("Safe", StringComparison.OrdinalIgnoreCase) ? 0.12 : 0.08;
+            return Math.Min(normal, profileTarget);
+        }
+
         [DataContract]
         public sealed class ActionSpeedConfig
         {
@@ -249,6 +260,7 @@ namespace ActionSpeedMod
             [DataMember] public bool PlantSpeedEnabled { get; set; }
             [DataMember] public double PlantMultiplier { get; set; } = 3;
             [DataMember] public bool AutoFillBottle { get; set; }
+            [DataMember] public bool AutoFillStrong { get; set; }
             [DataMember] public bool ContinuousDrinkWithRightClick { get; set; }
             [DataMember] public string ContinuousDrinkHoldKey { get; set; } = "None";
             [DataMember] public string MenuKey { get; set; } = "F10";

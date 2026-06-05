@@ -1,0 +1,14 @@
+{
+  "mod.name": "Y键控制台",
+  "mod.loaded": "Y键控制台已加载；进入存档后按 Y 打开。",
+  "mod.bound": "调试控制台 API 绑定完成。",
+  "mod.boundMissing": "调试控制台 API 绑定不完整。",
+  "mod.saveLoaded": "调试控制台 SaveLoaded 边界 OK。",
+  "mod.returnedTitle": "已回到标题页，调试控制台关闭。",
+  "mod.ignoredTitle": "尚未进入存档，忽略 Y 调试控制台热键。",
+  "mod.toggle": "Y 调试控制台切换请求。",
+  "mod.configSaved": "Y键控制台配置已保存。",
+  "config.section.main": "控制台",
+  "config.language.name": "显示语言",
+  "config.language.tooltip": "选择控制台界面语言；Auto 跟随 DTMAPI 语言检测。"
+}

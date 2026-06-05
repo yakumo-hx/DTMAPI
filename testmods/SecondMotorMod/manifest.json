@@ -1,0 +1,15 @@
+{
+  "Name": "DTMAPI Alternate Flying Motor",
+  "Author": "DTMAPI",
+  "Version": "0.2.5-dtmapi",
+  "UniqueID": "DTMAPI.SecondMotorMod",
+  "EntryDll": "SecondMotorMod.dll",
+  "MinimumDTMApiVersion": "0.2.5",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.2.5",
+      "Required": true
+    }
+  ]
+}

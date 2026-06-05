@@ -1,21 +1,21 @@
 {
   "Name": "Auto Fishing",
   "Author": "Yuuka",
-  "Version": "1.4.2-dtmapi",
+  "Version": "1.4.3-dtmapi",
   "Description": "DTMAPI migration of AutoFishing config/input/state policy.",
   "UniqueID": "Yuuka.DTMAPI.AutoFishing",
   "EntryDll": "AutoFishingMod.dll",
-  "MinimumDTMApiVersion": "0.1.13",
+  "MinimumDTMApiVersion": "0.2.5",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.1.13",
+      "MinimumVersion": "0.2.5",
       "Required": true
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.1.10",
+      "MinimumVersion": "0.2.5",
       "Required": true
     }
   ]

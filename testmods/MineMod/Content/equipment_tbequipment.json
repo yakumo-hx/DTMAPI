@@ -1,0 +1,44 @@
+[
+  {
+    "id": "dtmapi_mine",
+    "menu_type": 1,
+    "scene_asset": {
+      "url": "sprite_equipment_well"
+    },
+    "flip_asset": {
+      "url": ""
+    },
+    "animator_asset": {
+      "url": ""
+    },
+    "env_type": 2,
+    "fit_type": 1,
+    "cover_size": {
+      "x": 8,
+      "y": 6
+    },
+    "base_equipment": "",
+    "display_lock": true,
+    "show_complete_info_lock": true,
+    "function": {
+      "$type": "EquipmentFuncCase",
+      "total_capacity": 16,
+      "line_capacity": 4,
+      "place_condition": "",
+      "label_offset": {
+        "x": 14,
+        "y": 13
+      },
+      "automate_types": [
+        "material",
+        "construction",
+        "other"
+      ],
+      "skin_color": [],
+      "skin_sprite": []
+    },
+    "processors": [],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  }
+]

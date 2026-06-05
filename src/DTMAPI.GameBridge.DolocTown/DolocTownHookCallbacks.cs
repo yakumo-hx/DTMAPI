@@ -14,6 +14,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
+            Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
             Runtime?.NotifySaveLoaded(isNewGame);
             Bridge?.MarkSaveLoadedForSmoke();
         }
@@ -31,6 +32,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ReturnHomePostfix()
         {
+            Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
             Runtime?.NotifyReturnedToTitle();
         }
 
@@ -64,6 +66,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AnimalViewerShowPostfix(object __instance, object __0)
         {
+            Bridge?.ExperimentalApi?.RenderAnimalProgressOverlay(__instance, __0);
             if (Bridge?.ExperimentalApi?.RecordAnimalViewerUiEvidence(__instance, __0) == true)
                 Bridge.MarkAnimalViewerUiEvidenceForSmoke();
         }
@@ -74,9 +77,18 @@ namespace DTMAPI.GameBridge.DolocTown
                 Bridge.MarkAnimalViewerUiEvidenceForSmoke();
         }
 
+        public static void ToolColliderHandleToolsPrefix(object __instance, object other)
+        {
+            Bridge?.ExperimentalApi?.CaptureOilCoalDropBeforeToolHit(__instance, other);
+        }
+
         public static void ToolColliderHandleToolsPostfix(object __instance, object other)
         {
-            Bridge?.ExperimentalApi?.ApplyOneActionToolHit(__instance, other);
+            bool oneActionHandled = Bridge?.ExperimentalApi?.ApplyOneActionToolHit(__instance, other) == true;
+            if (!oneActionHandled)
+                Bridge?.ExperimentalApi?.ApplyOilCoalDropAfterToolHit(__instance, other);
+            else
+                Bridge?.ExperimentalApi?.ClearCapturedOilCoalDrop(__instance, other);
         }
 
         public static void AgentStateToolEnterPostfix(object __instance)
@@ -137,12 +149,17 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void FishingMiniGameStartPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("MiniGame", __instance);
+            Bridge?.ExperimentalApi?.NotifyFishingMiniGameStart(__instance);
+        }
+
+        public static void FishingMiniGameUpdatePostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ApplyFishingMiniGameAutomationTick(__instance);
         }
 
         public static void FishingMiniGameStopPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("MiniGameStop", __instance);
+            Bridge?.ExperimentalApi?.NotifyFishingMiniGameStop(__instance);
         }
 
         public static void FishingPullEnterPostfix(object __instance)
@@ -153,6 +170,66 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void FishingPullExitPostfix()
         {
             Bridge?.ExperimentalApi?.NotifyFishingPhase("Cooldown", null);
+        }
+
+        public static bool ItemMotorKeyOnUsePrefix(object __instance)
+        {
+            return Bridge?.ExperimentalApi?.HandleMotorKeyUse(__instance) ?? true;
+        }
+
+        public static bool MotorInteractableOnInteractPrefix(object __instance)
+        {
+            return Bridge?.ExperimentalApi?.HandleMotorInteract(__instance) ?? true;
+        }
+
+        public static void AgentControllerStateGetOnMotorPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.NotifyMotorGetOn(__instance);
+        }
+
+        public static void AgentControllerStateGetOffMotorPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.NotifyMotorGetOff(__instance);
+        }
+
+        public static void MotorControllerOnFixedUpdatePrefix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ApplySecondMotorTuningForFixedUpdate(__instance);
+        }
+
+        public static void MotorControllerOnFixedUpdatePostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.RestoreSecondMotorTuningAfterFixedUpdate(__instance);
+        }
+
+        public static void UnlockMotorPostfix()
+        {
+            Bridge?.ExperimentalApi?.NotifyOriginalMotorUnlocked();
+        }
+
+        public static void SetMotorPositionPostfix(object __0, object __1)
+        {
+            Bridge?.ExperimentalApi?.NotifyOriginalMotorPositionChanged(__0, __1);
+        }
+
+        public static void DolocApiEnterRoomPostfix(object __0, object __1, bool __result)
+        {
+            Bridge?.ExperimentalApi?.NotifyEnterRoomForActiveSecondMotor(__0, __1, __result);
+        }
+
+        public static void AgentEquipmentReloadParamsPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ApplyEquipmentSlotsAfterReloadParams(__instance);
+        }
+
+        public static void AccessoriesBarInitPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.__Init");
+        }
+
+        public static void AccessoriesBarOnStartShowPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.OnStartShow");
         }
     }
 }

@@ -5,6 +5,8 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using BepInEx;
+using DTMAPI.Abstractions;
+using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 using DTMAPI.GameBridge.DolocTown;
 using DTMAPI.ModConfigMenu;
@@ -17,6 +19,7 @@ namespace DTMAPI.BepInExBootstrap
         private DtmApiRuntime? runtime;
         private DolocTownGameBridge? bridge;
         private ReflectedTitleMenuSettingsUi? titleSettingsUi;
+        private ReflectedDebugConsoleUi? debugConsoleUi;
         private BepInExRuntimeHost? host;
         private bool initialized;
         private bool frameSourceLogged;
@@ -24,6 +27,7 @@ namespace DTMAPI.BepInExBootstrap
         private bool fallbackPumpLogged;
         private bool bridgeUpdateErrorLogged;
         private bool titleUiUpdateErrorLogged;
+        private bool debugUiUpdateErrorLogged;
         private int fallbackTickQueued;
         private SynchronizationContext? unityContext;
         private Timer? fallbackPump;
@@ -48,6 +52,17 @@ namespace DTMAPI.BepInExBootstrap
                 var configMenu = new ConfigMenuRegistry();
                 runtime = new DtmApiRuntime(host, configMenu);
                 titleSettingsUi = new ReflectedTitleMenuSettingsUi(runtime, configMenu);
+                debugConsoleUi = new ReflectedDebugConsoleUi(runtime);
+                runtime.SaveSessionLoaded += (slot, isNewGame) => debugConsoleUi?.ResetForSaveBoundary(slot, isNewGame);
+                runtime.ReturnedToTitleBoundary += () => debugConsoleUi?.ResetForTitleBoundary();
+                runtime.RegisterRuntimeApi<IDebugConsoleApi>(new ManifestModel
+                {
+                    Name = "DTMAPI Debug Console Host",
+                    Author = "DTMAPI",
+                    Version = DtmApiRuntime.ApiVersion,
+                    UniqueID = "DTMAPI.DebugConsoleHost",
+                    Type = "RuntimeApi"
+                }, debugConsoleUi);
                 bridge = new DolocTownGameBridge(runtime, () => titleSettingsUi.ClickTitleButtonForSmoke());
                 unityContext = SynchronizationContext.Current;
                 diagnosticsHotkey = ResolveDiagnosticsHotkey();
@@ -245,6 +260,15 @@ namespace DTMAPI.BepInExBootstrap
                     {
                         RecordUpdateComponentError("DTMAPI.TitleSettings", "Title settings UI update failed.", ex, ref titleUiUpdateErrorLogged);
                     }
+
+                    try
+                    {
+                        debugConsoleUi?.Update();
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordUpdateComponentError("DTMAPI.DebugConsole", "Debug console UI update failed.", ex, ref debugUiUpdateErrorLogged);
+                    }
                 }
 
                 bool uiCapturingKey = titleSettingsUi != null && titleSettingsUi.IsCapturingKey;
@@ -255,7 +279,8 @@ namespace DTMAPI.BepInExBootstrap
                     runtime.RuntimeMonitor.Log("DTMAPI diagnostics hotkey " + diagnosticsHotkey + " observed. open=" + wasOpen + " -> " + runtime.UI.IsOpen + " context=" + runtime.UI.InputContext + ".");
                 }
 
-                if (allowUnityApi && !uiCapturingKey)
+                bool debugConsoleConsumedInput = debugConsoleUi != null && debugConsoleUi.ConsumedInputThisFrame;
+                if (allowUnityApi && !uiCapturingKey && !debugConsoleConsumedInput)
                     PollRegisteredInputButtons();
 
                 runtime.Update();

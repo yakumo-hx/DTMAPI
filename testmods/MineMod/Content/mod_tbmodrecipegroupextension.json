@@ -1,0 +1,8 @@
+[
+  {
+    "id": "equipment_workbench",
+    "extra_recipes": [
+      "dtmapi_mine"
+    ]
+  }
+]

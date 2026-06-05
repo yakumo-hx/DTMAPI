@@ -38,8 +38,21 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly HashSet<string> autoExerciseOneActionWrongToolCreateAttempts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool autoExerciseAutoFishingPhaseAttempted;
         private bool autoExerciseAutoFishingPhaseStarted;
+        private bool autoExerciseAutoFishingAutoCastVerified;
+        private bool autoExerciseAutoFishingMovementCancelVerified;
+        private bool autoExerciseAutoFishingPhaseVerified;
+        private int autoFishingMiniGameCompleteBaseline;
         private bool autoExerciseTitleButtonLifecycleAttempted;
         private bool autoExerciseInstantSaveAttempted;
+        private bool autoExerciseDebugConsoleAttempted;
+        private bool autoExerciseDebugInventoryAttempted;
+        private bool autoExerciseDebugWeatherAttempted;
+        private bool autoExerciseDebugTeleportAttempted;
+        private bool autoExerciseDebugTimeAttempted;
+        private bool autoExerciseDebugMovementAttempted;
+        private bool autoExerciseVehicleAttempted;
+        private bool autoExerciseNewContentApisAttempted;
+        private bool debugTeleportVerificationCompleted;
         private bool instantSaveReloadCompleted;
         private bool autoFishingHotkeyInjected;
         private bool autoOpenTitleSettingsAttempted;
@@ -56,6 +69,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool titleSettingsButtonScreenshotRequested;
         private DateTimeOffset titleSettingsMenuEvidenceAt;
         private bool titleSettingsMenuScreenshotRequested;
+        private int titleSettingsConfigScreenshotStage;
+        private DateTimeOffset titleSettingsConfigScreenshotAt;
         private string? titleSettingsEvidenceDir;
         private DateTimeOffset officialModUiEvidenceAt;
         private string? officialModUiEvidenceDir;
@@ -69,11 +84,23 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset autoFishingPhaseStartedAt;
         private int autoFishingApplicationBaseline;
         private DateTimeOffset instantSaveReloadRequestedAt;
+        private DateTimeOffset debugTeleportRequestedAt;
+        private DateTimeOffset vehicleOutdoorTeleportRequestedAt;
+        private DateTimeOffset vehicleEdgeTransitionRequestedAt;
         private int? instantSaveGameIndex;
         private InstantSaveSnapshot? instantSaveBeforeSnapshot;
+        private TeleportSnapshot? debugTeleportBeforeSnapshot;
+        private TeleportDestination? debugTeleportDestination;
+        private TeleportResult? debugTeleportRequestResult;
+        private TeleportDestination? vehicleEdgeTransitionDestination;
+        private TeleportResult? vehicleEdgeTransitionRequestResult;
+        private MotorVehicleState? vehicleEdgeTransitionOriginalBefore;
+        private MotorVehicleState? vehicleEdgeTransitionSecondBefore;
+        private string vehicleEdgeTransitionBaseSummary = string.Empty;
         private int titleLifecycleStage;
         private DateTimeOffset titleLifecycleStageAt;
         private string? titleLifecycleEvidenceDir;
+        private string? newContentEvidenceDir;
         private Timer? hookRetryTimer;
         private readonly object hookGate = new object();
         private bool saveLoadedPatched;
@@ -91,11 +118,13 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool actionSpeedUseItemContinuesPatched;
         private bool actionSpeedBaseExitPatched;
         private bool oneActionToolColliderPatched;
+        private bool oilCoalDropCapturePatched;
         private bool fishingReadyEnterPatched;
         private bool fishingCastEnterPatched;
         private bool fishingWaitEnterPatched;
         private bool fishingWaitPlayPatched;
         private bool fishingMiniGameStartPatched;
+        private bool fishingMiniGameUpdatePatched;
         private bool fishingMiniGameStopPatched;
         private bool fishingPullEnterPatched;
         private bool fishingPullExitPatched;
@@ -105,6 +134,18 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool animalFullInfoDataPatched;
         private bool animalViewerShowPatched;
         private bool animalPanelRefreshViewerPatched;
+        private bool motorKeyUsePatched;
+        private bool motorInteractPatched;
+        private bool motorGetOnPatched;
+        private bool motorGetOffPatched;
+        private bool motorFixedUpdatePrefixPatched;
+        private bool motorFixedUpdatePostfixPatched;
+        private bool motorUnlockPatched;
+        private bool motorSetPositionPatched;
+        private bool motorEnterRoomPatched;
+        private bool equipmentSlotsReloadParamsPatched;
+        private bool equipmentSlotsAccessoriesInitPatched;
+        private bool equipmentSlotsAccessoriesStartShowPatched;
         private bool hookResolutionDiagnosticLogged;
         private bool uiContextDiagnosticLogged;
         private Delegate? saveLoadedUnityEventDelegate;
@@ -118,6 +159,11 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
         internal DolocTownExperimentalBridgeApi? ExperimentalApi => experimentalApi;
+
+        public void CleanupSecondMotorForLifecycleBoundary(string reason)
+        {
+            experimentalApi?.CleanupSecondMotorResidueForBoundary(reason);
+        }
 
         public void Initialize()
         {
@@ -151,11 +197,22 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IActionSpeedApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IItemTooltipApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAnimalViewerApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IMailDeliveryApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IWeatherDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<ITeleportDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IInstantSaveDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<ITimeDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IMovementDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IMotorVehicleApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
         }
 
         public void Update()
         {
             RefreshUiContext();
+            experimentalApi?.UpdateRuntimeAutomation();
             if (smokeSettings == null)
                 LoadSmokeSettings();
             if (smokeSettings == null || !smokeSettings.Enabled)
@@ -220,6 +277,83 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 autoExerciseInstantSaveAttempted = true;
                 TryExerciseInstantSaveForSmoke();
+            }
+            if (smokeSettings.AutoExerciseDebugTeleport && debugTeleportRequestedAt != default && !debugTeleportVerificationCompleted &&
+                (DateTimeOffset.Now - debugTeleportRequestedAt).TotalSeconds >= 4)
+            {
+                debugTeleportVerificationCompleted = true;
+                CompleteDebugTeleportForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugConsoleAttempted && smokeSettings.AutoExerciseDebugConsole && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugConsoleDelaySeconds))
+            {
+                autoExerciseDebugConsoleAttempted = true;
+                runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + external smoke key input", "External smoke script should have completed Y/Escape/Y/Y verification; see latest.log and result.json for the pass/fail evidence.");
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugInventoryAttempted && smokeSettings.AutoExerciseDebugInventory && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugInventoryDelaySeconds))
+            {
+                autoExerciseDebugInventoryAttempted = true;
+                TryExerciseDebugInventoryForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugWeatherAttempted && smokeSettings.AutoExerciseDebugWeather && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugWeatherDelaySeconds))
+            {
+                autoExerciseDebugWeatherAttempted = true;
+                TryExerciseDebugWeatherForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugTimeAttempted && smokeSettings.AutoExerciseDebugTime && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugTimeDelaySeconds))
+            {
+                autoExerciseDebugTimeAttempted = true;
+                TryExerciseDebugTimeForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugMovementAttempted && smokeSettings.AutoExerciseDebugMovement && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugMovementDelaySeconds))
+            {
+                autoExerciseDebugMovementAttempted = true;
+                TryExerciseDebugMovementForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseVehicleAttempted && smokeSettings.AutoExerciseVehicle && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseVehicleDelaySeconds))
+            {
+                SmokeAttemptResult vehicleResult = TryExerciseVehicleForSmoke();
+                if (vehicleResult == SmokeAttemptResult.Pending)
+                    return;
+
+                autoExerciseVehicleAttempted = true;
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseNewContentApisAttempted && smokeSettings.AutoExerciseNewContentApis && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseNewContentApisDelaySeconds))
+            {
+                SmokeAttemptResult newContentResult = TryExerciseNewContentApisForSmoke();
+                if (newContentResult == SmokeAttemptResult.Pending)
+                    return;
+
+                autoExerciseNewContentApisAttempted = true;
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseDebugTeleportAttempted && smokeSettings.AutoExerciseDebugTeleport && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugTeleportDelaySeconds))
+            {
+                autoExerciseDebugTeleportAttempted = true;
+                SmokeAttemptResult teleportResult = TryExerciseDebugTeleportForSmoke();
+                if (teleportResult != SmokeAttemptResult.Pending)
+                {
+                    debugTeleportVerificationCompleted = true;
+                    TryQuitAfterDebugSmoke();
+                }
+                else
+                {
+                    return;
+                }
             }
             if (!autoOpenAnimalPanelAttempted && smokeSettings.AutoOpenAnimalPanel && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoOpenAnimalPanelDelaySeconds))
@@ -351,6 +485,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 titleSettingsMenuScreenshotRequested = true;
                 CaptureTitleSettingsMenuEvidenceScreenshot();
             }
+            if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 9)
+                UpdateTitleSettingsConfigEvidenceScreenshots();
             if (!autoExitAttempted && animalViewerUiEvidenceAt != default &&
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 5)
             {
@@ -454,6 +590,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 autoExerciseAttempted = true;
                 TryExerciseExperimentalHooksForSmoke();
             }
+            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle)
+            {
+                if (smokeSettings.AutoExerciseDebugConsole)
+                    runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Save loaded; external smoke script will press Y/Escape/Y/Y and wait for debug console open/close logs.");
+                if (smokeSettings.AutoExerciseDebugInventory)
+                    runtime.SetHookStatus("Smoke.DebugInventory", "pending", "IInventoryDebugApi", "Waiting after save load to give one official item through native backpack placement.");
+                if (smokeSettings.AutoExerciseDebugWeather)
+                    runtime.SetHookStatus("Smoke.DebugWeather", "pending", "IWeatherDebugApi", "Waiting after save load to list and switch a native weather option.");
+                if (smokeSettings.AutoExerciseDebugTeleport)
+                    runtime.SetHookStatus("Smoke.DebugTeleport", "pending", "ITeleportDebugApi", "Waiting after save load to request a whitelisted native mark-point transport.");
+                if (smokeSettings.AutoExerciseDebugTime)
+                    runtime.SetHookStatus("Smoke.DebugTime", "pending", "ITimeDebugApi", "Waiting after save load to skip to the next weather period through native time pass.");
+                if (smokeSettings.AutoExerciseDebugMovement)
+                    runtime.SetHookStatus("Smoke.DebugMovement", "pending", "IMovementDebugApi", "Waiting after save load to cycle 0.5x/1x/2x/3x/4x and restore 1x.");
+                if (smokeSettings.AutoExerciseVehicle)
+                    runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi + ItemMotorKey.OnUse", "Waiting after save load to verify SecondMotor registration, official mod item key, key summon, ride, dismount, and original motor summon.");
+                return;
+            }
             if (smokeSettings.AutoOpenAnimalPanel)
             {
                 runtime.SetHookStatus("Smoke.AnimalPanelUi", "pending", "AnimalPanelUiState", "Waiting after save load to open the official animal panel UI.");
@@ -497,6 +651,8 @@ namespace DTMAPI.GameBridge.DolocTown
             if (smokeSettings.AutoExerciseAutoFishingPhase)
             {
                 runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateFishingWait.OnPlay", "Waiting after save load to toggle AutoFishing and exercise the instant-bite wait phase.");
+                if (smokeSettings.AutoExerciseAutoFishingMiniGameComplete)
+                    runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "pending", "FishingGameScrollBar.UpdateGame", "SkipMiniGame=false; waiting for visible minigame auto-complete evidence.");
                 return;
             }
             if (smokeSettings.AutoExerciseTitleButtonLifecycle)
@@ -507,6 +663,13 @@ namespace DTMAPI.GameBridge.DolocTown
             if (smokeSettings.AutoExerciseInstantSave)
             {
                 runtime.SetHookStatus("Smoke.InstantSave", "pending", "DolocAPI.SaveGame/LoadGame", "Save loaded; waiting briefly before invoking the experimental instant-save debug path.");
+                return;
+            }
+            if (smokeSettings.AutoExerciseNewContentApis)
+            {
+                runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "pending", "ToolCollider.HandleTools + OilMod dtmapi_oil", "Save loaded; waiting briefly before creating or finding a coal resource, breaking it with a native pickaxe hit, and forcing the smoke-only oil roll.");
+                runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "pending", "IEquipmentSlotsApi + grandmas_button", "Save loaded; waiting briefly before giving a passive item, equipping it into a DTMAPI extra slot, and recovering it.");
+                runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "IMachineProductionApi + transient dtmapi_mine equipment", "Save loaded; waiting briefly before creating a temporary mine and forcing one runtime production cycle for evidence.");
                 return;
             }
             if (smokeSettings.AutoSaveAfterLoad && pendingAutoLoadGameIndex.HasValue && !autoSaveAttempted)
@@ -629,7 +792,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetActionSpeedToolHooksInstalled(actionSpeedToolHooksReady);
                 experimentalApi?.SetActionSpeedInteractionHooksInstalled(actionSpeedInteractionHooksReady);
                 runtime.SetHookStatus("ActionSpeed.ToolAnimation", actionSpeedToolHooksReady ? "verified" : "pending", "Harmony Postfix: AgentStateTool.OnEnter/OnExit", actionSpeedToolHooksReady ? "Patched tool animation speed and restore points; verified by ACTIONSPEED-001. Selected interaction slices are tracked separately in ACTIONSPEED-002." : "Waiting for AgentStateTool.OnEnter/OnExit to become patchable.");
-                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", actionSpeedInteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues", actionSpeedInteractionHooksReady ? "Patched shared interaction/eat animation speed points plus right-click continuous item timer scaling. ACTIONSPEED-002 verifies fuel/feed add, eat/drink continuous use, IWaterContainer and in-water bottle fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues hooks to become patchable.");
+                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", actionSpeedInteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues", actionSpeedInteractionHooksReady ? "Patched shared interaction/eat animation speed points plus right-click continuous timer scaling. ACTIONSPEED-002 verifies fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues hooks to become patchable.");
+
+                if (!oilCoalDropCapturePatched)
+                {
+                    oilCoalDropCapturePatched = patcher.TryPatchPrefix("DolocTown.ToolCollider, Assembly-CSharp", "HandleTools", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
 
                 if (!oneActionToolColliderPatched)
                 {
@@ -638,6 +806,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 experimentalApi?.SetActionHooksInstalled(oneActionToolColliderPatched);
                 runtime.SetHookStatus("Actions.OneActionComplete", oneActionToolColliderPatched ? "verified" : "pending", "Harmony Postfix: ToolCollider.HandleTools", oneActionToolColliderPatched ? "Patched resource/tool-hit path with native ResourceFellData validation; verified by ONEACTION-001/002. Fuel/feeder completion is tracked separately and verified by ONEACTION-002. Vegetation/dandelion uses native VegetationRenderer.OnFell and is verified as a non-DungeonResource exception in ONEACTION-003." : "Waiting for ToolCollider.HandleTools to become patchable.");
+                runtime.SetHookStatus("Resources.OilCoalDrop", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: ToolCollider.HandleTools", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "Patched pre-hit coal resource capture plus post-hit oil placement; waiting for OilMod coal mining smoke evidence." : "Waiting for ToolCollider.HandleTools Prefix/Postfix to become patchable.");
                 runtime.SetHookStatus("Actions.OneActionFuelFeed", actionSpeedInteractExitPatched ? "verified" : "pending", "Harmony Postfix: AgentStateInteract.OnExit", actionSpeedInteractExitPatched ? "Patched post-interact native CostSelf/AddFuel/AddFeeds path for fuel/feed targets; verified by ONEACTION-002 fuel/feed smoke." : "Waiting for AgentStateInteract.OnExit to become patchable.");
 
                 if (!fishingReadyEnterPatched)
@@ -665,6 +834,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     fishingMiniGameStartPatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "StartGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameStartPostfix), BindingFlags.Public | BindingFlags.Static), 2);
                 }
 
+                if (!fishingMiniGameUpdatePatched)
+                {
+                    fishingMiniGameUpdatePatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "UpdateGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameUpdatePostfix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
                 if (!fishingMiniGameStopPatched)
                 {
                     fishingMiniGameStopPatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "StopGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameStopPostfix), BindingFlags.Public | BindingFlags.Static), 0);
@@ -680,9 +854,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     fishingPullExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingPull, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingPullExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
                 }
 
-                bool fishingHooksReady = fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched;
+                bool fishingHooksReady = fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched;
                 experimentalApi?.SetFishingHooksInstalled(fishingHooksReady);
-                runtime.SetHookStatus("Fishing.Automation", fishingHooksReady ? "experimental" : "pending", "Harmony Postfix: fishing state/input phases", fishingHooksReady ? "Patched fishing phase observation hooks plus wait-phase InstantBite; wait-phase verified by AUTOFISH-001. Full automation remains experimental." : "Waiting for fishing phase targets to become patchable.");
+                runtime.SetHookStatus("Fishing.Automation", fishingHooksReady ? "experimental" : "pending", "Harmony Postfix: fishing state/input phases", fishingHooksReady ? "Patched fishing phase observation hooks plus native BodyController.UseFishRod auto-cast, wait-phase InstantBite, and delayed FishingGameScrollBar.UpdateGame auto-complete; F6 auto-cast and wait phase verified by AUTOFISH-001." : "Waiting for fishing phase targets to become patchable.");
 
                 if (!fishRoeTitlePatched)
                 {
@@ -722,6 +896,74 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetAnimalViewerHookInstalled(animalViewerHooksReady);
                 runtime.SetHookStatus("Animals.ViewerRendering", animalViewerHooksReady ? "verified" : "pending", "Harmony Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", animalViewerHooksReady ? "Patched animal viewer data construction and real UI refresh path; verified by ANIMAL-001." : "Waiting for animal viewer data/UI targets to become patchable.");
 
+                if (!motorKeyUsePatched)
+                {
+                    motorKeyUsePatched = patcher.TryPatchPrefix("DolocTown.ItemMotorKey, Assembly-CSharp", "OnUse", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemMotorKeyOnUsePrefix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!motorInteractPatched)
+                {
+                    motorInteractPatched = patcher.TryPatchPrefix("DolocTown.MotorInteractable, Assembly-CSharp", "OnInteract", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorInteractableOnInteractPrefix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!motorGetOnPatched)
+                {
+                    motorGetOnPatched = patcher.TryPatchPostfix("DolocTown.AgentControllerState, Assembly-CSharp", "GetOnMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateGetOnMotorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!motorGetOffPatched)
+                {
+                    motorGetOffPatched = patcher.TryPatchPostfix("DolocTown.AgentControllerState, Assembly-CSharp", "GetOffMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateGetOffMotorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!motorFixedUpdatePrefixPatched)
+                {
+                    motorFixedUpdatePrefixPatched = patcher.TryPatchPrefix("DolocTown.MotorController, Assembly-CSharp", "OnFixedUpdate", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorControllerOnFixedUpdatePrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!motorFixedUpdatePostfixPatched)
+                {
+                    motorFixedUpdatePostfixPatched = patcher.TryPatchPostfix("DolocTown.MotorController, Assembly-CSharp", "OnFixedUpdate", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorControllerOnFixedUpdatePostfix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!motorUnlockPatched)
+                {
+                    motorUnlockPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "UnlockMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.UnlockMotorPostfix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!motorSetPositionPatched)
+                {
+                    motorSetPositionPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetMotorPosition", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SetMotorPositionPostfix), BindingFlags.Public | BindingFlags.Static), 2);
+                }
+
+                if (!motorEnterRoomPatched)
+                {
+                    motorEnterRoomPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "EnterRoom", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiEnterRoomPostfix), BindingFlags.Public | BindingFlags.Static), 3);
+                }
+
+                bool motorHooksReady = motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched;
+                experimentalApi?.SetMotorVehicleHooksInstalled(motorHooksReady);
+                runtime.SetHookStatus("Vehicle.MotorApi", motorHooksReady ? "experimental" : "pending", "Harmony: ItemMotorKey/MotorInteractable/AgentControllerState/MotorController/DolocAPI", motorHooksReady ? "Patched native motor key, riding, tuning, unlock, position, and room-entry touchpoints. Second-motor routing remains experimental and must be smoke-verified." : "Waiting for native motor hook targets to become patchable.");
+
+                if (!equipmentSlotsReloadParamsPatched)
+                {
+                    equipmentSlotsReloadParamsPatched = patcher.TryPatchPostfix("DolocTown.GameData.AgentEquipmentManager, Assembly-CSharp", "ReloadParams", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentEquipmentReloadParamsPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!equipmentSlotsAccessoriesInitPatched)
+                {
+                    equipmentSlotsAccessoriesInitPatched = patcher.TryPatchPostfix("DolocTown.UI.AccessoriesBar, Assembly-CSharp", "__Init", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AccessoriesBarInitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!equipmentSlotsAccessoriesStartShowPatched)
+                {
+                    equipmentSlotsAccessoriesStartShowPatched = patcher.TryPatchPostfix("DolocTown.UI.AccessoriesBar, Assembly-CSharp", "OnStartShow", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AccessoriesBarOnStartShowPostfix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                experimentalApi?.SetEquipmentSlotsRuntimeHooksInstalled(equipmentSlotsReloadParamsPatched);
+                experimentalApi?.SetEquipmentSlotsUiHooksInstalled(equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
+                runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsReloadParamsPatched ? "experimental" : "pending", "Harmony Postfix: AgentEquipmentManager.ReloadParams + AccessoriesBar", equipmentSlotsReloadParamsPatched ? "Patched native equipment stat refresh and AccessoriesBar lifecycle so DTMAPI extra-slot state can participate as attribute-only stats and render a read-only player equipment strip without exposing raw game types." : "Waiting for AgentEquipmentManager.ReloadParams and AccessoriesBar UI hooks to become patchable.");
+
                 if (!hookResolutionDiagnosticLogged && !AllHookTargetsReady && (DateTimeOffset.Now - initializedAt).TotalSeconds >= 4)
                 {
                     hookResolutionDiagnosticLogged = true;
@@ -737,6 +979,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         "AgentStateBase, Assembly-CSharp",
                         "DolocTown.ToolCollider, Assembly-CSharp",
                         "DolocTown.DungeonResource, Assembly-CSharp",
+                        "DolocTown.UI.AccessoriesBar, Assembly-CSharp",
                         "DolocTown.AgentStateFishingReady, Assembly-CSharp",
                         "DolocTown.AgentStateFishingCast, Assembly-CSharp",
                         "DolocTown.AgentStateFishingWait, Assembly-CSharp",
@@ -748,6 +991,9 @@ namespace DTMAPI.GameBridge.DolocTown
                         "DolocTown.UI.AnimalViewer, Assembly-CSharp",
                         "DolocTown.UI.AnimalPanel, Assembly-CSharp",
                         "DolocTown.Animal, Assembly-CSharp",
+                        "DolocTown.ItemMotorKey, Assembly-CSharp",
+                        "DolocTown.MotorInteractable, Assembly-CSharp",
+                        "DolocTown.MotorController, Assembly-CSharp",
                         "HarmonyLib.Harmony, 0Harmony"));
                 }
 
@@ -1281,6 +1527,197 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private void UpdateTitleSettingsConfigEvidenceScreenshots()
+        {
+            DateTimeOffset now = DateTimeOffset.Now;
+            if (titleSettingsConfigScreenshotStage == 0)
+            {
+                runtime.UI.OpenConfigPage("Yuuka.DTMAPI.ActionSpeed");
+                titleSettingsConfigScreenshotStage = 1;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 1)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.ActionSpeed", "action-speed");
+                titleSettingsConfigScreenshotStage = 2;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 2)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                runtime.UI.OpenConfigPage("Yuuka.DTMAPI.AutoFishing");
+                titleSettingsConfigScreenshotStage = 3;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 3)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.AutoFishing", "auto-fishing");
+                titleSettingsConfigScreenshotStage = 4;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 4)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                runtime.UI.OpenConfigPage("Yuuka.DTMAPI.AnimalHusbandryProgress");
+                titleSettingsConfigScreenshotStage = 5;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 5)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.AnimalHusbandryProgress", "animal-husbandry-progress");
+                if (TryStageAnimalCustomColorForTitleSmoke())
+                    runtime.UI.OpenConfigPage("DTMAPI.SecondMotorMod");
+                titleSettingsConfigScreenshotStage = 6;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 6)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.25)
+                    return;
+                runtime.UI.OpenConfigPage("Yuuka.DTMAPI.AnimalHusbandryProgress");
+                titleSettingsConfigScreenshotStage = 7;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 7)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.AnimalHusbandryProgress", "animal-husbandry-progress-custom");
+                titleSettingsConfigScreenshotStage = 8;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 8)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                runtime.UI.OpenConfigPage("DTMAPI.SecondMotorMod");
+                titleSettingsConfigScreenshotStage = 9;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 9)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.SecondMotorMod", "second-motor");
+                titleSettingsConfigScreenshotStage = 10;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 10)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                runtime.UI.OpenConfigPage("DTMAPI.MineMod");
+                titleSettingsConfigScreenshotStage = 11;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 11)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.MineMod", "mine");
+                titleSettingsConfigScreenshotStage = 12;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 12)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                runtime.UI.OpenConfigPage("DTMAPI.MoreEquipmentSlotsMod");
+                titleSettingsConfigScreenshotStage = 13;
+                titleSettingsConfigScreenshotAt = now;
+                return;
+            }
+
+            if (titleSettingsConfigScreenshotStage == 13)
+            {
+                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
+                    return;
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.MoreEquipmentSlotsMod", "more-equipment-slots");
+                titleSettingsConfigScreenshotStage = 14;
+                titleSettingsConfigScreenshotAt = now;
+            }
+        }
+
+        private bool TryStageAnimalCustomColorForTitleSmoke()
+        {
+            try
+            {
+                IConfigMenuPage? page = runtime.CreateSnapshot().ConfigPages.FirstOrDefault(p => p.Manifest.UniqueID.Equals("Yuuka.DTMAPI.AnimalHusbandryProgress", StringComparison.OrdinalIgnoreCase));
+                if (page == null || page.IsLocked)
+                    return false;
+
+                page.BeginEditing();
+                SetConfigPendingValue(page, "ColorPreset", "Custom", "颜色预设", "Color preset");
+                runtime.RuntimeMonitor.Log("Smoke staged AnimalHusbandryProgress Custom color preset for pending-preview screenshot.");
+                runtime.SetHookStatus("Smoke.TitleSettingsConfigPageScreenshot.animal-husbandry-progress-custom", "pending", "DTMAPI ConfigMenu pending preview", "Staged Custom color preset without saving so the custom hex input should be visible in the next screenshot.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to stage AnimalHusbandryProgress Custom color screenshot state.", ex.ToString());
+                runtime.SetHookStatus("Smoke.TitleSettingsConfigPageScreenshot.animal-husbandry-progress-custom", "failed", "DTMAPI ConfigMenu pending preview", ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
+        }
+
+        private bool CaptureTitleSettingsConfigPageEvidenceScreenshot(string uniqueId, string slug)
+        {
+            try
+            {
+                string evidenceDir = EnsureTitleSettingsEvidenceDir();
+                string screenshotPath = Path.Combine(evidenceDir, "title-settings-config-" + slug + ".png");
+                bool screenshotRequested = TryCaptureScreenshot(screenshotPath);
+                string summaryPath = Path.Combine(evidenceDir, "summary.txt");
+                File.AppendAllText(summaryPath,
+                    "ConfigPageCaptured=" + DateTimeOffset.Now.ToString("o") + Environment.NewLine +
+                    "ConfigPageUniqueId=" + uniqueId + Environment.NewLine +
+                    "ConfigPageScreenshotRequested=" + screenshotRequested + Environment.NewLine +
+                    "ConfigPageScreenshot=" + screenshotPath + Environment.NewLine);
+
+                runtime.RuntimeMonitor.Log("Title settings config page screenshot " + (screenshotRequested ? "OK" : "unavailable") + " uniqueId=" + uniqueId + " screenshot=" + screenshotPath + ".");
+                runtime.SetHookStatus("Smoke.TitleSettingsConfigPageScreenshot." + slug, screenshotRequested ? "verified" : "pending", "UnityEngine.ScreenCapture.CaptureScreenshot", uniqueId + " screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") + ".");
+                return screenshotRequested;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to capture title settings config page screenshot.", ex.ToString());
+                runtime.SetHookStatus("Smoke.TitleSettingsConfigPageScreenshot." + slug, "failed", "UnityEngine.ScreenCapture.CaptureScreenshot", ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
+        }
+
         private string EnsureTitleSettingsEvidenceDir()
         {
             if (!string.IsNullOrWhiteSpace(titleSettingsEvidenceDir))
@@ -1297,6 +1734,29 @@ namespace DTMAPI.GameBridge.DolocTown
             try
             {
                 Type? screenCapture = Type.GetType("UnityEngine.ScreenCapture, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.ScreenCapture, UnityEngine");
+                MethodInfo? captureTexture = screenCapture?.GetMethod("CaptureScreenshotAsTexture", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+                object? texture = captureTexture?.Invoke(null, null);
+                if (texture != null)
+                {
+                    try
+                    {
+                        MethodInfo? encodeToPng = texture.GetType().GetMethod("EncodeToPNG", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                        if (encodeToPng?.Invoke(texture, null) is byte[] bytes && bytes.Length > 0)
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+                            File.WriteAllBytes(path, bytes);
+                            return true;
+                        }
+                    }
+                    finally
+                    {
+                        TryDestroyUnityObject(texture);
+                    }
+                }
+
+                if (TryCaptureScreenshotWithReadPixels(path))
+                    return true;
+
                 MethodInfo? capture = screenCapture?.GetMethod("CaptureScreenshot", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
                 if (capture == null)
                     return false;
@@ -1306,6 +1766,105 @@ namespace DTMAPI.GameBridge.DolocTown
             catch
             {
                 return false;
+            }
+        }
+
+        private static bool TryCaptureScreenshotWithReadPixels(string path)
+        {
+            object? texture = null;
+            try
+            {
+                Type? screenType = Type.GetType("UnityEngine.Screen, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Screen, UnityEngine");
+                Type? texture2DType = Type.GetType("UnityEngine.Texture2D, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Texture2D, UnityEngine");
+                Type? textureFormatType = Type.GetType("UnityEngine.TextureFormat, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.TextureFormat, UnityEngine");
+                Type? rectType = Type.GetType("UnityEngine.Rect, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Rect, UnityEngine");
+                if (screenType == null || texture2DType == null || textureFormatType == null || rectType == null)
+                    return false;
+
+                int width = Math.Max(1, Convert.ToInt32(screenType.GetProperty("width", BindingFlags.Public | BindingFlags.Static)?.GetValue(null), System.Globalization.CultureInfo.InvariantCulture));
+                int height = Math.Max(1, Convert.ToInt32(screenType.GetProperty("height", BindingFlags.Public | BindingFlags.Static)?.GetValue(null), System.Globalization.CultureInfo.InvariantCulture));
+                object format = Enum.Parse(textureFormatType, "RGB24");
+                texture = Activator.CreateInstance(texture2DType, width, height, format, false);
+                if (texture == null)
+                    return false;
+
+                object rect = Activator.CreateInstance(rectType, 0f, 0f, (float)width, (float)height)!;
+                MethodInfo? readPixels = texture2DType.GetMethod("ReadPixels", BindingFlags.Public | BindingFlags.Instance, null, new[] { rectType, typeof(int), typeof(int) }, null);
+                MethodInfo? apply = texture2DType.GetMethod("Apply", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                MethodInfo? encodeToPng = texture2DType.GetMethod("EncodeToPNG", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                if (readPixels == null || apply == null || encodeToPng == null)
+                    return false;
+
+                readPixels.Invoke(texture, new object[] { rect, 0, 0 });
+                apply.Invoke(texture, null);
+                if (encodeToPng.Invoke(texture, null) is byte[] bytes && bytes.Length > 0)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+                    File.WriteAllBytes(path, bytes);
+                    return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (texture != null)
+                    TryDestroyUnityObject(texture);
+            }
+        }
+
+        private static void TryDestroyUnityObject(object instance)
+        {
+            try
+            {
+                Type? objectType = Type.GetType("UnityEngine.Object, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Object, UnityEngine");
+                MethodInfo? destroy = objectType?.GetMethod("Destroy", BindingFlags.Public | BindingFlags.Static, null, new[] { objectType }, null);
+                destroy?.Invoke(null, new[] { instance });
+            }
+            catch
+            {
+            }
+        }
+
+        private string EnsureNewContentEvidenceDir()
+        {
+            if (!string.IsNullOrWhiteSpace(newContentEvidenceDir))
+                return newContentEvidenceDir!;
+
+            string timestamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            newContentEvidenceDir = Path.Combine(runtime.Paths.EvidencePath, "NEWCONTENT-025", timestamp);
+            Directory.CreateDirectory(newContentEvidenceDir);
+            return newContentEvidenceDir;
+        }
+
+        private string CaptureMinePlacementEvidenceForSmoke(object mine, string createSummary)
+        {
+            try
+            {
+                string evidenceDir = EnsureNewContentEvidenceDir();
+                string screenshotPath = Path.Combine(evidenceDir, "mine-placed-dtmapi-mine.png");
+                bool screenshotRequested = TryCaptureScreenshot(screenshotPath);
+                string equipmentSummary = DescribeEquipmentForSmoke(mine);
+                string summary = "playerItem=dtmapi_mine ItemEquipment, placed=" + equipmentSummary + ", create={" + createSummary + "}, screenshot=" + (screenshotRequested ? screenshotPath : "unavailable");
+                File.WriteAllText(Path.Combine(evidenceDir, "mine-placement-summary.txt"),
+                    "Captured=" + DateTimeOffset.Now.ToString("o", System.Globalization.CultureInfo.InvariantCulture) + Environment.NewLine +
+                    "ScreenshotRequested=" + screenshotRequested + Environment.NewLine +
+                    "Screenshot=" + screenshotPath + Environment.NewLine +
+                    "Create=" + createSummary + Environment.NewLine +
+                    "Equipment=" + equipmentSummary + Environment.NewLine);
+                runtime.RuntimeMonitor.Log("Mine placement evidence " + (screenshotRequested ? "OK" : "unavailable") + " " + summary + ".");
+                runtime.SetHookStatus("Smoke.NewContentMinePlacement", screenshotRequested ? "verified" : "pending", "ItemEquipment dtmapi_mine + IEquipmentHost.CreateEquipment + UnityEngine.ScreenCapture", summary);
+                return summary;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Mine placement evidence capture failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.NewContentMinePlacement", "failed", "ItemEquipment dtmapi_mine + IEquipmentHost.CreateEquipment", ex.GetType().Name + ": " + ex.Message);
+                return "failed:" + ex.GetType().Name + ":" + ex.Message;
             }
         }
 
@@ -1432,13 +1991,762 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 if (smokeSettings?.AutoExitAfterSaveLoaded == true && !autoExitAttempted)
                 {
-                    autoExitAttempted = true;
-                    TryQuitApplication("smoke instant-save evidence captured");
+                    if (IsDebugSmokeRequested())
+                    {
+                        TryQuitAfterDebugSmoke();
+                    }
+                    else
+                    {
+                        autoExitAttempted = true;
+                        TryQuitApplication("smoke instant-save evidence captured");
+                    }
                 }
             }
         }
 
+        private void TryExerciseDebugInventoryForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                InventoryDebugItem? item = SelectInventorySmokeItem(experimentalApi);
+                if (item == null)
+                    throw new InvalidOperationException("No spawnable official item was found in TbItem.");
+
+                InventoryGiveResult result = experimentalApi.GiveItem(CreateSmokeManifest(), item.Id, 1);
+                if (!result.Success)
+                    throw new InvalidOperationException(result.FailureReason + ": " + result.Message);
+
+                string modSummary = "modItem=not-found";
+                InventoryDebugItem? modItem = SelectModInventorySmokeItem(experimentalApi);
+                if (modItem != null)
+                {
+                    InventoryGiveResult modResult = experimentalApi.GiveItem(CreateSmokeManifest(), modItem.Id, 1);
+                    if (!modResult.Success)
+                        throw new InvalidOperationException("Mod item give failed " + modItem.Id + ": " + modResult.FailureReason + ": " + modResult.Message);
+
+                    modSummary = "modItem=" + modResult.ItemId +
+                        ", modDisplay=" + FirstNonEmpty(modResult.DisplayName, modItem.DisplayName, modItem.Id) +
+                        ", sourceKind=" + modItem.SourceKind +
+                        ", sourceTitle=" + modItem.SourceModTitle +
+                        ", sourceId=" + modItem.SourceId +
+                        ", workshopId=" + (modItem.WorkshopId.HasValue ? modItem.WorkshopId.Value.ToString() : "none") +
+                        ", runtimeLoaded=" + modItem.RuntimeLoaded +
+                        ", before=" + modResult.BeforeCount +
+                        ", after=" + modResult.AfterCount +
+                        ", given=" + modResult.GivenCount +
+                        (modItem.SourceKind.Equals("Workshop", StringComparison.OrdinalIgnoreCase) ? ", workshopRuntimeItem=verified" : ", workshopRuntimeItem=not-found");
+                }
+
+                string summary = "item=" + result.ItemId +
+                    ", display=" + FirstNonEmpty(result.DisplayName, item.DisplayName, item.Id) +
+                    ", before=" + result.BeforeCount +
+                    ", after=" + result.AfterCount +
+                    ", given=" + result.GivenCount +
+                    ", " + modSummary;
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugInventory OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugInventory", "verified", "IInventoryDebugApi -> DolocAPI.TryPlaceInBackpack", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug inventory exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugInventory", "failed", "IInventoryDebugApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private static InventoryDebugItem? SelectInventorySmokeItem(IInventoryDebugApi api)
+        {
+            string[] preferredIds = { "wood", "stone", "roughage_feed", "seed_endyam" };
+            foreach (string preferredId in preferredIds)
+            {
+                InventoryDebugPage page = api.GetItems(new InventoryDebugQuery { SearchText = preferredId, PageSize = 50 });
+                InventoryDebugItem? exact = page.Items.FirstOrDefault(i => i.CanSpawn && i.Id.Equals(preferredId, StringComparison.OrdinalIgnoreCase));
+                if (exact != null)
+                    return exact;
+
+                InventoryDebugItem? partial = page.Items.FirstOrDefault(i => i.CanSpawn && i.Id.IndexOf(preferredId, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (partial != null)
+                    return partial;
+            }
+
+            return api.GetItems(new InventoryDebugQuery { PageSize = 50 }).Items.FirstOrDefault(i => i.CanSpawn);
+        }
+
+        private static InventoryDebugItem? SelectModInventorySmokeItem(IInventoryDebugApi api)
+        {
+            InventoryDebugPage page = api.GetItems(new InventoryDebugQuery { ModItemsOnly = true, IncludeUnavailable = true, PageSize = 200 });
+            InventoryDebugItem? preferredButter = page.Items
+                .Where(i => i.CanGive && i.RuntimeLoaded && i.IsModItem)
+                .Where(i => i.SourceKind.Equals("Workshop", StringComparison.OrdinalIgnoreCase))
+                .Where(i => i.WorkshopId == 3722791728UL || i.SourceId.Equals("Workshop.3722791728", StringComparison.OrdinalIgnoreCase))
+                .Where(i => i.Id.Equals("mod_butter", StringComparison.OrdinalIgnoreCase) || ContainsIgnoreCase(i.DisplayName, "黄油") || ContainsIgnoreCase(i.SearchText, "butter"))
+                .OrderBy(i => i.Id.Equals("mod_butter", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(i => i.RuntimeOrder)
+                .ThenBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+            if (preferredButter != null)
+                return preferredButter;
+
+            InventoryDebugItem? workshop = page.Items
+                .Where(i => i.CanGive && i.RuntimeLoaded && i.IsModItem)
+                .Where(i => i.SourceKind.Equals("Workshop", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(i => i.RuntimeOrder)
+                .ThenBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+            if (workshop != null)
+                return workshop;
+
+            return page.Items
+                .Where(i => i.CanGive && i.RuntimeLoaded && i.IsModItem)
+                .OrderBy(i => i.RuntimeOrder)
+                .ThenBy(i => i.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+
+        private void TryExerciseDebugWeatherForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                WeatherDebugState state = experimentalApi.GetState();
+                IReadOnlyList<WeatherDebugOption> options = experimentalApi.GetAvailableWeathers();
+                WeatherDebugOption? option = options.FirstOrDefault(w => !w.IsCurrent)
+                    ?? options.FirstOrDefault();
+                if (option == null)
+                    throw new InvalidOperationException("No native weather options were available.");
+
+                WeatherSetResult result = experimentalApi.SetWeather(CreateSmokeManifest(), option.Id, patchCurrentPeriod: true);
+                if (!result.Success)
+                    throw new InvalidOperationException(result.FailureReason + ": " + result.Message);
+
+                string summary = "options=" + options.Count +
+                    ", season=" + state.SeasonName +
+                    ", date=" + state.Year + "-" + state.Month + "-" + state.Day + " " + state.Hour +
+                    ", before=" + result.BeforeWeatherId +
+                    ", after=" + result.AfterWeatherId +
+                    ", display=" + FirstNonEmpty(result.DisplayName, option.DisplayName, option.Id) +
+                    ", currentDayForecast=" + option.IsCurrentDayForecast;
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugWeather OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugWeather", "verified", "IWeatherDebugApi -> ArchiveDataHandle.SetWeather/PatchWeather", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug weather exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugWeather", "failed", "IWeatherDebugApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void TryExerciseDebugTimeForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                var steps = new List<string>();
+                for (int i = 0; i < 3; i++)
+                {
+                    TimeSkipResult result = experimentalApi.SkipToNextWeatherPeriod(CreateSmokeManifest());
+                    if (!result.Success)
+                        throw new InvalidOperationException(result.FailureReason + ": " + result.Message);
+
+                    steps.Add("step" + (i + 1) +
+                        "{targetHour=" + result.TargetHour +
+                        ", advancedMinutes=" + result.AdvancedGameMinutes +
+                        ", advancedSeconds=" + result.AdvancedSeconds +
+                        ", before=" + FormatTimeSnapshot(result.Before) +
+                        ", after=" + FormatTimeSnapshot(result.After) +
+                        "}");
+                    runtime.RuntimeMonitor.Log("Smoke exercise DebugTime step OK " + steps[steps.Count - 1]);
+                }
+
+                string summary = "transitions=" + string.Join(" -> ", steps.ToArray());
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugTime OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugTime", "verified", "ITimeDebugApi -> ArchiveDataHandle.PassTimeNoControl", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug time exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugTime", "failed", "ITimeDebugApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void TryExerciseDebugMovementForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                double[] levels = { 0.5, 1, 2, 3, 4 };
+                var samples = new List<string>();
+                foreach (double level in levels)
+                {
+                    MovementSpeedResult result = experimentalApi.SetSpeedMultiplier(CreateSmokeManifest(), level);
+                    if (!result.Success)
+                        throw new InvalidOperationException(result.FailureReason + ": " + result.Message);
+                    samples.Add(level.ToString("0.#") + "x:" + FormatSmokeDouble(result.After.MoveSpeed));
+                }
+                MovementSpeedResult reset = experimentalApi.ResetSpeed(CreateSmokeManifest(), "smoke-restore");
+                if (!reset.Success || !reset.After.IsDefault)
+                    throw new InvalidOperationException("Reset failed: " + reset.FailureReason + " " + reset.Message);
+
+                string summary = "levels=" + string.Join(",", samples.ToArray()) + ", restored=" + reset.After.IsDefault + ", finalSpeed=" + FormatSmokeDouble(reset.After.MoveSpeed);
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugMovement OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugMovement", "verified", "IMovementDebugApi -> MotionAbility.SetMoveScaler", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug movement exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugMovement", "failed", "IMovementDebugApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private SmokeAttemptResult TryExerciseVehicleForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                const string vehicleId = "dtmapi.second_motor";
+                const string keyItemId = "dtmapi_second_motor_key";
+                ManifestModel smokeManifest = CreateSmokeManifest();
+                MotorVehicleState registered = experimentalApi.GetVehicleState(vehicleId);
+                if (!registered.IsRegistered)
+                    throw new InvalidOperationException("SecondMotorMod did not register " + vehicleId + ".");
+
+                if (!registered.OwnerUniqueId.Equals("DTMAPI.SecondMotorMod", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Second motor owner was " + registered.OwnerUniqueId + " instead of DTMAPI.SecondMotorMod.");
+
+                if (Math.Abs(registered.SpeedMultiplier - 2) > 0.05)
+                    throw new InvalidOperationException("Second motor speed multiplier was " + FormatSmokeDouble(registered.SpeedMultiplier) + " instead of 2x.");
+
+                if (vehicleEdgeTransitionRequestedAt != default)
+                {
+                    if ((DateTimeOffset.Now - vehicleEdgeTransitionRequestedAt).TotalSeconds < 4)
+                        return SmokeAttemptResult.Pending;
+
+                    return CompleteVehicleEdgeTransitionForSmoke(smokeManifest, vehicleId, keyItemId, registered);
+                }
+
+                if (vehicleOutdoorTeleportRequestedAt != default &&
+                    (DateTimeOffset.Now - vehicleOutdoorTeleportRequestedAt).TotalSeconds < 4)
+                {
+                    return SmokeAttemptResult.Pending;
+                }
+
+                string outdoorRecovery = vehicleOutdoorTeleportRequestedAt == default ? "not-needed" : "verified";
+                if (!registered.IsAvailableInCurrentRoom)
+                {
+                    if (vehicleOutdoorTeleportRequestedAt == default)
+                    {
+                        TeleportDestination? farm = SelectVehicleOutdoorSmokeDestination(experimentalApi);
+                        if (farm == null)
+                            throw new InvalidOperationException("Current room disallows motor summon and no farm/outdoor teleport destination was available. reason=" + registered.LastFailureReason + " message=" + registered.LastMessage);
+
+                        TeleportResult transport = experimentalApi.Teleport(smokeManifest, farm.Id);
+                        if (!transport.Success)
+                            throw new InvalidOperationException("Current room disallows motor summon and outdoor recovery teleport failed: " + transport.FailureReason + ": " + transport.Message);
+
+                        vehicleOutdoorTeleportRequestedAt = DateTimeOffset.Now;
+                        runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "ITeleportDebugApi -> DolocAPI.DoTransport", "Current room disallows motor summon (" + registered.LastFailureReason + "); requested outdoor recovery teleport destination=" + farm.Id + " markPoint=" + farm.MarkPointId + ".");
+                        return SmokeAttemptResult.Pending;
+                    }
+
+                    if ((DateTimeOffset.Now - vehicleOutdoorTeleportRequestedAt).TotalSeconds < 4)
+                        return SmokeAttemptResult.Pending;
+
+                    registered = experimentalApi.GetVehicleState(vehicleId);
+                    outdoorRecovery = "requested";
+                    if (!registered.IsAvailableInCurrentRoom)
+                        throw new InvalidOperationException("Outdoor recovery teleport did not reach a motor-enabled room. reason=" + registered.LastFailureReason + " message=" + registered.LastMessage);
+
+                    outdoorRecovery = "verified";
+                }
+
+                InventoryGiveResult giveKey = experimentalApi.GiveItem(smokeManifest, keyItemId, 1);
+                if (!giveKey.Success)
+                    throw new InvalidOperationException("Failed to give second motor key: " + giveKey.FailureReason + ": " + giveKey.Message);
+
+                MotorVehicleState originalBeforeKey = experimentalApi.GetOriginalMotorState();
+                if (!originalBeforeKey.IsUnlocked)
+                {
+                    MotorVehicleSummonResult unlock = experimentalApi.UnlockOriginalMotor(smokeManifest, 0);
+                    if (!unlock.Success)
+                        throw new InvalidOperationException("Original motor unlock before key smoke failed: " + unlock.FailureReason + ": " + unlock.Message);
+                }
+
+                MotorVehicleSummonResult originalKeySummon = experimentalApi.UseOriginalMotorKeyForSmoke("motor_key");
+                if (!originalKeySummon.Success)
+                    throw new InvalidOperationException("Original motor key summon failed: " + originalKeySummon.FailureReason + ": " + originalKeySummon.Message);
+
+                MotorVehicleSummonResult keySummon = experimentalApi.UseRegisteredSecondMotorKeyForSmoke(keyItemId);
+                if (!keySummon.Success)
+                    throw new InvalidOperationException("Second motor key summon failed: " + keySummon.FailureReason + ": " + keySummon.Message);
+
+                MotorVehicleState originalAfterKeySummon = experimentalApi.GetOriginalMotorState();
+                MotorVehicleState secondAfterKeySummon = experimentalApi.GetVehicleState(vehicleId);
+                bool dualVisibleAfterKeySummon = originalAfterKeySummon.IsVisible && secondAfterKeySummon.IsVisible;
+                runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor dual-visible probe originalVisible=" + originalAfterKeySummon.IsVisible +
+                    " originalRoom=" + originalAfterKeySummon.RoomId +
+                    " secondVisible=" + secondAfterKeySummon.IsVisible +
+                    " secondRoom=" + secondAfterKeySummon.RoomId +
+                    " dualVisible=" + dualVisibleAfterKeySummon + ".");
+                if (!dualVisibleAfterKeySummon)
+                    throw new InvalidOperationException("Original and DTMAPI second motor were not simultaneously visible after original-key then second-key summon. originalRoom=" + originalAfterKeySummon.RoomId + " secondRoom=" + secondAfterKeySummon.RoomId + ".");
+
+                string appearanceProbe = experimentalApi.ProbeSecondMotorAppearanceForSmoke(vehicleId);
+                if (!appearanceProbe.Contains("appearanceIsolated=True"))
+                    throw new InvalidOperationException("Second motor appearance was not isolated from the original motor: " + appearanceProbe);
+
+                MotorVehicleRideResult ride = experimentalApi.RideVehicle(smokeManifest, vehicleId);
+                if (!ride.Success || !ride.After.IsRiding)
+                    throw new InvalidOperationException("Second motor ride failed: " + ride.FailureReason + ": " + ride.Message);
+
+                vehicleEdgeTransitionBaseSummary = "vehicle=" + vehicleId +
+                    ", owner=" + registered.OwnerUniqueId +
+                    ", keyItem=" + keyItemId +
+                    ", keyBefore=" + giveKey.BeforeCount +
+                    ", keyAfter=" + giveKey.AfterCount +
+                    ", originalKeySummonRoom=" + originalKeySummon.After.RoomId +
+                    ", keySummonRoom=" + keySummon.After.RoomId +
+                    ", originalVisibleAfterKey=" + originalAfterKeySummon.IsVisible +
+                    ", secondVisibleAfterKey=" + secondAfterKeySummon.IsVisible +
+                    ", dualVisibleAfterKey=" + dualVisibleAfterKeySummon +
+                    ", appearanceProbe=" + appearanceProbe.Replace(", ", "|") +
+                    ", ride=" + ride.After.IsRiding +
+                    ", speedMultiplier=" + FormatSmokeDouble(registered.SpeedMultiplier) +
+                    ", baseMaxSpeed=" + FormatSmokeDouble(registered.BaseMaxSpeed) +
+                    ", effectiveMaxSpeed=" + FormatSmokeDouble(registered.EffectiveMaxSpeed) +
+                    ", enduranceSummon=" + FormatSmokeDouble(keySummon.After.EnduranceProgress) +
+                    ", enduranceRide=" + FormatSmokeDouble(ride.After.EnduranceProgress) +
+                    ", outdoorRecovery=" + outdoorRecovery;
+                if (StartVehicleEdgeTransitionForSmoke(smokeManifest, vehicleId, originalAfterKeySummon, ride.After))
+                    return SmokeAttemptResult.Pending;
+
+                MotorVehicleRideResult dismount = experimentalApi.DismountVehicle(smokeManifest, "smoke-restore");
+                if (!dismount.Success || dismount.After.IsRiding)
+                    throw new InvalidOperationException("Second motor dismount failed: " + dismount.FailureReason + ": " + dismount.Message);
+
+                MotorVehicleSummonResult original = experimentalApi.SummonOriginalMotor(smokeManifest);
+                if (!original.Success)
+                    throw new InvalidOperationException("Original motor summon after second-motor dismount failed: " + original.FailureReason + ": " + original.Message);
+
+                string disabledProbe = TryProbeVehicleDisabledLocationForSmoke(vehicleId, keyItemId);
+                string summary = "vehicle=" + vehicleId +
+                    ", owner=" + registered.OwnerUniqueId +
+                    ", keyItem=" + keyItemId +
+                    ", keyBefore=" + giveKey.BeforeCount +
+                    ", keyAfter=" + giveKey.AfterCount +
+                    ", originalKeySummonRoom=" + originalKeySummon.After.RoomId +
+                    ", keySummonRoom=" + keySummon.After.RoomId +
+                    ", originalVisibleAfterKey=" + originalAfterKeySummon.IsVisible +
+                    ", secondVisibleAfterKey=" + secondAfterKeySummon.IsVisible +
+                    ", dualVisibleAfterKey=" + dualVisibleAfterKeySummon +
+                    ", appearanceProbe=" + appearanceProbe.Replace(", ", "|") +
+                    ", ride=" + ride.After.IsRiding +
+                    ", dismount=" + (!dismount.After.IsRiding) +
+                    ", speedMultiplier=" + FormatSmokeDouble(registered.SpeedMultiplier) +
+                    ", baseMaxSpeed=" + FormatSmokeDouble(registered.BaseMaxSpeed) +
+                    ", effectiveMaxSpeed=" + FormatSmokeDouble(registered.EffectiveMaxSpeed) +
+                    ", enduranceSummon=" + FormatSmokeDouble(keySummon.After.EnduranceProgress) +
+                    ", enduranceRide=" + FormatSmokeDouble(ride.After.EnduranceProgress) +
+                    ", enduranceDismount=" + FormatSmokeDouble(dismount.After.EnduranceProgress) +
+                    ", enduranceTuning=unchanged" +
+                    ", originalRoom=" + original.After.RoomId +
+                    ", outdoorRecovery=" + outdoorRecovery +
+                    ", disabledProbe=" + disabledProbe;
+                runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor OK " + summary);
+                runtime.SetHookStatus("Smoke.VehicleSecondMotor", "verified", "IMotorVehicleApi + ItemMotorKey.OnUse prefix", summary);
+                return SmokeAttemptResult.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke vehicle exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.VehicleSecondMotor", "failed", "IMotorVehicleApi", ex.GetType().Name + ": " + ex.Message);
+                return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private static TeleportDestination? SelectVehicleOutdoorSmokeDestination(ITeleportDebugApi api)
+        {
+            IReadOnlyList<TeleportDestination> destinations = api.GetDestinations();
+            return destinations
+                .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
+                .FirstOrDefault(d => d.Id.StartsWith("farm:", StringComparison.OrdinalIgnoreCase) || ContainsIgnoreCase(d.DisplayName, "农场") || ContainsIgnoreCase(d.DisplayName, "Farm"))
+                ?? destinations
+                    .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
+                    .OrderByDescending(d => d.IsStation)
+                    .ThenBy(d => d.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault();
+        }
+
+        private bool StartVehicleEdgeTransitionForSmoke(ManifestModel smokeManifest, string vehicleId, MotorVehicleState originalBefore, MotorVehicleState secondBefore)
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental bridge API is not available.");
+
+            TeleportSnapshot before = experimentalApi.GetCurrentSnapshot();
+            TeleportDestination? destination = SelectVehicleEdgeTransitionDestination(experimentalApi, before.RoomId);
+            if (destination == null)
+                throw new InvalidOperationException("No outdoor/motor-allowed transition destination was available for second-motor edge smoke. before=" + FormatTeleportSnapshot(before));
+
+            TeleportResult transport = experimentalApi.Teleport(smokeManifest, destination.Id);
+            if (!transport.Success)
+                throw new InvalidOperationException("Second-motor edge transition request failed: " + transport.FailureReason + ": " + transport.Message);
+
+            vehicleEdgeTransitionRequestedAt = DateTimeOffset.Now;
+            vehicleEdgeTransitionDestination = destination;
+            vehicleEdgeTransitionRequestResult = transport;
+            vehicleEdgeTransitionOriginalBefore = originalBefore;
+            vehicleEdgeTransitionSecondBefore = secondBefore;
+
+            string summary = "vehicle=" + vehicleId +
+                ", destination=" + FirstNonEmpty(destination.DisplayName, destination.Id) +
+                ", markPoint=" + destination.MarkPointId +
+                ", before={" + FormatTeleportSnapshot(before) + "}" +
+                ", originalBeforeRoom=" + originalBefore.RoomId +
+                ", secondBeforeRoom=" + secondBefore.RoomId +
+                ", secondRidingBefore=" + secondBefore.IsRiding +
+                ", requestAfter={" + FormatTeleportSnapshot(transport.AfterRequest) + "}";
+            runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor edge-transition request OK " + summary);
+            runtime.SetHookStatus("Smoke.VehicleSecondMotorEdgeTransition", "pending", "ITeleportDebugApi -> DolocAPI.DoTransport while riding second motor", summary);
+            return true;
+        }
+
+        private SmokeAttemptResult CompleteVehicleEdgeTransitionForSmoke(ManifestModel smokeManifest, string vehicleId, string keyItemId, MotorVehicleState registered)
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental bridge API is not available.");
+
+            TeleportSnapshot before = vehicleEdgeTransitionRequestResult?.Before ?? new TeleportSnapshot();
+            TeleportSnapshot after = experimentalApi.GetCurrentSnapshot();
+            MotorVehicleState originalAfterTransition = experimentalApi.GetOriginalMotorState();
+            MotorVehicleState secondAfterTransition = experimentalApi.GetVehicleState(vehicleId);
+            bool changedRoom = !string.IsNullOrWhiteSpace(before.RoomId) && !before.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase);
+            bool secondStillRiding = secondAfterTransition.IsRiding;
+            bool secondInCurrentRoom = !string.IsNullOrWhiteSpace(after.RoomId) && secondAfterTransition.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase);
+            double distanceToDestination = vehicleEdgeTransitionDestination == null
+                ? double.NaN
+                : DistanceBetween(after.X, after.Y, vehicleEdgeTransitionDestination.X, vehicleEdgeTransitionDestination.Y);
+            bool nearDestination = !double.IsNaN(distanceToDestination) && distanceToDestination < 8;
+            double originalDistanceToEntry = DistanceBetween(originalAfterTransition.X, originalAfterTransition.Y, after.X, after.Y);
+            bool originalAtNewEntry = originalAfterTransition.IsVisible &&
+                originalAfterTransition.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase) &&
+                !double.IsNaN(originalDistanceToEntry) &&
+                originalDistanceToEntry < 6;
+            bool noStuck = changedRoom && secondStillRiding && secondInCurrentRoom && nearDestination;
+
+            string transitionSummary = "destination=" + FirstNonEmpty(vehicleEdgeTransitionDestination?.DisplayName ?? string.Empty, vehicleEdgeTransitionDestination?.Id ?? string.Empty) +
+                ", markPoint=" + (vehicleEdgeTransitionDestination?.MarkPointId ?? string.Empty) +
+                ", before={" + FormatTeleportSnapshot(before) + "}" +
+                ", after={" + FormatTeleportSnapshot(after) + "}" +
+                ", changedRoom=" + changedRoom +
+                ", secondStillRiding=" + secondStillRiding +
+                ", secondRoom=" + secondAfterTransition.RoomId +
+                ", secondInCurrentRoom=" + secondInCurrentRoom +
+                ", distanceToDestination=" + FormatSmokeDouble(distanceToDestination) +
+                ", nearDestination=" + nearDestination +
+                ", originalRoomAfterTransition=" + originalAfterTransition.RoomId +
+                ", originalVisibleAfterTransition=" + originalAfterTransition.IsVisible +
+                ", originalAtNewEntry=" + originalAtNewEntry +
+                ", originalDistanceToEntry=" + FormatSmokeDouble(originalDistanceToEntry) +
+                ", noStuck=" + noStuck;
+
+            if (!noStuck || originalAtNewEntry)
+                throw new InvalidOperationException("Second-motor edge transition failed. " + transitionSummary);
+
+            runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor edge-transition OK " + transitionSummary);
+            runtime.SetHookStatus("Smoke.VehicleSecondMotorEdgeTransition", "verified", "ITeleportDebugApi -> DolocAPI.DoTransport while riding second motor", transitionSummary);
+
+            MotorVehicleRideResult dismount = experimentalApi.DismountVehicle(smokeManifest, "smoke-edge-transition-restore");
+            if (!dismount.Success || dismount.After.IsRiding)
+                throw new InvalidOperationException("Second motor dismount after edge transition failed: " + dismount.FailureReason + ": " + dismount.Message);
+
+            MotorVehicleSummonResult original = experimentalApi.SummonOriginalMotor(smokeManifest);
+            if (!original.Success)
+                throw new InvalidOperationException("Original motor summon after second-motor edge transition failed: " + original.FailureReason + ": " + original.Message);
+
+            string disabledProbe = TryProbeVehicleDisabledLocationForSmoke(vehicleId, keyItemId);
+            string summary = FirstNonEmpty(vehicleEdgeTransitionBaseSummary, "vehicle=" + vehicleId + ", owner=" + registered.OwnerUniqueId) +
+                ", edgeTransition={" + transitionSummary + "}" +
+                ", dismount=" + (!dismount.After.IsRiding) +
+                ", enduranceDismount=" + FormatSmokeDouble(dismount.After.EnduranceProgress) +
+                ", originalRoom=" + original.After.RoomId +
+                ", originalVisibleAfterRestore=" + original.After.IsVisible +
+                ", disabledProbe=" + disabledProbe;
+            runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor OK " + summary);
+            runtime.SetHookStatus("Smoke.VehicleSecondMotor", "verified", "IMotorVehicleApi + ItemMotorKey.OnUse prefix + DoTransport edge transition", summary);
+            return SmokeAttemptResult.Succeeded;
+        }
+
+        private static TeleportDestination? SelectVehicleEdgeTransitionDestination(ITeleportDebugApi api, string currentRoomId)
+        {
+            IReadOnlyList<TeleportDestination> destinations = api.GetDestinations();
+            return destinations
+                .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
+                .Where(d => string.IsNullOrWhiteSpace(currentRoomId) || string.IsNullOrWhiteSpace(d.RoomId) || !d.RoomId.Equals(currentRoomId, StringComparison.OrdinalIgnoreCase))
+                .Where(d => !LooksLikeIndoorVehicleDestination(d))
+                .OrderByDescending(d => d.RoomId.StartsWith("city_", StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(d => ContainsIgnoreCase(d.DisplayName, "丘陵") || ContainsIgnoreCase(d.DisplayName, "郊区") || ContainsIgnoreCase(d.DisplayName, "Farm") || ContainsIgnoreCase(d.DisplayName, "农场"))
+                .ThenByDescending(d => d.IsStation)
+                .ThenBy(d => d.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+
+        private static bool LooksLikeIndoorVehicleDestination(TeleportDestination destination)
+        {
+            string text = (destination.Id ?? string.Empty) + " " + (destination.DisplayName ?? string.Empty) + " " + (destination.RoomId ?? string.Empty);
+            return ContainsIgnoreCase(text, "hall") ||
+                ContainsIgnoreCase(text, "research") ||
+                ContainsIgnoreCase(text, "laboratory") ||
+                ContainsIgnoreCase(text, "lab") ||
+                ContainsIgnoreCase(text, "bar") ||
+                ContainsIgnoreCase(text, "市政") ||
+                ContainsIgnoreCase(text, "研究") ||
+                ContainsIgnoreCase(text, "酒吧") ||
+                ContainsIgnoreCase(text, "屋") ||
+                ContainsIgnoreCase(text, "室内");
+        }
+
+        private static double DistanceBetween(double x1, double y1, double x2, double y2)
+        {
+            if (double.IsNaN(x1) || double.IsNaN(y1) || double.IsNaN(x2) || double.IsNaN(y2))
+                return double.NaN;
+            double dx = x1 - x2;
+            double dy = y1 - y2;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        private string TryProbeVehicleDisabledLocationForSmoke(string vehicleId, string keyItemId)
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    return "not-verified:missing-api";
+
+                TeleportSnapshot before = experimentalApi.GetCurrentSnapshot();
+                TeleportDestination? indoor = experimentalApi.GetDestinations()
+                    .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
+                    .Where(d => !d.RoomId.Equals(before.RoomId, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(d => ContainsIgnoreCase(d.Id, "hall") || ContainsIgnoreCase(d.Id, "research") || ContainsIgnoreCase(d.Id, "laboratory") || ContainsIgnoreCase(d.Id, "lab") || ContainsIgnoreCase(d.Id, "bar") || ContainsIgnoreCase(d.DisplayName, "市政") || ContainsIgnoreCase(d.DisplayName, "研究") || ContainsIgnoreCase(d.DisplayName, "酒吧"));
+                if (indoor == null)
+                    return "not-verified:no-indoor-whitelist-destination";
+
+                TeleportResult transport = experimentalApi.Teleport(CreateSmokeManifest(), indoor.Id);
+                if (!transport.Success)
+                    return "not-verified:teleport-" + transport.FailureReason;
+
+                TeleportSnapshot after = experimentalApi.GetCurrentSnapshot();
+                bool changed = !string.IsNullOrWhiteSpace(before.RoomId) && !before.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase);
+                if (!changed)
+                    return "not-verified:teleport-not-settled:" + indoor.Id;
+
+                MotorVehicleSummonResult disabledKey = experimentalApi.UseRegisteredSecondMotorKeyForSmoke(keyItemId);
+                if (!disabledKey.Success && (disabledKey.FailureReason.Equals("in-house", StringComparison.OrdinalIgnoreCase) || disabledKey.FailureReason.Equals("disabled-room", StringComparison.OrdinalIgnoreCase)))
+                    return "verified:" + disabledKey.FailureReason + ":" + FirstNonEmpty(after.RoomTitle, after.RoomId, indoor.Id);
+
+                return "not-verified:unexpected-" + (disabledKey.Success ? "success" : disabledKey.FailureReason);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke vehicle disabled-location probe failed.", ex.ToString());
+                return "not-verified:" + ex.GetType().Name;
+            }
+        }
+
+        private static bool ContainsIgnoreCase(string value, string search)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(search) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ContainsAny(IEnumerable<string> values, params string[] searches)
+        {
+            foreach (string value in values)
+            {
+                foreach (string search in searches)
+                {
+                    if (ContainsIgnoreCase(value, search))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private SmokeAttemptResult TryExerciseDebugTeleportForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                TeleportSnapshot before = experimentalApi.GetCurrentSnapshot();
+                IReadOnlyList<TeleportDestination> destinations = experimentalApi.GetDestinations();
+                ManifestModel smokeManifest = CreateSmokeManifest();
+                TeleportCsvExportResult csvExport = experimentalApi.ExportDestinationsCsv(smokeManifest);
+                if (!csvExport.Success)
+                    throw new InvalidOperationException("Teleport CSV export failed: " + csvExport.FailureReason + ": " + csvExport.Message);
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugTeleportCsv OK rows=" + csvExport.RowCount + " path=" + csvExport.Path);
+                runtime.SetHookStatus("Smoke.DebugTeleportCsv", "verified", "ITeleportDebugApi.ExportDestinationsCsv", "rows=" + csvExport.RowCount + " path=" + csvExport.Path);
+
+                TeleportDestination? destination = destinations
+                    .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
+                    .Where(d => string.IsNullOrWhiteSpace(before.RoomId) || !d.RoomId.Equals(before.RoomId, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(d => d.IsStation)
+                    .ThenBy(d => d.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .FirstOrDefault()
+                    ?? destinations.FirstOrDefault(d => !string.IsNullOrWhiteSpace(d.MarkPointId));
+                if (destination == null)
+                    throw new InvalidOperationException("No whitelisted teleport destination was available.");
+
+                debugTeleportBeforeSnapshot = before;
+                debugTeleportDestination = destination;
+                TeleportResult result = experimentalApi.Teleport(smokeManifest, destination.Id);
+                debugTeleportRequestResult = result;
+                if (!result.Success)
+                    throw new InvalidOperationException(result.FailureReason + ": " + result.Message);
+
+                debugTeleportRequestedAt = DateTimeOffset.Now;
+                string summary = "destination=" + FirstNonEmpty(destination.DisplayName, destination.Id) +
+                    ", markPoint=" + destination.MarkPointId +
+                    ", from={" + FormatTeleportSnapshot(before) + "}" +
+                    ", requestAfter={" + FormatTeleportSnapshot(result.AfterRequest) + "}";
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugTeleport request OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugTeleport", "pending", "ITeleportDebugApi -> DolocAPI.DoTransport", summary);
+                return SmokeAttemptResult.Pending;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug teleport exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugTeleport", "failed", "ITeleportDebugApi", ex.GetType().Name + ": " + ex.Message);
+                return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private void CompleteDebugTeleportForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                TeleportSnapshot before = debugTeleportBeforeSnapshot ?? debugTeleportRequestResult?.Before ?? new TeleportSnapshot();
+                TeleportSnapshot after = experimentalApi.GetCurrentSnapshot();
+                bool changedRoom = !string.IsNullOrWhiteSpace(before.RoomId) && !before.RoomId.Equals(after.RoomId, StringComparison.OrdinalIgnoreCase);
+                double distance = DistanceBetween(before, after);
+                bool moved = changedRoom || (!double.IsNaN(distance) && distance > 1);
+                string summary = "destination=" + FirstNonEmpty(debugTeleportDestination?.DisplayName ?? string.Empty, debugTeleportDestination?.Id ?? string.Empty, debugTeleportRequestResult?.DestinationId ?? string.Empty) +
+                    ", markPoint=" + FirstNonEmpty(debugTeleportDestination?.MarkPointId ?? string.Empty, debugTeleportRequestResult?.MarkPointId ?? string.Empty) +
+                    ", before={" + FormatTeleportSnapshot(before) + "}" +
+                    ", after={" + FormatTeleportSnapshot(after) + "}" +
+                    ", changedRoom=" + changedRoom +
+                    ", distance=" + FormatSmokeDouble(distance);
+
+                if (!moved)
+                    throw new InvalidOperationException("Teleport request did not change the observed room/position within the smoke verification window. " + summary);
+
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugTeleport OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugTeleport", "verified", "ITeleportDebugApi -> DolocAPI.DoTransport", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug teleport completion failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugTeleport", "failed", "ITeleportDebugApi -> DolocAPI.DoTransport", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void TryQuitAfterDebugSmoke()
+        {
+            if (smokeSettings == null || !smokeSettings.Enabled || !smokeSettings.AutoExitAfterSaveLoaded || autoExitAttempted)
+                return;
+            if (!IsDebugSmokeRequested())
+                return;
+            if (smokeSettings.AutoExerciseDebugConsole && !autoExerciseDebugConsoleAttempted)
+                return;
+            if (smokeSettings.AutoExerciseDebugInventory && !autoExerciseDebugInventoryAttempted)
+                return;
+            if (smokeSettings.AutoExerciseDebugWeather && !autoExerciseDebugWeatherAttempted)
+                return;
+            if (smokeSettings.AutoExerciseDebugTime && !autoExerciseDebugTimeAttempted)
+                return;
+            if (smokeSettings.AutoExerciseDebugMovement && !autoExerciseDebugMovementAttempted)
+                return;
+            if (smokeSettings.AutoExerciseVehicle && !autoExerciseVehicleAttempted)
+                return;
+            if (smokeSettings.AutoExerciseNewContentApis && !autoExerciseNewContentApisAttempted)
+                return;
+            if (smokeSettings.AutoExerciseDebugTeleport && !debugTeleportVerificationCompleted)
+                return;
+
+            autoExitAttempted = true;
+            TryQuitApplication("smoke debug console/API evidence captured");
+        }
+
+        private bool IsDebugSmokeRequested()
+        {
+            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis);
+        }
+
+        private static ManifestModel CreateSmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "DTMAPI Smoke",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.Smoke",
+                Type = "Smoke"
+            };
+        }
+
+        private static double DistanceBetween(TeleportSnapshot before, TeleportSnapshot after)
+        {
+            if (before == null || after == null || double.IsNaN(before.X) || double.IsNaN(before.Y) || double.IsNaN(after.X) || double.IsNaN(after.Y))
+                return double.NaN;
+            double dx = before.X - after.X;
+            double dy = before.Y - after.Y;
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        private static string FormatTeleportSnapshot(TeleportSnapshot snapshot)
+        {
+            if (snapshot == null)
+                return "unknown";
+            return "roomId=" + snapshot.RoomId +
+                ", roomTitle=" + snapshot.RoomTitle +
+                ", roomType=" + snapshot.RoomType +
+                ", position=" + FormatSmokeDouble(snapshot.X) + "," + FormatSmokeDouble(snapshot.Y) + "," + FormatSmokeDouble(snapshot.Z);
+        }
+
+        private static string FormatTimeSnapshot(TimeDebugState snapshot)
+        {
+            if (snapshot == null)
+                return "unknown";
+            return snapshot.Year + "-" + snapshot.Month + "-" + snapshot.Day + " " + snapshot.Hour.ToString("00") + ":" + snapshot.Minute.ToString("00") +
+                ", weather=" + FirstNonEmpty(snapshot.CurrentWeatherName, snapshot.CurrentWeatherId) +
+                ", period=" + snapshot.Period;
+        }
+
+        private static string FormatSmokeDouble(double value)
+        {
+            return double.IsNaN(value) ? "unknown" : value.ToString("0.###");
+        }
+
         private void TryAutoReloadMods()
+        {
+            if (!TryReloadOfficialModsAndConfig("Smoke.AutoReloadMods", "smoke auto-reload mods", out string detail))
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-reload mods failed.", detail);
+            }
+        }
+
+        private bool TryReloadOfficialModsAndConfig(string statusKey, string reason, out string detail)
         {
             try
             {
@@ -1446,17 +2754,26 @@ namespace DTMAPI.GameBridge.DolocTown
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
                 object? modManager = dolocApi?.GetProperty("modManager", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
                 MethodInfo? reloadMods = modManager?.GetType().GetMethod("ReloadMods", BindingFlags.Public | BindingFlags.Instance);
+                Type? dolocConfig = patcher.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+                MethodInfo? reloadConfig = dolocConfig?.GetMethod("Reload", BindingFlags.Public | BindingFlags.Static);
                 if (modManager == null || reloadMods == null)
                     throw new MissingMethodException("DolocAPI.modManager.ReloadMods() was not found.");
+                if (reloadConfig == null)
+                    throw new MissingMethodException("DolocConfig.Reload() was not found.");
 
-                runtime.RuntimeMonitor.Log("Smoke automation requesting official ModManager.ReloadMods.");
-                runtime.SetHookStatus("Smoke.AutoReloadMods", "pending", "DolocAPI.modManager.ReloadMods", "Requested official ModManager reload for workshop hook evidence.");
+                detail = "official ModManager.ReloadMods + DolocConfig.Reload requested for " + reason + ".";
+                runtime.RuntimeMonitor.Log(detail);
+                runtime.SetHookStatus(statusKey, "pending", "DolocAPI.modManager.ReloadMods + DolocConfig.Reload", detail);
                 reloadMods.Invoke(modManager, null);
+                reloadConfig.Invoke(null, null);
+                return true;
             }
             catch (Exception ex)
             {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-reload mods failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AutoReloadMods", "failed", "DolocAPI.modManager.ReloadMods", ex.GetType().Name + ": " + ex.Message);
+                Exception root = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException : ex;
+                detail = root.GetType().Name + ": " + root.Message;
+                runtime.SetHookStatus(statusKey, "failed", "DolocAPI.modManager.ReloadMods + DolocConfig.Reload", detail);
+                return false;
             }
         }
 
@@ -2017,6 +3334,112 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private bool TryExerciseAutoFishingAutoCastForSmoke(Type dolocApi, Type fishingPoolType, out string summary)
+        {
+            summary = string.Empty;
+            object? inventory = null;
+            object? originalSlotItem = null;
+            int quickSlot = 0;
+
+            try
+            {
+                if (experimentalApi == null)
+                {
+                    summary = "Experimental API unavailable.";
+                    return false;
+                }
+
+                experimentalApi.SuppressFishingAutoCastForSmoke = false;
+
+                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
+                experimentalApi.ForceFishingNoWaterForSmoke = true;
+                experimentalApi.UpdateRuntimeAutomation();
+
+                object? fishingPool = FindOrCreateFishingPoolForSmoke(fishingPoolType, dolocApi, out string poolSource);
+                if (fishingPool == null)
+                {
+                    summary = "No fishing pool was available for auto-cast smoke. " + poolSource;
+                    return false;
+                }
+                experimentalApi.FishingPoolOverrideForSmoke = fishingPool;
+
+                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
+                experimentalApi.ForceFishingNoRodForSmoke = true;
+                experimentalApi.UpdateRuntimeAutomation();
+                experimentalApi.ForceFishingNoWaterForSmoke = false;
+                experimentalApi.ForceFishingNoRodForSmoke = false;
+
+                object? fishingRod = GenerateFishingRodForSmoke(dolocApi);
+                if (fishingRod == null)
+                {
+                    summary = "Generated fishing rod was not available.";
+                    return false;
+                }
+
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, fishingRod, quickSlot, out inventory, out originalSlotItem, out string placeSummary))
+                {
+                    summary = placeSummary;
+                    return false;
+                }
+
+                TryEnterIdleStateForSmoke(dolocApi);
+                int beforeAutoCast = experimentalApi.FishingAutoCastApplicationCount;
+                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
+                int afterAutoCast = beforeAutoCast;
+                for (int attempt = 1; attempt <= 24; attempt++)
+                {
+                    experimentalApi.UpdateRuntimeAutomation();
+                    afterAutoCast = experimentalApi.FishingAutoCastApplicationCount;
+                    if (afterAutoCast > beforeAutoCast)
+                        break;
+                    Thread.Sleep(125);
+                }
+                string bridgeSummary = experimentalApi.LastFishingAutomationApplicationSummary;
+                string attemptSummary = experimentalApi.LastFishingAutoCastAttemptSummary;
+                bool invoked = afterAutoCast > beforeAutoCast && bridgeSummary.IndexOf("AutoCast", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!invoked)
+                {
+                    summary = "pool={" + poolSource + "}, rod=" + ReadStringMember(fishingRod, "name", fishingRod.GetType().Name) +
+                        ", autoCastDelta=" + (afterAutoCast - beforeAutoCast) +
+                        ", place={" + placeSummary + "}" +
+                        ", bridge=" + (string.IsNullOrWhiteSpace(bridgeSummary) ? "none" : bridgeSummary) +
+                        ", lastAttempt=" + (string.IsNullOrWhiteSpace(attemptSummary) ? "none" : attemptSummary);
+                    return false;
+                }
+
+                summary = "pool={" + poolSource + "}, rod=" + ReadStringMember(fishingRod, "name", fishingRod.GetType().Name) +
+                    ", autoCastDelta=" + (afterAutoCast - beforeAutoCast) +
+                    ", place={" + placeSummary + "}" +
+                    ", toastPolicy=0.2.3-suppressed-no-water-no-rod-cast" +
+                    ", bridge=" + bridgeSummary;
+                experimentalApi.SuppressFishingAutoCastForSmoke = true;
+                return true;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                summary = ex.InnerException.GetType().Name + ": " + ex.InnerException.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-fishing auto-cast exercise failed.", ex.InnerException.ToString());
+                return false;
+            }
+            catch (Exception ex)
+            {
+                summary = ex.GetType().Name + ": " + ex.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-fishing auto-cast exercise failed.", ex.ToString());
+                return false;
+            }
+            finally
+            {
+                TryEnterIdleStateForSmoke(dolocApi);
+                RestoreSmokeQuickSlot(dolocApi, inventory, quickSlot, originalSlotItem);
+                if (experimentalApi != null)
+                {
+                    experimentalApi.ForceFishingNoWaterForSmoke = false;
+                    experimentalApi.ForceFishingNoRodForSmoke = false;
+                    experimentalApi.FishingPoolOverrideForSmoke = null;
+                }
+            }
+        }
+
         private SmokeAttemptResult TryExerciseAutoFishingPhaseForSmoke()
         {
             try
@@ -2068,6 +3491,34 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!experimentalApi.TryGetEnabledFishingAutomationOwner(out string ownerId))
                     throw new InvalidOperationException("AutoFishing policy was not enabled after the F6 input dispatch. Is the official AutoFishing package enabled?");
 
+                if (!autoExerciseAutoFishingMovementCancelVerified)
+                {
+                    runtime.RecordInputPressed("W");
+                    runtime.RecordInputReleased("W");
+                    if (experimentalApi.TryGetEnabledFishingAutomationOwner(out string stillEnabledOwner))
+                        throw new InvalidOperationException("AutoFishing movement cancel did not disable automation. owner=" + stillEnabledOwner);
+
+                    autoExerciseAutoFishingMovementCancelVerified = true;
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMovementCancel OK key=W owner=" + ownerId + ".");
+                    runtime.SetHookStatus("Smoke.AutoFishingMovementCancel", "verified", "DTMAPI input W -> AutoFishingMod manual cancel", "Movement key W disabled automation after F6 enable; owner=" + ownerId + ".");
+
+                    runtime.RecordInputPressed("F6");
+                    runtime.RecordInputReleased("F6");
+                    if (!experimentalApi.TryGetEnabledFishingAutomationOwner(out ownerId))
+                        throw new InvalidOperationException("AutoFishing policy did not re-enable after movement-cancel re-toggle.");
+                    runtime.RuntimeMonitor.Log("Smoke automation re-enabled AutoFishing after movement-cancel proof through F6 input. owner=" + ownerId + ".");
+                    runtime.SetHookStatus("Smoke.AutoFishingHotkey", "verified", "DtmApiRuntime.RecordInputPressed", "F6 enabled automation and re-enabled it after movement-cancel proof.");
+                }
+
+                if (!autoExerciseAutoFishingAutoCastVerified)
+                {
+                    if (!TryExerciseAutoFishingAutoCastForSmoke(dolocApi, fishingPoolType, out string autoCastSummary))
+                        throw new InvalidOperationException("AutoFishing auto-cast path failed. " + autoCastSummary);
+                    autoExerciseAutoFishingAutoCastVerified = true;
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingAutoCast OK " + autoCastSummary);
+                    runtime.SetHookStatus("Smoke.AutoFishingAutoCast", "verified", "BodyController.UseFishRod", autoCastSummary);
+                }
+
                 if (!autoExerciseAutoFishingPhaseStarted)
                 {
                     object? agent = dolocApi.GetProperty("agent", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
@@ -2099,8 +3550,10 @@ namespace DTMAPI.GameBridge.DolocTown
                         throw new MissingMethodException("AgentStateManager.Overwrite<T>(bool) was not found.");
 
                     autoFishingApplicationBaseline = experimentalApi.FishingAutomationApplicationCount;
+                    autoFishingMiniGameCompleteBaseline = experimentalApi.FishingMiniGameCompleteApplicationCount;
                     autoFishingPhaseStartedAt = DateTimeOffset.Now;
                     autoExerciseAutoFishingPhaseStarted = true;
+                    experimentalApi.ForceFishingFishForSmoke = smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true;
                     runtime.RuntimeMonitor.Log("Smoke automation entering AgentStateFishingWait for AutoFishing phase evidence. owner=" + ownerId + ", rod=" + fishingRod.GetType().Name + ", poolSource=" + poolSource + ".");
                     runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateManager.Overwrite<AgentStateFishingWait>", "Entered real AgentStateFishingWait; waiting for OnPlay instant-bite automation.");
                     overwrite.MakeGenericMethod(fishingWaitType).Invoke(stateManager, new object[] { true });
@@ -2110,8 +3563,34 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (experimentalApi.FishingAutomationApplicationCount > autoFishingApplicationBaseline)
                 {
                     string summary = experimentalApi.LastFishingAutomationApplicationSummary;
-                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingPhase OK " + summary);
-                    runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "AgentStateFishingWait.OnPlay Postfix", summary);
+                    if (!autoExerciseAutoFishingPhaseVerified)
+                    {
+                        autoExerciseAutoFishingPhaseVerified = true;
+                        runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingPhase OK " + summary);
+                        runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "AgentStateFishingWait.OnPlay Postfix", summary);
+                    }
+
+                    if (smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true)
+                    {
+                        if (experimentalApi.FishingMiniGameCompleteApplicationCount > autoFishingMiniGameCompleteBaseline)
+                        {
+                            experimentalApi.ForceFishingFishForSmoke = false;
+                            string completeSummary = string.IsNullOrWhiteSpace(experimentalApi.LastFishingMiniGameCompleteSummary)
+                                ? experimentalApi.LastFishingAutomationApplicationSummary
+                                : experimentalApi.LastFishingMiniGameCompleteSummary;
+                            runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMiniGameComplete OK " + completeSummary);
+                            runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", completeSummary);
+                            return SmokeAttemptResult.Succeeded;
+                        }
+
+                        if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 30)
+                            throw new TimeoutException("AutoFishing skip=false minigame completion did not apply within 30 seconds after entering AgentStateFishingWait.");
+
+                        LogAutoFishingPending("Waiting for FishingGameScrollBar.UpdateGame auto-complete skip=false. miniGameApplications=" + experimentalApi.FishingMiniGameCompleteApplicationCount + ".");
+                        return SmokeAttemptResult.Pending;
+                    }
+
+                    experimentalApi.ForceFishingFishForSmoke = false;
                     return SmokeAttemptResult.Succeeded;
                 }
 
@@ -2123,10 +3602,733 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
+                if (experimentalApi != null)
+                    experimentalApi.ForceFishingFishForSmoke = false;
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-fishing phase exercise failed.", ex.ToString());
                 runtime.SetHookStatus("Smoke.AutoFishingPhase", "failed", "AgentStateFishingWait.OnPlay", ex.GetType().Name + ": " + ex.Message);
                 return SmokeAttemptResult.Failed;
             }
+        }
+
+        private SmokeAttemptResult TryExerciseNewContentApisForSmoke()
+        {
+            object? transientMine = null;
+            object? room = null;
+            string newContentStage = "OilItemMetadata";
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                if (dolocApi == null)
+                    throw new MissingMemberException("DolocAPI was not visible.");
+
+                if (!TryGetStaticBoolProperty(dolocApi, "IsNormalState"))
+                {
+                    runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "NormalGameState", "Waiting for NormalGameState before creating a temporary dtmapi_mine.");
+                    return SmokeAttemptResult.Pending;
+                }
+
+                room = ReadStaticMember(dolocApi, "CurrentRoom");
+                if (room == null)
+                    throw new InvalidOperationException("CurrentRoom was not available for new-content smoke.");
+
+                if (ReadBoolMember(room, "IsInHouse", false))
+                {
+                    if (!autoExerciseOneActionMainFarmRequested && TryEnterMainFarmForOneActionSmoke(dolocApi, room, out string transitionSummary))
+                    {
+                        runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "pending", "DolocAPI.EnterFarm", transitionSummary);
+                        return SmokeAttemptResult.Pending;
+                    }
+
+                    runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "pending", "DolocAPI.EnterFarm", "Waiting for outdoor farm transition before OilMod coal-resource smoke. room=" + DescribeRoomForSmoke(room));
+                    return SmokeAttemptResult.Pending;
+                }
+
+                string oilItemMetadataSummary = TryExerciseOilItemMetadataForSmoke(dolocApi);
+                newContentStage = "OilCoalDrop";
+                string oilCoalDropSummary = TryExerciseOilCoalDropForSmoke(dolocApi, room);
+                newContentStage = "MineOfficialJson";
+                string mineOfficialJsonSummary = TryExerciseMineOfficialJsonForSmoke(dolocApi);
+                newContentStage = "EquipmentSlots";
+                string equipmentSlotsSummary = TryExerciseEquipmentSlotsForSmoke();
+                newContentStage = "MineProduction";
+
+                transientMine = TryCreateTransientEquipmentForSmoke(dolocApi, room, "DolocTown.Equipment", new[] { "dtmapi_mine" }, out string createSummary);
+                if (transientMine == null)
+                    throw new InvalidOperationException("Could not create transient dtmapi_mine. " + createSummary);
+                if (!ReadStringMember(transientMine, "Name", string.Empty).Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Transient equipment was not dtmapi_mine. target=" + DescribeEquipmentForSmoke(transientMine) + ", create={" + createSummary + "}");
+                experimentalApi.UpdateRuntimeAutomation();
+                string minePlacementEvidenceSummary = CaptureMinePlacementEvidenceForSmoke(transientMine, createSummary);
+
+                int beforeCycles = experimentalApi.GetMachineProductionCycleCountForSmoke("DTMAPI.MineMod");
+                experimentalApi.ForceMachineProductionDueForSmoke = true;
+                for (int attempt = 1; attempt <= 10; attempt++)
+                {
+                    experimentalApi.UpdateRuntimeAutomation();
+                    int afterCycles = experimentalApi.GetMachineProductionCycleCountForSmoke("DTMAPI.MineMod");
+                    if (afterCycles > beforeCycles)
+                    {
+                        string state = experimentalApi.GetMachineProductionStateSummaryForSmoke("DTMAPI.MineMod");
+                        if (!ContainsIgnoreCase(state, "outputTarget=equipment-storage") ||
+                            !ContainsIgnoreCase(state, "storageLineCapacity=4"))
+                        {
+                            throw new InvalidOperationException("Machine runtime produced but did not place output into Mine-owned 16-slot storage. state={" + state + "}");
+                        }
+
+                        string summary = "oilItemMetadata={" + oilItemMetadataSummary + "}, oilCoalDrop={" + oilCoalDropSummary + "}, mineOfficialJson={" + mineOfficialJsonSummary + "}, equipmentSlots={" + equipmentSlotsSummary + "}, minePlacement={" + minePlacementEvidenceSummary + "}, mine={" + DescribeEquipmentForSmoke(transientMine) + "}, create={" + createSummary + "}, beforeCycles=" + beforeCycles + ", afterCycles=" + afterCycles + ", state={" + state + "}";
+                        runtime.RuntimeMonitor.Log("Smoke exercise NewContentMineProduction OK " + summary);
+                        runtime.SetHookStatus("Smoke.NewContentMineProduction", "verified", "IMachineProductionApi runtime loop + equipment IContainer/LinearInventory", summary);
+                        return SmokeAttemptResult.Succeeded;
+                    }
+
+                    Thread.Sleep(125);
+                    experimentalApi.ForceMachineProductionDueForSmoke = true;
+                }
+
+                throw new InvalidOperationException("Machine runtime loop did not produce from transient dtmapi_mine. beforeCycles=" + beforeCycles + ", state={" + experimentalApi.GetMachineProductionStateSummaryForSmoke("DTMAPI.MineMod") + "}");
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke new-content mine production failed.", ex.InnerException.ToString());
+                runtime.SetHookStatus("Smoke.NewContent" + newContentStage, "failed", "NewContent smoke", ex.InnerException.GetType().Name + ": " + ex.InnerException.Message);
+                return SmokeAttemptResult.Failed;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke new-content mine production failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.NewContent" + newContentStage, "failed", "NewContent smoke", ex.GetType().Name + ": " + ex.Message);
+                return SmokeAttemptResult.Failed;
+            }
+            finally
+            {
+                if (experimentalApi != null)
+                {
+                    experimentalApi.ForceOilDropForSmoke = false;
+                    experimentalApi.ForceMachineProductionDueForSmoke = false;
+                }
+                if (room != null && transientMine != null)
+                    TryRemoveTransientEquipmentForSmoke(room, transientMine);
+            }
+        }
+
+        private string TryExerciseEquipmentSlotsForSmoke()
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+
+            var owner = new ManifestModel
+            {
+                Name = "DTMAPI More Equipment Slots",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.MoreEquipmentSlotsMod",
+                Type = "CodeMod"
+            };
+
+            InventoryGiveResult give = experimentalApi.GiveItem(CreateSmokeManifest(), "grandmas_button", 1);
+            if (!give.Success)
+                throw new InvalidOperationException("Could not give grandmas_button for equipment-slot smoke. " + give.Message);
+
+            IReadOnlyList<EquipmentSlotInfo> beforeSlots = experimentalApi.GetSlots(owner.UniqueID);
+            EquipmentSlotEquipResult equip = experimentalApi.EquipExtraSlot(owner, string.Empty, "grandmas_button");
+            if (!equip.Success)
+                throw new InvalidOperationException("Could not equip DTMAPI extra slot. " + equip.Message);
+
+            IReadOnlyList<EquipmentSlotInfo> equippedSlots = experimentalApi.GetSlots(owner.UniqueID);
+            string uiSummary = experimentalApi.CaptureEquipmentSlotsUiEvidenceForSmoke("new-content smoke after equip");
+            EquipmentSlotEquipResult recover = experimentalApi.UnequipExtraSlot(owner, equip.SlotId, "new-content smoke recovery");
+            if (!recover.Success)
+                throw new InvalidOperationException("Could not recover DTMAPI extra slot. " + recover.Message);
+
+            IReadOnlyList<EquipmentSlotInfo> recoveredSlots = experimentalApi.GetSlots(owner.UniqueID);
+            string summary = "give=" + give.ItemId + " " + give.BeforeCount + "->" + give.AfterCount +
+                ", beforeSlots=" + beforeSlots.Count +
+                ", equipSlot=" + equip.SlotId +
+                ", equipBackpack=" + equip.BeforeBackpackCount + "->" + equip.AfterBackpackCount +
+                ", equippedStored=" + equippedSlots.Count(slot => slot.IsOccupied) +
+                ", ui={" + uiSummary + "}" +
+                ", recoverCount=" + recover.RecoveredCount +
+                ", recoverBackpack=" + recover.BeforeBackpackCount + "->" + recover.AfterBackpackCount +
+                ", recoveredStored=" + recoveredSlots.Count(slot => slot.IsOccupied) +
+                ", state={" + experimentalApi.GetEquipmentSlotsStateSummaryForSmoke(owner.UniqueID) + "}";
+            runtime.RuntimeMonitor.Log("Smoke exercise NewContentEquipmentSlots OK " + summary);
+            runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "verified", "IEquipmentSlotsApi EquipExtraSlot/UnequipExtraSlot", summary);
+            return summary;
+        }
+
+        private string TryExerciseMineOfficialJsonForSmoke(Type dolocApi)
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+
+            if (!TryGetNativeItemProto(dolocApi, "dtmapi_mine", out object? itemProto, out string itemProbe))
+            {
+                string reloadDetail;
+                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentMineOfficialJson", "missing dtmapi_mine before Mine metadata smoke", out reloadDetail))
+                    throw new InvalidOperationException("dtmapi_mine is not present in the native item table before Mine metadata smoke, and official reload failed. probe={" + itemProbe + "}, reload={" + reloadDetail + "}");
+
+                if (!TryGetNativeItemProto(dolocApi, "dtmapi_mine", out itemProto, out itemProbe))
+                    throw new InvalidOperationException("dtmapi_mine is not present in the native item table after official reload. probe={" + itemProbe + "}, reload={" + reloadDetail + "}");
+            }
+
+            object? equipmentProto = QueryEquipmentProtoForSmoke(dolocApi, "dtmapi_mine");
+            object? wellProto = QueryEquipmentProtoForSmoke(dolocApi, "well");
+            if (!TryGetNativeRecipeProto(dolocApi, "dtmapi_mine", out object? recipeProto, out string recipeProbe))
+                throw new InvalidOperationException("dtmapi_mine recipe is not present in the native recipe table. probe={" + recipeProbe + "}");
+            object? generatedMineItem = GenerateItemForSmoke(dolocApi, "dtmapi_mine");
+            string generatedMineItemType = generatedMineItem == null ? "null" : generatedMineItem.GetType().FullName ?? generatedMineItem.GetType().Name;
+            bool generatedMineIsItemEquipment = generatedMineItem != null && IsTypeOrBase(generatedMineItem.GetType(), "DolocTown.ItemEquipment");
+
+            object? recipeGroup = GetDolocConfigDataMapValueForSmoke("TbRecipeGroup", "equipment_workbench");
+            IContentItemInfo? sourceInfo = runtime.GetIndexedContentItem("dtmapi_mine");
+            experimentalApi.UpdateRuntimeAutomation();
+            MachineProductionState state = ((IMachineProductionApi)experimentalApi).GetState("DTMAPI.MineMod");
+            object equipmentObject = equipmentProto ?? new object();
+            object wellObject = wellProto ?? new object();
+            object recipeObject = recipeProto ?? new object();
+
+            string title = FirstNonEmpty(ReadAnyStringMember(itemProto!, string.Empty, "Title", "title"), "dtmapi_mine");
+            string description = ReadAnyStringMember(itemProto!, string.Empty, "DescriptionBasic", "description_basic");
+            string subType = ReadAnyStringMember(itemProto!, string.Empty, "SubType", "sub_type");
+            string itemFunction = ReadAnyMember(itemProto!, "Function", "function")?.GetType().Name ?? "none";
+            int overlay = ReadAnyIntMember(itemProto!, -1, "Overlay", "overlay");
+            int buyingPrice = ReadAnyIntMember(itemProto!, -1, "BuyingPrice", "buying_price");
+            bool viewable = ReadAnyBoolMember(itemProto!, false, "Viewable", "viewable");
+            string indexedIcon = sourceInfo?.IconAssetKey ?? string.Empty;
+
+            (int mineWidth, int mineHeight) = ReadVector2IntForSmoke(ReadAnyMember(equipmentObject, "CoverSize", "cover_size"));
+            (int wellWidth, int wellHeight) = ReadVector2IntForSmoke(ReadAnyMember(wellObject, "CoverSize", "cover_size"));
+            string sceneAsset = ReadAnyStringMember(ReadAnyMember(equipmentObject, "SceneAsset", "scene_asset") ?? new object(), string.Empty, "AssetUrl", "url");
+            object? equipmentFunctionObject = ReadAnyMember(equipmentObject, "Function", "function");
+            string equipmentFunction = equipmentFunctionObject?.GetType().Name ?? "none";
+            int caseTotalCapacity = ReadAnyIntMember(equipmentFunctionObject ?? new object(), -1, "TotalCapacity", "total_capacity");
+            int caseLineCapacity = ReadAnyIntMember(equipmentFunctionObject ?? new object(), -1, "LineCapacity", "line_capacity");
+            string outputItem = ReadAnyStringMember(ReadAnyMember(recipeObject, "OutputItem", "output_item") ?? new object(), string.Empty, "itemName", "ItemName", "item_name");
+            int techPoint = ReadAnyIntMember(recipeObject, -1, "TechPoint", "tech_point");
+            bool defaultUnlock = ReadAnyBoolMember(recipeObject, false, "DefaultUnlock", "default_unlock");
+            bool groupIncludesRecipe = recipeGroup != null && ReadStringValues(ReadAnyMember(recipeGroup, "RecipeIds", "recipe_ids")).Any(v => v.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase));
+            string inputs = DescribeCountItemsForSmoke(ReadAnyMember(recipeObject, "InputItems", "input_items"));
+            string outputRules = string.Join("|", experimentalApi.GetMachines("DTMAPI.MineMod")
+                .SelectMany(machine => machine.OutputRules ?? Array.Empty<MachineOutputRule>())
+                .Select(rule => rule.ItemId + ":" + rule.Weight.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + ":" + rule.Source));
+            string nativeTechTreeSummary = state.NativeTechTreeSummary ?? string.Empty;
+
+            var failures = new List<string>();
+            if (equipmentProto == null)
+                failures.Add("missing-equipment-proto");
+            if (wellProto == null)
+                failures.Add("missing-well-proto");
+            if (sourceInfo == null || !sourceInfo.SourceKind.Equals("DTMAPI", StringComparison.OrdinalIgnoreCase))
+                failures.Add("missing-dtmapi-source:" + (sourceInfo == null ? "none" : sourceInfo.SourceKind));
+            if (!ContainsIgnoreCase(title, "矿井") && !ContainsIgnoreCase(title, "Mine"))
+                failures.Add("missing-title:" + title);
+            if (!ContainsIgnoreCase(description, "水井") && !ContainsIgnoreCase(description, "well"))
+                failures.Add("missing-well-description");
+            if (!subType.Equals("equipment_ornament", StringComparison.OrdinalIgnoreCase))
+                failures.Add("unexpected-subtype:" + subType);
+            if (!itemFunction.Equals("ItemFunctionEquipment", StringComparison.OrdinalIgnoreCase))
+                failures.Add("unexpected-item-function:" + itemFunction);
+            if (!generatedMineIsItemEquipment)
+                failures.Add("generated-item-not-ItemEquipment:" + generatedMineItemType);
+            if (overlay <= 0 || buyingPrice <= 0 || !viewable)
+                failures.Add("item-not-viewable-buyable-stackable:overlay=" + overlay + ", buy=" + buyingPrice + ", viewable=" + viewable);
+            if (!ContainsIgnoreCase(indexedIcon, "icon_item_well"))
+                failures.Add("missing-indexed-icon:" + indexedIcon);
+            if (mineWidth != 8 || mineHeight != 6)
+                failures.Add("mine-cover-size=" + mineWidth + "x" + mineHeight);
+            if (wellWidth <= 0 || wellHeight <= 0 || mineWidth != wellWidth * 2 || mineHeight != wellHeight * 2)
+                failures.Add("not-double-well-cover:mine=" + mineWidth + "x" + mineHeight + ", well=" + wellWidth + "x" + wellHeight);
+            if (!ContainsIgnoreCase(sceneAsset, "sprite_equipment_well"))
+                failures.Add("scene-asset=" + sceneAsset);
+            if (!equipmentFunction.Equals("EquipmentFuncCase", StringComparison.OrdinalIgnoreCase))
+                failures.Add("unexpected-equipment-function:" + equipmentFunction);
+            if (caseTotalCapacity != 16 || caseLineCapacity != 4)
+                failures.Add("unexpected-case-storage:" + caseTotalCapacity + "/" + caseLineCapacity);
+            if (!outputItem.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
+                failures.Add("recipe-output=" + outputItem);
+            if (!CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "dtmapi_oil", 10) ||
+                !CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "steel_ingot", 10))
+                failures.Add("recipe-inputs=" + inputs);
+            if (techPoint != 30 || defaultUnlock)
+                failures.Add("recipe-tech-default:tech=" + techPoint + ", defaultUnlock=" + defaultUnlock);
+            if (!groupIncludesRecipe)
+                failures.Add("equipment_workbench-missing-dtmapi_mine");
+            if (!ContainsIgnoreCase(nativeTechTreeSummary, "node=dtmapi_mine") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "parent=alloy_material") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "rightOfParent=True") ||
+                !ContainsIgnoreCase(nativeTechTreeSummary, "aboveCommander=True") ||
+                ContainsIgnoreCase(nativeTechTreeSummary, "pending") ||
+                ContainsIgnoreCase(nativeTechTreeSummary, "failed"))
+            {
+                failures.Add("native-tech-route=" + nativeTechTreeSummary);
+            }
+            if (!state.MachineId.Equals("dtmapi.mine", StringComparison.OrdinalIgnoreCase) ||
+                !state.EquipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ||
+                !state.RecipeGroupId.Equals("equipment_workbench", StringComparison.OrdinalIgnoreCase) ||
+                state.VisualScale < 1.99 ||
+                state.FuelCapacity < 7200 ||
+                state.ElectricModePowerCostPerCycle != 10 ||
+                state.ElectricModeFuelCostPerCycle >= state.FuelOnlyFuelCostPerCycle ||
+                !ContainsIgnoreCase(outputRules, "dtmapi_oil"))
+                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", fuelCapacity:" + state.FuelCapacity + ", costs:" + state.FuelOnlyFuelCostPerCycle + "/" + state.ElectricModeFuelCostPerCycle + "/" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
+
+            string summary = "item=" + title +
+                ", source=" + (sourceInfo == null ? "none" : sourceInfo.SourceKind + "/" + sourceInfo.SourceId + "/" + sourceInfo.SourceModTitle) +
+                ", icon=" + indexedIcon +
+                ", itemFunction=" + itemFunction +
+                ", subtype=" + subType +
+                ", cover=" + mineWidth + "x" + mineHeight +
+                ", baseWellCover=" + wellWidth + "x" + wellHeight +
+                ", sceneAsset=" + sceneAsset +
+                ", equipmentFunction=" + equipmentFunction +
+                ", caseStorage=" + caseTotalCapacity + "/" + caseLineCapacity +
+                ", generatedItemType=" + generatedMineItemType +
+                ", recipeOutput=" + outputItem +
+                ", recipeInputs=" + inputs +
+                ", techPoint=" + techPoint +
+                ", defaultUnlock=" + defaultUnlock +
+                ", recipeGroup=equipment_workbench includes=" + groupIncludesRecipe +
+                ", nativeTech={" + nativeTechTreeSummary + "}" +
+                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/fuel:" + state.RemainingFuel + "-" + state.FuelCapacity + "/cycleMinutes:" + state.CycleMinutes + "/costs:" + state.FuelOnlyFuelCostPerCycle + "-" + state.ElectricModeFuelCostPerCycle + "-" + state.ElectricModePowerCostPerCycle +
+                ", outputRules=" + outputRules +
+                ", probes=item{" + itemProbe + "}, recipe{" + recipeProbe + "}";
+            if (failures.Count > 0)
+                throw new InvalidOperationException("Mine official JSON/API smoke failed: " + string.Join(", ", failures) + ". " + summary);
+
+            runtime.RuntimeMonitor.Log("Smoke exercise NewContentMineOfficialJson OK " + summary);
+            runtime.SetHookStatus("Smoke.NewContentMineOfficialJson", "verified", "DolocConfig item/equipment/recipe/group + IMachineProductionApi state", summary);
+            return summary;
+        }
+
+        private string TryExerciseOilItemMetadataForSmoke(Type dolocApi)
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+
+            if (!TryGetNativeItemProto(dolocApi, "dtmapi_oil", out object? proto, out string nativeProbe))
+            {
+                string reloadDetail;
+                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilItemMetadata", "missing dtmapi_oil before Oil metadata smoke", out reloadDetail))
+                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table before Oil metadata smoke, and official reload failed. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
+
+                if (!TryGetNativeItemProto(dolocApi, "dtmapi_oil", out proto, out nativeProbe))
+                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table after official reload. probe={" + nativeProbe + "}, reload={" + reloadDetail + "}");
+            }
+
+            if (proto == null)
+                throw new InvalidOperationException("dtmapi_oil native item query returned no proto. probe={" + nativeProbe + "}");
+
+            InventoryDebugPage page = experimentalApi.GetItems(new InventoryDebugQuery
+            {
+                SearchText = "dtmapi_oil",
+                IncludeUnavailable = true,
+                PageSize = 50
+            });
+            InventoryDebugItem? item = page.Items.FirstOrDefault(i => i.Id.Equals("dtmapi_oil", StringComparison.OrdinalIgnoreCase));
+            if (item == null)
+                throw new InvalidOperationException("IInventoryDebugApi did not return dtmapi_oil. status=" + page.Status + ", total=" + page.TotalItems + ".");
+
+            InventoryDebugPage sourcePage = experimentalApi.GetItems(new InventoryDebugQuery
+            {
+                SourceId = item.SourceId,
+                IncludeUnavailable = true,
+                PageSize = 50
+            });
+            IContentItemInfo? sourceInfo = runtime.GetIndexedContentItem("dtmapi_oil");
+            bool sourceFilterIncludesOil = sourcePage.Items.Any(i => i.Id.Equals("dtmapi_oil", StringComparison.OrdinalIgnoreCase));
+            InventoryDebugSourceGroup? sourceGroup = page.Sources.FirstOrDefault(g => g.Id.Equals(item.SourceId, StringComparison.OrdinalIgnoreCase));
+            string effectiveCategory = FirstNonEmpty(item.SubCategory, item.Category);
+            bool categoryListed = !string.IsNullOrWhiteSpace(effectiveCategory) &&
+                page.Categories.Any(c => c.Equals(effectiveCategory, StringComparison.OrdinalIgnoreCase));
+            string[] tags = item.Tags?.ToArray() ?? Array.Empty<string>();
+            string[] nativeSources = ReadStringValues(ReadAnyMember(proto, "Source", "source")).ToArray();
+
+            string title = FirstNonEmpty(ReadAnyStringMember(proto, string.Empty, "Title", "title"), item.DisplayName, item.ChineseName, item.Id);
+            string description = ReadAnyStringMember(proto, string.Empty, "DescriptionBasic", "description_basic");
+            bool salable = ReadAnyBoolMember(proto, false, "Salable", "salable");
+            bool viewable = ReadAnyBoolMember(proto, false, "Viewable", "viewable");
+            int sellingPrice = ReadAnyIntMember(proto, -1, "SellingPrice", "selling_price");
+            int buyingPrice = ReadAnyIntMember(proto, -1, "BuyingPrice", "buying_price");
+            int electricEnergy = ReadAnyIntMember(proto, -1, "ElectricEnergy", "electric_energy");
+            int overlay = ReadAnyIntMember(proto, -1, "Overlay", "overlay");
+            string nativeIcon = ReadAnyMember(proto, "UiSpriteAsset", "ui_sprite_asset")?.ToString() ?? string.Empty;
+            string indexedIcon = sourceInfo?.IconAssetKey ?? string.Empty;
+            string nativeSubType = ReadAnyStringMember(proto, string.Empty, "SubType", "sub_type");
+            string functionType = ReadAnyMember(proto, "Function", "function")?.GetType().Name ?? "none";
+            int highestBaseFuel = FindHighestNativeFuelEnergyExcept("dtmapi_oil", out string highestBaseFuelItem);
+
+            var failures = new List<string>();
+            if (!item.RuntimeLoaded)
+                failures.Add("not-runtime-loaded");
+            if (!item.CanSpawn || !item.CanGive)
+                failures.Add("not-giveable:" + item.CannotGiveReason);
+            if (!item.IsModItem)
+                failures.Add("not-marked-mod-item");
+            if (!item.SourceKind.Equals("DTMAPI", StringComparison.OrdinalIgnoreCase))
+                failures.Add("source-kind=" + item.SourceKind);
+            if (!item.SourceId.Equals("Local.DTMAPI_Oil", StringComparison.OrdinalIgnoreCase))
+                failures.Add("source-id=" + item.SourceId);
+            if (sourceGroup == null || sourceGroup.Count <= 0)
+                failures.Add("missing-source-group");
+            if (!sourceFilterIncludesOil)
+                failures.Add("source-filter-misses-oil");
+            if (string.IsNullOrWhiteSpace(effectiveCategory))
+                failures.Add("missing-category");
+            if (!categoryListed)
+                failures.Add("category-not-listed:" + effectiveCategory);
+            if (!ContainsAny(tags, "material_ore", "mining", "processing") &&
+                !ContainsAny(nativeSources, "material_ore", "mining", "processing") &&
+                !ContainsIgnoreCase(item.SearchText, "material_ore"))
+                failures.Add("missing-mining-category-tags");
+            if (!item.HasIcon || string.IsNullOrWhiteSpace(nativeIcon) || !ContainsIgnoreCase(indexedIcon, "icon_item_coal"))
+                failures.Add("missing-icon:hasIcon=" + item.HasIcon + ", item=" + item.IconAssetKey + ", native=" + nativeIcon + ", indexed=" + indexedIcon);
+            if (!ContainsIgnoreCase(title, "石油") && !ContainsIgnoreCase(title, "Oil") && !ContainsIgnoreCase(item.DisplayName, "石油") && !ContainsIgnoreCase(item.DisplayName, "Oil"))
+                failures.Add("missing-localized-title:" + title + "/" + item.DisplayName);
+            if (!ContainsIgnoreCase(description, "燃料") && !ContainsIgnoreCase(description, "fuel"))
+                failures.Add("missing-fuel-description");
+            if (!salable || sellingPrice <= 0)
+                failures.Add("not-salable:sale=" + salable + ", price=" + sellingPrice);
+            if (buyingPrice <= 0)
+                failures.Add("missing-buy-price:" + buyingPrice);
+            if (!viewable)
+                failures.Add("not-viewable");
+            if (overlay <= 0)
+                failures.Add("not-stackable-overlay:" + overlay);
+            if (electricEnergy <= highestBaseFuel)
+                failures.Add("fuel-not-above-base-highest:" + electricEnergy + "<=" + highestBaseFuel + "(" + highestBaseFuelItem + ")");
+
+            string summary = "id=" + item.Id +
+                ", display=" + FirstNonEmpty(item.DisplayName, title, item.Id) +
+                ", sourceKind=" + item.SourceKind +
+                ", sourceId=" + item.SourceId +
+                ", sourceTitle=" + item.SourceModTitle +
+                ", sourceGroup=" + (sourceGroup == null ? "missing" : sourceGroup.DisplayName + "/" + sourceGroup.Count) +
+                ", sourceFilterIncludesOil=" + sourceFilterIncludesOil +
+                ", category=" + effectiveCategory +
+                ", categoryListed=" + categoryListed +
+                ", tags=" + (tags.Length == 0 ? "none" : string.Join("|", tags)) +
+                ", nativeSources=" + (nativeSources.Length == 0 ? "none" : string.Join("|", nativeSources)) +
+                ", salable=" + salable +
+                ", sellingPrice=" + sellingPrice +
+                ", buyingPrice=" + buyingPrice +
+                ", fuelEnergy=" + electricEnergy +
+                ", baseHighestFuel=" + highestBaseFuelItem + ":" + highestBaseFuel +
+                ", icon=" + FirstNonEmpty(item.IconAssetKey, nativeIcon) +
+                ", indexedIcon=" + indexedIcon +
+                ", title=" + title +
+                ", subType=" + nativeSubType +
+                ", function=" + functionType +
+                ", nativeProbe={" + nativeProbe + "}";
+            if (failures.Count > 0)
+                throw new InvalidOperationException("Oil item metadata smoke failed: " + string.Join(", ", failures) + ". " + summary);
+
+            runtime.RuntimeMonitor.Log("Smoke exercise NewContentOilItemMetadata OK " + summary);
+            runtime.SetHookStatus("Smoke.NewContentOilItemMetadata", "verified", "IInventoryDebugApi.GetItems + DolocAPI.QueryItemProto", summary);
+            return summary;
+        }
+
+        private string TryExerciseOilCoalDropForSmoke(Type dolocApi, object room)
+        {
+            if (experimentalApi == null)
+                throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+
+            if (!TryQueryNativeItemProto(dolocApi, "dtmapi_oil", out string oilProbe))
+            {
+                string reloadDetail;
+                if (!TryReloadOfficialModsAndConfig("Smoke.NewContentOilCoalDrop", "missing dtmapi_oil before OilMod smoke", out reloadDetail))
+                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table before OilMod smoke, and official reload failed. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
+
+                if (!TryQueryNativeItemProto(dolocApi, "dtmapi_oil", out oilProbe))
+                    throw new InvalidOperationException("dtmapi_oil is not present in the native item table after official reload. probe={" + oilProbe + "}, reload={" + reloadDetail + "}");
+            }
+
+            Type? toolColliderType = patcher?.ResolveType("DolocTown.ToolCollider, Assembly-CSharp");
+            Type? resourceRendererType = patcher?.ResolveType("DolocTown.DungeonResourceRenderer, Assembly-CSharp");
+            if (toolColliderType == null || resourceRendererType == null)
+                throw new MissingMemberException("ToolCollider or DungeonResourceRenderer was not visible.");
+
+            if (!TryEnsureCoalResourceForOilSmoke(room, resourceRendererType, out string setupSummary))
+                throw new InvalidOperationException("Could not prepare a coal resource for OilMod smoke. " + setupSummary);
+
+            MethodInfo? handleTools = FindMethod(toolColliderType, "HandleTools", 1);
+            MethodInfo? resetTool = FindMethod(toolColliderType, "ResetTool", 1);
+            MethodInfo? resetChopCounter = FindMethod(toolColliderType, "ResetChopCounter", 1);
+            if (handleTools == null || resetTool == null)
+                throw new MissingMethodException("ToolCollider.HandleTools/ResetTool path was not found for OilMod smoke.");
+
+            object? toolCollider = FindToolColliderForSmoke(dolocApi, toolColliderType);
+            if (toolCollider == null)
+                throw new InvalidOperationException("No ToolCollider instance was available for OilMod smoke.");
+
+            object? tool = GenerateItemForSmoke(dolocApi, "steel_pickaxe") ?? GenerateItemForSmoke(dolocApi, "iron_pickaxe") ?? GenerateItemForSmoke(dolocApi, "old_pickaxe");
+            if (tool == null)
+                throw new InvalidOperationException("Could not generate a pickaxe for OilMod smoke.");
+
+            string toolName = ReadStringMember(tool, "name", tool.GetType().Name);
+            int toolDamage = ReadIntMember(tool, "ChopNumber", 0);
+            int beforeDrops = experimentalApi.OilMiningDropCount;
+            int rendererCount = 0;
+            int coalCount = 0;
+            int invokedCount = 0;
+            List<string> samples = new List<string>();
+            List<string> attempts = new List<string>();
+
+            try
+            {
+                experimentalApi.ForceOilDropForSmoke = true;
+                foreach (object renderer in FindUnityObjects(resourceRendererType))
+                {
+                    rendererCount++;
+                    object? resource = ReadMember(renderer, "DungeonResource");
+                    if (resource == null || IsRemoved(resource))
+                        continue;
+
+                    string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
+                    string resourceClass = ReadResourceClass(resource);
+                    int healthBefore = ReadIntMember(resource, "currentHealth", 0);
+                    if (samples.Count < 8)
+                        samples.Add(resourceName + "/class=" + resourceClass + "/health=" + healthBefore);
+                    if (!IsCoalResourceNameForSmoke(resourceName) || healthBefore <= 0)
+                        continue;
+
+                    coalCount++;
+                    object? collider = ReadMember(renderer, "PolygonCollider");
+                    if (collider == null)
+                        continue;
+
+                    int seededHealth = Math.Max(1, toolDamage > 0 ? Math.Min(healthBefore, toolDamage) : 1);
+                    WriteIntMember(resource, "currentHealth", seededHealth);
+                    resetTool.Invoke(toolCollider, new object[] { tool });
+                    resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
+                    handleTools.Invoke(toolCollider, new object[] { collider });
+                    invokedCount++;
+
+                    int healthAfter = ReadIntMember(resource, "currentHealth", 0);
+                    bool removedAfter = IsRemoved(resource);
+                    if (attempts.Count < 8)
+                        attempts.Add(resourceName + "/tool=" + toolName + "/toolDamage=" + toolDamage + "/health=" + healthBefore + "->" + healthAfter + "/seeded=" + seededHealth + "/removed=" + removedAfter + "/drops=" + beforeDrops + "->" + experimentalApi.OilMiningDropCount + "/bridge={" + experimentalApi.LastOilMiningDropSummary + "}");
+                    if (experimentalApi.OilMiningDropCount > beforeDrops)
+                    {
+                        string summary = "setup={" + setupSummary + "}, resource=" + resourceName + ", class=" + resourceClass + ", tool=" + toolName + ", toolDamage=" + toolDamage + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", bridge={" + experimentalApi.LastOilMiningDropSummary + "}";
+                        runtime.RuntimeMonitor.Log("Smoke exercise NewContentOilCoalDrop OK " + summary);
+                        runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "verified", "ToolCollider.HandleTools private path + OilMod.MiningDrop", summary);
+                        return summary;
+                    }
+                }
+            }
+            finally
+            {
+                experimentalApi.ForceOilDropForSmoke = false;
+            }
+
+            throw new InvalidOperationException("No coal resource produced dtmapi_oil during OilMod smoke. renderers=" + rendererCount + ", coalResources=" + coalCount + ", invoked=" + invokedCount + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", setup={" + setupSummary + "}, attempts=" + (attempts.Count == 0 ? "none" : string.Join(" ; ", attempts)) + ", samples=" + string.Join(" ; ", samples));
+        }
+
+        private static bool TryQueryNativeItemProto(Type dolocApi, string itemId, out string detail)
+        {
+            return TryGetNativeItemProto(dolocApi, itemId, out _, out detail);
+        }
+
+        private static bool TryGetNativeRecipeProto(Type dolocApi, string recipeId, out object? proto, out string detail)
+        {
+            detail = string.Empty;
+            proto = null;
+            try
+            {
+                MethodInfo? queryRecipeProto = dolocApi.GetMethod("QueryRecipeProto", BindingFlags.Public | BindingFlags.Static);
+                if (queryRecipeProto == null)
+                {
+                    detail = "DolocAPI.QueryRecipeProto was not found.";
+                    return false;
+                }
+
+                object?[] args = new object?[] { recipeId, null };
+                bool found = queryRecipeProto.Invoke(null, args) is bool ok && ok && args[1] != null;
+                proto = found ? args[1] : null;
+                detail = found ? "found " + recipeId + " in DolocConfig.Tables.TbRecipe." : "missing " + recipeId + " in DolocConfig.Tables.TbRecipe.";
+                return found;
+            }
+            catch (Exception ex)
+            {
+                Exception root = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException : ex;
+                detail = root.GetType().Name + ": " + root.Message;
+                return false;
+            }
+        }
+
+        private static bool TryGetNativeItemProto(Type dolocApi, string itemId, out object? proto, out string detail)
+        {
+            detail = string.Empty;
+            proto = null;
+            try
+            {
+                MethodInfo? queryItemProto = dolocApi.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
+                if (queryItemProto == null)
+                {
+                    detail = "DolocAPI.QueryItemProto was not found.";
+                    return false;
+                }
+
+                object?[] args = new object?[] { itemId, null };
+                bool found = queryItemProto.Invoke(null, args) is bool ok && ok && args[1] != null;
+                proto = found ? args[1] : null;
+                detail = found ? "found " + itemId + " in DolocConfig.Tables.TbItem." : "missing " + itemId + " in DolocConfig.Tables.TbItem.";
+                return found;
+            }
+            catch (Exception ex)
+            {
+                Exception root = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException : ex;
+                detail = root.GetType().Name + ": " + root.Message;
+                return false;
+            }
+        }
+
+        private int FindHighestNativeFuelEnergyExcept(string excludedItemId, out string itemId)
+        {
+            itemId = string.Empty;
+            int highest = 0;
+            HashSet<string> indexedContentIds = new HashSet<string>(
+                runtime.GetIndexedContentItems()
+                    .Select(i => i.ItemId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+            patcher ??= new HarmonyReflectionPatcher(runtime);
+            Type? dolocConfig = patcher.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            object? tables = dolocConfig?.GetProperty("Tables", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            object? tbItem = tables == null ? null : ReadMember(tables, "TbItem");
+            object? dataList = tbItem == null ? null : ReadMember(tbItem, "DataList");
+            if (!(dataList is IEnumerable enumerable))
+                return highest;
+
+            foreach (object proto in enumerable)
+            {
+                string id = ReadAnyStringMember(proto, string.Empty, "Id", "id");
+                if (string.IsNullOrWhiteSpace(id) || id.Equals(excludedItemId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (indexedContentIds.Contains(id))
+                    continue;
+
+                int energy = ReadAnyIntMember(proto, 0, "ElectricEnergy", "electric_energy");
+                if (energy > highest)
+                {
+                    highest = energy;
+                    itemId = id;
+                }
+            }
+
+            return highest;
+        }
+
+        private object? GetDolocConfigDataMapValueForSmoke(string tableName, string id)
+        {
+            patcher ??= new HarmonyReflectionPatcher(runtime);
+            Type? dolocConfig = patcher.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            object? tables = dolocConfig == null ? null : ReadStaticMember(dolocConfig, "Tables");
+            object? table = tables == null ? null : ReadMember(tables, tableName);
+            object? dataMap = table == null ? null : ReadMember(table, "DataMap");
+            foreach (object entry in EnumerateObjects(dataMap))
+            {
+                object? key = ReadMember(entry, "Key");
+                if (key == null || !id.Equals(key.ToString(), StringComparison.OrdinalIgnoreCase))
+                    continue;
+                return ReadMember(entry, "Value");
+            }
+
+            return null;
+        }
+
+        private static (int x, int y) ReadVector2IntForSmoke(object? vector)
+        {
+            if (vector == null)
+                return (0, 0);
+            return (ReadIntMember(vector, "x", 0), ReadIntMember(vector, "y", 0));
+        }
+
+        private static string DescribeCountItemsForSmoke(object? items)
+        {
+            List<string> parts = new List<string>();
+            foreach (object item in EnumerateObjects(items))
+            {
+                string itemId = ReadAnyStringMember(item, string.Empty, "itemName", "ItemName", "item_name");
+                int count = ReadAnyIntMember(item, 0, "itemCount", "ItemCount", "item_count");
+                if (!string.IsNullOrWhiteSpace(itemId))
+                    parts.Add(itemId + "x" + count);
+            }
+
+            return parts.Count == 0 ? "none" : string.Join("|", parts);
+        }
+
+        private static bool CountItemsContain(object? items, string itemId, int minimumCount)
+        {
+            foreach (object item in EnumerateObjects(items))
+            {
+                string currentId = ReadAnyStringMember(item, string.Empty, "itemName", "ItemName", "item_name");
+                int count = ReadAnyIntMember(item, 0, "itemCount", "ItemCount", "item_count");
+                if (currentId.Equals(itemId, StringComparison.OrdinalIgnoreCase) && count >= minimumCount)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<object> EnumerateObjects(object? value)
+        {
+            if (value is IEnumerable enumerable && !(value is string))
+            {
+                foreach (object? item in enumerable)
+                {
+                    if (item != null)
+                        yield return item;
+                }
+            }
+        }
+
+        private bool TryEnsureCoalResourceForOilSmoke(object room, Type resourceRendererType, out string summary)
+        {
+            TryRenderAllResourcesForSmoke(room);
+            int existing = CountRenderedCoalResources(FindUnityObjects(resourceRendererType), out string existingSamples);
+            if (existing > 0)
+            {
+                summary = "existingCoalResources=" + existing + ", samples=" + existingSamples;
+                return true;
+            }
+
+            if (TryCreateTransientOneActionResourceForSmoke(room, "Ore", "coal", out string createSummary))
+            {
+                TryRenderAllResourcesForSmoke(room);
+                int created = CountRenderedCoalResources(FindUnityObjects(resourceRendererType), out string createdSamples);
+                summary = "createdCoalResources=" + created + ", create={" + createSummary + "}, samples=" + createdSamples;
+                return created > 0;
+            }
+
+            summary = "existingCoalResources=0, samples=" + existingSamples + ", create={" + createSummary + "}";
+            return false;
+        }
+
+        private static int CountRenderedCoalResources(IEnumerable<object> renderers, out string samplesText)
+        {
+            int count = 0;
+            List<string> samples = new List<string>();
+            foreach (object renderer in renderers)
+            {
+                object? resource = ReadMember(renderer, "DungeonResource");
+                if (resource == null || IsRemoved(resource))
+                    continue;
+                string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
+                string resourceClass = ReadResourceClass(resource);
+                int health = ReadIntMember(resource, "currentHealth", 0);
+                if (samples.Count < 8)
+                    samples.Add(resourceName + "/class=" + resourceClass + "/health=" + health);
+                if (IsCoalResourceNameForSmoke(resourceName))
+                    count++;
+            }
+
+            samplesText = samples.Count == 0 ? "none" : string.Join(" ; ", samples);
+            return count;
         }
 
         private void LogAutoFishingPending(string message)
@@ -2224,8 +4426,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 page.BeginEditing();
                 SetConfigPendingValue(page, "Bool", "true", "启用", "Enabled");
-                SetConfigPendingValue(page, "Bool", "true", "工具动画加速", "Tool animation speed");
-                SetConfigPendingValue(page, "Number", "4", "工具倍率", "Tool multiplier");
+                SetConfigPendingValue(page, "InlineBoolNumber", "true|4", "工具动画加速", "Tool animation speed");
                 page.Save();
                 runtime.RuntimeMonitor.Log("Smoke ActionSpeed config saved through DTMAPI ConfigMenu page multiplier=4.");
 
@@ -2323,8 +4524,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 samples.Add("feeder={" + feederSummary + "}");
 
                 if (!TryExerciseActionSpeedEatDrinkForSmoke(dolocApi, out string eatSummary))
-                    throw new InvalidOperationException("Eat/drink ActionSpeed continuous-use path failed. " + eatSummary);
+                    throw new InvalidOperationException("Eat/drink ActionSpeed animation path failed. " + eatSummary);
                 samples.Add("eatDrink={" + eatSummary + "}");
+
+                if (!TryExerciseActionSpeedBottledWaterContinuousForSmoke(dolocApi, out string bottledWaterSummary))
+                    throw new InvalidOperationException("Bottled-water right-click continuous-use path failed. " + bottledWaterSummary);
+                samples.Add("bottledWaterRightClick={" + bottledWaterSummary + "}");
 
                 if (!TryExerciseActionSpeedBottleFillForSmoke(dolocApi, out string bottleSummary))
                     throw new InvalidOperationException("Bottle-fill ActionSpeed continuous-use path failed. " + bottleSummary);
@@ -2333,6 +4538,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!TryExerciseActionSpeedBottleFillInWaterForSmoke(dolocApi, out string bottleWaterSummary))
                     throw new InvalidOperationException("In-water bottle-fill ActionSpeed continuous-use path failed. " + bottleWaterSummary);
                 samples.Add("bottleFillInWater={" + bottleWaterSummary + "}");
+
+                if (!TryExerciseActionSpeedAutoFillBottleForSmoke(dolocApi, out string autoFillBottleSummary))
+                    throw new InvalidOperationException("No-key in-water bottle auto-fill path failed. " + autoFillBottleSummary);
+                samples.Add("autoFillBottle={" + autoFillBottleSummary + "}");
 
                 if (!TryExerciseActionSpeedPlantForSmoke(dolocApi, out string plantSummary))
                     throw new InvalidOperationException("Planting ActionSpeed interaction path failed. " + plantSummary);
@@ -2353,7 +4562,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 string summary = "owner=" + ownerId + "; " + string.Join("; ", samples.ToArray()) + "; pending=none";
                 runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction OK " + summary);
                 runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "verified", "Native item/equipment paths -> AgentStateInteract/AgentStateEat/UseItemContinues", summary);
-                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", "experimental", "Harmony Postfix/Prefix: AgentStateInteract.OnEnter, AgentStateEat.OnEnter, AgentControllerState.UseItemContinues", "Verified fuel/feed add, eat/drink continuous use, bottle fill from IWaterContainer and in-water branch, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest in third-save smoke.");
+                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", "experimental", "Harmony Postfix/Prefix: AgentStateInteract.OnEnter, AgentStateEat.OnEnter, AgentControllerState.UseItemContinues", "Verified fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, bottle fill from IWaterContainer and in-water branch, no-key ItemBottle.UseAsItem auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest in third-save smoke.");
                 return SmokeAttemptResult.Succeeded;
             }
             catch (Exception ex)
@@ -2548,8 +4757,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 string bridgeSummary = experimentalApi?.LastActionSpeedApplicationSummary ?? string.Empty;
                 string continuousSummary = experimentalApi?.LastActionSpeedContinuousUseSummary ?? string.Empty;
                 bool speedApplied = afterApplications > beforeApplications && SummaryContainsKind(bridgeSummary, "EatDrink");
-                bool continuousApplied = afterContinuous > beforeContinuous && SummaryContainsKind(continuousSummary, "EatDrink");
-                if (!speedApplied || !continuousApplied || afterCount >= beforeCount)
+                if (!speedApplied || afterCount >= beforeCount)
                 {
                     summary = "item=" + itemId +
                         ", count=" + beforeCount + "->" + afterCount +
@@ -2566,9 +4774,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
                     ", continuousDelta=" + (afterContinuous - beforeContinuous) +
                     ", invoke={" + invokeSummary + "}" +
-                    ", continuous=" + continuousSummary +
+                    ", continuous=" + (string.IsNullOrWhiteSpace(continuousSummary) ? "none" : continuousSummary) +
                     ", bridge=" + bridgeSummary;
-                runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction sample OK EatDrink " + summary);
+                runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction sample OK EatDrinkAnimation " + summary);
                 return true;
             }
             catch (TargetInvocationException ex) when (ex.InnerException != null)
@@ -2581,6 +4789,94 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 summary = ex.GetType().Name + ": " + ex.Message;
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed eat/drink failed.", ex.ToString());
+                return false;
+            }
+            finally
+            {
+                TryEnterIdleStateForSmoke(dolocApi);
+                RestoreSmokeQuickSlot(dolocApi, inventory, quickSlot, originalSlotItem);
+            }
+        }
+
+        private bool TryExerciseActionSpeedBottledWaterContinuousForSmoke(Type dolocApi, out string summary)
+        {
+            summary = string.Empty;
+            object? inventory = null;
+            object? originalSlotItem = null;
+            int quickSlot = 0;
+
+            try
+            {
+                object? item = GenerateItemForSmoke(dolocApi, "bottle_of_water", 3);
+                if (item == null)
+                {
+                    summary = "Could not generate bottle_of_water.";
+                    return false;
+                }
+
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, item, quickSlot, out inventory, out originalSlotItem, out string placeSummary))
+                {
+                    summary = placeSummary;
+                    return false;
+                }
+
+                int beforeApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
+                int beforeContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
+                int beforeCount = ReadQuickSlotItemCount(inventory, quickSlot);
+                int afterCount = beforeCount;
+                string invokeSummary = string.Empty;
+                for (int attempt = 1; attempt <= 5; attempt++)
+                {
+                    if (!TryInvokeUseItemContinuesForSmoke(dolocApi, 0.2f, out invokeSummary))
+                    {
+                        summary = invokeSummary;
+                        return false;
+                    }
+                    afterCount = ReadQuickSlotItemCount(inventory, quickSlot);
+                    if (afterCount < beforeCount)
+                        break;
+                }
+
+                int afterApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
+                int afterContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
+                string bridgeSummary = experimentalApi?.LastActionSpeedApplicationSummary ?? string.Empty;
+                string continuousSummary = experimentalApi?.LastActionSpeedContinuousUseSummary ?? string.Empty;
+                bool speedApplied = afterApplications > beforeApplications && SummaryContainsKind(bridgeSummary, "EatDrink");
+                bool continuousApplied = afterContinuous > beforeContinuous && SummaryContainsKind(continuousSummary, "BottledWaterDrink");
+                if (!speedApplied || !continuousApplied || afterCount >= beforeCount)
+                {
+                    summary = "item=bottle_of_water" +
+                        ", count=" + beforeCount + "->" + afterCount +
+                        ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
+                        ", continuousDelta=" + (afterContinuous - beforeContinuous) +
+                        ", place={" + placeSummary + "}" +
+                        ", invoke={" + invokeSummary + "}" +
+                        ", continuous=" + (string.IsNullOrWhiteSpace(continuousSummary) ? "none" : continuousSummary) +
+                        ", bridge=" + (string.IsNullOrWhiteSpace(bridgeSummary) ? "none" : bridgeSummary);
+                    return false;
+                }
+
+                summary = "item=bottle_of_water" +
+                    ", count=" + beforeCount + "->" + afterCount +
+                    ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
+                    ", continuousDelta=" + (afterContinuous - beforeContinuous) +
+                    ", place={" + placeSummary + "}" +
+                    ", invoke={" + invokeSummary + "}" +
+                    ", continuous=" + continuousSummary +
+                    ", bridge=" + bridgeSummary;
+                runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction sample OK BottledWaterRightClick " + summary);
+                return true;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                summary = ex.InnerException.GetType().Name + ": " + ex.InnerException.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed bottled-water right-click failed.", ex.InnerException.ToString());
+                return false;
+            }
+            catch (Exception ex)
+            {
+                summary = ex.GetType().Name + ": " + ex.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed bottled-water right-click failed.", ex.ToString());
                 return false;
             }
             finally
@@ -2734,6 +5030,9 @@ namespace DTMAPI.GameBridge.DolocTown
 
             try
             {
+                if (experimentalApi != null)
+                    experimentalApi.SuppressActionSpeedAutoFillForSmoke = true;
+
                 interactiveWaterType = patcher?.ResolveType("DolocTown.InteractiveWater, Assembly-CSharp");
                 if (interactiveWaterType == null)
                 {
@@ -2826,6 +5125,125 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 summary = ex.GetType().Name + ": " + ex.Message;
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed in-water bottle fill failed.", ex.ToString());
+                return false;
+            }
+            finally
+            {
+                TryEnterIdleStateForSmoke(dolocApi);
+                RestoreSmokeQuickSlot(dolocApi, inventory, quickSlot, originalSlotItem);
+                if (experimentalApi != null)
+                    experimentalApi.SuppressActionSpeedAutoFillForSmoke = false;
+                if (interactiveWaterType != null)
+                    WriteStaticBoolMember(interactiveWaterType, "IsInWater", originalIsInWater);
+            }
+        }
+
+        private bool TryExerciseActionSpeedAutoFillBottleForSmoke(Type dolocApi, out string summary)
+        {
+            summary = string.Empty;
+            object? inventory = null;
+            object? originalSlotItem = null;
+            int quickSlot = 0;
+            bool originalIsInWater = false;
+            Type? interactiveWaterType = null;
+
+            try
+            {
+                if (experimentalApi == null)
+                {
+                    summary = "Experimental API unavailable.";
+                    return false;
+                }
+
+                interactiveWaterType = patcher?.ResolveType("DolocTown.InteractiveWater, Assembly-CSharp");
+                if (interactiveWaterType == null)
+                {
+                    summary = "InteractiveWater type unavailable.";
+                    return false;
+                }
+
+                object? original = ReadStaticMember(interactiveWaterType, "IsInWater");
+                originalIsInWater = original is bool value && value;
+                if (!WriteStaticBoolMember(interactiveWaterType, "IsInWater", true))
+                {
+                    summary = "Could not force InteractiveWater.IsInWater for no-key auto-fill branch.";
+                    return false;
+                }
+                TryClearRoomScannerSelectionForSmoke(dolocApi);
+
+                object? item = GenerateItemForSmoke(dolocApi, "waste_plastic_bottle", 3);
+                if (item == null || !IsTypeOrBase(item.GetType(), "DolocTown.ItemBottle"))
+                {
+                    summary = "Could not generate ItemBottle waste_plastic_bottle.";
+                    return false;
+                }
+
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, item, quickSlot, out inventory, out originalSlotItem, out string placeSummary))
+                {
+                    summary = placeSummary;
+                    return false;
+                }
+
+                int beforeAutoFill = experimentalApi.ActionSpeedAutoFillApplicationCount;
+                int beforeApplications = experimentalApi.ActionSpeedApplicationCount;
+                int beforeCount = ReadQuickSlotItemCount(inventory, quickSlot);
+                string beforeItem = ReadQuickSlotItemName(inventory, quickSlot);
+                string interactSummary = string.Empty;
+                for (int attempt = 1; attempt <= 8; attempt++)
+                {
+                    experimentalApi.UpdateRuntimeAutomation();
+                    if (experimentalApi.ActionSpeedAutoFillApplicationCount > beforeAutoFill)
+                    {
+                        WriteStaticBoolMember(interactiveWaterType, "IsInWater", false);
+                        break;
+                    }
+                    Thread.Sleep(80);
+                }
+                TryRunCurrentAgentInteractExitForSmoke(dolocApi, out interactSummary);
+
+                int afterAutoFill = experimentalApi.ActionSpeedAutoFillApplicationCount;
+                int afterApplications = experimentalApi.ActionSpeedApplicationCount;
+                int afterCount = ReadQuickSlotItemCount(inventory, quickSlot);
+                string afterItem = ReadQuickSlotItemName(inventory, quickSlot);
+                string bridgeSummary = experimentalApi.LastActionSpeedAutoFillSummary;
+                bool invoked = afterAutoFill > beforeAutoFill && bridgeSummary.IndexOf("AutoFillBottle", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool inventoryChanged = afterCount != beforeCount || !afterItem.Equals(beforeItem, StringComparison.OrdinalIgnoreCase);
+                if (!invoked)
+                {
+                    summary = "branch=InteractiveWater.IsInWater" +
+                        ", item=" + beforeItem + "->" + afterItem +
+                        ", count=" + beforeCount + "->" + afterCount +
+                        ", autoFillDelta=" + (afterAutoFill - beforeAutoFill) +
+                        ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
+                        ", place={" + placeSummary + "}" +
+                        ", nativeInteract={" + interactSummary + "}" +
+                        ", bridge=" + (string.IsNullOrWhiteSpace(bridgeSummary) ? "none" : bridgeSummary);
+                    return false;
+                }
+
+                summary = "branch=InteractiveWater.IsInWater" +
+                    ", item=" + beforeItem + "->" + afterItem +
+                    ", count=" + beforeCount + "->" + afterCount +
+                    ", inventoryChanged=" + inventoryChanged +
+                    ", autoFillDelta=" + (afterAutoFill - beforeAutoFill) +
+                    ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
+                    ", place={" + placeSummary + "}" +
+                    ", nativeInteract={" + interactSummary + "}" +
+                    ", bridge=" + bridgeSummary;
+                runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction sample OK AutoFillBottle " + summary);
+                runtime.SetHookStatus("Smoke.ActionSpeedAutoFillBottle", "verified", "ItemBottle.UseAsItem native path", summary);
+                return true;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                summary = ex.InnerException.GetType().Name + ": " + ex.InnerException.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed no-key auto-fill bottle failed.", ex.InnerException.ToString());
+                return false;
+            }
+            catch (Exception ex)
+            {
+                summary = ex.GetType().Name + ": " + ex.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed no-key auto-fill bottle failed.", ex.ToString());
                 return false;
             }
             finally
@@ -4157,9 +6575,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 candidate.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase) &&
                 nameFragments.Any(fragment => candidate.Name.IndexOf(fragment, StringComparison.OrdinalIgnoreCase) >= 0));
             if (item == null)
-                throw new InvalidOperationException("Could not find ActionSpeed config item kind=" + kind + " names=" + string.Join("/", nameFragments) + ".");
+                throw new InvalidOperationException("Could not find config item kind=" + kind + " names=" + string.Join("/", nameFragments) + ".");
             if (!item.TrySetPendingValue(value, out string error))
-                throw new InvalidOperationException("Could not stage ActionSpeed config value for " + item.Name + ": " + error);
+                throw new InvalidOperationException("Could not stage config value for " + item.Name + ": " + error);
         }
 
         private void LogActionSpeedPending(string message, string statusKey = "Smoke.ActionSpeedTool")
@@ -4184,7 +6602,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private object? GenerateFishingRodForSmoke(Type dolocApi)
         {
-            foreach (string itemId in new[] { "old_fishrod", "simple_fishrod", "bamboo_fishrod" })
+            foreach (string itemId in new[] { "carbon_fishrod", "bamboo_fishrod", "simple_fishrod", "old_fishrod" })
             {
                 object? item = GenerateItemForSmoke(dolocApi, itemId);
                 if (item != null && IsTypeOrBase(item.GetType(), "DolocTown.ItemFishingRod"))
@@ -4636,6 +7054,15 @@ namespace DTMAPI.GameBridge.DolocTown
             return item == null ? 0 : ReadIntMember(item, "count", 0);
         }
 
+        private string ReadQuickSlotItemName(object? inventory, int slot)
+        {
+            if (inventory == null)
+                return string.Empty;
+            MethodInfo? read = FindMethod(inventory.GetType(), "Read", 1);
+            object? item = read?.Invoke(inventory, new object[] { slot });
+            return item == null ? string.Empty : ReadStringMember(item, "name", item.GetType().Name);
+        }
+
         private static string ReadSeedTypeForSmoke(object seed)
         {
             object? seedProto = ReadMember(seed, "seedProto");
@@ -4818,18 +7245,32 @@ namespace DTMAPI.GameBridge.DolocTown
         private static string DescribeEquipmentForSmoke(object equipment)
         {
             object? anchor = ReadMember(equipment, "Anchor");
+            object? proto = ReadMember(equipment, "proto") ?? ReadMember(equipment, "Proto");
+            object? coverSize = proto == null ? null : ReadMember(proto, "CoverSize");
+            object? sceneAsset = proto == null ? null : ReadMember(proto, "SceneAsset");
+            object? function = proto == null ? null : ReadMember(proto, "Function");
+            object? renderer = ReadMember(equipment, "Renderer");
+            object? transform = renderer == null ? null : ReadMember(renderer, "transform");
+            object? localScale = transform == null ? null : ReadMember(transform, "localScale");
+            object? inventory = ReadMember(equipment, "inventory");
             string name = ReadStringMember(equipment, "Name", ReadStringMember(equipment, "Title", equipment.GetType().Name));
             int index = ReadIntMember(equipment, "index", -1);
             string anchorText = anchor == null ? "unknown" : ReadIntMember(anchor, "x", 0) + "," + ReadIntMember(anchor, "y", 0);
-            return name + "/" + (equipment.GetType().FullName ?? equipment.GetType().Name) + "/index=" + index + "/anchor=" + anchorText;
+            string coverText = coverSize == null ? "unknown" : ReadIntMember(coverSize, "x", 0) + "x" + ReadIntMember(coverSize, "y", 0);
+            string sceneText = sceneAsset == null ? "unknown" : FirstNonEmpty(ReadStringMember(sceneAsset, "AssetUrl", string.Empty), sceneAsset.ToString() ?? string.Empty);
+            string scaleText = localScale == null ? "unknown" : ReadDoubleMember(localScale, "x", 0).ToString("0.##") + "x" + ReadDoubleMember(localScale, "y", 0).ToString("0.##");
+            string storageText = inventory == null
+                ? "none"
+                : ReadIntMember(inventory, "filledCount", 0) + "/" + ReadIntMember(inventory, "capacity", 0) + "/line=" + ReadIntMember(equipment, "lineCapacity", 0);
+            return name + "/" + (equipment.GetType().FullName ?? equipment.GetType().Name) + "/index=" + index + "/anchor=" + anchorText + "/cover=" + coverText + "/scene=" + sceneText + "/function=" + (function == null ? "unknown" : function.GetType().Name) + "/rendererScale=" + scaleText + "/storage=" + storageText;
         }
 
         private object? FindOrCreateFishingPoolForSmoke(Type fishingPoolType, Type dolocApi, out string source)
         {
             List<string> details = new List<string>();
-            object[] existingPools = FindUnityObjects(fishingPoolType, includeInactive: true);
-            details.Add("scenePools=" + existingPools.Length);
-            foreach (object existing in existingPools)
+            object[] activePools = FindUnityObjects(fishingPoolType);
+            details.Add("activeScenePools=" + activePools.Length);
+            foreach (object existing in activePools)
             {
                 string existingName = ReadStringMember(existing, "PoolName", string.Empty);
                 if (string.IsNullOrWhiteSpace(existingName))
@@ -4842,6 +7283,30 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
 
                 details.Add("scenePoolNoRoll=" + existingName + "(" + sceneRollDetails + ")");
+            }
+
+            object[] allPools = FindUnityObjects(fishingPoolType, includeInactive: true);
+            if (allPools.Length != activePools.Length)
+                details.Add("inactiveOrHiddenScenePools=" + Math.Max(0, allPools.Length - activePools.Length));
+            foreach (object existing in allPools)
+            {
+                string existingName = ReadStringMember(existing, "PoolName", string.Empty);
+                if (string.IsNullOrWhiteSpace(existingName) || !TryRollFishForSmoke(dolocApi, existingName, out string hiddenFishId, out string _))
+                    continue;
+
+                if (activePools.Contains(existing))
+                    continue;
+
+                if (TrySetUnityComponentActiveForSmoke(existing, true, out string activationDetails))
+                {
+                    details.Add("activatedHiddenScenePool=" + existingName + "(" + hiddenFishId + ", " + activationDetails + ")");
+                    source = "activated-scene:" + existingName + ", fish=" + hiddenFishId + ", " + string.Join(", ", details);
+                    return existing;
+                }
+
+                details.Add("hiddenScenePool=" + existingName + "(" + hiddenFishId + ", activation=" + activationDetails + ")");
+                source = "hidden-scene:" + existingName + ", fish=" + hiddenFishId + ", " + string.Join(", ", details);
+                return existing;
             }
 
             IReadOnlyList<string> poolNames = FindFishingPoolNamesForSmoke(out string configDetails);
@@ -4866,6 +7331,46 @@ namespace DTMAPI.GameBridge.DolocTown
 
             source = string.Join(", ", details);
             return null;
+        }
+
+        private static bool TrySetUnityComponentActiveForSmoke(object component, bool active, out string details)
+        {
+            details = string.Empty;
+            try
+            {
+                object? gameObject = ReadMember(component, "gameObject");
+                MethodInfo? setActive = gameObject?.GetType().GetMethod("SetActive", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
+                if (gameObject == null || setActive == null)
+                {
+                    details = "missing-gameObject";
+                    return false;
+                }
+
+                int activatedParents = 0;
+                object? transform = ReadMember(gameObject, "transform");
+                for (object? parent = transform == null ? null : ReadMember(transform, "parent"); parent != null; parent = ReadMember(parent, "parent"))
+                {
+                    object? parentGameObject = ReadMember(parent, "gameObject");
+                    MethodInfo? parentSetActive = parentGameObject?.GetType().GetMethod("SetActive", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
+                    if (parentGameObject == null || parentSetActive == null)
+                        break;
+                    parentSetActive.Invoke(parentGameObject, new object[] { active });
+                    activatedParents++;
+                    if (activatedParents >= 16)
+                        break;
+                }
+
+                setActive.Invoke(gameObject, new object[] { active });
+                bool activeSelf = ReadBoolMember(gameObject, "activeSelf", false);
+                bool activeInHierarchy = ReadBoolMember(gameObject, "activeInHierarchy", false);
+                details = "activeSelf=" + activeSelf + ", activeInHierarchy=" + activeInHierarchy + ", activatedParents=" + activatedParents;
+                return activeInHierarchy;
+            }
+            catch (Exception ex)
+            {
+                details = ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
         }
 
         private object? CreateTransientFishingPoolForSmoke(Type fishingPoolType, string poolName, out string details)
@@ -5221,12 +7726,6 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                if (animals.Count > 0 && TrySeedAnimalHusbandryForSmoke(animals[0], out string firstSeedSummary))
-                {
-                    runtime.RuntimeMonitor.Log("Smoke exercise seeded transient animal husbandry progress for real UI first animal " + firstSeedSummary + ".");
-                    return;
-                }
-
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dataType = patcher.ResolveType("DolocTown.UI.AnimalFullInfoData, Assembly-CSharp");
                 if (dataType == null)
@@ -5258,7 +7757,10 @@ namespace DTMAPI.GameBridge.DolocTown
             return !string.IsNullOrWhiteSpace(stateDescription) &&
                 (stateDescription.IndexOf("Special produce:", StringComparison.OrdinalIgnoreCase) >= 0 ||
                  stateDescription.IndexOf("隐藏产物:", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                 stateDescription.IndexOf("隐藏产物：", StringComparison.OrdinalIgnoreCase) >= 0);
+                 stateDescription.IndexOf("隐藏产物：", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 (stateDescription.IndexOf("<color=#", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                  stateDescription.IndexOf("█", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                  stateDescription.IndexOf("/", StringComparison.OrdinalIgnoreCase) >= 0));
         }
 
         private string? FindFishRoeItemId()
@@ -5646,6 +8148,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool TryCreateTransientOneActionResourceForSmoke(object room, string? targetKind, out string summary)
         {
+            return TryCreateTransientOneActionResourceForSmoke(room, targetKind, null, out summary);
+        }
+
+        private bool TryCreateTransientOneActionResourceForSmoke(object room, string? targetKind, string? resourceNameContains, out string summary)
+        {
             summary = string.Empty;
             Type? hostType = patcher?.ResolveType("DolocTown.IDungeonResourceHost, Assembly-CSharp");
             MethodInfo? createResource = FindMethod(hostType, "CreateDungeonResource", 1);
@@ -5653,7 +8160,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
 
             int attempted = 0;
-            foreach (object proto in FindOneActionResourceProtosForSmoke(targetKind))
+            foreach (object proto in FindOneActionResourceProtosForSmoke(targetKind, resourceNameContains))
             {
                 attempted++;
                 try
@@ -5664,7 +8171,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
                     string resourceClass = ReadResourceClass(resource);
                     string kind = GetOneActionResourceKind(resource);
-                    summary = "Smoke created transient one-action resource through IDungeonResourceHost.CreateDungeonResource. room=" + DescribeRoomForSmoke(room) + ", targetKind=" + (targetKind ?? "any") + ", resource=" + resourceName + ", kind=" + kind + ", class=" + resourceClass + ", attemptedProtos=" + attempted;
+                    summary = "Smoke created transient one-action resource through IDungeonResourceHost.CreateDungeonResource. room=" + DescribeRoomForSmoke(room) + ", targetKind=" + (targetKind ?? "any") + ", resourceNameContains=" + (resourceNameContains ?? "any") + ", resource=" + resourceName + ", kind=" + kind + ", class=" + resourceClass + ", attemptedProtos=" + attempted;
                     return true;
                 }
                 catch (TargetInvocationException ex) when (ex.InnerException != null)
@@ -5677,7 +8184,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
             }
 
-            summary = "No transient one-action resource candidate could be created. room=" + DescribeRoomForSmoke(room) + ", targetKind=" + (targetKind ?? "any") + ", attemptedProtos=" + attempted;
+            summary = "No transient one-action resource candidate could be created. room=" + DescribeRoomForSmoke(room) + ", targetKind=" + (targetKind ?? "any") + ", resourceNameContains=" + (resourceNameContains ?? "any") + ", attemptedProtos=" + attempted;
             return false;
         }
 
@@ -5724,7 +8231,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return setupNotes.Count > 0;
         }
 
-        private IEnumerable<object> FindOneActionResourceProtosForSmoke(string? targetKind = null)
+        private IEnumerable<object> FindOneActionResourceProtosForSmoke(string? targetKind = null, string? resourceNameContains = null)
         {
             Type? dolocConfig = patcher?.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
             object? tables = dolocConfig?.GetProperty("Tables", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
@@ -5735,6 +8242,13 @@ namespace DTMAPI.GameBridge.DolocTown
 
             foreach (object proto in enumerable)
             {
+                string id = ReadStringMember(proto, "Id", string.Empty);
+                if (string.IsNullOrWhiteSpace(id))
+                    id = ReadStringMember(proto, "id", string.Empty);
+                if (!string.IsNullOrWhiteSpace(resourceNameContains) &&
+                    id.IndexOf(resourceNameContains, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
                 string resourceClass = ReadMember(proto, "ResourceClass")?.ToString() ?? string.Empty;
                 object? resourceTypeRef = ReadMember(proto, "ResourceType_Ref");
                 string classTypeName = resourceTypeRef == null ? string.Empty : ReadStringMember(resourceTypeRef, "ClassTypeName", string.Empty);
@@ -6092,16 +8606,58 @@ namespace DTMAPI.GameBridge.DolocTown
             return value is bool removed && removed;
         }
 
+        private static bool IsCoalResourceNameForSmoke(string resourceName)
+        {
+            if (string.IsNullOrWhiteSpace(resourceName))
+                return false;
+            string normalized = resourceName.Trim().ToLowerInvariant();
+            return normalized.Equals("coal", StringComparison.Ordinal) ||
+                normalized.Equals("coal_ore", StringComparison.Ordinal) ||
+                normalized.Contains("coal");
+        }
+
         private static int ReadIntMember(object instance, string name, int fallback)
         {
             object? value = ReadMember(instance, name);
             return value == null ? fallback : Convert.ToInt32(value);
         }
 
+        private static int ReadAnyIntMember(object instance, int fallback, params string[] names)
+        {
+            object? value = ReadAnyMember(instance, names);
+            if (value == null)
+                return fallback;
+
+            try
+            {
+                return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
         private static bool ReadBoolMember(object instance, string name, bool fallback)
         {
             object? value = ReadMember(instance, name);
             return value == null ? fallback : Convert.ToBoolean(value);
+        }
+
+        private static bool ReadAnyBoolMember(object instance, bool fallback, params string[] names)
+        {
+            object? value = ReadAnyMember(instance, names);
+            if (value == null)
+                return fallback;
+
+            try
+            {
+                return Convert.ToBoolean(value);
+            }
+            catch
+            {
+                return fallback;
+            }
         }
 
         private static bool WriteIntMember(object instance, string name, int value)
@@ -6200,6 +8756,38 @@ namespace DTMAPI.GameBridge.DolocTown
             return value as string ?? fallback;
         }
 
+        private static string ReadAnyStringMember(object instance, string fallback, params string[] names)
+        {
+            object? value = ReadAnyMember(instance, names);
+            return value as string ?? value?.ToString() ?? fallback;
+        }
+
+        private static IEnumerable<string> ReadStringValues(object? value)
+        {
+            if (value == null)
+                yield break;
+            if (value is string text)
+            {
+                if (!string.IsNullOrWhiteSpace(text))
+                    yield return text;
+                yield break;
+            }
+            if (value is IEnumerable enumerable)
+            {
+                foreach (object item in enumerable)
+                {
+                    string? itemText = item?.ToString();
+                    if (!string.IsNullOrWhiteSpace(itemText))
+                        yield return itemText!;
+                }
+                yield break;
+            }
+
+            string? fallback = value.ToString();
+            if (!string.IsNullOrWhiteSpace(fallback))
+                yield return fallback!;
+        }
+
         private static string ReadResourceClass(object resource)
         {
             object? proto = ReadMember(resource, "Proto");
@@ -6226,6 +8814,20 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (value != null)
                     return value;
             }
+            return null;
+        }
+
+        private static object? ReadAnyMember(object instance, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+                object? value = ReadMember(instance, name);
+                if (value != null)
+                    return value;
+            }
+
             return null;
         }
 
@@ -6301,7 +8903,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched;
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -6520,9 +9122,26 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseOneActionVegetationDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseAutoFishingPhase { get; set; }
             [DataMember] public int AutoExerciseAutoFishingPhaseDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseAutoFishingMiniGameComplete { get; set; }
             [DataMember] public bool AutoExerciseTitleButtonLifecycle { get; set; }
             [DataMember] public bool AutoExerciseInstantSave { get; set; }
             [DataMember] public int AutoExerciseInstantSaveDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseDebugConsole { get; set; }
+            [DataMember] public int AutoExerciseDebugConsoleDelaySeconds { get; set; } = 60;
+            [DataMember] public bool AutoExerciseDebugInventory { get; set; }
+            [DataMember] public int AutoExerciseDebugInventoryDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseDebugWeather { get; set; }
+            [DataMember] public int AutoExerciseDebugWeatherDelaySeconds { get; set; } = 4;
+            [DataMember] public bool AutoExerciseDebugTeleport { get; set; }
+            [DataMember] public int AutoExerciseDebugTeleportDelaySeconds { get; set; } = 5;
+            [DataMember] public bool AutoExerciseDebugTime { get; set; }
+            [DataMember] public int AutoExerciseDebugTimeDelaySeconds { get; set; } = 6;
+            [DataMember] public bool AutoExerciseDebugMovement { get; set; }
+            [DataMember] public int AutoExerciseDebugMovementDelaySeconds { get; set; } = 7;
+            [DataMember] public bool AutoExerciseVehicle { get; set; }
+            [DataMember] public int AutoExerciseVehicleDelaySeconds { get; set; } = 8;
+            [DataMember] public bool AutoExerciseNewContentApis { get; set; }
+            [DataMember] public int AutoExerciseNewContentApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsMenu { get; set; }
             [DataMember] public int AutoOpenTitleSettingsDelaySeconds { get; set; } = 12;

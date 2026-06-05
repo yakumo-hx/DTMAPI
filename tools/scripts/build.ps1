@@ -18,10 +18,15 @@ $projects = @(
     'testmods\HelloDtmMod\HelloDtmMod.csproj',
     'testmods\ConfigMenuExample\ConfigMenuExample.csproj',
     'testmods\ActionSpeedMod\ActionSpeedMod.csproj',
+    'testmods\DebugConsoleMod\DebugConsoleMod.csproj',
     'testmods\OneActionCompleteMod\OneActionCompleteMod.csproj',
     'testmods\AutoFishingMod\AutoFishingMod.csproj',
     'testmods\FishBreedingAssistantMod\FishBreedingAssistantMod.csproj',
     'testmods\AnimalHusbandryProgressMod\AnimalHusbandryProgressMod.csproj',
+    'testmods\SecondMotorMod\SecondMotorMod.csproj',
+    'testmods\OilMod\OilMod.csproj',
+    'testmods\MineMod\MineMod.csproj',
+    'testmods\MoreEquipmentSlotsMod\MoreEquipmentSlotsMod.csproj',
     'testmods\HookProbeMod\HookProbeMod.csproj',
     'tests\DTMAPI.UnitTests\DTMAPI.UnitTests.csproj'
 )

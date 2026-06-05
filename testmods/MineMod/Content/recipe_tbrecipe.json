@@ -1,0 +1,29 @@
+[
+  {
+    "id": "dtmapi_mine",
+    "default_unlock": false,
+    "title": {
+      "key": "",
+      "text": ""
+    },
+    "cost_time": 0,
+    "output_item": {
+      "item_name": "dtmapi_mine",
+      "min_count": 1,
+      "max_count": 1
+    },
+    "input_items": [
+      {
+        "item_name": "dtmapi_oil",
+        "item_count": 10
+      },
+      {
+        "item_name": "steel_ingot",
+        "item_count": 10
+      }
+    ],
+    "recipe_sub_type": "none",
+    "tech_point": 30,
+    "show_in_handbook": true
+  }
+]

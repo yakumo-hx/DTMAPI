@@ -47,10 +47,7 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
             menu.SetDisplayName(helper.ModManifest, () => T("mod.name", helper.ModManifest.Name));
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.main", "Fish roe tooltip"));
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Master switch for fish roe display."), () => config.Enabled, value => config.Enabled = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.labelTitle.name", "Label title"), () => T("config.labelTitle.tooltip", "Append the hatch fish name to roe titles."), () => config.LabelFishRoeTitle, value => config.LabelFishRoeTitle = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.labelDetails.name", "Label details"), () => T("config.labelDetails.tooltip", "Append incubation and growth details."), () => config.LabelFishRoeDetails, value => config.LabelFishRoeDetails = value);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.cacheSeconds.name", "Cache seconds"), () => T("config.cacheSeconds.tooltip", "Cache fish lookup results for tooltip hooks."), () => config.CacheSeconds, value => config.CacheSeconds = (int)Math.Round(value), 0, 300, 5);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency cache diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
+            menu.AddParagraph(helper.ModManifest, () => T("config.scope", "Shows the parent fish name in the roe title only; incubation/growth details stay hidden."));
         }
 
         private string T(string key, string fallback) => helper.Translation.Get(key, fallback);
@@ -67,10 +64,10 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
             api.ConfigureFishRoeProvider(helper.ModManifest, new FishRoeTooltipOptions
             {
                 Enabled = config.Enabled,
-                LabelFishRoeTitle = config.LabelFishRoeTitle,
-                LabelFishRoeDetails = config.LabelFishRoeDetails,
+                LabelFishRoeTitle = true,
+                LabelFishRoeDetails = false,
                 CacheSeconds = config.CacheSeconds,
-                VerboseLogging = config.VerboseLogging
+                VerboseLogging = false
             }, LookupFishRoe);
             BridgeFeatureStatus status = api.GetStatus(helper.ModManifest.UniqueID);
             helper.Monitor.Log("FishBreedingAssistant bridge provider OK reason=" + reason + " status=" + status.Status);
@@ -131,6 +128,9 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
         private void NormalizeConfig()
         {
             config.CacheSeconds = Math.Max(0, Math.Min(300, config.CacheSeconds));
+            config.LabelFishRoeTitle = true;
+            config.LabelFishRoeDetails = false;
+            config.VerboseLogging = false;
         }
 
         private sealed class CacheEntry
@@ -150,7 +150,7 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
         {
             [DataMember] public bool Enabled { get; set; } = true;
             [DataMember] public bool LabelFishRoeTitle { get; set; } = true;
-            [DataMember] public bool LabelFishRoeDetails { get; set; } = true;
+            [DataMember] public bool LabelFishRoeDetails { get; set; }
             [DataMember] public int CacheSeconds { get; set; } = 30;
             [DataMember] public bool VerboseLogging { get; set; }
         }

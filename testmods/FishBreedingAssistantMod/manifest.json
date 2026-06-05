@@ -5,12 +5,12 @@
   "Description": "DTMAPI migration of fish roe tooltip lookup and display policy.",
   "UniqueID": "Yuuka.DTMAPI.FishBreedingAssistant",
   "EntryDll": "FishBreedingAssistantMod.dll",
-  "MinimumDTMApiVersion": "0.1.13",
+  "MinimumDTMApiVersion": "0.2.1",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.1.13",
+      "MinimumVersion": "0.2.1",
       "Required": true
     },
     {

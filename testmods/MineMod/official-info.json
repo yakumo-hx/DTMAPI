@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 矿井",
+  "author": "DTMAPI",
+  "version": "0.2.5-dtmapi",
+  "description": "DTMAPI experimental 矿井内容包。新增矿井设备、设备工作台配方，并通过 DTMAPI Machine API 声明燃料/耗电/概率产矿方案。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Machine",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 矿井",
+    "tchinese": "DTMAPI 礦井",
+    "english": "DTMAPI Mine"
+  },
+  "localized_description": {
+    "schinese": "新增矿井设备和配方，复用官方水井素材但不替换水井；生产、燃料、耗电和兼容模组矿物由 DTMAPI experimental Machine API 承接。",
+    "tchinese": "新增礦井設備和配方，複用官方水井素材但不替換水井；生產、燃料、耗電和相容模組礦物由 DTMAPI experimental Machine API 承接。",
+    "english": "Adds a mine equipment item and recipe, reuses the official well sprite without replacing the well, and declares production/fuel/electric behavior through the experimental DTMAPI Machine API."
+  }
+}

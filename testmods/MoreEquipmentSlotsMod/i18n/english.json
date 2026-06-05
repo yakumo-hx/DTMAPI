@@ -1,0 +1,20 @@
+{
+  "mod.name": "DTMAPI More Equipment Slots",
+  "mod.loaded": "DTMAPI More Equipment Slots loaded; experimental Equipment Slots API owns the runtime extension policy.",
+  "mod.apiMissing": "Equipment Slots API is not available yet.",
+  "config.section.slots": "Equipment slots",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Registers extra attribute-only equipment slots.",
+  "config.extra.name": "Extra slots",
+  "config.extra.tooltip": "Extra attribute-only slots. Default visual slots keep their normal appearance effects.",
+  "config.quickEquip.name": "Equip item id",
+  "config.quickEquip.tooltip": "Passive item id to equip into the first empty DTMAPI extra slot.",
+  "config.equipFirst.name": "Equip first empty",
+  "config.equipFirst.tooltip": "Consumes one matching passive item from the backpack and applies it as an attribute-only extra slot.",
+  "config.recover.name": "Recover all extra slots",
+  "config.recover.tooltip": "Safely unequips all DTMAPI extra-slot items back to the backpack, with native overflow handling.",
+  "config.safeRecovery.name": "Safe recovery",
+  "config.safeRecovery.tooltip": "Requests safe unequip/recovery when the mod is disabled or missing.",
+  "config.status.missing": "Equipment Slots API is not available.",
+  "config.status": "Status={0}, extraSlots={1}, stored={2}, applied={3}, ui={4}, visualEffects={5}. Slots: {6}"
+}

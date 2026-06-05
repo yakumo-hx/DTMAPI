@@ -20,6 +20,7 @@ namespace DTMAPI.UnitTests
                 RuntimeApiCanRegisterBeforeStart();
                 BrokenManifestDoesNotCrashDiscovery();
                 ConfigMenuEditsSaveCancelAndDetectConflicts();
+                ConfigMenuPendingPreviewDrivesConditionalVisibility();
                 DisabledDiscoveredModLocksConfigPage();
                 OfficialLocalModPackagesRespectOfficialEnablement();
                 WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod();
@@ -174,6 +175,55 @@ namespace DTMAPI.UnitTests
                 conflictBlocked = true;
             }
             Assert(conflictBlocked, "Save should block keybind conflicts.");
+        }
+
+        private static void ConfigMenuPendingPreviewDrivesConditionalVisibility()
+        {
+            var menu = new ConfigMenuRegistry();
+            IManifest manifest = new ManifestModel
+            {
+                Name = "Conditional Menu Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.ConditionalMenu"
+            };
+            string colorPreset = "Orange";
+            string hex = "FF942E";
+
+            menu.Register(manifest, () =>
+            {
+                colorPreset = "Orange";
+                hex = "FF942E";
+            }, () => { });
+            menu.AddColorPresetOption(
+                manifest,
+                () => "Color",
+                () => "",
+                () => colorPreset,
+                value => colorPreset = value,
+                new[]
+                {
+                    new DtmColorPreset("Orange", "Orange", "FF942E"),
+                    new DtmColorPreset("Custom", "Custom", hex)
+                });
+            Func<bool> customSelected = () => colorPreset.Equals("Custom", StringComparison.OrdinalIgnoreCase);
+            menu.AddTextOption(manifest, () => "Hex", () => "", () => hex, value => hex = value, customSelected, customSelected);
+
+            IConfigMenuPage page = menu.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
+            page.BeginEditing();
+            Assert(page.Items.Count(item => item.Kind == "Text") == 0, "Non-custom color should hide the custom text input.");
+            IConfigMenuItem colorItem = page.Items.Single(item => item.Kind == "ColorPreset");
+            Assert(colorItem.TrySetPendingValue("Custom", out _), "Custom color preset should be selectable.");
+            Assert(colorPreset == "Orange", "Pending edits should not permanently apply before save.");
+
+            using (((IConfigMenuPendingPreview)page).PreviewPendingValues())
+            {
+                Assert(colorPreset == "Custom", "Pending preview should temporarily expose the selected custom preset.");
+                IConfigMenuItem textItem = page.Items.Single(item => item.Kind == "Text");
+                Assert(textItem.CanEdit, "Custom color text input should be editable inside pending preview.");
+            }
+
+            Assert(colorPreset == "Orange", "Pending preview should restore the committed color after rendering.");
         }
 
         private static void DisabledDiscoveredModLocksConfigPage()

@@ -2,7 +2,7 @@
 
 This migration understands the old mod as: after one normal successful tool hit or direct interaction, finish the remaining tree/ore/weed/garbage/fuel/feeder work while preserving original enablement and energy-cost intent.
 
-Current 0.1.13 boundary:
+Current 0.2.0 boundary (gameplay behavior unchanged from the 0.1.13 verification):
 
 - DTMAPI-native `DtmMod` entry.
 - Unified config menu options for all original switches.

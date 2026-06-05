@@ -14,7 +14,7 @@ namespace DTMAPI.Core.Runtime
 {
     public sealed class DtmApiRuntime
     {
-        public const string ApiVersion = "0.1.13";
+        public const string ApiVersion = "0.2.5";
 
         private readonly IRuntimeHost host;
         private readonly IDtmConfigMenuApi? configMenuApi;
@@ -39,7 +39,7 @@ namespace DTMAPI.Core.Runtime
             Config = new ConfigService(Paths);
             ModRegistry = new ModRegistryService();
             Workshop = new WorkshopService();
-            Content = new ContentQueryService();
+            Content = new ContentQueryService(Paths);
             Input = new InputService();
             UI = new UiRuntimeService(ExportLogs, Events.DispatchMenuOpened, Events.DispatchMenuClosed);
         }
@@ -57,6 +57,8 @@ namespace DTMAPI.Core.Runtime
         public IReadOnlyList<DiscoveredMod> DiscoveredMods => discoveredMods.ToArray();
         public IReadOnlyList<DiscoveredMod> LoadedMods => loadedMods.ToArray();
         public DateTimeOffset StartedAt => startedAt;
+        public event Action<int?, bool>? SaveSessionLoaded;
+        public event Action? ReturnedToTitleBoundary;
 
         public void Start()
         {
@@ -144,6 +146,14 @@ namespace DTMAPI.Core.Runtime
         public void NotifySaveLoaded(bool isNewGame)
         {
             RuntimeMonitor.Log($"SaveLoaded hook dispatched. slot/index={currentLoadingSlot?.ToString() ?? "unknown"} isNewGame={isNewGame}");
+            try
+            {
+                SaveSessionLoaded?.Invoke(currentLoadingSlot, isNewGame);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.RecordError("DTMAPI.Runtime", "Save session boundary listener failed.", ex.ToString());
+            }
             Events.DispatchSaveLoaded(currentLoadingSlot, isNewGame);
         }
 
@@ -162,6 +172,15 @@ namespace DTMAPI.Core.Runtime
         public void NotifyReturnedToTitle()
         {
             RuntimeMonitor.Log("ReturnedToTitle hook dispatched.");
+            currentLoadingSlot = null;
+            try
+            {
+                ReturnedToTitleBoundary?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.RecordError("DTMAPI.Runtime", "Returned-to-title boundary listener failed.", ex.ToString());
+            }
             Events.DispatchReturnedToTitle();
         }
 
@@ -215,6 +234,10 @@ namespace DTMAPI.Core.Runtime
                 UI.LastExportPath);
         }
 
+        public IReadOnlyList<IContentItemInfo> GetIndexedContentItems() => Content.GetIndexedItems();
+
+        public IContentItemInfo? GetIndexedContentItem(string itemId) => Content.GetIndexedItem(itemId);
+
         private void DiscoverMods()
         {
             Stopwatch scan = Stopwatch.StartNew();
@@ -236,6 +259,7 @@ namespace DTMAPI.Core.Runtime
             Stopwatch content = Stopwatch.StartNew();
             Content.Rebuild(discoveredMods);
             RuntimeMonitor.Log($"Discovered {discoveredMods.Count} DTMAPI-capable mod folder(s).");
+            RuntimeMonitor.Log("Official content item source index = " + Content.IndexedItemCount + " item row(s) from " + Content.IndexedItemSourceCount + " source mod(s).");
             RuntimeMonitor.Log(
                 "Official local MODS root = " + scanner.OfficialLocalModsRoot +
                 "; exists=" + scanner.OfficialLocalModsRootExists +

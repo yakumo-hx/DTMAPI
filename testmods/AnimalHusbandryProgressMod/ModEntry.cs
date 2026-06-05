@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
@@ -7,7 +8,6 @@ namespace AnimalHusbandryProgressMod
 {
     public sealed class ModEntry : DtmMod
     {
-        private const string DefaultProgressLabel = "隐藏产物";
         private IDtmHelper helper = null!;
         private AnimalProgressConfig config = new AnimalProgressConfig();
         private bool updateEvidenceLogged;
@@ -46,10 +46,23 @@ namespace AnimalHusbandryProgressMod
             menu.SetDisplayName(helper.ModManifest, () => T("mod.name", helper.ModManifest.Name));
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.main", "Animal viewer"));
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Show special-produce progress in the animal bell viewer."), () => config.Enabled, value => config.Enabled = value);
-            menu.AddTextOption(helper.ModManifest, () => T("config.progressLabel.name", "Progress label"), () => T("config.progressLabel.tooltip", "Label for the appended progress bar."), () => config.ProgressLabel, value => config.ProgressLabel = value);
-            menu.AddTextOption(helper.ModManifest, () => T("config.fillColor.name", "Fill color"), () => T("config.fillColor.tooltip", "Hex RGB color, for example FF942E."), () => config.ProgressColorHex, value => config.ProgressColorHex = value);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.cacheSeconds.name", "Cache seconds"), () => T("config.cacheSeconds.tooltip", "Cache animal viewer data before recomputing."), () => config.CacheSeconds, value => config.CacheSeconds = (int)Math.Round(value), 0, 120, 5);
+            menu.AddColorPresetOption(helper.ModManifest, () => T("config.colorPreset.name", "Color preset"), () => T("config.colorPreset.tooltip", "Pick the progress bar color directly."), () => config.ColorPreset, value => config.ColorPreset = value, BuildColorPresets());
+            Func<bool> customColorSelected = () => config.ColorPreset.Equals("Custom", StringComparison.OrdinalIgnoreCase);
+            menu.AddTextOption(helper.ModManifest, () => T("config.fillColor.name", "Fill color"), () => T("config.fillColor.tooltip", "Hex RGB color, for example FF942E."), () => config.ProgressColorHex, value => config.ProgressColorHex = value, customColorSelected, customColorSelected);
             menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency viewer diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
+        }
+
+        private IReadOnlyList<DtmColorPreset> BuildColorPresets()
+        {
+            return new[]
+            {
+                new DtmColorPreset("Orange", T("config.color.orange", "Orange"), "FF942E"),
+                new DtmColorPreset("Green", T("config.color.green", "Green"), "70C978"),
+                new DtmColorPreset("Blue", T("config.color.blue", "Blue"), "65A6FF"),
+                new DtmColorPreset("Pink", T("config.color.pink", "Pink"), "FF7AC8"),
+                new DtmColorPreset("White", T("config.color.white", "White"), "F0F0F0"),
+                new DtmColorPreset("Custom", T("config.color.custom", "Custom"), config.ProgressColorHex)
+            };
         }
 
         private string T(string key, string fallback) => helper.Translation.Get(key, fallback);
@@ -66,9 +79,8 @@ namespace AnimalHusbandryProgressMod
             api.ConfigureSpecialProduceProgress(helper.ModManifest, new AnimalHusbandryProgressOptions
             {
                 Enabled = config.Enabled,
-                ProgressLabel = string.IsNullOrWhiteSpace(config.ProgressLabel) ? DefaultProgressLabel : config.ProgressLabel,
                 ProgressColor = ParseColor(config.ProgressColorHex),
-                CacheSeconds = config.CacheSeconds,
+                CacheSeconds = 0,
                 VerboseLogging = config.VerboseLogging
             });
             BridgeFeatureStatus status = api.GetStatus(helper.ModManifest.UniqueID);
@@ -86,7 +98,7 @@ namespace AnimalHusbandryProgressMod
             if (config.VerboseLogging && (DateTimeOffset.Now - lastStatusLog).TotalSeconds >= 30)
             {
                 lastStatusLog = DateTimeOffset.Now;
-                helper.Monitor.Log("AnimalHusbandryProgress low-frequency status enabled=" + config.Enabled + " cacheSeconds=" + config.CacheSeconds);
+                helper.Monitor.Log("AnimalHusbandryProgress low-frequency status enabled=" + config.Enabled + " colorPreset=" + config.ColorPreset + ".");
             }
         }
 
@@ -98,11 +110,34 @@ namespace AnimalHusbandryProgressMod
 
         private void NormalizeConfig()
         {
-            config.ProgressLabel = string.IsNullOrWhiteSpace(config.ProgressLabel) || config.ProgressLabel.Trim().Equals("Special produce", StringComparison.OrdinalIgnoreCase)
-                ? DefaultProgressLabel
-                : config.ProgressLabel.Trim();
+            config.ColorPreset = NormalizeChoice(config.ColorPreset, "Orange", "Orange", "Green", "Blue", "Pink", "White", "Custom");
+            if (!config.ColorPreset.Equals("Custom", StringComparison.OrdinalIgnoreCase))
+                config.ProgressColorHex = ColorPresetToHex(config.ColorPreset);
             config.ProgressColorHex = NormalizeHex(config.ProgressColorHex);
-            config.CacheSeconds = Math.Max(0, Math.Min(120, config.CacheSeconds));
+            config.CacheSeconds = 0;
+        }
+
+        private static string NormalizeChoice(string value, string fallback, params string[] allowed)
+        {
+            foreach (string option in allowed)
+            {
+                if (option.Equals(value, StringComparison.OrdinalIgnoreCase))
+                    return option;
+            }
+            return fallback;
+        }
+
+        private static string ColorPresetToHex(string preset)
+        {
+            if (preset.Equals("Green", StringComparison.OrdinalIgnoreCase))
+                return "70C978";
+            if (preset.Equals("Blue", StringComparison.OrdinalIgnoreCase))
+                return "65A6FF";
+            if (preset.Equals("Pink", StringComparison.OrdinalIgnoreCase))
+                return "FF7AC8";
+            if (preset.Equals("White", StringComparison.OrdinalIgnoreCase))
+                return "F0F0F0";
+            return "FF942E";
         }
 
         private static string NormalizeHex(string value)
@@ -131,7 +166,7 @@ namespace AnimalHusbandryProgressMod
         public sealed class AnimalProgressConfig
         {
             [DataMember] public bool Enabled { get; set; } = true;
-            [DataMember] public string ProgressLabel { get; set; } = DefaultProgressLabel;
+            [DataMember] public string ColorPreset { get; set; } = "Orange";
             [DataMember] public string ProgressColorHex { get; set; } = "FF942E";
             [DataMember] public int CacheSeconds { get; set; } = 10;
             [DataMember] public bool VerboseLogging { get; set; }

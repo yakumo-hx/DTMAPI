@@ -18,9 +18,14 @@ namespace DTMAPI.ModConfigMenu
         public void AddSectionTitle(IManifest mod, Func<string> text) => GetRequiredPage(mod).AddItem(new TextConfigItem(GetRequiredPage(mod).NextItemId("Section"), "Section", text, () => string.Empty));
         public void AddParagraph(IManifest mod, Func<string> text) => GetRequiredPage(mod).AddItem(new TextConfigItem(GetRequiredPage(mod).NextItemId("Paragraph"), "Paragraph", text, () => string.Empty));
         public void AddBoolOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<bool> getValue, Action<bool> setValue) => GetRequiredPage(mod).AddItem(new BoolConfigItem(GetRequiredPage(mod).NextItemId("Bool"), name, tooltip, getValue, setValue));
+        public void AddBoolOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<bool> getValue, Action<bool> setValue, Func<bool> canEdit, Func<bool>? isVisible = null) => GetRequiredPage(mod).AddItem(new BoolConfigItem(GetRequiredPage(mod).NextItemId("Bool"), name, tooltip, getValue, setValue, canEdit, isVisible));
+        public void AddInlineBoolNumberOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<bool> getEnabled, Action<bool> setEnabled, Func<double> getValue, Action<double> setValue, double min, double max, double interval) => GetRequiredPage(mod).AddItem(new InlineBoolNumberConfigItem(GetRequiredPage(mod).NextItemId("InlineBoolNumber"), name, tooltip, getEnabled, setEnabled, getValue, setValue, min, max, interval));
+        public void AddInlineBoolBoolOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<bool> getEnabled, Action<bool> setEnabled, Func<string> secondaryName, Func<string> secondaryTooltip, Func<bool> getSecondaryValue, Action<bool> setSecondaryValue, Func<bool>? secondaryVisible = null) => GetRequiredPage(mod).AddItem(new InlineBoolBoolConfigItem(GetRequiredPage(mod).NextItemId("InlineBoolBool"), name, tooltip, getEnabled, setEnabled, secondaryName, secondaryTooltip, getSecondaryValue, setSecondaryValue, secondaryVisible));
         public void AddNumberOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<double> getValue, Action<double> setValue, double min, double max, double interval) => GetRequiredPage(mod).AddItem(new NumberConfigItem(GetRequiredPage(mod).NextItemId("Number"), name, tooltip, getValue, setValue, min, max, interval));
         public void AddTextOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue) => GetRequiredPage(mod).AddItem(new StringConfigItem(GetRequiredPage(mod).NextItemId("Text"), "Text", name, tooltip, getValue, setValue));
+        public void AddTextOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, Func<bool> canEdit, Func<bool>? isVisible = null) => GetRequiredPage(mod).AddItem(new StringConfigItem(GetRequiredPage(mod).NextItemId("Text"), "Text", name, tooltip, getValue, setValue, canEdit: canEdit, isVisible: isVisible));
         public void AddChoiceOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, IReadOnlyList<string> allowedValues) => GetRequiredPage(mod).AddItem(new ChoiceConfigItem(GetRequiredPage(mod).NextItemId("Choice"), name, tooltip, getValue, setValue, allowedValues));
+        public void AddColorPresetOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, IReadOnlyList<DtmColorPreset> presets) => GetRequiredPage(mod).AddItem(new ColorPresetConfigItem(GetRequiredPage(mod).NextItemId("ColorPreset"), name, tooltip, getValue, setValue, presets));
         public void AddKeybindOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue) => GetRequiredPage(mod).AddItem(new StringConfigItem(GetRequiredPage(mod).NextItemId("Keybind"), "Keybind", name, tooltip, getValue, setValue, isKeybind: true));
         public void AddButton(IManifest mod, Func<string> name, Func<string> tooltip, Action onPressed) => GetRequiredPage(mod).AddItem(new ButtonConfigItem(GetRequiredPage(mod).NextItemId("Button"), name, tooltip, onPressed));
         public void SetDisplayName(IManifest mod, Func<string> name) => GetRequiredPage(mod).SetDisplayName(name);
@@ -91,7 +96,7 @@ namespace DTMAPI.ModConfigMenu
         }
     }
 
-    internal sealed class ConfigMenuPage : IConfigMenuPage
+    internal sealed class ConfigMenuPage : IConfigMenuPage, IConfigMenuPendingPreview
     {
         private readonly ConfigMenuRegistry registry;
         private readonly Action reset;
@@ -116,7 +121,7 @@ namespace DTMAPI.ModConfigMenu
         public bool IsLocked { get; private set; }
         public string LockReason { get; private set; } = string.Empty;
         public List<ConfigMenuItemBase> ItemsInternal { get; } = new List<ConfigMenuItemBase>();
-        public IReadOnlyList<IConfigMenuItem> Items => ItemsInternal.Cast<IConfigMenuItem>().ToArray();
+        public IReadOnlyList<IConfigMenuItem> Items => ItemsInternal.Where(i => i.IsVisible).Cast<IConfigMenuItem>().ToArray();
         private Func<string> displayName = null!;
 
         public string NextItemId(string kind)
@@ -147,6 +152,14 @@ namespace DTMAPI.ModConfigMenu
             foreach (ConfigMenuItemBase item in ItemsInternal)
                 item.CaptureCommittedValue();
             IsEditing = true;
+        }
+
+        public IDisposable PreviewPendingValues()
+        {
+            string[] previousValues = ItemsInternal.Select(item => item.ReadCurrentValueForPreview()).ToArray();
+            for (int i = 0; i < ItemsInternal.Count; i++)
+                ItemsInternal[i].ApplyPreviewValue(ItemsInternal[i].PendingValue);
+            return new PendingPreviewScope(this, previousValues);
         }
 
         public void Reset()
@@ -197,6 +210,29 @@ namespace DTMAPI.ModConfigMenu
                 return "<error: " + ex.GetType().Name + ">";
             }
         }
+
+        private sealed class PendingPreviewScope : IDisposable
+        {
+            private readonly ConfigMenuPage page;
+            private readonly string[] previousValues;
+            private bool disposed;
+
+            public PendingPreviewScope(ConfigMenuPage page, string[] previousValues)
+            {
+                this.page = page;
+                this.previousValues = previousValues;
+            }
+
+            public void Dispose()
+            {
+                if (disposed)
+                    return;
+                disposed = true;
+                int count = Math.Min(page.ItemsInternal.Count, previousValues.Length);
+                for (int i = 0; i < count; i++)
+                    page.ItemsInternal[i].ApplyPreviewValue(previousValues[i]);
+            }
+        }
     }
 
     internal abstract class ConfigMenuItemBase : IConfigMenuItem
@@ -219,6 +255,7 @@ namespace DTMAPI.ModConfigMenu
         public string DisplayValue => CanEdit ? pendingValue : ReadValue();
         public string PendingValue => pendingValue;
         public virtual bool CanEdit => true;
+        public virtual bool IsVisible => true;
         public bool HasPendingChange => CanEdit && !string.Equals(committedValue, pendingValue, StringComparison.Ordinal);
         public string ValidationError { get; private set; } = string.Empty;
         public virtual IReadOnlyList<string> AllowedValues => Array.Empty<string>();
@@ -275,6 +312,10 @@ namespace DTMAPI.ModConfigMenu
             ApplyValue(pendingValue);
         }
 
+        internal string ReadCurrentValueForPreview() => ReadValue();
+
+        internal void ApplyPreviewValue(string value) => ApplyValue(value);
+
         protected abstract string ReadValue();
         protected abstract void ApplyValue(string value);
         protected abstract bool TryNormalize(string value, out string normalized, out string error);
@@ -316,12 +357,19 @@ namespace DTMAPI.ModConfigMenu
     {
         private readonly Func<bool> getValue;
         private readonly Action<bool> setValue;
+        private readonly Func<bool>? canEdit;
+        private readonly Func<bool>? isVisible;
 
-        public BoolConfigItem(string itemId, Func<string> name, Func<string> tooltip, Func<bool> getValue, Action<bool> setValue) : base(itemId, "Bool", name, tooltip)
+        public BoolConfigItem(string itemId, Func<string> name, Func<string> tooltip, Func<bool> getValue, Action<bool> setValue, Func<bool>? canEdit = null, Func<bool>? isVisible = null) : base(itemId, "Bool", name, tooltip)
         {
             this.getValue = getValue;
             this.setValue = setValue;
+            this.canEdit = canEdit;
+            this.isVisible = isVisible;
         }
+
+        public override bool CanEdit => canEdit == null || SafeInvokeBool(canEdit, true);
+        public override bool IsVisible => isVisible == null || SafeInvokeBool(isVisible, true);
 
         protected override string ReadValue() => getValue() ? "true" : "false";
         protected override void ApplyValue(string value) => setValue(value.Equals("true", StringComparison.OrdinalIgnoreCase));
@@ -337,6 +385,18 @@ namespace DTMAPI.ModConfigMenu
             normalized = PendingValue;
             error = "Expected true or false.";
             return false;
+        }
+
+        private static bool SafeInvokeBool(Func<bool> func, bool fallback)
+        {
+            try
+            {
+                return func();
+            }
+            catch
+            {
+                return fallback;
+            }
         }
     }
 
@@ -393,18 +453,169 @@ namespace DTMAPI.ModConfigMenu
         }
     }
 
+    internal sealed class InlineBoolNumberConfigItem : ConfigMenuItemBase
+    {
+        private readonly Func<bool> getEnabled;
+        private readonly Action<bool> setEnabled;
+        private readonly Func<double> getValue;
+        private readonly Action<double> setValue;
+        private readonly double min;
+        private readonly double max;
+        private readonly double interval;
+
+        public InlineBoolNumberConfigItem(string itemId, Func<string> name, Func<string> tooltip, Func<bool> getEnabled, Action<bool> setEnabled, Func<double> getValue, Action<double> setValue, double min, double max, double interval) : base(itemId, "InlineBoolNumber", name, tooltip)
+        {
+            this.getEnabled = getEnabled;
+            this.setEnabled = setEnabled;
+            this.getValue = getValue;
+            this.setValue = setValue;
+            this.min = min;
+            this.max = max;
+            this.interval = interval <= 0 ? 1 : interval;
+        }
+
+        public override double? MinValue => min;
+        public override double? MaxValue => max;
+        public override double? Interval => interval;
+
+        protected override string ReadValue() => (getEnabled() ? "true" : "false") + "|" + NormalizeNumber(getValue()).ToString("0.###", CultureInfo.InvariantCulture);
+
+        protected override void ApplyValue(string value)
+        {
+            if (!TryParse(value, out bool enabled, out double number))
+                return;
+            setEnabled(enabled);
+            setValue(NormalizeNumber(number));
+        }
+
+        protected override bool TryNormalize(string value, out string normalized, out string error)
+        {
+            if (!TryParse(value, out bool enabled, out double number))
+            {
+                normalized = PendingValue;
+                error = "Expected true|number.";
+                return false;
+            }
+            normalized = (enabled ? "true" : "false") + "|" + NormalizeNumber(number).ToString("0.###", CultureInfo.InvariantCulture);
+            error = string.Empty;
+            return true;
+        }
+
+        private bool TryParse(string value, out bool enabled, out double number)
+        {
+            enabled = false;
+            number = min;
+            string[] parts = (value ?? string.Empty).Split('|');
+            if (parts.Length != 2 || !bool.TryParse(parts[0], out enabled))
+                return false;
+            return double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out number);
+        }
+
+        private double NormalizeNumber(double value)
+        {
+            double clamped = Math.Min(max, Math.Max(min, value));
+            if (interval > 0)
+            {
+                double steps = Math.Round((clamped - min) / interval, MidpointRounding.AwayFromZero);
+                clamped = min + steps * interval;
+            }
+            return Math.Min(max, Math.Max(min, clamped));
+        }
+    }
+
+    internal sealed class InlineBoolBoolConfigItem : ConfigMenuItemBase
+    {
+        private readonly Func<bool> getEnabled;
+        private readonly Action<bool> setEnabled;
+        private readonly Func<string> secondaryName;
+        private readonly Func<string> secondaryTooltip;
+        private readonly Func<bool> getSecondaryValue;
+        private readonly Action<bool> setSecondaryValue;
+        private readonly Func<bool>? secondaryVisible;
+
+        public InlineBoolBoolConfigItem(string itemId, Func<string> name, Func<string> tooltip, Func<bool> getEnabled, Action<bool> setEnabled, Func<string> secondaryName, Func<string> secondaryTooltip, Func<bool> getSecondaryValue, Action<bool> setSecondaryValue, Func<bool>? secondaryVisible = null) : base(itemId, "InlineBoolBool", name, tooltip)
+        {
+            this.getEnabled = getEnabled;
+            this.setEnabled = setEnabled;
+            this.secondaryName = secondaryName;
+            this.secondaryTooltip = secondaryTooltip;
+            this.getSecondaryValue = getSecondaryValue;
+            this.setSecondaryValue = setSecondaryValue;
+            this.secondaryVisible = secondaryVisible;
+        }
+
+        public override IReadOnlyList<string> AllowedValues => new[]
+        {
+            SafeInvoke(secondaryName),
+            SafeInvoke(secondaryTooltip),
+            IsSecondaryVisible() ? "true" : "false"
+        };
+
+        protected override string ReadValue() => (getEnabled() ? "true" : "false") + "|" + (getSecondaryValue() ? "true" : "false");
+
+        protected override void ApplyValue(string value)
+        {
+            if (!TryParse(value, out bool enabled, out bool secondary))
+                return;
+            setEnabled(enabled);
+            setSecondaryValue(enabled && IsSecondaryVisible() && secondary);
+        }
+
+        protected override bool TryNormalize(string value, out string normalized, out string error)
+        {
+            if (!TryParse(value, out bool enabled, out bool secondary))
+            {
+                normalized = PendingValue;
+                error = "Expected true|false.";
+                return false;
+            }
+            normalized = (enabled ? "true" : "false") + "|" + (secondary ? "true" : "false");
+            error = string.Empty;
+            return true;
+        }
+
+        private bool IsSecondaryVisible() => secondaryVisible == null || SafeInvokeBool(secondaryVisible, true);
+
+        private static bool TryParse(string value, out bool enabled, out bool secondary)
+        {
+            enabled = false;
+            secondary = false;
+            string[] parts = (value ?? string.Empty).Split('|');
+            return parts.Length == 2 && bool.TryParse(parts[0], out enabled) && bool.TryParse(parts[1], out secondary);
+        }
+
+        private static bool SafeInvokeBool(Func<bool> func, bool fallback)
+        {
+            try
+            {
+                return func();
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+    }
+
     internal class StringConfigItem : ConfigMenuItemBase
     {
         private readonly Func<string> getValue;
         private readonly Action<string> setValue;
         private readonly bool isKeybind;
+        private readonly Func<bool>? canEdit;
+        private readonly Func<bool>? isVisible;
 
-        public StringConfigItem(string itemId, string kind, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, bool isKeybind = false) : base(itemId, kind, name, tooltip)
+        public StringConfigItem(string itemId, string kind, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, bool isKeybind = false, Func<bool>? canEdit = null, Func<bool>? isVisible = null) : base(itemId, kind, name, tooltip)
         {
             this.getValue = getValue;
             this.setValue = setValue;
             this.isKeybind = isKeybind;
+            this.canEdit = canEdit;
+            this.isVisible = isVisible;
         }
+
+        public override bool CanEdit => canEdit == null || SafeInvokeBool(canEdit, true);
+        public override bool IsVisible => isVisible == null || SafeInvokeBool(isVisible, true);
 
         protected override string ReadValue()
         {
@@ -425,6 +636,18 @@ namespace DTMAPI.ModConfigMenu
             }
             error = string.Empty;
             return true;
+        }
+
+        private static bool SafeInvokeBool(Func<bool> func, bool fallback)
+        {
+            try
+            {
+                return func();
+            }
+            catch
+            {
+                return fallback;
+            }
         }
     }
 
@@ -451,6 +674,42 @@ namespace DTMAPI.ModConfigMenu
             normalized = PendingValue;
             error = "Expected one of: " + string.Join(", ", allowedValues);
             return false;
+        }
+    }
+
+    internal sealed class ColorPresetConfigItem : StringConfigItem
+    {
+        private readonly IReadOnlyList<DtmColorPreset> presets;
+
+        public ColorPresetConfigItem(string itemId, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, IReadOnlyList<DtmColorPreset> presets) : base(itemId, "ColorPreset", name, tooltip, getValue, setValue)
+        {
+            this.presets = (presets ?? Array.Empty<DtmColorPreset>())
+                .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Id))
+                .ToArray();
+        }
+
+        public override IReadOnlyList<string> AllowedValues => presets
+            .Select(p => p.Id + "|" + p.Label + "|" + NormalizeHex(p.HexColor))
+            .ToArray();
+
+        protected override bool TryNormalize(string value, out string normalized, out string error)
+        {
+            DtmColorPreset? preset = presets.FirstOrDefault(p => p.Id.Equals(value, StringComparison.OrdinalIgnoreCase));
+            if (preset != null)
+            {
+                normalized = preset.Id;
+                error = string.Empty;
+                return true;
+            }
+            normalized = PendingValue;
+            error = "Expected one color preset.";
+            return false;
+        }
+
+        private static string NormalizeHex(string value)
+        {
+            value = (value ?? string.Empty).Trim().TrimStart('#');
+            return value.Length == 6 ? value.ToUpperInvariant() : "FFFFFF";
         }
     }
 

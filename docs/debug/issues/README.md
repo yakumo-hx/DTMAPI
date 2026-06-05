@@ -17,3 +17,5 @@ Current issues:
 - `ISSUE-002-hookprobe-blocks-hotkeys.md`
 - `ISSUE-003-hotkey-openconfig-no-overlay.md`
 - `ISSUE-004-steam-launch-stuck.md`
+- `ISSUE-005-20260603-manual-qa-024-regressions.md`
+- `ISSUE-006-20260604-critical-manual-qa-025.md`

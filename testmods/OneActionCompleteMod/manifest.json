@@ -5,12 +5,12 @@
   "Description": "DTMAPI migration of the OneActionComplete configuration and GameBridge policy shell.",
   "UniqueID": "Yuuka.DTMAPI.OneActionComplete",
   "EntryDll": "OneActionCompleteMod.dll",
-  "MinimumDTMApiVersion": "0.1.13",
+  "MinimumDTMApiVersion": "0.2.1",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.1.13",
+      "MinimumVersion": "0.2.1",
       "Required": true
     },
     {

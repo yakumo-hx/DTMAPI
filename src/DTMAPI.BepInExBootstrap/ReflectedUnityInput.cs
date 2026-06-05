@@ -137,13 +137,15 @@ namespace DTMAPI.BepInExBootstrap
                 return false;
             }
 
-            bool down = IsWin32KeyDown(virtualKey);
+            short state = GetAsyncKeyState(virtualKey);
+            bool down = (state & 0x8000) != 0;
+            bool transitioned = (state & 0x0001) != 0;
             bool wasDown = win32PreviousDown.Contains(key);
             if (down)
                 win32PreviousDown.Add(key);
             else
                 win32PreviousDown.Remove(key);
-            return down && !wasDown;
+            return !wasDown && (down || transitioned);
         }
 
         private static bool InvokeWin32Key(string key)
@@ -218,6 +220,11 @@ namespace DTMAPI.BepInExBootstrap
                 case "DownArrow": virtualKey = 0x28; return true;
                 case "LeftArrow": virtualKey = 0x25; return true;
                 case "RightArrow": virtualKey = 0x27; return true;
+                case "Mouse0": virtualKey = 0x01; return true;
+                case "Mouse1": virtualKey = 0x02; return true;
+                case "Mouse2": virtualKey = 0x04; return true;
+                case "Mouse3": virtualKey = 0x05; return true;
+                case "Mouse4": virtualKey = 0x06; return true;
                 default: return false;
             }
         }

@@ -190,7 +190,7 @@ namespace DTMAPI.Core.Manifesting
 
     internal sealed class OfficialModEnablementIndex
     {
-        private readonly Dictionary<string, bool> enabledByOfficialId = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, OfficialModInfoState> stateByOfficialId = new Dictionary<string, OfficialModInfoState>(StringComparer.OrdinalIgnoreCase);
 
         private OfficialModEnablementIndex(string dolocPersistentRoot)
         {
@@ -203,8 +203,8 @@ namespace DTMAPI.Core.Manifesting
         public string EnablementFilePath { get; private set; } = string.Empty;
         public bool FileExists { get; private set; }
         public string LoadError { get; private set; } = string.Empty;
-        public bool HasData => enabledByOfficialId.Count > 0;
-        public int EntryCount => enabledByOfficialId.Count;
+        public bool HasData => stateByOfficialId.Count > 0;
+        public int EntryCount => stateByOfficialId.Count;
 
         public static OfficialModEnablementIndex Load()
         {
@@ -225,7 +225,7 @@ namespace DTMAPI.Core.Manifesting
                 {
                     string id = string.IsNullOrWhiteSpace(pair.Value.Id) ? pair.Key : pair.Value.Id;
                     if (!string.IsNullOrWhiteSpace(id))
-                        index.enabledByOfficialId[id] = pair.Value.Enabled;
+                        index.stateByOfficialId[id] = pair.Value;
                 }
             }
             catch (Exception ex)
@@ -235,7 +235,19 @@ namespace DTMAPI.Core.Manifesting
             return index;
         }
 
-        public bool TryGetEnabled(string officialId, out bool enabled) => enabledByOfficialId.TryGetValue(officialId, out enabled);
+        public bool TryGetEnabled(string officialId, out bool enabled)
+        {
+            if (stateByOfficialId.TryGetValue(officialId, out OfficialModInfoState state))
+            {
+                enabled = state.Enabled;
+                return true;
+            }
+
+            enabled = false;
+            return false;
+        }
+
+        public bool TryGetState(string officialId, out OfficialModInfoState state) => stateByOfficialId.TryGetValue(officialId, out state);
 
         private static string GetDolocPersistentRoot()
         {
@@ -278,5 +290,14 @@ namespace DTMAPI.Core.Manifesting
 
         [DataMember(Name = "enabled")]
         public bool Enabled { get; set; }
+
+        [DataMember(Name = "priority")]
+        public int Priority { get; set; } = -1;
+
+        [DataMember(Name = "source")]
+        public string Source { get; set; } = string.Empty;
+
+        [DataMember(Name = "title")]
+        public string Title { get; set; } = string.Empty;
     }
 }

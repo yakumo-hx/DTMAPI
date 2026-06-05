@@ -1,17 +1,17 @@
-# ActionSpeedMod DTMAPI migration
+# ActionSpeedMod DTMAPI Migration
 
-This is the first DTMAPI-native migration slice for `Yuuka.DTMAPI.ActionSpeed`.
+DTMAPI-native migration of `Yuuka.DTMAPI.ActionSpeed`.
 
-Implemented in this slice:
+Implemented:
 
 - DTMAPI manifest and `DtmMod.Entry`.
-- Defaults-off config model.
-- DTMAPI config menu coverage for bool, number, text, choice, and keybind fields.
-- Title-page DTMAPI Settings config entry; F10 remains only a diagnostic shortcut while the migration is under test.
+- Player-facing config menu focused on core toggles and multipliers.
 - `UpdateTicked` evidence without per-frame log spam.
 - Runtime apply/restore boundary logs.
+- GameBridge-backed tool animation, interaction animation, eat/drink continuous-use timing, bottle-fill timing, machine/feed add timing, harvest timing, and plant timing.
+- Right-click continuous drinking policy for bottled water and in-water bottle-fill policy remain routed through GameBridge continuous-use paths.
 
-Not complete yet:
+Experimental boundary:
 
-- The old timing-sensitive Harmony patches for tool/eat/fill/machine/harvest animation speed are intentionally not copied here.
-- Those need a DTMAPI GameBridge/API pass and hook evidence before this mod can claim functional action-speed parity.
+- Auto-fill bottle is exposed as policy/config text but deeper hands-free trigger evidence is still experimental.
+- See `ACTIONSPEED-001` and `ACTIONSPEED-002` in the smoke matrix for current hook evidence.

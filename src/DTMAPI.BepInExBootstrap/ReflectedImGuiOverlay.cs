@@ -195,11 +195,19 @@ namespace DTMAPI.BepInExBootstrap
                 TryPageAction(page, "Canceled", () => configMenu.Cancel(page.Manifest.UniqueID));
             line += 2;
 
-            foreach (string conflict in configMenu.GetKeybindConflicts(page.Manifest.UniqueID).Take(3))
-                DrawLine(contentX, y, contentWidth, ref line, conflict);
+            IDisposable? preview = (page as IConfigMenuPendingPreview)?.PreviewPendingValues();
+            try
+            {
+                foreach (string conflict in configMenu.GetKeybindConflicts(page.Manifest.UniqueID).Take(3))
+                    DrawLine(contentX, y, contentWidth, ref line, conflict);
 
-            foreach (IConfigMenuItem item in page.Items.Take(Math.Max(1, (int)((height - 110) / 30))))
-                DrawConfigItem(page, item, contentX, y + line++ * 30, contentWidth);
+                foreach (IConfigMenuItem item in page.Items.Take(Math.Max(1, (int)((height - 110) / 30))))
+                    DrawConfigItem(page, item, contentX, y + line++ * 30, contentWidth);
+            }
+            finally
+            {
+                preview?.Dispose();
+            }
         }
 
         private void DrawConfigItem(IConfigMenuPage page, IConfigMenuItem item, float x, float y, float width)
@@ -264,6 +272,36 @@ namespace DTMAPI.BepInExBootstrap
                 if (Button(controlX + 178, y, 28, 24, ">"))
                     SetPending(item, item.AllowedValues[(current + 1) % item.AllowedValues.Count]);
             }
+            else if (item.Kind == "InlineBoolNumber")
+            {
+                ParseInlineBoolNumber(item.PendingValue, out bool enabled, out double value);
+                double step = item.Interval ?? 1;
+                string numericText = value.ToString("0.###", CultureInfo.InvariantCulture);
+                if (Button(controlX, y, 62, 24, enabled ? "On" : "Off"))
+                    SetPending(item, (enabled ? "false" : "true") + "|" + value.ToString(CultureInfo.InvariantCulture));
+                if (Button(controlX + 68, y, 28, 24, "-"))
+                    SetPending(item, enabled.ToString().ToLowerInvariant() + "|" + (value - step).ToString(CultureInfo.InvariantCulture));
+                string changed = TextField(controlX + 100, y, 72, 24, numericText);
+                if (changed != numericText)
+                    SetPending(item, enabled.ToString().ToLowerInvariant() + "|" + changed);
+                if (Button(controlX + 176, y, 28, 24, "+"))
+                    SetPending(item, enabled.ToString().ToLowerInvariant() + "|" + (value + step).ToString(CultureInfo.InvariantCulture));
+                Label(controlX + 210, y, Math.Max(40, controlWidth - 210), 24, $"[{item.MinValue:0.###}..{item.MaxValue:0.###}]");
+            }
+            else if (item.Kind == "InlineBoolBool")
+            {
+                ParseInlineBoolBool(item.PendingValue, out bool enabled, out bool secondary);
+                if (Button(controlX, y, 62, 24, enabled ? "On" : "Off"))
+                    SetPending(item, (enabled ? "false" : "true") + "|" + secondary.ToString().ToLowerInvariant());
+                bool showSecondary = enabled && (item.AllowedValues.Count < 3 || item.AllowedValues[2].Equals("true", StringComparison.OrdinalIgnoreCase));
+                if (showSecondary)
+                {
+                    string secondaryName = item.AllowedValues.Count > 0 ? item.AllowedValues[0] : "Secondary";
+                    Label(controlX + 72, y, 112, 24, Truncate(secondaryName, 16));
+                    if (Button(controlX + 190, y, 62, 24, secondary ? "On" : "Off"))
+                        SetPending(item, enabled.ToString().ToLowerInvariant() + "|" + (secondary ? "false" : "true"));
+                }
+            }
             else if (item.Kind == "Keybind")
             {
                 bool capturing = item.ItemId == capturingKeybindItemId;
@@ -308,6 +346,28 @@ namespace DTMAPI.BepInExBootstrap
                 statusMessage = item.Name + ": " + error;
             else
                 statusMessage = string.Empty;
+        }
+
+        private static void ParseInlineBoolNumber(string value, out bool enabled, out double number)
+        {
+            enabled = false;
+            number = 0;
+            string[] parts = (value ?? string.Empty).Split('|');
+            if (parts.Length > 0)
+                bool.TryParse(parts[0], out enabled);
+            if (parts.Length > 1)
+                double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out number);
+        }
+
+        private static void ParseInlineBoolBool(string value, out bool enabled, out bool secondary)
+        {
+            enabled = false;
+            secondary = false;
+            string[] parts = (value ?? string.Empty).Split('|');
+            if (parts.Length > 0)
+                bool.TryParse(parts[0], out enabled);
+            if (parts.Length > 1)
+                bool.TryParse(parts[1], out secondary);
         }
 
         private void DrawErrors(RuntimeSnapshot snapshot, float x, float y, float width)

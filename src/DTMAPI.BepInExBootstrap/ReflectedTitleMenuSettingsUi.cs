@@ -61,6 +61,7 @@ namespace DTMAPI.BepInExBootstrap
         private bool buttonVisibleLogged;
         private bool menuOpenLogged;
         private DtmOverlayPage renderedPage = (DtmOverlayPage)(-1);
+        private string? renderedConfigUniqueId;
         private bool trackingRenderedObjects = true;
         private bool buildingStaticUi;
 
@@ -132,7 +133,8 @@ namespace DTMAPI.BepInExBootstrap
             bool showPanel = runtime.UI.IsOpen;
             SetActive(panelRoot, showPanel);
             SetActive(titleButtonRoot, !showPanel);
-            if (showPanel && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage))
+            bool configRequestChanged = !string.Equals(renderedConfigUniqueId, runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase);
+            if (showPanel && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage || configRequestChanged))
             {
                 if (!menuOpenLogged)
                 {
@@ -284,6 +286,7 @@ namespace DTMAPI.BepInExBootstrap
             ClearRenderedObjects();
             RuntimeSnapshot snapshot = runtime.CreateSnapshot();
             renderedPage = runtime.UI.CurrentPage;
+            renderedConfigUniqueId = runtime.UI.RequestedConfigUniqueId;
 
             AddText(panelContentRoot, "DTMAPI.Title", T("ui.title", "DTMAPI Settings") + "  " + DtmApiRuntime.ApiVersion, 22, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, 40, -36, 520, 32);
             CreateButton(panelContentRoot, "DTMAPI.Close", T("ui.close", "Close"), () =>
@@ -374,28 +377,36 @@ namespace DTMAPI.BepInExBootstrap
 
         private void RenderConfigPage(IConfigMenuPage page)
         {
-            float x = 326;
-            float y = -126;
-            AddText(panelContentRoot!, "DTMAPI.Config.PageTitle", page.DisplayName + " (" + page.Manifest.UniqueID + ")" + (page.HasPendingChanges ? " *" : string.Empty), 18, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, x, y, 600, 28);
-            if (page.IsLocked)
-                AddText(panelContentRoot!, "DTMAPI.Config.Locked", T("config.lockedPrefix", "Locked: ") + text.TranslateEnablementReason(page.LockReason), 14, Color(1f, 0.70f, 0.42f, 1f), TextAnchorMiddleLeft, x, y - 26, 650, 24);
-
-            CreateButton(panelContentRoot!, "DTMAPI.Config.Save", T("config.save", "Save"), () => TryPageAction(page, T("config.saved", "Saved"), () => configMenu.Save(page.Manifest.UniqueID)), page.IsLocked ? Color(0.20f, 0.20f, 0.20f, 1f) : Color(0.12f, 0.44f, 0.32f, 1f), Color(1f, 1f, 1f, 1f), x, -178, 82, 28);
-            CreateButton(panelContentRoot!, "DTMAPI.Config.Reset", T("config.reset", "Reset"), () => TryPageAction(page, T("config.resetPending", "Reset pending"), () => configMenu.Reset(page.Manifest.UniqueID)), page.IsLocked ? Color(0.20f, 0.20f, 0.20f, 1f) : Color(0.42f, 0.28f, 0.13f, 1f), Color(1f, 1f, 1f, 1f), x + 92, -178, 82, 28);
-            CreateButton(panelContentRoot!, "DTMAPI.Config.Cancel", T("config.cancel", "Cancel"), () => TryPageAction(page, T("config.canceled", "Canceled"), () => configMenu.Cancel(page.Manifest.UniqueID)), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 184, -178, 82, 28);
-
-            int conflictLine = 0;
-            foreach (string conflict in configMenu.GetKeybindConflicts(page.Manifest.UniqueID).Take(2))
+            IDisposable? preview = (page as IConfigMenuPendingPreview)?.PreviewPendingValues();
+            try
             {
-                AddText(panelContentRoot!, "DTMAPI.Config.Conflict." + conflictLine, conflict, 13, Color(1f, 0.66f, 0.62f, 1f), TextAnchorMiddleLeft, x + 286, -179 - conflictLine * 20, 420, 20);
-                conflictLine++;
+                float x = 326;
+                float y = -126;
+                AddText(panelContentRoot!, "DTMAPI.Config.PageTitle", page.DisplayName + " (" + page.Manifest.UniqueID + ")" + (page.HasPendingChanges ? " *" : string.Empty), 18, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, x, y, 600, 28);
+                if (page.IsLocked)
+                    AddText(panelContentRoot!, "DTMAPI.Config.Locked", T("config.lockedPrefix", "Locked: ") + text.TranslateEnablementReason(page.LockReason), 14, Color(1f, 0.70f, 0.42f, 1f), TextAnchorMiddleLeft, x, y - 26, 650, 24);
+
+                CreateButton(panelContentRoot!, "DTMAPI.Config.Save", T("config.save", "Save"), () => TryPageAction(page, T("config.saved", "Saved"), () => configMenu.Save(page.Manifest.UniqueID)), page.IsLocked ? Color(0.20f, 0.20f, 0.20f, 1f) : Color(0.12f, 0.44f, 0.32f, 1f), Color(1f, 1f, 1f, 1f), x, -178, 82, 28);
+                CreateButton(panelContentRoot!, "DTMAPI.Config.Reset", T("config.reset", "Reset"), () => TryPageAction(page, T("config.resetPending", "Reset pending"), () => configMenu.Reset(page.Manifest.UniqueID)), page.IsLocked ? Color(0.20f, 0.20f, 0.20f, 1f) : Color(0.42f, 0.28f, 0.13f, 1f), Color(1f, 1f, 1f, 1f), x + 92, -178, 82, 28);
+                CreateButton(panelContentRoot!, "DTMAPI.Config.Cancel", T("config.cancel", "Cancel"), () => TryPageAction(page, T("config.canceled", "Canceled"), () => configMenu.Cancel(page.Manifest.UniqueID)), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 184, -178, 82, 28);
+
+                int conflictLine = 0;
+                foreach (string conflict in configMenu.GetKeybindConflicts(page.Manifest.UniqueID).Take(2))
+                {
+                    AddText(panelContentRoot!, "DTMAPI.Config.Conflict." + conflictLine, conflict, 13, Color(1f, 0.66f, 0.62f, 1f), TextAnchorMiddleLeft, x + 286, -179 - conflictLine * 20, 420, 20);
+                    conflictLine++;
+                }
+
+                float itemY = -226;
+                foreach (IConfigMenuItem item in page.Items.Take(13))
+                {
+                    RenderConfigItem(page, item, x, itemY, 650);
+                    itemY -= 34;
+                }
             }
-
-            float itemY = -226;
-            foreach (IConfigMenuItem item in page.Items.Take(13))
+            finally
             {
-                RenderConfigItem(page, item, x, itemY, 650);
-                itemY -= 34;
+                preview?.Dispose();
             }
         }
 
@@ -419,11 +430,41 @@ namespace DTMAPI.BepInExBootstrap
                 AddText(panelContentRoot!, "DTMAPI.Item.Lock." + item.ItemId, T("item.locked", "Locked"), 14, Color(1f, 0.70f, 0.42f, 1f), TextAnchorMiddleLeft, controlX, y, 220, 26);
                 return;
             }
+            if (!item.CanEdit && !item.Kind.Equals("Button", StringComparison.OrdinalIgnoreCase))
+            {
+                AddText(panelContentRoot!, "DTMAPI.Item.ItemLock." + item.ItemId, FirstText(item.DisplayValue, T("item.locked", "Locked")), 14, Color(0.68f, 0.72f, 0.75f, 1f), TextAnchorMiddleLeft, controlX, y, 260, 26);
+                return;
+            }
 
             if (item.Kind == "Bool")
             {
                 string next = item.PendingValue.Equals("true", StringComparison.OrdinalIgnoreCase) ? "false" : "true";
                 CreateButton(panelContentRoot!, "DTMAPI.Item.Bool." + item.ItemId, item.PendingValue.Equals("true", StringComparison.OrdinalIgnoreCase) ? T("item.on", "On") : T("item.off", "Off"), () => TrySetPending(item, next), item.PendingValue.Equals("true", StringComparison.OrdinalIgnoreCase) ? Color(0.10f, 0.43f, 0.32f, 1f) : Color(0.28f, 0.31f, 0.34f, 1f), Color(1f, 1f, 1f, 1f), controlX, y, 88, 26);
+            }
+            else if (item.Kind == "InlineBoolNumber")
+            {
+                ParseInlineBoolNumber(item.PendingValue, out bool enabled, out double value);
+                double step = item.Interval ?? 1;
+                string next = enabled ? "false" : "true";
+                CreateButton(panelContentRoot!, "DTMAPI.Item.InlineBool." + item.ItemId, enabled ? T("item.on", "On") : T("item.off", "Off"), () => TrySetPending(item, next + "|" + value.ToString(CultureInfo.InvariantCulture)), enabled ? Color(0.10f, 0.43f, 0.32f, 1f) : Color(0.28f, 0.31f, 0.34f, 1f), Color(1f, 1f, 1f, 1f), controlX, y, 70, 26);
+                CreateButton(panelContentRoot!, "DTMAPI.Item.InlineMinus." + item.ItemId, "-", () => TrySetPending(item, enabled.ToString().ToLowerInvariant() + "|" + (value - step).ToString(CultureInfo.InvariantCulture)), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 80, y, 30, 26);
+                CreateInput(panelContentRoot!, "DTMAPI.Item.InlineNumInput." + item.ItemId, value.ToString("0.###", CultureInfo.InvariantCulture), v => TrySetPending(item, enabled.ToString().ToLowerInvariant() + "|" + v), controlX + 116, y, 78, 26);
+                CreateButton(panelContentRoot!, "DTMAPI.Item.InlinePlus." + item.ItemId, "+", () => TrySetPending(item, enabled.ToString().ToLowerInvariant() + "|" + (value + step).ToString(CultureInfo.InvariantCulture)), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 200, y, 30, 26);
+                AddText(panelContentRoot!, "DTMAPI.Item.InlineRange." + item.ItemId, "[" + item.MinValue?.ToString("0.###", CultureInfo.InvariantCulture) + ".." + item.MaxValue?.ToString("0.###", CultureInfo.InvariantCulture) + "]", 12, Color(0.68f, 0.72f, 0.75f, 1f), TextAnchorMiddleLeft, controlX + 240, y, 110, 24);
+            }
+            else if (item.Kind == "InlineBoolBool")
+            {
+                ParseInlineBoolBool(item.PendingValue, out bool enabled, out bool secondary);
+                string next = enabled ? "false" : "true";
+                CreateButton(panelContentRoot!, "DTMAPI.Item.InlineBoolPrimary." + item.ItemId, enabled ? T("item.on", "On") : T("item.off", "Off"), () => TrySetPending(item, next + "|" + secondary.ToString().ToLowerInvariant()), enabled ? Color(0.10f, 0.43f, 0.32f, 1f) : Color(0.28f, 0.31f, 0.34f, 1f), Color(1f, 1f, 1f, 1f), controlX, y, 70, 26);
+                bool showSecondary = enabled && (item.AllowedValues.Count < 3 || item.AllowedValues[2].Equals("true", StringComparison.OrdinalIgnoreCase));
+                if (showSecondary)
+                {
+                    string secondaryName = item.AllowedValues.Count > 0 ? item.AllowedValues[0] : T("item.secondary", "Secondary");
+                    string secondaryNext = secondary ? "false" : "true";
+                    AddText(panelContentRoot!, "DTMAPI.Item.InlineBoolSecondaryLabel." + item.ItemId, Truncate(secondaryName, 16), 13, Color(0.82f, 0.86f, 0.88f, 1f), TextAnchorMiddleLeft, controlX + 88, y, 126, 24);
+                    CreateButton(panelContentRoot!, "DTMAPI.Item.InlineBoolSecondary." + item.ItemId, secondary ? T("item.on", "On") : T("item.off", "Off"), () => TrySetPending(item, enabled.ToString().ToLowerInvariant() + "|" + secondaryNext), secondary ? Color(0.10f, 0.43f, 0.32f, 1f) : Color(0.28f, 0.31f, 0.34f, 1f), Color(1f, 1f, 1f, 1f), controlX + 222, y, 78, 26);
+                }
             }
             else if (item.Kind == "Number")
             {
@@ -449,6 +490,27 @@ namespace DTMAPI.BepInExBootstrap
                 CreateButton(panelContentRoot!, "DTMAPI.Item.ChoicePrev." + item.ItemId, "<", () => TrySetPending(item, item.AllowedValues[(current - 1 + item.AllowedValues.Count) % item.AllowedValues.Count]), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX, y, 30, 26);
                 AddText(panelContentRoot!, "DTMAPI.Item.ChoiceValue." + item.ItemId, item.PendingValue, 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleCenter, controlX + 36, y, 128, 26);
                 CreateButton(panelContentRoot!, "DTMAPI.Item.ChoiceNext." + item.ItemId, ">", () => TrySetPending(item, item.AllowedValues[(current + 1) % item.AllowedValues.Count]), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 170, y, 30, 26);
+            }
+            else if (item.Kind == "ColorPreset")
+            {
+                int swatch = 0;
+                foreach (string value in item.AllowedValues.Take(8))
+                {
+                    string[] parts = value.Split('|');
+                    string id = parts.Length > 0 ? parts[0] : value;
+                    string hex = parts.Length > 2 ? parts[2] : "FFFFFF";
+                    bool selected = id.Equals(item.PendingValue, StringComparison.OrdinalIgnoreCase);
+                    bool custom = id.Equals("Custom", StringComparison.OrdinalIgnoreCase);
+                    string label = custom ? (selected ? "*" : "+") : (selected ? "*" : string.Empty);
+                    object background = custom
+                        ? Color(selected ? 1f : 0.88f, selected ? 1f : 0.92f, selected ? 1f : 0.96f, 0.94f)
+                        : ColorFromHex(hex, selected ? 1f : 0.86f);
+                    object textColor = selected || custom
+                        ? Color(0f, 0f, 0f, 1f)
+                        : Color(1f, 1f, 1f, 1f);
+                    CreateButton(panelContentRoot!, "DTMAPI.Item.ColorPreset." + item.ItemId + "." + swatch, label, () => TrySetPending(item, id), background, textColor, controlX + swatch * 34, y, 26, 26);
+                    swatch++;
+                }
             }
             else if (item.Kind == "Keybind")
             {
@@ -936,6 +998,52 @@ namespace DTMAPI.BepInExBootstrap
         private object Color(float r, float g, float b, float a) => Activator.CreateInstance(colorType!, r, g, b, a);
         private object Vector2(float x, float y) => Activator.CreateInstance(vector2Type!, x, y);
         private string T(string key, string fallback) => text.Get(key, fallback);
+
+        private object ColorFromHex(string hex, float alpha)
+        {
+            hex = (hex ?? string.Empty).Trim().TrimStart('#');
+            if (hex.Length != 6 ||
+                !int.TryParse(hex.Substring(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int r) ||
+                !int.TryParse(hex.Substring(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int g) ||
+                !int.TryParse(hex.Substring(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int b))
+            {
+                return Color(1f, 1f, 1f, alpha);
+            }
+
+            return Color(r / 255f, g / 255f, b / 255f, alpha);
+        }
+
+        private static void ParseInlineBoolNumber(string value, out bool enabled, out double number)
+        {
+            enabled = false;
+            number = 1;
+            string[] parts = (value ?? string.Empty).Split('|');
+            if (parts.Length > 0)
+                bool.TryParse(parts[0], out enabled);
+            if (parts.Length > 1)
+                double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out number);
+        }
+
+        private static void ParseInlineBoolBool(string value, out bool enabled, out bool secondary)
+        {
+            enabled = false;
+            secondary = false;
+            string[] parts = (value ?? string.Empty).Split('|');
+            if (parts.Length > 0)
+                bool.TryParse(parts[0], out enabled);
+            if (parts.Length > 1)
+                bool.TryParse(parts[1], out secondary);
+        }
+
+        private static string FirstText(params string[] values)
+        {
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+            return string.Empty;
+        }
 
         private const int TextAnchorMiddleLeft = 3;
         private const int TextAnchorMiddleCenter = 4;

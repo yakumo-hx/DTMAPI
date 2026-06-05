@@ -114,6 +114,8 @@ namespace DTMAPI.Abstractions
         IReadOnlyList<IContentAssetInfo> FindAssets(string contentType);
         IReadOnlyList<string> GetKnownContentTypes();
         bool TryReadTextAsset(string relativePath, out string text);
+        IReadOnlyList<IContentItemInfo> GetIndexedItems();
+        IContentItemInfo? GetIndexedItem(string itemId);
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
@@ -123,6 +125,28 @@ namespace DTMAPI.Abstractions
         string RelativePath { get; }
         string SourceModId { get; }
         string SourcePath { get; }
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.2")]
+    public interface IContentItemInfo
+    {
+        string ItemId { get; }
+        string ChineseName { get; }
+        string EnglishName { get; }
+        string Category { get; }
+        IReadOnlyList<string> Tags { get; }
+        string IconAssetKey { get; }
+        string IconPath { get; }
+        string SourceKind { get; }
+        string SourceModTitle { get; }
+        string SourceId { get; }
+        ulong? WorkshopId { get; }
+        bool Enabled { get; }
+        bool EnablementKnown { get; }
+        bool IsDtmApiContent { get; }
+        string RootPath { get; }
+        string ContentPath { get; }
+        int LoadOrder { get; }
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]

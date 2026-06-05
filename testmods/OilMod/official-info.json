@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 石油",
+  "author": "DTMAPI",
+  "version": "0.2.5-dtmapi",
+  "description": "DTMAPI experimental 石油内容包。新增高燃料值石油物品，用于矿井研究、矿井制作和燃料消耗。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Item",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 石油",
+    "tchinese": "DTMAPI 石油",
+    "english": "DTMAPI Oil"
+  },
+  "localized_description": {
+    "schinese": "新增高燃料值石油物品，用于矿井研究、矿井制作和高效燃料。",
+    "tchinese": "新增高燃料值石油物品，用於礦井研究、礦井製作和高效燃料。",
+    "english": "Adds a high-energy oil item for mine research, mine crafting, and efficient fuel."
+  }
+}

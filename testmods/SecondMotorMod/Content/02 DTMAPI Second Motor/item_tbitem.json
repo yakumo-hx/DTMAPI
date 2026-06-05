@@ -1,0 +1,30 @@
+[
+  {
+    "id": "dtmapi_second_motor_key",
+    "sub_type": "kit_activeprop",
+    "salable": false,
+    "disposable": false,
+    "consumable": false,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": false,
+    "source": [],
+    "selling_price": 0,
+    "buying_price": 0,
+    "overlay": 1,
+    "ui_sprite_asset": {
+      "url": "icon_vehicle_motor"
+    },
+    "title": {
+      "key": "item_dtmapi_second_motor_key",
+      "text": "飞行摩托钥匙（异色）"
+    },
+    "description_basic": {
+      "key": "item_dtmapi_second_motor_key_desc",
+      "text": "DTMAPI experimental 调试钥匙。使用后召唤异色飞行摩托；若存档缺少钥匙，模组会尝试通过官方邮件投递。"
+    },
+    "function": {
+      "$type": "ItemFunctionMotorKey"
+    }
+  }
+]
