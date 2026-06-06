@@ -12,14 +12,17 @@ Before design or code work, read:
 - `references/README.md`
 - `docs/debug/INDEX.md`
 
-Before turning user manual test feedback into Codex constraints, `readme.md` task details, or a short `/goal` prompt, read:
+Before turning user manual test feedback into Codex constraints, a dedicated `docs/goals/YYYY/...` task file, or a short `/goal` prompt, read:
 
 - `docs/workflows/codex-feedback-to-goal.md`
+- `docs/goals/README.md`
 - `docs/reviews/README.md` when doing review/root-cause work
 
 Manual feedback review must preserve the user's numbered issue order, translate screenshot-only details into text, and attach analysis immediately after each issue so a fresh Codex or compacted context can resume without losing continuity.
 
-Repeated, previously "fixed", lifecycle, UI flicker, stale-state, hook, input, save/load, vehicle, machine, or official-content issues require review/root-cause notes before a new implementation goal. Store durable review records under `docs/reviews/manual-qa/YYYY/` when the review must feed `readme.md` or a future `/goal`.
+Repeated, previously "fixed", lifecycle, UI flicker, stale-state, hook, input, save/load, vehicle, machine, or official-content issues require review/root-cause notes before a new implementation goal. Store durable review records under `docs/reviews/manual-qa/YYYY/` when the review must feed a dedicated goal file or a future `/goal`.
+
+Each implementation handoff must use one exact file under `docs/goals/YYYY/` plus a sibling `.goal.txt` backup of the short `/goal` prompt. The repository root must not contain or rely on a mutable task-ledger file.
 
 For hook work, also read:
 

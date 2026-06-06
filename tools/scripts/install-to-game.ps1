@@ -266,17 +266,17 @@ function Install-OfficialLocalDtmApiMod {
 
     $manifest = Get-Content -Raw -LiteralPath $sourceManifestPath | ConvertFrom-Json
     $manifest.EntryDll = "Content/DTMAPI/$($Mod.PackageDll)"
-    $manifest.MinimumDTMApiVersion = '0.2.8'
+    $manifest.MinimumDTMApiVersion = '0.4.0'
     if ($manifest.Dependencies) {
         foreach ($dependency in $manifest.Dependencies) {
             if ($dependency.UniqueID -eq 'DTMAPI.ModConfigMenu') {
-                $dependency.MinimumVersion = '0.2.8'
+                $dependency.MinimumVersion = '0.4.0'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.GameBridge.DolocTown') {
-                $dependency.MinimumVersion = '0.2.8'
+                $dependency.MinimumVersion = '0.4.0'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.DebugConsoleHost') {
-                $dependency.MinimumVersion = '0.2.8'
+                $dependency.MinimumVersion = '0.4.0'
             }
         }
     }
@@ -449,6 +449,30 @@ if (-not $SkipOfficialLocalMods) {
             Project = 'MoreEquipmentSlotsMod'
             SourceDll = 'MoreEquipmentSlotsMod.dll'
             PackageDll = 'DTMAPI.MoreEquipmentSlots.dll'
+        },
+        @{
+            OfficialFolder = 'DTMAPI_MoreSaves'
+            Project = 'MoreSavesMod'
+            SourceDll = 'MoreSavesMod.dll'
+            PackageDll = 'DTMAPI.MoreSaves.dll'
+        },
+        @{
+            OfficialFolder = 'DTMAPI_Zoom'
+            Project = 'ZoomMod'
+            SourceDll = 'ZoomMod.dll'
+            PackageDll = 'DTMAPI.Zoom.dll'
+        },
+        @{
+            OfficialFolder = 'DTMAPI_ChestLocatorEnhancer'
+            Project = 'ChestLocatorEnhancerMod'
+            SourceDll = 'ChestLocatorEnhancerMod.dll'
+            PackageDll = 'DTMAPI.ChestLocatorEnhancer.dll'
+        },
+        @{
+            OfficialFolder = 'DTMAPI_StrongPlantingGun'
+            Project = 'StrongPlantingGunMod'
+            SourceDll = 'StrongPlantingGunMod.dll'
+            PackageDll = 'DTMAPI.StrongPlantingGun.dll'
         }
     )
 

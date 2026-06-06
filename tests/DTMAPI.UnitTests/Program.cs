@@ -25,6 +25,7 @@ namespace DTMAPI.UnitTests
                 OfficialLocalModPackagesRespectOfficialEnablement();
                 WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod();
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
+                CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
             }
@@ -427,6 +428,111 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+            string dir = NewTempGameDir();
+            var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+            runtime.Start();
+
+            IModRegistry registry = GetModRegistry(runtime);
+            Assert(registry.GetApi<ICustomAnimalApi>("DTMAPI") != null, "Stable custom animal API should be registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomMonsterApi>("DTMAPI") != null, "Stable custom monster API should be registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomAttackApi>("DTMAPI") != null, "Stable custom attack API should be registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomDroneApi>("DTMAPI") != null, "Stable custom drone API should be registered by the runtime manifest.");
+
+            IManifest owner = new ManifestModel
+            {
+                Name = "Custom Entity Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.CustomEntity"
+            };
+
+            runtime.CustomEntities.AnimalLifecycleChanged += (_, __) => throw new InvalidOperationException("listener isolation probe");
+
+            CustomAnimalRegistrationResult invalidAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = "NotNamespaced" });
+            Assert(!invalidAnimal.Succeeded && invalidAnimal.Messages.Any(m => m.Code == "definition-id-not-namespaced"), "Invalid non-namespaced animal IDs should be rejected.");
+
+            string animalId = owner.UniqueID + ".Animal";
+            string monsterId = owner.UniqueID + ".Monster";
+            string attackId = owner.UniqueID + ".Attack";
+            string droneId = owner.UniqueID + ".Drone";
+            CustomAnimalRegistrationResult animal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition
+            {
+                SpeciesId = animalId,
+                DisplayName = TestText("Animal"),
+                Diet = new CustomAnimalDietPolicy { AcceptedItemIds = new[] { "hay" }, UnitsPerFeeding = 1 },
+                Excrement = new CustomAnimalExcrementPolicy { Enabled = true, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "poop", MinStack = 1, MaxStack = 1 } } },
+                Breeding = new CustomAnimalBreedingPolicy { Enabled = true, CompatibleSpeciesIds = new[] { animalId }, OffspringCount = 1 },
+                HiddenProducts = new[] { new CustomAnimalProductRule { ProductId = owner.UniqueID + ".HiddenProduct", RequiredProgress = 100, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "hidden", MinStack = 1, MaxStack = 1 } } } },
+                Persistence = TestPersistence()
+            });
+            Assert(animal.Succeeded, "Valid animal definition should register.");
+            Assert(runtime.CreateSnapshot().Errors.Any(e => e.Owner == owner.UniqueID && e.Message.Contains("lifecycle listener")), "Throwing lifecycle listeners should be captured with owner attribution.");
+
+            CustomAnimalRegistrationResult duplicateAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = animalId });
+            Assert(!duplicateAnimal.Succeeded && duplicateAnimal.FailureReason == "duplicate-definition-id", "Duplicate animal definition IDs should be rejected.");
+
+            CustomAttackRegistrationResult attack = runtime.CustomEntities.RegisterAttack(owner, new CustomAttackDefinition
+            {
+                AttackId = attackId,
+                Damage = new CustomDamagePayload { Amount = 2, DamageType = "test" },
+                Pattern = new CustomBarragePatternDefinition { Kind = CustomAttackPatternKind.Barrage, ProjectileCount = 3, DeterministicRandomSeed = true }
+            });
+            Assert(attack.Succeeded, "Valid attack definition should register.");
+
+            CustomMonsterRegistrationResult monster = runtime.CustomEntities.RegisterMonster(owner, new CustomMonsterDefinition
+            {
+                MonsterId = monsterId,
+                SpawnRules = new[] { new CustomMonsterSpawnRule { RuleId = owner.UniqueID + ".Spawn", RoomTags = new[] { "test" }, Probability = 1 } },
+                AttackSlots = new[] { new CustomMonsterAttackSlot { SlotId = "primary", AttackId = attackId, CooldownSeconds = 1, Range = 5 } },
+                Loot = new[] { new CustomMonsterLootRule { ItemId = "test-loot", MinStack = 1, MaxStack = 1, Chance = 1 } },
+                Persistence = TestPersistence()
+            });
+            Assert(monster.Succeeded, "Valid monster definition should register.");
+            CustomMonsterRegistrationResult spawnTable = runtime.CustomEntities.RegisterSpawnTable(owner, new CustomMonsterSpawnTableDefinition { SpawnTableId = owner.UniqueID + ".SpawnTable", MonsterIds = new[] { monsterId } });
+            Assert(spawnTable.Succeeded, "Valid monster spawn table should register.");
+
+            CustomDroneRegistrationResult drone = runtime.CustomEntities.RegisterDrone(owner, new CustomDroneDefinition
+            {
+                DroneId = droneId,
+                SupportedModes = new[] { CustomDroneBehaviorMode.Follow, CustomDroneBehaviorMode.Guard, CustomDroneBehaviorMode.Attack },
+                EquipmentSlots = new[] { new CustomDroneEquipmentSlotDefinition { SlotId = "weapon", AllowedItemTags = new[] { "weapon" } } },
+                AttackIds = new[] { attackId },
+                Persistence = TestPersistence()
+            });
+            Assert(drone.Succeeded, "Valid drone definition should register.");
+
+            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Animal snapshot should count registered definitions.");
+            Assert(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RuntimeStatus == CustomEntityRuntimeStatus.ConfiguredNoRuntimeInstance, "Monster snapshot should report configured with no runtime instance.");
+            Assert(runtime.CustomEntities.GetAttackStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Attack status should report configured-no-runtime-instance.");
+            Assert(runtime.CustomEntities.GetDroneStatus(owner.UniqueID).FailureReason == "runtime-creation-blocked", "Drone status should expose runtime creation blocker.");
+
+            Assert(IsBlocked(runtime.CustomEntities.RequestSpawn(owner, new CustomAnimalSpawnRequest { SpeciesId = animalId })), "Animal spawn should return runtime-creation-blocked before native adapters are verified.");
+            Assert(IsBlocked(runtime.CustomEntities.RequestSpawn(owner, new CustomMonsterSpawnRequest { MonsterId = monsterId })), "Monster spawn should return runtime-creation-blocked before native adapters are verified.");
+            Assert(IsBlocked(runtime.CustomEntities.ExecuteAttack(owner, new CustomAttackSpawnRequest { AttackId = attackId })), "Attack execution should return runtime-creation-blocked before native adapters are verified.");
+            Assert(IsBlocked(runtime.CustomEntities.RequestSummon(owner, new CustomDroneSummonRequest { DroneId = droneId })), "Drone summon should return runtime-creation-blocked before native adapters are verified.");
+
+            runtime.NotifyLoadGameRequested(2);
+            runtime.NotifySaveLoaded(isNewGame: false);
+            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).ActiveRuntimeInstanceCount == 0, "Save-load boundary should not keep stale custom animal runtime instances.");
+
+            int removed = runtime.CustomEntities.RemoveOwner(owner.UniqueID, "unit test cleanup");
+            Assert(removed >= 5, "Owner cleanup should remove four definitions plus the monster spawn table.");
+            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Animal definitions should be removed by owner cleanup.");
+            Assert(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Monster definitions should be removed by owner cleanup.");
+            Assert(runtime.CustomEntities.GetAttackSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Attack definitions should be removed by owner cleanup.");
+            Assert(runtime.CustomEntities.GetDroneSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Drone definitions should be removed by owner cleanup.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static string NewTempGameDir()
         {
             string dir = Path.Combine(Path.GetTempPath(), "DTMAPI-tests", Guid.NewGuid().ToString("N"));
@@ -480,6 +586,38 @@ namespace DTMAPI.UnitTests
                 return;
             }
             throw new InvalidOperationException(message);
+        }
+
+        private static bool IsBlocked(CustomEntityRequestResult result)
+        {
+            return result != null && !result.Succeeded && result.FailureReason == "runtime-creation-blocked" && result.RuntimeStatus == CustomEntityRuntimeStatus.RuntimeCreationBlocked;
+        }
+
+        private static CustomEntityLocalizedText TestText(string text)
+        {
+            return new CustomEntityLocalizedText
+            {
+                Default = text,
+                English = text,
+                SimplifiedChinese = text
+            };
+        }
+
+        private static CustomEntityPersistencePolicy TestPersistence()
+        {
+            return new CustomEntityPersistencePolicy
+            {
+                Kind = CustomEntityPersistenceKind.SaveScoped,
+                SchemaVersion = 1,
+                RemoveInstancesWhenOwnerMissing = true,
+                SaveKeys = new[] { new CustomEntitySaveDataKey { Key = "state", Version = 1 } }
+            };
+        }
+
+        private static IModRegistry GetModRegistry(DtmApiRuntime runtime)
+        {
+            PropertyInfo? registryProperty = typeof(DtmApiRuntime).GetProperty("ModRegistry", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (IModRegistry)(registryProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime mod registry should exist."));
         }
 
         private static IEventsHelper CreateEventsProxy(DtmApiRuntime runtime, string owner)

@@ -9,7 +9,7 @@ Source: user manual QA with screenshots for MoreEquipmentSlots, AnimalHusbandryP
 
 - Time: 2026-06-06 00:03:51 +08:00.
 - Source: user manual testing plus three screenshots.
-- Scope: create a durable review record, update `readme.md`, and prepare a short implementation `/goal`.
+- Scope: create a durable review record, update a dedicated goal file, and prepare a short implementation `/goal`.
 - Forbidden: do not implement code in this review pass; do not reset/revert current 0.2.7 worktree changes; do not copy old DLKsmapi code.
 - Current baseline: `docs/updates/2026/20260605-0006-027-manual-qa-root-cause.md` says DTMAPI 0.2.7 was build/smoke verified, but this review treats the user's newer manual QA as the current player-visible truth.
 
@@ -49,7 +49,7 @@ Review record:
   - It is not proven that every Workshop passive item is safe, only that the native filter is `ItemPassive`.
   - It is not proven that all hat functions are safe as attribute-only effects; implementation needs fallback/blocker if a hat function depends on native hat visuals.
 - Ownership: DTMAPI GameBridge EquipmentSlots API plus MoreEquipmentSlotsMod UI/config.
-- Needs update: `readme.md`, `docs/debug`, hook/API matrix if the EquipmentSlots API changes, and smoke/manual evidence for native-like click/hover.
+- Needs update: dedicated goal file, `docs/debug`, hook/API matrix if the EquipmentSlots API changes, and smoke/manual evidence for native-like click/hover.
 - Acceptance:
   - Extra slots can be clicked, hovered, equipped, unequipped, and recovered through player UI, not only through config text entry.
   - Extra slots accept accessory-2 passive items and hats.
@@ -89,7 +89,7 @@ Review record:
   - The issue is not only a font-size tweak. The ownership of the row is wrong: mood row data is being reused for hidden product.
   - It is unproven whether a native extra row can be inserted cleanly; if not, a controlled DTMAPI row clone must be positioned and sized like native UI.
 - Ownership: DTMAPI GameBridge Animal Viewer API plus AnimalHusbandryProgressMod.
-- Needs update: `readme.md`, debug issue/evidence, hook map/API matrix if a new animal viewer render-row API is added.
+- Needs update: dedicated goal file, debug issue/evidence, hook map/API matrix if a new animal viewer render-row API is added.
 - Acceptance:
   - Animal UI shows hunger, mood, and hidden-product progress as separate player-readable rows.
   - Hidden product row does not overwrite or corrupt `moodInfo/moodProgress`.
@@ -127,7 +127,7 @@ Review record:
 - Rejected/unproven:
   - This review does not prove whether a 6th/7th item row will collide with page/source/category controls; implementation must adjust layout and verify.
 - Ownership: DTMAPI Bootstrap Y-console UI.
-- Needs update: `readme.md` and debug/smoke evidence for UI screenshot.
+- Needs update: dedicated goal file and debug/smoke evidence for UI screenshot.
 - Acceptance:
   - Item grid uses more vertical space and fills toward the bottom without overlapping page controls.
   - Page size matches the larger visible grid.
@@ -166,7 +166,7 @@ Review record:
   - Exact official item IDs for metal frame, engine core, steel ingot, and coal must be verified from native content before editing JSON.
   - It is unproven whether official content reload can swap recipes safely after game launch. If not, recipe selection may need to happen before official tables load or require restart.
 - Ownership: MineMod official JSON/config plus DTMAPI Machine API/content patch path.
-- Needs update: `readme.md`, update/debug records, smoke matrix, public API matrix if Machine API DTO/mode semantics change.
+- Needs update: dedicated goal file, update/debug records, smoke matrix, public API matrix if Machine API DTO/mode semantics change.
 - Acceptance:
   - Mine config no longer exposes fuel capacity or fuel mode.
   - Machine state and logs show electric-only behavior and power cost only.
@@ -201,7 +201,7 @@ Review record:
 - Rejected/unproven:
   - This review does not choose the final id. A good id should be content-facing and formal, not a framework/internal name.
 - Ownership: OilMod official content plus GameBridge oil-drop/runtime references plus smoke/docs.
-- Needs update: `readme.md`, update/debug docs, smoke matrix, possibly content index/API docs.
+- Needs update: dedicated goal file, update/debug docs, smoke matrix, possibly content index/API docs.
 - Acceptance:
   - New official oil item id is formal and documented.
   - All runtime references use the new id.

@@ -14,7 +14,7 @@ namespace DTMAPI.Core.Runtime
 {
     public sealed class DtmApiRuntime
     {
-        public const string ApiVersion = "0.2.8";
+        public const string ApiVersion = "0.4.0";
 
         private readonly IRuntimeHost host;
         private readonly IDtmConfigMenuApi? configMenuApi;
@@ -41,6 +41,7 @@ namespace DTMAPI.Core.Runtime
             Workshop = new WorkshopService();
             Content = new ContentQueryService(Paths);
             Input = new InputService();
+            CustomEntities = new CustomEntityRegistryService(Diagnostics);
             UI = new UiRuntimeService(ExportLogs, Events.DispatchMenuOpened, Events.DispatchMenuClosed);
         }
 
@@ -53,6 +54,7 @@ namespace DTMAPI.Core.Runtime
         internal WorkshopService Workshop { get; }
         internal ContentQueryService Content { get; }
         internal InputService Input { get; }
+        public CustomEntityRegistryService CustomEntities { get; }
         public IMonitor RuntimeMonitor { get; private set; } = NullMonitor.Instance;
         public IReadOnlyList<DiscoveredMod> DiscoveredMods => discoveredMods.ToArray();
         public IReadOnlyList<DiscoveredMod> LoadedMods => loadedMods.ToArray();
@@ -76,7 +78,11 @@ namespace DTMAPI.Core.Runtime
             RuntimeMonitor.Log("GamePath = " + Paths.GamePath);
             RuntimeMonitor.Log("ModsPath = " + Paths.ModsPath);
 
-            ModRegistry.AddLoaded(CreateRuntimeManifest());
+            IManifest runtimeManifest = CreateRuntimeManifest();
+            RegisterRuntimeApi<ICustomAnimalApi>(runtimeManifest, CustomEntities);
+            RegisterRuntimeApi<ICustomMonsterApi>(runtimeManifest, CustomEntities);
+            RegisterRuntimeApi<ICustomAttackApi>(runtimeManifest, CustomEntities);
+            RegisterRuntimeApi<ICustomDroneApi>(runtimeManifest, CustomEntities);
             if (configMenuApi != null)
             {
                 IManifest configMenuManifest = CreateConfigMenuManifest();
@@ -146,6 +152,7 @@ namespace DTMAPI.Core.Runtime
         public void NotifySaveLoaded(bool isNewGame)
         {
             RuntimeMonitor.Log($"SaveLoaded hook dispatched. slot/index={currentLoadingSlot?.ToString() ?? "unknown"} isNewGame={isNewGame}");
+            CustomEntities.BeginSaveSession(currentLoadingSlot, isNewGame);
             try
             {
                 SaveSessionLoaded?.Invoke(currentLoadingSlot, isNewGame);
@@ -173,6 +180,7 @@ namespace DTMAPI.Core.Runtime
         {
             RuntimeMonitor.Log("ReturnedToTitle hook dispatched.");
             currentLoadingSlot = null;
+            CustomEntities.ClearRuntimeInstances("returned-to-title");
             try
             {
                 ReturnedToTitleBoundary?.Invoke();

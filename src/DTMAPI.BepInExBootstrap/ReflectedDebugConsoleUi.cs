@@ -25,6 +25,7 @@ namespace DTMAPI.BepInExBootstrap
         private ITimeDebugApi? timeApi;
         private IMovementDebugApi? movementApi;
         private IInstantSaveDebugApi? instantSaveApi;
+        private IAdvancedDebugApi? advancedApi;
         private IManifest? ownerManifest;
 
         private Type? gameObjectType;
@@ -126,6 +127,15 @@ namespace DTMAPI.BepInExBootstrap
             runtime.SetHookStatus("UI.DebugConsoleHost", "experimental", "Unity UI Canvas", "In-save Y-key debug console host bound to inventory/weather/teleport/time/movement/instant-save APIs.");
         }
 
+        public void BindAdvanced(IManifest owner, IAdvancedDebugApi? advancedDebugApi)
+        {
+            ownerManifest = owner;
+            advancedApi = advancedDebugApi;
+            dirty = true;
+            runtime.RuntimeMonitor.Log("Debug console host advanced binding owner=" + (owner?.UniqueID ?? "unknown") + " advanced=" + (advancedDebugApi != null) + ".");
+            runtime.SetHookStatus("UI.DebugConsoleAdvancedHost", advancedDebugApi != null ? "experimental" : "missing-api", "Unity UI Canvas + IAdvancedDebugApi", "Advanced Y-console controls bound=" + (advancedDebugApi != null) + ".");
+        }
+
         public void SetLanguage(IManifest owner, string language)
         {
             ownerManifest ??= owner;
@@ -207,7 +217,7 @@ namespace DTMAPI.BepInExBootstrap
 
         public BridgeFeatureStatus GetStatus(string uniqueId)
         {
-            bool bound = inventoryApi != null && weatherApi != null && teleportApi != null && timeApi != null && movementApi != null && instantSaveApi != null;
+            bool bound = inventoryApi != null && weatherApi != null && teleportApi != null && timeApi != null && movementApi != null && instantSaveApi != null && advancedApi != null;
             return new BridgeFeatureStatus(bound ? "bound-experimental" : "missing-api", "open=" + IsOpen + " owner=" + (ownerManifest?.UniqueID ?? "none"));
         }
 
@@ -369,6 +379,10 @@ namespace DTMAPI.BepInExBootstrap
             if (string.IsNullOrWhiteSpace(sourceFilter))
                 sourceFilter = SourceFilterBase;
 
+            const int itemPageSize = 35;
+            const int filterButtonRows = 16;
+            const float filterPagerY = -704;
+
             InventoryDebugPage page = inventoryApi.GetItems(new InventoryDebugQuery
             {
                 SearchText = searchText,
@@ -376,7 +390,7 @@ namespace DTMAPI.BepInExBootstrap
                 SourceId = sourceFilter,
                 IncludeUnavailable = true,
                 Page = itemPage,
-                PageSize = 35
+                PageSize = itemPageSize
             });
             itemPage = page.Page;
             AddText(panelRoot!, "DTMAPI.DebugConsole.Items.Count", string.Format(T("debug.items.count", "{0} items | page {1}/{2}"), page.TotalItems, page.Page + 1, page.TotalPages), 15, Color(0.78f, 0.82f, 0.84f, 1f), TextAnchorMiddleLeft, 520, -94, 360, 34);
@@ -386,7 +400,7 @@ namespace DTMAPI.BepInExBootstrap
             float gridX = 388;
             AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Items.SourceTitle", T("debug.items.sourceColumn", "Source"), sourceX, -128, 150, 26);
             InventoryDebugSourceGroup[] sources = page.Sources.ToArray();
-            int sourcePageSize = 12;
+            int sourcePageSize = filterButtonRows;
             int sourceTotalPages = Math.Max(1, (int)Math.Ceiling(sources.Length / (double)sourcePageSize));
             sourcePage = Math.Max(0, Math.Min(sourcePage, sourceTotalPages - 1));
             int sourceIndex = 0;
@@ -411,13 +425,13 @@ namespace DTMAPI.BepInExBootstrap
                 {
                     sourcePage = Math.Max(0, sourcePage - 1);
                     dirty = true;
-                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), sourceX, -578, 44, 30);
-                AddText(panelRoot!, "DTMAPI.DebugConsole.Source.Page", (sourcePage + 1) + "/" + sourceTotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, sourceX + 48, -578, 58, 30);
+                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), sourceX, filterPagerY, 44, 30);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Source.Page", (sourcePage + 1) + "/" + sourceTotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, sourceX + 48, filterPagerY, 58, 30);
                 CreateButton(panelRoot!, "DTMAPI.DebugConsole.Source.Next", ">", () =>
                 {
                     sourcePage = Math.Min(sourceTotalPages - 1, sourcePage + 1);
                     dirty = true;
-                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), sourceX + 110, -578, 44, 30);
+                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), sourceX + 110, filterPagerY, 44, 30);
             }
 
             AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Items.CategoryTitle", T("debug.items.categoryColumn", "Category"), categoryX, -128, 160, 26);
@@ -429,7 +443,7 @@ namespace DTMAPI.BepInExBootstrap
             }, string.IsNullOrWhiteSpace(category) ? Color(0.10f, 0.36f, 0.34f, 1f) : Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), categoryX, -158, 160, 30);
 
             string[] categories = page.Categories.ToArray();
-            int categoryPageSize = 11;
+            int categoryPageSize = filterButtonRows - 1;
             int categoryTotalPages = Math.Max(1, (int)Math.Ceiling(categories.Length / (double)categoryPageSize));
             categoryPage = Math.Max(0, Math.Min(categoryPage, categoryTotalPages - 1));
             int catIndex = 0;
@@ -451,13 +465,13 @@ namespace DTMAPI.BepInExBootstrap
                 {
                     categoryPage = Math.Max(0, categoryPage - 1);
                     dirty = true;
-                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), categoryX, -612, 44, 30);
-                AddText(panelRoot!, "DTMAPI.DebugConsole.Category.Page", (categoryPage + 1) + "/" + categoryTotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, categoryX + 48, -612, 58, 30);
+                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), categoryX, filterPagerY, 44, 30);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Category.Page", (categoryPage + 1) + "/" + categoryTotalPages, 13, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleCenter, categoryX + 48, filterPagerY, 58, 30);
                 CreateButton(panelRoot!, "DTMAPI.DebugConsole.Category.Next", ">", () =>
                 {
                     categoryPage = Math.Min(categoryTotalPages - 1, categoryPage + 1);
                     dirty = true;
-                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), categoryX + 110, -612, 44, 30);
+                }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), categoryX + 110, filterPagerY, 44, 30);
             }
 
             int index = 0;
@@ -587,6 +601,34 @@ namespace DTMAPI.BepInExBootstrap
                     }, Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 282, -634, 42, 30);
                 }
             }
+
+            AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Advanced.Title", T("debug.section.advanced", "Advanced"), x, -674, 180, 28);
+            if (advancedApi == null)
+            {
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Advanced.Missing", T("debug.missing.advanced", "Advanced debug API is not available."), 14, Color(1f, 0.72f, 0.55f, 1f), TextAnchorMiddleLeft, x, -704, 520, 26);
+            }
+            else
+            {
+                CreativeModeState creative = advancedApi.GetCreativeModeState();
+                string creativeLabel = creative.Enabled ? T("debug.creative.on", "Creative on") : T("debug.creative.off", "Creative off");
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Advanced.State", creativeLabel, 14, creative.Enabled ? Color(0.74f, 1f, 0.82f, 1f) : Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleLeft, x, -704, 180, 26);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Day", T("debug.advanced.day", "+1 day"), () => AdvanceAdvancedTime(AdvancedTimeAdvanceKind.Day, 1), Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + 144, -704, 72, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Week", T("debug.advanced.week", "+1 week"), () => AdvanceAdvancedTime(AdvancedTimeAdvanceKind.Week, 1), Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + 222, -704, 78, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Month", T("debug.advanced.month", "+1 month"), () => AdvanceAdvancedTime(AdvancedTimeAdvanceKind.Month, 1), Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x + 306, -704, 88, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Scale4", T("debug.advanced.scale4", "4x time"), () => SetDebugTimeScale(4), Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x + 400, -704, 72, 28);
+
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.ScaleReset", T("debug.advanced.scaleReset", "1x"), () => SetDebugTimeScale(1), Color(0.13f, 0.15f, 0.17f, 1f), Color(1f, 1f, 1f, 1f), x, -738, 56, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Money", T("debug.advanced.money", "+money"), () => AddDebugMoney(10000), Color(0.14f, 0.34f, 0.20f, 1f), Color(1f, 1f, 1f, 1f), x + 62, -738, 86, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.TechPoint", T("debug.advanced.techPoint", "+tech"), AddFirstTechPoint, Color(0.18f, 0.28f, 0.44f, 1f), Color(1f, 1f, 1f, 1f), x + 154, -738, 78, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.UnlockTech", T("debug.advanced.unlockTech", "Tech tree"), UnlockAllTechTrees, Color(0.18f, 0.28f, 0.44f, 1f), Color(1f, 1f, 1f, 1f), x + 238, -738, 94, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.MatureCrops", T("debug.advanced.matureCrops", "Crops"), MatureAllCrops, Color(0.17f, 0.32f, 0.22f, 1f), Color(1f, 1f, 1f, 1f), x + 338, -738, 70, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Creative", creative.Enabled ? T("debug.advanced.creativeOff", "Creative off") : T("debug.advanced.creativeOn", "Creative on"), ToggleCreativeMode, creative.Enabled ? Color(0.36f, 0.24f, 0.12f, 1f) : Color(0.17f, 0.32f, 0.22f, 1f), Color(1f, 1f, 1f, 1f), x + 414, -738, 84, 28);
+
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Generator", T("debug.advanced.generator", "Generator"), GiveCreativeGenerator, Color(0.12f, 0.28f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), x, -772, 102, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Monster", T("debug.advanced.monster", "Monster"), SpawnFirstMonster, Color(0.38f, 0.18f, 0.18f, 1f), Color(1f, 1f, 1f, 1f), x + 108, -772, 92, 28);
+                CreateButton(panelRoot!, "DTMAPI.DebugConsole.Advanced.Resource", T("debug.advanced.resource", "Resource"), SpawnFirstResource, Color(0.24f, 0.28f, 0.14f, 1f), Color(1f, 1f, 1f, 1f), x + 206, -772, 98, 28);
+                AddText(panelRoot!, "DTMAPI.DebugConsole.Advanced.Note", Truncate(FirstText(creative.LastMessage, T("debug.advanced.note", "Whitelist only")), 36), 12, Color(0.60f, 0.68f, 0.70f, 1f), TextAnchorMiddleLeft, x + 314, -772, 190, 28);
+            }
         }
 
         private void CreateItemCell(object parent, InventoryDebugItem item, int index, float x, float y, float w, float h)
@@ -607,7 +649,7 @@ namespace DTMAPI.BepInExBootstrap
             });
             object? sprite = ResolveItemSprite(item.Id);
             if (sprite != null)
-                AddImage(go, "DTMAPI.DebugConsole.ItemCell.Icon." + index, sprite, 15, -15, 60, 60);
+                AddImage(go, "DTMAPI.DebugConsole.ItemCell.Icon." + index, sprite, 20, -7, 60, 60);
             else
                 AddText(go, "DTMAPI.DebugConsole.ItemCell.IconFallback." + index, item.HasIcon ? "?" : "-", 30, item.HasIcon ? Color(0.64f, 0.82f, 0.70f, 1f) : Color(0.42f, 0.47f, 0.49f, 1f), TextAnchorMiddleCenter, 4, -6, -8, 28, stretch: true);
             if (item.IsModItem)
@@ -773,6 +815,143 @@ namespace DTMAPI.BepInExBootstrap
             statusMessage = result.Success
                 ? string.Format(T("debug.speed.changed", "Speed {0:0.#}x"), result.AppliedMultiplier)
                 : string.Format(T("debug.speed.failed", "Speed failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void AdvanceAdvancedTime(AdvancedTimeAdvanceKind kind, int amount)
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            TimeSkipResult result = advancedApi.AdvanceTime(ownerManifest, kind, amount);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.timeChanged", "Advanced time: {0}"), result.AdvancedGameMinutes)
+                : string.Format(T("debug.advanced.timeFailed", "Advanced time failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void SetDebugTimeScale(double multiplier)
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            TimeScaleDebugResult result = multiplier <= 1
+                ? advancedApi.ResetTimeScale(ownerManifest, "debug-console")
+                : advancedApi.SetTimeScale(ownerManifest, multiplier);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.scaleChanged", "Time scale {0:0.#}x"), result.AfterMultiplier)
+                : string.Format(T("debug.advanced.scaleFailed", "Time scale failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void AddDebugMoney(int amount)
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            DebugValueResult result = advancedApi.AddMoney(ownerManifest, amount);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.moneyChanged", "Money {0} -> {1}"), result.BeforeValue, result.AfterValue)
+                : string.Format(T("debug.advanced.moneyFailed", "Money failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void AddFirstTechPoint()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            TechPointDebugOption? option = advancedApi.GetTechPointOptions().FirstOrDefault();
+            if (option == null)
+            {
+                statusMessage = T("debug.advanced.techMissing", "No tech point type found.");
+                dirty = true;
+                return;
+            }
+
+            DebugValueResult result = advancedApi.AddTechPoint(ownerManifest, option.Id, 100);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.techChanged", "{0} {1} -> {2}"), FirstText(option.DisplayName, option.Id), result.BeforeValue, result.AfterValue)
+                : string.Format(T("debug.advanced.techFailed", "Tech failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void UnlockAllTechTrees()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            DebugCommandResult result = advancedApi.UnlockAllTechTrees(ownerManifest);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.techTreeChanged", "Tech trees affected: {0}"), result.AffectedCount)
+                : string.Format(T("debug.advanced.techTreeFailed", "Tech tree failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void MatureAllCrops()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            CropMaturityResult result = advancedApi.MatureAllCrops(ownerManifest);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.cropsChanged", "Crops {0}/{1}"), result.CropsMatured, result.PlantBasinsVisited)
+                : string.Format(T("debug.advanced.cropsFailed", "Crops failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void ToggleCreativeMode()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            bool next = !advancedApi.GetCreativeModeState().Enabled;
+            CreativeModeResult result = advancedApi.SetCreativeMode(ownerManifest, next);
+            statusMessage = result.Success
+                ? result.Message
+                : string.Format(T("debug.advanced.creativeFailed", "Creative failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void GiveCreativeGenerator()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            InventoryGiveResult result = advancedApi.GiveCreativeGenerator(ownerManifest);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.generatorGiven", "Gave {0}"), FirstText(result.DisplayName, result.ItemId))
+                : string.Format(T("debug.advanced.generatorFailed", "Generator failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void SpawnFirstMonster()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            SpawnDebugOption? option = advancedApi.GetMonsterOptions().FirstOrDefault(o => o.IsAvailableInCurrentRoom) ?? advancedApi.GetMonsterOptions().FirstOrDefault();
+            if (option == null)
+            {
+                statusMessage = T("debug.advanced.monsterMissing", "No monster option found.");
+                dirty = true;
+                return;
+            }
+
+            SpawnDebugResult result = advancedApi.SpawnMonster(ownerManifest, option.Id, 1);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.monsterSpawned", "Spawned {0}"), FirstText(result.DisplayName, result.SpawnId))
+                : string.Format(T("debug.advanced.monsterFailed", "Monster failed: {0}"), FirstText(result.FailureReason, result.Message));
+            dirty = true;
+        }
+
+        private void SpawnFirstResource()
+        {
+            if (advancedApi == null || ownerManifest == null)
+                return;
+            SpawnDebugOption? option = advancedApi.GetResourceOptions().FirstOrDefault(o => o.IsAvailableInCurrentRoom) ?? advancedApi.GetResourceOptions().FirstOrDefault();
+            if (option == null)
+            {
+                statusMessage = T("debug.advanced.resourceMissing", "No resource option found.");
+                dirty = true;
+                return;
+            }
+
+            SpawnDebugResult result = advancedApi.SpawnResource(ownerManifest, option.Id, 1);
+            statusMessage = result.Success
+                ? string.Format(T("debug.advanced.resourceSpawned", "Spawned {0}"), FirstText(result.DisplayName, result.SpawnId))
+                : string.Format(T("debug.advanced.resourceFailed", "Resource failed: {0}"), FirstText(result.FailureReason, result.Message));
             dirty = true;
         }
 

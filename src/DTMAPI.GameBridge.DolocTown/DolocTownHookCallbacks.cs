@@ -1,3 +1,4 @@
+using System;
 using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -17,6 +18,8 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
+            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame);
+            Bridge?.ExperimentalApi?.ResetCameraZoomForLifecycleBoundary("SaveLoaded");
             Runtime?.NotifySaveLoaded(isNewGame);
             Bridge?.MarkSaveLoadedForSmoke();
         }
@@ -29,12 +32,15 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void SaveGamePostfix(int index)
         {
             Runtime?.NotifySaveSaved(index);
+            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveSaved(index);
             Bridge?.MarkSaveSavedForSmoke();
         }
 
         public static void ReturnHomePostfix()
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
+            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle();
+            Bridge?.ExperimentalApi?.ResetCameraZoomForLifecycleBoundary("ReturnedToTitle");
             Runtime?.NotifyReturnedToTitle();
         }
 
@@ -64,6 +70,11 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AnimalFullInfoDataCtorPostfix(object __instance, object __0)
         {
             Bridge?.ExperimentalApi?.DecorateAnimalFullInfoData(__instance, __0);
+        }
+
+        public static void AnimalViewerShowPrefix(object __instance, object __0)
+        {
+            Bridge?.ExperimentalApi?.PrepareAnimalProgressOverlayBeforeShow(__instance, __0);
         }
 
         public static void AnimalViewerShowPostfix(object __instance, object __0)
@@ -147,6 +158,35 @@ namespace DTMAPI.GameBridge.DolocTown
                 Runtime?.SetHookStatus("UI.DebugConsoleInputIsolation", "verified", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", "Native backpack/menu/tool/item input is swallowed while the DTMAPI Y console is open.");
             }
             return false;
+        }
+
+        public static bool AdvancedCreativeBoolTruePrefix(ref bool __result)
+        {
+            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
+                return true;
+
+            __result = true;
+            Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("bool-cost-prefix");
+            return false;
+        }
+
+        public static bool AdvancedCreativeVoidSkipPrefix()
+        {
+            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
+                return true;
+
+            Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("void-cost-prefix");
+            return false;
+        }
+
+        public static void AdvancedCreativeRecipeTimePostfix(ref int __result)
+        {
+            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeTimeHooks() != true)
+                return;
+
+            int original = __result;
+            __result = 0;
+            Bridge.ExperimentalApi.RecordCreativeNoTimeBypassObserved(original);
         }
 
         private static bool AllowNativeGameplayInput(string source)
@@ -286,6 +326,31 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AccessoriesBarOnStartShowPostfix(object __instance)
         {
             Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.OnStartShow");
+        }
+
+        public static Array ArchiveDataHandleGetAvailableInventoriesPostfix(object __instance, object __0, object __1, bool __2, Array __result)
+        {
+            return Bridge?.ExperimentalApi?.ExtendAvailableInventoriesForChestLocator(__instance, __0, __1, __2, __result) ?? __result;
+        }
+
+        public static void ItemFarmingGunCtorPostfix(object __instance)
+        {
+            Bridge?.ExperimentalApi?.ExpandFarmingGunInventoryIfNeeded(__instance, "ItemFarmingGun ctor");
+        }
+
+        public static bool ItemFarmingGunOnUseAsToolPrefix(object __instance)
+        {
+            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunToolUse(__instance) ?? true;
+        }
+
+        public static bool FarmingGunUiStateHandlePlaceToOtherSidePrefix(object __instance, int __0)
+        {
+            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiPlaceToOtherSide(__instance, __0) ?? true;
+        }
+
+        public static bool FarmingGunUiStateHandleSwapOneItemPrefix(object __instance, int __0)
+        {
+            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true;
         }
     }
 }

@@ -63,7 +63,7 @@ namespace DTMAPI.BepInExBootstrap
                     UniqueID = "DTMAPI.DebugConsoleHost",
                     Type = "RuntimeApi"
                 }, debugConsoleUi);
-                bridge = new DolocTownGameBridge(runtime, () => titleSettingsUi.ClickTitleButtonForSmoke());
+                bridge = new DolocTownGameBridge(runtime, () => titleSettingsUi.ClickTitleButtonForSmoke(), debugConsoleUi);
                 unityContext = SynchronizationContext.Current;
                 diagnosticsHotkey = ResolveDiagnosticsHotkey();
                 runtime.Start();

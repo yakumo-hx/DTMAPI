@@ -20,6 +20,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private static readonly string[] OneActionWrongToolTargetKinds = { "Tree", "Ore", "Garbage", "Weeds" };
         private readonly DtmApiRuntime runtime;
         private readonly Func<bool>? clickTitleSettingsButton;
+        private readonly IDebugConsoleApi? debugConsoleApi;
         private SmokeSettings? smokeSettings;
         private DateTimeOffset initializedAt;
         private HarmonyReflectionPatcher? patcher;
@@ -51,9 +52,14 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseDebugTeleportAttempted;
         private bool autoExerciseDebugTimeAttempted;
         private bool autoExerciseDebugMovementAttempted;
+        private bool autoExerciseAdvancedDebugAttempted;
         private bool autoExerciseVehicleAttempted;
         private bool autoExerciseNewContentApisAttempted;
         private bool autoExerciseMineContentApisAttempted;
+        private bool autoExerciseZoomAttempted;
+        private bool autoExerciseChestLocatorEnhancerAttempted;
+        private bool autoExerciseStrongPlantingGunAttempted;
+        private bool autoExerciseCustomEntityApisAttempted;
         private bool debugTeleportVerificationCompleted;
         private bool autoFishingHotkeyInjected;
         private bool autoOpenTitleSettingsAttempted;
@@ -140,6 +146,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool fishRoeDescriptionPatched;
         private bool fishRoeDetailPatched;
         private bool animalFullInfoDataPatched;
+        private bool animalViewerShowPrefixPatched;
         private bool animalViewerShowPatched;
         private bool animalPanelRefreshViewerPatched;
         private bool motorKeyUsePatched;
@@ -157,15 +164,36 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsReloadParamsPatched;
         private bool equipmentSlotsAccessoriesInitPatched;
         private bool equipmentSlotsAccessoriesStartShowPatched;
+        private bool chestLocatorAvailableInventoriesPatched;
+        private bool strongPlantingGunCtorPatched;
+        private bool strongPlantingGunToolPatched;
+        private bool strongPlantingGunUiPlacePatched;
+        private bool strongPlantingGunUiSwapOnePatched;
+        private bool advancedCreativeCostEnergyPatched;
+        private bool advancedCreativeCostToolEnergyPatched;
+        private bool advancedCreativeHasEnoughEnergyPatched;
+        private bool advancedCreativeHasEnoughToolEnergyPatched;
+        private bool advancedCreativeCostItemStringPatched;
+        private bool advancedCreativeCostItemObjectPatched;
+        private bool advancedCreativeCostItemNoCheckListPatched;
+        private bool advancedCreativeCostItemNoCheckStringPatched;
+        private bool advancedCreativeCostSelectedItemDefaultPatched;
+        private bool advancedCreativeCostSelectedItemAtPatched;
+        private bool advancedCreativeCostItemAtPatched;
+        private bool advancedCreativeCanAffordDefaultPatched;
+        private bool advancedCreativeCanAffordScaledPatched;
+        private bool advancedCreativeCanAffordMoneyPatched;
+        private bool advancedCreativeRecipeTimePatched;
         private bool hookResolutionDiagnosticLogged;
         private bool uiContextDiagnosticLogged;
         private Delegate? saveLoadedUnityEventDelegate;
         private DolocTownExperimentalBridgeApi? experimentalApi;
 
-        public DolocTownGameBridge(DtmApiRuntime runtime, Func<bool>? clickTitleSettingsButton = null)
+        public DolocTownGameBridge(DtmApiRuntime runtime, Func<bool>? clickTitleSettingsButton = null, IDebugConsoleApi? debugConsoleApi = null)
         {
             this.runtime = runtime;
             this.clickTitleSettingsButton = clickTitleSettingsButton;
+            this.debugConsoleApi = debugConsoleApi;
             RegisterExperimentalApis();
         }
 
@@ -182,6 +210,7 @@ namespace DTMAPI.GameBridge.DolocTown
             DolocTownHookCallbacks.Runtime = runtime;
             DolocTownHookCallbacks.Bridge = this;
             experimentalApi?.PublishHookStatuses();
+            PublishStableCustomEntityHookStatuses();
             runtime.SetHookStatus("GameLoop.UpdateTicked", "verified", "BepInEx MonoBehaviour.Update", "DTMAPI dispatches UpdateTicked from the bootstrap Update callback.");
             runtime.SetHookStatus("GameLoop.OneSecondUpdateTicked", "verified", "DTMAPI.Core timer", "DTMAPI dispatches a throttled one-second event from Update.");
             InstallHarmonyHooks();
@@ -218,6 +247,44 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IMotorVehicleApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<ICameraZoomApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IChestLocatorEnhancerApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IStrongPlantingGunApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, experimentalApi);
+            runtime.RegisterRuntimeApi<ICustomAnimalApi>(manifest, runtime.CustomEntities);
+            runtime.RegisterRuntimeApi<ICustomMonsterApi>(manifest, runtime.CustomEntities);
+            runtime.RegisterRuntimeApi<ICustomAttackApi>(manifest, runtime.CustomEntities);
+            runtime.RegisterRuntimeApi<ICustomDroneApi>(manifest, runtime.CustomEntities);
+        }
+
+        private void PublishStableCustomEntityHookStatuses()
+        {
+            runtime.SetHookStatus(
+                "CustomEntities.CoreRegistry",
+                "verified",
+                "DTMAPI.Core.CustomEntityRegistryService",
+                "Stable 0.4.0 custom animal, monster, attack/projectile, and drone APIs are registered with owner-aware validation, duplicate-ID detection, snapshots, save-boundary cleanup, and provider error isolation.");
+            runtime.SetHookStatus(
+                "CustomAnimals.StableApi",
+                "configured-blocked",
+                "AnimalManager.CreateAnimal + Animal lifecycle research",
+                "Registry/status path is verified. Runtime creation remains blocked until AnimalInfo/proto, room/home, food, excrement, breeding, produce, and save adapters are verified without exposing raw Doloc Town types.");
+            runtime.SetHookStatus(
+                "CustomMonsters.StableApi",
+                "configured-blocked",
+                "MonsterController + MonsterGroupManager + MonsterAttackBehaviour research",
+                "Registry/status path is verified. Runtime creation remains blocked until spawn groups, AI targeting, movement, attack, damage, drop, and despawn adapters are verified.");
+            runtime.SetHookStatus(
+                "CustomAttacks.ProjectileApi",
+                "configured-blocked",
+                "BulletFactory + BulletManager + PhysicalDamageBox research",
+                "Registry/status path is verified. Runtime creation remains blocked until BulletManager/BulletFactory, hitbox/collision, damage ownership, and barrage tick adapters are verified.");
+            runtime.SetHookStatus(
+                "CustomDrones.StableApi",
+                "configured-blocked",
+                "DroneController + DroneWeapon + DolocAPI.EquipDrone research",
+                "Registry/status path is verified. Runtime creation remains blocked until drone controller, equipment, weapon, movement, and save persistence adapters are verified.");
         }
 
         public void Update()
@@ -294,7 +361,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugConsoleDelaySeconds))
             {
                 autoExerciseDebugConsoleAttempted = true;
-                runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + external smoke key input", "External smoke script should have completed Y/Escape/Y/Y verification; see latest.log and result.json for the pass/fail evidence.");
+                TryExerciseDebugConsoleHotkeyForSmoke();
                 TryQuitAfterDebugSmoke();
             }
             if (!autoExerciseDebugInventoryAttempted && smokeSettings.AutoExerciseDebugInventory && saveLoadedAt != default &&
@@ -325,6 +392,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 TryExerciseDebugMovementForSmoke();
                 TryQuitAfterDebugSmoke();
             }
+            if (!autoExerciseAdvancedDebugAttempted && smokeSettings.AutoExerciseAdvancedDebug && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseAdvancedDebugDelaySeconds))
+            {
+                autoExerciseAdvancedDebugAttempted = true;
+                TryExerciseAdvancedDebugForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
             if (!autoExerciseVehicleAttempted && smokeSettings.AutoExerciseVehicle && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseVehicleDelaySeconds))
             {
@@ -353,6 +427,34 @@ namespace DTMAPI.GameBridge.DolocTown
                     return;
 
                 autoExerciseMineContentApisAttempted = true;
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseZoomAttempted && smokeSettings.AutoExerciseZoom && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseZoomDelaySeconds))
+            {
+                autoExerciseZoomAttempted = true;
+                TryExerciseZoomForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseChestLocatorEnhancerAttempted && smokeSettings.AutoExerciseChestLocatorEnhancer && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseChestLocatorEnhancerDelaySeconds))
+            {
+                autoExerciseChestLocatorEnhancerAttempted = true;
+                TryExerciseChestLocatorEnhancerForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseStrongPlantingGunAttempted && smokeSettings.AutoExerciseStrongPlantingGun && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseStrongPlantingGunDelaySeconds))
+            {
+                autoExerciseStrongPlantingGunAttempted = true;
+                TryExerciseStrongPlantingGunForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
+            if (!autoExerciseCustomEntityApisAttempted && smokeSettings.AutoExerciseCustomEntityApis && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseCustomEntityApisDelaySeconds))
+            {
+                autoExerciseCustomEntityApisAttempted = true;
+                TryExerciseCustomEntityApisForSmoke();
                 TryQuitAfterDebugSmoke();
             }
             if (!autoExerciseDebugTeleportAttempted && smokeSettings.AutoExerciseDebugTeleport && saveLoadedAt != default &&
@@ -600,10 +702,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 autoExerciseAttempted = true;
                 TryExerciseExperimentalHooksForSmoke();
             }
-            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle)
+            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCustomEntityApis)
             {
                 if (smokeSettings.AutoExerciseDebugConsole)
-                    runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Save loaded; external smoke script will press Y/Escape/Y/Y and wait for debug console open/close logs.");
+                    runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Save loaded; in-game smoke will exercise Y/Escape/Y/Y, ten short taps, and held-Y no-flicker.");
                 if (smokeSettings.AutoExerciseDebugInventory)
                     runtime.SetHookStatus("Smoke.DebugInventory", "pending", "IInventoryDebugApi", "Waiting after save load to give one official item through native backpack placement.");
                 if (smokeSettings.AutoExerciseDebugWeather)
@@ -614,8 +716,18 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Smoke.DebugTime", "pending", "ITimeDebugApi", "Waiting after save load to skip to the next weather period through native time pass.");
                 if (smokeSettings.AutoExerciseDebugMovement)
                     runtime.SetHookStatus("Smoke.DebugMovement", "pending", "IMovementDebugApi", "Waiting after save load to cycle 1x/2x/3x/4x and restore 1x.");
+                if (smokeSettings.AutoExerciseAdvancedDebug)
+                    runtime.SetHookStatus("Smoke.AdvancedDebug", "pending", "IAdvancedDebugApi whitelist", "Waiting after save load to exercise time advance, time scale, value grants, creative toggle, and current-room spawn probes.");
                 if (smokeSettings.AutoExerciseVehicle)
                     runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi + ItemMotorKey.OnUse", "Waiting after save load to verify SecondMotor registration, official mod item key, key summon, ride, dismount, and original motor summon.");
+                if (smokeSettings.AutoExerciseZoom)
+                    runtime.SetHookStatus("Smoke.Zoom", "pending", "ICameraZoomApi", "Waiting after save load to register the Zoom policy, apply a 4x camera view, and restore vanilla view.");
+                if (smokeSettings.AutoExerciseChestLocatorEnhancer)
+                    runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "pending", "IChestLocatorEnhancerApi + ArchiveDataHandle.GetAvailableInventories", "Waiting after save load to create a transient shared Case in a building room and verify CountItem/CostItem through the native shared-inventory array.");
+                if (smokeSettings.AutoExerciseStrongPlantingGun)
+                    runtime.SetHookStatus("Smoke.StrongPlantingGun", "pending", "IStrongPlantingGunApi + ItemFarmingGun", "Waiting after save load to generate an official farming gun, expose three slots, place seed/film/fertilizer, and apply them to a temporary plant basin.");
+                if (smokeSettings.AutoExerciseCustomEntityApis)
+                    runtime.SetHookStatus("Smoke.CustomEntityApis", "pending", "ICustomAnimalApi/ICustomMonsterApi/ICustomAttackApi/ICustomDroneApi", "Waiting after save load to register stable 0.4.0 custom entity definitions, verify snapshots/status, confirm duplicate validation, confirm runtime-creation-blocked request results, and clean up the smoke owner.");
                 return;
             }
             if (smokeSettings.AutoOpenAnimalPanel)
@@ -768,6 +880,45 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Workshop.ReloadMods", workshopReloadPatched ? "experimental" : "pending", "Harmony Postfix: ModManager.ReloadMods", workshopReloadPatched ? "Patched to refresh DTMAPI diagnostics after official reload." : "Waiting for Assembly-CSharp/ModManager to become patchable.");
                 }
 
+                if (!chestLocatorAvailableInventoriesPatched)
+                {
+                    chestLocatorAvailableInventoriesPatched = patcher.TryPatchArrayResultPostfix(
+                        "DolocTown.GameData.ArchiveDataHandle, Assembly-CSharp",
+                        "GetAvailableInventories",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ArchiveDataHandleGetAvailableInventoriesPostfix), BindingFlags.Public | BindingFlags.Static),
+                        3);
+                    experimentalApi?.SetChestLocatorInventoryHookInstalled(chestLocatorAvailableInventoriesPatched);
+                    runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", chestLocatorAvailableInventoriesPatched ? "experimental" : "pending", "Harmony Postfix: ArchiveDataHandle.GetAvailableInventories", chestLocatorAvailableInventoriesPatched ? "Patched native inventory array enumeration so registered DTMAPI policies can append official shared container inventories without replacing CountItem/CostItem transaction logic." : "Waiting for ArchiveDataHandle.GetAvailableInventories to become patchable.");
+                }
+
+                if (!strongPlantingGunCtorPatched)
+                {
+                    MethodInfo? ctorPostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemFarmingGunCtorPostfix), BindingFlags.Public | BindingFlags.Static);
+                    strongPlantingGunCtorPatched =
+                        patcher.TryPatchConstructorPostfix("DolocTown.ItemFarmingGun, Assembly-CSharp", ctorPostfix, 2) |
+                        patcher.TryPatchConstructorPostfix("DolocTown.ItemFarmingGun, Assembly-CSharp", ctorPostfix, 3);
+                }
+
+                if (!strongPlantingGunToolPatched)
+                {
+                    strongPlantingGunToolPatched = patcher.TryPatchPrefix("DolocTown.ItemFarmingGun, Assembly-CSharp", "OnUseAsTool", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemFarmingGunOnUseAsToolPrefix), BindingFlags.Public | BindingFlags.Static), 0);
+                }
+
+                if (!strongPlantingGunUiPlacePatched)
+                {
+                    strongPlantingGunUiPlacePatched = patcher.TryPatchPrefix("DolocTown.FarmingGunUiState, Assembly-CSharp", "HandlePlaceToOtherSide", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FarmingGunUiStateHandlePlaceToOtherSidePrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                if (!strongPlantingGunUiSwapOnePatched)
+                {
+                    strongPlantingGunUiSwapOnePatched = patcher.TryPatchPrefix("DolocTown.FarmingGunUiState, Assembly-CSharp", "HandleSwapOneItem", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FarmingGunUiStateHandleSwapOneItemPrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                }
+
+                bool strongPlantingGunToolHookReady = strongPlantingGunToolPatched;
+                bool strongPlantingGunUiHooksReady = strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
+                experimentalApi?.SetStrongPlantingGunHooksInstalled(strongPlantingGunToolHookReady, strongPlantingGunUiHooksReady, strongPlantingGunCtorPatched);
+                runtime.SetHookStatus("Farming.StrongPlantingGun", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "experimental" : "pending", "Harmony Prefix/Postfix: ItemFarmingGun + FarmingGunUiState", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "Patched official farming gun construction, use, and UI transfer paths so registered DTMAPI policies can expose multi-slot seed/film/fertilizer behavior while delegating plant checks to official methods." : "Waiting for ItemFarmingGun/FarmingGunUiState targets to become patchable.");
+
                 if (!actionSpeedToolEnterPatched)
                 {
                     actionSpeedToolEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateTool, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateToolEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
@@ -827,6 +978,58 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 bool debugConsoleInputHooksReady = debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched;
                 runtime.SetHookStatus("UI.DebugConsoleInputIsolation", debugConsoleInputHooksReady ? "experimental" : "pending", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", debugConsoleInputHooksReady ? "Patched native UI toggles and tool/item entry points; active only while the DTMAPI Y console is open." : "Waiting for AgentControllerState input methods to become patchable.");
+
+                MethodInfo? creativeBoolTruePrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeBoolTruePrefix), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo? creativeVoidSkipPrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeVoidSkipPrefix), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo? creativeRecipeTimePostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeRecipeTimePostfix), BindingFlags.Public | BindingFlags.Static);
+                if (!advancedCreativeCostEnergyPatched)
+                    advancedCreativeCostEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostEnergy", creativeBoolTruePrefix, 1);
+                if (!advancedCreativeCostToolEnergyPatched)
+                    advancedCreativeCostToolEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostToolEnergy", creativeBoolTruePrefix, 0);
+                if (!advancedCreativeHasEnoughEnergyPatched)
+                    advancedCreativeHasEnoughEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "HasEnoughEnergy", creativeBoolTruePrefix, 1);
+                if (!advancedCreativeHasEnoughToolEnergyPatched)
+                    advancedCreativeHasEnoughToolEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "HasEnoughEnergyForUsingTool", creativeBoolTruePrefix, 0);
+                if (!advancedCreativeCostItemStringPatched)
+                    advancedCreativeCostItemStringPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItem", creativeBoolTruePrefix, 3);
+                if (!advancedCreativeCostItemObjectPatched)
+                    advancedCreativeCostItemObjectPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItem", creativeBoolTruePrefix, 4);
+                if (!advancedCreativeCostItemNoCheckListPatched)
+                    advancedCreativeCostItemNoCheckListPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemNoCheck", creativeVoidSkipPrefix, 2);
+                if (!advancedCreativeCostItemNoCheckStringPatched)
+                    advancedCreativeCostItemNoCheckStringPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemNoCheck", creativeVoidSkipPrefix, 3);
+                if (!advancedCreativeCostSelectedItemDefaultPatched)
+                    advancedCreativeCostSelectedItemDefaultPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostSelectedItem", creativeBoolTruePrefix, 2);
+                if (!advancedCreativeCostSelectedItemAtPatched)
+                    advancedCreativeCostSelectedItemAtPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostSelectedItem", creativeBoolTruePrefix, 3);
+                if (!advancedCreativeCostItemAtPatched)
+                    advancedCreativeCostItemAtPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemAt", creativeBoolTruePrefix, 2);
+                if (!advancedCreativeCanAffordDefaultPatched)
+                    advancedCreativeCanAffordDefaultPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAfford", creativeBoolTruePrefix, 2);
+                if (!advancedCreativeCanAffordScaledPatched)
+                    advancedCreativeCanAffordScaledPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAfford", creativeBoolTruePrefix, 3);
+                if (!advancedCreativeCanAffordMoneyPatched)
+                    advancedCreativeCanAffordMoneyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAffordMoney", creativeBoolTruePrefix, 1);
+                if (!advancedCreativeRecipeTimePatched)
+                    advancedCreativeRecipeTimePatched = patcher.TryPatchPostfix("DolocTown.Synthesizer, Assembly-CSharp", "GetRecipeTime", creativeRecipeTimePostfix, 2);
+
+                bool advancedCreativeCostHooksReady =
+                    advancedCreativeCostEnergyPatched &&
+                    advancedCreativeCostToolEnergyPatched &&
+                    advancedCreativeHasEnoughEnergyPatched &&
+                    advancedCreativeHasEnoughToolEnergyPatched &&
+                    advancedCreativeCostItemStringPatched &&
+                    advancedCreativeCostItemObjectPatched &&
+                    advancedCreativeCostItemNoCheckListPatched &&
+                    advancedCreativeCostItemNoCheckStringPatched &&
+                    advancedCreativeCostSelectedItemDefaultPatched &&
+                    advancedCreativeCostSelectedItemAtPatched &&
+                    advancedCreativeCostItemAtPatched &&
+                    advancedCreativeCanAffordDefaultPatched &&
+                    advancedCreativeCanAffordScaledPatched &&
+                    advancedCreativeCanAffordMoneyPatched;
+                experimentalApi?.SetAdvancedCreativeHooksInstalled(advancedCreativeCostHooksReady, advancedCreativeRecipeTimePatched);
+                runtime.SetHookStatus("Debug.CreativeModeHooks", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: DolocAPI cost/afford APIs + Synthesizer.GetRecipeTime", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "Patched no-cost/no-energy checks and synthesizer recipe time for the Y-console creative toggle; GameInitConfig material/shop/spirit flags are applied only while creative mode is enabled." : "Waiting for all advanced creative cost/time targets to become patchable.");
 
                 if (!oilCoalDropCapturePatched)
                 {
@@ -918,6 +1121,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 if (!animalViewerShowPatched)
                 {
+                    animalViewerShowPrefixPatched = patcher.TryPatchPrefix("DolocTown.UI.AnimalViewer, Assembly-CSharp", "Show", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalViewerShowPrefix), BindingFlags.Public | BindingFlags.Static), 1);
                     animalViewerShowPatched = patcher.TryPatchPostfix("DolocTown.UI.AnimalViewer, Assembly-CSharp", "Show", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalViewerShowPostfix), BindingFlags.Public | BindingFlags.Static), 1);
                 }
 
@@ -926,9 +1130,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     animalPanelRefreshViewerPatched = patcher.TryPatchPostfix("DolocTown.UI.AnimalPanel, Assembly-CSharp", "RefreshViewer", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalPanelRefreshViewerPostfix), BindingFlags.Public | BindingFlags.Static), 1);
                 }
 
-                bool animalViewerHooksReady = animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched;
+                bool animalViewerHooksReady = animalFullInfoDataPatched && animalViewerShowPrefixPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched;
                 experimentalApi?.SetAnimalViewerHookInstalled(animalViewerHooksReady);
-                runtime.SetHookStatus("Animals.ViewerRendering", animalViewerHooksReady ? "verified" : "pending", "Harmony Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", animalViewerHooksReady ? "Patched animal viewer data construction and real UI refresh path; verified by ANIMAL-001." : "Waiting for animal viewer data/UI targets to become patchable.");
+                runtime.SetHookStatus("Animals.ViewerRendering", animalViewerHooksReady ? "verified" : "pending", "Harmony Prefix/Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", animalViewerHooksReady ? "Patched animal viewer data construction plus prefilled independent progress rows before native Show settles, with real UI refresh evidence in ANIMAL-001." : "Waiting for animal viewer data/UI targets to become patchable.");
 
                 if (!motorKeyUsePatched)
                 {
@@ -1046,6 +1250,8 @@ namespace DTMAPI.GameBridge.DolocTown
                         "DolocTown.ItemMotorKey, Assembly-CSharp",
                         "DolocTown.MotorInteractable, Assembly-CSharp",
                         "DolocTown.MotorController, Assembly-CSharp",
+                        "DolocTown.ItemFarmingGun, Assembly-CSharp",
+                        "DolocTown.FarmingGunUiState, Assembly-CSharp",
                         "HarmonyLib.Harmony, 0Harmony"));
                 }
 
@@ -2220,6 +2426,396 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private void TryExerciseAdvancedDebugForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                ManifestModel owner = CreateDebugConsoleSmokeManifest();
+                var required = new List<string>();
+                var optional = new List<string>();
+
+                TimeSkipResult day = experimentalApi.AdvanceTime(owner, AdvancedTimeAdvanceKind.Day, 1);
+                if (!day.Success)
+                    throw new InvalidOperationException("Advance day failed: " + day.FailureReason + ": " + day.Message);
+                required.Add("day{seconds=" + day.AdvancedSeconds + ", before=" + FormatTimeSnapshot(day.Before) + ", after=" + FormatTimeSnapshot(day.After) + "}");
+
+                TimeScaleDebugResult scale = experimentalApi.SetTimeScale(owner, 4);
+                if (!scale.Success)
+                    throw new InvalidOperationException("Set time scale failed: " + scale.FailureReason + ": " + scale.Message);
+                TimeScaleDebugResult resetScale = experimentalApi.ResetTimeScale(owner, "advanced-smoke");
+                if (!resetScale.Success)
+                    throw new InvalidOperationException("Reset time scale failed: " + resetScale.FailureReason + ": " + resetScale.Message);
+                required.Add("scale{set=" + FormatSmokeDouble(scale.AfterMultiplier) + ", reset=" + FormatSmokeDouble(resetScale.AfterMultiplier) + "}");
+
+                DebugValueResult money = experimentalApi.AddMoney(owner, 1);
+                if (!money.Success)
+                    throw new InvalidOperationException("Add money failed: " + money.FailureReason + ": " + money.Message);
+                required.Add("money{" + money.BeforeValue + "->" + money.AfterValue + "}");
+
+                TechPointDebugOption? techOption = experimentalApi.GetTechPointOptions().FirstOrDefault();
+                if (techOption == null)
+                    throw new InvalidOperationException("No tech point options were available.");
+                DebugValueResult tech = experimentalApi.AddTechPoint(owner, techOption.Id, 1);
+                if (!tech.Success)
+                    throw new InvalidOperationException("Add tech point failed: " + tech.FailureReason + ": " + tech.Message);
+                required.Add("tech{" + techOption.Id + ":" + tech.BeforeValue + "->" + tech.AfterValue + "}");
+
+                CreativeModeResult creativeOn = experimentalApi.SetCreativeMode(owner, true);
+                CreativeModeResult? creativeOff = null;
+                string creativeSmoke;
+                try
+                {
+                    if (!creativeOn.Success || !creativeOn.After.RuntimeHooksInstalled)
+                        throw new InvalidOperationException("Creative enable failed: " + FirstNonEmpty(creativeOn.FailureReason, creativeOn.Message));
+                    creativeSmoke = experimentalApi.VerifyAdvancedCreativeHooksForSmoke();
+                }
+                finally
+                {
+                    creativeOff = experimentalApi.SetCreativeMode(owner, false);
+                }
+                if (creativeOff == null || !creativeOff.Success)
+                    throw new InvalidOperationException("Creative disable failed: " + (creativeOff == null ? "no result" : FirstNonEmpty(creativeOff.FailureReason, creativeOff.Message)));
+                required.Add("creative{hooks=" + creativeOn.After.RuntimeHooksInstalled + ", generatorAvailable=" + creativeOn.After.GeneratorRuntimeAvailable + ", smoke=" + creativeSmoke + "}");
+
+                DebugCommandResult unlock = experimentalApi.UnlockAllTechTrees(owner);
+                optional.Add("unlockTech{success=" + unlock.Success + ", affected=" + unlock.AffectedCount + ", reason=" + FirstNonEmpty(unlock.FailureReason, "none") + "}");
+
+                CropMaturityResult crops = experimentalApi.MatureAllCrops(owner);
+                optional.Add("crops{success=" + crops.Success + ", matured=" + crops.CropsMatured + "/" + crops.PlantBasinsVisited + ", reason=" + FirstNonEmpty(crops.FailureReason, "none") + "}");
+
+                InventoryGiveResult generator = experimentalApi.GiveCreativeGenerator(owner);
+                if (!generator.Success)
+                    throw new InvalidOperationException("Creative generator give failed: " + generator.FailureReason + ": " + generator.Message);
+                required.Add("generator{success=True, id=" + FirstNonEmpty(generator.ItemId, "dtmapi_creative_generator") + ", before=" + generator.BeforeCount + ", after=" + generator.AfterCount + "}");
+
+                SpawnDebugOption? monsterOption = experimentalApi.GetMonsterOptions().FirstOrDefault(o => o.IsAvailableInCurrentRoom);
+                if (monsterOption == null)
+                    throw new InvalidOperationException("No monster option was available in the current room.");
+                else
+                {
+                    SpawnDebugResult monster = experimentalApi.SpawnMonster(owner, monsterOption.Id, 1);
+                    if (!monster.Success)
+                        throw new InvalidOperationException("Monster spawn failed: " + monster.FailureReason + ": " + monster.Message);
+                    required.Add("monster{success=True, id=" + monsterOption.Id + ", count=" + monster.SpawnedCount + "}");
+                }
+
+                SpawnDebugOption? resourceOption = experimentalApi.GetResourceOptions().FirstOrDefault(o => o.IsAvailableInCurrentRoom);
+                if (resourceOption == null)
+                    throw new InvalidOperationException("No resource option was available in the current room.");
+                else
+                {
+                    SpawnDebugResult resource = experimentalApi.SpawnResource(owner, resourceOption.Id, 1);
+                    if (!resource.Success)
+                        throw new InvalidOperationException("Resource spawn failed: " + resource.FailureReason + ": " + resource.Message);
+                    required.Add("resource{success=True, id=" + resourceOption.Id + ", count=" + resource.SpawnedCount + "}");
+                }
+
+                string summary = "required=" + string.Join("; ", required.ToArray()) + "; optional=" + string.Join("; ", optional.ToArray());
+                runtime.RuntimeMonitor.Log("Smoke exercise AdvancedDebug OK " + summary);
+                runtime.SetHookStatus("Smoke.AdvancedDebug", "verified", "IAdvancedDebugApi whitelist", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke advanced debug exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.AdvancedDebug", "failed", "IAdvancedDebugApi whitelist", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void TryExerciseZoomForSmoke()
+        {
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                ICameraZoomApi zoomApi = experimentalApi;
+                ManifestModel owner = CreateZoomSmokeManifest();
+                CameraZoomRegisterResult register = zoomApi.Register(owner, new CameraZoomOptions
+                {
+                    Enabled = true,
+                    MinViewScale = 1,
+                    MaxViewScale = 4,
+                    Step = 1,
+                    VerboseLogging = true
+                });
+                if (!register.Success)
+                    throw new InvalidOperationException(register.FailureReason + ": " + register.Message);
+
+                CameraZoomState before = zoomApi.GetState(owner.UniqueID);
+                CameraZoomResult max = zoomApi.SetViewScale(owner, 4d, "smoke max-view");
+                experimentalApi.UpdateRuntimeAutomation();
+                CameraZoomState maxState = zoomApi.GetState(owner.UniqueID);
+                CameraZoomResult reset = zoomApi.ResetViewScale(owner, "smoke restore-vanilla");
+                experimentalApi.UpdateRuntimeAutomation();
+                CameraZoomState after = zoomApi.GetState(owner.UniqueID);
+
+                if (!max.Success)
+                    throw new InvalidOperationException("4x apply failed: " + max.FailureReason + ": " + max.Message);
+                if (!maxState.CameraAvailable)
+                    throw new InvalidOperationException("Camera was not available after 4x apply. state=" + FormatZoomState(maxState));
+                if (maxState.CurrentViewScale < 3.95d)
+                    throw new InvalidOperationException("Expected 4x view scale after apply. state=" + FormatZoomState(maxState));
+                if (maxState.AppliedOrthographicSize <= maxState.VanillaOrthographicSize)
+                    throw new InvalidOperationException("Expected applied orthographic size to exceed vanilla size. state=" + FormatZoomState(maxState));
+                if (!reset.Success)
+                    throw new InvalidOperationException("Reset failed: " + reset.FailureReason + ": " + reset.Message);
+                if (after.CurrentViewScale > 1.05d)
+                    throw new InvalidOperationException("Expected vanilla view scale after reset. state=" + FormatZoomState(after));
+
+                string summary = "before={" + FormatZoomState(before) + "}, max={" + FormatZoomState(maxState) + "}, reset={" + FormatZoomState(after) + "}, apply={" + max.Message + "}, restore={" + reset.Message + "}";
+                runtime.RuntimeMonitor.Log("Smoke exercise Zoom OK " + summary);
+                runtime.SetHookStatus("Smoke.Zoom", "verified", "ICameraZoomApi -> DolocAPI.mainCamera.orthographicSize", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke zoom exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.Zoom", "failed", "ICameraZoomApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void TryExerciseChestLocatorEnhancerForSmoke()
+        {
+            object? transientCase = null;
+            object? targetRoom = null;
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                if (dolocApi == null)
+                    throw new InvalidOperationException("DolocAPI was not available.");
+
+                IChestLocatorEnhancerApi api = experimentalApi;
+                ManifestModel owner = CreateChestLocatorSmokeManifest();
+                ChestLocatorEnhancerRegisterResult register = api.Register(owner, new ChestLocatorEnhancerOptions
+                {
+                    Enabled = true,
+                    IncludeSharedCases = true,
+                    IncludeSharedStorageShelfBoxes = true,
+                    RespectNativeAutoUseBoxSetting = true,
+                    VerboseLogging = true
+                });
+                if (!register.Success)
+                    throw new InvalidOperationException("Register failed: " + register.FailureReason + ": " + register.Message);
+                if (!register.HookInstalled)
+                    throw new InvalidOperationException("ArchiveDataHandle.GetAvailableInventories hook was not installed. message=" + register.Message);
+
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                if (archive == null)
+                    throw new InvalidOperationException("archiveHandle was not available.");
+                targetRoom = FindChestLocatorSmokeBuildingRoom(dolocApi, archive, out string roomSummary);
+                if (targetRoom == null)
+                    throw new InvalidOperationException("No building room was available for cross-room chest locator smoke. " + roomSummary);
+
+                string itemId = SelectZeroBaselineSmokeItemId(dolocApi, new[] { "dtmapi_mine", "crude_oil", "case_locator", "recipe_case_locator", "sunmao_showcase", "mountain_showcase" }, out int baseline, out string itemSummary);
+                if (string.IsNullOrWhiteSpace(itemId))
+                    throw new InvalidOperationException("No zero-baseline generated item was available for safe consume smoke. " + itemSummary);
+
+                transientCase = TryCreateTransientEquipmentNoRenderForSmoke(dolocApi, targetRoom, "DolocTown.Case", new[] { "wooden_case", "large_wooden_case" }, out string caseSummary);
+                if (transientCase == null)
+                    throw new InvalidOperationException("Failed to create transient shared Case. " + caseSummary);
+                if (!SetMemberValue(transientCase, "IsShared", true))
+                    throw new InvalidOperationException("Failed to set transient Case IsShared=true. " + DescribeEquipmentForSmoke(transientCase));
+
+                object? inventory = ReadMember(transientCase, "inventory");
+                MethodInfo? placeItem = inventory == null ? null : FindMethod(inventory.GetType(), "PlaceItem", 1);
+                object? item = GenerateItemForSmoke(dolocApi, itemId, 3);
+                if (inventory == null || placeItem == null || item == null)
+                    throw new InvalidOperationException("Failed to prepare transient inventory item. inventory=" + (inventory != null) + ", placeItem=" + (placeItem != null) + ", item=" + (item != null));
+                object? leftover = placeItem.Invoke(inventory, new[] { item });
+                if (leftover != null)
+                    throw new InvalidOperationException("Transient Case inventory did not accept " + itemId + "; leftover=" + leftover.GetType().FullName);
+
+                int afterPlace = CountNativeItemForSmoke(dolocApi, itemId, checkBox: true);
+                if (afterPlace < baseline + 3)
+                    throw new InvalidOperationException("CountItem did not include transient shared Case. item=" + itemId + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}");
+
+                bool cost = CostNativeItemForSmoke(dolocApi, itemId, 2, checkBox: true);
+                int afterCost = CountNativeItemForSmoke(dolocApi, itemId, checkBox: true);
+                if (!cost || afterCost < baseline + 1 || afterCost > baseline + 1)
+                    throw new InvalidOperationException("CostItem did not consume through shared inventory array. item=" + itemId + ", cost=" + cost + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", afterCost=" + afterCost + ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}");
+
+                ChestLocatorEnhancerState state = api.GetState(owner.UniqueID);
+                if (state.LastAppendedInventoryCount <= 0 || state.LastSharedCaseCount <= 0)
+                    throw new InvalidOperationException("Bridge state did not record appended shared Case inventory. state=" + FormatChestLocatorState(state));
+
+                string summary = "item=" + itemId +
+                    ", baseline=" + baseline +
+                    ", afterPlace=" + afterPlace +
+                    ", afterCost=" + afterCost +
+                    ", room={" + roomSummary + "}" +
+                    ", case={" + caseSummary + "}" +
+                    ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}" +
+                    ", state={" + FormatChestLocatorState(state) + "}";
+                runtime.RuntimeMonitor.Log("Smoke exercise ChestLocatorEnhancer OK " + summary);
+                runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "verified", "IChestLocatorEnhancerApi -> ArchiveDataHandle.GetAvailableInventories -> CountItem/CostItem", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke chest locator enhancer exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "failed", "IChestLocatorEnhancerApi", ex.GetType().Name + ": " + ex.Message);
+            }
+            finally
+            {
+                if (transientCase != null)
+                    TryRemoveTransientEquipmentForSmoke(targetRoom, transientCase);
+            }
+        }
+
+        private void TryExerciseStrongPlantingGunForSmoke()
+        {
+            object? transientBasin = null;
+            object? inventory = null;
+            object? originalSlotItem = null;
+            int quickSlot = 0;
+            Type? dolocApiForCleanup = null;
+
+            try
+            {
+                if (experimentalApi == null)
+                    throw new InvalidOperationException("Experimental bridge API is not available.");
+
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                if (dolocApi == null)
+                    throw new InvalidOperationException("DolocAPI was not available.");
+                dolocApiForCleanup = dolocApi;
+
+                IStrongPlantingGunApi api = experimentalApi;
+                ManifestModel owner = CreateStrongPlantingGunSmokeManifest();
+                StrongPlantingGunRegisterResult register = api.Register(owner, new StrongPlantingGunOptions
+                {
+                    Enabled = true,
+                    SlotCount = 3,
+                    IncludeSeeds = true,
+                    IncludeFilms = true,
+                    IncludeFertilizers = true,
+                    IncludeWater = false,
+                    VerboseLogging = true
+                });
+                if (!register.Success)
+                    throw new InvalidOperationException("Register failed: " + register.FailureReason + ": " + register.Message);
+                if (!register.ToolHookInstalled || !register.UiHookInstalled)
+                    throw new InvalidOperationException("StrongPlantingGun hooks were not installed. toolHook=" + register.ToolHookInstalled + ", uiHook=" + register.UiHookInstalled + ", message=" + register.Message);
+
+                object? room = ReadStaticMember(dolocApi, "CurrentRoom");
+                if (room == null)
+                    throw new InvalidOperationException("CurrentRoom was not available.");
+
+                transientBasin = TryCreateTransientEquipmentForSmoke(dolocApi, room, "DolocTown.PlantBasin", new[] { "plantbasin_basic" }, out string basinSource);
+                if (transientBasin == null)
+                    throw new InvalidOperationException("No PlantBasin target available. source=" + basinSource);
+
+                object? gun = GenerateItemForSmoke(dolocApi, "farming_gun", 1);
+                if (gun == null || !IsTypeOrBase(gun.GetType(), "DolocTown.ItemFarmingGun"))
+                    throw new InvalidOperationException("Could not generate official farming_gun item.");
+
+                experimentalApi.ExpandFarmingGunInventoryIfNeeded(gun, "StrongPlantingGun smoke");
+                object? gunInventory = ReadMember(gun, "inventory");
+                if (gunInventory == null)
+                    throw new InvalidOperationException("Generated farming gun did not expose inventory.");
+
+                int inventoryCapacity = ReadIntMember(gunInventory, "capacity", 0);
+                int totalCapacity = ReadIntMember(gun, "totalCapacity", 0);
+                int lineCapacity = ReadIntMember(gun, "lineCapacity", 0);
+                if (inventoryCapacity < 3 || totalCapacity < 3 || lineCapacity < 3)
+                    throw new InvalidOperationException("Farming gun capacity was not expanded to three visible slots. inventory=" + inventoryCapacity + ", total=" + totalCapacity + ", line=" + lineCapacity + ".");
+
+                object? seed = FindStrongPlantingGunSeedForSmoke(dolocApi, transientBasin, out string seedSummary);
+                object? film = GenerateItemForSmoke(dolocApi, "plastic_film", 1);
+                object? fertilizer = GenerateItemForSmoke(dolocApi, "fertilizer", 1);
+                if (seed == null || film == null || fertilizer == null)
+                    throw new InvalidOperationException("Could not generate seed/film/fertilizer. seed={" + seedSummary + "}, film=" + (film != null) + ", fertilizer=" + (fertilizer != null));
+
+                bool seedPlaced = SwapInventoryItemAtForSmoke(gunInventory, 0, seed, out string seedPlace);
+                bool filmPlaced = SwapInventoryItemAtForSmoke(gunInventory, 1, film, out string filmPlace);
+                bool fertilizerPlaced = SwapInventoryItemAtForSmoke(gunInventory, 2, fertilizer, out string fertilizerPlace);
+                if (!seedPlaced || !filmPlaced || !fertilizerPlaced)
+                    throw new InvalidOperationException("Could not place strong planting gun contents. seed={" + seedPlace + "}, film={" + filmPlace + "}, fertilizer={" + fertilizerPlace + "}");
+
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, gun, quickSlot, out inventory, out originalSlotItem, out string quickSlotSummary))
+                    throw new InvalidOperationException("Could not quick-slot generated farming gun. " + quickSlotSummary);
+
+                object? selectedGun = ReadStaticMember(dolocApi, "SelectedItem");
+                if (selectedGun == null || !IsTypeOrBase(selectedGun.GetType(), "DolocTown.ItemFarmingGun"))
+                    throw new InvalidOperationException("SelectedItem was not the generated farming gun after quick-slot placement. selected=" + (selectedGun == null ? "null" : selectedGun.GetType().FullName));
+
+                if (!TryPointAgentCellTipAtEquipmentForSmoke(dolocApi, transientBasin, out string tipSummary))
+                    throw new InvalidOperationException("Could not point farming gun cell tip at transient basin. " + tipSummary);
+
+                MethodInfo? onUseAsTool = FindMethod(selectedGun.GetType(), "OnUseAsTool", 0);
+                if (onUseAsTool == null)
+                    throw new MissingMethodException("ItemFarmingGun.OnUseAsTool was not found.");
+
+                int beforeSeedCount = ReadInventoryItemCount(gunInventory, 0);
+                int beforeFilmCount = ReadInventoryItemCount(gunInventory, 1);
+                int beforeFertilizerCount = ReadInventoryItemCount(gunInventory, 2);
+                onUseAsTool.Invoke(selectedGun, null);
+
+                bool planted = ReadBoolMember(transientBasin, "IsPlanted", false);
+                bool protectedByFilm = ReadBoolMember(transientBasin, "IsProtected", false);
+                bool fertilized = ReadBoolMember(transientBasin, "IsFertilizerd", false);
+                int afterSeedCount = ReadInventoryItemCount(gunInventory, 0);
+                int afterFilmCount = ReadInventoryItemCount(gunInventory, 1);
+                int afterFertilizerCount = ReadInventoryItemCount(gunInventory, 2);
+                StrongPlantingGunState state = api.GetState(owner.UniqueID);
+
+                if (!planted || !protectedByFilm || !fertilized || state.LastSeedActions <= 0 || state.LastFilmActions <= 0 || state.LastFertilizerActions <= 0)
+                    throw new InvalidOperationException("Strong planting gun did not apply all three visible actions. planted=" + planted + ", protected=" + protectedByFilm + ", fertilized=" + fertilized + ", state={" + FormatStrongPlantingGunState(state) + "}");
+
+                string summary = "seed={" + seedSummary + "}" +
+                    ", basin={" + DescribeEquipmentForSmoke(transientBasin) + " source=" + basinSource + "}" +
+                    ", capacities=inventory:" + inventoryCapacity + "/total:" + totalCapacity + "/line:" + lineCapacity +
+                    ", counts=seed:" + beforeSeedCount + "->" + afterSeedCount +
+                    ", film:" + beforeFilmCount + "->" + afterFilmCount +
+                    ", fertilizer:" + beforeFertilizerCount + "->" + afterFertilizerCount +
+                    ", basinState=planted:" + planted + ",protected:" + protectedByFilm + ",fertilized:" + fertilized +
+                    ", quickSlot={" + quickSlotSummary + "}" +
+                    ", tip={" + tipSummary + "}" +
+                    ", state={" + FormatStrongPlantingGunState(state) + "}";
+                runtime.RuntimeMonitor.Log("Smoke exercise StrongPlantingGun OK " + summary);
+                runtime.SetHookStatus("Smoke.StrongPlantingGun", "verified", "IStrongPlantingGunApi -> ItemFarmingGun.OnUseAsTool", summary);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke strong planting gun exercise failed.", ex.InnerException.ToString());
+                runtime.SetHookStatus("Smoke.StrongPlantingGun", "failed", "IStrongPlantingGunApi", ex.InnerException.GetType().Name + ": " + ex.InnerException.Message);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke strong planting gun exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.StrongPlantingGun", "failed", "IStrongPlantingGunApi", ex.GetType().Name + ": " + ex.Message);
+            }
+            finally
+            {
+                if (dolocApiForCleanup != null)
+                    RestoreSmokeQuickSlot(dolocApiForCleanup, inventory, quickSlot, originalSlotItem);
+                if (transientBasin != null && dolocApiForCleanup != null)
+                    TryRemoveTransientEquipmentForSmoke(ReadStaticMember(dolocApiForCleanup, "CurrentRoom"), transientBasin);
+            }
+        }
+
+        private static string FormatZoomState(CameraZoomState state)
+        {
+            if (state == null)
+                return "unknown";
+
+            return "owner=" + state.OwnerId +
+                ", status=" + state.Status +
+                ", enabled=" + state.Enabled +
+                ", current=" + FormatSmokeDouble(state.CurrentViewScale) +
+                ", range=" + FormatSmokeDouble(state.MinViewScale) + "-" + FormatSmokeDouble(state.MaxViewScale) +
+                ", camera=" + state.CameraAvailable +
+                ", vanillaSize=" + FormatSmokeDouble(state.VanillaOrthographicSize) +
+                ", appliedSize=" + FormatSmokeDouble(state.AppliedOrthographicSize) +
+                ", message=" + state.LastMessage;
+        }
+
         private SmokeAttemptResult TryExerciseVehicleForSmoke()
         {
             try
@@ -2691,11 +3287,23 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             if (smokeSettings.AutoExerciseDebugMovement && !autoExerciseDebugMovementAttempted)
                 return;
+            if (smokeSettings.AutoExerciseAdvancedDebug && !autoExerciseAdvancedDebugAttempted)
+                return;
+            if (smokeSettings.AutoExerciseInstantSave && !autoExerciseInstantSaveAttempted)
+                return;
             if (smokeSettings.AutoExerciseVehicle && !autoExerciseVehicleAttempted)
                 return;
             if (smokeSettings.AutoExerciseNewContentApis && !autoExerciseNewContentApisAttempted)
                 return;
             if (smokeSettings.AutoExerciseMineContentApis && !autoExerciseMineContentApisAttempted)
+                return;
+            if (smokeSettings.AutoExerciseZoom && !autoExerciseZoomAttempted)
+                return;
+            if (smokeSettings.AutoExerciseChestLocatorEnhancer && !autoExerciseChestLocatorEnhancerAttempted)
+                return;
+            if (smokeSettings.AutoExerciseStrongPlantingGun && !autoExerciseStrongPlantingGunAttempted)
+                return;
+            if (smokeSettings.AutoExerciseCustomEntityApis && !autoExerciseCustomEntityApisAttempted)
                 return;
             if (smokeSettings.AutoExerciseDebugTeleport && !debugTeleportVerificationCompleted)
                 return;
@@ -2704,9 +3312,313 @@ namespace DTMAPI.GameBridge.DolocTown
             TryQuitApplication("smoke debug console/API evidence captured");
         }
 
+        private void TryExerciseDebugConsoleHotkeyForSmoke()
+        {
+            try
+            {
+                if (debugConsoleApi == null)
+                    throw new InvalidOperationException("Debug console host API was not available to the GameBridge smoke runner.");
+
+                ManifestModel owner = CreateDebugConsoleSmokeManifest();
+                if (debugConsoleApi.IsOpen)
+                    debugConsoleApi.Close(owner, "smoke-reset");
+
+                int openCount = 0;
+                int escapeCloseCount = 0;
+                int yCloseCount = 0;
+
+                DispatchSmokeInput("Y");
+                if (!debugConsoleApi.IsOpen)
+                    throw new InvalidOperationException("Y did not open the debug console through the DTMAPI input event path.");
+                openCount++;
+
+                debugConsoleApi.Close(owner, "Escape");
+                if (debugConsoleApi.IsOpen)
+                    throw new InvalidOperationException("Escape did not close the debug console host state.");
+                escapeCloseCount++;
+
+                DispatchSmokeInput("Y");
+                if (!debugConsoleApi.IsOpen)
+                    throw new InvalidOperationException("Second Y did not reopen the debug console through the DTMAPI input event path.");
+                openCount++;
+
+                debugConsoleApi.Close(owner, "Y");
+                if (debugConsoleApi.IsOpen)
+                    throw new InvalidOperationException("Y close did not close the debug console host state.");
+                yCloseCount++;
+
+                for (int tap = 1; tap <= 10; tap++)
+                {
+                    if (debugConsoleApi.IsOpen)
+                    {
+                        debugConsoleApi.Close(owner, "Y");
+                        if (debugConsoleApi.IsOpen)
+                            throw new InvalidOperationException("Short Y tap " + tap + " did not close the console.");
+                        yCloseCount++;
+                    }
+                    else
+                    {
+                        DispatchSmokeInput("Y");
+                        if (!debugConsoleApi.IsOpen)
+                            throw new InvalidOperationException("Short Y tap " + tap + " did not open the console.");
+                        openCount++;
+                    }
+                }
+
+                int openBeforeHold = openCount;
+                int yCloseBeforeHold = yCloseCount;
+                DispatchSmokeInput("Y");
+                if (!debugConsoleApi.IsOpen)
+                    throw new InvalidOperationException("Held-Y smoke did not open the console before the no-flicker check.");
+                openCount++;
+
+                runtime.RecordInputPressed("Y");
+                runtime.RecordInputReleased("Y");
+                bool holdNoFlicker = debugConsoleApi.IsOpen && openCount == openBeforeHold + 1 && yCloseCount == yCloseBeforeHold;
+                if (!holdNoFlicker)
+                    throw new InvalidOperationException("Held-Y smoke changed the expected open/close counts.");
+
+                bool keepOpenForMouseGive = smokeSettings?.AutoExerciseDebugConsoleMouseGive == true;
+                if (!keepOpenForMouseGive && debugConsoleApi.IsOpen)
+                    debugConsoleApi.Close(owner, "smoke-cleanup");
+
+                string summary = "openCount=" + openCount +
+                    ", escapeCloseCount=" + escapeCloseCount +
+                    ", yCloseCount=" + yCloseCount +
+                    ", shortTaps=10" +
+                    ", holdNoFlicker=" + holdNoFlicker +
+                    ", keepOpenForMouseGive=" + keepOpenForMouseGive;
+                runtime.RuntimeMonitor.Log("Smoke exercise DebugConsoleHotkey OK " + summary);
+                runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "verified", "DtmApiRuntime.RecordInputPressed + IDebugConsoleApi", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug console hotkey exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "failed", "DtmApiRuntime.RecordInputPressed + IDebugConsoleApi", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private void DispatchSmokeInput(string button)
+        {
+            runtime.RecordInputPressed(button);
+            runtime.RecordInputReleased(button);
+        }
+
+        private void TryExerciseCustomEntityApisForSmoke()
+        {
+            ManifestModel owner = CreateCustomEntitySmokeManifest();
+            string animalId = owner.UniqueID + ".Animal";
+            string monsterId = owner.UniqueID + ".Monster";
+            string attackId = owner.UniqueID + ".Attack";
+            string droneId = owner.UniqueID + ".Drone";
+            try
+            {
+                runtime.CustomEntities.RemoveOwner(owner.UniqueID, "pre-smoke cleanup");
+
+                int animalEvents = 0;
+                int monsterEvents = 0;
+                int attackEvents = 0;
+                int droneEvents = 0;
+                EventHandler<CustomAnimalLifecycleEventArgs> animalListener = (_, __) => animalEvents++;
+                EventHandler<CustomMonsterLifecycleEventArgs> monsterListener = (_, __) => monsterEvents++;
+                EventHandler<CustomAttackLifecycleEventArgs> attackListener = (_, __) => attackEvents++;
+                EventHandler<CustomDroneLifecycleEventArgs> droneListener = (_, __) => droneEvents++;
+                runtime.CustomEntities.AnimalLifecycleChanged += animalListener;
+                runtime.CustomEntities.MonsterLifecycleChanged += monsterListener;
+                runtime.CustomEntities.AttackLifecycleChanged += attackListener;
+                runtime.CustomEntities.DroneLifecycleChanged += droneListener;
+                try
+                {
+                    CustomAnimalRegistrationResult invalidAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = "SmokeAnimal" });
+                    EnsureCustomEntitySmoke(!invalidAnimal.Succeeded && invalidAnimal.FailureReason == "invalid-definition", "Invalid animal definition should fail namespaced-ID validation.");
+
+                    CustomAnimalRegistrationResult animal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition
+                    {
+                        SpeciesId = animalId,
+                        VariantIds = new[] { "default" },
+                        DisplayName = SmokeText("Custom Entity Smoke Animal"),
+                        Description = SmokeText("Contract-only animal used by the internal DTMAPI smoke harness."),
+                        Diet = new CustomAnimalDietPolicy { AcceptedItemIds = new[] { "hay" }, UnitsPerFeeding = 1, CanGraze = true },
+                        Consumption = new CustomAnimalConsumptionPolicy { HungerIntervalHours = 12, MaxFeedCapacity = 2 },
+                        Excrement = new CustomAnimalExcrementPolicy { Enabled = true, IntervalHours = 24, MaxPendingCount = 2, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "dtmapi_smoke_excrement", MinStack = 1, MaxStack = 1 } } },
+                        Breeding = new CustomAnimalBreedingPolicy { Enabled = true, CompatibleSpeciesIds = new[] { animalId }, CooldownHours = 48, PregnancyOrIncubationHours = 72, OffspringCount = 1, PopulationLimitPerOwner = 8 },
+                        HiddenProducts = new[] { new CustomAnimalProductRule { ProductId = "dtmapi_smoke_hidden_product", DisplayName = SmokeText("Smoke Hidden Product"), HiddenUntilReady = true, ProgressPerGameHour = 5, RequiredProgress = 100, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "dtmapi_smoke_hidden_product", MinStack = 1, MaxStack = 1 } } } },
+                        ProduceRules = new[] { new CustomAnimalProductRule { ProductId = "dtmapi_smoke_product", DisplayName = SmokeText("Smoke Product"), ProgressPerGameHour = 10, RequiredProgress = 100, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "dtmapi_smoke_product", MinStack = 1, MaxStack = 2 } } } },
+                        Persistence = SmokePersistence(),
+                        TickPolicy = SmokeTickPolicy()
+                    });
+                    EnsureCustomEntitySmoke(animal.Succeeded, "Animal registration failed: " + animal.FailureReason);
+                    CustomAnimalRegistrationResult duplicateAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = animalId });
+                    EnsureCustomEntitySmoke(!duplicateAnimal.Succeeded && duplicateAnimal.FailureReason == "duplicate-definition-id", "Duplicate animal registration should fail.");
+
+                    CustomAttackRegistrationResult attack = runtime.CustomEntities.RegisterAttack(owner, new CustomAttackDefinition
+                    {
+                        AttackId = attackId,
+                        FactionId = "DTMAPI.Smoke",
+                        RelationToPlayer = CustomEntityRelationKind.OwnerAlly,
+                        Damage = new CustomDamagePayload { Amount = 1, DamageType = "smoke" },
+                        EffectTags = new[] { "contract", "smoke" },
+                        Hitbox = new CustomHitboxDefinition { Shape = CustomHitboxShapeKind.Circle, Radius = 0.5 },
+                        Trajectory = new CustomTrajectoryDefinition { Kind = CustomEntityMovementKind.FollowTarget, Speed = 3 },
+                        Pattern = new CustomBarragePatternDefinition { Kind = CustomAttackPatternKind.Projectile, ProjectileCount = 1, DeterministicRandomSeed = true },
+                        Persistence = new CustomEntityPersistencePolicy { Kind = CustomEntityPersistenceKind.RuntimeOnly, SchemaVersion = 1 },
+                        TickPolicy = SmokeTickPolicy()
+                    });
+                    EnsureCustomEntitySmoke(attack.Succeeded, "Attack registration failed: " + attack.FailureReason);
+
+                    CustomMonsterRegistrationResult monster = runtime.CustomEntities.RegisterMonster(owner, new CustomMonsterDefinition
+                    {
+                        MonsterId = monsterId,
+                        VariantIds = new[] { "default" },
+                        DisplayName = SmokeText("Custom Entity Smoke Monster"),
+                        Description = SmokeText("Contract-only monster used by the internal DTMAPI smoke harness."),
+                        SpawnRules = new[] { new CustomMonsterSpawnRule { RuleId = owner.UniqueID + ".SpawnRule", RoomTags = new[] { "smoke" }, Probability = 1, MinGroupSize = 1, MaxGroupSize = 1 } },
+                        MaxCountPerRoom = 1,
+                        FactionId = "DTMAPI.Smoke",
+                        Stats = new CustomMonsterStats { MaxHealth = 5, Armor = 0, ContactDamage = 1, MoveSpeed = 1 },
+                        Targeting = new CustomMonsterTargetPolicy { AggroRange = 5, RetargetWhenDamaged = true },
+                        Movement = new CustomMonsterMovementPolicy { Kind = CustomEntityMovementKind.Wander, PatrolRadius = 3 },
+                        AttackSlots = new[] { new CustomMonsterAttackSlot { SlotId = "primary", AttackId = attackId, CooldownSeconds = 1, Range = 4 } },
+                        Loot = new[] { new CustomMonsterLootRule { ItemId = "dtmapi_smoke_loot", MinStack = 1, MaxStack = 1, Chance = 1 } },
+                        Persistence = SmokePersistence(),
+                        TickPolicy = SmokeTickPolicy()
+                    });
+                    EnsureCustomEntitySmoke(monster.Succeeded, "Monster registration failed: " + monster.FailureReason);
+                    CustomMonsterRegistrationResult spawnTable = runtime.CustomEntities.RegisterSpawnTable(owner, new CustomMonsterSpawnTableDefinition { SpawnTableId = owner.UniqueID + ".SpawnTable", MonsterIds = new[] { monsterId } });
+                    EnsureCustomEntitySmoke(spawnTable.Succeeded, "Monster spawn-table registration failed: " + spawnTable.FailureReason);
+
+                    CustomDroneRegistrationResult drone = runtime.CustomEntities.RegisterDrone(owner, new CustomDroneDefinition
+                    {
+                        DroneId = droneId,
+                        VariantIds = new[] { "default" },
+                        DisplayName = SmokeText("Custom Entity Smoke Drone"),
+                        Description = SmokeText("Contract-only drone used by the internal DTMAPI smoke harness."),
+                        OwnerBinding = new CustomDroneOwnerBindingPolicy { BindToPlayer = true, BindToOwnerMod = true },
+                        SupportedModes = new[] { CustomDroneBehaviorMode.Follow, CustomDroneBehaviorMode.Guard, CustomDroneBehaviorMode.Attack },
+                        EquipmentSlots = new[] { new CustomDroneEquipmentSlotDefinition { SlotId = "weapon", DisplayName = SmokeText("Weapon"), AllowedItemTags = new[] { "smoke-weapon" } } },
+                        ModuleSlots = new[] { new CustomDroneEquipmentSlotDefinition { SlotId = "module", DisplayName = SmokeText("Module"), AllowedItemTags = new[] { "smoke-module" } } },
+                        AttackIds = new[] { attackId },
+                        Stats = new CustomDroneStats { MaxHealth = 10, MaxShield = 5, Armor = 1, ContactDamage = 1, MoveSpeed = 3 },
+                        Energy = new CustomDroneEnergyPolicy { MaxEnergy = 100, EnergyPerSecond = 1, AttackEnergyCost = 5 },
+                        Movement = new CustomDroneMovementPolicy { Kind = CustomEntityMovementKind.FollowTarget, FollowDistance = 2, ProviderCanOverride = true },
+                        Repair = new CustomDroneRepairPolicy { CanRepair = true, RepairAmountPerItem = 5, RepairItemIds = new[] { "dtmapi_smoke_repair" } },
+                        Summon = new CustomDroneSummonPolicy { CanSummonAnywhere = false, CooldownSeconds = 1, MaxActiveInstances = 1 },
+                        Persistence = SmokePersistence(),
+                        TickPolicy = SmokeTickPolicy()
+                    });
+                    EnsureCustomEntitySmoke(drone.Succeeded, "Drone registration failed: " + drone.FailureReason);
+
+                    CustomAnimalSpawnResult animalSpawn = runtime.CustomEntities.RequestSpawn(owner, new CustomAnimalSpawnRequest { SpeciesId = animalId, Position = SmokePosition() });
+                    CustomMonsterSpawnResult monsterSpawn = runtime.CustomEntities.RequestSpawn(owner, new CustomMonsterSpawnRequest { MonsterId = monsterId, Position = SmokePosition() });
+                    CustomAttackSpawnResult attackSpawn = runtime.CustomEntities.SpawnProjectile(owner, new CustomAttackSpawnRequest { AttackId = attackId, Origin = SmokePosition() });
+                    CustomDroneSummonResult droneSummon = runtime.CustomEntities.RequestSummon(owner, new CustomDroneSummonRequest { DroneId = droneId, Position = SmokePosition() });
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(animalSpawn), "Animal spawn should return runtime-creation-blocked.");
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(monsterSpawn), "Monster spawn should return runtime-creation-blocked.");
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(attackSpawn), "Attack spawn should return runtime-creation-blocked.");
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(droneSummon), "Drone summon should return runtime-creation-blocked.");
+
+                    CustomDroneEquipmentResult equip = runtime.CustomEntities.Equip(owner, new CustomEntityHandle { Family = CustomEntityFamily.Drone, OwnerUniqueId = owner.UniqueID, DefinitionId = droneId, RuntimeId = "smoke-missing" }, new CustomDroneEquipmentRequest { SlotId = "weapon", ItemId = "dtmapi_smoke_weapon" });
+                    CustomDroneCommandResult command = runtime.CustomEntities.SetMode(owner, new CustomEntityHandle { Family = CustomEntityFamily.Drone, OwnerUniqueId = owner.UniqueID, DefinitionId = droneId, RuntimeId = "smoke-missing" }, new CustomDroneCommandRequest { Mode = CustomDroneBehaviorMode.Guard, Reason = "smoke" });
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(equip), "Drone equipment request should return runtime-creation-blocked.");
+                    EnsureCustomEntitySmoke(IsRuntimeCreationBlocked(command), "Drone mode request should return runtime-creation-blocked.");
+
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Animal snapshot should include one definition.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Monster snapshot should include one definition.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetAttackSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Attack snapshot should include one definition.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetDroneSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Drone snapshot should include one definition.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetAnimalStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Animal status should report configured-no-runtime-instance.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetMonsterStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Monster status should report configured-no-runtime-instance.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetAttackStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Attack status should report configured-no-runtime-instance.");
+                    EnsureCustomEntitySmoke(runtime.CustomEntities.GetDroneStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Drone status should report configured-no-runtime-instance.");
+                }
+                finally
+                {
+                    runtime.CustomEntities.AnimalLifecycleChanged -= animalListener;
+                    runtime.CustomEntities.MonsterLifecycleChanged -= monsterListener;
+                    runtime.CustomEntities.AttackLifecycleChanged -= attackListener;
+                    runtime.CustomEntities.DroneLifecycleChanged -= droneListener;
+                }
+
+                int removed = runtime.CustomEntities.RemoveOwner(owner.UniqueID, "smoke cleanup");
+                EnsureCustomEntitySmoke(removed >= 5, "Smoke cleanup should remove all four definitions and the monster spawn table. removed=" + removed);
+                EnsureCustomEntitySmoke(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Animal cleanup snapshot should be empty.");
+                EnsureCustomEntitySmoke(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Monster cleanup snapshot should be empty.");
+                EnsureCustomEntitySmoke(runtime.CustomEntities.GetAttackSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Attack cleanup snapshot should be empty.");
+                EnsureCustomEntitySmoke(runtime.CustomEntities.GetDroneSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Drone cleanup snapshot should be empty.");
+
+                string summary = "registered=animal,monster,attack,drone; invalidAnimal=invalid-definition; duplicateAnimal=duplicate-definition-id; requests=runtime-creation-blocked; cleanupRemoved=" + removed + "; lifecycleEvents=" + animalEvents + "/" + monsterEvents + "/" + attackEvents + "/" + droneEvents + ".";
+                runtime.RuntimeMonitor.Log("Smoke exercise CustomEntityApis OK " + summary);
+                runtime.SetHookStatus("Smoke.CustomEntityApis", "verified", "DTMAPI.Core.CustomEntityRegistryService", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.CustomEntities.RemoveOwner(owner.UniqueID, "smoke failure cleanup");
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke custom entity API exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.CustomEntityApis", "failed", "DTMAPI.Core.CustomEntityRegistryService", ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private static CustomEntityLocalizedText SmokeText(string value)
+        {
+            return new CustomEntityLocalizedText
+            {
+                Default = value,
+                English = value,
+                SimplifiedChinese = value
+            };
+        }
+
+        private static CustomEntityPersistencePolicy SmokePersistence()
+        {
+            return new CustomEntityPersistencePolicy
+            {
+                Kind = CustomEntityPersistenceKind.SaveScoped,
+                SchemaVersion = 1,
+                RemoveInstancesWhenOwnerMissing = true,
+                RestoreRuntimeInstancesOnSaveLoad = false,
+                SaveKeys = new[] { new CustomEntitySaveDataKey { Key = "smoke-state", Version = 1, Description = "Smoke-only stable custom entity state key." } }
+            };
+        }
+
+        private static CustomEntityTickPolicy SmokeTickPolicy()
+        {
+            return new CustomEntityTickPolicy
+            {
+                Kind = CustomEntityTickPolicyKind.OneSecond,
+                IntervalSeconds = 1,
+                DeterministicOrder = true,
+                Order = 0
+            };
+        }
+
+        private static CustomEntityGridPosition SmokePosition()
+        {
+            return new CustomEntityGridPosition
+            {
+                RoomId = "smoke-current-room",
+                X = 0,
+                Y = 0,
+                Layer = 0
+            };
+        }
+
+        private static bool IsRuntimeCreationBlocked(CustomEntityRequestResult result)
+        {
+            return result != null &&
+                !result.Succeeded &&
+                result.FailureReason == "runtime-creation-blocked" &&
+                result.RuntimeStatus == CustomEntityRuntimeStatus.RuntimeCreationBlocked;
+        }
+
+        private static void EnsureCustomEntitySmoke(bool condition, string message)
+        {
+            if (!condition)
+                throw new InvalidOperationException(message);
+        }
+
         private bool IsDebugSmokeRequested()
         {
-            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis || smokeSettings.AutoExerciseMineContentApis);
+            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis || smokeSettings.AutoExerciseMineContentApis || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCustomEntityApis);
         }
 
         private static ManifestModel CreateSmokeManifest()
@@ -2717,6 +3629,66 @@ namespace DTMAPI.GameBridge.DolocTown
                 Author = "DTMAPI",
                 Version = DtmApiRuntime.ApiVersion,
                 UniqueID = "DTMAPI.Smoke",
+                Type = "Smoke"
+            };
+        }
+
+        private static ManifestModel CreateZoomSmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "DTMAPI Zoom Smoke",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.ZoomMod",
+                Type = "Smoke"
+            };
+        }
+
+        private static ManifestModel CreateChestLocatorSmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "DTMAPI Chest Locator Enhancer Smoke",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.ChestLocatorEnhancerMod",
+                Type = "Smoke"
+            };
+        }
+
+        private static ManifestModel CreateStrongPlantingGunSmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "DTMAPI Strong Planting Gun Smoke",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.StrongPlantingGunMod",
+                Type = "Smoke"
+            };
+        }
+
+        private static ManifestModel CreateCustomEntitySmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "DTMAPI Custom Entity API Smoke",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.CustomEntityApiSmokeHarness",
+                Type = "Smoke"
+            };
+        }
+
+        private static ManifestModel CreateDebugConsoleSmokeManifest()
+        {
+            return new ManifestModel
+            {
+                Name = "Y-Key Console",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.DebugConsoleMod",
                 Type = "Smoke"
             };
         }
@@ -4007,6 +4979,9 @@ namespace DTMAPI.GameBridge.DolocTown
             string equipmentFunction = equipmentFunctionObject?.GetType().Name ?? "none";
             int caseTotalCapacity = ReadAnyIntMember(equipmentFunctionObject ?? new object(), -1, "TotalCapacity", "total_capacity");
             int caseLineCapacity = ReadAnyIntMember(equipmentFunctionObject ?? new object(), -1, "LineCapacity", "line_capacity");
+            object? electronicComponentObject = ReadAnyMember(equipmentObject, "ElectronicComponent", "electronic_component");
+            string electronicComponent = electronicComponentObject?.GetType().Name ?? "none";
+            int electronicThreshold = ReadAnyIntMember(electronicComponentObject ?? new object(), -1, "Threshold", "threshold");
             string outputItem = ReadAnyStringMember(ReadAnyMember(recipeObject, "OutputItem", "output_item") ?? new object(), string.Empty, "itemName", "ItemName", "item_name");
             int techPoint = ReadAnyIntMember(recipeObject, -1, "TechPoint", "tech_point");
             bool defaultUnlock = ReadAnyBoolMember(recipeObject, false, "DefaultUnlock", "default_unlock");
@@ -4048,6 +5023,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 failures.Add("unexpected-equipment-function:" + equipmentFunction);
             if (caseTotalCapacity != 16 || caseLineCapacity != 4)
                 failures.Add("unexpected-case-storage:" + caseTotalCapacity + "/" + caseLineCapacity);
+            if (!electronicComponent.Equals("EComProtoAppliance", StringComparison.OrdinalIgnoreCase) || electronicThreshold != 10)
+                failures.Add("unexpected-electronic-component:" + electronicComponent + "/" + electronicThreshold);
             if (!outputItem.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase))
                 failures.Add("recipe-output=" + outputItem);
             bool hasOilRecipe = CountItemsContain(ReadAnyMember(recipeObject, "InputItems", "input_items"), "crude_oil", 10) &&
@@ -4082,12 +5059,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 !state.EquipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ||
                 !state.RecipeGroupId.Equals("equipment_workbench", StringComparison.OrdinalIgnoreCase) ||
                 state.VisualScale < 1.99 ||
-                state.AllowFuelMode ||
+                !state.AllowFuelMode ||
+                !state.AllowElectricMode ||
+                !state.DefaultMode.Equals("electric", StringComparison.OrdinalIgnoreCase) ||
+                state.FuelCapacity <= 0 ||
+                state.FuelOnlyFuelCostPerCycle <= state.ElectricModeFuelCostPerCycle ||
+                state.ElectricModeFuelCostPerCycle <= 0 ||
                 state.ElectricModePowerCostPerCycle != 10 ||
-                state.ElectricModeFuelCostPerCycle != 0 ||
-                state.FuelOnlyFuelCostPerCycle != 0 ||
                 (ContainsIgnoreCase(outputRules, "DTMAPI.OilMod") && !ContainsIgnoreCase(outputRules, "crude_oil")))
-                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) + ", powerCost=" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
+                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", hybrid=" + (state.AllowFuelMode && state.AllowElectricMode) + ", defaultMode=" + state.DefaultMode + ", fuelCapacity=" + state.FuelCapacity + ", fuelOnlyCost=" + state.FuelOnlyFuelCostPerCycle + ", electricFuelCost=" + state.ElectricModeFuelCostPerCycle + ", powerCost=" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
 
             string summary = "item=" + title +
                 ", source=" + (sourceInfo == null ? "none" : sourceInfo.SourceKind + "/" + sourceInfo.SourceId + "/" + sourceInfo.SourceModTitle) +
@@ -4099,6 +5079,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", sceneAsset=" + sceneAsset +
                 ", equipmentFunction=" + equipmentFunction +
                 ", caseStorage=" + caseTotalCapacity + "/" + caseLineCapacity +
+                ", electronicComponent=" + electronicComponent + "/" + electronicThreshold +
                 ", generatedItemType=" + generatedMineItemType +
                 ", recipeOutput=" + outputItem +
                 ", recipeInputs=" + inputs +
@@ -4106,7 +5087,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", defaultUnlock=" + defaultUnlock +
                 ", recipeGroup=equipment_workbench includes=" + groupIncludesRecipe +
                 ", nativeTech={" + nativeTechTreeSummary + "}" +
-                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/electricOnly:" + (!state.AllowFuelMode && state.AllowElectricMode) + "/cycleMinutes:" + state.CycleMinutes + "/powerCost:" + state.ElectricModePowerCostPerCycle +
+                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/hybrid:" + (state.AllowFuelMode && state.AllowElectricMode) + "/defaultMode:" + state.DefaultMode + "/fuelCapacity:" + state.FuelCapacity + "/fuelOnlyCost:" + state.FuelOnlyFuelCostPerCycle + "/electricFuelCost:" + state.ElectricModeFuelCostPerCycle + "/cycleMinutes:" + state.CycleMinutes + "/powerCost:" + state.ElectricModePowerCostPerCycle +
                 ", outputRules=" + outputRules +
                 ", probes=item{" + itemProbe + "}, recipe{" + recipeProbe + "}";
             if (failures.Count > 0)
@@ -6920,6 +7901,253 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
+        private object? TryCreateTransientEquipmentNoRenderForSmoke(Type dolocApi, object room, string targetTypeName, IReadOnlyList<string> equipmentIds, out string summary)
+        {
+            summary = string.Empty;
+            Type? hostType = patcher?.ResolveType("DolocTown.IEquipmentHost, Assembly-CSharp");
+            if (hostType == null || !hostType.IsInstanceOfType(room))
+            {
+                summary = "room is not an IEquipmentHost. room=" + DescribeRoomForSmoke(room);
+                return null;
+            }
+
+            MethodInfo? createEquipmentNoRender = hostType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .FirstOrDefault(m => m.Name == "CreateEquipmentNoRender" && m.GetParameters().Length == 4);
+            if (createEquipmentNoRender == null)
+            {
+                summary = "IEquipmentHost.CreateEquipmentNoRender was not found.";
+                return null;
+            }
+
+            List<string> notes = new List<string>();
+            int attempted = 0;
+            foreach (string equipmentId in equipmentIds)
+            {
+                object? proto = QueryEquipmentProtoForSmoke(dolocApi, equipmentId);
+                if (proto == null)
+                {
+                    notes.Add(equipmentId + ":missing-proto");
+                    continue;
+                }
+
+                object? coverSize = ReadMember(proto, "CoverSize");
+                int width = coverSize == null ? 1 : Math.Max(1, ReadIntMember(coverSize, "x", 1));
+                int height = coverSize == null ? 1 : Math.Max(1, ReadIntMember(coverSize, "y", 1));
+                foreach ((int x, int y) in EnumerateSmokeEquipmentAnchors(dolocApi, room, width, height))
+                {
+                    attempted++;
+                    object? anchor = CreateVector2IntForSmoke(x, y);
+                    object? worldPosition = CreateEquipmentWorldPositionForSmoke(room, x, y, width);
+                    if (anchor == null || worldPosition == null)
+                        continue;
+                    if (!AreEquipmentCellsEmptyForSmoke(hostType, room, x, y, width, height))
+                        continue;
+
+                    try
+                    {
+                        object? equipment = createEquipmentNoRender.Invoke(room, new object?[] { worldPosition, anchor, proto, false });
+                        if (equipment == null)
+                        {
+                            notes.Add(equipmentId + "@" + x + "," + y + ":null");
+                            continue;
+                        }
+
+                        if (IsTypeOrBase(equipment.GetType(), targetTypeName))
+                        {
+                            summary = "transient-no-render:" + equipmentId + "@" + x + "," + y + ", attempted=" + attempted + ", room=" + DescribeRoomForSmoke(room);
+                            return equipment;
+                        }
+
+                        notes.Add(equipmentId + "@" + x + "," + y + ":wrong-type=" + equipment.GetType().FullName);
+                        TryRemoveTransientEquipmentForSmoke(room, equipment);
+                    }
+                    catch (TargetInvocationException ex) when (ex.InnerException != null)
+                    {
+                        notes.Add(equipmentId + "@" + x + "," + y + ":" + ex.InnerException.GetType().Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        notes.Add(equipmentId + "@" + x + "," + y + ":" + ex.GetType().Name);
+                    }
+                }
+            }
+
+            summary = "transient-no-render-create-failed targetType=" + targetTypeName + ", attempted=" + attempted + ", notes=" + string.Join("|", notes.Take(8));
+            return null;
+        }
+
+        private object? FindChestLocatorSmokeBuildingRoom(Type dolocApi, object archive, out string summary)
+        {
+            object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+            object? mainFarm = ReadMember(archive, "MainFarm");
+            object? buildingManager = mainFarm == null ? null : ReadMember(mainFarm, "DM_building");
+            object? buildings = buildingManager == null ? null : ReadMember(buildingManager, "Buildings");
+            int scanned = 0;
+            var samples = new List<string>();
+
+            if (buildings is IEnumerable enumerable)
+            {
+                foreach (object? building in enumerable)
+                {
+                    if (building == null)
+                        continue;
+                    scanned++;
+                    object? room = ReadMember(building, "room");
+                    if (room == null)
+                    {
+                        samples.Add("building" + scanned + ":no-room");
+                        continue;
+                    }
+                    samples.Add(DescribeRoomForSmoke(room));
+                    if (ReferenceEquals(room, currentRoom))
+                        continue;
+                    if (ReadMember(room, "DM_equipment") == null)
+                        continue;
+
+                    summary = "selected=" + DescribeRoomForSmoke(room) + ", scanned=" + scanned + ", current=" + (currentRoom == null ? "none" : DescribeRoomForSmoke(currentRoom));
+                    return room;
+                }
+            }
+
+            summary = "scanned=" + scanned + ", current=" + (currentRoom == null ? "none" : DescribeRoomForSmoke(currentRoom)) + ", samples=" + string.Join(" | ", samples.Take(5));
+            return null;
+        }
+
+        private string SelectZeroBaselineSmokeItemId(Type dolocApi, IReadOnlyList<string> candidates, out int baseline, out string summary)
+        {
+            baseline = 0;
+            var notes = new List<string>();
+            foreach (string candidate in candidates)
+            {
+                object? item = GenerateItemForSmoke(dolocApi, candidate, 1);
+                if (item == null)
+                {
+                    notes.Add(candidate + ":missing");
+                    continue;
+                }
+
+                int count = CountNativeItemForSmoke(dolocApi, candidate, checkBox: true);
+                notes.Add(candidate + ":baseline=" + count);
+                if (count == 0)
+                {
+                    baseline = count;
+                    summary = string.Join("|", notes);
+                    return candidate;
+                }
+            }
+
+            summary = string.Join("|", notes);
+            return string.Empty;
+        }
+
+        private static int CountNativeItemForSmoke(Type dolocApi, string itemId, bool checkBox)
+        {
+            MethodInfo? countItem = dolocApi.GetMethod("CountItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(bool) }, null);
+            object? result = countItem == null ? null : countItem.Invoke(null, new object[] { itemId, checkBox });
+            return result is int value ? value : -1;
+        }
+
+        private static bool CostNativeItemForSmoke(Type dolocApi, string itemId, int count, bool checkBox)
+        {
+            MethodInfo? costItem = dolocApi.GetMethod("CostItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(int), typeof(bool) }, null);
+            object? result = costItem == null ? null : costItem.Invoke(null, new object[] { itemId, count, checkBox });
+            return result is bool value && value;
+        }
+
+        private static string FormatChestLocatorState(ChestLocatorEnhancerState state)
+        {
+            if (state == null)
+                return "unknown";
+            return "owner=" + state.OwnerId +
+                ", status=" + state.Status +
+                ", enabled=" + state.Enabled +
+                ", hook=" + state.HookInstalled +
+                ", applications=" + state.ExtensionApplications +
+                ", base=" + state.LastBaseInventoryCount +
+                ", appended=" + state.LastAppendedInventoryCount +
+                ", roots=" + state.LastScannedRootCount +
+                ", equipment=" + state.LastScannedEquipmentCount +
+                ", cases=" + state.LastSharedCaseCount +
+                ", storageBoxes=" + state.LastSharedStorageBoxCount +
+                ", message=" + state.LastMessage;
+        }
+
+        private object? FindStrongPlantingGunSeedForSmoke(Type dolocApi, object basin, out string summary)
+        {
+            string basinSeedType = ReadPlantBasinSeedTypeForSmoke(basin);
+            var notes = new List<string>();
+            foreach (string seedId in new[] { "seed_endyam", "seed_thunder_grass", "seed_chinese_cabbage", "seed_scallion", "seed_pumpkin", "seed_wheat" })
+            {
+                object? seed = GenerateItemForSmoke(dolocApi, seedId, 1);
+                if (seed == null || !IsTypeOrBase(seed.GetType(), "DolocTown.ItemSeed"))
+                {
+                    notes.Add(seedId + ":missing");
+                    continue;
+                }
+
+                WriteBoolMember(seed, "enablePlantInInvalidSeason", true);
+                string seedType = ReadSeedTypeForSmoke(seed);
+                notes.Add(seedId + ":" + seedType);
+                if (seedType.Equals(basinSeedType, StringComparison.OrdinalIgnoreCase))
+                {
+                    summary = "selected=" + seedId + ", seedType=" + seedType + ", basinSeedType=" + basinSeedType + ", candidates=" + string.Join("|", notes);
+                    return seed;
+                }
+            }
+
+            summary = "basinSeedType=" + basinSeedType + ", candidates=" + string.Join("|", notes);
+            return null;
+        }
+
+        private static bool SwapInventoryItemAtForSmoke(object inventory, int slot, object item, out string summary)
+        {
+            try
+            {
+                MethodInfo? swapItem = FindMethod(inventory.GetType(), "SwapItem", 2);
+                if (swapItem == null)
+                {
+                    summary = "LinearInventory.SwapItem was not available.";
+                    return false;
+                }
+
+                object? leftover = swapItem.Invoke(inventory, new object[] { slot, item });
+                if (leftover != null)
+                {
+                    summary = "slot=" + slot + ", leftover=" + ReadStringMember(leftover, "name", leftover.GetType().Name) + ", count=" + ReadIntMember(leftover, "count", 0);
+                    return false;
+                }
+
+                object? placed = FindMethod(inventory.GetType(), "Read", 1)?.Invoke(inventory, new object[] { slot });
+                summary = "slot=" + slot + ", item=" + (placed == null ? "null" : ReadStringMember(placed, "name", placed.GetType().Name)) + ", count=" + (placed == null ? 0 : ReadIntMember(placed, "count", 0));
+                return placed != null;
+            }
+            catch (Exception ex)
+            {
+                summary = ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
+        }
+
+        private static string FormatStrongPlantingGunState(StrongPlantingGunState state)
+        {
+            if (state == null)
+                return "unknown";
+            return "owner=" + state.OwnerId +
+                ", status=" + state.Status +
+                ", enabled=" + state.Enabled +
+                ", slots=" + state.SlotCount +
+                ", toolHook=" + state.ToolHookInstalled +
+                ", uiHook=" + state.UiHookInstalled +
+                ", expanded=" + state.ExpandedGunCount +
+                ", visited=" + state.LastVisitedEquipmentCount +
+                ", seed=" + state.LastSeedActions +
+                ", film=" + state.LastFilmActions +
+                ", fertilizer=" + state.LastFertilizerActions +
+                ", water=" + state.LastWaterActions +
+                ", consumed=" + state.LastConsumedItemCount +
+                ", message=" + state.LastMessage;
+        }
+
         private object? FindExistingEquipmentForSmoke(object room, string targetTypeName, string ratioMember, out string summary)
         {
             int scanned = 0;
@@ -7259,6 +8487,15 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
         private int ReadQuickSlotItemCount(object? inventory, int slot)
+        {
+            if (inventory == null)
+                return 0;
+            MethodInfo? read = FindMethod(inventory.GetType(), "Read", 1);
+            object? item = read?.Invoke(inventory, new object[] { slot });
+            return item == null ? 0 : ReadIntMember(item, "count", 0);
+        }
+
+        private static int ReadInventoryItemCount(object? inventory, int slot)
         {
             if (inventory == null)
                 return 0;
@@ -9001,6 +10238,22 @@ namespace DTMAPI.GameBridge.DolocTown
                 yield return fallback!;
         }
 
+        private static int CountEnumerableForSmoke(object? value)
+        {
+            if (value == null)
+                return -1;
+            if (value is string)
+                return -1;
+            if (value is IEnumerable enumerable)
+            {
+                int count = 0;
+                foreach (object _ in enumerable)
+                    count++;
+                return count;
+            }
+            return -1;
+        }
+
         private static string ReadResourceClass(object resource)
         {
             object? proto = ReadMember(resource, "Proto");
@@ -9028,6 +10281,27 @@ namespace DTMAPI.GameBridge.DolocTown
                     return value;
             }
             return null;
+        }
+
+        private static bool SetMemberValue(object instance, string name, object value)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null && (value == null || field.FieldType.IsInstanceOfType(value)))
+                {
+                    field.SetValue(instance, value);
+                    return true;
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null && property.CanWrite && (value == null || property.PropertyType.IsInstanceOfType(value)))
+                {
+                    property.SetValue(instance, value);
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static object? ReadAnyMember(object instance, params string[] names)
@@ -9116,7 +10390,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && strongPlantingGunToolPatched && strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -9129,12 +10403,21 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (!IsUiStateActive(dolocApi, homePageUiState))
             {
+                double secondsSinceInit = (DateTimeOffset.Now - initializedAt).TotalSeconds;
+                if (smokeSettings?.AutoExerciseZoom == true && secondsSinceInit >= Math.Max(30, smokeSettings.AutoLoadDelaySeconds + 25))
+                {
+                    runtime.RuntimeMonitor.Log("Smoke automation did not observe HomePageUiState before Zoom smoke load; falling back to direct DolocAPI.LoadGame for save slot " + humanSlot + ". context=" + runtime.UI.InputContext + ".");
+                    runtime.SetHookStatus("Smoke.AutoLoadSave", "pending", "DolocAPI.LoadGame", "HomePageUiState was not observed for Zoom smoke; using direct save-load fallback for slot " + humanSlot + ".");
+                    waitForOfficialUi = false;
+                    return false;
+                }
+
                 waitForOfficialUi = true;
                 if ((DateTimeOffset.Now - lastAutoLoadReadinessLog).TotalSeconds >= 5)
                 {
                     lastAutoLoadReadinessLog = DateTimeOffset.Now;
-                    runtime.RuntimeMonitor.Log("Smoke automation waiting for HomePageUiState before loading save slot " + humanSlot + ".");
-                    runtime.SetHookStatus("Smoke.AutoLoadSave", "pending", "HomePageUiState", "Waiting for official home/save UI to become active.");
+                    runtime.RuntimeMonitor.Log("Smoke automation waiting for HomePageUiState before loading save slot " + humanSlot + ". context=" + runtime.UI.InputContext + ".");
+                    runtime.SetHookStatus("Smoke.AutoLoadSave", "pending", "HomePageUiState", "Waiting for official home/save UI to become active. context=" + runtime.UI.InputContext + ".");
                 }
                 return false;
             }
@@ -9149,6 +10432,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (state == null)
                 throw new InvalidOperationException("GameDataUiState could not be entered.");
             pendingAutoLoadGameDataState = state;
+            RecordMoreSavesOfficialSaveUiEvidence(dolocApi, state);
 
             MethodInfo? select = gameDataUiState.GetMethod("OnDataSlotSelect", BindingFlags.Instance | BindingFlags.NonPublic);
             MethodInfo? confirm = gameDataUiState.GetMethod("OnConfirm", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -9163,6 +10447,30 @@ namespace DTMAPI.GameBridge.DolocTown
             pendingAutoLoadGameIndex = gameIndex;
             runtime.SetHookStatus("Smoke.AutoLoadSave", "pending", "GameDataUiState.OnConfirm", "Requested official save UI load path for slot " + humanSlot + ".");
             return true;
+        }
+
+        private void RecordMoreSavesOfficialSaveUiEvidence(Type dolocApi, object gameDataUiState)
+        {
+            try
+            {
+                object? gameManager = ReadStaticMember(dolocApi, "gameManager");
+                int archiveFileCount = gameManager == null ? -1 : ReadIntMember(gameManager, "archiveFileCount", -1);
+                object? panel = ReadMember(gameDataUiState, "panel");
+                int panelSlotCount = panel == null ? -1 : ReadIntMember(panel, "slotCount", -1);
+                object? slots = panel == null ? null : ReadMember(panel, "slots");
+                int renderedSlots = CountEnumerableForSmoke(slots);
+                string status = archiveFileCount >= 12 && (panelSlotCount >= 12 || renderedSlots >= 12)
+                    ? "verified"
+                    : "pending";
+                string summary = "archiveFileCount=" + archiveFileCount + ", panelSlotCount=" + panelSlotCount + ", renderedSlots=" + renderedSlots + ", path=DolocAPI.gameManager.archiveFileCount -> GameDataUiState.Show -> GameDataPanel.Render.";
+                runtime.RuntimeMonitor.Log("MoreSaves official save UI evidence " + summary);
+                runtime.SetHookStatus("Smoke.MoreSavesOfficialSaveUi", status, "GameDataUiState official save UI path", summary);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "MoreSaves official save UI evidence failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.MoreSavesOfficialSaveUi", "failed", "GameDataUiState official save UI path", ex.GetType().Name + ": " + ex.Message);
+            }
         }
 
         private void TryConfirmModChangePrompt()
@@ -9340,6 +10648,7 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public bool AutoExerciseInstantSave { get; set; }
             [DataMember] public int AutoExerciseInstantSaveDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseDebugConsole { get; set; }
+            [DataMember] public bool AutoExerciseDebugConsoleMouseGive { get; set; }
             [DataMember] public int AutoExerciseDebugConsoleDelaySeconds { get; set; } = 60;
             [DataMember] public bool AutoExerciseDebugInventory { get; set; }
             [DataMember] public int AutoExerciseDebugInventoryDelaySeconds { get; set; } = 3;
@@ -9351,12 +10660,22 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseDebugTimeDelaySeconds { get; set; } = 6;
             [DataMember] public bool AutoExerciseDebugMovement { get; set; }
             [DataMember] public int AutoExerciseDebugMovementDelaySeconds { get; set; } = 7;
+            [DataMember] public bool AutoExerciseAdvancedDebug { get; set; }
+            [DataMember] public int AutoExerciseAdvancedDebugDelaySeconds { get; set; } = 8;
             [DataMember] public bool AutoExerciseVehicle { get; set; }
             [DataMember] public int AutoExerciseVehicleDelaySeconds { get; set; } = 8;
             [DataMember] public bool AutoExerciseNewContentApis { get; set; }
             [DataMember] public int AutoExerciseNewContentApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseMineContentApis { get; set; }
             [DataMember] public int AutoExerciseMineContentApisDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseZoom { get; set; }
+            [DataMember] public int AutoExerciseZoomDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseChestLocatorEnhancer { get; set; }
+            [DataMember] public int AutoExerciseChestLocatorEnhancerDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseStrongPlantingGun { get; set; }
+            [DataMember] public int AutoExerciseStrongPlantingGunDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseCustomEntityApis { get; set; }
+            [DataMember] public int AutoExerciseCustomEntityApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsMenu { get; set; }
             [DataMember] public int AutoOpenTitleSettingsDelaySeconds { get; set; } = 12;

@@ -45,6 +45,7 @@ namespace DTMAPI.Abstractions
     {
         bool IsOpen { get; }
         void Bind(IManifest owner, IInventoryDebugApi? inventoryApi, IWeatherDebugApi? weatherApi, ITeleportDebugApi? teleportApi, ITimeDebugApi? timeApi, IMovementDebugApi? movementApi, IInstantSaveDebugApi? instantSaveApi = null);
+        void BindAdvanced(IManifest owner, IAdvancedDebugApi? advancedDebugApi);
         void SetLanguage(IManifest owner, string language);
         void Open(IManifest owner, string reason);
         void Close(IManifest owner, string reason);
@@ -147,6 +148,69 @@ namespace DTMAPI.Abstractions
         EquipmentSlotsState GetState(string uniqueId);
         EquipmentSlotsRecoveryResult RecoverExtraSlotItems(IManifest owner, string reason);
         BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9")]
+    public interface ISaveSlotsApi
+    {
+        SaveSlotsRegisterResult RegisterSlots(IManifest owner, SaveSlotsOptions options);
+        SaveSlotsState GetState(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    public interface ICameraZoomApi
+    {
+        CameraZoomRegisterResult Register(IManifest owner, CameraZoomOptions options);
+        CameraZoomResult SetViewScale(IManifest owner, double viewScale, string reason);
+        CameraZoomResult StepViewScale(IManifest owner, int direction, string reason);
+        CameraZoomResult ResetViewScale(IManifest owner, string reason);
+        CameraZoomState GetState(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    public interface IChestLocatorEnhancerApi
+    {
+        ChestLocatorEnhancerRegisterResult Register(IManifest owner, ChestLocatorEnhancerOptions options);
+        ChestLocatorEnhancerState GetState(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    public interface IStrongPlantingGunApi
+    {
+        StrongPlantingGunRegisterResult Register(IManifest owner, StrongPlantingGunOptions options);
+        StrongPlantingGunState GetState(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    public interface IAdvancedDebugApi
+    {
+        IReadOnlyList<TechPointDebugOption> GetTechPointOptions();
+        IReadOnlyList<SpawnDebugOption> GetMonsterOptions();
+        IReadOnlyList<SpawnDebugOption> GetResourceOptions();
+        CreativeModeState GetCreativeModeState();
+        TimeSkipResult AdvanceTime(IManifest owner, AdvancedTimeAdvanceKind kind, int amount);
+        TimeScaleDebugResult SetTimeScale(IManifest owner, double multiplier);
+        TimeScaleDebugResult ResetTimeScale(IManifest owner, string reason);
+        DebugValueResult AddMoney(IManifest owner, int amount);
+        DebugValueResult AddTechPoint(IManifest owner, string pointTypeId, int amount);
+        DebugCommandResult UnlockAllTechTrees(IManifest owner);
+        CropMaturityResult MatureAllCrops(IManifest owner);
+        CreativeModeResult SetCreativeMode(IManifest owner, bool enabled);
+        InventoryGiveResult GiveCreativeGenerator(IManifest owner);
+        SpawnDebugResult SpawnMonster(IManifest owner, string monsterId, int count);
+        SpawnDebugResult SpawnResource(IManifest owner, string resourceId, int count);
+        BridgeFeatureStatus GetStatus();
+    }
+
+    public enum AdvancedTimeAdvanceKind
+    {
+        Day,
+        Week,
+        Month
     }
 
     public sealed class InventoryDebugQuery
@@ -393,6 +457,91 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    public sealed class TimeScaleDebugResult
+    {
+        public bool Success { get; set; }
+        public double RequestedMultiplier { get; set; }
+        public double BeforeMultiplier { get; set; }
+        public double AfterMultiplier { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class DebugValueResult
+    {
+        public bool Success { get; set; }
+        public string ValueId { get; set; } = string.Empty;
+        public int RequestedDelta { get; set; }
+        public int BeforeValue { get; set; }
+        public int AfterValue { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class DebugCommandResult
+    {
+        public bool Success { get; set; }
+        public string CommandId { get; set; } = string.Empty;
+        public int AffectedCount { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class CropMaturityResult
+    {
+        public bool Success { get; set; }
+        public int PlantBasinsVisited { get; set; }
+        public int CropsMatured { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class CreativeModeState
+    {
+        public bool Enabled { get; set; }
+        public bool RuntimeHooksInstalled { get; set; }
+        public bool GeneratorRuntimeAvailable { get; set; }
+        public string GeneratorItemId { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public sealed class CreativeModeResult
+    {
+        public bool Success { get; set; }
+        public bool Enabled { get; set; }
+        public CreativeModeState Before { get; set; } = new CreativeModeState();
+        public CreativeModeState After { get; set; } = new CreativeModeState();
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class TechPointDebugOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public int CurrentPoints { get; set; }
+        public int CurrentLevel { get; set; }
+    }
+
+    public sealed class SpawnDebugOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public bool IsAvailableInCurrentRoom { get; set; } = true;
+    }
+
+    public sealed class SpawnDebugResult
+    {
+        public bool Success { get; set; }
+        public string SpawnId { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public int RequestedCount { get; set; }
+        public int SpawnedCount { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
     public sealed class MovementDebugState
     {
         public double Multiplier { get; set; } = 1;
@@ -599,6 +748,163 @@ namespace DTMAPI.Abstractions
         public bool SafeUnequipOnDisable { get; set; } = true;
         public bool AutoRecoverOnMissingMod { get; set; } = true;
         public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class SaveSlotsOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public int SlotCount { get; set; } = 12;
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class SaveSlotsRegisterResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public int PreviousSlotCount { get; set; }
+        public int RequestedSlotCount { get; set; }
+        public int AppliedSlotCount { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class SaveSlotsState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public int NativeSlotCount { get; set; }
+        public int RequestedSlotCount { get; set; }
+        public int AppliedSlotCount { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public sealed class CameraZoomOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public double MinViewScale { get; set; } = 1d;
+        public double MaxViewScale { get; set; } = 4d;
+        public double Step { get; set; } = 0.25d;
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class CameraZoomRegisterResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public double MinViewScale { get; set; }
+        public double MaxViewScale { get; set; }
+        public double CurrentViewScale { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class CameraZoomResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public double RequestedViewScale { get; set; }
+        public double BeforeViewScale { get; set; }
+        public double AfterViewScale { get; set; }
+        public double VanillaOrthographicSize { get; set; }
+        public double AppliedOrthographicSize { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class CameraZoomState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public double MinViewScale { get; set; }
+        public double MaxViewScale { get; set; }
+        public double Step { get; set; }
+        public double CurrentViewScale { get; set; } = 1d;
+        public double VanillaOrthographicSize { get; set; }
+        public double AppliedOrthographicSize { get; set; }
+        public bool CameraAvailable { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public sealed class ChestLocatorEnhancerOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public bool IncludeSharedCases { get; set; } = true;
+        public bool IncludeSharedStorageShelfBoxes { get; set; } = true;
+        public bool RespectNativeAutoUseBoxSetting { get; set; } = true;
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class ChestLocatorEnhancerRegisterResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+        public bool HookInstalled { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class ChestLocatorEnhancerState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public bool HookInstalled { get; set; }
+        public int ExtensionApplications { get; set; }
+        public int LastBaseInventoryCount { get; set; }
+        public int LastAppendedInventoryCount { get; set; }
+        public int LastScannedRootCount { get; set; }
+        public int LastScannedEquipmentCount { get; set; }
+        public int LastSharedCaseCount { get; set; }
+        public int LastSharedStorageBoxCount { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public sealed class StrongPlantingGunOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public int SlotCount { get; set; } = 3;
+        public bool IncludeSeeds { get; set; } = true;
+        public bool IncludeFilms { get; set; } = true;
+        public bool IncludeFertilizers { get; set; } = true;
+        public bool IncludeWater { get; set; }
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class StrongPlantingGunRegisterResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+        public int SlotCount { get; set; }
+        public bool ToolHookInstalled { get; set; }
+        public bool UiHookInstalled { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class StrongPlantingGunState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public int SlotCount { get; set; }
+        public bool ToolHookInstalled { get; set; }
+        public bool UiHookInstalled { get; set; }
+        public int ExpandedGunCount { get; set; }
+        public int LastVisitedEquipmentCount { get; set; }
+        public int LastSeedActions { get; set; }
+        public int LastFilmActions { get; set; }
+        public int LastFertilizerActions { get; set; }
+        public int LastWaterActions { get; set; }
+        public int LastConsumedItemCount { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
     }
 
     public sealed class EquipmentSlotsRegisterResult

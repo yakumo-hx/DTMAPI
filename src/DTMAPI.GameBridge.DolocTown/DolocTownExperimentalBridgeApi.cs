@@ -14,8 +14,9 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed class DolocTownExperimentalBridgeApi : IActionCompletionApi, IFishingAutomationApi, IActionSpeedApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi
+    internal sealed class DolocTownExperimentalBridgeApi : IActionCompletionApi, IFishingAutomationApi, IActionSpeedApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, ICameraZoomApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
     {
+        private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
         private const double SecondMotorScopedTintR = 0.55;
         private const double SecondMotorScopedTintG = 0.90;
@@ -47,10 +48,19 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, MachineProductionState> machineStates = new Dictionary<string, MachineProductionState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, MachineRuntimeEntry> machineRuntimeEntries = new Dictionary<string, MachineRuntimeEntry>(StringComparer.OrdinalIgnoreCase);
         private readonly Random machineRandom = new Random();
+        private readonly Dictionary<string, SaveSlotsOptions> saveSlotOptions = new Dictionary<string, SaveSlotsOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SaveSlotsState> saveSlotStates = new Dictionary<string, SaveSlotsState>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, CameraZoomOptions> cameraZoomOptions = new Dictionary<string, CameraZoomOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, CameraZoomState> cameraZoomStates = new Dictionary<string, CameraZoomState>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ChestLocatorEnhancerOptions> chestLocatorOptions = new Dictionary<string, ChestLocatorEnhancerOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ChestLocatorEnhancerState> chestLocatorStates = new Dictionary<string, ChestLocatorEnhancerState>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, StrongPlantingGunOptions> strongPlantingGunOptions = new Dictionary<string, StrongPlantingGunOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, StrongPlantingGunState> strongPlantingGunStates = new Dictionary<string, StrongPlantingGunState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, EquipmentSlotsOptions> equipmentSlotOptions = new Dictionary<string, EquipmentSlotsOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, EquipmentSlotsState> equipmentSlotStates = new Dictionary<string, EquipmentSlotsState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<EquipmentSlotRuntimeEntry>> equipmentSlotEntries = new Dictionary<string, List<EquipmentSlotRuntimeEntry>>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loadedEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> dirtyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<object> activeEquipmentSlotUiObjects = new List<object>();
         private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
         private readonly HashSet<object> secondMotorControllers = new HashSet<object>();
@@ -85,6 +95,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool machineRuntimeLoopInstalled;
         private bool equipmentSlotsRuntimeHooksInstalled;
         private bool equipmentSlotsUiHooksInstalled;
+        private bool chestLocatorInventoryHookInstalled;
+        private bool strongPlantingGunToolHookInstalled;
+        private bool strongPlantingGunUiHookInstalled;
+        private bool strongPlantingGunCtorHookInstalled;
         private bool equipmentSlotsUiRendered;
         private bool equipmentSlotsUiEvidenceRecorded;
         private bool equipmentSlotsUiBindDiagnosticLogged;
@@ -92,6 +106,21 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsUiInteractionFailureLogged;
         private bool equipmentSlotsApplyingFunctions;
         private bool equipmentSlotsOrphanRecoveryChecked;
+        private double cameraZoomVanillaOrthographicSize;
+        private double cameraZoomCurrentViewScale = 1d;
+        private double cameraZoomAppliedOrthographicSize;
+        private bool creativeModeEnabled;
+        private string creativeModeLastMessage = "Creative mode is off.";
+        private bool creativeNoCostHooksInstalled;
+        private bool creativeNoTimeHooksInstalled;
+        private bool creativeCostBypassObserved;
+        private bool creativeNoTimeBypassObserved;
+        private bool creativeConfigSnapshotValid;
+        private bool creativeOriginalIgnoreMaterialCost;
+        private bool creativeOriginalSkipMoneyVerifyInShop;
+        private bool creativeOriginalIgnoreSpiritCost;
+        private bool creativeNativeConfigApplied;
+        private double advancedTimeScaleMultiplier = 1d;
         private DateTimeOffset lastEquipmentSlotsUiRefreshAt = DateTimeOffset.MinValue;
         private string equipmentSlotsUiLastSummary = string.Empty;
 
@@ -100,6 +129,77 @@ namespace DTMAPI.GameBridge.DolocTown
         public DolocTownExperimentalBridgeApi(DTMAPI.Core.Runtime.DtmApiRuntime runtime)
         {
             this.runtime = runtime;
+        }
+
+        internal void NotifyEquipmentSlotsSaveLoaded(bool isNewGame)
+        {
+            ResetEquipmentSlotSessionState("SaveLoaded isNewGame=" + isNewGame, discardDirty: true);
+        }
+
+        internal void NotifyEquipmentSlotsSaveSaved(int? slot)
+        {
+            if (dirtyEquipmentSlotStorageOwners.Count == 0)
+                return;
+
+            string[] owners = dirtyEquipmentSlotStorageOwners.ToArray();
+            foreach (string ownerId in owners)
+            {
+                PersistEquipmentSlotStorage(ownerId, "SaveSaved slot=" + (slot?.ToString(CultureInfo.InvariantCulture) ?? "unknown"));
+                dirtyEquipmentSlotStorageOwners.Remove(ownerId);
+            }
+
+            runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "verified", "SaveGame postfix -> DTMAPI equipment-slot storage flush", "Flushed " + owners.Length + " dirty equipment-slot owner(s) after native SaveGame completed.");
+        }
+
+        internal void NotifyEquipmentSlotsReturnedToTitle()
+        {
+            ResetEquipmentSlotSessionState("ReturnedToTitle", discardDirty: true);
+        }
+
+        internal void ResetCameraZoomForLifecycleBoundary(string reason)
+        {
+            if (cameraZoomOptions.Count == 0 && cameraZoomCurrentViewScale <= 1d)
+                return;
+
+            foreach (KeyValuePair<string, CameraZoomState> entry in cameraZoomStates.ToArray())
+            {
+                CameraZoomState state = entry.Value;
+                state.CurrentViewScale = 1d;
+                state.Status = "vanilla";
+                state.LastMessage = "Camera zoom reset for lifecycle boundary: " + (reason ?? string.Empty) + ".";
+                cameraZoomStates[entry.Key] = state;
+            }
+
+            CameraZoomResult result = ApplyCameraZoomTarget("lifecycle " + (reason ?? string.Empty));
+            runtime.RuntimeMonitor.Log("CameraZoom lifecycle reset reason=" + (reason ?? string.Empty) + " success=" + result.Success + " message=" + result.Message, result.Success ? DTMAPI.Abstractions.LogLevel.Info : DTMAPI.Abstractions.LogLevel.Warn);
+        }
+
+        private void ResetEquipmentSlotSessionState(string reason, bool discardDirty)
+        {
+            if (equipmentSlotEntries.Count == 0 && loadedEquipmentSlotStorageOwners.Count == 0 && dirtyEquipmentSlotStorageOwners.Count == 0)
+                return;
+
+            object? manager = GetNativeAgentEquipmentManager();
+            if (manager != null)
+            {
+                foreach (List<EquipmentSlotRuntimeEntry> entries in equipmentSlotEntries.Values)
+                {
+                    foreach (EquipmentSlotRuntimeEntry entry in entries)
+                        RemoveEquipmentSlotFunction(manager, entry);
+                }
+                InvokeNativeReloadParams(manager);
+            }
+
+            int discardedDirty = dirtyEquipmentSlotStorageOwners.Count;
+            equipmentSlotEntries.Clear();
+            loadedEquipmentSlotStorageOwners.Clear();
+            if (discardDirty)
+                dirtyEquipmentSlotStorageOwners.Clear();
+            equipmentSlotStates.Clear();
+            equipmentSlotsOrphanRecoveryChecked = false;
+            equipmentSlotsUiLastSummary = string.Empty;
+            runtime.RuntimeMonitor.Log("EquipmentSlots session reset reason=" + (reason ?? string.Empty) + " discardedDirtyOwners=" + discardedDirty + ".");
+            runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "session-reset", "SaveLoaded/ReturnedToTitle boundary", "Cleared in-memory equipment-slot state for " + (reason ?? string.Empty) + "; unsaved DTMAPI storage mutations are not written outside native SaveGame.");
         }
 
         internal int OneActionApplicationCount { get; private set; }
@@ -150,6 +250,10 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal bool ForceMachineProductionDueForSmoke { get; set; }
 
+        internal string LastChestLocatorEnhancerSummary { get; private set; } = string.Empty;
+
+        internal int ChestLocatorEnhancerExtensionApplications { get; private set; }
+
         internal void ResetFishingFeedbackCooldownForSmoke()
         {
             lastFishingFeedbackAt = DateTimeOffset.MinValue;
@@ -170,7 +274,11 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus("Debug.MovementApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses native MotionAbility.SetMoveScaler on the player body; reset restores scale 0.");
             runtime.SetHookStatus("Vehicle.MotorApi", "pending", "DTMAPI.GameBridge.DolocTown API", "Waiting for MotorController, ItemMotorKey, MotorInteractable, AgentControllerState, UnlockMotor, SetMotorPosition, and EnterRoom hooks.");
             runtime.SetHookStatus("Machine.ProductionApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.4 experimental machine contract accepts JSON-backed machine definitions; production/fuel/electric runtime hooks still require third-save implementation evidence.");
-            runtime.SetHookStatus("Player.EquipmentSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.8 experimental equipment-slot contract records extra attribute slots and safe recovery policy; GameBridge owns DTMAPI slot storage, native stat-function application, interactive player equipment strip rendering, and recovery without exposing raw game types.");
+            runtime.SetHookStatus("Player.EquipmentSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.9 experimental equipment-slot contract records extra attribute slots and safe recovery policy; GameBridge owns DTMAPI slot storage, native stat-function application, interactive player equipment strip rendering, and recovery without exposing raw game types.");
+            runtime.SetHookStatus("Save.MoreSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.9 experimental save-slot contract adjusts DolocAPI.gameManager.archiveFileCount so official LocalSave and GameDataPanel paths own archive discovery/render/load/delete/copy behavior.");
+            runtime.SetHookStatus("Camera.ZoomApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.3.0 experimental camera zoom contract adjusts only the world camera orthographic size; UI scale and raw game camera types are not exposed.");
+            runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", "contract", "DTMAPI.GameBridge.DolocTown API", "0.3.0 experimental chest locator enhancer contract appends only native LinearInventory instances from official ILocatable.IsShared containers to ArchiveDataHandle.GetAvailableInventories results.");
+            runtime.SetHookStatus("Farming.StrongPlantingGun", "contract", "DTMAPI.GameBridge.DolocTown API", "0.3.0 experimental strong planting gun contract expands the official farming gun inventory and routes multi-slot use through native farming gun interaction checks.");
         }
 
         internal void SetFishRoeHooksInstalled(bool installed)
@@ -232,6 +340,69 @@ namespace DTMAPI.GameBridge.DolocTown
                     : state.Status;
                 equipmentSlotStates[entry.Key] = state;
             }
+        }
+
+        internal void SetChestLocatorInventoryHookInstalled(bool installed)
+        {
+            chestLocatorInventoryHookInstalled = installed;
+            foreach (KeyValuePair<string, ChestLocatorEnhancerState> entry in chestLocatorStates.ToArray())
+            {
+                ChestLocatorEnhancerState state = entry.Value;
+                state.HookInstalled = installed;
+                if (state.IsConfigured)
+                    state.Status = state.Enabled ? (installed ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
+                chestLocatorStates[entry.Key] = state;
+            }
+        }
+
+        internal void SetStrongPlantingGunHooksInstalled(bool toolInstalled, bool uiInstalled, bool ctorInstalled)
+        {
+            strongPlantingGunToolHookInstalled = toolInstalled;
+            strongPlantingGunUiHookInstalled = uiInstalled;
+            strongPlantingGunCtorHookInstalled = ctorInstalled;
+            foreach (KeyValuePair<string, StrongPlantingGunState> entry in strongPlantingGunStates.ToArray())
+            {
+                StrongPlantingGunState state = entry.Value;
+                state.ToolHookInstalled = toolInstalled;
+                state.UiHookInstalled = uiInstalled;
+                if (state.IsConfigured)
+                    state.Status = state.Enabled ? ((toolInstalled && uiInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook") : "disabled";
+                strongPlantingGunStates[entry.Key] = state;
+            }
+        }
+
+        internal void SetAdvancedCreativeHooksInstalled(bool noCostInstalled, bool noTimeInstalled)
+        {
+            creativeNoCostHooksInstalled = noCostInstalled;
+            creativeNoTimeHooksInstalled = noTimeInstalled;
+        }
+
+        internal bool ShouldBypassCreativeCostHooks()
+        {
+            return creativeModeEnabled && creativeNoCostHooksInstalled;
+        }
+
+        internal bool ShouldBypassCreativeTimeHooks()
+        {
+            return creativeModeEnabled && creativeNoTimeHooksInstalled;
+        }
+
+        internal void RecordCreativeCostBypassObserved(string source)
+        {
+            if (creativeCostBypassObserved)
+                return;
+
+            creativeCostBypassObserved = true;
+            runtime.SetHookStatus("Debug.CreativeMode", "verified", "Y-console creative toggle + " + source, "Runtime no-cost/no-energy prefix observed while creative mode was enabled. generatorAvailable=" + IsNativeItemAvailable("dtmapi_creative_generator") + ".");
+        }
+
+        internal void RecordCreativeNoTimeBypassObserved(int originalRecipeTime)
+        {
+            if (creativeNoTimeBypassObserved)
+                return;
+
+            creativeNoTimeBypassObserved = true;
+            runtime.SetHookStatus("Debug.CreativeNoTime", "verified", "Harmony Postfix: Synthesizer.GetRecipeTime", "Creative mode changed synthesizer recipe time from " + originalRecipeTime + " TU to 0 TU.");
         }
 
         public void Configure(IManifest owner, ActionCompletionOptions options)
@@ -439,7 +610,7 @@ namespace DTMAPI.GameBridge.DolocTown
             };
             ApplyMachineDefinitionState(machineStates[owner.UniqueID], normalized, 0, null);
             runtime.RuntimeMonitor.Log("Machine production definition registered owner=" + owner.UniqueID + " machine=" + normalized.MachineId + " equipment=" + normalized.EquipmentId + " outputs=" + normalized.OutputRules.Count + ".");
-            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native recipe overrides and electric-only runtime remain experimental.");
+            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native recipe overrides and hybrid fuel/electric runtime remain experimental.");
 
             result.Success = true;
             result.Message = machineStates[owner.UniqueID].LastMessage;
@@ -1027,6 +1198,1402 @@ namespace DTMAPI.GameBridge.DolocTown
                 : new BridgeFeatureStatus("not-configured", "No machine definitions were registered for this mod.");
         }
 
+        public SaveSlotsRegisterResult RegisterSlots(IManifest owner, SaveSlotsOptions options)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            SaveSlotsOptions normalized = NormalizeSaveSlotsOptions(options);
+            saveSlotOptions[owner.UniqueID] = normalized;
+            SaveSlotsRegisterResult result = ApplySaveSlotExpansion(owner.UniqueID, "register");
+            runtime.RuntimeMonitor.Log("SaveSlots API register success=" + result.Success + " owner=" + owner.UniqueID + " requested=" + result.RequestedSlotCount + " applied=" + result.AppliedSlotCount + " reason=register message=" + result.Message);
+            return result;
+        }
+
+        SaveSlotsState ISaveSlotsApi.GetState(string uniqueId)
+        {
+            string ownerId = uniqueId ?? string.Empty;
+            int nativeCount = GetNativeArchiveSlotCount();
+            if (saveSlotStates.TryGetValue(ownerId, out SaveSlotsState state))
+            {
+                state.NativeSlotCount = nativeCount;
+                return state;
+            }
+
+            return new SaveSlotsState
+            {
+                OwnerId = ownerId,
+                IsConfigured = false,
+                Enabled = false,
+                NativeSlotCount = nativeCount,
+                RequestedSlotCount = VanillaArchiveSlotCount,
+                AppliedSlotCount = nativeCount,
+                Status = "not-configured",
+                LastMessage = "No save-slot expansion policy registered."
+            };
+        }
+
+        BridgeFeatureStatus ISaveSlotsApi.GetStatus(string uniqueId)
+        {
+            SaveSlotsState state = ((ISaveSlotsApi)this).GetState(uniqueId ?? string.Empty);
+            return new BridgeFeatureStatus(state.Status, state.LastMessage);
+        }
+
+        public CameraZoomRegisterResult Register(IManifest owner, CameraZoomOptions options)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            CameraZoomOptions normalized = NormalizeCameraZoomOptions(options);
+            cameraZoomOptions[owner.UniqueID] = normalized;
+            CameraZoomState state = GetCameraZoomState(owner.UniqueID);
+            state.IsConfigured = true;
+            state.Enabled = normalized.Enabled;
+            state.MinViewScale = normalized.MinViewScale;
+            state.MaxViewScale = normalized.MaxViewScale;
+            state.Step = normalized.Step;
+            state.Status = normalized.Enabled ? "configured" : "disabled";
+            state.LastMessage = normalized.Enabled ? "Camera zoom policy registered." : "Camera zoom policy is disabled.";
+            cameraZoomStates[owner.UniqueID] = state;
+
+            CameraZoomResult apply = ApplyCameraZoomTarget("register:" + owner.UniqueID);
+            var result = new CameraZoomRegisterResult
+            {
+                Success = apply.Success || !normalized.Enabled,
+                OwnerId = owner.UniqueID,
+                MinViewScale = normalized.MinViewScale,
+                MaxViewScale = normalized.MaxViewScale,
+                CurrentViewScale = state.CurrentViewScale,
+                FailureReason = apply.Success || !normalized.Enabled ? string.Empty : apply.FailureReason,
+                Message = apply.Success || !normalized.Enabled ? state.LastMessage : apply.Message
+            };
+            runtime.RuntimeMonitor.Log("CameraZoom API register success=" + result.Success + " owner=" + owner.UniqueID + " range=" + normalized.MinViewScale.ToString("0.##", CultureInfo.InvariantCulture) + "-" + normalized.MaxViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " current=" + result.CurrentViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " message=" + result.Message, result.Success ? DTMAPI.Abstractions.LogLevel.Info : DTMAPI.Abstractions.LogLevel.Warn);
+            return result;
+        }
+
+        public CameraZoomResult SetViewScale(IManifest owner, double viewScale, string reason)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            CameraZoomOptions options = GetCameraZoomOptions(owner.UniqueID);
+            CameraZoomState state = GetCameraZoomState(owner.UniqueID);
+            state.IsConfigured = cameraZoomOptions.ContainsKey(owner.UniqueID);
+            state.Enabled = options.Enabled;
+            state.MinViewScale = options.MinViewScale;
+            state.MaxViewScale = options.MaxViewScale;
+            state.Step = options.Step;
+
+            double before = state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale;
+            double requested = ClampDouble(viewScale, options.MinViewScale, options.MaxViewScale);
+            state.CurrentViewScale = options.Enabled ? requested : 1d;
+            state.Status = options.Enabled ? "configured" : "disabled";
+            state.LastMessage = "Requested camera view scale " + before.ToString("0.##", CultureInfo.InvariantCulture) + "->" + state.CurrentViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " reason=" + (reason ?? string.Empty) + ".";
+            cameraZoomStates[owner.UniqueID] = state;
+
+            CameraZoomResult result = ApplyCameraZoomTarget(reason ?? string.Empty);
+            result.OwnerId = owner.UniqueID;
+            result.RequestedViewScale = requested;
+            result.BeforeViewScale = before;
+            result.AfterViewScale = state.CurrentViewScale;
+            if (result.Success)
+                result.Message = state.LastMessage + " " + result.Message;
+            return result;
+        }
+
+        public CameraZoomResult StepViewScale(IManifest owner, int direction, string reason)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            CameraZoomOptions options = GetCameraZoomOptions(owner.UniqueID);
+            CameraZoomState state = GetCameraZoomState(owner.UniqueID);
+            double current = state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale;
+            int sign = direction < 0 ? -1 : 1;
+            return SetViewScale(owner, current + (options.Step * sign), reason);
+        }
+
+        public CameraZoomResult ResetViewScale(IManifest owner, string reason)
+        {
+            return SetViewScale(owner, 1d, reason);
+        }
+
+        CameraZoomState ICameraZoomApi.GetState(string uniqueId)
+        {
+            return CloneCameraZoomState(GetCameraZoomState(uniqueId ?? string.Empty));
+        }
+
+        BridgeFeatureStatus ICameraZoomApi.GetStatus(string uniqueId)
+        {
+            CameraZoomState state = GetCameraZoomState(uniqueId ?? string.Empty);
+            return new BridgeFeatureStatus(state.Status, state.LastMessage);
+        }
+
+        public ChestLocatorEnhancerRegisterResult Register(IManifest owner, ChestLocatorEnhancerOptions options)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            ChestLocatorEnhancerOptions normalized = NormalizeChestLocatorEnhancerOptions(options);
+            chestLocatorOptions[owner.UniqueID] = normalized;
+            ChestLocatorEnhancerState state = GetChestLocatorEnhancerState(owner.UniqueID);
+            state.IsConfigured = true;
+            state.Enabled = normalized.Enabled;
+            state.HookInstalled = chestLocatorInventoryHookInstalled;
+            state.Status = normalized.Enabled ? (chestLocatorInventoryHookInstalled ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
+            state.LastMessage = normalized.Enabled
+                ? "Chest locator enhancer policy registered; shared Case inventories and shared StorageShelf ItemBox inventories are appended to the native inventory array when the hook is installed."
+                : "Chest locator enhancer policy is disabled.";
+            chestLocatorStates[owner.UniqueID] = state;
+
+            var result = new ChestLocatorEnhancerRegisterResult
+            {
+                Success = true,
+                OwnerId = owner.UniqueID,
+                Enabled = normalized.Enabled,
+                HookInstalled = chestLocatorInventoryHookInstalled,
+                Message = state.LastMessage
+            };
+            runtime.RuntimeMonitor.Log("ChestLocatorEnhancer API register success=True owner=" + owner.UniqueID + " enabled=" + normalized.Enabled + " hook=" + chestLocatorInventoryHookInstalled + " message=" + result.Message);
+            runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", state.Status, "IChestLocatorEnhancerApi -> ArchiveDataHandle.GetAvailableInventories Postfix", state.LastMessage);
+            return result;
+        }
+
+        ChestLocatorEnhancerState IChestLocatorEnhancerApi.GetState(string uniqueId)
+        {
+            return CloneChestLocatorEnhancerState(GetChestLocatorEnhancerState(uniqueId ?? string.Empty));
+        }
+
+        BridgeFeatureStatus IChestLocatorEnhancerApi.GetStatus(string uniqueId)
+        {
+            ChestLocatorEnhancerState state = GetChestLocatorEnhancerState(uniqueId ?? string.Empty);
+            return new BridgeFeatureStatus(state.Status, state.LastMessage);
+        }
+
+        public StrongPlantingGunRegisterResult Register(IManifest owner, StrongPlantingGunOptions options)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
+            StrongPlantingGunOptions normalized = NormalizeStrongPlantingGunOptions(options);
+            strongPlantingGunOptions[owner.UniqueID] = normalized;
+            StrongPlantingGunState state = GetStrongPlantingGunState(owner.UniqueID);
+            state.IsConfigured = true;
+            state.Enabled = normalized.Enabled;
+            state.SlotCount = normalized.SlotCount;
+            state.ToolHookInstalled = strongPlantingGunToolHookInstalled;
+            state.UiHookInstalled = strongPlantingGunUiHookInstalled;
+            state.Status = normalized.Enabled
+                ? ((strongPlantingGunToolHookInstalled && strongPlantingGunUiHookInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook")
+                : "disabled";
+            state.LastMessage = normalized.Enabled
+                ? "Strong planting gun policy registered; DTMAPI expands official farming gun storage and uses official basin interaction checks across seed, film, and fertilizer slots."
+                : "Strong planting gun policy is disabled.";
+            strongPlantingGunStates[owner.UniqueID] = state;
+
+            var result = new StrongPlantingGunRegisterResult
+            {
+                Success = true,
+                OwnerId = owner.UniqueID,
+                Enabled = normalized.Enabled,
+                SlotCount = normalized.SlotCount,
+                ToolHookInstalled = strongPlantingGunToolHookInstalled,
+                UiHookInstalled = strongPlantingGunUiHookInstalled,
+                Message = state.LastMessage
+            };
+            runtime.RuntimeMonitor.Log("StrongPlantingGun API register success=True owner=" + owner.UniqueID + " enabled=" + normalized.Enabled + " slots=" + normalized.SlotCount + " toolHook=" + strongPlantingGunToolHookInstalled + " uiHook=" + strongPlantingGunUiHookInstalled + " message=" + result.Message);
+            runtime.SetHookStatus("Farming.StrongPlantingGun", state.Status, "IStrongPlantingGunApi -> ItemFarmingGun/FarmingGunUiState Harmony hooks", state.LastMessage);
+            return result;
+        }
+
+        StrongPlantingGunState IStrongPlantingGunApi.GetState(string uniqueId)
+        {
+            return CloneStrongPlantingGunState(GetStrongPlantingGunState(uniqueId ?? string.Empty));
+        }
+
+        BridgeFeatureStatus IStrongPlantingGunApi.GetStatus(string uniqueId)
+        {
+            StrongPlantingGunState state = GetStrongPlantingGunState(uniqueId ?? string.Empty);
+            return new BridgeFeatureStatus(state.Status, state.LastMessage);
+        }
+
+        internal void ExpandFarmingGunInventoryIfNeeded(object gun, string reason)
+        {
+            if (gun == null || !IsFarmingGun(gun) || !TryGetStrongPlantingGunPolicy(out string ownerId, out StrongPlantingGunOptions options))
+                return;
+
+            object? inventory = ReadMember(gun, "inventory");
+            if (inventory == null)
+                return;
+
+            int currentCapacity = ReadIntMember(inventory, "capacity", 0);
+            int targetCapacity = Math.Max(currentCapacity, options.SlotCount);
+            if (targetCapacity <= 0)
+                return;
+
+            bool expanded = false;
+            if (currentCapacity < targetCapacity)
+            {
+                MethodInfo? validateCapacity = FindMethodInHierarchy(inventory.GetType(), "ValidateCapacity", 2) ?? FindMethodInHierarchy(inventory.GetType(), "ValidateCapacity", 1);
+                if (validateCapacity == null)
+                {
+                    UpdateStrongPlantingGunStates(ownerId, options, 0, 0, 0, 0, 0, 0, "LinearInventory.ValidateCapacity was not available for farming gun expansion.", "failed");
+                    return;
+                }
+
+                object?[] args = validateCapacity.GetParameters().Length == 2
+                    ? new object?[] { targetCapacity, false }
+                    : new object?[] { targetCapacity };
+                validateCapacity.Invoke(inventory, args);
+                expanded = true;
+            }
+
+            object? func = ReadMember(gun, "func");
+            if (func != null)
+                TrySetStrongPlantingGunFunctionCapacity(func, targetCapacity);
+
+            StrongPlantingGunState state = GetStrongPlantingGunState(ownerId);
+            if (expanded)
+                state.ExpandedGunCount++;
+            state.IsConfigured = true;
+            state.Enabled = options.Enabled;
+            state.SlotCount = options.SlotCount;
+            state.ToolHookInstalled = strongPlantingGunToolHookInstalled;
+            state.UiHookInstalled = strongPlantingGunUiHookInstalled;
+            state.Status = (strongPlantingGunToolHookInstalled && strongPlantingGunUiHookInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook";
+            state.LastMessage = "Strong planting gun storage prepared slots=" + targetCapacity + " previousSlots=" + currentCapacity + " reason=" + reason + ".";
+            strongPlantingGunStates[ownerId] = state;
+
+            if (expanded || options.VerboseLogging)
+                runtime.RuntimeMonitor.Log("StrongPlantingGun expanded official farming gun storage owner=" + ownerId + " slots=" + targetCapacity + " previousSlots=" + currentCapacity + " reason=" + reason + ".");
+        }
+
+        internal bool HandleStrongPlantingGunToolUse(object gun)
+        {
+            try
+            {
+                if (gun == null || !IsFarmingGun(gun) || !TryGetStrongPlantingGunPolicy(out string ownerId, out StrongPlantingGunOptions options))
+                    return true;
+
+                ExpandFarmingGunInventoryIfNeeded(gun, "ItemFarmingGun.OnUseAsTool");
+                object? inventory = ReadMember(gun, "inventory");
+                if (inventory == null || ReadBoolMember(inventory, "isEmpty", false))
+                    return true;
+
+                List<StrongPlantingGunSlotItem> slots = ReadStrongPlantingGunSlotItems(inventory, options);
+                if (slots.Count == 0)
+                    return true;
+
+                List<object> equipments = ReadStrongPlantingGunEquipments(gun).ToList();
+                if (equipments.Count == 0)
+                    return true;
+
+                int seedActions = 0;
+                int filmActions = 0;
+                int fertilizerActions = 0;
+                int waterActions = 0;
+                int consumed = 0;
+
+                foreach (object equipment in equipments)
+                {
+                    foreach (StrongPlantingGunSlotItem slot in slots.ToArray())
+                    {
+                        object? currentItem = ReadInventoryItemAt(inventory, slot.Index);
+                        if (currentItem == null || !IsStrongPlantingGunItemAllowed(options, currentItem))
+                            continue;
+
+                        string kind = GetStrongPlantingGunItemKind(currentItem);
+                        object itemForCheck = CloneItem(currentItem, 1) ?? currentItem;
+                        if (!InvokeStrongPlantingGunCheckCanInteract(gun, equipment, itemForCheck))
+                            continue;
+
+                        if (!TryCostInventoryAtIndex(inventory, slot.Index, 1))
+                            continue;
+
+                        object itemForInteract = CloneItem(currentItem, 1) ?? itemForCheck;
+                        if (!InvokeStrongPlantingGunDoInteract(gun, equipment, itemForInteract))
+                            continue;
+
+                        consumed++;
+                        if (kind == "seed")
+                            seedActions++;
+                        else if (kind == "film")
+                            filmActions++;
+                        else if (kind == "fertilizer")
+                            fertilizerActions++;
+                        else if (kind == "water")
+                            waterActions++;
+                    }
+                }
+
+                if (consumed <= 0)
+                    return true;
+
+                InvokeNoArgIfAvailable(gun, "HideCellTip");
+                InvokeNoArgIfAvailable(gun, "ShineArea");
+                InvokeNoArgIfAvailable(gun, "InitCellTip");
+
+                string message = "owner=" + ownerId +
+                    ", slots=" + slots.Count +
+                    ", equipments=" + equipments.Count +
+                    ", seedActions=" + seedActions +
+                    ", filmActions=" + filmActions +
+                    ", fertilizerActions=" + fertilizerActions +
+                    ", waterActions=" + waterActions +
+                    ", consumed=" + consumed;
+                UpdateStrongPlantingGunStates(ownerId, options, equipments.Count, seedActions, filmActions, fertilizerActions, waterActions, consumed, message, "verified");
+                runtime.RuntimeMonitor.Log("StrongPlantingGun use " + message);
+                runtime.SetHookStatus("Farming.StrongPlantingGun", "verified", "Harmony Prefix: ItemFarmingGun.OnUseAsTool", message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Strong planting gun tool use failed.", ex.ToString());
+                runtime.SetHookStatus("Farming.StrongPlantingGun", "failed", "Harmony Prefix: ItemFarmingGun.OnUseAsTool", ex.GetType().Name + ": " + ex.Message);
+                return true;
+            }
+        }
+
+        internal bool HandleStrongPlantingGunUiPlaceToOtherSide(object uiState, int index)
+        {
+            try
+            {
+                if (!TryPrepareStrongPlantingGunUiTransfer(uiState, "FarmingGunUiState.HandlePlaceToOtherSide", out string ownerId, out StrongPlantingGunOptions options, out object container, out object containerInventory, out object backpackInventory, out object selectedItem))
+                    return true;
+
+                ExpandFarmingGunInventoryIfNeeded(container, "FarmingGunUiState.HandlePlaceToOtherSide");
+                object? taken = InvokeInventoryMethod(backpackInventory, "Take", index);
+                if (taken == null)
+                    return false;
+
+                object? leftover = PlaceInventoryItem(containerInventory, taken);
+                if (leftover != null)
+                    PlaceInventoryItemAt(backpackInventory, index, leftover);
+
+                string message = "owner=" + ownerId + ", action=put-stack, index=" + index + ", item=" + ReadStringMember(selectedItem, "name") + ", leftover=" + (leftover == null ? "none" : ReadIntMember(leftover, "count", 0).ToString(CultureInfo.InvariantCulture));
+                runtime.SetHookStatus("Farming.StrongPlantingGunUi", "verified", "Harmony Prefix: FarmingGunUiState.HandlePlaceToOtherSide", message);
+                if (options.VerboseLogging)
+                    runtime.RuntimeMonitor.Log("StrongPlantingGun UI transfer " + message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Strong planting gun UI stack transfer failed.", ex.ToString());
+                runtime.SetHookStatus("Farming.StrongPlantingGunUi", "failed", "Harmony Prefix: FarmingGunUiState.HandlePlaceToOtherSide", ex.GetType().Name + ": " + ex.Message);
+                return true;
+            }
+        }
+
+        internal bool HandleStrongPlantingGunUiSwapOneItem(object uiState, int index)
+        {
+            try
+            {
+                if (!TryPrepareStrongPlantingGunUiTransfer(uiState, "FarmingGunUiState.HandleSwapOneItem", out string ownerId, out StrongPlantingGunOptions options, out object container, out object containerInventory, out object backpackInventory, out object selectedItem))
+                    return true;
+
+                ExpandFarmingGunInventoryIfNeeded(container, "FarmingGunUiState.HandleSwapOneItem");
+                object? oneItem = CloneItem(selectedItem, 1);
+                if (oneItem == null || !CanPlaceInventoryItem(containerInventory, oneItem))
+                    return true;
+
+                int currentIndex = ReadIntMember(uiState, "currentIndex", index);
+                if (!TryCostInventoryAtIndex(backpackInventory, currentIndex, 1))
+                    return true;
+
+                object? leftover = PlaceInventoryItem(containerInventory, oneItem);
+                if (leftover != null)
+                    PlaceInventoryItemAt(backpackInventory, currentIndex, leftover);
+
+                string message = "owner=" + ownerId + ", action=put-one, index=" + currentIndex + ", item=" + ReadStringMember(selectedItem, "name") + ", leftover=" + (leftover == null ? "none" : ReadIntMember(leftover, "count", 0).ToString(CultureInfo.InvariantCulture));
+                runtime.SetHookStatus("Farming.StrongPlantingGunUi", "verified", "Harmony Prefix: FarmingGunUiState.HandleSwapOneItem", message);
+                if (options.VerboseLogging)
+                    runtime.RuntimeMonitor.Log("StrongPlantingGun UI transfer " + message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Strong planting gun UI one-item transfer failed.", ex.ToString());
+                runtime.SetHookStatus("Farming.StrongPlantingGunUi", "failed", "Harmony Prefix: FarmingGunUiState.HandleSwapOneItem", ex.GetType().Name + ": " + ex.Message);
+                return true;
+            }
+        }
+
+        internal Array ExtendAvailableInventoriesForChestLocator(object archive, object anchor, object area, bool useBox, Array nativeResult)
+        {
+            if (nativeResult == null || !TryGetChestLocatorPolicy(out string ownerId, out ChestLocatorEnhancerOptions options))
+                return nativeResult!;
+
+            Type? inventoryType = nativeResult.GetType().GetElementType();
+            if (inventoryType == null)
+                return nativeResult;
+
+            int baseCount = nativeResult.Length;
+            var inventories = new List<object>(Math.Max(baseCount + 4, 4));
+            var seen = new HashSet<int>();
+            for (int i = 0; i < nativeResult.Length; i++)
+                AddInventory(nativeResult.GetValue(i), inventoryType, inventories, seen);
+
+            int scannedRoots = 0;
+            int scannedEquipment = 0;
+            int sharedCases = 0;
+            int sharedStorageBoxes = 0;
+            bool nativeAutoUseBox = !options.RespectNativeAutoUseBoxSetting || IsNativeAutoUseBoxEnabled();
+            Type? caseType = ResolveType("DolocTown.Case, Assembly-CSharp");
+            Type? storageShelfType = ResolveType("DolocTown.StorageShelf, Assembly-CSharp");
+
+            foreach (object room in EnumerateMachineCandidateRooms(ResolveType("DolocAPI, Assembly-CSharp") ?? archive.GetType(), archive, ReadMember(archive, "currentRoom") ?? ReadMember(archive, "CurrentRoom") ?? ReadStaticMember(ResolveType("DolocAPI, Assembly-CSharp"), "CurrentRoom") ?? archive))
+            {
+                scannedRoots++;
+                foreach (object equipment in EnumerateEquipments(room))
+                {
+                    scannedEquipment++;
+                    if (!ReadBoolMember(equipment, "IsShared", false))
+                        continue;
+
+                    Type equipmentType = equipment.GetType();
+                    if (options.IncludeSharedCases && caseType != null && caseType.IsAssignableFrom(equipmentType))
+                    {
+                        object? inventory = ReadMember(equipment, "inventory");
+                        int before = inventories.Count;
+                        AddInventory(inventory, inventoryType, inventories, seen);
+                        if (inventories.Count > before)
+                            sharedCases++;
+                        continue;
+                    }
+
+                    if (options.IncludeSharedStorageShelfBoxes && useBox && nativeAutoUseBox && storageShelfType != null && storageShelfType.IsAssignableFrom(equipmentType))
+                    {
+                        object? shelfInventory = ReadMember(equipment, "inventory");
+                        MethodInfo? readAll = shelfInventory == null ? null : FindMethodInHierarchy(shelfInventory.GetType(), "ReadAll", 0);
+                        object? readResult = readAll == null ? null : readAll.Invoke(shelfInventory, null);
+                        if (!(readResult is IEnumerable shelfItems))
+                            continue;
+
+                        foreach (object? item in shelfItems)
+                        {
+                            if (item == null || !IsTypeOrBase(item.GetType(), "DolocTown.ItemBox"))
+                                continue;
+                            object? boxInventory = ReadMember(item, "inventory");
+                            int before = inventories.Count;
+                            AddInventory(boxInventory, inventoryType, inventories, seen);
+                            if (inventories.Count > before)
+                                sharedStorageBoxes++;
+                        }
+                    }
+                }
+            }
+
+            int appended = inventories.Count - baseCount;
+            ChestLocatorEnhancerExtensionApplications++;
+            LastChestLocatorEnhancerSummary = "owner=" + ownerId +
+                ", useBox=" + useBox +
+                ", nativeAutoUseBox=" + nativeAutoUseBox +
+                ", base=" + baseCount +
+                ", appended=" + appended +
+                ", roots=" + scannedRoots +
+                ", equipments=" + scannedEquipment +
+                ", sharedCases=" + sharedCases +
+                ", sharedStorageBoxes=" + sharedStorageBoxes +
+                ", applications=" + ChestLocatorEnhancerExtensionApplications;
+            UpdateChestLocatorEnhancerStates(ownerId, options, baseCount, appended, scannedRoots, scannedEquipment, sharedCases, sharedStorageBoxes, LastChestLocatorEnhancerSummary);
+            if (options.VerboseLogging || appended > 0 || ChestLocatorEnhancerExtensionApplications <= 3)
+                runtime.RuntimeMonitor.Log("ChestLocatorEnhancer inventories " + LastChestLocatorEnhancerSummary);
+            runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", appended > 0 ? "verified" : "experimental", "Harmony Postfix: ArchiveDataHandle.GetAvailableInventories", LastChestLocatorEnhancerSummary);
+
+            if (appended <= 0)
+                return nativeResult;
+
+            Array next = Array.CreateInstance(inventoryType, inventories.Count);
+            for (int i = 0; i < inventories.Count; i++)
+                next.SetValue(inventories[i], i);
+            return next;
+        }
+
+        private bool TryGetChestLocatorPolicy(out string ownerId, out ChestLocatorEnhancerOptions options)
+        {
+            foreach (KeyValuePair<string, ChestLocatorEnhancerOptions> entry in chestLocatorOptions)
+            {
+                ChestLocatorEnhancerOptions candidate = entry.Value ?? new ChestLocatorEnhancerOptions { Enabled = false };
+                if (!candidate.Enabled)
+                    continue;
+                ownerId = entry.Key;
+                options = candidate;
+                return true;
+            }
+
+            ownerId = string.Empty;
+            options = new ChestLocatorEnhancerOptions { Enabled = false };
+            return false;
+        }
+
+        private void UpdateChestLocatorEnhancerStates(string ownerId, ChestLocatorEnhancerOptions options, int baseCount, int appended, int roots, int equipment, int cases, int storageBoxes, string message)
+        {
+            foreach (KeyValuePair<string, ChestLocatorEnhancerOptions> entry in chestLocatorOptions.ToArray())
+            {
+                ChestLocatorEnhancerOptions entryOptions = entry.Value ?? new ChestLocatorEnhancerOptions();
+                ChestLocatorEnhancerState state = GetChestLocatorEnhancerState(entry.Key);
+                state.IsConfigured = true;
+                state.Enabled = entryOptions.Enabled;
+                state.HookInstalled = chestLocatorInventoryHookInstalled;
+                state.ExtensionApplications = ChestLocatorEnhancerExtensionApplications;
+                state.LastBaseInventoryCount = baseCount;
+                state.LastAppendedInventoryCount = appended;
+                state.LastScannedRootCount = roots;
+                state.LastScannedEquipmentCount = equipment;
+                state.LastSharedCaseCount = cases;
+                state.LastSharedStorageBoxCount = storageBoxes;
+                state.Status = entryOptions.Enabled ? (appended > 0 && entry.Key.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? "verified" : "configured-experimental-inventory-hook") : "disabled";
+                state.LastMessage = message ?? string.Empty;
+                chestLocatorStates[entry.Key] = state;
+            }
+        }
+
+        private ChestLocatorEnhancerState GetChestLocatorEnhancerState(string ownerId)
+        {
+            ownerId ??= string.Empty;
+            if (chestLocatorStates.TryGetValue(ownerId, out ChestLocatorEnhancerState state))
+                return state;
+
+            ChestLocatorEnhancerOptions options = chestLocatorOptions.TryGetValue(ownerId, out ChestLocatorEnhancerOptions? configured)
+                ? configured
+                : new ChestLocatorEnhancerOptions { Enabled = false };
+            return new ChestLocatorEnhancerState
+            {
+                OwnerId = ownerId,
+                IsConfigured = chestLocatorOptions.ContainsKey(ownerId),
+                Enabled = options.Enabled && chestLocatorOptions.ContainsKey(ownerId),
+                HookInstalled = chestLocatorInventoryHookInstalled,
+                Status = chestLocatorOptions.ContainsKey(ownerId) ? (options.Enabled ? "registered" : "disabled") : "not-configured",
+                LastMessage = chestLocatorOptions.ContainsKey(ownerId) ? "Chest locator enhancer policy registered." : "No chest locator enhancer policy registered."
+            };
+        }
+
+        private static ChestLocatorEnhancerState CloneChestLocatorEnhancerState(ChestLocatorEnhancerState state)
+        {
+            return new ChestLocatorEnhancerState
+            {
+                OwnerId = state.OwnerId,
+                IsConfigured = state.IsConfigured,
+                Enabled = state.Enabled,
+                HookInstalled = state.HookInstalled,
+                ExtensionApplications = state.ExtensionApplications,
+                LastBaseInventoryCount = state.LastBaseInventoryCount,
+                LastAppendedInventoryCount = state.LastAppendedInventoryCount,
+                LastScannedRootCount = state.LastScannedRootCount,
+                LastScannedEquipmentCount = state.LastScannedEquipmentCount,
+                LastSharedCaseCount = state.LastSharedCaseCount,
+                LastSharedStorageBoxCount = state.LastSharedStorageBoxCount,
+                Status = state.Status,
+                LastMessage = state.LastMessage
+            };
+        }
+
+        private static ChestLocatorEnhancerOptions NormalizeChestLocatorEnhancerOptions(ChestLocatorEnhancerOptions? options)
+        {
+            options ??= new ChestLocatorEnhancerOptions();
+            return new ChestLocatorEnhancerOptions
+            {
+                Enabled = options.Enabled,
+                IncludeSharedCases = options.IncludeSharedCases,
+                IncludeSharedStorageShelfBoxes = options.IncludeSharedStorageShelfBoxes,
+                RespectNativeAutoUseBoxSetting = options.RespectNativeAutoUseBoxSetting,
+                VerboseLogging = options.VerboseLogging
+            };
+        }
+
+        private bool TryGetStrongPlantingGunPolicy(out string ownerId, out StrongPlantingGunOptions options)
+        {
+            foreach (KeyValuePair<string, StrongPlantingGunOptions> entry in strongPlantingGunOptions)
+            {
+                StrongPlantingGunOptions candidate = entry.Value ?? new StrongPlantingGunOptions { Enabled = false };
+                if (!candidate.Enabled)
+                    continue;
+                ownerId = entry.Key;
+                options = candidate;
+                return true;
+            }
+
+            ownerId = string.Empty;
+            options = new StrongPlantingGunOptions { Enabled = false };
+            return false;
+        }
+
+        private void UpdateStrongPlantingGunStates(string ownerId, StrongPlantingGunOptions options, int visitedEquipment, int seedActions, int filmActions, int fertilizerActions, int waterActions, int consumed, string message, string status)
+        {
+            foreach (KeyValuePair<string, StrongPlantingGunOptions> entry in strongPlantingGunOptions.ToArray())
+            {
+                StrongPlantingGunOptions entryOptions = entry.Value ?? new StrongPlantingGunOptions();
+                StrongPlantingGunState state = GetStrongPlantingGunState(entry.Key);
+                state.IsConfigured = true;
+                state.Enabled = entryOptions.Enabled;
+                state.SlotCount = entryOptions.SlotCount;
+                state.ToolHookInstalled = strongPlantingGunToolHookInstalled;
+                state.UiHookInstalled = strongPlantingGunUiHookInstalled;
+                state.LastVisitedEquipmentCount = visitedEquipment;
+                state.LastSeedActions = seedActions;
+                state.LastFilmActions = filmActions;
+                state.LastFertilizerActions = fertilizerActions;
+                state.LastWaterActions = waterActions;
+                state.LastConsumedItemCount = consumed;
+                state.Status = entryOptions.Enabled
+                    ? (entry.Key.Equals(ownerId, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(status) ? status : "configured-experimental-tool-ui-hooks")
+                    : "disabled";
+                state.LastMessage = message ?? string.Empty;
+                strongPlantingGunStates[entry.Key] = state;
+            }
+        }
+
+        private StrongPlantingGunState GetStrongPlantingGunState(string ownerId)
+        {
+            ownerId ??= string.Empty;
+            if (strongPlantingGunStates.TryGetValue(ownerId, out StrongPlantingGunState state))
+                return state;
+
+            StrongPlantingGunOptions options = strongPlantingGunOptions.TryGetValue(ownerId, out StrongPlantingGunOptions? configured)
+                ? configured
+                : new StrongPlantingGunOptions { Enabled = false };
+            return new StrongPlantingGunState
+            {
+                OwnerId = ownerId,
+                IsConfigured = strongPlantingGunOptions.ContainsKey(ownerId),
+                Enabled = options.Enabled && strongPlantingGunOptions.ContainsKey(ownerId),
+                SlotCount = Math.Max(1, options.SlotCount),
+                ToolHookInstalled = strongPlantingGunToolHookInstalled,
+                UiHookInstalled = strongPlantingGunUiHookInstalled,
+                Status = strongPlantingGunOptions.ContainsKey(ownerId) ? (options.Enabled ? "registered" : "disabled") : "not-configured",
+                LastMessage = strongPlantingGunOptions.ContainsKey(ownerId) ? "Strong planting gun policy registered." : "No strong planting gun policy registered."
+            };
+        }
+
+        private static StrongPlantingGunState CloneStrongPlantingGunState(StrongPlantingGunState state)
+        {
+            return new StrongPlantingGunState
+            {
+                OwnerId = state.OwnerId,
+                IsConfigured = state.IsConfigured,
+                Enabled = state.Enabled,
+                SlotCount = state.SlotCount,
+                ToolHookInstalled = state.ToolHookInstalled,
+                UiHookInstalled = state.UiHookInstalled,
+                ExpandedGunCount = state.ExpandedGunCount,
+                LastVisitedEquipmentCount = state.LastVisitedEquipmentCount,
+                LastSeedActions = state.LastSeedActions,
+                LastFilmActions = state.LastFilmActions,
+                LastFertilizerActions = state.LastFertilizerActions,
+                LastWaterActions = state.LastWaterActions,
+                LastConsumedItemCount = state.LastConsumedItemCount,
+                Status = state.Status,
+                LastMessage = state.LastMessage
+            };
+        }
+
+        private static StrongPlantingGunOptions NormalizeStrongPlantingGunOptions(StrongPlantingGunOptions? options)
+        {
+            options ??= new StrongPlantingGunOptions();
+            return new StrongPlantingGunOptions
+            {
+                Enabled = options.Enabled,
+                SlotCount = Math.Max(1, Math.Min(12, options.SlotCount)),
+                IncludeSeeds = options.IncludeSeeds,
+                IncludeFilms = options.IncludeFilms,
+                IncludeFertilizers = options.IncludeFertilizers,
+                IncludeWater = options.IncludeWater,
+                VerboseLogging = options.VerboseLogging
+            };
+        }
+
+        private static bool IsFarmingGun(object instance)
+        {
+            return instance != null && IsTypeOrBase(instance.GetType(), "DolocTown.ItemFarmingGun");
+        }
+
+        private static void TrySetStrongPlantingGunFunctionCapacity(object func, int capacity)
+        {
+            try
+            {
+                for (Type? type = func.GetType(); type != null; type = type.BaseType)
+                {
+                    FieldInfo? backingField = type.GetField("<Capacity>k__BackingField", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (backingField != null && backingField.FieldType == typeof(int))
+                    {
+                        backingField.SetValue(func, capacity);
+                        return;
+                    }
+
+                    PropertyInfo? property = type.GetProperty("Capacity", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (property != null && property.CanWrite && property.PropertyType == typeof(int))
+                    {
+                        property.SetValue(func, capacity);
+                        return;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static List<StrongPlantingGunSlotItem> ReadStrongPlantingGunSlotItems(object inventory, StrongPlantingGunOptions options)
+        {
+            int capacity = Math.Max(0, ReadIntMember(inventory, "capacity", 0));
+            var items = new List<StrongPlantingGunSlotItem>();
+            for (int i = 0; i < capacity; i++)
+            {
+                object? item = ReadInventoryItemAt(inventory, i);
+                if (item != null && IsStrongPlantingGunItemAllowed(options, item))
+                    items.Add(new StrongPlantingGunSlotItem(i, item));
+            }
+            return items;
+        }
+
+        private static object? ReadInventoryItemAt(object inventory, int index)
+        {
+            MethodInfo? read = FindMethodInHierarchy(inventory.GetType(), "Read", 1);
+            try
+            {
+                return read?.Invoke(inventory, new object[] { index });
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static IEnumerable<object> ReadStrongPlantingGunEquipments(object gun)
+        {
+            MethodInfo? getEquipments = FindMethodInHierarchy(gun.GetType(), "GetEquipmentsFromArea", 0);
+            object? result = null;
+            try
+            {
+                result = getEquipments?.Invoke(gun, null);
+            }
+            catch
+            {
+            }
+
+            var seen = new HashSet<int>();
+            foreach (object equipment in EnumerateObjects(result))
+            {
+                int key = RuntimeHelpers.GetHashCode(equipment);
+                if (seen.Add(key))
+                    yield return equipment;
+            }
+
+        }
+
+        private static bool IsStrongPlantingGunItemAllowed(StrongPlantingGunOptions options, object item)
+        {
+            string kind = GetStrongPlantingGunItemKind(item);
+            return (options.IncludeSeeds && kind == "seed") ||
+                (options.IncludeFilms && kind == "film") ||
+                (options.IncludeFertilizers && kind == "fertilizer") ||
+                (options.IncludeWater && kind == "water");
+        }
+
+        private static string GetStrongPlantingGunItemKind(object item)
+        {
+            if (item == null)
+                return string.Empty;
+            Type type = item.GetType();
+            if (IsTypeOrBase(type, "DolocTown.ItemSeed"))
+                return "seed";
+            if (IsTypeOrBase(type, "DolocTown.ItemFilm"))
+                return "film";
+            if (IsTypeOrBase(type, "DolocTown.ItemFertilizer"))
+                return "fertilizer";
+
+            string itemName = ReadStringMember(item, "name");
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? globalParameter = ReadStaticMember(dolocApi, "GlobalParameter");
+            string bottleOfWater = globalParameter == null ? string.Empty : ReadStringMember(globalParameter, "ItemRefBottleOfWater");
+            return !string.IsNullOrWhiteSpace(itemName) && itemName.Equals(bottleOfWater, StringComparison.OrdinalIgnoreCase) ? "water" : string.Empty;
+        }
+
+        private static object? CloneItem(object item, int count)
+        {
+            try
+            {
+                MethodInfo? clone = FindMethodInHierarchy(item.GetType(), "Clone", 1);
+                return clone?.Invoke(item, new object[] { count });
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool InvokeStrongPlantingGunCheckCanInteract(object gun, object equipment, object item)
+        {
+            MethodInfo? method = FindStrongPlantingGunMethod(
+                gun.GetType(),
+                "CheckCanInteract",
+                2,
+                parameters => !parameters[0].ParameterType.IsArray && parameters[0].ParameterType.IsInstanceOfType(equipment));
+            try
+            {
+                return method?.Invoke(gun, new[] { equipment, item }) is bool result && result;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool InvokeStrongPlantingGunDoInteract(object gun, object equipment, object item)
+        {
+            MethodInfo? method = FindStrongPlantingGunMethod(
+                gun.GetType(),
+                "DoInteract",
+                2,
+                parameters => !parameters[0].ParameterType.IsArray && parameters[0].ParameterType.IsInstanceOfType(equipment));
+            try
+            {
+                return method?.Invoke(gun, new[] { equipment, item }) is bool result && result;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static MethodInfo? FindStrongPlantingGunMethod(Type? type, string name, int parameterCount, Func<ParameterInfo[], bool> predicate)
+        {
+            for (Type? current = type; current != null; current = current.BaseType)
+            {
+                foreach (MethodInfo method in current.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                {
+                    ParameterInfo[] parameters = method.GetParameters();
+                    if (method.Name == name && parameters.Length == parameterCount && predicate(parameters))
+                        return method;
+                }
+            }
+            return null;
+        }
+
+        private static bool TryCostInventoryAtIndex(object inventory, int index, int count)
+        {
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(inventory.GetType(), "TryCostAtIndex", 3);
+                if (method != null)
+                    return method.Invoke(inventory, new object[] { index, count, false }) is bool result && result;
+
+                method = FindMethodInHierarchy(inventory.GetType(), "TryCostAtIndex", 2);
+                return method?.Invoke(inventory, new object[] { index, count }) is bool fallbackResult && fallbackResult;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static object? InvokeInventoryMethod(object inventory, string methodName, int index)
+        {
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(inventory.GetType(), methodName, 1);
+                return method?.Invoke(inventory, new object[] { index });
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool CanPlaceInventoryItem(object inventory, object item)
+        {
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(inventory.GetType(), "CanPlaceIn", 1);
+                return method?.Invoke(inventory, new[] { item }) is bool result && result;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static object? PlaceInventoryItem(object inventory, object item)
+        {
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(inventory.GetType(), "PlaceItem", 1);
+                return method?.Invoke(inventory, new[] { item });
+            }
+            catch
+            {
+                return item;
+            }
+        }
+
+        private static object? PlaceInventoryItemAt(object inventory, int index, object item)
+        {
+            try
+            {
+                MethodInfo? method = FindMethodInHierarchy(inventory.GetType(), "PlaceItemAt", 2);
+                return method?.Invoke(inventory, new object[] { index, item });
+            }
+            catch
+            {
+                return item;
+            }
+        }
+
+        private static void InvokeNoArgIfAvailable(object instance, string methodName)
+        {
+            try
+            {
+                FindMethodInHierarchy(instance.GetType(), methodName, 0)?.Invoke(instance, null);
+            }
+            catch
+            {
+            }
+        }
+
+        private bool TryPrepareStrongPlantingGunUiTransfer(object uiState, string source, out string ownerId, out StrongPlantingGunOptions options, out object container, out object containerInventory, out object backpackInventory, out object selectedItem)
+        {
+            ownerId = string.Empty;
+            options = null!;
+            container = null!;
+            containerInventory = null!;
+            backpackInventory = null!;
+            selectedItem = null!;
+
+            if (uiState == null)
+                return false;
+
+            if (!ReadBoolMember(uiState, "inBackpack", false))
+                return false;
+
+            object? buffer = ReadMember(uiState, "buffer");
+            if (buffer != null && !ReadBoolMember(buffer, "IsEmpty", ReadBoolMember(buffer, "isEmpty", false)))
+                return false;
+
+            object? possibleContainer = ReadMember(uiState, "container");
+            if (possibleContainer == null || !IsFarmingGun(possibleContainer))
+                return false;
+
+            object? possibleSelectedItem = ReadMember(uiState, "selectedItem");
+            if (possibleSelectedItem == null)
+                return false;
+
+            if (!TryGetStrongPlantingGunPolicy(out ownerId, out options) || !IsStrongPlantingGunItemAllowed(options, possibleSelectedItem))
+                return false;
+
+            object? possibleContainerInventory = ReadMember(uiState, "containerInventory");
+            object? possibleBackpackInventory = ReadMember(uiState, "backpackInventory");
+            if (possibleContainerInventory == null || possibleBackpackInventory == null)
+                return false;
+
+            container = possibleContainer;
+            containerInventory = possibleContainerInventory;
+            backpackInventory = possibleBackpackInventory;
+            selectedItem = possibleSelectedItem;
+            return true;
+        }
+
+        private sealed class StrongPlantingGunSlotItem
+        {
+            public StrongPlantingGunSlotItem(int index, object item)
+            {
+                Index = index;
+                Item = item;
+            }
+
+            public int Index { get; }
+            public object Item { get; }
+        }
+
+        private static bool AddInventory(object? inventory, Type inventoryType, List<object> inventories, HashSet<int> seen)
+        {
+            if (inventory == null || !inventoryType.IsInstanceOfType(inventory))
+                return false;
+
+            int key = RuntimeHelpers.GetHashCode(inventory);
+            if (!seen.Add(key))
+                return false;
+
+            inventories.Add(inventory);
+            return true;
+        }
+
+        private static bool IsNativeAutoUseBoxEnabled()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? userSettings = ReadStaticMember(dolocApi, "userSettings");
+            return userSettings == null || ReadBoolMember(userSettings, "autoUseBox", true);
+        }
+
+        private void RefreshSaveSlotExpansionForRuntime()
+        {
+            if (saveSlotOptions.Count == 0)
+                return;
+
+            int target = ComputeRequestedSaveSlotCount();
+            int native = GetNativeArchiveSlotCount();
+            if (native != target)
+                ApplySaveSlotExpansion(string.Empty, "runtime refresh native=" + native + " target=" + target);
+        }
+
+        private SaveSlotsRegisterResult ApplySaveSlotExpansion(string ownerId, string reason)
+        {
+            ownerId ??= string.Empty;
+            SaveSlotsOptions ownerOptions = GetSaveSlotsOptions(ownerId);
+            int requested = ownerOptions.Enabled ? ownerOptions.SlotCount : VanillaArchiveSlotCount;
+            var result = new SaveSlotsRegisterResult
+            {
+                OwnerId = ownerId,
+                RequestedSlotCount = requested
+            };
+
+            if (!TryGetNativeArchiveSlotManager(out object? manager, out string managerMessage))
+            {
+                result.Success = false;
+                result.FailureReason = "missing-game-manager";
+                result.Message = managerMessage;
+                saveSlotStates[ownerId] = BuildSaveSlotsState(ownerId, ownerOptions, 0, 0, "pending-native-game-manager", managerMessage);
+                runtime.SetHookStatus("Save.MoreSlotsApi", "pending", "DolocAPI.gameManager.archiveFileCount", managerMessage);
+                return result;
+            }
+
+            int previous = ReadIntMember(manager!, "archiveFileCount", VanillaArchiveSlotCount);
+            int applied = ComputeRequestedSaveSlotCount();
+            bool set = SetMemberValue(manager!, "archiveFileCount", applied);
+            int nativeAfter = ReadIntMember(manager!, "archiveFileCount", previous);
+            result.PreviousSlotCount = previous;
+            result.AppliedSlotCount = nativeAfter;
+            result.Success = set && nativeAfter == applied;
+            result.FailureReason = result.Success ? string.Empty : "archive-count-set-failed";
+            result.Message = result.Success
+                ? "Official save slot count set " + previous + "->" + nativeAfter + " through DolocAPI.gameManager.archiveFileCount; LocalSave and GameDataPanel keep owning archive files/UI."
+                : "Failed to set DolocAPI.gameManager.archiveFileCount to " + applied + "; native count is " + nativeAfter + ".";
+
+            UpdateSaveSlotsStates(nativeAfter, applied, result.Message);
+            runtime.SetHookStatus("Save.MoreSlotsApi", result.Success ? "configured-official-archive-count" : "failed", "DolocAPI.gameManager.archiveFileCount -> LocalSave.GetAllArchiveInfo -> GameDataPanel.Render", result.Message + " reason=" + (reason ?? string.Empty) + ".");
+            return result;
+        }
+
+        private void UpdateSaveSlotsStates(int nativeSlotCount, int appliedSlotCount, string message)
+        {
+            foreach (KeyValuePair<string, SaveSlotsOptions> entry in saveSlotOptions.ToArray())
+            {
+                SaveSlotsOptions options = entry.Value ?? new SaveSlotsOptions { Enabled = false, SlotCount = VanillaArchiveSlotCount };
+                saveSlotStates[entry.Key] = BuildSaveSlotsState(entry.Key, options, nativeSlotCount, appliedSlotCount, options.Enabled ? "configured-official-archive-count" : "disabled-vanilla-slot-count", message);
+            }
+        }
+
+        private SaveSlotsState BuildSaveSlotsState(string ownerId, SaveSlotsOptions options, int nativeSlotCount, int appliedSlotCount, string status, string message)
+        {
+            return new SaveSlotsState
+            {
+                OwnerId = ownerId ?? string.Empty,
+                IsConfigured = true,
+                Enabled = options.Enabled,
+                NativeSlotCount = nativeSlotCount,
+                RequestedSlotCount = options.Enabled ? options.SlotCount : VanillaArchiveSlotCount,
+                AppliedSlotCount = appliedSlotCount,
+                Status = status ?? string.Empty,
+                LastMessage = message ?? string.Empty
+            };
+        }
+
+        private SaveSlotsOptions GetSaveSlotsOptions(string ownerId)
+        {
+            return saveSlotOptions.TryGetValue(ownerId ?? string.Empty, out SaveSlotsOptions? options)
+                ? options
+                : new SaveSlotsOptions { Enabled = false, SlotCount = VanillaArchiveSlotCount };
+        }
+
+        private int ComputeRequestedSaveSlotCount()
+        {
+            int target = VanillaArchiveSlotCount;
+            foreach (SaveSlotsOptions options in saveSlotOptions.Values)
+            {
+                if (options?.Enabled == true)
+                    target = Math.Max(target, ClampInt(options.SlotCount, VanillaArchiveSlotCount, 60));
+            }
+            return target;
+        }
+
+        private static SaveSlotsOptions NormalizeSaveSlotsOptions(SaveSlotsOptions? options)
+        {
+            options ??= new SaveSlotsOptions();
+            return new SaveSlotsOptions
+            {
+                Enabled = options.Enabled,
+                SlotCount = ClampInt(options.SlotCount, VanillaArchiveSlotCount, 60),
+                VerboseLogging = options.VerboseLogging
+            };
+        }
+
+        private void RefreshCameraZoomForRuntime()
+        {
+            if (cameraZoomOptions.Count == 0 && cameraZoomCurrentViewScale <= 1d)
+                return;
+
+            ApplyCameraZoomTarget("runtime refresh");
+        }
+
+        private CameraZoomResult ApplyCameraZoomTarget(string reason)
+        {
+            var result = new CameraZoomResult
+            {
+                Success = false,
+                RequestedViewScale = ComputeCameraZoomTargetScale(),
+                BeforeViewScale = cameraZoomCurrentViewScale <= 0 ? 1d : cameraZoomCurrentViewScale,
+                AfterViewScale = ComputeCameraZoomTargetScale()
+            };
+
+            if (!TryReadCameraOrthographicSize(out double currentSize, out string readMessage))
+            {
+                result.FailureReason = "missing-camera";
+                result.Message = readMessage;
+                UpdateCameraZoomStates(cameraAvailable: false, result.AfterViewScale, cameraZoomVanillaOrthographicSize, cameraZoomAppliedOrthographicSize, "pending-camera", readMessage);
+                runtime.SetHookStatus("Camera.ZoomApi", "pending", "DolocAPI.mainCamera.orthographicSize", readMessage);
+                return result;
+            }
+
+            if (cameraZoomVanillaOrthographicSize <= 0 || result.BeforeViewScale <= 1.0001d)
+                cameraZoomVanillaOrthographicSize = currentSize > 0 ? currentSize : cameraZoomVanillaOrthographicSize;
+            if (cameraZoomVanillaOrthographicSize <= 0)
+                cameraZoomVanillaOrthographicSize = currentSize;
+
+            double targetSize = Math.Max(0.01d, cameraZoomVanillaOrthographicSize * result.AfterViewScale);
+            if (!TryWriteCameraOrthographicSize(targetSize, out string writeMessage))
+            {
+                result.FailureReason = "camera-write-failed";
+                result.Message = writeMessage;
+                UpdateCameraZoomStates(cameraAvailable: true, result.AfterViewScale, cameraZoomVanillaOrthographicSize, currentSize, "failed", writeMessage);
+                runtime.SetHookStatus("Camera.ZoomApi", "failed", "DolocAPI.mainCamera.orthographicSize", writeMessage);
+                return result;
+            }
+
+            cameraZoomCurrentViewScale = result.AfterViewScale;
+            cameraZoomAppliedOrthographicSize = targetSize;
+            result.Success = true;
+            result.VanillaOrthographicSize = cameraZoomVanillaOrthographicSize;
+            result.AppliedOrthographicSize = targetSize;
+            result.Message = "Camera orthographic size " + currentSize.ToString("0.###", CultureInfo.InvariantCulture) + "->" + targetSize.ToString("0.###", CultureInfo.InvariantCulture) + " viewScale=" + result.AfterViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " reason=" + (reason ?? string.Empty) + ".";
+            UpdateCameraZoomStates(cameraAvailable: true, result.AfterViewScale, cameraZoomVanillaOrthographicSize, targetSize, result.AfterViewScale > 1.0001d ? "applied" : "vanilla", result.Message);
+            runtime.SetHookStatus("Camera.ZoomApi", "verified", "DolocAPI.mainCamera.orthographicSize", result.Message);
+            return result;
+        }
+
+        private double ComputeCameraZoomTargetScale()
+        {
+            double target = 1d;
+            foreach (KeyValuePair<string, CameraZoomOptions> entry in cameraZoomOptions)
+            {
+                CameraZoomOptions options = entry.Value ?? new CameraZoomOptions { Enabled = false };
+                CameraZoomState state = GetCameraZoomState(entry.Key);
+                if (options.Enabled)
+                    target = Math.Max(target, ClampDouble(state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale, options.MinViewScale, options.MaxViewScale));
+            }
+            return target;
+        }
+
+        private void UpdateCameraZoomStates(bool cameraAvailable, double targetScale, double vanillaSize, double appliedSize, string status, string message)
+        {
+            foreach (KeyValuePair<string, CameraZoomOptions> entry in cameraZoomOptions.ToArray())
+            {
+                CameraZoomOptions options = entry.Value ?? new CameraZoomOptions();
+                CameraZoomState state = GetCameraZoomState(entry.Key);
+                state.IsConfigured = true;
+                state.Enabled = options.Enabled;
+                state.MinViewScale = options.MinViewScale;
+                state.MaxViewScale = options.MaxViewScale;
+                state.Step = options.Step;
+                state.CameraAvailable = cameraAvailable;
+                state.VanillaOrthographicSize = vanillaSize;
+                state.AppliedOrthographicSize = appliedSize;
+                state.Status = options.Enabled ? status : "disabled";
+                state.LastMessage = message ?? string.Empty;
+                if (!options.Enabled)
+                    state.CurrentViewScale = 1d;
+                else if (state.CurrentViewScale <= 0)
+                    state.CurrentViewScale = Math.Max(1d, targetScale);
+                cameraZoomStates[entry.Key] = state;
+            }
+        }
+
+        private CameraZoomState GetCameraZoomState(string ownerId)
+        {
+            ownerId ??= string.Empty;
+            if (cameraZoomStates.TryGetValue(ownerId, out CameraZoomState state))
+                return state;
+
+            CameraZoomOptions options = GetCameraZoomOptions(ownerId);
+            return new CameraZoomState
+            {
+                OwnerId = ownerId,
+                IsConfigured = cameraZoomOptions.ContainsKey(ownerId),
+                Enabled = false,
+                MinViewScale = options.MinViewScale,
+                MaxViewScale = options.MaxViewScale,
+                Step = options.Step,
+                CurrentViewScale = 1d,
+                VanillaOrthographicSize = cameraZoomVanillaOrthographicSize,
+                AppliedOrthographicSize = cameraZoomAppliedOrthographicSize,
+                CameraAvailable = TryGetMainCameraObject() != null,
+                Status = cameraZoomOptions.ContainsKey(ownerId) ? "registered" : "not-configured",
+                LastMessage = cameraZoomOptions.ContainsKey(ownerId) ? "Camera zoom policy registered." : "No camera zoom policy registered."
+            };
+        }
+
+        private static CameraZoomState CloneCameraZoomState(CameraZoomState state)
+        {
+            return new CameraZoomState
+            {
+                OwnerId = state.OwnerId,
+                IsConfigured = state.IsConfigured,
+                Enabled = state.Enabled,
+                MinViewScale = state.MinViewScale,
+                MaxViewScale = state.MaxViewScale,
+                Step = state.Step,
+                CurrentViewScale = state.CurrentViewScale,
+                VanillaOrthographicSize = state.VanillaOrthographicSize,
+                AppliedOrthographicSize = state.AppliedOrthographicSize,
+                CameraAvailable = state.CameraAvailable,
+                Status = state.Status,
+                LastMessage = state.LastMessage
+            };
+        }
+
+        private CameraZoomOptions GetCameraZoomOptions(string ownerId)
+        {
+            return cameraZoomOptions.TryGetValue(ownerId ?? string.Empty, out CameraZoomOptions? options)
+                ? options
+                : new CameraZoomOptions { Enabled = false };
+        }
+
+        private static CameraZoomOptions NormalizeCameraZoomOptions(CameraZoomOptions? options)
+        {
+            options ??= new CameraZoomOptions();
+            double min = ClampDouble(options.MinViewScale <= 0 ? 1d : options.MinViewScale, 1d, 16d);
+            double max = ClampDouble(options.MaxViewScale <= 0 ? 4d : options.MaxViewScale, min, 16d);
+            double step = ClampDouble(options.Step <= 0 ? 0.25d : options.Step, 0.05d, Math.Max(0.05d, max - min));
+            return new CameraZoomOptions
+            {
+                Enabled = options.Enabled,
+                MinViewScale = min,
+                MaxViewScale = max,
+                Step = step,
+                VerboseLogging = options.VerboseLogging
+            };
+        }
+
+        private static object? TryGetMainCameraObject()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? camera = ReadStaticMember(dolocApi, "mainCamera");
+            if (camera != null)
+                return camera;
+
+            Type? cameraType = ResolveType("UnityEngine.Camera, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Camera, UnityEngine");
+            return ReadStaticMember(cameraType, "main");
+        }
+
+        private static bool TryReadCameraOrthographicSize(out double size, out string message)
+        {
+            size = 0;
+            object? camera = TryGetMainCameraObject();
+            if (camera == null)
+            {
+                message = "Main Unity camera is not available yet.";
+                return false;
+            }
+
+            object? value = ReadMember(camera, "orthographicSize");
+            if (value == null)
+            {
+                message = "Camera.orthographicSize is not readable.";
+                return false;
+            }
+
+            try
+            {
+                size = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                message = string.Empty;
+                return size > 0;
+            }
+            catch (Exception ex)
+            {
+                message = "Camera.orthographicSize conversion failed: " + ex.GetType().Name + ".";
+                return false;
+            }
+        }
+
+        private static bool TryWriteCameraOrthographicSize(double size, out string message)
+        {
+            object? camera = TryGetMainCameraObject();
+            if (camera == null)
+            {
+                message = "Main Unity camera is not available yet.";
+                return false;
+            }
+
+            for (Type? type = camera.GetType(); type != null; type = type.BaseType)
+            {
+                PropertyInfo? property = type.GetProperty("orthographicSize", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null && property.CanWrite)
+                {
+                    try
+                    {
+                        object value = property.PropertyType == typeof(float) ? (object)(float)size : Convert.ChangeType(size, property.PropertyType, CultureInfo.InvariantCulture);
+                        property.SetValue(camera, value, null);
+                        message = string.Empty;
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        message = "Camera.orthographicSize property write failed: " + ex.GetType().Name + ".";
+                        return false;
+                    }
+                }
+
+                FieldInfo? field = type.GetField("orthographicSize", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    try
+                    {
+                        object value = field.FieldType == typeof(float) ? (object)(float)size : Convert.ChangeType(size, field.FieldType, CultureInfo.InvariantCulture);
+                        field.SetValue(camera, value);
+                        message = string.Empty;
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        message = "Camera.orthographicSize field write failed: " + ex.GetType().Name + ".";
+                        return false;
+                    }
+                }
+            }
+
+            message = "Camera.orthographicSize is not writable.";
+            return false;
+        }
+
+        private static bool TryGetNativeArchiveSlotManager(out object? manager, out string message)
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            manager = ReadStaticMember(dolocApi, "gameManager");
+            if (manager == null)
+            {
+                message = "DolocAPI.gameManager is not available yet; save slot expansion will retry during runtime updates.";
+                return false;
+            }
+
+            message = string.Empty;
+            return true;
+        }
+
+        private static int GetNativeArchiveSlotCount()
+        {
+            return TryGetNativeArchiveSlotManager(out object? manager, out _)
+                ? ReadIntMember(manager!, "archiveFileCount", VanillaArchiveSlotCount)
+                : 0;
+        }
+
         public EquipmentSlotsRegisterResult RegisterSlots(IManifest owner, EquipmentSlotsOptions options)
         {
             if (owner == null)
@@ -1422,6 +2989,17 @@ namespace DTMAPI.GameBridge.DolocTown
             if (string.IsNullOrWhiteSpace(ownerId))
                 return;
 
+            dirtyEquipmentSlotStorageOwners.Add(ownerId);
+            runtime.RuntimeMonitor.Log("EquipmentSlots storage marked dirty owner=" + ownerId + "; waiting for native SaveGame before writing DTMAPI sidecar storage.");
+            runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "dirty", "runtime mutation -> SaveGame postfix", "Equipment-slot sidecar storage for " + ownerId + " is pending native SaveGame; unsaved exit will discard the sidecar mutation.");
+        }
+
+        private void PersistEquipmentSlotStorage(string ownerId, string reason)
+        {
+            ownerId ??= string.Empty;
+            if (string.IsNullOrWhiteSpace(ownerId))
+                return;
+
             List<EquipmentSlotRuntimeEntry> entries = equipmentSlotEntries.TryGetValue(ownerId, out List<EquipmentSlotRuntimeEntry>? existing)
                 ? existing
                 : new List<EquipmentSlotRuntimeEntry>();
@@ -1444,6 +3022,7 @@ namespace DTMAPI.GameBridge.DolocTown
             try
             {
                 WriteJson(path, document);
+                runtime.RuntimeMonitor.Log("EquipmentSlots storage persisted owner=" + ownerId + " reason=" + (reason ?? string.Empty) + " path=" + path + " storedItems=" + entries.Count(entry => !string.IsNullOrWhiteSpace(entry.ItemId)) + ".");
             }
             catch (Exception ex)
             {
@@ -2589,6 +4168,648 @@ namespace DTMAPI.GameBridge.DolocTown
             return new BridgeFeatureStatus("experimental", "Sets player movement through MotionAbility.SetMoveScaler and resets by applying multiplier 1x.");
         }
 
+        public IReadOnlyList<TechPointDebugOption> GetTechPointOptions()
+        {
+            var result = new List<TechPointDebugOption>();
+            try
+            {
+                Type? techPointType = ResolveType("DolocTown.Config.TechTree.TechPointType, Assembly-CSharp");
+                if (techPointType == null || !techPointType.IsEnum)
+                    return result;
+
+                foreach (object value in Enum.GetValues(techPointType))
+                {
+                    string id = value.ToString() ?? string.Empty;
+                    GetNativeTechPointSnapshot(value, out int points, out int level);
+                    result.Add(new TechPointDebugOption
+                    {
+                        Id = id,
+                        DisplayName = LocalizeTechPointId(id),
+                        CurrentPoints = points,
+                        CurrentLevel = level
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug tech-point option enumeration failed.", ex.ToString());
+            }
+            return result.OrderBy(o => o.DisplayName, StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+
+        public IReadOnlyList<SpawnDebugOption> GetMonsterOptions()
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? assets = ReadStaticMember(dolocApi, "assets");
+                object? monsters = assets == null ? null : ReadMember(assets, "monsters");
+                object? totalProtos = monsters == null ? null : ReadMember(monsters, "TotalProtos");
+                bool available = IsCurrentRoomSpawnHost("DolocTown.IMonsterHost, Assembly-CSharp");
+                return EnumerateObjects(totalProtos)
+                    .Select(proto => new SpawnDebugOption
+                    {
+                        Id = FirstText(ReadStringMember(proto, "Id"), ReadStringMember(proto, "id"), ReadStringMember(proto, "Name"), ReadStringMember(proto, "name")),
+                        DisplayName = FirstText(ReadStringMember(proto, "Title"), ReadStringMember(proto, "title"), ReadStringMember(proto, "Name"), ReadStringMember(proto, "Id")),
+                        Category = ReadMember(proto, "MonsterType")?.ToString() ?? "monster",
+                        IsAvailableInCurrentRoom = available
+                    })
+                    .Where(o => !string.IsNullOrWhiteSpace(o.Id))
+                    .OrderBy(o => o.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .Take(80)
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug monster option enumeration failed.", ex.ToString());
+                return Array.Empty<SpawnDebugOption>();
+            }
+        }
+
+        public IReadOnlyList<SpawnDebugOption> GetResourceOptions()
+        {
+            try
+            {
+                object? resourceList = ReadConfigTableList("TbResource");
+                bool available = IsCurrentRoomSpawnHost("DolocTown.IDungeonResourceHost, Assembly-CSharp");
+                return EnumerateObjects(resourceList)
+                    .Select(proto => new SpawnDebugOption
+                    {
+                        Id = FirstText(ReadStringMember(proto, "Id"), ReadStringMember(proto, "id"), ReadStringMember(proto, "Name"), ReadStringMember(proto, "name")),
+                        DisplayName = FirstText(ReadStringMember(proto, "Title"), ReadStringMember(proto, "title"), ReadStringMember(proto, "Id")),
+                        Category = FirstText(ReadMember(proto, "ResourceClass")?.ToString() ?? string.Empty, ReadMember(proto, "ResourceType")?.ToString() ?? string.Empty, "resource"),
+                        IsAvailableInCurrentRoom = available
+                    })
+                    .Where(o => !string.IsNullOrWhiteSpace(o.Id))
+                    .OrderBy(o => o.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .Take(80)
+                    .ToArray();
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug resource option enumeration failed.", ex.ToString());
+                return Array.Empty<SpawnDebugOption>();
+            }
+        }
+
+        public CreativeModeState GetCreativeModeState()
+        {
+            return new CreativeModeState
+            {
+                Enabled = creativeModeEnabled,
+                RuntimeHooksInstalled = creativeNoCostHooksInstalled && creativeNoTimeHooksInstalled,
+                GeneratorRuntimeAvailable = IsNativeItemAvailable("dtmapi_creative_generator"),
+                GeneratorItemId = "dtmapi_creative_generator",
+                LastMessage = creativeModeLastMessage
+            };
+        }
+
+        internal string VerifyAdvancedCreativeHooksForSmoke()
+        {
+            if (!creativeModeEnabled)
+                throw new InvalidOperationException("Creative mode is not enabled.");
+            CreativeModeState state = GetCreativeModeState();
+            if (!state.RuntimeHooksInstalled)
+                throw new InvalidOperationException("Creative no-cost/no-time hooks are not installed.");
+            if (!ReadCreativeNativeDebugFlags(out bool ignoreMaterialCost, out bool skipMoneyVerifyInShop, out bool ignoreSpiritCost))
+                throw new InvalidOperationException("Creative native GameInitConfig flags are unavailable.");
+            if (!ignoreMaterialCost || !skipMoneyVerifyInShop || !ignoreSpiritCost)
+                throw new InvalidOperationException("Creative native GameInitConfig flags are not active. ignoreMaterialCost=" + ignoreMaterialCost + ", skipMoneyVerifyInShop=" + skipMoneyVerifyInShop + ", ignoreSpiritCost=" + ignoreSpiritCost + ".");
+
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            MethodInfo? canAffordMoney = dolocApi?.GetMethod("CanAffordMoney", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
+            object? canAffordResult = canAffordMoney?.Invoke(null, new object?[] { int.MaxValue });
+            if (!(canAffordResult is bool canAfford) || !canAfford)
+                throw new InvalidOperationException("Creative CanAffordMoney(int.MaxValue) did not return true.");
+
+            int? energyBefore = ReadAgentEnergy();
+            MethodInfo? costEnergy = dolocApi?.GetMethod("CostEnergy", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
+            object? costEnergyResult = costEnergy?.Invoke(null, new object?[] { 1 });
+            int? energyAfter = ReadAgentEnergy();
+            if (!(costEnergyResult is bool costOk) || !costOk)
+                throw new InvalidOperationException("Creative CostEnergy(1) did not return true.");
+            if (energyBefore.HasValue && energyAfter.HasValue && energyBefore.Value != energyAfter.Value)
+                throw new InvalidOperationException("Creative CostEnergy(1) changed energy " + energyBefore.Value + "->" + energyAfter.Value + ".");
+
+            string summary = "nativeFlags{ignoreMaterialCost=" + ignoreMaterialCost + ",skipMoneyVerifyInShop=" + skipMoneyVerifyInShop + ",ignoreSpiritCost=" + ignoreSpiritCost + "}, canAffordMoneyIntMax=True, costEnergyNoChange=" + (energyBefore.HasValue && energyAfter.HasValue ? (energyBefore.Value == energyAfter.Value).ToString() : "unknown") + ", noTimeHookInstalled=" + creativeNoTimeHooksInstalled + ", generatorAvailable=" + state.GeneratorRuntimeAvailable;
+            runtime.SetHookStatus("Debug.CreativeMode", "verified", "Y-console creative toggle + Harmony no-cost smoke", summary);
+            return summary;
+        }
+
+        private bool ApplyCreativeNativeDebugFlags()
+        {
+            object? config = GetGameInitConfig();
+            if (config == null)
+            {
+                creativeNativeConfigApplied = false;
+                return false;
+            }
+
+            if (!creativeConfigSnapshotValid)
+            {
+                creativeOriginalIgnoreMaterialCost = ReadBoolMember(config, "ignoreMaterialCost", false);
+                creativeOriginalSkipMoneyVerifyInShop = ReadBoolMember(config, "skipMoneyVerifyInShop", false);
+                creativeOriginalIgnoreSpiritCost = ReadBoolMember(config, "ignoreSpiritCost", false);
+                creativeConfigSnapshotValid = true;
+            }
+
+            bool material = WriteBoolMember(config, "ignoreMaterialCost", true);
+            bool shop = WriteBoolMember(config, "skipMoneyVerifyInShop", true);
+            bool spirit = WriteBoolMember(config, "ignoreSpiritCost", true);
+            creativeNativeConfigApplied = material && shop && spirit;
+            return creativeNativeConfigApplied;
+        }
+
+        private bool RestoreCreativeNativeDebugFlags()
+        {
+            object? config = GetGameInitConfig();
+            if (!creativeConfigSnapshotValid)
+            {
+                creativeNativeConfigApplied = false;
+                return true;
+            }
+            if (config == null)
+            {
+                creativeNativeConfigApplied = false;
+                return false;
+            }
+
+            bool material = WriteBoolMember(config, "ignoreMaterialCost", creativeOriginalIgnoreMaterialCost);
+            bool shop = WriteBoolMember(config, "skipMoneyVerifyInShop", creativeOriginalSkipMoneyVerifyInShop);
+            bool spirit = WriteBoolMember(config, "ignoreSpiritCost", creativeOriginalIgnoreSpiritCost);
+            bool restored = material && shop && spirit;
+            if (restored)
+            {
+                creativeConfigSnapshotValid = false;
+                creativeNativeConfigApplied = false;
+            }
+            return restored;
+        }
+
+        private static bool ReadCreativeNativeDebugFlags(out bool ignoreMaterialCost, out bool skipMoneyVerifyInShop, out bool ignoreSpiritCost)
+        {
+            object? config = GetGameInitConfig();
+            if (config == null)
+            {
+                ignoreMaterialCost = false;
+                skipMoneyVerifyInShop = false;
+                ignoreSpiritCost = false;
+                return false;
+            }
+
+            ignoreMaterialCost = ReadBoolMember(config, "ignoreMaterialCost", false);
+            skipMoneyVerifyInShop = ReadBoolMember(config, "skipMoneyVerifyInShop", false);
+            ignoreSpiritCost = ReadBoolMember(config, "ignoreSpiritCost", false);
+            return true;
+        }
+
+        private static object? GetGameInitConfig()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? gameManager = ReadStaticMember(dolocApi, "gameManager");
+            return gameManager == null ? null : ReadMember(gameManager, "gameInitConfig");
+        }
+
+        private static bool IsNativeItemAvailable(string itemId)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+                return false;
+
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? queryItemProto = dolocApi?.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
+                object?[] queryArgs = new object?[] { itemId, null };
+                return queryItemProto?.Invoke(null, queryArgs) is bool found && found && queryArgs[1] != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static int? ReadAgentEnergy()
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                object? farmData = archive == null ? null : ReadMember(archive, "farmData");
+                object? agentData = farmData == null ? null : ReadMember(farmData, "agentData");
+                if (agentData == null)
+                    return null;
+                object? value = ReadMember(agentData, "energy");
+                return value == null ? null : Convert.ToInt32(value);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public TimeSkipResult AdvanceTime(IManifest owner, AdvancedTimeAdvanceKind kind, int amount)
+        {
+            amount = Math.Max(1, Math.Min(52, amount));
+            string ownerId = owner?.UniqueID ?? "unknown";
+            var result = new TimeSkipResult { Before = GetTimeDebugState() };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                object? globalParameter = ReadStaticMember(dolocApi, "GlobalParameter");
+                if (dolocApi == null || archive == null || globalParameter == null)
+                    return TimeSkipFailed(result, "missing-native-time", "DolocAPI archive/global parameter objects are not available.");
+
+                int seconds;
+                string source;
+                if (kind == AdvancedTimeAdvanceKind.Month)
+                {
+                    seconds = GameMonthsToSeconds(globalParameter, amount);
+                    source = "GameMonths2Secs";
+                }
+                else
+                {
+                    int days = kind == AdvancedTimeAdvanceKind.Week ? amount * 7 : amount;
+                    seconds = GameDaysToSeconds(globalParameter, days);
+                    source = kind == AdvancedTimeAdvanceKind.Week ? "GameDays2Secs(week)" : "GameDays2Secs";
+                }
+
+                if (!InvokeNativePassTime(archive, dolocApi, seconds, out string passMessage))
+                    return TimeSkipFailed(result, "missing-pass-time", passMessage);
+
+                result.After = GetTimeDebugState();
+                result.AdvancedSeconds = seconds;
+                result.AdvancedGameMinutes = EstimateAdvancedGameMinutes(globalParameter, seconds);
+                result.TargetHour = result.After.Hour;
+                result.Success = true;
+                result.Message = "Advanced time owner=" + ownerId + " kind=" + kind + " amount=" + amount + " seconds=" + seconds + " source=" + source + " before=" + FormatTimeDebugState(result.Before) + " after=" + FormatTimeDebugState(result.After) + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug time OK " + result.Message);
+                runtime.SetHookStatus("Debug.AdvancedTime", "verified", "ArchiveDataHandle.PassTimeNoControl + DolocAPI.OnWakeUp", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced time debug failed.", ex.ToString());
+                return TimeSkipFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public TimeScaleDebugResult SetTimeScale(IManifest owner, double multiplier)
+        {
+            string ownerId = owner?.UniqueID ?? "unknown";
+            multiplier = ClampAdvancedTimeScale(multiplier);
+            var result = new TimeScaleDebugResult
+            {
+                RequestedMultiplier = multiplier,
+                BeforeMultiplier = advancedTimeScaleMultiplier
+            };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? setTimeScale = dolocApi?.GetMethod("SetTimeScale", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(float), typeof(bool) }, null);
+                if (dolocApi == null || setTimeScale == null)
+                    return TimeScaleFailed(result, "missing-set-time-scale", "DolocAPI.SetTimeScale(float,bool) was not found.");
+
+                setTimeScale.Invoke(null, new object[] { (float)multiplier, true });
+                advancedTimeScaleMultiplier = multiplier;
+                result.AfterMultiplier = advancedTimeScaleMultiplier;
+                result.Success = true;
+                result.Message = "Time scale owner=" + ownerId + " multiplier=" + multiplier.ToString("0.###", CultureInfo.InvariantCulture) + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug time scale OK " + result.Message);
+                runtime.SetHookStatus("Debug.TimeScale", "verified", "DolocAPI.SetTimeScale", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced time-scale debug failed.", ex.ToString());
+                return TimeScaleFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public TimeScaleDebugResult ResetTimeScale(IManifest owner, string reason)
+        {
+            var result = new TimeScaleDebugResult
+            {
+                RequestedMultiplier = 1,
+                BeforeMultiplier = advancedTimeScaleMultiplier
+            };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? revert = dolocApi?.GetMethod("RevertTimeScale", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+                if (dolocApi == null || revert == null)
+                    return TimeScaleFailed(result, "missing-revert-time-scale", "DolocAPI.RevertTimeScale() was not found.");
+
+                revert.Invoke(null, null);
+                advancedTimeScaleMultiplier = 1;
+                result.AfterMultiplier = 1;
+                result.Success = true;
+                result.Message = "Time scale reset reason=" + (reason ?? string.Empty) + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug time scale reset OK " + result.Message);
+                runtime.SetHookStatus("Debug.TimeScale", "verified", "DolocAPI.RevertTimeScale", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced time-scale reset failed.", ex.ToString());
+                return TimeScaleFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public DebugValueResult AddMoney(IManifest owner, int amount)
+        {
+            amount = Math.Max(1, Math.Min(100000, amount));
+            var result = new DebugValueResult { ValueId = "money", RequestedDelta = amount };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                if (dolocApi == null || archive == null)
+                    return DebugValueFailed(result, "missing-archive", "DolocAPI.archiveHandle is not available.");
+
+                result.BeforeValue = ReadIntMember(archive, "CurrentMoney", 0);
+                MethodInfo? commandAddMoney = FindMethod(dolocApi, "Command_AddMoney", 1);
+                if (commandAddMoney != null)
+                    commandAddMoney.Invoke(null, new object[] { amount });
+                else
+                    SetMemberValue(archive, "CurrentMoney", result.BeforeValue + amount);
+
+                result.AfterValue = ReadIntMember(archive, "CurrentMoney", result.BeforeValue + amount);
+                result.Success = result.AfterValue >= result.BeforeValue + amount;
+                result.Message = "Added money +" + amount + " before=" + result.BeforeValue + " after=" + result.AfterValue + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug money OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.AddMoney", result.Success ? "verified" : "failed", commandAddMoney != null ? "DolocAPI.Command_AddMoney" : "ArchiveDataHandle.CurrentMoney", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug add money failed.", ex.ToString());
+                return DebugValueFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public DebugValueResult AddTechPoint(IManifest owner, string pointTypeId, int amount)
+        {
+            pointTypeId = (pointTypeId ?? string.Empty).Trim();
+            amount = Math.Max(1, Math.Min(1000, amount));
+            var result = new DebugValueResult { ValueId = pointTypeId, RequestedDelta = amount };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                Type? techPointType = ResolveType("DolocTown.Config.TechTree.TechPointType, Assembly-CSharp");
+                if (dolocApi == null || techPointType == null || !techPointType.IsEnum)
+                    return DebugValueFailed(result, "missing-tech-point-type", "DolocAPI or TechPointType is unavailable.");
+                if (!TryParseEnum(techPointType, pointTypeId, out object? typeValue))
+                    return DebugValueFailed(result, "not-whitelisted", "Unknown tech point type: " + pointTypeId + ".");
+
+                GetNativeTechPointSnapshot(typeValue!, out int before, out _);
+                result.BeforeValue = before;
+                MethodInfo? addTechPoint = dolocApi.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name == "AddTechPoint" && m.GetParameters().Length == 2 && m.GetParameters()[1].ParameterType == typeof(int));
+                if (addTechPoint == null)
+                    return DebugValueFailed(result, "missing-add-tech-point", "DolocAPI.AddTechPoint(TechPointType,int) was not found.");
+
+                addTechPoint.Invoke(null, new object[] { typeValue!, amount });
+                GetNativeTechPointSnapshot(typeValue!, out int after, out _);
+                result.AfterValue = after;
+                result.Success = after >= before + amount;
+                result.Message = "Added tech point " + pointTypeId + " +" + amount + " before=" + before + " after=" + after + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug tech point OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.AddTechPoint", result.Success ? "verified" : "failed", "DolocAPI.AddTechPoint", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug add tech point failed.", ex.ToString());
+                return DebugValueFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public DebugCommandResult UnlockAllTechTrees(IManifest owner)
+        {
+            var result = new DebugCommandResult { CommandId = "unlock_all_tech_trees" };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                object? farmData = archive == null ? null : ReadMember(archive, "farmData");
+                object? unlocked = farmData == null ? null : ReadMember(farmData, "unlockedTechTree");
+                object? techTrees = ReadConfigTableList("TbTechTree");
+                if (unlocked == null || techTrees == null)
+                    return DebugCommandFailed(result, "missing-tech-tree-data", "Native tech-tree tables or save collection are unavailable.");
+
+                int before = CountEnumerable(unlocked);
+                int affected = 0;
+                foreach (object proto in EnumerateObjects(techTrees))
+                {
+                    string id = FirstText(ReadStringMember(proto, "Id"), ReadStringMember(proto, "id"));
+                    if (!string.IsNullOrWhiteSpace(id) && AddToNativeCollection(unlocked, id))
+                        affected++;
+                }
+
+                result.AffectedCount = affected;
+                result.Success = affected > 0 || CountEnumerable(unlocked) >= before;
+                result.Message = "Unlocked tech tree ids affected=" + affected + " before=" + before + " after=" + CountEnumerable(unlocked) + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug unlock tech tree OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.UnlockAllTechTrees", result.Success ? "verified" : "failed", "farmData.unlockedTechTree", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug unlock tech trees failed.", ex.ToString());
+                return DebugCommandFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public CropMaturityResult MatureAllCrops(IManifest owner)
+        {
+            var result = new CropMaturityResult();
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+                if (dolocApi == null || archive == null || currentRoom == null)
+                    return CropMaturityFailed(result, "missing-room", "Current room/archive is unavailable.");
+
+                var notes = new List<string>();
+                foreach (object equipment in EnumerateMachineCandidateEquipments(dolocApi, archive, currentRoom))
+                {
+                    string typeName = equipment.GetType().FullName ?? equipment.GetType().Name;
+                    if (typeName.IndexOf("PlantBasin", StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+
+                    result.PlantBasinsVisited++;
+                    object? crop = ReadMember(equipment, "Crop");
+                    if (crop == null && typeName.IndexOf("PlantBasinGrass", StringComparison.OrdinalIgnoreCase) >= 0)
+                        crop = equipment;
+                    if (crop == null)
+                        continue;
+
+                    if (TryMatureCrop(crop, out string note))
+                    {
+                        result.CropsMatured++;
+                        if (notes.Count < 6)
+                            notes.Add(note);
+                    }
+                }
+
+                result.Success = result.PlantBasinsVisited > 0;
+                result.Message = "Matured crops=" + result.CropsMatured + "/" + result.PlantBasinsVisited + (notes.Count == 0 ? string.Empty : " samples=" + string.Join("|", notes));
+                runtime.RuntimeMonitor.Log("Advanced debug mature crops OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.MatureAllCrops", result.Success ? "verified" : "pending", "PlantBasin.Crop.DEBUG_SetLevel", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug mature all crops failed.", ex.ToString());
+                return CropMaturityFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public CreativeModeResult SetCreativeMode(IManifest owner, bool enabled)
+        {
+            var result = new CreativeModeResult
+            {
+                Enabled = enabled,
+                Before = GetCreativeModeState()
+            };
+            creativeModeEnabled = enabled;
+            bool nativeConfigApplied = enabled ? ApplyCreativeNativeDebugFlags() : RestoreCreativeNativeDebugFlags();
+            if (enabled)
+            {
+                bool runtimeHooksInstalled = creativeNoCostHooksInstalled && creativeNoTimeHooksInstalled;
+                creativeModeLastMessage = "Creative mode is on. runtimeHooksInstalled=" + runtimeHooksInstalled + ", noCostHooks=" + creativeNoCostHooksInstalled + ", noTimeHooks=" + creativeNoTimeHooksInstalled + ", nativeConfigApplied=" + nativeConfigApplied + ", generatorAvailable=" + IsNativeItemAvailable("dtmapi_creative_generator") + ".";
+            }
+            else
+            {
+                creativeModeLastMessage = "Creative mode is off. nativeConfigRestored=" + nativeConfigApplied + ".";
+            }
+            result.After = GetCreativeModeState();
+            result.Success = true;
+            result.Message = creativeModeLastMessage;
+            runtime.RuntimeMonitor.Log("Advanced debug creative mode owner=" + (owner?.UniqueID ?? "unknown") + " enabled=" + enabled + ". " + result.Message, enabled ? DTMAPI.Abstractions.LogLevel.Warn : DTMAPI.Abstractions.LogLevel.Info);
+            runtime.SetHookStatus("Debug.CreativeMode", enabled ? (result.After.RuntimeHooksInstalled ? "experimental" : "pending") : "off", "Y-console creative toggle + GameInitConfig debug flags", result.Message);
+            return result;
+        }
+
+        public InventoryGiveResult GiveCreativeGenerator(IManifest owner)
+        {
+            InventoryGiveResult result = GiveItem(owner, "dtmapi_creative_generator", 1);
+            runtime.SetHookStatus("Debug.CreativeGeneratorGive", result.Success ? "verified" : "pending", "IInventoryDebugApi.GiveItem", result.Message);
+            return result;
+        }
+
+        public SpawnDebugResult SpawnMonster(IManifest owner, string monsterId, int count)
+        {
+            monsterId = (monsterId ?? string.Empty).Trim();
+            count = Math.Max(1, Math.Min(10, count));
+            var result = new SpawnDebugResult { SpawnId = monsterId, RequestedCount = count };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+                Type? hostType = ResolveType("DolocTown.IMonsterHost, Assembly-CSharp");
+                if (currentRoom == null || hostType == null || !hostType.IsInstanceOfType(currentRoom))
+                    return SpawnFailed(result, "unsupported-room", "Current room does not support monster spawning.");
+
+                object? assets = ReadStaticMember(dolocApi, "assets");
+                object? monsters = assets == null ? null : ReadMember(assets, "monsters");
+                MethodInfo? query = monsters == null ? null : FindMethodInHierarchy(monsters.GetType(), "QueryMonster", 2);
+                object?[] queryArgs = new object?[] { monsterId, null };
+                if (!(query?.Invoke(monsters, queryArgs) is bool found) || !found || queryArgs[1] == null)
+                    return SpawnFailed(result, "unknown-monster", "Monster is not present in native monster assets.");
+
+                object proto = queryArgs[1]!;
+                result.DisplayName = FirstText(ReadStringMember(proto, "Title"), monsterId);
+                MethodInfo? generate = dolocApi?.GetMethod("Command_GenerateMonster", BindingFlags.NonPublic | BindingFlags.Static, null, new[] { typeof(string), typeof(int) }, null);
+                if (generate == null)
+                    return SpawnFailed(result, "missing-official-command", "DolocAPI.Command_GenerateMonster(string,int) was not found.");
+
+                generate.Invoke(null, new object[] { monsterId, count });
+                result.SpawnedCount = count;
+
+                result.Success = result.SpawnedCount == count;
+                result.Message = "Spawned monster " + monsterId + " count=" + result.SpawnedCount + " through official Command_GenerateMonster.";
+                runtime.RuntimeMonitor.Log("Advanced debug monster spawn OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.SpawnMonster", result.Success ? "verified" : "failed", "DolocAPI.Command_GenerateMonster", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug monster spawn failed.", ex.ToString());
+                return SpawnFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        public SpawnDebugResult SpawnResource(IManifest owner, string resourceId, int count)
+        {
+            resourceId = (resourceId ?? string.Empty).Trim();
+            count = Math.Max(1, Math.Min(10, count));
+            var result = new SpawnDebugResult { SpawnId = resourceId, RequestedCount = count };
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+                Type? hostType = ResolveType("DolocTown.IDungeonResourceHost, Assembly-CSharp");
+                if (currentRoom == null || hostType == null || !hostType.IsInstanceOfType(currentRoom))
+                    return SpawnFailed(result, "unsupported-room", "Current room does not support direct resource spawning.");
+
+                object? resourceTable = GetConfigTable("TbResource");
+                MethodInfo? getOrDefault = FindMethodInHierarchy(resourceTable?.GetType(), "GetOrDefault", 1);
+                object? proto = getOrDefault?.Invoke(resourceTable, new object[] { resourceId });
+                if (proto == null)
+                    return SpawnFailed(result, "unknown-resource", "Resource is not present in DolocConfig.Tables.TbResource.");
+
+                result.DisplayName = FirstText(ReadStringMember(proto, "Title"), resourceId);
+                MethodInfo? createNoRender = FindMethodInHierarchy(hostType, "CreateDungeonResourceNoRender", 2) ?? FindMethodInHierarchy(currentRoom.GetType(), "CreateDungeonResourceNoRender", 2);
+                MethodInfo? renderResource = FindMethodInHierarchy(hostType, "RenderResource", 1) ?? FindMethodInHierarchy(currentRoom.GetType(), "RenderResource", 1);
+                if (createNoRender == null)
+                    return SpawnFailed(result, "missing-create-resource", "IDungeonResourceHost.CreateDungeonResourceNoRender was not found.");
+
+                object? agentPosition = ReadStaticMember(dolocApi, "AgentPosition");
+                int baseX = (int)Math.Round(ReadVectorComponent(agentPosition, "x"));
+                int baseY = (int)Math.Round(ReadVectorComponent(agentPosition, "y"));
+                var created = new List<object>();
+                for (int i = 0; i < count; i++)
+                {
+                    object? pos = CreateUnityVector2Int(baseX + (i % 5), baseY + (i / 5));
+                    if (pos == null)
+                        continue;
+                    object? resource = createNoRender.Invoke(currentRoom, new[] { pos, proto });
+                    if (resource != null)
+                    {
+                        created.Add(resource);
+                        result.SpawnedCount++;
+                    }
+                }
+
+                if (created.Count > 0 && renderResource != null && ReadBoolMember(currentRoom, "isRenderNow", true))
+                {
+                    Array array = Array.CreateInstance(created[0].GetType(), created.Count);
+                    for (int i = 0; i < created.Count; i++)
+                        array.SetValue(created[i], i);
+                    renderResource.Invoke(currentRoom, new object[] { array });
+                }
+
+                result.Success = result.SpawnedCount > 0;
+                result.Message = "Spawned resource " + resourceId + " count=" + result.SpawnedCount + " at " + baseX + "," + baseY + ".";
+                runtime.RuntimeMonitor.Log("Advanced debug resource spawn OK owner=" + (owner?.UniqueID ?? "unknown") + " " + result.Message);
+                runtime.SetHookStatus("Debug.SpawnResource", result.Success ? "verified" : "failed", "IDungeonResourceHost.CreateDungeonResourceNoRender", result.Message);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Advanced debug resource spawn failed.", ex.ToString());
+                return SpawnFailed(result, ex.GetType().Name, ex.Message);
+            }
+        }
+
+        BridgeFeatureStatus IAdvancedDebugApi.GetStatus()
+        {
+            return new BridgeFeatureStatus("experimental", "Whitelisted Y-console advanced debug API. Implemented: time advance/time scale, money, tech points, tech-tree unlock, crop maturity, creative no-cost/no-time toggle, creative generator give, and current-room monster/resource spawn. Dangerous raw Lua/load/reset/story commands remain excluded.");
+        }
+
         public MotorVehicleState GetOriginalMotorState()
         {
             return BuildOriginalMotorState("query");
@@ -3358,8 +5579,16 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             if (viewer == null || data == null)
                 return false;
-            if (!animalProgressRowsByData.TryGetValue(data, out IReadOnlyList<AnimalProgressRenderRow>? rows) || rows.Count == 0)
+            if (!IsAnimalViewerDataVisible(data))
+            {
+                ClearAnimalProgressOverlayForViewer(viewer);
                 return false;
+            }
+            if (!animalProgressRowsByData.TryGetValue(data, out IReadOnlyList<AnimalProgressRenderRow>? rows) || rows.Count == 0)
+            {
+                ClearAnimalProgressOverlayForViewer(viewer);
+                return false;
+            }
 
             try
             {
@@ -3394,12 +5623,13 @@ namespace DTMAPI.GameBridge.DolocTown
                     PositionAnimalProgressRow(moodTransform, rowTransform, rendered);
                     activeAnimalProgressOverlayObjects.Add(clone);
                     activeAnimalProgressOverlayRows.Add(row);
-                    SetActive(clone, true);
                     rendered++;
                 }
 
                 RefreshAnimalProgressOverlayTexts(force: true);
-                latestAnimalProgressOverlaySummary = "independent cloned ProgressBar rows=" + rendered + ", primary=" + rows[0].OutputTitle + " " + rows[0].Current + "/" + rows[0].Threshold + ", moodOverride=False, stateDescriptionOverride=False";
+                foreach (object clone in activeAnimalProgressOverlayObjects)
+                    SetActive(clone, true);
+                latestAnimalProgressOverlaySummary = "independent cloned ProgressBar prefilled rows=" + rendered + ", primary=" + rows[0].OutputTitle + " " + rows[0].Current + "/" + rows[0].Threshold + ", moodOverride=False, stateDescriptionOverride=False";
                 runtime.RuntimeMonitor.Log("Animal viewer progress independent row active " + latestAnimalProgressOverlaySummary + ".");
                 runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", rendered > 0 ? "verified" : "pending", "AnimalFullInfoData ctor -> AnimalViewer.Show cloned ProgressBar", latestAnimalProgressOverlaySummary);
                 return rendered > 0;
@@ -3410,6 +5640,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "failed", "AnimalFullInfoData ctor -> AnimalViewer.OnShow native ProgressBar", ex.GetType().Name + ": " + ex.Message);
                 return false;
             }
+        }
+
+        internal void PrepareAnimalProgressOverlayBeforeShow(object viewer, object data)
+        {
+            RenderAnimalProgressOverlay(viewer, data);
         }
 
         internal bool HasAnimalProgressRowsForSmoke(object? data, out string summary)
@@ -4017,11 +6252,13 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
+            RefreshSaveSlotExpansionForRuntime();
             RecoverOrphanEquipmentSlotsIfNeeded();
             UpdateActiveSecondMotorRoomSnapshot();
             UpdateActionSpeedAutoFill();
             UpdateFishingAutoCast();
             UpdateMachineProduction(forceMachineProductionPoll);
+            RefreshCameraZoomForRuntime();
             RefreshAnimalProgressOverlayTexts(force: false);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
         }
@@ -4044,10 +6281,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", recipe=" + state.RecipeId +
                 ", recipeGroup=" + state.RecipeGroupId +
                 ", visualScale=" + state.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) +
-                ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) +
+                ", hybrid=" + (state.AllowFuelMode && state.AllowElectricMode) +
+                ", defaultMode=" + state.DefaultMode +
                 ", cycleMinutes=" + state.CycleMinutes +
                 ", cycleTUs=" + state.CycleTUs +
                 ", nextDueTUs=" + state.NextDueTotalTUs +
+                ", fuel=" + state.RemainingFuel + "/" + state.FuelCapacity +
+                ", fuelOnlyCost=" + state.FuelOnlyFuelCostPerCycle +
+                ", electricFuelCost=" + state.ElectricModeFuelCostPerCycle +
                 ", electricPowerPerCycle=" + state.ElectricModePowerCostPerCycle +
                 ", placed=" + state.PlacedMachineCount +
                 ", cycles=" + state.ProductionCycleCount +
@@ -4057,6 +6298,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", storage=" + state.LastStorageFilledSlots + "/" + state.LastStorageCapacity +
                 ", storageLineCapacity=" + state.LastStorageLineCapacity +
                 ", lastMode=" + state.LastMode +
+                ", lastFuelCost=" + state.LastFuelCost +
                 ", lastPowerCost=" + state.LastElectricPowerCost +
                 ", techTree={" + state.NativeTechTreeSummary + "}" +
                 ", message=" + state.LastMessage;
@@ -4830,7 +7072,7 @@ namespace DTMAPI.GameBridge.DolocTown
                                 state.Status = "configured-experimental-runtime-loop";
                                 state.LastMessage = string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}";
                                 machineStates[ownerId] = state;
-                                runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + " electricPowerCost=" + entry.LastElectricPowerCost + " dueAt=" + dueAt + " nextDue=" + entry.NextDueTotalTus + " totalTUs=" + totalTus + ".");
+                                runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + " fuelCost=" + entry.LastFuelCost + " fuelRemaining=" + entry.RemainingFuel + "/" + definition.FuelCapacity + " electricPowerCost=" + entry.LastElectricPowerCost + " dueAt=" + dueAt + " nextDue=" + entry.NextDueTotalTus + " totalTUs=" + totalTus + ".");
                                 runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update catch-up -> equipment IContainer/LinearInventory", message + " dueAt=" + dueAt + ", nextDue=" + entry.NextDueTotalTus + ".");
                             }
                             else
@@ -5144,6 +7386,12 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             int count = machineRandom.Next(Math.Min(selected.MinCount, selected.MaxCount), Math.Max(selected.MinCount, selected.MaxCount) + 1);
+            if (!TryConsumeMachineElectricPower(definition, equipment, entry, out string electricMessage))
+            {
+                message = electricMessage;
+                return false;
+            }
+
             if (!TryPlaceMachineOutput(dolocApi, definition, equipment, selected.ItemId, count, out string placementMessage, out string outputTarget, out int filledSlots, out int storageCapacity, out int storageLineCapacity))
             {
                 message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " but output placement failed: " + placementMessage;
@@ -5162,8 +7410,41 @@ namespace DTMAPI.GameBridge.DolocTown
             string costSummary = definition.AllowFuelMode
                 ? "fuelCost=" + fuelCost + ", electricPowerCost=" + entry.LastElectricPowerCost
                 : "electricPowerCost=" + entry.LastElectricPowerCost;
-            message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " via " + entry.LastMode + " mode; " + costSummary + ", " + placementMessage;
+            message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " via " + entry.LastMode + " mode; " + costSummary + ", " + electricMessage + ", " + placementMessage;
             return true;
+        }
+
+        private bool TryConsumeMachineElectricPower(MachineDefinition definition, object equipment, MachineRuntimeEntry entry, out string message)
+        {
+            message = string.Empty;
+            if (!entry.LastMode.Equals("electric", StringComparison.OrdinalIgnoreCase) || definition.ElectricModePowerCostPerCycle <= 0)
+                return true;
+
+            object? component = ReadMember(equipment, "IElectronicComponent");
+            string componentType = component == null ? "none" : component.GetType().FullName ?? component.GetType().Name;
+            if (component == null)
+            {
+                message = "Machine " + definition.MachineId + " skipped production because the equipment has no official IElectronicComponent; expected EComProtoAppliance threshold=" + definition.ElectricModePowerCostPerCycle + ".";
+                return false;
+            }
+
+            MethodInfo? launch = FindMethodInHierarchy(component.GetType(), "Launch", 0);
+            if (launch == null)
+            {
+                message = "Machine " + definition.MachineId + " skipped production because official electric component " + componentType + " has no Launch() path.";
+                return false;
+            }
+
+            object? launched = launch.Invoke(component, null);
+            if (launched is bool ok && ok)
+            {
+                string powerInfo = ReadStringMember(component, "PowerInfo");
+                message = "Official electric component Launch OK type=" + componentType + ", powerInfo=" + powerInfo + ".";
+                return true;
+            }
+
+            message = "Machine " + definition.MachineId + " skipped production because official electric component Launch returned false (low power). type=" + componentType + ", powerInfo=" + ReadStringMember(component, "PowerInfo") + ", required=" + definition.ElectricModePowerCostPerCycle + ".";
+            return false;
         }
 
         private bool TryPlaceMachineOutput(Type dolocApi, MachineDefinition definition, object equipment, string itemId, int count, out string message, out string outputTarget, out int filledSlots, out int storageCapacity, out int storageLineCapacity)
@@ -5772,7 +8053,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.RuntimeMonitor.Log("Fishing automation instant-bite applied by " + ownerId + " fish=" + fishId + " pool=" + poolName + ".");
                 loggedFishingPhases.Add("AutoBite:" + ownerId);
                 runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "AgentStateFishingWait.OnPlay Postfix", LastFishingAutomationApplicationSummary);
-                if (options.AutoCompleteMiniGame && options.SkipMiniGame && autoHook.Equals("AgentStateFishingPull", StringComparison.OrdinalIgnoreCase))
+                if (options.SkipMiniGame && autoHook.Equals("AgentStateFishingPull", StringComparison.OrdinalIgnoreCase))
                     runtime.SetHookStatus("Smoke.AutoFishingMiniGameSkip", "verified", "AgentStateFishingWait.OnPlay -> AgentStateFishingPull", LastFishingAutomationApplicationSummary);
                 return true;
             }
@@ -5821,8 +8102,6 @@ namespace DTMAPI.GameBridge.DolocTown
             options.CastReleaseProgress = Math.Min(1, Math.Max(0, options.CastReleaseProgress));
             options.RecastDelaySeconds = ClampSeconds(options.RecastDelaySeconds, 0.05, 10);
             options.FastAnimationMultiplier = ClampMultiplier(options.FastAnimationMultiplier);
-            if (!options.AutoCompleteMiniGame)
-                options.SkipMiniGame = false;
             return options;
         }
 
@@ -5942,7 +8221,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (energy > 0)
                 costEnergy?.Invoke(null, new object[] { energy });
 
-            string targetTypeName = isFish && !(options.AutoCompleteMiniGame && options.SkipMiniGame)
+            string targetTypeName = isFish && !options.SkipMiniGame
                 ? "DolocTown.AgentStateFishingBattle, Assembly-CSharp"
                 : "DolocTown.AgentStateFishingPull, Assembly-CSharp";
             Type? targetType = ResolveType(targetTypeName);
@@ -7942,6 +10221,28 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private void ClearAnimalProgressOverlayForViewer(object viewer)
+        {
+            object? moodBar = ReadMember(viewer, "moodBar");
+            object? moodGameObject = moodBar == null ? null : ReadMember(moodBar, "gameObject");
+            object? moodTransform = moodGameObject == null ? null : ReadMember(moodGameObject, "transform");
+            object? parent = moodTransform == null ? null : ReadMember(moodTransform, "parent");
+            if (parent != null)
+                ClearAnimalProgressOverlay(parent);
+            else
+            {
+                activeAnimalProgressOverlayObjects.Clear();
+                activeAnimalProgressOverlayRows.Clear();
+            }
+        }
+
+        private static bool IsAnimalViewerDataVisible(object data)
+        {
+            bool notEmpty = ReadBoolMember(data, "notEmpty", true);
+            bool visible = ReadBoolMember(data, "visible", true);
+            return notEmpty && visible;
+        }
+
         private void RefreshAnimalProgressOverlayTexts(bool force)
         {
             if (activeAnimalProgressOverlayObjects.Count == 0 || activeAnimalProgressOverlayRows.Count == 0)
@@ -8697,6 +10998,264 @@ namespace DTMAPI.GameBridge.DolocTown
             result.FailureReason = reason ?? string.Empty;
             result.Message = message ?? string.Empty;
             return result;
+        }
+
+        private bool GetNativeTechPointSnapshot(object pointType, out int points, out int level)
+        {
+            points = 0;
+            level = 0;
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+                Type? operationGlobal = ResolveType("DolocTown.GameData.ArchiveOperationGlobal, Assembly-CSharp");
+                MethodInfo? getPoint = operationGlobal?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name == "GetTechPoint" && m.GetParameters().Length == 2);
+                MethodInfo? getLevel = operationGlobal?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name == "GetTechLevel" && m.GetParameters().Length == 2);
+                if (archive != null && getPoint != null && getLevel != null)
+                {
+                    points = Convert.ToInt32(getPoint.Invoke(null, new[] { archive, pointType }), CultureInfo.InvariantCulture);
+                    level = Convert.ToInt32(getLevel.Invoke(null, new[] { archive, pointType }), CultureInfo.InvariantCulture);
+                    return true;
+                }
+
+                object? farmData = archive == null ? null : ReadMember(archive, "farmData");
+                object? manager = farmData == null ? null : ReadMember(farmData, "techLevelManager");
+                MethodInfo? getLevelData = manager == null ? null : FindMethodInHierarchy(manager.GetType(), "GetLevelData", 1);
+                object? data = getLevelData?.Invoke(manager, new[] { pointType });
+                if (data == null)
+                    return false;
+
+                points = ReadIntMember(data, "AvailablePoints", ReadIntMember(data, "availablePoints", 0));
+                level = ReadIntMember(data, "CurrentLevel", ReadIntMember(data, "currentLevel", 0));
+                return true;
+            }
+            catch
+            {
+                points = 0;
+                level = 0;
+                return false;
+            }
+        }
+
+        private static string LocalizeTechPointId(string id)
+        {
+            switch ((id ?? string.Empty).Trim().ToUpperInvariant())
+            {
+                case "NATURE":
+                    return "自然";
+                case "OPERATE":
+                    return "经营";
+                case "SCIENCE":
+                    return "科学";
+                case "ANIMAL":
+                    return "动物";
+                case "BATTLE":
+                    return "战斗";
+                case "FISHING":
+                    return "钓鱼";
+                default:
+                    return id ?? string.Empty;
+            }
+        }
+
+        private bool IsCurrentRoomSpawnHost(string hostTypeName)
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? currentRoom = ReadStaticMember(dolocApi, "CurrentRoom");
+            Type? hostType = ResolveType(hostTypeName);
+            return currentRoom != null && hostType != null && hostType.IsInstanceOfType(currentRoom);
+        }
+
+        private object? ReadConfigTableList(string tableName)
+        {
+            object? table = GetConfigTable(tableName);
+            return table == null ? null : ReadMember(table, "DataList");
+        }
+
+        private object? GetConfigTable(string tableName)
+        {
+            return GetDolocTable(tableName);
+        }
+
+        private static int GameDaysToSeconds(object globalParameter, int days)
+        {
+            MethodInfo? convert = globalParameter.GetType().GetMethod("GameDays2Secs", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float) }, null);
+            if (convert != null)
+            {
+                object? value = convert.Invoke(globalParameter, new object[] { (float)Math.Max(1, days) });
+                if (value != null)
+                    return Math.Max(1, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+            }
+
+            int day2Hour = Math.Max(1, ReadIntMember(globalParameter, "Day2Hour", 24));
+            int hour2Min = Math.Max(1, ReadIntMember(globalParameter, "Hour2Min", 60));
+            return GameMinutesToSeconds(globalParameter, Math.Max(1, days) * day2Hour * hour2Min);
+        }
+
+        private static int GameMonthsToSeconds(object globalParameter, int months)
+        {
+            MethodInfo? convert = globalParameter.GetType().GetMethod("GameMonths2Secs", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float) }, null);
+            if (convert != null)
+            {
+                object? value = convert.Invoke(globalParameter, new object[] { (float)Math.Max(1, months) });
+                if (value != null)
+                    return Math.Max(1, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+            }
+
+            int month2Day = Math.Max(1, ReadIntMember(globalParameter, "Month2Day", 30));
+            return GameDaysToSeconds(globalParameter, Math.Max(1, months) * month2Day);
+        }
+
+        private static bool InvokeNativePassTime(object archive, Type dolocApi, int seconds, out string message)
+        {
+            message = string.Empty;
+            MethodInfo? passTime = archive.GetType().GetMethod("PassTimeNoControl", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(int), typeof(Action), typeof(bool) }, null)
+                ?? archive.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "PassTimeNoControl" && m.GetParameters().Length >= 1);
+            if (passTime == null)
+            {
+                message = "ArchiveDataHandle.PassTimeNoControl was not found.";
+                return false;
+            }
+
+            Action wake = () => InvokeWakeUp(dolocApi);
+            ParameterInfo[] parameters = passTime.GetParameters();
+            object?[] args = parameters.Length >= 3
+                ? new object?[] { Math.Max(1, seconds), wake, true }
+                : parameters.Length == 2
+                    ? new object?[] { Math.Max(1, seconds), wake }
+                    : new object?[] { Math.Max(1, seconds) };
+            passTime.Invoke(archive, args);
+            message = "PassTimeNoControl seconds=" + Math.Max(1, seconds).ToString(CultureInfo.InvariantCulture) + ".";
+            return true;
+        }
+
+        private static int EstimateAdvancedGameMinutes(object globalParameter, int seconds)
+        {
+            int tuLength = Math.Max(1, ReadIntMember(globalParameter, "TULength", 1));
+            int tu2Min = Math.Max(1, ReadIntMember(globalParameter, "TU2Min", 1));
+            return Math.Max(1, (int)Math.Round(Math.Max(1, seconds) * (double)tu2Min / tuLength));
+        }
+
+        private static double ClampAdvancedTimeScale(double multiplier)
+        {
+            if (double.IsNaN(multiplier) || double.IsInfinity(multiplier))
+                return 1d;
+            return Math.Max(1d, Math.Min(16d, multiplier));
+        }
+
+        private static TimeScaleDebugResult TimeScaleFailed(TimeScaleDebugResult result, string reason, string message)
+        {
+            result.Success = false;
+            result.FailureReason = reason ?? string.Empty;
+            result.Message = message ?? string.Empty;
+            result.AfterMultiplier = result.BeforeMultiplier;
+            return result;
+        }
+
+        private static DebugValueResult DebugValueFailed(DebugValueResult result, string reason, string message)
+        {
+            result.Success = false;
+            result.FailureReason = reason ?? string.Empty;
+            result.Message = message ?? string.Empty;
+            result.AfterValue = result.BeforeValue;
+            return result;
+        }
+
+        private static DebugCommandResult DebugCommandFailed(DebugCommandResult result, string reason, string message)
+        {
+            result.Success = false;
+            result.FailureReason = reason ?? string.Empty;
+            result.Message = message ?? string.Empty;
+            return result;
+        }
+
+        private static CropMaturityResult CropMaturityFailed(CropMaturityResult result, string reason, string message)
+        {
+            result.Success = false;
+            result.FailureReason = reason ?? string.Empty;
+            result.Message = message ?? string.Empty;
+            return result;
+        }
+
+        private static SpawnDebugResult SpawnFailed(SpawnDebugResult result, string reason, string message)
+        {
+            result.Success = false;
+            result.FailureReason = reason ?? string.Empty;
+            result.Message = message ?? string.Empty;
+            return result;
+        }
+
+        private static bool TryParseEnum(Type enumType, string id, out object? value)
+        {
+            value = null;
+            if (enumType == null || !enumType.IsEnum || string.IsNullOrWhiteSpace(id))
+                return false;
+            try
+            {
+                value = Enum.Parse(enumType, id.Trim(), ignoreCase: true);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static int CountEnumerable(object? value)
+        {
+            if (value == null)
+                return 0;
+            if (value is ICollection collection)
+                return collection.Count;
+            int count = 0;
+            foreach (object _ in EnumerateObjects(value))
+                count++;
+            return count;
+        }
+
+        private static bool AddToNativeCollection(object collection, string value)
+        {
+            if (collection == null || string.IsNullOrWhiteSpace(value))
+                return false;
+            MethodInfo? contains = FindMethodInHierarchy(collection.GetType(), "Contains", 1);
+            if (contains != null && contains.Invoke(collection, new object[] { value }) is bool alreadyPresent && alreadyPresent)
+                return false;
+
+            MethodInfo? add = FindMethodInHierarchy(collection.GetType(), "Add", 1);
+            object? added = add?.Invoke(collection, new object[] { value });
+            return added is bool boolResult ? boolResult : add != null;
+        }
+
+        private static bool TryMatureCrop(object crop, out string note)
+        {
+            note = crop == null ? "missing-crop" : crop.GetType().Name;
+            if (crop == null)
+                return false;
+
+            MethodInfo? debugSetLevelWithRender = crop.GetType().GetMethod("DEBUG_SetLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(bool), typeof(int) }, null);
+            MethodInfo? debugSetLevel = crop.GetType().GetMethod("DEBUG_SetLevel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(int) }, null);
+            int matureLevel = ReadIntMember(crop, "MatureLevel", 5);
+            object? proto = ReadMember(crop, "Proto") ?? ReadMember(crop, "proto") ?? ReadMember(crop, "cropInfo");
+            matureLevel = Math.Max(matureLevel, proto == null ? matureLevel : ReadIntMember(proto, "MatureLevel", matureLevel));
+            matureLevel = Math.Max(1, Math.Min(99, matureLevel));
+
+            if (debugSetLevelWithRender != null)
+            {
+                debugSetLevelWithRender.Invoke(crop, new object[] { true, matureLevel });
+                note = crop.GetType().Name + ":" + matureLevel.ToString(CultureInfo.InvariantCulture);
+                return true;
+            }
+
+            if (debugSetLevel != null)
+            {
+                debugSetLevel.Invoke(crop, new object[] { matureLevel });
+                note = crop.GetType().Name + ":" + matureLevel.ToString(CultureInfo.InvariantCulture);
+                return true;
+            }
+
+            return false;
         }
 
         private object? GetDolocTable(string tableName)

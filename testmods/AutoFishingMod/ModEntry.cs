@@ -57,7 +57,8 @@ namespace AutoFishingMod
             menu.AddNumberOption(helper.ModManifest, () => T("config.castRelease.name", "Cast release progress"), () => T("config.castRelease.tooltip", "0 skips charging; 1 waits for full charge."), () => config.CastReleaseProgress, value => config.CastReleaseProgress = value, 0, 1, 0.05);
             menu.AddNumberOption(helper.ModManifest, () => T("config.recastDelay.name", "Recast delay"), () => T("config.recastDelay.tooltip", "Delay before the next cast after pull/result."), () => config.RecastDelaySeconds, value => config.RecastDelaySeconds = value, 0.05, 10, 0.05);
             menu.AddBoolOption(helper.ModManifest, () => T("config.instantBite.name", "Instant bite"), () => T("config.instantBite.tooltip", "Verified for the wait phase, still experimental; changes bite timing."), () => config.InstantBite, value => config.InstantBite = value);
-            menu.AddInlineBoolBoolOption(helper.ModManifest, () => T("config.autoCompleteMinigame.name", "Auto-complete minigame"), () => T("config.autoCompleteMinigame.tooltip", "Experimental: when the fishing minigame opens, complete it through the native minigame status path."), () => config.AutoCompleteMiniGame, value => config.AutoCompleteMiniGame = value, () => T("config.skipMinigame.name", "Skip minigame"), () => T("config.skipMinigame.tooltip", "Experimental high-impact behavior; jumps from bite to pull/result instead of showing the minigame."), () => config.SkipMiniGame, value => config.SkipMiniGame = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.autoCompleteMinigame.name", "Auto-complete minigame"), () => T("config.autoCompleteMinigame.tooltip", "Experimental: when the fishing minigame opens, complete it through the native minigame status path."), () => config.AutoCompleteMiniGame, value => config.AutoCompleteMiniGame = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.skipMinigame.name", "Skip minigame"), () => T("config.skipMinigame.tooltip", "Experimental high-impact behavior; jumps from bite to pull/result instead of showing the minigame."), () => config.SkipMiniGame, value => config.SkipMiniGame = value);
             menu.AddBoolOption(helper.ModManifest, () => T("config.fastAnimations.name", "Fast animations"), () => T("config.fastAnimations.tooltip", "Speeds cast/pull animations when supported by hooks."), () => config.FastAnimations, value => config.FastAnimations = value);
             menu.AddChoiceOption(helper.ModManifest, () => T("config.fastMultiplier.name", "Animation multiplier"), () => T("config.fastMultiplier.tooltip", "Fast animation multiplier."), () => config.FastAnimationMultiplier.ToString("0"), value => config.FastAnimationMultiplier = ParseDouble(value, 3), new[] { "2", "3", "4", "5" });
             menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency migration diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
@@ -82,7 +83,7 @@ namespace AutoFishingMod
                 CastReleaseProgress = config.CastReleaseProgress,
                 RecastDelaySeconds = config.RecastDelaySeconds,
                 AutoCompleteMiniGame = config.AutoCompleteMiniGame,
-                SkipMiniGame = config.AutoCompleteMiniGame && config.SkipMiniGame,
+                SkipMiniGame = config.SkipMiniGame,
                 InstantBite = config.InstantBite,
                 FastAnimations = config.FastAnimations,
                 FastAnimationMultiplier = config.FastAnimationMultiplier,
@@ -183,8 +184,6 @@ namespace AutoFishingMod
             config.InfoKey = NormalizeKey(config.InfoKey);
             config.AutoRecast = true;
             config.RequireSelectedFishingRod = true;
-            if (!config.AutoCompleteMiniGame)
-                config.SkipMiniGame = false;
             config.CastReleaseProgress = Clamp(config.CastReleaseProgress, 0, 1);
             config.RecastDelaySeconds = Clamp(config.RecastDelaySeconds, 0.05, 10);
             config.FastAnimationMultiplier = Clamp(config.FastAnimationMultiplier, 2, 5);

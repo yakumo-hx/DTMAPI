@@ -39,6 +39,11 @@ namespace DTMAPI.BepInExBootstrap
             { "End", "endKey" },
             { "PageUp", "pageUpKey" },
             { "PageDown", "pageDownKey" },
+            { "Plus", "equalsKey" },
+            { "Equals", "equalsKey" },
+            { "Minus", "minusKey" },
+            { "KeypadPlus", "numpadPlusKey" },
+            { "KeypadMinus", "numpadMinusKey" },
             { "UpArrow", "upArrowKey" },
             { "DownArrow", "downArrowKey" },
             { "LeftArrow", "leftArrowKey" },
@@ -275,6 +280,11 @@ namespace DTMAPI.BepInExBootstrap
                 case "End": virtualKey = 0x23; return true;
                 case "PageUp": virtualKey = 0x21; return true;
                 case "PageDown": virtualKey = 0x22; return true;
+                case "Plus": virtualKey = 0xBB; return true;
+                case "Equals": virtualKey = 0xBB; return true;
+                case "Minus": virtualKey = 0xBD; return true;
+                case "KeypadPlus": virtualKey = 0x6B; return true;
+                case "KeypadMinus": virtualKey = 0x6D; return true;
                 case "UpArrow": virtualKey = 0x26; return true;
                 case "DownArrow": virtualKey = 0x28; return true;
                 case "LeftArrow": virtualKey = 0x25; return true;
@@ -353,6 +363,11 @@ namespace DTMAPI.BepInExBootstrap
                 keys.Add(c.ToString());
             for (int i = 0; i <= 9; i++)
                 keys.Add("Alpha" + i);
+            keys.Add("Plus");
+            keys.Add("Equals");
+            keys.Add("Minus");
+            keys.Add("KeypadPlus");
+            keys.Add("KeypadMinus");
             keys.AddRange(fixedKeys);
             return keys.ToArray();
         }

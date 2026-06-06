@@ -18,6 +18,7 @@ param(
     [switch] $AutoExerciseAutoFishingMiniGameComplete,
     [switch] $AutoExerciseTitleButtonLifecycle,
     [switch] $AutoExerciseInstantSave,
+    [int] $AutoExerciseInstantSaveDelaySeconds = 3,
     [switch] $AutoPressAutoFishingHotkey,
     [switch] $AutoOpenTitleSettingsMenu,
     [switch] $AutoOpenOfficialModUi,
@@ -29,9 +30,14 @@ param(
     [switch] $AutoExerciseDebugTeleport,
     [switch] $AutoExerciseDebugTime,
     [switch] $AutoExerciseDebugMovement,
+    [switch] $AutoExerciseAdvancedDebug,
     [switch] $AutoExerciseVehicle,
     [switch] $AutoExerciseNewContentApis,
     [switch] $AutoExerciseMineContentApis,
+    [switch] $AutoExerciseZoom,
+    [switch] $AutoExerciseChestLocatorEnhancer,
+    [switch] $AutoExerciseStrongPlantingGun,
+    [switch] $AutoExerciseCustomEntityApis,
     [switch] $DisableSecondMotorForSmoke,
     [int] $AutoExitAfterSecondsOverride = 0,
     [switch] $SkipBuild
@@ -98,10 +104,15 @@ function Set-SmokeOfficialLocalModEnabled {
 }
 
 function Restore-SmokeSecondMotorEnablement {
-    if ($script:DisableSecondMotorForSmoke -and $script:secondMotorEnablementHadOriginal -and $script:secondMotorEnablementPath) {
+    if ($script:secondMotorEnablementTouched -and $script:secondMotorEnablementHadOriginal -and $script:secondMotorEnablementPath) {
         Copy-Item -Force -LiteralPath $script:secondMotorEnablementBackup -Destination $script:secondMotorEnablementPath -ErrorAction SilentlyContinue
     }
 }
+
+$script:secondMotorEnablementBackup = $null
+$script:secondMotorEnablementPath = $null
+$script:secondMotorEnablementHadOriginal = $false
+$script:secondMotorEnablementTouched = $false
 
 trap {
     Restore-SmokeSecondMotorEnablement
@@ -129,7 +140,7 @@ if ($existingFatalWindow) {
 }
 
 $includeRuntimeTestMods = [bool]$IncludeHookProbe -or [bool]$AutoOpenTitleSettingsMenu
-$includeDebugConsoleMod = [bool]$AutoExerciseDebugConsole -or [bool]$AutoExerciseDebugConsoleMouseGive
+$includeDebugConsoleMod = [bool]$AutoExerciseDebugConsole -or [bool]$AutoExerciseDebugConsoleMouseGive -or [bool]$AutoExerciseAdvancedDebug
 $requiresDebugConsoleKeySmoke = [bool]$AutoExerciseDebugConsole -or [bool]$AutoExerciseDebugConsoleMouseGive
 & "$PSScriptRoot\install-to-game.ps1" -IncludeTestMods:$includeRuntimeTestMods -IncludeDebugConsoleMod:$includeDebugConsoleMod -IncludeHookProbe:$IncludeHookProbe -SkipBuild:$SkipBuild
 $installExit = if (Get-Variable LASTEXITCODE -ErrorAction SilentlyContinue) { $LASTEXITCODE } else { 0 }
@@ -144,8 +155,14 @@ $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
 $script:secondMotorEnablementBackup = Join-Path $evidence 'mod_infos.before-second-motor-smoke.json'
 $script:secondMotorEnablementPath = $null
 $script:secondMotorEnablementHadOriginal = $false
+$script:secondMotorEnablementTouched = $false
 if ($DisableSecondMotorForSmoke) {
     $script:secondMotorEnablementPath = Set-SmokeOfficialLocalModEnabled -OfficialFolder 'DTMAPI_SecondMotor' -Enabled:$false -BackupPath $script:secondMotorEnablementBackup -HadOriginal ([ref]$script:secondMotorEnablementHadOriginal)
+    $script:secondMotorEnablementTouched = $true
+}
+elseif ($AutoExerciseVehicle) {
+    $script:secondMotorEnablementPath = Set-SmokeOfficialLocalModEnabled -OfficialFolder 'DTMAPI_SecondMotor' -Enabled:$true -BackupPath $script:secondMotorEnablementBackup -HadOriginal ([ref]$script:secondMotorEnablementHadOriginal)
+    $script:secondMotorEnablementTouched = $true
 }
 $oneActionConfigPath = Join-Path $dtmapiDir 'config\Yuuka.DTMAPI.OneActionComplete.json'
 $oneActionConfigBackup = Join-Path $evidence 'Yuuka.DTMAPI.OneActionComplete.before.json'
@@ -759,8 +776,9 @@ $smokeSettings = @{
     AutoExerciseAutoFishingMiniGameComplete = [bool]$AutoExerciseAutoFishingMiniGameComplete
     AutoExerciseTitleButtonLifecycle = [bool]$AutoExerciseTitleButtonLifecycle
     AutoExerciseInstantSave = [bool]$AutoExerciseInstantSave
-    AutoExerciseInstantSaveDelaySeconds = 3
+    AutoExerciseInstantSaveDelaySeconds = $AutoExerciseInstantSaveDelaySeconds
     AutoExerciseDebugConsole = $requiresDebugConsoleKeySmoke
+    AutoExerciseDebugConsoleMouseGive = [bool]$AutoExerciseDebugConsoleMouseGive
     AutoExerciseDebugConsoleDelaySeconds = 60
     AutoExerciseDebugInventory = [bool]$AutoExerciseDebugInventory
     AutoExerciseDebugInventoryDelaySeconds = 3
@@ -772,12 +790,22 @@ $smokeSettings = @{
     AutoExerciseDebugTimeDelaySeconds = 6
     AutoExerciseDebugMovement = [bool]$AutoExerciseDebugMovement
     AutoExerciseDebugMovementDelaySeconds = 7
+    AutoExerciseAdvancedDebug = [bool]$AutoExerciseAdvancedDebug
+    AutoExerciseAdvancedDebugDelaySeconds = 8
     AutoExerciseVehicle = [bool]$AutoExerciseVehicle
     AutoExerciseVehicleDelaySeconds = 8
     AutoExerciseNewContentApis = [bool]$AutoExerciseNewContentApis
     AutoExerciseNewContentApisDelaySeconds = 3
     AutoExerciseMineContentApis = [bool]$AutoExerciseMineContentApis
     AutoExerciseMineContentApisDelaySeconds = 3
+    AutoExerciseZoom = [bool]$AutoExerciseZoom
+    AutoExerciseZoomDelaySeconds = 3
+    AutoExerciseChestLocatorEnhancer = [bool]$AutoExerciseChestLocatorEnhancer
+    AutoExerciseChestLocatorEnhancerDelaySeconds = 3
+    AutoExerciseStrongPlantingGun = [bool]$AutoExerciseStrongPlantingGun
+    AutoExerciseStrongPlantingGunDelaySeconds = 3
+    AutoExerciseCustomEntityApis = [bool]$AutoExerciseCustomEntityApis
+    AutoExerciseCustomEntityApisDelaySeconds = 3
     AutoFishingExternalHotkeyRequired = [bool]$AutoPressAutoFishingHotkey
     AutoOpenTitleSettingsMenu = [bool]$AutoOpenTitleSettingsMenu
     AutoOpenTitleSettingsDelaySeconds = 12
@@ -796,7 +824,7 @@ if (Test-Path $freshBepLogPath) {
     Remove-Item -Force -LiteralPath $freshBepLogPath
 }
 
-"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseInstantSaveDelaySeconds=$AutoExerciseInstantSaveDelaySeconds`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseAdvancedDebug=$AutoExerciseAdvancedDebug`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoExerciseZoom=$AutoExerciseZoom`nAutoExerciseChestLocatorEnhancer=$AutoExerciseChestLocatorEnhancer`nAutoExerciseStrongPlantingGun=$AutoExerciseStrongPlantingGun`nAutoExerciseCustomEntityApis=$AutoExerciseCustomEntityApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
 
 $launchCommandStartedAt = Get-Date
 if ($launchViaSteam) {
@@ -829,7 +857,7 @@ $launchModeLabel = if ($launchViaSteam) { 'Steam' } else { 'DirectExe' }
 $startupOk = Wait-ForStartupLogWithTimeline -LogPath $logPath -Pattern 'DTMAPI runtime starting.' -TimeoutSeconds $startupTimeoutSeconds -EvidenceDir $evidence -LaunchCommandStartedAt $launchCommandStartedAt -LaunchCommandFinishedAt $launchCommandFinishedAt -LaunchMode $launchModeLabel
 $gameLaunchedOk = $false
 $probeOk = -not [bool]$IncludeHookProbe
-$saveLoadedOk = -not (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis))
+$saveLoadedOk = -not (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseAdvancedDebug -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis -or [bool]$AutoExerciseZoom -or [bool]$AutoExerciseChestLocatorEnhancer -or [bool]$AutoExerciseStrongPlantingGun -or [bool]$AutoExerciseCustomEntityApis))
 $titleLifecycleOk = -not [bool]$AutoExerciseTitleButtonLifecycle
 $titleButtonOk = -not [bool]$AutoOpenTitleSettingsMenu
 $titleButtonScreenshotOk = -not [bool]$AutoOpenTitleSettingsMenu
@@ -864,6 +892,7 @@ $debugTeleportCsvOk = -not [bool]$AutoExerciseDebugTeleport
 $debugTeleportOk = -not [bool]$AutoExerciseDebugTeleport
 $debugTimeOk = -not [bool]$AutoExerciseDebugTime
 $debugMovementOk = -not [bool]$AutoExerciseDebugMovement
+$advancedDebugOk = -not [bool]$AutoExerciseAdvancedDebug
 $vehicleSecondMotorOk = -not [bool]$AutoExerciseVehicle
 $newContentApisOk = -not [bool]$AutoExerciseNewContentApis
 $newContentMineApisOk = -not [bool]$AutoExerciseMineContentApis
@@ -873,6 +902,10 @@ $newContentMineOfficialJsonOk = -not ([bool]$AutoExerciseNewContentApis -or [boo
 $newContentMineOfficialTechTreeUiOk = -not [bool]$AutoExerciseMineContentApis
 $newContentMineProductionOk = -not ([bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis)
 $newContentEquipmentSlotsOk = -not [bool]$AutoExerciseNewContentApis
+$zoomOk = -not [bool]$AutoExerciseZoom
+$chestLocatorEnhancerOk = -not [bool]$AutoExerciseChestLocatorEnhancer
+$strongPlantingGunOk = -not [bool]$AutoExerciseStrongPlantingGun
+$customEntityApisOk = -not [bool]$AutoExerciseCustomEntityApis
 
 if ($startupOk) {
     $gameLaunchedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'GameLaunched dispatched.' -TimeoutSeconds 60 -AbortOnFatalInstanceWindow
@@ -930,7 +963,7 @@ if ($startupOk) {
     elseif ($probeOk -and $AutoExerciseInstantSave -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
-    elseif ($probeOk -and ($requiresDebugConsoleKeySmoke -or $AutoExerciseDebugInventory -or $AutoExerciseDebugWeather -or $AutoExerciseDebugTeleport -or $AutoExerciseDebugTime -or $AutoExerciseDebugMovement -or $AutoExerciseVehicle -or $AutoExerciseNewContentApis -or $AutoExerciseMineContentApis) -and $SaveSlot -gt 0) {
+    elseif ($probeOk -and ($requiresDebugConsoleKeySmoke -or $AutoExerciseDebugInventory -or $AutoExerciseDebugWeather -or $AutoExerciseDebugTeleport -or $AutoExerciseDebugTime -or $AutoExerciseDebugMovement -or $AutoExerciseAdvancedDebug -or $AutoExerciseVehicle -or $AutoExerciseNewContentApis -or $AutoExerciseMineContentApis -or $AutoExerciseZoom -or $AutoExerciseChestLocatorEnhancer -or $AutoExerciseStrongPlantingGun -or $AutoExerciseCustomEntityApis) -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
     if ($saveLoadedOk -and $AutoExerciseNewContentApis) {
@@ -1015,53 +1048,69 @@ if ($startupOk) {
         $instantSaveOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise InstantSave OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
     if ($saveLoadedOk -and $requiresDebugConsoleKeySmoke) {
-        Start-Sleep -Seconds 1
-        $debugConsoleOpenY1Ok = Invoke-DebugConsoleSmokeKey -Label 'Y1' -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount 1 -Attempts 4 -WaitSeconds 5
-        if ($debugConsoleOpenY1Ok) {
+        $debugConsoleInGameHotkeyOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise DebugConsoleHotkey OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+        if ($debugConsoleInGameHotkeyOk) {
+            $debugConsoleOpenY1Ok = $true
+            $debugConsoleCloseEscapeOk = $true
+            $debugConsoleOpenY2Ok = $true
+            $debugConsoleCloseYOk = $true
+            $debugConsoleTenYShortTapsOk = $true
+            $debugConsoleHoldYNoFlickerOk = $true
+            "InGameDebugConsoleHotkeySmoke=$(Get-Date -Format o);ok=True" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
             if ($AutoExerciseDebugConsoleMouseGive) {
                 $debugConsoleMouseGiveOk = Invoke-DebugConsoleMouseGiveSmoke
             }
-            $debugConsoleCloseEscapeOk = Invoke-DebugConsoleSmokeKey -Label 'Escape' -VirtualKey 0x1B -Pattern 'Debug console closed reason=Escape owner=DTMAPI.DebugConsoleMod.' -MinimumCount 1 -Attempts 2 -WaitSeconds 5
         }
-        if ($debugConsoleCloseEscapeOk) {
-            $debugConsoleOpenY2Ok = Invoke-DebugConsoleSmokeKey -Label 'Y2' -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount 2 -Attempts 4 -WaitSeconds 5
-        }
-        if ($debugConsoleOpenY2Ok) {
-            $debugConsoleCloseYOk = Invoke-DebugConsoleSmokeKey -Label 'Y3' -VirtualKey 0x59 -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -MinimumCount 1 -Attempts 2 -WaitSeconds 5
-        }
-        if ($debugConsoleCloseYOk) {
-            $debugConsoleTenYShortTapsOk = $true
-            for ($tap = 1; $tap -le 10; $tap++) {
-                if (($tap % 2) -eq 1) {
-                    $expectedOpenCount = 2 + [int](($tap + 1) / 2)
-                    $ok = Invoke-DebugConsoleSmokeKey -Label "YShort$tap" -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount $expectedOpenCount -Attempts 1 -WaitSeconds 4
+        else {
+            "InGameDebugConsoleHotkeySmoke=$(Get-Date -Format o);ok=False;fallback=external-key-injection" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+            Start-Sleep -Seconds 1
+            $debugConsoleOpenY1Ok = Invoke-DebugConsoleSmokeKey -Label 'Y1' -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount 1 -Attempts 4 -WaitSeconds 5
+            if ($debugConsoleOpenY1Ok) {
+                if ($AutoExerciseDebugConsoleMouseGive) {
+                    $debugConsoleMouseGiveOk = Invoke-DebugConsoleMouseGiveSmoke
                 }
-                else {
-                    $expectedCloseCount = 1 + [int]($tap / 2)
-                    $ok = Invoke-DebugConsoleSmokeKey -Label "YShort$tap" -VirtualKey 0x59 -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -MinimumCount $expectedCloseCount -Attempts 1 -WaitSeconds 4
-                }
-
-                if (-not $ok) {
-                    $debugConsoleTenYShortTapsOk = $false
-                    break
-                }
+                $debugConsoleCloseEscapeOk = Invoke-DebugConsoleSmokeKey -Label 'Escape' -VirtualKey 0x1B -Pattern 'Debug console closed reason=Escape owner=DTMAPI.DebugConsoleMod.' -MinimumCount 1 -Attempts 2 -WaitSeconds 5
             }
+            if ($debugConsoleCloseEscapeOk) {
+                $debugConsoleOpenY2Ok = Invoke-DebugConsoleSmokeKey -Label 'Y2' -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount 2 -Attempts 4 -WaitSeconds 5
+            }
+            if ($debugConsoleOpenY2Ok) {
+                $debugConsoleCloseYOk = Invoke-DebugConsoleSmokeKey -Label 'Y3' -VirtualKey 0x59 -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -MinimumCount 1 -Attempts 2 -WaitSeconds 5
+            }
+            if ($debugConsoleCloseYOk) {
+                $debugConsoleTenYShortTapsOk = $true
+                for ($tap = 1; $tap -le 10; $tap++) {
+                    if (($tap % 2) -eq 1) {
+                        $expectedOpenCount = 2 + [int](($tap + 1) / 2)
+                        $ok = Invoke-DebugConsoleSmokeKey -Label "YShort$tap" -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount $expectedOpenCount -Attempts 1 -WaitSeconds 4
+                    }
+                    else {
+                        $expectedCloseCount = 1 + [int]($tap / 2)
+                        $ok = Invoke-DebugConsoleSmokeKey -Label "YShort$tap" -VirtualKey 0x59 -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -MinimumCount $expectedCloseCount -Attempts 1 -WaitSeconds 4
+                    }
 
-            if ($debugConsoleTenYShortTapsOk) {
-                $openCountBeforeHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -ErrorAction SilentlyContinue).Count
-                $closeYCountBeforeHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -ErrorAction SilentlyContinue).Count
-                $sentHoldY = Send-DolocTownKey -VirtualKey 0x59 -Name 'YHold' -HoldMilliseconds 1800
-                "SentExternalDebugConsoleYHold=$(Get-Date -Format o);ok=$sentHoldY;openBefore=$openCountBeforeHold;closeYBefore=$closeYCountBeforeHold" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
-                if ($sentHoldY -and (Wait-ForLogLineCount -LogPath $logPath -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount ($openCountBeforeHold + 1) -TimeoutSeconds 5)) {
-                    Start-Sleep -Seconds 2
-                    $openCountAfterHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -ErrorAction SilentlyContinue).Count
-                    $closeYCountAfterHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -ErrorAction SilentlyContinue).Count
-                    $debugConsoleHoldYNoFlickerOk = ($openCountAfterHold -eq ($openCountBeforeHold + 1)) -and ($closeYCountAfterHold -eq $closeYCountBeforeHold)
-                    "DebugConsoleYHoldResult=$(Get-Date -Format o);openAfter=$openCountAfterHold;closeYAfter=$closeYCountAfterHold;ok=$debugConsoleHoldYNoFlickerOk" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                    if (-not $ok) {
+                        $debugConsoleTenYShortTapsOk = $false
+                        break
+                    }
                 }
-                else {
-                    $debugConsoleHoldYNoFlickerOk = $false
-                    "DebugConsoleYHoldResult=$(Get-Date -Format o);ok=False" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+
+                if ($debugConsoleTenYShortTapsOk) {
+                    $openCountBeforeHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -ErrorAction SilentlyContinue).Count
+                    $closeYCountBeforeHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -ErrorAction SilentlyContinue).Count
+                    $sentHoldY = Send-DolocTownKey -VirtualKey 0x59 -Name 'YHold' -HoldMilliseconds 1800
+                    "SentExternalDebugConsoleYHold=$(Get-Date -Format o);ok=$sentHoldY;openBefore=$openCountBeforeHold;closeYBefore=$closeYCountBeforeHold" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                    if ($sentHoldY -and (Wait-ForLogLineCount -LogPath $logPath -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount ($openCountBeforeHold + 1) -TimeoutSeconds 5)) {
+                        Start-Sleep -Seconds 2
+                        $openCountAfterHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -ErrorAction SilentlyContinue).Count
+                        $closeYCountAfterHold = @(Select-String -LiteralPath $logPath -SimpleMatch -Pattern 'Debug console closed reason=Y owner=DTMAPI.DebugConsoleMod.' -ErrorAction SilentlyContinue).Count
+                        $debugConsoleHoldYNoFlickerOk = ($openCountAfterHold -eq ($openCountBeforeHold + 1)) -and ($closeYCountAfterHold -eq $closeYCountBeforeHold)
+                        "DebugConsoleYHoldResult=$(Get-Date -Format o);openAfter=$openCountAfterHold;closeYAfter=$closeYCountAfterHold;ok=$debugConsoleHoldYNoFlickerOk" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                    }
+                    else {
+                        $debugConsoleHoldYNoFlickerOk = $false
+                        "DebugConsoleYHoldResult=$(Get-Date -Format o);ok=False" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                    }
                 }
             }
         }
@@ -1082,8 +1131,23 @@ if ($startupOk) {
     if ($saveLoadedOk -and $AutoExerciseDebugMovement) {
         $debugMovementOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise DebugMovement OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
+    if ($saveLoadedOk -and $AutoExerciseAdvancedDebug) {
+        $advancedDebugOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise AdvancedDebug OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
     if ($saveLoadedOk -and $AutoExerciseVehicle) {
         $vehicleSecondMotorOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise VehicleSecondMotor OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($saveLoadedOk -and $AutoExerciseZoom) {
+        $zoomOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise Zoom OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($saveLoadedOk -and $AutoExerciseChestLocatorEnhancer) {
+        $chestLocatorEnhancerOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise ChestLocatorEnhancer OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($saveLoadedOk -and $AutoExerciseStrongPlantingGun) {
+        $strongPlantingGunOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise StrongPlantingGun OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($saveLoadedOk -and $AutoExerciseCustomEntityApis) {
+        $customEntityApisOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise CustomEntityApis OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
 }
 
@@ -1215,7 +1279,12 @@ $result = @{
     DebugTeleport = $debugTeleportOk
     DebugTime = $debugTimeOk
     DebugMovement = $debugMovementOk
+    AdvancedDebug = $advancedDebugOk
     VehicleSecondMotor = $vehicleSecondMotorOk
+    Zoom = $zoomOk
+    ChestLocatorEnhancer = $chestLocatorEnhancerOk
+    StrongPlantingGun = $strongPlantingGunOk
+    CustomEntityApis = $customEntityApisOk
     NewContentApis = $newContentApisOk
     NewContentMineApis = $newContentMineApisOk
     NewContentOilItemMetadata = $newContentOilItemMetadataOk
@@ -1238,7 +1307,7 @@ catch {
     $_ | Out-String | Set-Content -LiteralPath (Join-Path $evidence 'startup-analysis-error.txt')
 }
 
-if (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $vehicleSecondMotorOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $fatalWindows.Count -gt 0 -or $forcedClose -or $leftover) {
+if (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $strongPlantingGunOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $fatalWindows.Count -gt 0 -or $forcedClose -or $leftover) {
     Write-Error "Game smoke failed or left DolocTown.exe running. Evidence: $evidence"
     exit 1
 }

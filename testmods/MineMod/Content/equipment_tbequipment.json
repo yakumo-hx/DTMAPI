@@ -37,6 +37,10 @@
       "skin_color": [],
       "skin_sprite": []
     },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 10
+    },
     "processors": [],
     "fit_slot_datas": [],
     "contained_slot_datas": []

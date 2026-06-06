@@ -1,0 +1,33 @@
+[
+  {
+    "id": "dtmapi_creative_generator",
+    "sub_type": "material_ore",
+    "salable": false,
+    "disposable": true,
+    "consumable": false,
+    "cookable": false,
+    "electric_energy": 50000,
+    "viewable": true,
+    "source": [
+      "debug",
+      "dtmapi"
+    ],
+    "selling_price": 0,
+    "buying_price": 0,
+    "overlay": 1,
+    "ui_sprite_asset": {
+      "url": "icon_item_coal"
+    },
+    "title": {
+      "key": "item_dtmapi_creative_generator",
+      "text": "DTMAPI创造发电机"
+    },
+    "description_basic": {
+      "key": "item_dtmapi_creative_generator_desc",
+      "text": "Y键控制台创造模式的调试燃料物品，用于验证官方JSON内容注入、背包生成和高燃料值路径。"
+    },
+    "function": {
+      "$type": "ItemFunction"
+    }
+  }
+]

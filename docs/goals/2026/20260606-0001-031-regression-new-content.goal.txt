@@ -1,0 +1,39 @@
+ARCHIVED PROMPT - DO NOT EXECUTE AS A NEW GOAL.
+This prompt is retained only to explain the 0.3.1 automatic-versioning drift. The user later identified 0.3.1 as a Codex error.
+
+/goal
+目标：完成 DTMAPI 0.3.1 手测回归与新内容实现：修复 AnimalHusbandryProgress、AutoFishing/ActionSpeed、Y Console 存档/传送、SecondMotor，并完成 Oil、Mine/Machine API、MoreEquipmentSlots 的安全实现。详细需求、问题、验收标准以 docs/goals/2026/20260606-0001-031-regression-new-content.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260606-0001-031-regression-new-content.md
+docs/reviews/README.md
+docs/reviews/manual-qa/2026/20260606-0004-031-regression-new-content-review.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+references/README.md
+references/doloc-town/reverse/builds/23465763_workshop_38581E
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本固定为 goal 文件写明的版本。注意：0.3.1 是上一轮 Codex 的错误自动升级结果，不得作为后续自动升版依据。若当前代码已经达到目标版本，不要再升版本；只有用户明确要求或 goal 文件明确写新目标版本时才允许继续升版本。
+
+任务 A：Confirm Current State And Reopen Manual Regressions
+任务 B：AnimalHusbandryProgress Bell UI And Color Config
+任务 C：AutoFishing And ActionSpeed Config/Function
+任务 D：Y Console Save And Teleport Audit
+任务 E：SecondMotor True Independent Vehicle
+任务 F：OilMod Official JSON And Runtime Drop
+任务 G：MineMod And DTMAPI Machine API
+任务 H：MoreEquipmentSlots Safe Extra Slots
+任务 I：Validation And Documentation Closeout
+
+完成标准：
+只有当 docs/goals/2026/20260606-0001-031-regression-new-content.md 中本轮任务列表的玩家可见功能都在第三存档真实可用，并完成 Release build、game smoke、日志/截图/CSV 证据、退出残留检查和文档更新，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步。

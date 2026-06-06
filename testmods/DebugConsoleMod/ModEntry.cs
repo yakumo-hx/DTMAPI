@@ -41,14 +41,16 @@ namespace DebugConsoleMod
             ITimeDebugApi? timeApi = helper.ModRegistry.GetApi<ITimeDebugApi>("DTMAPI.GameBridge.DolocTown");
             movementApi = helper.ModRegistry.GetApi<IMovementDebugApi>("DTMAPI.GameBridge.DolocTown");
             IInstantSaveDebugApi? instantSaveApi = helper.ModRegistry.GetApi<IInstantSaveDebugApi>("DTMAPI.GameBridge.DolocTown");
+            IAdvancedDebugApi? advancedApi = helper.ModRegistry.GetApi<IAdvancedDebugApi>("DTMAPI.GameBridge.DolocTown");
 
             if (consoleApi != null)
             {
                 consoleApi.Bind(helper.ModManifest, inventoryApi, weatherApi, teleportApi, timeApi, movementApi, instantSaveApi);
+                consoleApi.BindAdvanced(helper.ModManifest, advancedApi);
                 consoleApi.SetLanguage(helper.ModManifest, config.Language);
             }
 
-            bool bound = consoleApi != null && inventoryApi != null && weatherApi != null && teleportApi != null && timeApi != null && movementApi != null && instantSaveApi != null;
+            bool bound = consoleApi != null && inventoryApi != null && weatherApi != null && teleportApi != null && timeApi != null && movementApi != null && instantSaveApi != null && advancedApi != null;
             helper.Monitor.Log(bound ? T("mod.bound", "Debug console API binding completed.") : T("mod.boundMissing", "Debug console API binding is incomplete."), bound ? LogLevel.Info : LogLevel.Warn);
         }
 

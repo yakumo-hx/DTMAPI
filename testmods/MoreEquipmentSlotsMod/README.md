@@ -1,6 +1,6 @@
 # DTMAPI More Equipment Slots
 
-Experimental 0.2.8 runtime/UI mod for extra player equipment slots.
+Experimental 0.2.9 runtime/UI mod for extra player equipment slots.
 
 - The mod registers `IEquipmentSlotsApi` with three default extra attribute-only slots.
 - Vanilla/default equipment slots remain responsible for visible decoration effects.

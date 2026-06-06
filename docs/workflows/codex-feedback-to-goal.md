@@ -12,7 +12,7 @@ Use this file before answering or editing when the user asks to:
 - 只讨论下一轮目标、验收指标、blocker、debug 记录。
 - 区分“整理反馈的 Codex”和“升级 DTMAPI 的 Codex”。
 
-Do not use this workflow to implement runtime/API/gameplay changes. If the user asks to implement, follow `AGENTS.md`, `readme.md`, debug docs, and update-record rules instead.
+Do not use this workflow to implement runtime/API/gameplay changes. If the user asks to implement, follow `AGENTS.md`, the exact `docs/goals/YYYY/...md` file named by the prompt, debug docs, and update-record rules instead.
 
 ## Role Split
 
@@ -24,7 +24,8 @@ The feedback organizer only:
 - separates confirmed user facts, screenshot observations, and Codex inferences;
 - performs code-path/root-cause review before asking an implementation Codex to fix repeated, lifecycle, hook, UI, input, save/load, vehicle, machine, or official-content issues;
 - creates or updates `docs/reviews` records when the review needs to survive context compaction or feed a future implementation goal;
-- updates or drafts `readme.md` task details when requested;
+- creates or updates a dedicated `docs/goals/YYYY/...md` task ledger when requested;
+- stores the exact short `/goal` prompt beside it as `docs/goals/YYYY/....goal.txt`;
 - outputs a short `/goal` prompt for the implementation Codex;
 - records durable constraints that prevent repeated already-solved issues.
 
@@ -38,7 +39,7 @@ The feedback organizer must not:
 
 ### DTMAPI Upgrade Codex
 
-The upgrade Codex receives the short `/goal`, reads `readme.md`, implements changes, validates in game, updates evidence, and follows `AGENTS.md`.
+The upgrade Codex receives the short `/goal`, reads the exact goal file named in that prompt, implements changes, validates in game, updates evidence, and follows `AGENTS.md`.
 
 ## Required Inputs
 
@@ -46,9 +47,10 @@ Before producing a new prompt or task breakdown, read the relevant current truth
 
 - `AGENTS.md`
 - `PROJECT.md`
+- `docs/goals/README.md`
 - `docs/reviews/README.md` when doing manual-QA review or root-cause review
 - the latest relevant `docs/reviews/manual-qa/YYYY/...` record if one exists
-- `readme.md` if it is the current task ledger
+- the exact `docs/goals/YYYY/...md` file if this turn is updating or producing an implementation handoff
 - `docs/updates/INDEX.md`
 - the latest relevant `docs/updates/YYYY/...` record
 - `docs/debug/INDEX.md`
@@ -65,7 +67,7 @@ Manual QA should pass through these layers in order:
 
 1. **Record**: preserve the user's numbered issues and translate screenshots/logs into text.
 2. **Review**: inspect the relevant docs, update records, debug records, and code paths. Attach analysis immediately under each issue.
-3. **Convert**: only after review, update `readme.md` task details or produce a short `/goal` if the user asks for an implementation handoff.
+3. **Convert**: only after review, create/update one dedicated goal file and produce a short `/goal` if the user asks for an implementation handoff.
 4. **Implement**: a separate DTMAPI Upgrade Codex executes the goal, validates in game, and updates evidence.
 
 Do not skip the Review layer for:
@@ -84,14 +86,14 @@ For these cases, identify at least the likely render/input/save/hook paths and t
 
 ## Review File Policy
 
-Not every discussion updates `readme.md`. Use the smallest durable artifact that matches the turn:
+Not every discussion creates a goal file. Use the smallest durable artifact that matches the turn:
 
 - Review/discussion only: answer in chat; create a `docs/reviews` record only if the user asked to update files or the review will feed a future goal.
 - Durable audit: create or update `docs/reviews/manual-qa/YYYY/YYYYMMDD-NNNN-short-slug.md`.
-- Implementation handoff: update `readme.md` from the review record, then output the short `/goal`.
+- Implementation handoff: create a new `docs/goals/YYYY/YYYYMMDD-NNNN-short-slug.md` from the review record, create a sibling `.goal.txt` backup containing the exact short `/goal`, then output the short `/goal`.
 - Historical project/workflow change: add `docs/updates/YYYY/...` and link it from `docs/updates/INDEX.md`.
 
-`readme.md` is the current implementation ledger, not the archive of every test observation. `docs/reviews` holds the review reasoning; `docs/debug` holds runtime evidence; `docs/updates` holds traceable changes.
+`docs/goals` holds per-round implementation ledgers and prompt backups; `docs/reviews` holds the review reasoning; `docs/debug` holds runtime evidence; `docs/updates` holds traceable changes. Do not create, read, or rely on a mutable root task-ledger file.
 
 ## Output Format
 
@@ -103,7 +105,7 @@ Start every manual-feedback review with a durable header. This header is require
 
 - 时间：use the current local date/time with timezone when available.
 - 来源：shortly identify the user turn, attached screenshots/files, and whether this was user manual testing, screenshot review, log review, or Codex inference.
-- 范围：state whether this turn is only review/discussion, readme update, prompt generation, or implementation.
+- 范围：state whether this turn is only review/discussion, goal-file update, prompt generation, or implementation.
 - 禁止事项：repeat any active user constraint such as “先不给提示词”, “只讨论”, or “不实现”.
 - 审查记录：state whether this is chat-only or the path to a `docs/reviews/manual-qa/...` record.
 
@@ -128,7 +130,7 @@ Use this per-item format:
 - Codex 推断：<hypotheses from code/docs, clearly labeled>
 - 反证/未证实：<hypotheses rejected or not yet inspected>
 - 归属：<Mod 代码 / DTMAPI Core / GameBridge / Bootstrap UI / ConfigMenu API / official-workshop compatibility / docs>
-- 需要更新：<readme task/debug issue/update record/smoke matrix/API matrix/hook map>
+- 需要更新：<goal file/debug issue/update record/smoke matrix/API matrix/hook map>
 - 验收点：<player-visible check that proves this item is fixed>
 - blocker 判定：<what would make implementation stop instead of marking complete>
 ```
@@ -162,11 +164,13 @@ List:
 - 可选做：nice-to-have improvements that must not block the goal.
 - blocker 判定：what prevents `complete`.
 
-### readme.md 更新片段
+### 独立 Goal 文件更新片段
 
-Put detailed tasks here as a flexible, short sequence. `任务 A-G` is only an example, not a requirement. Use as many tasks as the scope needs, and keep small goals small. Long details belong here, not inside the `/goal` prompt.
+Put detailed tasks here as a flexible, short sequence. `任务 A-G` is only an example, not a requirement. Use as many tasks as the scope needs, and keep small goals small. Long details belong in the dedicated goal file, not inside the `/goal` prompt.
 
-When the user asks to generate an implementation prompt from manual feedback, update `readme.md` first unless they explicitly asked for text-only output. The `readme.md` task details must be based on the per-item review records above, not on a compressed final summary. For review-only turns, do not update `readme.md` unless the user explicitly requests it.
+When the user asks to generate an implementation prompt from manual feedback, create or update a dedicated `docs/goals/YYYY/...md` file first unless they explicitly asked for text-only output. The goal-file task details must be based on the per-item review records above, not on a compressed final summary. For review-only turns, do not create a goal file unless the user explicitly requests it.
+
+Each implementation handoff must also create a sibling `.goal.txt` file containing the exact short `/goal` prompt that will be shown to the user.
 
 ### 短 /goal 提示词
 
@@ -179,7 +183,7 @@ The `/goal` prompt should stay short:
 - a version-bump instruction for implementation goals;
 - final completion standard.
 
-Do not paste every task detail into the `/goal`; make the implementation Codex read `readme.md`.
+Do not paste every task detail into the `/goal`; make the implementation Codex read the exact `docs/goals/YYYY/...md` file.
 
 ## Strong Rules
 
@@ -187,10 +191,14 @@ Do not paste every task detail into the `/goal`; make the implementation Codex r
 - Screenshot content must be translated into written observations so the issue remains understandable after images or context are compacted away.
 - Repeated or previously "fixed" issues require code-path review before another implementation goal. Do not let a new Codex repair only the final visual state when the user's bug is a lifecycle, flicker, stale-state, or path-order problem.
 - A smoke pass can support evidence, but it cannot replace a user-visible acceptance condition that names the exact failure mode. If the user reports "it flickers first, then becomes correct", the acceptance must cover the flicker, not only the final correct state.
-- `readme.md` is not updated for every review. Update it when producing an implementation ledger or when the user explicitly requests it.
+- Do not create or update a mutable root task-ledger file. Use `docs/goals/YYYY/...md` instead.
+- Create one independent goal file per implementation handoff. Do not overwrite another active or historical goal file.
+- Back up the exact short `/goal` prompt in a sibling `.goal.txt` file.
 - Task numbering is flexible. A-G is a template example only; narrow scopes may use A-C, numbered tasks, or descriptive task titles.
 - A feedback-organizer Codex may be started fresh. It must read this workflow, the current project docs, and the latest records, then continue from the per-item review blocks rather than restarting from memory.
-- When producing an implementation `/goal`, include a version bump requirement. Prefer the next patch version unless `readme.md` explicitly calls for a minor/major bump. The implementing Codex must update every project-controlled version source it changes or relies on, and record the bump in `docs/updates`.
+- When producing an implementation `/goal`, include a fixed target version requirement, for example `from 0.3.0 to 0.3.1` or `target version 0.3.1`. Do not write only `bump once`.
+- If the workspace is already at the target version, the implementing Codex must not bump again unless the user or goal file explicitly names a newer target version.
+- The implementing Codex must update every project-controlled version source it changes or relies on, and record the old/new versions in `docs/updates`.
 - Keep smoke evidence and user manual QA separate. Write “smoke verified” only for automated evidence, and “user verified” only when the user said so.
 - Do not re-add already solved small issues to a new goal unless the user reports a regression.
 - Do not let “experimental”, “pending”, or “follow-up” substitute for a mandatory player-visible requirement.
@@ -204,14 +212,16 @@ Do not paste every task detail into the `/goal`; make the implementation Codex r
 
 ```text
 /goal
-目标：<one-sentence objective>. 详细需求、问题、验收标准以 readme.md 的任务列表为准。
+目标：<one-sentence objective>. 详细需求、问题、验收标准以 <exact docs/goals/YYYY/...md path> 的任务列表为准。
 
 开始前必须阅读：
 AGENTS.md
 PROJECT.md
+docs/goals/README.md
+<exact docs/goals/YYYY/...md file>
+<exact docs/goals/YYYY/....goal.txt file, if already created>
 docs/reviews/README.md
 <latest relevant review record, if any>
-readme.md
 docs/updates/INDEX.md
 <latest relevant update record>
 docs/debug/INDEX.md
@@ -221,10 +231,10 @@ docs/api/public-api-matrix.md
 <task-specific references>
 
 安全约束：
-修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
 
 版本要求：
-本轮实现必须把 DTMAPI 版本号升一次，优先 patch bump；同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+本轮目标版本固定为 <target version>。若当前代码已经是 <target version>，不要再升版本；只有用户明确要求或 goal 文件明确写新目标版本时才允许继续升版本。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
 
 任务 A：<title>
 任务 B：<title>
@@ -232,5 +242,5 @@ docs/api/public-api-matrix.md
 <add only the task titles actually needed by this scope>
 
 完成标准：
-只有当 readme.md 中本轮任务列表的玩家可见功能都在第三存档真实可用，并完成 build、game smoke、日志/截图证据、退出残留检查和文档更新，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步。
+只有当 <exact docs/goals/YYYY/...md path> 中本轮任务列表的玩家可见功能都在第三存档真实可用，并完成 build、game smoke、日志/截图证据、退出残留检查和文档更新，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步。
 ```

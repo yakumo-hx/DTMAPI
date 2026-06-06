@@ -1,0 +1,20 @@
+{
+  "Name": "DTMAPI Strong Planting Gun",
+  "Author": "DTMAPI",
+  "Version": "0.3.1-dtmapi",
+  "UniqueID": "DTMAPI.StrongPlantingGunMod",
+  "EntryDll": "StrongPlantingGunMod.dll",
+  "MinimumDTMApiVersion": "0.3.1",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.3.1",
+      "IsRequired": false
+    },
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.3.1",
+      "IsRequired": true
+    }
+  ]
+}

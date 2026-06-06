@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 石油",
   "author": "DTMAPI",
-  "version": "0.2.8-dtmapi",
+  "version": "0.3.1-dtmapi",
   "description": "DTMAPI experimental 石油内容包。新增高燃料值石油物品，用于矿井研究、矿井制作和燃料消耗。",
   "tags": [
     "Mod",

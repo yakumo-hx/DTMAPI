@@ -18,9 +18,12 @@ The review should answer:
 ## Relationship To Other Docs
 
 - `docs/reviews`: pre-implementation analysis and root-cause/path review.
-- `readme.md`: the current implementation task ledger for a future `/goal`.
+- `docs/goals/YYYY/...`: immutable implementation task ledgers for future `/goal` prompts.
+- `docs/goals/YYYY/....goal.txt`: backups of the exact short `/goal` prompts.
 - `docs/debug`: runtime investigation, evidence, regressions, and known bug state.
 - `docs/updates`: traceable records of document, runtime, workflow, or project-direction changes.
+
+Do not use a mutable root task-ledger file for review output or implementation handoff. Reviews feed dedicated files under `docs/goals/YYYY/`.
 
 Do not use a review record to claim a fix is complete. Completion belongs to update/debug evidence after implementation and validation.
 
@@ -45,7 +48,7 @@ Create or update a durable review record when:
 - the user asks for an audit, review, code-level review, or workflow-backed prompt;
 - the same issue has survived a previous claimed fix or smoke pass;
 - the issue involves UI lifecycle, input, hotkeys, map transitions, save/load, official/Workshop loading, machines, vehicles, config persistence, or GameBridge hooks;
-- the next step is to generate a `readme.md` task ledger or short `/goal` for a fresh Codex.
+- the next step is to generate a dedicated goal file or short `/goal` for a fresh Codex.
 
 For pure discussion, a chat-only review is acceptable unless the user asks to update files. If an implementation goal will be produced, prefer a durable review first for complex or repeated issues.
 
@@ -65,4 +68,3 @@ Each user-numbered item must keep its own analysis directly under it:
 - downstream docs to update if implementation happens.
 
 Do not move all analysis to the end. This is required so a compacted context or fresh Codex can resume from any single issue.
-

@@ -13,6 +13,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private object? harmony;
         private Type? harmonyType;
         private Type? harmonyMethodType;
+        private static Func<object, object, object, bool, Array, Array>? arrayResultPostfixCallback;
 
         public HarmonyReflectionPatcher(DtmApiRuntime runtime)
         {
@@ -27,6 +28,28 @@ namespace DTMAPI.GameBridge.DolocTown
         public bool TryPatchPostfix(string targetTypeName, string methodName, MethodInfo? postfix, int? parameterCount = null)
         {
             return TryPatch(targetTypeName, methodName, prefix: null, postfix: postfix, parameterCount: parameterCount);
+        }
+
+        public bool TryPatchArrayResultPostfix(string targetTypeName, string methodName, MethodInfo? arrayResultCallback, int? parameterCount = null)
+        {
+            try
+            {
+                if (arrayResultCallback == null || !EnsureHarmony())
+                    return false;
+
+                Type? targetType = FindType(targetTypeName);
+                MethodInfo? target = FindTarget(targetType, methodName, parameterCount);
+                if (target == null)
+                    return false;
+
+                MethodInfo? postfix = CreateArrayResultPostfix(target, arrayResultCallback);
+                return postfix != null && ApplyPatch(target, prefix: null, postfix: postfix);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch array-result postfix {targetTypeName}.{methodName}.", ex.ToString());
+                return false;
+            }
         }
 
         public bool TryPatchConstructorPostfix(string targetTypeName, MethodInfo? postfix, int? parameterCount = null)
@@ -147,6 +170,42 @@ namespace DTMAPI.GameBridge.DolocTown
             object?[] args = new object?[] { target, prefixMethod, postfixMethod, null, null };
             patch.Invoke(harmony, args);
             return true;
+        }
+
+        private static MethodInfo? CreateArrayResultPostfix(MethodInfo target, MethodInfo callback)
+        {
+            ParameterInfo[] targetParameters = target.GetParameters();
+            if (!target.ReturnType.IsArray || targetParameters.Length != 3 || targetParameters[2].ParameterType != typeof(bool))
+                return null;
+
+            ParameterInfo[] callbackParameters = callback.GetParameters();
+            if (!callback.IsStatic ||
+                callback.ReturnType != typeof(Array) ||
+                callbackParameters.Length != 5 ||
+                callbackParameters[0].ParameterType != typeof(object) ||
+                callbackParameters[1].ParameterType != typeof(object) ||
+                callbackParameters[2].ParameterType != typeof(object) ||
+                callbackParameters[3].ParameterType != typeof(bool) ||
+                callbackParameters[4].ParameterType != typeof(Array))
+                return null;
+
+            arrayResultPostfixCallback = (Func<object, object, object, bool, Array, Array>)Delegate.CreateDelegate(typeof(Func<object, object, object, bool, Array, Array>), callback);
+            MethodInfo? generic = typeof(HarmonyReflectionPatcher).GetMethod(nameof(ArrayResultPostfixGeneric), BindingFlags.NonPublic | BindingFlags.Static);
+            Type? elementType = target.ReturnType.GetElementType();
+            return generic == null || elementType == null
+                ? null
+                : generic.MakeGenericMethod(targetParameters[0].ParameterType, targetParameters[1].ParameterType, elementType);
+        }
+
+        private static void ArrayResultPostfixGeneric<TArg0, TArg1, TElement>(object __instance, TArg0 __0, TArg1 __1, bool __2, ref TElement[] __result)
+        {
+            Func<object, object, object, bool, Array, Array>? callback = arrayResultPostfixCallback;
+            if (callback == null || __result == null)
+                return;
+
+            Array next = callback(__instance, __0!, __1!, __2, __result);
+            if (next is TElement[] typed)
+                __result = typed;
         }
 
         private bool EnsureHarmony()

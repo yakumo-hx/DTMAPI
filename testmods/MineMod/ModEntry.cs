@@ -39,6 +39,10 @@ namespace MineMod
             menu.AddParagraph(helper.ModManifest, BuildStatusText);
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Registers the DTMAPI mine machine definition."), () => config.Enabled, value => config.Enabled = value);
             menu.AddNumberOption(helper.ModManifest, () => T("config.cycle.name", "Cycle minutes"), () => T("config.cycle.tooltip", "Game minutes per production cycle once runtime hooks are implemented."), () => config.CycleMinutes, value => config.CycleMinutes = (int)Math.Round(value), 5, 720, 5);
+            menu.AddChoiceOption(helper.ModManifest, () => T("config.mode.name", "Default mode"), () => T("config.mode.tooltip", "Electric mode consumes power and a small amount of fuel; fuel mode consumes fuel faster."), () => config.DefaultMode, value => config.DefaultMode = value, new[] { "electric", "fuel" });
+            menu.AddNumberOption(helper.ModManifest, () => T("config.fuelCapacity.name", "Fuel capacity"), () => T("config.fuelCapacity.tooltip", "Internal DTMAPI fuel capacity for both mine modes."), () => config.FuelCapacity, value => config.FuelCapacity = (int)Math.Round(value), 7200, 99999, 100);
+            menu.AddNumberOption(helper.ModManifest, () => T("config.fuelOnlyCost.name", "Fuel mode cost"), () => T("config.fuelOnlyCost.tooltip", "Fuel consumed per production cycle in pure fuel mode."), () => config.FuelOnlyFuelCostPerCycle, value => config.FuelOnlyFuelCostPerCycle = (int)Math.Round(value), 2, 1000, 1);
+            menu.AddNumberOption(helper.ModManifest, () => T("config.electricFuelCost.name", "Electric mode fuel"), () => T("config.electricFuelCost.tooltip", "Fuel consumed per production cycle while also using power."), () => config.ElectricModeFuelCostPerCycle, value => config.ElectricModeFuelCostPerCycle = (int)Math.Round(value), 1, 1000, 1);
             menu.AddNumberOption(helper.ModManifest, () => T("config.electricPower.name", "Power per cycle"), () => T("config.electricPower.tooltip", "Electric power consumed per production cycle."), () => config.ElectricPowerCostPerCycle, value => config.ElectricPowerCostPerCycle = (int)Math.Round(value), 0, 100, 1);
             menu.AddBoolOption(helper.ModManifest, () => T("config.oilRecipe.name", "Use Oil recipe"), () => T("config.oilRecipe.tooltip", "When OilMod is loaded, replace the fallback coal recipe with the oil recipe. Restart or reload official mods before crafting if this changes."), () => config.UseOilRecipeReplacement, value => config.UseOilRecipeReplacement = value);
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.outputs", "Output weights"));
@@ -72,17 +76,17 @@ namespace MineMod
                 RecipeId = MineItemId,
                 RecipeGroupId = "equipment_workbench",
                 VisualScale = 2,
-                AllowFuelMode = false,
+                AllowFuelMode = true,
                 AllowElectricMode = true,
-                DefaultMode = "electric",
+                DefaultMode = config.DefaultMode,
                 NativeTechNodeId = "dtmapi_mine",
                 NativeTechNodeTitle = T("tech.mine.title", "矿井"),
-                NativeTechNodeDescription = T("tech.mine.description", "解锁矿井制作配方。矿井只消耗电力，并按游戏时间产出矿物到自己的储物格。"),
+                NativeTechNodeDescription = T("tech.mine.description", "解锁矿井制作配方。矿井可使用纯燃料模式，或使用耗电 10 且燃料消耗更低的耗电模式，并按游戏时间产出矿物到自己的储物格。"),
                 NativeTechNodeParentId = "alloy_material",
                 NativeTechNodeAboveTitleContains = "指挥官",
-                FuelCapacity = 0,
-                FuelOnlyFuelCostPerCycle = 0,
-                ElectricModeFuelCostPerCycle = 0,
+                FuelCapacity = config.FuelCapacity,
+                FuelOnlyFuelCostPerCycle = config.FuelOnlyFuelCostPerCycle,
+                ElectricModeFuelCostPerCycle = config.ElectricModeFuelCostPerCycle,
                 ElectricModePowerCostPerCycle = config.ElectricPowerCostPerCycle,
                 CycleMinutes = config.CycleMinutes,
                 RecipeInputs = BuildRecipeInputs(),
@@ -152,7 +156,7 @@ namespace MineMod
             string mode = string.IsNullOrWhiteSpace(state.LastMode) ? state.DefaultMode : state.LastMode;
             string output = string.IsNullOrWhiteSpace(state.LastOutputItemId) ? "none" : state.LastOutputItemId;
             return string.Format(
-                T("config.status", "Status={0}, registered={1}, placed={2}, mode={3}, cycle={4}m/{5}TU, electric={6}/cycle, recipe={7}, group={8}, scale={9:0.##}, last={10}x{11}, target={12}, storage={13}/{14}."),
+                T("config.status", "Status={0}, registered={1}, placed={2}, mode={3}, cycle={4}m/{5}TU, electric={6}/cycle, recipe={7}, group={8}, scale={9:0.##}, last={10}x{11}, target={12}, storage={13}/{14}, fuel={15}/{16}, fuelModeCost={17}, electricFuelCost={18}."),
                 state.Status,
                 state.RegisteredMachineCount,
                 state.PlacedMachineCount,
@@ -167,7 +171,11 @@ namespace MineMod
                 state.LastOutputCount,
                 string.IsNullOrWhiteSpace(state.LastOutputTarget) ? "none" : state.LastOutputTarget,
                 state.LastStorageFilledSlots,
-                state.LastStorageCapacity);
+                state.LastStorageCapacity,
+                state.RemainingFuel,
+                state.FuelCapacity,
+                state.FuelOnlyFuelCostPerCycle,
+                state.ElectricModeFuelCostPerCycle);
         }
 
         private void SaveConfig()
@@ -186,6 +194,15 @@ namespace MineMod
         private void NormalizeConfig()
         {
             config.CycleMinutes = Math.Max(5, Math.Min(720, config.CycleMinutes));
+            config.DefaultMode = string.Equals(config.DefaultMode, "fuel", StringComparison.OrdinalIgnoreCase) ? "fuel" : "electric";
+            if (config.FuelCapacity < 7200)
+                config.FuelCapacity = 7200;
+            config.FuelCapacity = Math.Min(999999, config.FuelCapacity);
+            if (config.FuelOnlyFuelCostPerCycle <= 1)
+                config.FuelOnlyFuelCostPerCycle = 120;
+            config.FuelOnlyFuelCostPerCycle = Math.Max(2, Math.Min(999999, config.FuelOnlyFuelCostPerCycle));
+            if (config.ElectricModeFuelCostPerCycle <= 0 || config.ElectricModeFuelCostPerCycle >= config.FuelOnlyFuelCostPerCycle)
+                config.ElectricModeFuelCostPerCycle = Math.Max(1, Math.Min(20, config.FuelOnlyFuelCostPerCycle - 1));
             config.ElectricPowerCostPerCycle = Math.Max(0, config.ElectricPowerCostPerCycle);
             config.CoalWeight = Math.Max(0, config.CoalWeight);
             config.CopperOreWeight = Math.Max(0, config.CopperOreWeight);
@@ -202,6 +219,10 @@ namespace MineMod
             [DataMember] public bool IncludeRuntimeModMinerals { get; set; } = true;
             [DataMember] public bool UseOilRecipeReplacement { get; set; } = true;
             [DataMember] public int CycleMinutes { get; set; } = 120;
+            [DataMember] public string DefaultMode { get; set; } = "electric";
+            [DataMember] public int FuelCapacity { get; set; } = 7200;
+            [DataMember] public int FuelOnlyFuelCostPerCycle { get; set; } = 120;
+            [DataMember] public int ElectricModeFuelCostPerCycle { get; set; } = 20;
             [DataMember] public int ElectricPowerCostPerCycle { get; set; } = 10;
             [DataMember] public double CoalWeight { get; set; } = 18;
             [DataMember] public double CopperOreWeight { get; set; } = 10;

@@ -2,7 +2,7 @@
 
 - 时间：2026-06-06 04:28:05 +08:00
 - 来源：用户手测反馈；截图显示 Y键控制台 0.2.8、官方电力面板、MoreEquipmentSlots 配置页。
-- 范围：只做审查和代码级分析，不实现，不更新 `readme.md`，不输出 `/goal`。
+- 范围：只做审查和代码级分析，不实现，不更新独立 goal 文件，不输出 `/goal`。
 - 禁止事项：不回退当前工作树；不复制 DLKsmapi 实现；本记录仅作为后续 readme/goal 转化依据。
 - 审查记录：`docs/reviews/manual-qa/2026/20260606-0002-028-manual-qa-followup-review.md`
 

@@ -1,0 +1,12 @@
+{
+  "mod.loaded": "DTMAPI More Saves loaded; official save UI and LocalSave paths own the expanded archive slots.",
+  "mod.name": "DTMAPI More Saves",
+  "mod.apiMissing": "Save Slots API is not available yet.",
+  "config.section.slots": "Save slots",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Expands the official save/load UI slot count.",
+  "config.slotCount.name": "Slot count",
+  "config.slotCount.tooltip": "Total official save slots to show. The first six remain vanilla-compatible.",
+  "config.status.missing": "Save Slots API is not available.",
+  "config.status": "Status={0}, native={1}, requested={2}, applied={3}. {4}"
+}

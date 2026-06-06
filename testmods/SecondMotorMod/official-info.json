@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 异色飞行摩托",
   "author": "DTMAPI",
-  "version": "0.2.5-dtmapi",
+  "version": "0.3.1-dtmapi",
   "description": "DTMAPI experimental 异色飞行摩托示例包。新增飞行摩托钥匙（异色），并通过 DTMAPI GameBridge 管理独立摩托实例与官方邮件投递链路。",
   "tags": [
     "Mod",

@@ -14,5 +14,4 @@ The `NNNN` counter is local to the date when practical. Keep slugs short and foc
 2026/20260605-0001-animal-ui-flicker-review.md
 ```
 
-Manual QA review records should not replace `readme.md`. Use them to preserve the reasoning that feeds `readme.md`.
-
+Manual QA review records should not replace implementation goal files. Use them to preserve the reasoning that feeds dedicated files under `docs/goals/YYYY/`.

@@ -1,14 +1,14 @@
 {
   "Name": "DTMAPI Oil",
   "Author": "DTMAPI",
-  "Version": "0.2.8-dtmapi",
+  "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.OilMod",
   "EntryDll": "OilMod.dll",
-  "MinimumDTMApiVersion": "0.2.8",
+  "MinimumDTMApiVersion": "0.3.1",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.2.8",
+      "MinimumVersion": "0.3.1",
       "IsRequired": false
     }
   ]

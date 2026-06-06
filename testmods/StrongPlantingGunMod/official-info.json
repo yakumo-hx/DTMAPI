@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI 强力种植枪",
+  "author": "DTMAPI",
+  "version": "0.3.1-dtmapi",
+  "description": "DTMAPI experimental 强力种植枪。扩展官方种植枪为种子、保护膜、肥料多槽使用。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "DTMAPI",
+    "Farming",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 强力种植枪",
+    "tchinese": "DTMAPI 強力種植槍",
+    "english": "DTMAPI Strong Planting Gun"
+  },
+  "localized_description": {
+    "schinese": "扩展官方种植枪，让同一把枪可携带种子、保护膜和肥料，并按官方地块规则依次处理。",
+    "tchinese": "擴展官方種植槍，讓同一把槍可攜帶種子、保護膜和肥料，並按官方地塊規則依次處理。",
+    "english": "Extends the official farming gun so one gun can carry seeds, films, and fertilizers and apply them through official basin rules."
+  }
+}

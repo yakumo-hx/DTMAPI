@@ -1,0 +1,21 @@
+{
+  "mod.loaded": "DTMAPI Zoom loaded; press + / - to adjust the view.",
+  "mod.name": "DTMAPI Zoom",
+  "mod.apiMissing": "Camera Zoom API is not available yet.",
+  "mod.register": "Zoom API register: success={0} current={1} message={2}",
+  "mod.step": "Zoom {0}: success={1} before={2} after={3} message={4}",
+  "mod.reset": "Zoom restored to vanilla view: success={0} message={1}",
+  "config.section.main": "Zoom",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Allows + / - to adjust the world camera view.",
+  "config.maxScale.name": "Maximum view",
+  "config.maxScale.tooltip": "Maximum view scale. 4x targets roughly half-farm visibility; lower this if the game camera is unstable.",
+  "config.step.name": "Step",
+  "config.step.tooltip": "View scale changed per key press.",
+  "config.increaseKey.name": "Increase view key",
+  "config.increaseKey.tooltip": "Increase visible range. Keyboard + is often captured as Equals or Plus.",
+  "config.decreaseKey.name": "Decrease view key",
+  "config.decreaseKey.tooltip": "Decrease visible range down to vanilla.",
+  "config.status.missing": "Camera Zoom API is not available.",
+  "config.status": "Status={0}, current={1}, range={2}-{3}, camera={4}, vanillaSize={5}, appliedSize={6}. {7}"
+}

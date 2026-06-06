@@ -6,7 +6,7 @@
 - Source:
 - Scope:
 - User constraints:
-- Related readme/update/debug records:
+- Related goal/update/debug records:
 - Files/docs inspected:
 - Not inspected:
 
@@ -69,8 +69,7 @@ Review record:
 
 ## Readme/Goal Decision
 
-- Update `readme.md`: yes/no and why.
+- Update goal file: yes/no and why.
 - Generate short `/goal`: yes/no and why.
 - Suggested task titles:
 - Completion standard:
-

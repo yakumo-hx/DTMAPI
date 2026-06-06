@@ -1,0 +1,21 @@
+{
+  "mod.loaded": "DTMAPI 大视野已加载；按 + / - 调整视野。",
+  "mod.name": "DTMAPI 大视野",
+  "mod.apiMissing": "Camera Zoom API 暂不可用。",
+  "mod.register": "大视野 API 注册：success={0} current={1} message={2}",
+  "mod.step": "大视野 {0}：success={1} before={2} after={3} message={4}",
+  "mod.reset": "大视野已恢复原版视野：success={0} message={1}",
+  "config.section.main": "大视野",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "允许 + / - 调整世界相机视野。",
+  "config.maxScale.name": "最大视野",
+  "config.maxScale.tooltip": "最大视野倍率。4x 目标是看到约半个农场；如果游戏相机不稳定，应降低。",
+  "config.step.name": "每次调整",
+  "config.step.tooltip": "每次按键改变的视野倍率。",
+  "config.increaseKey.name": "放大视野键",
+  "config.increaseKey.tooltip": "提高可见范围。普通键盘 + 通常会以 Equals/Plus 捕获。",
+  "config.decreaseKey.name": "缩小视野键",
+  "config.decreaseKey.tooltip": "降低可见范围，最小恢复原版。",
+  "config.status.missing": "Camera Zoom API 暂不可用。",
+  "config.status": "状态={0}，当前={1}，范围={2}-{3}，相机={4}，原版Size={5}，应用Size={6}。{7}"
+}

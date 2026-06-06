@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI 更多存档",
+  "author": "DTMAPI",
+  "version": "0.3.1-dtmapi",
+  "description": "DTMAPI experimental 更多存档槽。通过官方存档 UI 和 LocalSave 路径扩展存档槽数量，不改动存档格式。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "DTMAPI",
+    "Save",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多存档",
+    "tchinese": "DTMAPI 更多存檔",
+    "english": "DTMAPI More Saves"
+  },
+  "localized_description": {
+    "schinese": "扩展官方存档界面显示的本地存档槽数量。前六个槽位保持原版兼容；禁用后不会删除额外存档文件。",
+    "tchinese": "擴展官方存檔介面顯示的本地存檔槽數量。前六個槽位保持原版相容；停用後不會刪除額外存檔檔案。",
+    "english": "Expands the number of local save slots shown by the official save UI. The first six slots remain vanilla-compatible, and disabling the mod does not delete extra archive files."
+  }
+}

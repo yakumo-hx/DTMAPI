@@ -1,0 +1,36 @@
+/goal
+目标：升级 DTMAPI 到固定目标版本 0.4.0，只提供稳定 API：自定义动物、自定义怪物、自定义攻击/弹幕、自定义无人机。详细需求、边界、验收标准以 docs/goals/2026/20260606-0002-040-stable-custom-entity-apis.md 为准。本轮不写新 mod，不改变现有 mod，只做 API、Core registry、GameBridge 适配/状态、文档和验证。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260606-0002-040-stable-custom-entity-apis.md
+docs/goals/2026/20260606-0002-040-stable-custom-entity-apis.goal.txt
+docs/workflows/codex-feedback-to-goal.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+references/README.md
+references/doloc-town/reverse/builds/23465763_workshop_38581E
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要、旧 readme 或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；不使用根 readme.md；不复制旧 DLKsmapi；不写新 mod；不修改现有 mod，除非 API 升级导致编译破坏且必须做最小兼容修复；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，本轮四类目标 API 优先稳定，不暴露原始反编译类型；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本固定为 0.4.0。若当前代码已经是 0.4.0，不要再升版本；若当前代码是 0.3.1、0.3.0 或其他旧值，只同步到 0.4.0。禁止自动升到 0.4.1 或其他版本。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+
+任务 A：Baseline 与 0.4.0 固定版本
+任务 B：稳定自定义实体 API 总架构
+任务 C：稳定自定义动物 API
+任务 D：稳定自定义怪物 API
+任务 E：稳定自定义攻击/弹幕 API
+任务 F：稳定自定义无人机 API
+任务 G：GameBridge Hook/适配研究与状态路径
+任务 H：验证与文档收尾
+
+完成标准：
+只有当 docs/goals/2026/20260606-0002-040-stable-custom-entity-apis.md 中的任务 A-H 达成，四类 API 的稳定契约、Core registry、GameBridge 状态/Hook 路径、测试、API matrix、hook map、debug/smoke/update 记录都完成，并在第三存档真实验证 DTMAPI 启动、API 注册/状态路径、现有 mod 不被改坏、退出无 DolocTown.exe 残留后，才把 goal 标记 complete。若任一强制 API 只能停留在 placeholder、无法稳定、无法验证或需要写 mod 才能证明，保持未完成，报告 blocker、日志、已验证事实和下一步。
+
