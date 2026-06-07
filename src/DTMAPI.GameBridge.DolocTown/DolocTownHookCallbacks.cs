@@ -44,6 +44,11 @@ namespace DTMAPI.GameBridge.DolocTown
             Runtime?.NotifyReturnedToTitle();
         }
 
+        public static void DolocApiSetEnvCameraPostfix()
+        {
+            Bridge?.ExperimentalApi?.NotifyCameraEnvironmentReset("DolocAPI.SetEnvCamera");
+        }
+
         public static void ReloadModsPostfix()
         {
             Runtime?.NotifyWorkshopModListChanged();

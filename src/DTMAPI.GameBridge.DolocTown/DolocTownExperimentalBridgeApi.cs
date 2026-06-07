@@ -109,6 +109,17 @@ namespace DTMAPI.GameBridge.DolocTown
         private double cameraZoomVanillaOrthographicSize;
         private double cameraZoomCurrentViewScale = 1d;
         private double cameraZoomAppliedOrthographicSize;
+        private string cameraZoomActiveOwnerId = string.Empty;
+        private double cameraZoomRequestedViewScale = 1d;
+        private double cameraZoomClampedViewScale = 1d;
+        private double cameraZoomAppliedViewScale = 1d;
+        private readonly Dictionary<object, object> cameraZoomOriginalTransformScales = new Dictionary<object, object>();
+        private string cameraZoomCameraControllerStatus = "not-applied";
+        private string cameraZoomBackgroundStatus = "not-applied";
+        private string cameraZoomFogStatus = "not-applied";
+        private string cameraZoomScannerStatus = "not-applied";
+        private string cameraZoomLifecycleStatus = "not-restored";
+        private string cameraZoomUiScaleStatus = "unchanged";
         private bool creativeModeEnabled;
         private string creativeModeLastMessage = "Creative mode is off.";
         private bool creativeNoCostHooksInstalled;
@@ -165,6 +176,8 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 CameraZoomState state = entry.Value;
                 state.CurrentViewScale = 1d;
+                state.RequestedViewScale = 1d;
+                state.ClampedViewScale = 1d;
                 state.Status = "vanilla";
                 state.LastMessage = "Camera zoom reset for lifecycle boundary: " + (reason ?? string.Empty) + ".";
                 cameraZoomStates[entry.Key] = state;
@@ -172,6 +185,15 @@ namespace DTMAPI.GameBridge.DolocTown
 
             CameraZoomResult result = ApplyCameraZoomTarget("lifecycle " + (reason ?? string.Empty));
             runtime.RuntimeMonitor.Log("CameraZoom lifecycle reset reason=" + (reason ?? string.Empty) + " success=" + result.Success + " message=" + result.Message, result.Success ? DTMAPI.Abstractions.LogLevel.Info : DTMAPI.Abstractions.LogLevel.Warn);
+        }
+
+        internal void NotifyCameraEnvironmentReset(string reason)
+        {
+            if (cameraZoomOptions.Count == 0 && cameraZoomCurrentViewScale <= 1d)
+                return;
+
+            CameraZoomResult result = ApplyCameraZoomTarget("environment reset " + (reason ?? string.Empty));
+            runtime.RuntimeMonitor.Log("CameraZoom environment refresh reason=" + (reason ?? string.Empty) + " success=" + result.Success + " message=" + result.Message, result.Success ? DTMAPI.Abstractions.LogLevel.Info : DTMAPI.Abstractions.LogLevel.Warn);
         }
 
         private void ResetEquipmentSlotSessionState(string reason, bool discardDirty)
@@ -1252,6 +1274,12 @@ namespace DTMAPI.GameBridge.DolocTown
             state.MinViewScale = normalized.MinViewScale;
             state.MaxViewScale = normalized.MaxViewScale;
             state.Step = normalized.Step;
+            state.RefreshCameraController = normalized.RefreshCameraController;
+            state.CompensateBackground = normalized.CompensateBackground;
+            state.CompensateDepthFog = normalized.CompensateDepthFog;
+            state.RefreshScanners = normalized.RefreshScanners;
+            state.RequestedViewScale = state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale;
+            state.ClampedViewScale = ClampDouble(state.RequestedViewScale, normalized.MinViewScale, normalized.MaxViewScale);
             state.Status = normalized.Enabled ? "configured" : "disabled";
             state.LastMessage = normalized.Enabled ? "Camera zoom policy registered." : "Camera zoom policy is disabled.";
             cameraZoomStates[owner.UniqueID] = state;
@@ -1264,6 +1292,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 MinViewScale = normalized.MinViewScale,
                 MaxViewScale = normalized.MaxViewScale,
                 CurrentViewScale = state.CurrentViewScale,
+                AppliedViewScale = apply.AppliedViewScale,
+                ActiveOwnerId = apply.ActiveOwnerId,
+                CameraControllerStatus = apply.CameraControllerStatus,
+                BackgroundCompensationStatus = apply.BackgroundCompensationStatus,
+                FogCompensationStatus = apply.FogCompensationStatus,
+                ScannerRefreshStatus = apply.ScannerRefreshStatus,
+                LifecycleRestoreStatus = apply.LifecycleRestoreStatus,
+                UiScaleStatus = apply.UiScaleStatus,
                 FailureReason = apply.Success || !normalized.Enabled ? string.Empty : apply.FailureReason,
                 Message = apply.Success || !normalized.Enabled ? state.LastMessage : apply.Message
             };
@@ -1283,17 +1319,25 @@ namespace DTMAPI.GameBridge.DolocTown
             state.MinViewScale = options.MinViewScale;
             state.MaxViewScale = options.MaxViewScale;
             state.Step = options.Step;
+            state.RefreshCameraController = options.RefreshCameraController;
+            state.CompensateBackground = options.CompensateBackground;
+            state.CompensateDepthFog = options.CompensateDepthFog;
+            state.RefreshScanners = options.RefreshScanners;
 
             double before = state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale;
-            double requested = ClampDouble(viewScale, options.MinViewScale, options.MaxViewScale);
-            state.CurrentViewScale = options.Enabled ? requested : 1d;
+            double requested = double.IsNaN(viewScale) || double.IsInfinity(viewScale) ? 1d : viewScale;
+            double clamped = ClampDouble(requested, options.MinViewScale, options.MaxViewScale);
+            state.RequestedViewScale = requested;
+            state.ClampedViewScale = clamped;
+            state.CurrentViewScale = options.Enabled ? clamped : 1d;
             state.Status = options.Enabled ? "configured" : "disabled";
-            state.LastMessage = "Requested camera view scale " + before.ToString("0.##", CultureInfo.InvariantCulture) + "->" + state.CurrentViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " reason=" + (reason ?? string.Empty) + ".";
+            state.LastMessage = "Requested camera view scale " + before.ToString("0.##", CultureInfo.InvariantCulture) + "->" + requested.ToString("0.##", CultureInfo.InvariantCulture) + " clamped=" + state.CurrentViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " reason=" + (reason ?? string.Empty) + ".";
             cameraZoomStates[owner.UniqueID] = state;
 
             CameraZoomResult result = ApplyCameraZoomTarget(reason ?? string.Empty);
             result.OwnerId = owner.UniqueID;
             result.RequestedViewScale = requested;
+            result.ClampedViewScale = clamped;
             result.BeforeViewScale = before;
             result.AfterViewScale = state.CurrentViewScale;
             if (result.Success)
@@ -1323,10 +1367,15 @@ namespace DTMAPI.GameBridge.DolocTown
             return CloneCameraZoomState(GetCameraZoomState(uniqueId ?? string.Empty));
         }
 
+        CameraZoomState ICameraZoomApi.GetSnapshot(string uniqueId)
+        {
+            return CloneCameraZoomState(GetCameraZoomState(uniqueId ?? string.Empty));
+        }
+
         BridgeFeatureStatus ICameraZoomApi.GetStatus(string uniqueId)
         {
             CameraZoomState state = GetCameraZoomState(uniqueId ?? string.Empty);
-            return new BridgeFeatureStatus(state.Status, state.LastMessage);
+            return new BridgeFeatureStatus(state.Status, state.LastMessage + " cameraController=" + state.CameraControllerStatus + "; background=" + state.BackgroundCompensationStatus + "; fog=" + state.FogCompensationStatus + "; scanner=" + state.ScannerRefreshStatus + "; lifecycle=" + state.LifecycleRestoreStatus + "; uiScale=" + state.UiScaleStatus + ".");
         }
 
         public ChestLocatorEnhancerRegisterResult Register(IManifest owner, ChestLocatorEnhancerOptions options)
@@ -2336,24 +2385,42 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private CameraZoomResult ApplyCameraZoomTarget(string reason)
         {
+            CameraZoomTarget target = ComputeCameraZoomTarget();
             var result = new CameraZoomResult
             {
                 Success = false,
-                RequestedViewScale = ComputeCameraZoomTargetScale(),
+                RequestedViewScale = target.RequestedScale,
+                ClampedViewScale = target.Scale,
                 BeforeViewScale = cameraZoomCurrentViewScale <= 0 ? 1d : cameraZoomCurrentViewScale,
-                AfterViewScale = ComputeCameraZoomTargetScale()
+                AfterViewScale = target.Scale,
+                AppliedViewScale = cameraZoomAppliedViewScale <= 0 ? 1d : cameraZoomAppliedViewScale,
+                ActiveOwnerId = target.OwnerId,
+                UiScaleStatus = "unchanged"
             };
 
             if (!TryReadCameraOrthographicSize(out double currentSize, out string readMessage))
             {
                 result.FailureReason = "missing-camera";
                 result.Message = readMessage;
-                UpdateCameraZoomStates(cameraAvailable: false, result.AfterViewScale, cameraZoomVanillaOrthographicSize, cameraZoomAppliedOrthographicSize, "pending-camera", readMessage);
-                runtime.SetHookStatus("Camera.ZoomApi", "pending", "DolocAPI.mainCamera.orthographicSize", readMessage);
+                result.CameraControllerStatus = cameraZoomCameraControllerStatus;
+                result.BackgroundCompensationStatus = cameraZoomBackgroundStatus;
+                result.FogCompensationStatus = cameraZoomFogStatus;
+                result.ScannerRefreshStatus = cameraZoomScannerStatus;
+                result.LifecycleRestoreStatus = BuildCameraZoomLifecycleStatus(reason, restored: false);
+                UpdateCameraZoomStates(cameraAvailable: false, target, cameraZoomAppliedViewScale, cameraZoomVanillaOrthographicSize, cameraZoomAppliedOrthographicSize, "pending-camera", readMessage, result);
+                runtime.SetHookStatus("Camera.ZoomApi", "pending", "DolocAPI.mainCamera + CameraController/envBackgroundEx/EnvCovariantController", readMessage);
                 return result;
             }
 
-            if (cameraZoomVanillaOrthographicSize <= 0 || result.BeforeViewScale <= 1.0001d)
+            bool nativeResetWhileZoomed = cameraZoomAppliedOrthographicSize > 0 &&
+                result.AfterViewScale > 1.0001d &&
+                result.BeforeViewScale > 1.0001d &&
+                Math.Abs(currentSize - cameraZoomAppliedOrthographicSize) > 0.05d;
+
+            if (cameraZoomVanillaOrthographicSize <= 0 ||
+                (result.BeforeViewScale <= 1.0001d && result.AfterViewScale > 1.0001d) ||
+                (result.BeforeViewScale <= 1.0001d && result.AfterViewScale <= 1.0001d) ||
+                nativeResetWhileZoomed)
                 cameraZoomVanillaOrthographicSize = currentSize > 0 ? currentSize : cameraZoomVanillaOrthographicSize;
             if (cameraZoomVanillaOrthographicSize <= 0)
                 cameraZoomVanillaOrthographicSize = currentSize;
@@ -2363,37 +2430,144 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 result.FailureReason = "camera-write-failed";
                 result.Message = writeMessage;
-                UpdateCameraZoomStates(cameraAvailable: true, result.AfterViewScale, cameraZoomVanillaOrthographicSize, currentSize, "failed", writeMessage);
-                runtime.SetHookStatus("Camera.ZoomApi", "failed", "DolocAPI.mainCamera.orthographicSize", writeMessage);
+                result.CameraControllerStatus = cameraZoomCameraControllerStatus;
+                result.BackgroundCompensationStatus = cameraZoomBackgroundStatus;
+                result.FogCompensationStatus = cameraZoomFogStatus;
+                result.ScannerRefreshStatus = cameraZoomScannerStatus;
+                result.LifecycleRestoreStatus = BuildCameraZoomLifecycleStatus(reason, restored: false);
+                UpdateCameraZoomStates(cameraAvailable: true, target, cameraZoomAppliedViewScale, cameraZoomVanillaOrthographicSize, currentSize, "failed", writeMessage, result);
+                runtime.SetHookStatus("Camera.ZoomApi", "failed", "DolocAPI.mainCamera + CameraController/envBackgroundEx/EnvCovariantController", writeMessage);
+                return result;
+            }
+
+            CameraZoomOptions activeOptions = GetCameraZoomOptions(target.OwnerId);
+            bool restoringVanilla = result.AfterViewScale <= 1.0001d;
+            var failures = new List<string>();
+            string cameraControllerStatus = activeOptions.RefreshCameraController
+                ? RefreshNativeCameraControllerAndPosition()
+                : "disabled-by-options";
+            string backgroundStatus = activeOptions.CompensateBackground
+                ? ApplyCameraZoomBackgroundCompensation(result.AfterViewScale, restoringVanilla)
+                : "disabled-by-options";
+            string fogStatus = activeOptions.CompensateDepthFog
+                ? ApplyCameraZoomFogCompensation(result.AfterViewScale, restoringVanilla)
+                : "disabled-by-options";
+            string scannerStatus = activeOptions.RefreshScanners
+                ? RefreshNativeScanners()
+                : "disabled-by-options";
+            string lifecycleStatus = BuildCameraZoomLifecycleStatus(reason, restoringVanilla);
+
+            if (IsCameraZoomStatusFailure(cameraControllerStatus, requireOwner: activeOptions.RefreshCameraController))
+                failures.Add("camera-controller");
+            if (result.AfterViewScale > 1.0001d && IsCameraZoomStatusFailure(backgroundStatus, requireOwner: activeOptions.CompensateBackground))
+                failures.Add("background-compensation");
+            if (result.AfterViewScale > 1.0001d && IsCameraZoomStatusFailure(fogStatus, requireOwner: activeOptions.CompensateDepthFog))
+                failures.Add("fog-compensation");
+            if (IsCameraZoomStatusFailure(scannerStatus, requireOwner: activeOptions.RefreshScanners))
+                failures.Add("scanner-refresh");
+
+            if (failures.Count > 0 && result.AfterViewScale > 1.0001d)
+            {
+                TryWriteCameraOrthographicSize(cameraZoomVanillaOrthographicSize, out string rollbackWriteMessage);
+                string rollbackCameraStatus = activeOptions.RefreshCameraController ? RefreshNativeCameraControllerAndPosition() : "disabled-by-options";
+                string rollbackBackgroundStatus = activeOptions.CompensateBackground ? ApplyCameraZoomBackgroundCompensation(1d, restore: true) : "disabled-by-options";
+                string rollbackFogStatus = activeOptions.CompensateDepthFog ? ApplyCameraZoomFogCompensation(1d, restore: true) : "disabled-by-options";
+                string rollbackScannerStatus = activeOptions.RefreshScanners ? RefreshNativeScanners() : "disabled-by-options";
+                cameraZoomCurrentViewScale = 1d;
+                cameraZoomAppliedViewScale = 1d;
+                cameraZoomAppliedOrthographicSize = cameraZoomVanillaOrthographicSize;
+                cameraZoomCameraControllerStatus = rollbackCameraStatus;
+                cameraZoomBackgroundStatus = rollbackBackgroundStatus;
+                cameraZoomFogStatus = rollbackFogStatus;
+                cameraZoomScannerStatus = rollbackScannerStatus;
+                cameraZoomLifecycleStatus = "rolled-back:" + FirstText(reason, "unknown");
+                cameraZoomUiScaleStatus = "unchanged";
+                cameraZoomOriginalTransformScales.Clear();
+
+                result.Success = false;
+                result.AppliedViewScale = 1d;
+                result.VanillaOrthographicSize = cameraZoomVanillaOrthographicSize;
+                result.AppliedOrthographicSize = cameraZoomVanillaOrthographicSize;
+                result.CameraControllerStatus = rollbackCameraStatus;
+                result.BackgroundCompensationStatus = rollbackBackgroundStatus;
+                result.FogCompensationStatus = rollbackFogStatus;
+                result.ScannerRefreshStatus = rollbackScannerStatus;
+                result.LifecycleRestoreStatus = cameraZoomLifecycleStatus;
+                result.FailureReason = string.Join(",", failures.ToArray());
+                result.Message = "Camera zoom compensation failed for " + result.FailureReason + "; rolled back to vanilla size " + cameraZoomVanillaOrthographicSize.ToString("0.###", CultureInfo.InvariantCulture) + ". rollbackWrite=" + rollbackWriteMessage + ".";
+                UpdateCameraZoomStates(cameraAvailable: true, target, 1d, cameraZoomVanillaOrthographicSize, cameraZoomVanillaOrthographicSize, "failed-partial-rolled-back", result.Message, result);
+                runtime.SetHookStatus("Camera.ZoomApi", "failed", "DolocAPI.mainCamera + CameraController/envBackgroundEx/EnvCovariantController", result.Message);
                 return result;
             }
 
             cameraZoomCurrentViewScale = result.AfterViewScale;
+            cameraZoomRequestedViewScale = result.RequestedViewScale;
+            cameraZoomClampedViewScale = result.ClampedViewScale;
+            cameraZoomAppliedViewScale = result.AfterViewScale;
             cameraZoomAppliedOrthographicSize = targetSize;
+            cameraZoomActiveOwnerId = target.OwnerId;
+            cameraZoomCameraControllerStatus = cameraControllerStatus;
+            cameraZoomBackgroundStatus = backgroundStatus;
+            cameraZoomFogStatus = fogStatus;
+            cameraZoomScannerStatus = scannerStatus;
+            cameraZoomLifecycleStatus = lifecycleStatus;
+            cameraZoomUiScaleStatus = "unchanged";
+            if (restoringVanilla)
+                cameraZoomOriginalTransformScales.Clear();
             result.Success = true;
+            result.AppliedViewScale = result.AfterViewScale;
             result.VanillaOrthographicSize = cameraZoomVanillaOrthographicSize;
             result.AppliedOrthographicSize = targetSize;
-            result.Message = "Camera orthographic size " + currentSize.ToString("0.###", CultureInfo.InvariantCulture) + "->" + targetSize.ToString("0.###", CultureInfo.InvariantCulture) + " viewScale=" + result.AfterViewScale.ToString("0.##", CultureInfo.InvariantCulture) + " reason=" + (reason ?? string.Empty) + ".";
-            UpdateCameraZoomStates(cameraAvailable: true, result.AfterViewScale, cameraZoomVanillaOrthographicSize, targetSize, result.AfterViewScale > 1.0001d ? "applied" : "vanilla", result.Message);
-            runtime.SetHookStatus("Camera.ZoomApi", "verified", "DolocAPI.mainCamera.orthographicSize", result.Message);
+            result.CameraControllerStatus = cameraControllerStatus;
+            result.BackgroundCompensationStatus = backgroundStatus;
+            result.FogCompensationStatus = fogStatus;
+            result.ScannerRefreshStatus = scannerStatus;
+            result.LifecycleRestoreStatus = lifecycleStatus;
+            result.UiScaleStatus = "unchanged";
+            result.Message = "Camera orthographic size " + currentSize.ToString("0.###", CultureInfo.InvariantCulture) + "->" + targetSize.ToString("0.###", CultureInfo.InvariantCulture) +
+                " viewScale=" + result.AfterViewScale.ToString("0.##", CultureInfo.InvariantCulture) +
+                " owner=" + FirstText(result.ActiveOwnerId, "none") +
+                " cameraController=" + cameraControllerStatus +
+                " background=" + backgroundStatus +
+                " fog=" + fogStatus +
+                " scanner=" + scannerStatus +
+                " lifecycle=" + lifecycleStatus +
+                " uiScale=unchanged reason=" + (reason ?? string.Empty) + ".";
+            UpdateCameraZoomStates(cameraAvailable: true, target, result.AppliedViewScale, cameraZoomVanillaOrthographicSize, targetSize, result.AfterViewScale > 1.0001d ? "applied-compensated" : "vanilla-restored", result.Message, result);
+            runtime.SetHookStatus("Camera.ZoomApi", "verified", "DolocAPI.mainCamera + CameraController/envBackgroundEx/EnvCovariantController", result.Message);
             return result;
         }
 
-        private double ComputeCameraZoomTargetScale()
+        private CameraZoomTarget ComputeCameraZoomTarget()
         {
-            double target = 1d;
+            var target = new CameraZoomTarget
+            {
+                OwnerId = string.Empty,
+                RequestedScale = 1d,
+                Scale = 1d
+            };
             foreach (KeyValuePair<string, CameraZoomOptions> entry in cameraZoomOptions)
             {
                 CameraZoomOptions options = entry.Value ?? new CameraZoomOptions { Enabled = false };
                 CameraZoomState state = GetCameraZoomState(entry.Key);
-                if (options.Enabled)
-                    target = Math.Max(target, ClampDouble(state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale, options.MinViewScale, options.MaxViewScale));
+                if (!options.Enabled)
+                    continue;
+
+                double requested = state.RequestedViewScale <= 0 ? (state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale) : state.RequestedViewScale;
+                double clamped = ClampDouble(state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale, options.MinViewScale, options.MaxViewScale);
+                if (clamped > target.Scale)
+                {
+                    target.OwnerId = entry.Key;
+                    target.RequestedScale = requested;
+                    target.Scale = clamped;
+                }
             }
             return target;
         }
 
-        private void UpdateCameraZoomStates(bool cameraAvailable, double targetScale, double vanillaSize, double appliedSize, string status, string message)
+        private void UpdateCameraZoomStates(bool cameraAvailable, CameraZoomTarget target, double appliedScale, double vanillaSize, double appliedSize, string status, string message, CameraZoomResult result)
         {
+            CameraZoomRoomSnapshot room = GetCameraZoomRoomSnapshot();
             foreach (KeyValuePair<string, CameraZoomOptions> entry in cameraZoomOptions.ToArray())
             {
                 CameraZoomOptions options = entry.Value ?? new CameraZoomOptions();
@@ -2403,15 +2577,33 @@ namespace DTMAPI.GameBridge.DolocTown
                 state.MinViewScale = options.MinViewScale;
                 state.MaxViewScale = options.MaxViewScale;
                 state.Step = options.Step;
+                state.RefreshCameraController = options.RefreshCameraController;
+                state.CompensateBackground = options.CompensateBackground;
+                state.CompensateDepthFog = options.CompensateDepthFog;
+                state.RefreshScanners = options.RefreshScanners;
+                state.ClampedViewScale = ClampDouble(state.CurrentViewScale <= 0 ? 1d : state.CurrentViewScale, options.MinViewScale, options.MaxViewScale);
+                if (state.RequestedViewScale <= 0)
+                    state.RequestedViewScale = state.ClampedViewScale;
+                state.AppliedViewScale = appliedScale <= 0 ? 1d : appliedScale;
+                state.ActiveOwnerId = target.OwnerId;
                 state.CameraAvailable = cameraAvailable;
                 state.VanillaOrthographicSize = vanillaSize;
                 state.AppliedOrthographicSize = appliedSize;
                 state.Status = options.Enabled ? status : "disabled";
                 state.LastMessage = message ?? string.Empty;
+                state.CameraControllerStatus = result.CameraControllerStatus;
+                state.BackgroundCompensationStatus = result.BackgroundCompensationStatus;
+                state.FogCompensationStatus = result.FogCompensationStatus;
+                state.ScannerRefreshStatus = result.ScannerRefreshStatus;
+                state.LifecycleRestoreStatus = result.LifecycleRestoreStatus;
+                state.UiScaleStatus = result.UiScaleStatus;
+                state.CurrentRoomId = room.RoomId;
+                state.CurrentRoomTitle = room.RoomTitle;
+                state.CurrentRoomShowsBackground = room.ShouldShowBackground;
                 if (!options.Enabled)
                     state.CurrentViewScale = 1d;
                 else if (state.CurrentViewScale <= 0)
-                    state.CurrentViewScale = Math.Max(1d, targetScale);
+                    state.CurrentViewScale = Math.Max(1d, target.Scale);
                 cameraZoomStates[entry.Key] = state;
             }
         }
@@ -2431,10 +2623,27 @@ namespace DTMAPI.GameBridge.DolocTown
                 MinViewScale = options.MinViewScale,
                 MaxViewScale = options.MaxViewScale,
                 Step = options.Step,
+                RequestedViewScale = 1d,
+                ClampedViewScale = 1d,
                 CurrentViewScale = 1d,
+                AppliedViewScale = cameraZoomAppliedViewScale <= 0 ? 1d : cameraZoomAppliedViewScale,
+                ActiveOwnerId = cameraZoomActiveOwnerId,
                 VanillaOrthographicSize = cameraZoomVanillaOrthographicSize,
                 AppliedOrthographicSize = cameraZoomAppliedOrthographicSize,
                 CameraAvailable = TryGetMainCameraObject() != null,
+                RefreshCameraController = options.RefreshCameraController,
+                CompensateBackground = options.CompensateBackground,
+                CompensateDepthFog = options.CompensateDepthFog,
+                RefreshScanners = options.RefreshScanners,
+                CameraControllerStatus = cameraZoomCameraControllerStatus,
+                BackgroundCompensationStatus = cameraZoomBackgroundStatus,
+                FogCompensationStatus = cameraZoomFogStatus,
+                ScannerRefreshStatus = cameraZoomScannerStatus,
+                LifecycleRestoreStatus = cameraZoomLifecycleStatus,
+                UiScaleStatus = cameraZoomUiScaleStatus,
+                CurrentRoomId = GetCameraZoomRoomSnapshot().RoomId,
+                CurrentRoomTitle = GetCameraZoomRoomSnapshot().RoomTitle,
+                CurrentRoomShowsBackground = GetCameraZoomRoomSnapshot().ShouldShowBackground,
                 Status = cameraZoomOptions.ContainsKey(ownerId) ? "registered" : "not-configured",
                 LastMessage = cameraZoomOptions.ContainsKey(ownerId) ? "Camera zoom policy registered." : "No camera zoom policy registered."
             };
@@ -2450,10 +2659,27 @@ namespace DTMAPI.GameBridge.DolocTown
                 MinViewScale = state.MinViewScale,
                 MaxViewScale = state.MaxViewScale,
                 Step = state.Step,
+                RequestedViewScale = state.RequestedViewScale,
+                ClampedViewScale = state.ClampedViewScale,
                 CurrentViewScale = state.CurrentViewScale,
+                AppliedViewScale = state.AppliedViewScale,
+                ActiveOwnerId = state.ActiveOwnerId,
                 VanillaOrthographicSize = state.VanillaOrthographicSize,
                 AppliedOrthographicSize = state.AppliedOrthographicSize,
                 CameraAvailable = state.CameraAvailable,
+                RefreshCameraController = state.RefreshCameraController,
+                CompensateBackground = state.CompensateBackground,
+                CompensateDepthFog = state.CompensateDepthFog,
+                RefreshScanners = state.RefreshScanners,
+                CameraControllerStatus = state.CameraControllerStatus,
+                BackgroundCompensationStatus = state.BackgroundCompensationStatus,
+                FogCompensationStatus = state.FogCompensationStatus,
+                ScannerRefreshStatus = state.ScannerRefreshStatus,
+                LifecycleRestoreStatus = state.LifecycleRestoreStatus,
+                UiScaleStatus = state.UiScaleStatus,
+                CurrentRoomId = state.CurrentRoomId,
+                CurrentRoomTitle = state.CurrentRoomTitle,
+                CurrentRoomShowsBackground = state.CurrentRoomShowsBackground,
                 Status = state.Status,
                 LastMessage = state.LastMessage
             };
@@ -2478,8 +2704,233 @@ namespace DTMAPI.GameBridge.DolocTown
                 MinViewScale = min,
                 MaxViewScale = max,
                 Step = step,
+                RefreshCameraController = options.RefreshCameraController,
+                CompensateBackground = options.CompensateBackground,
+                CompensateDepthFog = options.CompensateDepthFog,
+                RefreshScanners = options.RefreshScanners,
                 VerboseLogging = options.VerboseLogging
             };
+        }
+
+        private string RefreshNativeCameraControllerAndPosition()
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? controller = ReadStaticMember(dolocApi, "cameraController");
+                if (controller == null)
+                    return "missing-camera-controller";
+
+                bool refreshed = TryInvokeNoArg(controller, "RefreshResolution");
+                object? agentPosition = ReadStaticMember(dolocApi, "AgentPosition");
+                MethodInfo? setPosition = FindMethodInHierarchy(controller.GetType(), "SetPosition", 1);
+                bool positioned = false;
+                string positionStatus = "missing-set-position";
+                if (setPosition != null && agentPosition != null)
+                {
+                    ParameterInfo parameter = setPosition.GetParameters()[0];
+                    object? positionArgument = parameter.ParameterType.IsInstanceOfType(agentPosition)
+                        ? agentPosition
+                        : CreateUnityVector2(ReadVectorComponent(agentPosition, "x"), ReadVectorComponent(agentPosition, "y"));
+                    if (positionArgument != null && parameter.ParameterType.IsInstanceOfType(positionArgument))
+                    {
+                        setPosition.Invoke(controller, new[] { positionArgument });
+                        positioned = true;
+                        positionStatus = "positioned";
+                    }
+                    else
+                    {
+                        positionStatus = "argument-mismatch:" + parameter.ParameterType.FullName;
+                    }
+                }
+                else if (agentPosition == null)
+                {
+                    positionStatus = "missing-agent-position";
+                }
+
+                return "refreshed=" + refreshed + ", positioned=" + positioned + ", " + positionStatus;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "CameraZoom camera-controller refresh failed.", ex.ToString());
+                return "failed:" + ex.GetType().Name;
+            }
+        }
+
+        private string RefreshNativeScanners()
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? refreshScanner = FindMethod(dolocApi, "RefreshScanner", 0);
+                if (refreshScanner == null)
+                    return "missing-refresh-scanner";
+
+                refreshScanner.Invoke(null, null);
+                return "refreshed";
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "CameraZoom scanner refresh failed.", ex.ToString());
+                return "failed:" + ex.GetType().Name;
+            }
+        }
+
+        private string ApplyCameraZoomBackgroundCompensation(double viewScale, bool restore)
+        {
+            object? background = ResolveCameraZoomBackgroundObject();
+            if (background == null)
+                return restore ? "restore-skipped-missing-background" : "missing-background";
+
+            CameraZoomRoomSnapshot room = GetCameraZoomRoomSnapshot();
+            if (!restore && !room.ShouldShowBackground && !string.IsNullOrWhiteSpace(room.RoomId))
+                return "skipped-room-no-background";
+
+            return ApplyCameraZoomTransformScale(background, "background", viewScale, restore);
+        }
+
+        private string ApplyCameraZoomFogCompensation(double viewScale, bool restore)
+        {
+            List<string> statuses = new List<string>();
+            object? controller = ResolveCameraZoomEnvCovariantController();
+            if (controller == null)
+                return restore ? "restore-skipped-missing-env-controller" : "missing-env-controller";
+
+            object? outdoorFog = ReadMember(controller, "_depthFogController");
+            object? buildingFog = ReadMember(controller, "_depthFogControllerBuilding");
+            if (outdoorFog == null && buildingFog == null)
+                return restore ? "restore-skipped-missing-fog" : "missing-fog";
+
+            if (outdoorFog != null)
+                statuses.Add(ApplyCameraZoomTransformScale(outdoorFog, "depth-fog", viewScale, restore));
+            if (buildingFog != null)
+                statuses.Add(ApplyCameraZoomTransformScale(buildingFog, "building-depth-fog", viewScale, restore));
+
+            return string.Join("; ", statuses.ToArray());
+        }
+
+        private string ApplyCameraZoomTransformScale(object owner, string label, double viewScale, bool restore)
+        {
+            try
+            {
+                object? transform = ReadMember(owner, "transform");
+                if (transform == null)
+                    return "missing-" + label + "-transform";
+
+                object? originalScale = GetOrCaptureCameraZoomOriginalScale(transform);
+                if (originalScale == null)
+                    return "missing-" + label + "-scale";
+
+                object? targetScale = restore || viewScale <= 1.0001d
+                    ? originalScale
+                    : ScaleUnityVector3(originalScale, viewScale);
+                if (targetScale == null || !SetMemberValue(transform, "localScale", targetScale))
+                    return "failed-" + label + "-scale-write";
+
+                if (restore || viewScale <= 1.0001d)
+                    return "restored-" + label;
+
+                return "compensated-" + label + "=" + viewScale.ToString("0.###", CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "CameraZoom " + label + " compensation failed.", ex.ToString());
+                return "failed-" + label + ":" + ex.GetType().Name;
+            }
+        }
+
+        private object? GetOrCaptureCameraZoomOriginalScale(object transform)
+        {
+            if (cameraZoomOriginalTransformScales.TryGetValue(transform, out object originalScale))
+                return originalScale;
+
+            object? current = ReadMember(transform, "localScale");
+            if (current == null)
+                return null;
+
+            object? copy = CopyUnityVector3(current);
+            if (copy == null)
+                return null;
+
+            cameraZoomOriginalTransformScales[transform] = copy;
+            return copy;
+        }
+
+        private static object? CopyUnityVector3(object vector)
+        {
+            return ScaleUnityVector3(vector, 1d);
+        }
+
+        private static object? ScaleUnityVector3(object vector, double scale)
+        {
+            double x = ReadVectorComponent(vector, "x");
+            double y = ReadVectorComponent(vector, "y");
+            double z = ReadVectorComponent(vector, "z");
+            if (double.IsNaN(x) || double.IsNaN(y) || double.IsNaN(z))
+                return null;
+
+            return CreateUnityVector3(x * scale, y * scale, z * scale);
+        }
+
+        private static object? ResolveCameraZoomBackgroundObject()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            return ReadStaticMember(dolocApi, "envBackgroundEx");
+        }
+
+        private static object? ResolveCameraZoomEnvCovariantController()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            return ReadStaticMember(dolocApi, "EnvCovariantController");
+        }
+
+        private static CameraZoomRoomSnapshot GetCameraZoomRoomSnapshot()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? room = ReadStaticMember(dolocApi, "CurrentRoom");
+            if (room == null)
+                return new CameraZoomRoomSnapshot();
+
+            return new CameraZoomRoomSnapshot
+            {
+                RoomId = FirstText(ReadStringMember(room, "RoomId"), ReadStringMember(room, "roomId"), room.GetType().Name),
+                RoomTitle = ReadStringMember(room, "Title"),
+                ShouldShowBackground = ReadBoolMember(room, "ShouldShowBackground", false)
+            };
+        }
+
+        private string BuildCameraZoomLifecycleStatus(string reason, bool restored)
+        {
+            reason ??= string.Empty;
+            if (reason.IndexOf("lifecycle", StringComparison.OrdinalIgnoreCase) >= 0)
+                return restored ? "restored:" + reason : "restore-requested:" + reason;
+            if (reason.IndexOf("ReturnedToTitle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                reason.IndexOf("SaveLoaded", StringComparison.OrdinalIgnoreCase) >= 0)
+                return restored ? "restored:" + reason : "restore-requested:" + reason;
+            if (reason.IndexOf("environment reset", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "reapplied:" + reason;
+            return restored ? "vanilla" : cameraZoomCurrentViewScale > 1.0001d ? "active" : "not-needed";
+        }
+
+        private static bool IsCameraZoomStatusFailure(string status, bool requireOwner)
+        {
+            if (!requireOwner)
+                return false;
+            if (string.IsNullOrWhiteSpace(status))
+                return true;
+
+            string normalized = status.Trim().ToLowerInvariant();
+            if (normalized.StartsWith("disabled", StringComparison.Ordinal))
+                return false;
+            if (normalized.StartsWith("skipped-room-no-background", StringComparison.Ordinal))
+                return false;
+            if (normalized.StartsWith("restore-skipped", StringComparison.Ordinal))
+                return false;
+            if (normalized.IndexOf("failed", StringComparison.Ordinal) >= 0)
+                return true;
+            if (normalized.IndexOf("missing", StringComparison.Ordinal) >= 0)
+                return true;
+            return false;
         }
 
         private static object? TryGetMainCameraObject()
@@ -11733,6 +12184,20 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!keys.Add(key))
                 return;
             runtime.RuntimeMonitor.Log(message);
+        }
+
+        private sealed class CameraZoomTarget
+        {
+            public string OwnerId { get; set; } = string.Empty;
+            public double RequestedScale { get; set; } = 1d;
+            public double Scale { get; set; } = 1d;
+        }
+
+        private sealed class CameraZoomRoomSnapshot
+        {
+            public string RoomId { get; set; } = string.Empty;
+            public string RoomTitle { get; set; } = string.Empty;
+            public bool ShouldShowBackground { get; set; }
         }
 
         private sealed class SecondMotorRuntime

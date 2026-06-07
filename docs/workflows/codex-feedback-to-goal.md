@@ -11,6 +11,7 @@ Use this file before answering or editing when the user asks to:
 - 把手动测试问题转成 Codex 可执行任务。
 - 只讨论下一轮目标、验收指标、blocker、debug 记录。
 - 区分“整理反馈的 Codex”和“升级 DTMAPI 的 Codex”。
+- 把 API 审查结论转为 API 重做目标时，先切到 `docs/workflows/codex-api-rebuild.md`。
 
 Do not use this workflow to implement runtime/API/gameplay changes. If the user asks to implement, follow `AGENTS.md`, the exact `docs/goals/YYYY/...md` file named by the prompt, debug docs, and update-record rules instead.
 
@@ -57,6 +58,7 @@ Before producing a new prompt or task breakdown, read the relevant current truth
 - `docs/debug/regressions/smoke-matrix.md`
 - `docs/hook-map/README.md` for hook/API work
 - `docs/api/public-api-matrix.md` for API work
+- `docs/workflows/codex-api-rebuild.md` for API rebuild, native-owner follow-up, or GameBridge boundary redesign
 - relevant official docs / research notes / decompiled references named by the user
 
 If the user says “只讨论”, “不用实现”, “整理为提示词”, or “给 codex 目标”, treat the turn as feedback organization unless they explicitly ask for file edits.
@@ -81,8 +83,11 @@ Do not skip the Review layer for:
 - official-local or Workshop content indexing/loading;
 - vehicles, machines, placed objects, or item/mail systems;
 - broad symptoms such as "random other objects changed".
+- API/native-owner gaps, especially when previous work succeeded only through UI, registry, debug console, or smoke-helper evidence.
 
 For these cases, identify at least the likely render/input/save/hook paths and the evidence gap before generating a fix goal. A goal that says only "fix it" is too weak.
+
+For API rebuild cases, the review must additionally identify the native responsibility function or state holder, or explicitly mark that discovery as the first required task. Use `docs/workflows/codex-api-rebuild.md` before writing the goal.
 
 ## Review File Policy
 
@@ -197,6 +202,7 @@ Do not paste every task detail into the `/goal`; make the implementation Codex r
 - Task numbering is flexible. A-G is a template example only; narrow scopes may use A-C, numbered tasks, or descriptive task titles.
 - A feedback-organizer Codex may be started fresh. It must read this workflow, the current project docs, and the latest records, then continue from the per-item review blocks rather than restarting from memory.
 - When producing an implementation `/goal`, include a fixed target version requirement, for example `from 0.3.0 to 0.3.1` or `target version 0.3.1`. Do not write only `bump once`.
+- For API rebuild implementation goals, include `docs/workflows/codex-api-rebuild.md` in the required reading and require native-owner method-body review before runtime edits.
 - If the workspace is already at the target version, the implementing Codex must not bump again unless the user or goal file explicitly names a newer target version.
 - The implementing Codex must update every project-controlled version source it changes or relies on, and record the old/new versions in `docs/updates`.
 - Keep smoke evidence and user manual QA separate. Write “smoke verified” only for automated evidence, and “user verified” only when the user said so.

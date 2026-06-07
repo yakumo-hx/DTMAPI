@@ -57,6 +57,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseNewContentApisAttempted;
         private bool autoExerciseMineContentApisAttempted;
         private bool autoExerciseZoomAttempted;
+        private ZoomSmokeRun? zoomSmokeRun;
         private bool autoExerciseChestLocatorEnhancerAttempted;
         private bool autoExerciseStrongPlantingGunAttempted;
         private bool autoExerciseCustomEntityApisAttempted;
@@ -120,6 +121,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool saveSavingPatched;
         private bool saveSavedPatched;
         private bool returnHomePatched;
+        private bool cameraZoomSetEnvCameraPatched;
         private bool workshopReloadPatched;
         private bool actionSpeedToolEnterPatched;
         private bool actionSpeedToolExitPatched;
@@ -432,8 +434,11 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!autoExerciseZoomAttempted && smokeSettings.AutoExerciseZoom && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseZoomDelaySeconds))
             {
+                SmokeAttemptResult zoomResult = TryExerciseZoomForSmoke();
+                if (zoomResult == SmokeAttemptResult.Pending)
+                    return;
+
                 autoExerciseZoomAttempted = true;
-                TryExerciseZoomForSmoke();
                 TryQuitAfterDebugSmoke();
             }
             if (!autoExerciseChestLocatorEnhancerAttempted && smokeSettings.AutoExerciseChestLocatorEnhancer && saveLoadedAt != default &&
@@ -872,6 +877,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 {
                     returnHomePatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "ReturnHome", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReturnHomePostfix), BindingFlags.Public | BindingFlags.Static), 1);
                     runtime.SetHookStatus("GameLoop.ReturnedToTitle", returnHomePatched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.ReturnHome", returnHomePatched ? "Patched ReturnHome; title lifecycle smoke verifies the button remount." : "Waiting for DolocAPI.ReturnHome to become patchable.");
+                }
+
+                if (!cameraZoomSetEnvCameraPatched)
+                {
+                    cameraZoomSetEnvCameraPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetEnvCamera", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix), BindingFlags.Public | BindingFlags.Static), 5);
+                    runtime.SetHookStatus("Camera.ZoomEnvironmentLifecycle", cameraZoomSetEnvCameraPatched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.SetEnvCamera", cameraZoomSetEnvCameraPatched ? "Patched the native environment-camera reset boundary so active CameraZoom policies can reapply camera/background/fog compensation after room transitions." : "Waiting for DolocAPI.SetEnvCamera to become patchable.");
                 }
 
                 if (!workshopReloadPatched)
@@ -2524,7 +2535,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private void TryExerciseZoomForSmoke()
+        private SmokeAttemptResult TryExerciseZoomForSmoke()
         {
             try
             {
@@ -2532,47 +2543,171 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("Experimental bridge API is not available.");
 
                 ICameraZoomApi zoomApi = experimentalApi;
-                ManifestModel owner = CreateZoomSmokeManifest();
-                CameraZoomRegisterResult register = zoomApi.Register(owner, new CameraZoomOptions
+                if (zoomSmokeRun == null)
                 {
-                    Enabled = true,
-                    MinViewScale = 1,
-                    MaxViewScale = 4,
-                    Step = 1,
-                    VerboseLogging = true
-                });
-                if (!register.Success)
-                    throw new InvalidOperationException(register.FailureReason + ": " + register.Message);
+                    ManifestModel owner = CreateZoomSmokeManifest();
+                    CameraZoomRegisterResult register = zoomApi.Register(owner, new CameraZoomOptions
+                    {
+                        Enabled = true,
+                        MinViewScale = 1,
+                        MaxViewScale = 4,
+                        Step = 1,
+                        VerboseLogging = true
+                    });
+                    if (!register.Success)
+                        throw new InvalidOperationException(register.FailureReason + ": " + register.Message);
 
-                CameraZoomState before = zoomApi.GetState(owner.UniqueID);
-                CameraZoomResult max = zoomApi.SetViewScale(owner, 4d, "smoke max-view");
-                experimentalApi.UpdateRuntimeAutomation();
-                CameraZoomState maxState = zoomApi.GetState(owner.UniqueID);
-                CameraZoomResult reset = zoomApi.ResetViewScale(owner, "smoke restore-vanilla");
-                experimentalApi.UpdateRuntimeAutomation();
-                CameraZoomState after = zoomApi.GetState(owner.UniqueID);
+                    string evidenceDir = Path.Combine(runtime.Paths.EvidencePath, "ZOOM-042", DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture));
+                    Directory.CreateDirectory(evidenceDir);
+                    zoomSmokeRun = new ZoomSmokeRun
+                    {
+                        Owner = owner,
+                        EvidenceDir = evidenceDir,
+                        Before = zoomApi.GetState(owner.UniqueID),
+                        BeforeScreenshot = Path.Combine(evidenceDir, "zoom-before.png"),
+                        Stage = 1,
+                        StageAt = DateTimeOffset.Now
+                    };
+                    zoomSmokeRun.BeforeScreenshotRequested = TryCaptureScreenshot(zoomSmokeRun.BeforeScreenshot);
+                    runtime.RuntimeMonitor.Log("Smoke Zoom before screenshot requested=" + zoomSmokeRun.BeforeScreenshotRequested + " path=" + zoomSmokeRun.BeforeScreenshot + ".");
+                    return SmokeAttemptResult.Pending;
+                }
 
-                if (!max.Success)
-                    throw new InvalidOperationException("4x apply failed: " + max.FailureReason + ": " + max.Message);
-                if (!maxState.CameraAvailable)
-                    throw new InvalidOperationException("Camera was not available after 4x apply. state=" + FormatZoomState(maxState));
-                if (maxState.CurrentViewScale < 3.95d)
-                    throw new InvalidOperationException("Expected 4x view scale after apply. state=" + FormatZoomState(maxState));
-                if (maxState.AppliedOrthographicSize <= maxState.VanillaOrthographicSize)
-                    throw new InvalidOperationException("Expected applied orthographic size to exceed vanilla size. state=" + FormatZoomState(maxState));
-                if (!reset.Success)
-                    throw new InvalidOperationException("Reset failed: " + reset.FailureReason + ": " + reset.Message);
-                if (after.CurrentViewScale > 1.05d)
-                    throw new InvalidOperationException("Expected vanilla view scale after reset. state=" + FormatZoomState(after));
+                ZoomSmokeRun run = zoomSmokeRun;
+                if (run.Stage == 1)
+                {
+                    if (!WaitForZoomScreenshot(run.BeforeScreenshot, "before", run.BeforeScreenshotRequested, run.StageAt))
+                        return SmokeAttemptResult.Pending;
 
-                string summary = "before={" + FormatZoomState(before) + "}, max={" + FormatZoomState(maxState) + "}, reset={" + FormatZoomState(after) + "}, apply={" + max.Message + "}, restore={" + reset.Message + "}";
-                runtime.RuntimeMonitor.Log("Smoke exercise Zoom OK " + summary);
-                runtime.SetHookStatus("Smoke.Zoom", "verified", "ICameraZoomApi -> DolocAPI.mainCamera.orthographicSize", summary);
+                    run.MaxResult = zoomApi.SetViewScale(run.Owner, 4d, "smoke max-view");
+                    experimentalApi.UpdateRuntimeAutomation();
+                    run.Max = zoomApi.GetState(run.Owner.UniqueID);
+                    ValidateZoomMax(run.MaxResult, run.Max);
+                    run.MaxScreenshot = Path.Combine(run.EvidenceDir, "zoom-4x.png");
+                    run.MaxScreenshotRequested = TryCaptureScreenshot(run.MaxScreenshot);
+                    run.Stage = 2;
+                    run.StageAt = DateTimeOffset.Now;
+                    runtime.RuntimeMonitor.Log("Smoke Zoom 4x screenshot requested=" + run.MaxScreenshotRequested + " path=" + run.MaxScreenshot + ".");
+                    return SmokeAttemptResult.Pending;
+                }
+
+                if (run.Stage == 2)
+                {
+                    if (!WaitForZoomScreenshot(run.MaxScreenshot, "4x", run.MaxScreenshotRequested, run.StageAt))
+                        return SmokeAttemptResult.Pending;
+
+                    run.ResetResult = zoomApi.ResetViewScale(run.Owner, "smoke restore-vanilla");
+                    experimentalApi.UpdateRuntimeAutomation();
+                    run.After = zoomApi.GetState(run.Owner.UniqueID);
+                    ValidateZoomReset(run.ResetResult, run.After);
+                    run.ResetScreenshot = Path.Combine(run.EvidenceDir, "zoom-reset.png");
+                    run.ResetScreenshotRequested = TryCaptureScreenshot(run.ResetScreenshot);
+                    run.Stage = 3;
+                    run.StageAt = DateTimeOffset.Now;
+                    runtime.RuntimeMonitor.Log("Smoke Zoom reset screenshot requested=" + run.ResetScreenshotRequested + " path=" + run.ResetScreenshot + ".");
+                    return SmokeAttemptResult.Pending;
+                }
+
+                if (run.Stage == 3)
+                {
+                    if (!WaitForZoomScreenshot(run.ResetScreenshot, "reset", run.ResetScreenshotRequested, run.StageAt))
+                        return SmokeAttemptResult.Pending;
+
+                    string summary = "before={" + FormatZoomState(run.Before) + "}, max={" + FormatZoomState(run.Max) + "}, reset={" + FormatZoomState(run.After) + "}, apply={" + run.MaxResult?.Message + "}, restore={" + run.ResetResult?.Message + "}, screenshots=" + run.EvidenceDir;
+                    File.WriteAllText(Path.Combine(run.EvidenceDir, "summary.txt"),
+                        "Before=" + FormatZoomState(run.Before) + Environment.NewLine +
+                        "Max=" + FormatZoomState(run.Max) + Environment.NewLine +
+                        "Reset=" + FormatZoomState(run.After) + Environment.NewLine +
+                        "Apply=" + run.MaxResult?.Message + Environment.NewLine +
+                        "Restore=" + run.ResetResult?.Message + Environment.NewLine +
+                        "BeforeScreenshot=" + run.BeforeScreenshot + Environment.NewLine +
+                        "MaxScreenshot=" + run.MaxScreenshot + Environment.NewLine +
+                        "ResetScreenshot=" + run.ResetScreenshot + Environment.NewLine);
+                    runtime.RuntimeMonitor.Log("Smoke exercise Zoom OK " + summary);
+                    runtime.SetHookStatus("Smoke.Zoom", "verified", "ICameraZoomApi -> DolocAPI.mainCamera + CameraController/envBackgroundEx/EnvCovariantController", summary);
+                    zoomSmokeRun = null;
+                    return SmokeAttemptResult.Succeeded;
+                }
+
+                return SmokeAttemptResult.Pending;
             }
             catch (Exception ex)
             {
+                if (experimentalApi != null)
+                    TryRestoreZoomSmokeAfterFailure(experimentalApi);
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke zoom exercise failed.", ex.ToString());
                 runtime.SetHookStatus("Smoke.Zoom", "failed", "ICameraZoomApi", ex.GetType().Name + ": " + ex.Message);
+                zoomSmokeRun = null;
+                return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private bool WaitForZoomScreenshot(string path, string label, bool requested, DateTimeOffset requestedAt)
+        {
+            if (ScreenshotFileReady(path))
+                return true;
+            if ((DateTimeOffset.Now - requestedAt).TotalSeconds < 5)
+                return false;
+            throw new InvalidOperationException("Zoom " + label + " screenshot was not captured. requested=" + requested + " path=" + path);
+        }
+
+        private static bool ScreenshotFileReady(string path)
+        {
+            try
+            {
+                var file = new FileInfo(path);
+                return file.Exists && file.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void ValidateZoomMax(CameraZoomResult max, CameraZoomState maxState)
+        {
+            if (!max.Success)
+                throw new InvalidOperationException("4x apply failed: " + max.FailureReason + ": " + max.Message);
+            if (!maxState.CameraAvailable)
+                throw new InvalidOperationException("Camera was not available after 4x apply. state=" + FormatZoomState(maxState));
+            if (maxState.CurrentViewScale < 3.95d)
+                throw new InvalidOperationException("Expected 4x view scale after apply. state=" + FormatZoomState(maxState));
+            if (maxState.AppliedOrthographicSize <= maxState.VanillaOrthographicSize)
+                throw new InvalidOperationException("Expected applied orthographic size to exceed vanilla size. state=" + FormatZoomState(maxState));
+            if (ZoomStatusHasFailure(maxState.CameraControllerStatus) || !maxState.CameraControllerStatus.Contains("refreshed"))
+                throw new InvalidOperationException("Camera controller refresh was not verified after 4x apply. state=" + FormatZoomState(maxState));
+            if (maxState.CurrentRoomShowsBackground && !ZoomStatusContains(maxState.BackgroundCompensationStatus, "compensated"))
+                throw new InvalidOperationException("Background compensation was not verified in a background room after 4x apply. state=" + FormatZoomState(maxState));
+            if (!ZoomStatusContains(maxState.FogCompensationStatus, "compensated"))
+                throw new InvalidOperationException("Depth fog compensation was not verified after 4x apply. state=" + FormatZoomState(maxState));
+            if (ZoomStatusHasFailure(maxState.ScannerRefreshStatus) || !ZoomStatusContains(maxState.ScannerRefreshStatus, "refreshed"))
+                throw new InvalidOperationException("Scanner refresh was not verified after 4x apply. state=" + FormatZoomState(maxState));
+        }
+
+        private static void ValidateZoomReset(CameraZoomResult reset, CameraZoomState after)
+        {
+            if (!reset.Success)
+                throw new InvalidOperationException("Reset failed: " + reset.FailureReason + ": " + reset.Message);
+            if (after.CurrentViewScale > 1.05d)
+                throw new InvalidOperationException("Expected vanilla view scale after reset. state=" + FormatZoomState(after));
+            if (after.AppliedViewScale > 1.05d)
+                throw new InvalidOperationException("Expected applied view scale to return to vanilla after reset. state=" + FormatZoomState(after));
+            if (ZoomStatusHasFailure(after.BackgroundCompensationStatus) || !ZoomStatusContains(after.BackgroundCompensationStatus, "restored"))
+                throw new InvalidOperationException("Background scale restore was not verified after reset. state=" + FormatZoomState(after));
+            if (ZoomStatusHasFailure(after.FogCompensationStatus) || !ZoomStatusContains(after.FogCompensationStatus, "restored"))
+                throw new InvalidOperationException("Depth fog scale restore was not verified after reset. state=" + FormatZoomState(after));
+        }
+
+        private void TryRestoreZoomSmokeAfterFailure(ICameraZoomApi zoomApi)
+        {
+            try
+            {
+                if (zoomSmokeRun?.Owner != null)
+                    zoomApi.ResetViewScale(zoomSmokeRun.Owner, "smoke failure restore-vanilla");
+            }
+            catch (Exception restoreEx)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke zoom failure restore failed.", restoreEx.ToString());
             }
         }
 
@@ -2809,11 +2944,34 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", status=" + state.Status +
                 ", enabled=" + state.Enabled +
                 ", current=" + FormatSmokeDouble(state.CurrentViewScale) +
+                ", requested=" + FormatSmokeDouble(state.RequestedViewScale) +
+                ", clamped=" + FormatSmokeDouble(state.ClampedViewScale) +
+                ", appliedScale=" + FormatSmokeDouble(state.AppliedViewScale) +
+                ", activeOwner=" + state.ActiveOwnerId +
                 ", range=" + FormatSmokeDouble(state.MinViewScale) + "-" + FormatSmokeDouble(state.MaxViewScale) +
                 ", camera=" + state.CameraAvailable +
                 ", vanillaSize=" + FormatSmokeDouble(state.VanillaOrthographicSize) +
                 ", appliedSize=" + FormatSmokeDouble(state.AppliedOrthographicSize) +
+                ", cameraController=" + state.CameraControllerStatus +
+                ", background=" + state.BackgroundCompensationStatus +
+                ", fog=" + state.FogCompensationStatus +
+                ", scanner=" + state.ScannerRefreshStatus +
+                ", lifecycle=" + state.LifecycleRestoreStatus +
+                ", uiScale=" + state.UiScaleStatus +
+                ", room=" + (string.IsNullOrWhiteSpace(state.CurrentRoomTitle) ? state.CurrentRoomId : state.CurrentRoomTitle) +
+                ", roomBackground=" + state.CurrentRoomShowsBackground +
                 ", message=" + state.LastMessage;
+        }
+
+        private static bool ZoomStatusContains(string status, string needle)
+        {
+            return (status ?? string.Empty).IndexOf(needle ?? string.Empty, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ZoomStatusHasFailure(string status)
+        {
+            string normalized = (status ?? string.Empty).ToLowerInvariant();
+            return normalized.Contains("failed") || normalized.Contains("missing");
         }
 
         private SmokeAttemptResult TryExerciseVehicleForSmoke()
@@ -10390,7 +10548,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && strongPlantingGunToolPatched && strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && cameraZoomSetEnvCameraPatched && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oneActionToolColliderPatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && strongPlantingGunToolPatched && strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -10612,6 +10770,25 @@ namespace DTMAPI.GameBridge.DolocTown
             Pending,
             Failed,
             Succeeded
+        }
+
+        private sealed class ZoomSmokeRun
+        {
+            public ManifestModel Owner { get; set; } = new ManifestModel();
+            public string EvidenceDir { get; set; } = string.Empty;
+            public CameraZoomState Before { get; set; } = new CameraZoomState();
+            public CameraZoomState Max { get; set; } = new CameraZoomState();
+            public CameraZoomState After { get; set; } = new CameraZoomState();
+            public CameraZoomResult? MaxResult { get; set; }
+            public CameraZoomResult? ResetResult { get; set; }
+            public string BeforeScreenshot { get; set; } = string.Empty;
+            public string MaxScreenshot { get; set; } = string.Empty;
+            public string ResetScreenshot { get; set; } = string.Empty;
+            public bool BeforeScreenshotRequested { get; set; }
+            public bool MaxScreenshotRequested { get; set; }
+            public bool ResetScreenshotRequested { get; set; }
+            public int Stage { get; set; }
+            public DateTimeOffset StageAt { get; set; }
         }
 
         [DataContract]

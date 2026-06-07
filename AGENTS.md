@@ -18,6 +18,12 @@ Before turning user manual test feedback into Codex constraints, a dedicated `do
 - `docs/goals/README.md`
 - `docs/reviews/README.md` when doing review/root-cause work
 
+Before API rebuild, native-owner follow-up, or GameBridge boundary redesign work, also read:
+
+- `docs/workflows/codex-api-rebuild.md`
+- the latest relevant `docs/reviews/api/YYYY/...` records
+- `docs/api/public-api-matrix.md`
+
 Manual feedback review must preserve the user's numbered issue order, translate screenshot-only details into text, and attach analysis immediately after each issue so a fresh Codex or compacted context can resume without losing continuity.
 
 Repeated, previously "fixed", lifecycle, UI flicker, stale-state, hook, input, save/load, vehicle, machine, or official-content issues require review/root-cause notes before a new implementation goal. Store durable review records under `docs/reviews/manual-qa/YYYY/` when the review must feed a dedicated goal file or a future `/goal`.
@@ -47,6 +53,8 @@ BepInEx bootstrap -> DTMAPI Core -> DolocTown GameBridge -> stable public API ->
 ```
 
 Fragile Unity/Harmony/reflection logic belongs in `DTMAPI.GameBridge.DolocTown`. Public APIs in `DTMAPI.Abstractions` should stay stable and avoid exposing raw decompiled game types unless there is a deliberate adapter.
+
+API rebuild work must start from the native responsibility function or state holder, then build through GameBridge into public abstractions. Do not stabilize a public API from UI success, registry success, or smoke-helper success alone.
 
 ## Testing Rule
 

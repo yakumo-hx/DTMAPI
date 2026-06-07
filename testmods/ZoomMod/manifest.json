@@ -1,19 +1,19 @@
 {
   "Name": "DTMAPI Zoom",
   "Author": "DTMAPI",
-  "Version": "0.3.1-dtmapi",
+  "Version": "0.4.2-dtmapi",
   "UniqueID": "DTMAPI.ZoomMod",
   "EntryDll": "ZoomMod.dll",
-  "MinimumDTMApiVersion": "0.3.1",
+  "MinimumDTMApiVersion": "0.4.2",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.4.2",
       "IsRequired": false
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.4.2",
       "IsRequired": true
     }
   ]

@@ -4,6 +4,24 @@ This directory contains reference material only. DTMAPI is rebuilt from zero; th
 
 See `COPY-MANIFEST.md` for exact local source paths and explicit exclusions.
 
+## Git Scope
+
+Git should track only public reference documentation and DTMAPI-authored research notes:
+
+- `COPY-MANIFEST.md`
+- `README.md`
+- `doloc-town/official-workshop-docs`
+- `doloc-town/research-notes`
+
+The following folders are local-only and ignored by Git:
+
+- `doloc-town/reverse`
+- `doloc-town/own-mod-sources`
+- `third-party-mods`
+- `stardew-smapi`
+
+Those local-only folders may exist in a developer workspace, but they must not be published or required to build DTMAPI.
+
 ## Doloc Town
 
 - `doloc-town/official-workshop-docs/pdf`: copied official Workshop/modding PDFs from `E:\Python_project\DLK\research\创意工坊说明`.

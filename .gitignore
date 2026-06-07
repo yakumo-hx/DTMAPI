@@ -3,14 +3,22 @@
 .vs/
 .idea/
 .vscode/
+*.user
+*.suo
 
 # Build outputs
 **/bin/
 **/obj/
 TestResults/
+dist/
+tmp/
+temp/
 
 # Runtime/debug artifacts that are recorded in docs but too large/noisy for Git
 docs/debug/evidence/
+reports/
+crash-reports/
+logs/
 *.log
 *.tmp
 *.cache
@@ -25,8 +33,37 @@ docs/debug/evidence/
 *.rar
 *.nupkg
 
-# Official game assembly inputs must remain local reference material only
-references/doloc-town/reverse/builds/*/input/
+# Local settings
+local.settings.json
+*.local.json
+.env
 
-# Copied external runtime/reference installs
-references/stardew-smapi/installed/
+# Game / BepInEx install outputs
+BepInEx/
+winhttp.dll
+doorstop_config.ini
+DolocTown.exe
+
+# Reverse engineering / private references.
+# Keep local copies for research, but do not track or publish them.
+references/doloc-town/reverse/
+references/doloc-town/own-mod-sources/
+references/third-party-mods/
+references/stardew-smapi/
+references/**/Assembly-CSharp.dll
+references/**/decompiled/
+references/**/dnspy/
+references/**/ilspy/
+
+# Public/reference docs that may stay tracked.
+!references/
+!references/README.md
+!references/COPY-MANIFEST.md
+!references/doloc-town/
+!references/doloc-town/official-workshop-docs/
+!references/doloc-town/official-workshop-docs/**
+!references/doloc-town/research-notes/
+!references/doloc-town/research-notes/**
+
+# Keep reference docs, but still exclude local crawl/runtime logs inside them.
+references/**/*.log

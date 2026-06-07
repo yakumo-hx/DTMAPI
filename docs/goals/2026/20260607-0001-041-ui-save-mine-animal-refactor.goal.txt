@@ -1,0 +1,39 @@
+/goal
+注意：此 prompt 已归档，不是当前 active implementation goal。用户已明确 0.4.1 主要作为手测记录归档，不应阻塞后续 API 重做。除非用户明确要求恢复本目标，不要执行本 prompt。
+
+目标：把 2026-06-07 手测反馈转为 DTMAPI 0.4.1 底层重构：修复 MoreSaves 24 存档 UI、标题页 `模组设置` 官方像素风入口、ConfigMenu 滚动、Mine 纯电力/缩放生命周期、AnimalHusbandryProgress `心情` 闪烁。详细需求、问题、验收标准以 docs/goals/2026/20260607-0001-041-ui-save-mine-animal-refactor.md 的任务列表为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260607-0001-041-ui-save-mine-animal-refactor.md
+docs/goals/2026/20260607-0001-041-ui-save-mine-animal-refactor.goal.txt
+docs/reviews/README.md
+docs/reviews/manual-qa/2026/20260607-0002-ui-save-mine-animal-refactor-review.md
+docs/updates/INDEX.md
+docs/updates/2026/20260607-0004-041-ui-save-mine-animal-goal.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+E:\Python_project\DLK\src\mods\AnimalHusbandryProgressMod\README.md
+E:\Python_project\DLK\src\mods\AnimalHusbandryProgressMod\MAINTENANCE.md
+E:\Python_project\DLK\docs\releases\DolocTownSMAPI-0.8.21-animals-api.md
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；旧 DLK 牧铃资料只作行为参考，禁止复制或仿写旧 DLKsmapi 实现；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本固定为 0.4.1。若当前代码已经是 0.4.1，不要再升版本；只有用户明确要求或 goal 文件明确写新目标版本时才允许继续升版本。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+
+任务 A：Baseline、git safety、0.4.1 固定版本
+任务 B：MoreSaves 12/24+ 存档滚动 UI
+任务 C：标题页 `模组设置` 官方像素风入口与 ConfigMenu 双侧滚动
+任务 D：Mine 纯电力 runtime/config/API 清理
+任务 E：Mine 场景切换与手持预览 2x 缩放生命周期
+任务 F：AnimalHusbandryProgress 隐藏产物行 `心情` 闪烁根因修复
+任务 G：第三存档验证、日志/截图/退出证据与文档收尾
+
+完成标准：
+只有当 docs/goals/2026/20260607-0001-041-ui-save-mine-animal-refactor.md 中本轮任务列表的玩家可见功能都在第三存档真实可用，并完成 build、game smoke、日志/截图证据、退出残留检查和文档更新，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步。

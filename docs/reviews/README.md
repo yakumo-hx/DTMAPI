@@ -18,6 +18,7 @@ The review should answer:
 ## Relationship To Other Docs
 
 - `docs/reviews`: pre-implementation analysis and root-cause/path review.
+- `docs/reviews/api`: API native-owner, status, and rebuild-readiness reviews.
 - `docs/goals/YYYY/...`: immutable implementation task ledgers for future `/goal` prompts.
 - `docs/goals/YYYY/....goal.txt`: backups of the exact short `/goal` prompts.
 - `docs/debug`: runtime investigation, evidence, regressions, and known bug state.
@@ -41,6 +42,8 @@ docs/reviews/
 
 Use `docs/reviews/manual-qa/YYYY/...` for durable user manual-test reviews. The year folder may be created only when the first review for that year is needed.
 
+Use `docs/reviews/api/YYYY/...` for API native-owner reviews. These reviews should name the public API symbol or domain, the native responsibility function, the authoritative state holder, the current DTMAPI bridge path, ordinary-mod usability, and the concrete failure mode if the API is exposed too early.
+
 ## When To Create A Durable Review
 
 Create or update a durable review record when:
@@ -51,6 +54,13 @@ Create or update a durable review record when:
 - the next step is to generate a dedicated goal file or short `/goal` for a fresh Codex.
 
 For pure discussion, a chat-only review is acceptable unless the user asks to update files. If an implementation goal will be produced, prefer a durable review first for complex or repeated issues.
+
+Create an API review record before an API rebuild goal when:
+
+- an API is classified as `Gap`, `Blocked`, `debug-only`, `registry-only`, or `DTMAPI-internal`;
+- the feature currently succeeds only through UI, debug console, registry/index state, or smoke-helper evidence;
+- the fix requires GameBridge/native-owner work;
+- the API touches global state, save/load, transitions, equipment, vehicles, machines, camera, input, or custom entity runtime creation.
 
 ## Minimum Per-Issue Review
 
@@ -68,3 +78,17 @@ Each user-numbered item must keep its own analysis directly under it:
 - downstream docs to update if implementation happens.
 
 Do not move all analysis to the end. This is required so a compacted context or fresh Codex can resume from any single issue.
+
+## API Review Minimum
+
+Each API/native-owner review block should include:
+
+- public symbol or domain;
+- current matrix status and recommended status;
+- declaration and implementation paths;
+- native owner and native state holder, or a clear "not found yet";
+- hook/bridge path and whether it is native-owner proof or only UI/debug proof;
+- save/load, transition, disable/re-enable, and multi-mod risks;
+- ordinary-mod usability;
+- exact blocker conditions;
+- recommended next action: document, downgrade, targeted native-owner deep dive, GameBridge rebuild, or no action.

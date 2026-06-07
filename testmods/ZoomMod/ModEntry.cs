@@ -79,7 +79,7 @@ namespace ZoomMod
                 return T("config.status.missing", "Camera Zoom API is not available.");
 
             CameraZoomState state = zoomApi.GetState(helper.ModManifest.UniqueID);
-            return string.Format(CultureInfo.InvariantCulture, T("config.status", "Status={0}, current={1}, range={2}-{3}, camera={4}, vanillaSize={5}, appliedSize={6}. {7}"), state.Status, Format(state.CurrentViewScale), Format(state.MinViewScale), Format(state.MaxViewScale), state.CameraAvailable, Format(state.VanillaOrthographicSize), Format(state.AppliedOrthographicSize), state.LastMessage);
+            return string.Format(CultureInfo.InvariantCulture, T("config.status", "Status={0}, current={1}, applied={2}, range={3}-{4}, camera={5}, cameraController={6}, background={7}, fog={8}, scanner={9}, lifecycle={10}, vanillaSize={11}, appliedSize={12}. {13}"), state.Status, Format(state.CurrentViewScale), Format(state.AppliedViewScale), Format(state.MinViewScale), Format(state.MaxViewScale), state.CameraAvailable, state.CameraControllerStatus, state.BackgroundCompensationStatus, state.FogCompensationStatus, state.ScannerRefreshStatus, state.LifecycleRestoreStatus, Format(state.VanillaOrthographicSize), Format(state.AppliedOrthographicSize), state.LastMessage);
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)

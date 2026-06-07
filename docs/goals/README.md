@@ -32,6 +32,22 @@ docs/goals/
 - Store the short `/goal` text beside the goal file as `.goal.txt`.
 - Completed, blocked, or superseded goal files remain in place as history. New facts go into a new goal file or a review record.
 
+## API Rebuild Handoffs
+
+API rebuild goals must also follow `docs/workflows/codex-api-rebuild.md`.
+
+Each API rebuild goal file must state:
+
+- the exact API/domain being rebuilt;
+- the prior native-owner review records it relies on;
+- the native responsibility functions or state holders already known;
+- the native-owner questions that must be answered before code changes;
+- the intended API status result: `stable open`, `experimental open`, `debug-only`, `registry-only`, `DTMAPI-internal`, or `blocked-rebuild`;
+- the GameBridge boundary and any public API matrix/doc changes required;
+- game smoke and lifecycle evidence required before completion.
+
+Do not use a broad "fix all APIs" implementation goal. Split high-risk domains into separate handoffs.
+
 ## Migrated Historical Goal
 
 - `docs/goals/2026/20260606-0001-031-regression-new-content.md`

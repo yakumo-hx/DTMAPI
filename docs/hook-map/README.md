@@ -729,19 +729,19 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 ## Hook: Camera.ZoomApi
 
 - Status: experimental
-- Public surface: `ICameraZoomApi`, `CameraZoomOptions`, `CameraZoomRegisterResult`, `CameraZoomResult`, and `CameraZoomState`.
+- Public surface: `ICameraZoomApi`, `CameraZoomOptions`, `CameraZoomRegisterResult`, `CameraZoomResult`, `CameraZoomState`, and `GetSnapshot(string uniqueId)`.
 - Game build: 23465763 workshop
-- Game method/type: reflected `DolocAPI.mainCamera.orthographicSize`, with `UnityEngine.Camera.main` fallback.
-- Patch type: GameBridge runtime reflection over the world camera only; no raw Unity camera object or decompiled game type is exposed through the public API.
-- Why this point: Zoom needs to enlarge the world view while preserving UI scale, config UI, and input mapping. Orthographic size is the smallest useful camera-owned value observed for this behavior.
-- Failure behavior: registration may report pending while the main camera is unavailable; runtime refresh retries. `SaveLoaded` and `ReturnedToTitle` reset registered zoom state to vanilla view. `GetState` returns a snapshot copy so callers cannot mutate internal state.
+- Game method/type: `DolocAPI.mainCamera.orthographicSize`, `DolocAPI.cameraController.RefreshResolution()` / `SetPosition(Vector2)`, `DolocAPI.envBackgroundEx` / `BackgroundRenderer`, `DolocAPI.EnvCovariantController` depth-fog controllers, and `DolocAPI.SetEnvCamera(...)` lifecycle reset.
+- Patch type: GameBridge runtime reflection plus Harmony Postfix on `DolocAPI.SetEnvCamera`; no raw Unity camera object or decompiled game type is exposed through the public API.
+- Why this point: large-view zoom must change the gameplay camera without scaling UI, then compensate the native background/fog owners that otherwise remain sized for the vanilla camera. `SetEnvCamera` is the room/map transition boundary that can overwrite camera/background/fog state, so the zoom runtime reapplies or restores from that owner path.
+- Failure behavior: registration may report pending while the main camera is unavailable; runtime refresh retries. Applying scale above 1x rolls back if the camera-controller/background/fog compensation path cannot be completed. `SaveLoaded`, `ReturnedToTitle`, explicit reset, and environment-camera transitions restore or reapply tracked camera/background/fog state. `GetState`/`GetSnapshot` return copies so callers cannot mutate internal state, and UI scale remains reported as unchanged.
 - Mods/tests depending on it: `DTMAPI.ZoomMod`, smoke harness `-AutoExerciseZoom`.
 - Evidence:
-  - Build: DTMAPI 0.3.0 Release build/unit passed 2026-06-06 with 0 errors.
+  - Build: DTMAPI 0.4.2 Release build/unit passed 2026-06-07 with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260606-134042` logs `Camera.ZoomApi = verified`, `Camera orthographic size 16.875->67.5 viewScale=4 reason=smoke max-view`, `Camera orthographic size 67.5->16.875 viewScale=1 reason=smoke restore-vanilla`, and `Smoke exercise Zoom OK`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-134042`; result has `Zoom=true`, `SaveLoaded=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, and `ForcedClose=false`.
-- Regression cases: ZOOM-030-F
+  - Log line: `GAME-SMOKE/20260607-072228` logs `Camera.ZoomEnvironmentLifecycle = experimental`, `Camera.ZoomApi = verified`, `Camera orthographic size 16.875->67.5 viewScale=4 owner=DTMAPI.ZoomMod cameraController=refreshed=True, positioned=True, positioned background=compensated-background=4 fog=compensated-depth-fog=4; compensated-building-depth-fog=4 scanner=refreshed lifecycle=not-needed uiScale=unchanged reason=smoke max-view`, and `Smoke.Zoom = verified`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260607-072228`; Zoom screenshot set `DTMAPI-evidence/ZOOM-042/20260607-072308` contains `zoom-before.png`, `zoom-4x.png`, `zoom-reset.png`, and `summary.txt`; `zoom-4x.png` visually shows the 4x farm view without a small framed background. Result has `Zoom=true`, `SaveLoaded=true`, `HookProbe=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, and `ForcedClose=false`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
+- Regression cases: ZOOM-030-F, ZOOM-042-API-REBUILD
 
 ## Hook: Inventory.ChestLocatorEnhancer
 

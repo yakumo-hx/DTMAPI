@@ -166,6 +166,7 @@ namespace DTMAPI.Abstractions
         CameraZoomResult StepViewScale(IManifest owner, int direction, string reason);
         CameraZoomResult ResetViewScale(IManifest owner, string reason);
         CameraZoomState GetState(string uniqueId);
+        CameraZoomState GetSnapshot(string uniqueId);
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
@@ -786,6 +787,10 @@ namespace DTMAPI.Abstractions
         public double MinViewScale { get; set; } = 1d;
         public double MaxViewScale { get; set; } = 4d;
         public double Step { get; set; } = 0.25d;
+        public bool RefreshCameraController { get; set; } = true;
+        public bool CompensateBackground { get; set; } = true;
+        public bool CompensateDepthFog { get; set; } = true;
+        public bool RefreshScanners { get; set; } = true;
         public bool VerboseLogging { get; set; }
     }
 
@@ -796,6 +801,14 @@ namespace DTMAPI.Abstractions
         public double MinViewScale { get; set; }
         public double MaxViewScale { get; set; }
         public double CurrentViewScale { get; set; }
+        public double AppliedViewScale { get; set; }
+        public string ActiveOwnerId { get; set; } = string.Empty;
+        public string CameraControllerStatus { get; set; } = string.Empty;
+        public string BackgroundCompensationStatus { get; set; } = string.Empty;
+        public string FogCompensationStatus { get; set; } = string.Empty;
+        public string ScannerRefreshStatus { get; set; } = string.Empty;
+        public string LifecycleRestoreStatus { get; set; } = string.Empty;
+        public string UiScaleStatus { get; set; } = string.Empty;
         public string FailureReason { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
     }
@@ -805,10 +818,19 @@ namespace DTMAPI.Abstractions
         public bool Success { get; set; }
         public string OwnerId { get; set; } = string.Empty;
         public double RequestedViewScale { get; set; }
+        public double ClampedViewScale { get; set; }
         public double BeforeViewScale { get; set; }
         public double AfterViewScale { get; set; }
+        public double AppliedViewScale { get; set; }
         public double VanillaOrthographicSize { get; set; }
         public double AppliedOrthographicSize { get; set; }
+        public string ActiveOwnerId { get; set; } = string.Empty;
+        public string CameraControllerStatus { get; set; } = string.Empty;
+        public string BackgroundCompensationStatus { get; set; } = string.Empty;
+        public string FogCompensationStatus { get; set; } = string.Empty;
+        public string ScannerRefreshStatus { get; set; } = string.Empty;
+        public string LifecycleRestoreStatus { get; set; } = string.Empty;
+        public string UiScaleStatus { get; set; } = string.Empty;
         public string FailureReason { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
     }
@@ -821,10 +843,27 @@ namespace DTMAPI.Abstractions
         public double MinViewScale { get; set; }
         public double MaxViewScale { get; set; }
         public double Step { get; set; }
+        public double RequestedViewScale { get; set; } = 1d;
+        public double ClampedViewScale { get; set; } = 1d;
         public double CurrentViewScale { get; set; } = 1d;
+        public double AppliedViewScale { get; set; } = 1d;
+        public string ActiveOwnerId { get; set; } = string.Empty;
         public double VanillaOrthographicSize { get; set; }
         public double AppliedOrthographicSize { get; set; }
         public bool CameraAvailable { get; set; }
+        public bool RefreshCameraController { get; set; } = true;
+        public bool CompensateBackground { get; set; } = true;
+        public bool CompensateDepthFog { get; set; } = true;
+        public bool RefreshScanners { get; set; } = true;
+        public string CameraControllerStatus { get; set; } = string.Empty;
+        public string BackgroundCompensationStatus { get; set; } = string.Empty;
+        public string FogCompensationStatus { get; set; } = string.Empty;
+        public string ScannerRefreshStatus { get; set; } = string.Empty;
+        public string LifecycleRestoreStatus { get; set; } = string.Empty;
+        public string UiScaleStatus { get; set; } = string.Empty;
+        public string CurrentRoomId { get; set; } = string.Empty;
+        public string CurrentRoomTitle { get; set; } = string.Empty;
+        public bool CurrentRoomShowsBackground { get; set; }
         public string Status { get; set; } = string.Empty;
         public string LastMessage { get; set; } = string.Empty;
     }

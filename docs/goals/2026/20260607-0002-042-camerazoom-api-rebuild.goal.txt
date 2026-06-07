@@ -1,0 +1,43 @@
+/goal
+目标：按新的 API 重做流程，把 DTMAPI CameraZoom 从“只改 orthographicSize 的实验功能”重做为有 native owner 审查、GameBridge 背景/雾层/生命周期补偿、可由 ZoomMod 验证的可信实验 API。详细需求、问题、验收标准以 docs/goals/2026/20260607-0002-042-camerazoom-api-rebuild.md 的任务列表为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/workflows/codex-api-rebuild.md
+docs/workflows/codex-feedback-to-goal.md
+docs/goals/README.md
+docs/goals/2026/20260607-0002-042-camerazoom-api-rebuild.md
+docs/goals/2026/20260607-0002-042-camerazoom-api-rebuild.goal.txt
+docs/reviews/README.md
+docs/reviews/api/2026/20260607-0008-native-owner-special-audits-index.md
+docs/reviews/api/2026/20260607-0008-native-owner-special-audits/02-camera-zoom.md
+docs/reviews/api/2026/20260607-0010-native-owner-remaining-api-audit-index.md
+docs/reviews/api/2026/20260607-0010-native-owner-remaining-api-audit/07-all-api-risk-closure-table.md
+docs/reviews/manual-qa/2026/20260607-0001-panorama-background-zoom-note.md
+docs/updates/INDEX.md
+docs/updates/2026/20260607-0011-api-rebuild-workflow.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+references/README.md
+references/doloc-town/research-notes/research-DolocPlus-deep-dive-20260607.md
+references/doloc-town/research-notes/research-DolocPlus-function-map-20260607.md
+references/doloc-town/reverse/builds/23465763_workshop_38581E
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；先做本轮 CameraZoom 的 native owner 方法体审查；未找到 camera/background/fog/room 状态持有者前，不得通过 ZoomMod 层补丁冒充 API 重做完成；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本固定为 0.4.2。`docs/goals/2026/20260607-0001-041-ui-save-mine-animal-refactor.md` 已按用户说明归档为手测记录，不是 active implementation blocker；若当前受控版本仍是 0.4.0，允许本轮直接进入 0.4.2 API 重做。若当前代码已经是 0.4.2，不要再升版本。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+
+任务 A：Baseline、版本守卫、CameraZoom API 状态矫正
+任务 B：Camera/background/fog/room native owner 方法体审查
+任务 C：重设计 CameraZoom experimental API contract
+任务 D：重做 GameBridge camera/panorama runtime
+任务 E：最小更新现有 ZoomMod 作为 API consumer
+任务 F：第三存档验证、截图/日志/退出证据与文档收尾
+
+完成标准：
+只有当 docs/goals/2026/20260607-0002-042-camerazoom-api-rebuild.md 中的强制任务全部完成，CameraZoom 同时接到 camera、背景/雾层/生命周期 owner 路径，并在第三存档证明 4x 大视野不再出现农场背景小框，才把 goal 标记 complete。若 native owner 找不到、版本守卫阻塞、或最终只改了 orthographicSize，保持未完成并报告 blocker、日志、已验证事实和下一步。
