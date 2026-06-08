@@ -740,8 +740,8 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Evidence:
   - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2 required.
-  - Latest log line: `GAME-SMOKE/20260609-015803` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
-  - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-015803`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-015844`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-015841.zip`.
+  - Latest log line: `GAME-SMOKE/20260609-030107` on merged `Refactor` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
+  - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-030107`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-030147`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-030144.zip`.
   - Log line: `GAME-SMOKE/20260608-150914` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260608-150914`; camera screenshots and summary under `D:\Steam\steamapps\common\Doloc Town\DTMAPI\evidence\CAMERA-PLAYABLE\20260608-150952`.
 - Regression cases: CAMERA-PLAYABLE, ZOOM-030-F, ZOOM-042-API-REBUILD
@@ -760,8 +760,8 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Evidence:
   - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
   - Save: n/a for compatibility wrapper by itself; `CAMERA-PLAYABLE` smoke validates the real playable path.
-  - Log line: `GAME-SMOKE/20260609-015803` includes `Camera.ZoomApi = obsolete-compatibility`.
-  - Screenshot/report: use `Camera.ViewApi` evidence from `GAME-SMOKE/20260609-015803` instead.
+  - Log line: `GAME-SMOKE/20260609-030107` includes `Camera.ZoomApi = obsolete-compatibility`.
+  - Screenshot/report: use `Camera.ViewApi` evidence from `GAME-SMOKE/20260609-030107` instead.
 - Regression cases: CAMERA-PLAYABLE
 
 ## Hook: Inventory.ChestLocatorEnhancer

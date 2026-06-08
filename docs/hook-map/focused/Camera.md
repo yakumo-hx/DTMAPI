@@ -43,21 +43,22 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Release build/test completed with 0 warnings and 0 errors.
   - `DTMAPI.UnitTests: OK`.
 - Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -IncludeHookProbe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
-  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260609-015803`.
+  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260609-030107` on `Refactor` after merging `codex/refactor-camera-feature`.
   - `result.json`: `RunStatus=Passed`, `StartupLog=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, `Zoom=Passed`, `GameLaunched=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `ForcedClose=Passed`.
   - HookProbe log: `HookProbe GameLaunched OK` and `HookProbe SaveLoaded OK slot=2 isNewGame=False`.
-  - Camera summary: `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-015844/summary.txt`.
-  - 4x dynamic: 30s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=67.5-67.5`, active owner `DTMAPI.ZoomMod`.
-  - 2x dynamic fallback: 30.003s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=33.75-33.75`, active owner `DTMAPI.CameraViewCompetingSmoke`.
+  - Camera summary: `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-030147/summary.txt`.
+  - 4x dynamic: 30.018s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=67.5-67.5`, active owner `DTMAPI.ZoomMod`.
+  - 2x dynamic fallback: 30.01s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=33.75-33.75`, active owner `DTMAPI.CameraViewCompetingSmoke`.
   - Reset: lower-priority lease release restored vanilla `1x`.
   - Boundary evidence: summary and logs retain `nativeRefresh=not-called-playable` and `uiScale=unchanged`.
-  - Report zip: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-015841.zip`.
+  - Report zip: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-030144.zip`.
 
 ## Related Records
 
 - `docs/updates/2026/20260608-0020-camera-view-lease-rebuild.md`
 - `docs/updates/2026/20260608-0026-camera-playable-dynamic-smoke.md`
 - `docs/updates/2026/20260609-0004-camera-feature-split.md`
+- `docs/updates/2026/20260609-0005-camera-feature-merge-refactor.md`
 - `docs/debug/regressions/smoke-matrix.md` row `CAMERA-PLAYABLE`
 - `docs/api/public-api-matrix.md` Camera rows
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
