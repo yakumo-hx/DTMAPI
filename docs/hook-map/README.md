@@ -726,22 +726,43 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-051653`; process check says no `DolocTown.exe`.
 - Regression cases: MANUALQA-029-README, SAVE-001, OFFICIAL-001
 
-## Hook: Camera.ZoomApi
+## Hook: Camera.ViewApi
 
 - Status: experimental
+- Public surface: `ICameraViewApi`, `ICameraViewLease`, `CameraViewRequest`, `CameraViewResult`, `CameraViewState`, and `GetSnapshot(string uniqueId)`.
+- Game build: 23465763 workshop
+- Game method/type: `DolocAPI.mainCamera.orthographicSize`; `DolocAPI.SetEnvCamera(...)` is observed only as a lifecycle boundary where DTMAPI reapplies the active playable-view orthographic size.
+- Patch type: GameBridge runtime reflection plus Harmony Postfix on `DolocAPI.SetEnvCamera`; no raw Unity camera object or decompiled game type is exposed through the public API.
+- Implementation owner: `CameraFeature` registers `ICameraViewApi` through `CameraViewService`, registers diagnostics through `CameraDiagnosticsService`, and receives lifecycle notifications from `DolocTownHookCallbacks`; `DolocTownExperimentalBridgeApi` no longer implements this camera API.
+- Why this point: playable zoom should keep the native camera follow/range semantics intact. DTMAPI only changes the gameplay camera orthographic size and lets the native `CameraController.UpdateCamPosition(...)` path continue following the player. The old `CameraController.RefreshResolution()` / `SetPosition(...)` / `RefreshScanner()` / background/fog compensation path is intentionally not used for playable zoom because manual QA showed it mixes panorama semantics into normal play.
+- Failure behavior: leases may report pending while the main camera is unavailable; runtime refresh retries the orthographic write. DTMAPI arbitrates active leases by highest priority, then latest update order. Releasing the active lease falls back to the next active lease or restores vanilla `1x`. `SaveLoaded`, `ReturnedToTitle`, explicit release/reset, and environment-camera transitions restore or reapply only the orthographic-size playable-view state. UI scale remains unchanged.
+- Mods/tests depending on it: `DTMAPI.ZoomMod`, smoke harness `-AutoExerciseZoom` / `Smoke.CameraPlayable`.
+- Evidence:
+  - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2 required.
+  - Latest log line: `GAME-SMOKE/20260609-015803` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
+  - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-015803`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-015844`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-015841.zip`.
+  - Log line: `GAME-SMOKE/20260608-150914` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260608-150914`; camera screenshots and summary under `D:\Steam\steamapps\common\Doloc Town\DTMAPI\evidence\CAMERA-PLAYABLE\20260608-150952`.
+- Regression cases: CAMERA-PLAYABLE, ZOOM-030-F, ZOOM-042-API-REBUILD
+
+## Hook: Camera.ZoomApi
+
+- Status: obsolete-compatibility
 - Public surface: `ICameraZoomApi`, `CameraZoomOptions`, `CameraZoomRegisterResult`, `CameraZoomResult`, `CameraZoomState`, and `GetSnapshot(string uniqueId)`.
 - Game build: 23465763 workshop
-- Game method/type: `DolocAPI.mainCamera.orthographicSize`, `DolocAPI.cameraController.RefreshResolution()` / `SetPosition(Vector2)`, `DolocAPI.envBackgroundEx` / `BackgroundRenderer`, `DolocAPI.EnvCovariantController` depth-fog controllers, and `DolocAPI.SetEnvCamera(...)` lifecycle reset.
-- Patch type: GameBridge runtime reflection plus Harmony Postfix on `DolocAPI.SetEnvCamera`; no raw Unity camera object or decompiled game type is exposed through the public API.
-- Why this point: large-view zoom must change the gameplay camera without scaling UI, then compensate the native background/fog owners that otherwise remain sized for the vanilla camera. `SetEnvCamera` is the room/map transition boundary that can overwrite camera/background/fog state, so the zoom runtime reapplies or restores from that owner path.
-- Failure behavior: registration may report pending while the main camera is unavailable; runtime refresh retries. Applying scale above 1x rolls back if the camera-controller/background/fog compensation path cannot be completed. `SaveLoaded`, `ReturnedToTitle`, explicit reset, and environment-camera transitions restore or reapply tracked camera/background/fog state. `GetState`/`GetSnapshot` return copies so callers cannot mutate internal state, and UI scale remains reported as unchanged.
-- Mods/tests depending on it: `DTMAPI.ZoomMod`, smoke harness `-AutoExerciseZoom`.
+- Game method/type: compatibility wrapper over `ICameraViewApi`; no direct CameraController/background/fog/scanner owner path.
+- Patch type: API redirect only.
+- Implementation owner: `CameraFeature` registers `ICameraZoomApi` through `CameraZoomCompatibilityService`; `DolocTownExperimentalBridgeApi` no longer implements this obsolete compatibility API.
+- Why this point: existing migrated mods can continue compiling while moving to lease-based playable camera view. New code should use `ICameraViewApi`.
+- Failure behavior: calls are redirected to a per-owner compatibility lease. Obsolete `CameraZoomOptions.RefreshCameraController`, `CompensateBackground`, `CompensateDepthFog`, and `RefreshScanners` are ignored for playable zoom.
+- Mods/tests depending on it: legacy callers only.
 - Evidence:
-  - Build: DTMAPI 0.4.2 Release build/unit passed 2026-06-07 with 0 warnings and 0 errors.
-  - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260607-072228` logs `Camera.ZoomEnvironmentLifecycle = experimental`, `Camera.ZoomApi = verified`, `Camera orthographic size 16.875->67.5 viewScale=4 owner=DTMAPI.ZoomMod cameraController=refreshed=True, positioned=True, positioned background=compensated-background=4 fog=compensated-depth-fog=4; compensated-building-depth-fog=4 scanner=refreshed lifecycle=not-needed uiScale=unchanged reason=smoke max-view`, and `Smoke.Zoom = verified`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260607-072228`; Zoom screenshot set `DTMAPI-evidence/ZOOM-042/20260607-072308` contains `zoom-before.png`, `zoom-4x.png`, `zoom-reset.png`, and `summary.txt`; `zoom-4x.png` visually shows the 4x farm view without a small framed background. Result has `Zoom=true`, `SaveLoaded=true`, `HookProbe=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, and `ForcedClose=false`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
-- Regression cases: ZOOM-030-F, ZOOM-042-API-REBUILD
+  - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
+  - Save: n/a for compatibility wrapper by itself; `CAMERA-PLAYABLE` smoke validates the real playable path.
+  - Log line: `GAME-SMOKE/20260609-015803` includes `Camera.ZoomApi = obsolete-compatibility`.
+  - Screenshot/report: use `Camera.ViewApi` evidence from `GAME-SMOKE/20260609-015803` instead.
+- Regression cases: CAMERA-PLAYABLE
 
 ## Hook: Inventory.ChestLocatorEnhancer
 

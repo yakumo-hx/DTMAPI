@@ -21,6 +21,11 @@ namespace DTMAPI.Abstractions
         void AddKeybindOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue);
         void AddButton(IManifest mod, Func<string> name, Func<string> tooltip, Action onPressed);
         void SetDisplayName(IManifest mod, Func<string> name);
+        IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null);
+    }
+
+    internal interface IConfigMenuRuntime
+    {
         IReadOnlyList<IConfigMenuPage> GetPages();
         IConfigMenuPage? GetPage(string uniqueId);
         void BeginEditing(string uniqueId);
@@ -29,6 +34,7 @@ namespace DTMAPI.Abstractions
         void Cancel(string uniqueId);
         void SetPageLock(string uniqueId, bool locked, string reason);
         IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null);
+        IDisposable? PreviewPendingValues(IConfigMenuPage page);
     }
 
     public interface IConfigMenuPage
@@ -41,14 +47,9 @@ namespace DTMAPI.Abstractions
         bool HasPendingChanges { get; }
         bool IsLocked { get; }
         string LockReason { get; }
-        void Reset();
-        void Save();
-        void Cancel();
-        void BeginEditing();
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
-    public interface IConfigMenuPendingPreview
+    internal interface IConfigMenuPendingPreview
     {
         IDisposable PreviewPendingValues();
     }

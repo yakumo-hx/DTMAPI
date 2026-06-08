@@ -1,10 +1,18 @@
-# DTMAPI 0.4.0 Stable Custom Entity APIs
+# DTMAPI 0.4.0 Custom Entity Stable-Candidate Contracts
 
-Status: implemented contract and registry; native runtime creation adapters are intentionally blocked until verified.
+Status:
 
-## Stable Surfaces
+- `StableCandidate` for definition and registry contracts.
+- `Experimental (blocked)` for native runtime creation.
 
-DTMAPI 0.4.0 adds four stable author-facing APIs in `DTMAPI.Abstractions`:
+This file name is historical. The current stability contract is registry-first:
+ordinary mods may use the definition, validation, query, snapshot, and status
+surfaces as candidate-stable contracts, but must not depend on runtime creation
+verbs until native GameBridge adapters are proven in game.
+
+## Stable-Candidate Surfaces
+
+DTMAPI 0.4.0 adds four author-facing APIs in `DTMAPI.Abstractions`:
 
 - `ICustomAnimalApi`
 - `ICustomMonsterApi`
@@ -12,6 +20,12 @@ DTMAPI 0.4.0 adds four stable author-facing APIs in `DTMAPI.Abstractions`:
 - `ICustomDroneApi`
 
 The contracts use stable DTMAPI DTOs and handles only. They do not expose raw Doloc Town, Unity, Harmony, BepInEx, or decompiled types.
+
+These APIs are `StableCandidate` for definition and registry work. They are not
+`Stable` until at least two real mods use them successfully, game evidence
+covers the relevant paths, visual/UI behavior is manually reviewed when
+applicable, and the regression matrix records the main success and failure
+paths.
 
 ## Shared Contract Rules
 
@@ -25,6 +39,8 @@ The contracts use stable DTMAPI DTOs and handles only. They do not expose raw Do
 
 ## Current Runtime Creation State
 
+Runtime creation is `Experimental (blocked)`.
+
 The 0.4.0 registry is usable for registration, validation, querying, snapshots, status pages, and future UI. Native creation requests currently return:
 
 ```text
@@ -32,7 +48,12 @@ FailureReason = runtime-creation-blocked
 RuntimeStatus = RuntimeCreationBlocked
 ```
 
-This is deliberate. The GameBridge has identified native adaptation paths, but creating live custom entities requires verified adapters for native proto/table records, scene assets, save data, AI/update loops, collisions, equipment, and cleanup. Until those adapters are proven in game, DTMAPI exposes a stable configured-state path rather than creating unsafe native objects.
+This is deliberate. The GameBridge has identified native adaptation paths, but creating live custom entities requires verified adapters for native proto/table records, scene assets, save data, AI/update loops, collisions, equipment, and cleanup. Until those adapters are proven in game, DTMAPI exposes a registry configured-state path rather than creating unsafe native objects.
+
+Ordinary mods must not depend on animal or monster `RequestSpawn`, attack
+`SpawnProjectile` or `ExecuteAttack`, drone `RequestSummon`, `Equip`, or
+`SetMode`, native handles, active runtime snapshots, or save restoration for
+live custom entities.
 
 ## Animal Coverage
 
@@ -103,3 +124,6 @@ Native research points are `Drone`, `DroneController`, `DroneWeapon`, `DroneWeap
 - Release build and unit/contract tests passed on 2026-06-06.
 - Unit tests cover invalid IDs, duplicate IDs, four-family registration, registry lookup, lifecycle listener error isolation, snapshots, `runtime-creation-blocked` request results, save-boundary cleanup, and owner cleanup.
 - Third-save game smoke `GAME-SMOKE/20260606-191219` uses the internal `DTMAPI.CustomEntityApiSmokeHarness` owner. It registers all four families, verifies invalid/duplicate handling, checks snapshots/status, confirms `runtime-creation-blocked` request results, removes the smoke owner with `cleanupRemoved=5`, and exits without creating a player-facing mod or leaving `DolocTown.exe`.
+- This evidence supports registry and blocked-runtime behavior only. It does not
+  prove native animal, monster, projectile, attack, or drone creation, and it
+  does not promote the APIs to `Stable`.

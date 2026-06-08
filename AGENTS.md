@@ -1,6 +1,6 @@
 # DTMAPI Agent Rules
 
-This workspace is a clean DTMAPI rebuild. Do not copy or imitate the old DLKsmapi implementation from `E:\Python_project\DLK\src`, `packages`, `archive`, or `tmp`.
+This workspace is a clean DTMAPI rebuild. Do not copy or imitate the old DLKsmapi implementation from any private predecessor workspace, package cache, archive, or temp directory.
 
 ## Required Context
 

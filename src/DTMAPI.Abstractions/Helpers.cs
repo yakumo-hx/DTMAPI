@@ -44,7 +44,7 @@ namespace DTMAPI.Abstractions
         IManifest? Get(string uniqueId);
         IReadOnlyList<IManifest> GetAll();
         TApi? GetApi<TApi>(string uniqueId) where TApi : class;
-        void RegisterApi<TApi>(IManifest owner, TApi api) where TApi : class;
+        void RegisterApi<TApi>(TApi api) where TApi : class;
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]

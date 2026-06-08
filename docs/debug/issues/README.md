@@ -19,3 +19,6 @@ Current issues:
 - `ISSUE-004-steam-launch-stuck.md`
 - `ISSUE-005-20260603-manual-qa-024-regressions.md`
 - `ISSUE-006-20260604-critical-manual-qa-025.md`
+- `ISSUE-007-20260605-mine-yconsole-026.md`
+- `ISSUE-008-20260605-manual-qa-027-root-cause.md`
+- `ISSUE-009-20260608-camera-playable-dynamic-qa.md`

@@ -402,7 +402,11 @@ namespace DTMAPI.Core.Services
             down.Remove(button);
         }
 
-        public void ClearFrame() => pressed.Clear();
+        public void ClearFrame()
+        {
+            pressed.Clear();
+            suppressed.Clear();
+        }
         public bool IsDown(string button) => down.Contains(button);
         public bool WasPressed(string button) => pressed.Contains(button);
         public void Suppress(string button) => suppressed.Add(button);

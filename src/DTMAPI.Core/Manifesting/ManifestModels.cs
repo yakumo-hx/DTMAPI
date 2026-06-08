@@ -13,6 +13,7 @@ namespace DTMAPI.Core.Manifesting
         [DataMember(Name = "Description")] public string Description { get; set; } = string.Empty;
         [DataMember(Name = "UniqueID")] public string UniqueID { get; set; } = string.Empty;
         [DataMember(Name = "EntryDll")] public string EntryDll { get; set; } = string.Empty;
+        [DataMember(Name = "EntryType")] public string EntryType { get; set; } = string.Empty;
         [DataMember(Name = "MinimumDTMApiVersion")] public string MinimumDTMApiVersion { get; set; } = string.Empty;
         [DataMember(Name = "MinimumApiVersion")] public string MinimumApiVersionAlias { get; set; } = string.Empty;
         [DataMember(Name = "MinimumGameVersion")] public string MinimumGameVersion { get; set; } = string.Empty;
@@ -31,6 +32,7 @@ namespace DTMAPI.Core.Manifesting
             Description = Description ?? string.Empty;
             UniqueID = UniqueID ?? string.Empty;
             EntryDll = EntryDll ?? string.Empty;
+            EntryType = EntryType ?? string.Empty;
             MinimumDTMApiVersion = string.IsNullOrWhiteSpace(MinimumDTMApiVersion) ? MinimumApiVersionAlias ?? string.Empty : MinimumDTMApiVersion;
             MinimumGameVersion = MinimumGameVersion ?? string.Empty;
             Type = string.IsNullOrWhiteSpace(Type) ? "CodeMod" : Type;
@@ -44,14 +46,32 @@ namespace DTMAPI.Core.Manifesting
     [DataContract]
     public sealed class ManifestDependencyModel : IManifestDependency
     {
+        private bool required = true;
+        private bool requiredAssigned;
+
         [DataMember(Name = "UniqueID")] public string UniqueID { get; set; } = string.Empty;
         [DataMember(Name = "MinimumVersion")] public string MinimumVersion { get; set; } = string.Empty;
-        [DataMember(Name = "Required")] public bool Required { get; set; } = true;
+        [DataMember(Name = "Required")] private bool? RequiredJson { get; set; }
+        [DataMember(Name = "IsRequired")] private bool? IsRequiredJson { get; set; }
+
+        public bool Required
+        {
+            get => required;
+            set
+            {
+                required = value;
+                requiredAssigned = true;
+            }
+        }
 
         public void Normalize()
         {
             UniqueID = UniqueID ?? string.Empty;
             MinimumVersion = MinimumVersion ?? string.Empty;
+            if (RequiredJson.HasValue || IsRequiredJson.HasValue)
+                required = (RequiredJson ?? true) && (IsRequiredJson ?? true);
+            else if (!requiredAssigned)
+                required = true;
         }
     }
 

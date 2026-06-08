@@ -8,7 +8,8 @@ namespace DTMAPI.Abstractions
         Experimental,
         Verified,
         Stable,
-        Disabled
+        Disabled,
+        StableCandidate
     }
 
     [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]

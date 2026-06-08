@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
@@ -19,12 +21,24 @@ namespace DTMAPI.UnitTests
                 RuntimeStartsWithEmptyMods();
                 RuntimeApiCanRegisterBeforeStart();
                 BrokenManifestDoesNotCrashDiscovery();
+                ManifestDependencyIsRequiredAliasSupportsOptionalDependencies();
+                DependencyVersionApiVersionAndCircularDependencyDiagnostics();
+                EntryDllMustRemainInsideModRoot();
+                EntryDllMustBeDllFile();
+                EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll();
+                MinimumGameVersionWithoutDetectedGameVersionLogsWarning();
+                HelperModRegistryBindsApiRegistrationToOwner();
+                HighFrequencyEventsDisableHandlersAfterConsecutiveFailures();
+                EventRemoveIsOwnerBound();
+                BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites();
+                OffThreadTimerFallbackUpdateDoesNotDispatchOrdinaryModUpdates();
                 ConfigMenuEditsSaveCancelAndDetectConflicts();
                 ConfigMenuPendingPreviewDrivesConditionalVisibility();
                 DisabledDiscoveredModLocksConfigPage();
                 OfficialLocalModPackagesRespectOfficialEnablement();
                 WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod();
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
+                Suppress_OneFrame_ClearsAfterUpdate();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
@@ -101,9 +115,340 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void ManifestDependencyIsRequiredAliasSupportsOptionalDependencies()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                string modDir = Path.Combine(dir, "Mods", "OptionalAlias");
+                Directory.CreateDirectory(modDir);
+                File.WriteAllText(
+                    Path.Combine(modDir, "manifest.json"),
+                    "{ \"Name\": \"Optional Alias\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalAlias\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Missing\", \"IsRequired\": false } ] }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.OptionalAlias"), "IsRequired=false alias should make a missing dependency optional.");
+                Assert(!snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.OptionalAlias" && e.Message.Contains("缺少必需依赖")), "Optional alias dependency must not be reported as required missing.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void DependencyVersionApiVersionAndCircularDependencyDiagnostics()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
+                WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
+                WriteManifest(dir, "NeedsFutureApi", "{ \"Name\": \"Needs Future API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"99.0.0\" }");
+                WriteManifest(dir, "CycleA", "{ \"Name\": \"Cycle A\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Required\": true } ] }");
+                WriteManifest(dir, "CycleB", "{ \"Name\": \"Cycle B\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Required\": true } ] }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Base"), "Base dependency should load.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsBase2"), "Required dependency version mismatch should block loading.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureApi"), "Future MinimumDTMApiVersion should block loading.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleA"), "CycleA should be blocked and must not load.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleB"), "CycleB should be blocked and must not load.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.NeedsBase2" && e.Message.Contains("依赖版本")), "Dependency version mismatch should be diagnosed.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.FutureApi" && e.Message.Contains("API 版本")), "MinimumDTMApiVersion mismatch should be diagnosed.");
+                Assert(snapshot.Errors.Any(e => e.Message.Contains("依赖循环") && e.Details.Contains("DTMAPI.Tests.CycleA") && e.Details.Contains("DTMAPI.Tests.CycleB")), "Circular dependencies should be diagnosed with the cycle path.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.CycleA" && e.Message.Contains("依赖循环阻止加载")), "CycleA should have an owner-specific blocked diagnostic.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.CycleB" && e.Message.Contains("依赖循环阻止加载")), "CycleB should have an owner-specific blocked diagnostic.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void EntryDllMustRemainInsideModRoot()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                WriteManifest(dir, "EscapingDll", "{ \"Name\": \"Escaping DLL\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.EscapingDll\", \"EntryDll\": \"../Escaping.dll\", \"Type\": \"CodeMod\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.EscapingDll"), "EntryDll escaping the mod root must not load.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.EscapingDll" && e.Message.Contains("不能逃出")), "Escaping EntryDll should have a path-safety diagnostic.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void EntryDllMustBeDllFile()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                WriteManifest(dir, "NotDll", "{ \"Name\": \"Not DLL\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NotDll\", \"EntryDll\": \"NotDll.txt\", \"Type\": \"CodeMod\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NotDll"), "EntryDll with a non-.dll extension must not load.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.NotDll" && e.Message.Contains(".dll")), "Non-.dll EntryDll should have a clear diagnostic.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                string assemblyPath = typeof(ApiOwnerProbeMod).Assembly.Location;
+                string assemblyName = Path.GetFileName(assemblyPath);
+                string selectedEntryType = typeof(ApiOwnerProbeMod).FullName ?? nameof(ApiOwnerProbeMod);
+
+                string ambiguousDir = Path.Combine(dir, "Mods", "AmbiguousEntry");
+                Directory.CreateDirectory(ambiguousDir);
+                File.Copy(assemblyPath, Path.Combine(ambiguousDir, assemblyName), overwrite: true);
+                File.WriteAllText(
+                    Path.Combine(ambiguousDir, "manifest.json"),
+                    "{ \"Name\": \"Ambiguous Entry\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.AmbiguousEntry\", \"EntryDll\": \"" + assemblyName + "\", \"Type\": \"CodeMod\" }");
+
+                string selectedDir = Path.Combine(dir, "Mods", "SelectedEntry");
+                Directory.CreateDirectory(selectedDir);
+                File.Copy(assemblyPath, Path.Combine(selectedDir, assemblyName), overwrite: true);
+                File.WriteAllText(
+                    Path.Combine(selectedDir, "manifest.json"),
+                    "{ \"Name\": \"Selected Entry\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.SelectedEntry\", \"EntryDll\": \"" + assemblyName + "\", \"EntryType\": \"" + selectedEntryType + "\", \"Type\": \"CodeMod\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(snapshot.DiscoveredMods.Single(m => m.Manifest.UniqueID == "DTMAPI.Tests.SelectedEntry").Manifest.EntryType == selectedEntryType, "Manifest should parse and preserve EntryType.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.AmbiguousEntry"), "DLLs with multiple DtmMod subclasses require EntryType.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.AmbiguousEntry" && e.Message.Contains("EntryType 缺失")), "Missing EntryType in an ambiguous DLL should be diagnosed.");
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.SelectedEntry"), "EntryType should select the requested DtmMod subclass.");
+                IModRegistry registry = GetModRegistry(runtime);
+                IUnitProbeApi? selectedApi = registry.GetApi<IUnitProbeApi>("DTMAPI.Tests.SelectedEntry");
+                Assert(selectedApi != null && selectedApi.Owner == "DTMAPI.Tests.SelectedEntry", "Selected EntryType should execute the chosen DtmMod Entry method.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void MinimumGameVersionWithoutDetectedGameVersionLogsWarning()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                WriteManifest(dir, "NeedsGameVersion", "{ \"Name\": \"Needs Game Version\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsGameVersion\", \"Type\": \"ContentPack\", \"MinimumGameVersion\": \"99.0.0\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsGameVersion"), "Missing game-version detection should warn but not block loading.");
+                string log = File.ReadAllText(runtime.Diagnostics.GetLatestLogPath());
+                Assert(log.Contains("[Warn]") && log.Contains("MinimumGameVersion") && log.Contains("cannot detect the game version"), "MinimumGameVersion should emit an explicit warning when game version cannot be detected.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void HelperModRegistryBindsApiRegistrationToOwner()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                string modDir = Path.Combine(dir, "Mods", "ApiOwner");
+                Directory.CreateDirectory(modDir);
+                string assemblyPath = typeof(ApiOwnerProbeMod).Assembly.Location;
+                string assemblyName = Path.GetFileName(assemblyPath);
+                File.Copy(assemblyPath, Path.Combine(modDir, assemblyName), overwrite: true);
+                File.WriteAllText(
+                    Path.Combine(modDir, "manifest.json"),
+                    "{ \"Name\": \"API Owner\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.ApiOwner\", \"EntryDll\": \"" + assemblyName + "\", \"EntryType\": \"" + (typeof(ApiOwnerProbeMod).FullName ?? nameof(ApiOwnerProbeMod)) + "\", \"Type\": \"CodeMod\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                IModRegistry registry = GetModRegistry(runtime);
+                IUnitProbeApi? ownedApi = registry.GetApi<IUnitProbeApi>("DTMAPI.Tests.ApiOwner");
+                Assert(ownedApi != null && ownedApi.Owner == "DTMAPI.Tests.ApiOwner", "Helper registry should register APIs under the helper's mod owner.");
+                Assert(registry.GetApi<IUnitProbeApi>("DTMAPI.Tests.SpoofedOwner") == null, "Helper registry should not let mods spoof another API owner.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void HighFrequencyEventsDisableHandlersAfterConsecutiveFailures()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                IEventsHelper events = CreateEventsProxy(runtime, "DTMAPI.Tests.ThrowingEvents");
+                int updateCalls = 0;
+                int secondCalls = 0;
+                events.GameLoop.UpdateTicked += (_, _) =>
+                {
+                    updateCalls++;
+                    throw new InvalidOperationException("update failure");
+                };
+                events.GameLoop.OneSecondUpdateTicked += (_, _) =>
+                {
+                    secondCalls++;
+                    throw new InvalidOperationException("second failure");
+                };
+
+                runtime.Start();
+                for (int i = 0; i < 5; i++)
+                    runtime.Update();
+                for (uint i = 0; i < 5; i++)
+                    DispatchOneSecondUpdateTicked(runtime, i);
+
+                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+                Assert(updateCalls == 3, "UpdateTicked handler should be disabled after three consecutive failures.");
+                Assert(secondCalls == 3, "OneSecondUpdateTicked handler should be disabled after three consecutive failures.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.ThrowingEvents" && e.Message.Contains("GameLoop.UpdateTicked") && e.Message.Contains("disabled")), "UpdateTicked circuit breaker should record a diagnostic.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.ThrowingEvents" && e.Message.Contains("GameLoop.OneSecondUpdateTicked") && e.Message.Contains("disabled")), "OneSecondUpdateTicked circuit breaker should record a diagnostic.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void EventRemoveIsOwnerBound()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                IEventsHelper ownerA = CreateEventsProxy(runtime, "DTMAPI.Tests.OwnerA");
+                IEventsHelper ownerB = CreateEventsProxy(runtime, "DTMAPI.Tests.OwnerB");
+                int updateCalls = 0;
+                EventHandler<UpdateTickedEventArgs> sharedHandler = (_, _) => updateCalls++;
+
+                ownerA.GameLoop.UpdateTicked += sharedHandler;
+                ownerB.GameLoop.UpdateTicked += sharedHandler;
+                ownerA.GameLoop.UpdateTicked -= sharedHandler;
+
+                runtime.Start();
+                runtime.Update();
+                Assert(updateCalls == 1, "Owner A removing a shared delegate must not remove Owner B's event subscription.");
+
+                ownerB.GameLoop.UpdateTicked -= sharedHandler;
+                runtime.Update();
+                Assert(updateCalls == 1, "Owner B removing its own delegate should remove the remaining subscription.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                IConfigHelper config = GetConfig(runtime);
+                IManifest manifest = new ManifestModel
+                {
+                    Name = "Bad Config",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.BadConfig"
+                };
+                string path = config.GetConfigPath(manifest);
+                Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+                File.WriteAllText(path, "{ this is not valid json");
+
+                SampleConfig restored = config.ReadConfig<SampleConfig>(manifest);
+                Assert(restored.Enabled && restored.Count == 7, "Bad config JSON should restore default config values.");
+                Assert(Directory.GetFiles(Path.GetDirectoryName(path) ?? ".", Path.GetFileName(path) + ".invalid-*.bak").Length == 1, "Bad config JSON should be backed up.");
+                Assert(runtime.CreateSnapshot().Errors.Any(e => e.Owner == manifest.UniqueID && e.Message.Contains("配置 JSON 损坏")), "Bad config JSON should be diagnosed.");
+
+                restored.Count = 11;
+                config.WriteConfig(manifest, restored);
+                Assert(config.ReadConfig<SampleConfig>(manifest).Count == 11, "Config writes should round-trip after recovery.");
+                Assert(Directory.GetFiles(Path.GetDirectoryName(path) ?? ".", "*.tmp").Length == 0, "Config writes should not leave temp files behind.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void OffThreadTimerFallbackUpdateDoesNotDispatchOrdinaryModUpdates()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                IEventsHelper events = CreateEventsProxy(runtime, "DTMAPI.Tests.TimerFallback");
+                int updates = 0;
+                events.GameLoop.UpdateTicked += (_, _) => updates++;
+                runtime.Start();
+
+                Exception? threadError = null;
+                var thread = new Thread(() =>
+                {
+                    try
+                    {
+                        runtime.Update();
+                    }
+                    catch (Exception ex)
+                    {
+                        threadError = ex;
+                    }
+                });
+                thread.Start();
+                thread.Join();
+                if (threadError != null)
+                    throw threadError;
+                Assert(updates == 0, "Off-thread TimerFallback update must not dispatch ordinary UpdateTicked callbacks.");
+
+                runtime.Update();
+                Assert(updates == 1, "Runtime-thread update should still dispatch ordinary UpdateTicked callbacks.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void ConfigMenuEditsSaveCancelAndDetectConflicts()
         {
             var menu = new ConfigMenuRegistry();
+            IConfigMenuRuntime menuRuntime = menu;
             IManifest manifest = new ManifestModel
             {
                 Name = "Menu Test",
@@ -136,40 +481,40 @@ namespace DTMAPI.UnitTests
             menu.AddKeybindOption(manifest, () => "Toggle", () => "", () => keybind, value => keybind = value);
             menu.AddKeybindOption(manifest, () => "Alternate", () => "", () => alternateKeybind, value => alternateKeybind = value);
 
-            IConfigMenuPage page = menu.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
-            page.BeginEditing();
+            IConfigMenuPage page = menuRuntime.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
+            menuRuntime.BeginEditing(manifest.UniqueID);
             Assert(page.Items[0].TrySetPendingValue("true", out _), "Bool option should accept true.");
             Assert(page.Items[1].TrySetPendingValue("3.25", out _), "Number option should accept numeric input.");
             Assert(page.Items[2].TrySetPendingValue("after", out _), "Text option should accept text input.");
             Assert(page.Items[3].TrySetPendingValue("Fast", out _), "Choice option should accept known choices.");
             Assert(page.HasPendingChanges, "Pending edits should be tracked.");
 
-            page.Cancel();
+            menuRuntime.Cancel(manifest.UniqueID);
             Assert(!enabled && multiplier == 1.0 && label == "before" && choice == "Safe", "Cancel should discard pending edits.");
 
-            page.BeginEditing();
+            menuRuntime.BeginEditing(manifest.UniqueID);
             page.Items[0].TrySetPendingValue("true", out _);
             page.Items[1].TrySetPendingValue("3.25", out _);
             page.Items[2].TrySetPendingValue("after", out _);
             page.Items[3].TrySetPendingValue("Fast", out _);
-            page.Save();
+            menuRuntime.Save(manifest.UniqueID);
             Assert(saved == 1, "Save callback should run.");
             Assert(enabled && Math.Abs(multiplier - 3.5) < 0.001 && label == "after" && choice == "Fast", "Save should apply pending values.");
 
-            page.Reset();
+            menuRuntime.Reset(manifest.UniqueID);
             Assert(reset == 1, "Reset callback should run.");
             Assert(page.HasPendingChanges, "Reset should remain pending until save.");
-            page.Cancel();
+            menuRuntime.Cancel(manifest.UniqueID);
             Assert(enabled && Math.Abs(multiplier - 3.5) < 0.001 && label == "after" && choice == "Fast", "Cancel after reset should restore committed values.");
 
-            page.BeginEditing();
+            menuRuntime.BeginEditing(manifest.UniqueID);
             Assert(page.Items[4].TrySetPendingValue("F9", out _), "Keybind option should accept captured keys.");
             string conflict = menu.GetKeybindConflicts(manifest.UniqueID).Single();
             Assert(conflict.StartsWith("按键冲突：F9", StringComparison.Ordinal), "Duplicate keybinds should be reported with Chinese-first conflict text.");
             bool conflictBlocked = false;
             try
             {
-                page.Save();
+                menuRuntime.Save(manifest.UniqueID);
             }
             catch (InvalidOperationException)
             {
@@ -181,6 +526,7 @@ namespace DTMAPI.UnitTests
         private static void ConfigMenuPendingPreviewDrivesConditionalVisibility()
         {
             var menu = new ConfigMenuRegistry();
+            IConfigMenuRuntime menuRuntime = menu;
             IManifest manifest = new ManifestModel
             {
                 Name = "Conditional Menu Test",
@@ -210,14 +556,14 @@ namespace DTMAPI.UnitTests
             Func<bool> customSelected = () => colorPreset.Equals("Custom", StringComparison.OrdinalIgnoreCase);
             menu.AddTextOption(manifest, () => "Hex", () => "", () => hex, value => hex = value, customSelected, customSelected);
 
-            IConfigMenuPage page = menu.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
-            page.BeginEditing();
+            IConfigMenuPage page = menuRuntime.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
+            menuRuntime.BeginEditing(manifest.UniqueID);
             Assert(page.Items.Count(item => item.Kind == "Text") == 0, "Non-custom color should hide the custom text input.");
             IConfigMenuItem colorItem = page.Items.Single(item => item.Kind == "ColorPreset");
             Assert(colorItem.TrySetPendingValue("Custom", out _), "Custom color preset should be selectable.");
             Assert(colorPreset == "Orange", "Pending edits should not permanently apply before save.");
 
-            using (((IConfigMenuPendingPreview)page).PreviewPendingValues())
+            using (menuRuntime.PreviewPendingValues(page) ?? throw new InvalidOperationException("Pending preview should be available."))
             {
                 Assert(colorPreset == "Custom", "Pending preview should temporarily expose the selected custom preset.");
                 IConfigMenuItem textItem = page.Items.Single(item => item.Kind == "Text");
@@ -239,6 +585,7 @@ namespace DTMAPI.UnitTests
             File.WriteAllText(Path.Combine(modDir, "dtmapi.disabled"), "disabled by official path");
 
             var menu = new ConfigMenuRegistry();
+            IConfigMenuRuntime menuRuntime = menu;
             IManifest manifest = new ManifestModel
             {
                 Name = "Disabled",
@@ -255,14 +602,14 @@ namespace DTMAPI.UnitTests
             var runtime = new DtmApiRuntime(new FakeHost(dir), menu);
             runtime.Start();
 
-            IConfigMenuPage page = menu.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Disabled page should exist.");
+            IConfigMenuPage page = menuRuntime.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Disabled page should exist.");
             Assert(page.IsLocked, "Disabled discovered mod should lock its config page.");
             Assert(page.LockReason.IndexOf("本地 DTMAPI 禁用标记", StringComparison.OrdinalIgnoreCase) >= 0, "Disabled lock should explain the local marker with Chinese-first text.");
 
-            page.BeginEditing();
+            menuRuntime.BeginEditing(manifest.UniqueID);
             Assert(page.Items[0].TrySetPendingValue("true", out _), "Locked page may stage text but must not apply it.");
-            AssertThrows(() => page.Save(), "Locked page save should be rejected.");
-            AssertThrows(() => page.Reset(), "Locked page reset should be rejected.");
+            AssertThrows(() => menuRuntime.Save(manifest.UniqueID), "Locked page save should be rejected.");
+            AssertThrows(() => menuRuntime.Reset(manifest.UniqueID), "Locked page reset should be rejected.");
             Assert(!enabled && saved == 0 && reset == 0, "Locked page actions must not mutate config.");
             }
             finally
@@ -335,7 +682,7 @@ namespace DTMAPI.UnitTests
             File.Copy(assemblyPath, Path.Combine(contentRoot, assemblyName), overwrite: true);
             File.WriteAllText(
                 Path.Combine(contentRoot, "manifest.json"),
-                "{ \"Name\": \"Hot Load Test\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.HotLoad\", \"EntryDll\": \"Content/DTMAPI/" + assemblyName + "\", \"Type\": \"CodeMod\" }");
+                "{ \"Name\": \"Hot Load Test\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.HotLoad\", \"EntryDll\": \"Content/DTMAPI/" + assemblyName + "\", \"EntryType\": \"" + (typeof(HotLoadProbeMod).FullName ?? nameof(HotLoadProbeMod)) + "\", \"Type\": \"CodeMod\" }");
 
             string? previousRoot = Environment.GetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT");
             try
@@ -344,6 +691,7 @@ namespace DTMAPI.UnitTests
                 WriteOfficialModInfos(persistentRoot, "Local.Yuuka_DTMAPI_HotLoad", false);
 
                 var menu = new ConfigMenuRegistry();
+                IConfigMenuRuntime menuRuntime = menu;
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir), menu);
                 runtime.Start();
                 Assert(!runtime.CreateSnapshot().LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.HotLoad"), "Disabled official package should not load at startup.");
@@ -353,7 +701,7 @@ namespace DTMAPI.UnitTests
                 RuntimeSnapshot loadedSnapshot = runtime.CreateSnapshot();
                 Assert(loadedSnapshot.LoadedMods.Count(m => m.Manifest.UniqueID == "DTMAPI.Tests.HotLoad") == 1, "Official reload should hot-load a newly enabled code mod once.");
                 Assert(ReadHotLoadEntryCount(gameDir) == 1, "Hot-loaded code mod Entry should run exactly once.");
-                IConfigMenuPage loadedPage = menu.GetPage("DTMAPI.Tests.HotLoad") ?? throw new InvalidOperationException("Hot-loaded mod should register a config page.");
+                IConfigMenuPage loadedPage = menuRuntime.GetPage("DTMAPI.Tests.HotLoad") ?? throw new InvalidOperationException("Hot-loaded mod should register a config page.");
                 Assert(!loadedPage.IsLocked, "Hot-loaded enabled page should be editable.");
 
                 runtime.NotifyWorkshopModListChanged();
@@ -364,7 +712,7 @@ namespace DTMAPI.UnitTests
                 runtime.NotifyWorkshopModListChanged();
                 RuntimeSnapshot disabledAfterLoad = runtime.CreateSnapshot();
                 Assert(disabledAfterLoad.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.HotLoad"), "Runtime should not attempt to unload a DLL after official disable.");
-                IConfigMenuPage lockedPage = menu.GetPage("DTMAPI.Tests.HotLoad") ?? throw new InvalidOperationException("Loaded disabled page should still exist.");
+                IConfigMenuPage lockedPage = menuRuntime.GetPage("DTMAPI.Tests.HotLoad") ?? throw new InvalidOperationException("Loaded disabled page should still exist.");
                 Assert(lockedPage.IsLocked, "Loaded disabled page should be locked until restart.");
                 Assert(lockedPage.LockReason.IndexOf("重启", StringComparison.OrdinalIgnoreCase) >= 0, "Loaded disabled page should explain restart is required with Chinese-first text.");
             }
@@ -428,6 +776,39 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void Suppress_OneFrame_ClearsAfterUpdate()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                IInputHelper input = GetInput(runtime);
+
+                runtime.Start();
+                runtime.UI.SetUiContext("Gameplay", canDrawOverlay: true, gameplayHotkeysAllowed: true, reason: "unit test");
+                input.RegisterButton("F10");
+                runtime.RecordInputPressed("F10");
+                input.Suppress("F10");
+
+                Assert(input.WasPressed("F10"), "Pressed input should be visible during the frame it is recorded.");
+                Assert(input.IsDown("F10"), "Pressed input should remain down until release.");
+                Assert(input.GetSuppressedButtons().Contains("F10", StringComparer.OrdinalIgnoreCase), "Suppressed input should be visible during the current frame.");
+
+                runtime.Update();
+                Assert(!input.WasPressed("F10"), "Runtime update should clear one-frame pressed input state.");
+                Assert(!input.GetSuppressedButtons().Contains("F10", StringComparer.OrdinalIgnoreCase), "Runtime update should clear one-frame suppressed input state.");
+                Assert(input.IsDown("F10"), "Clearing frame state should not release the input down-state.");
+
+                runtime.RecordInputReleased("F10");
+                Assert(!input.IsDown("F10"), "Released input should clear the down-state.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -438,10 +819,10 @@ namespace DTMAPI.UnitTests
             runtime.Start();
 
             IModRegistry registry = GetModRegistry(runtime);
-            Assert(registry.GetApi<ICustomAnimalApi>("DTMAPI") != null, "Stable custom animal API should be registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomMonsterApi>("DTMAPI") != null, "Stable custom monster API should be registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomAttackApi>("DTMAPI") != null, "Stable custom attack API should be registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomDroneApi>("DTMAPI") != null, "Stable custom drone API should be registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomAnimalApi>("DTMAPI") != null, "Custom animal registry API should remain registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomMonsterApi>("DTMAPI") != null, "Custom monster registry API should remain registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomAttackApi>("DTMAPI") != null, "Custom attack registry API should remain registered by the runtime manifest.");
+            Assert(registry.GetApi<ICustomDroneApi>("DTMAPI") != null, "Custom drone registry API should remain registered by the runtime manifest.");
 
             IManifest owner = new ManifestModel
             {
@@ -563,6 +944,13 @@ namespace DTMAPI.UnitTests
                 "{ \"modInfos\": { \"" + officialId + "\": { \"id\": \"" + officialId + "\", \"enabled\": " + (enabled ? "true" : "false") + ", \"priority\": -1, \"source\": \"Local\", \"title\": \"DTMAPI Test\" } } }");
         }
 
+        private static void WriteManifest(string gameDir, string folderName, string json)
+        {
+            string modDir = Path.Combine(gameDir, "Mods", folderName);
+            Directory.CreateDirectory(modDir);
+            File.WriteAllText(Path.Combine(modDir, "manifest.json"), json);
+        }
+
         private static int ReadHotLoadEntryCount(string gameDir)
         {
             string path = Path.Combine(gameDir, "DTMAPI", "config", "DTMAPI.Tests.HotLoad.hotload.txt");
@@ -620,12 +1008,32 @@ namespace DTMAPI.UnitTests
             return (IModRegistry)(registryProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime mod registry should exist."));
         }
 
+        private static IConfigHelper GetConfig(DtmApiRuntime runtime)
+        {
+            PropertyInfo? configProperty = typeof(DtmApiRuntime).GetProperty("Config", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (IConfigHelper)(configProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime config helper should exist."));
+        }
+
+        private static IInputHelper GetInput(DtmApiRuntime runtime)
+        {
+            PropertyInfo? inputProperty = typeof(DtmApiRuntime).GetProperty("Input", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (IInputHelper)(inputProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime input helper should exist."));
+        }
+
         private static IEventsHelper CreateEventsProxy(DtmApiRuntime runtime, string owner)
         {
             PropertyInfo? eventsProperty = typeof(DtmApiRuntime).GetProperty("Events", BindingFlags.Instance | BindingFlags.NonPublic);
             object events = eventsProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime events should exist.");
             MethodInfo createProxy = events.GetType().GetMethod("CreateProxy", BindingFlags.Instance | BindingFlags.Public) ?? throw new InvalidOperationException("CreateProxy should exist.");
             return (IEventsHelper)(createProxy.Invoke(events, new object[] { owner }) ?? throw new InvalidOperationException("CreateProxy returned null."));
+        }
+
+        private static void DispatchOneSecondUpdateTicked(DtmApiRuntime runtime, uint second)
+        {
+            PropertyInfo? eventsProperty = typeof(DtmApiRuntime).GetProperty("Events", BindingFlags.Instance | BindingFlags.NonPublic);
+            object events = eventsProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime events should exist.");
+            MethodInfo dispatch = events.GetType().GetMethod("DispatchOneSecondUpdateTicked", BindingFlags.Instance | BindingFlags.Public) ?? throw new InvalidOperationException("DispatchOneSecondUpdateTicked should exist.");
+            dispatch.Invoke(events, new object[] { second });
         }
 
         private sealed class FakeHost : IRuntimeHost
@@ -649,12 +1057,32 @@ namespace DTMAPI.UnitTests
             public void Configure(IManifest owner, ActionCompletionOptions options) { }
             public BridgeFeatureStatus GetStatus(string uniqueId) => new BridgeFeatureStatus("test", uniqueId);
         }
+
+        [DataContract]
+        private sealed class SampleConfig
+        {
+            [DataMember] public bool Enabled { get; set; } = true;
+            [DataMember] public int Count { get; set; } = 7;
+        }
+
+        public interface IUnitProbeApi
+        {
+            string Owner { get; }
+        }
+
+        public sealed class UnitProbeApi : IUnitProbeApi
+        {
+            public UnitProbeApi(string owner) => Owner = owner;
+            public string Owner { get; }
+        }
     }
 
     public sealed class HotLoadProbeMod : DtmMod
     {
         public override void Entry(IDtmHelper helper)
         {
+            helper.ModRegistry.RegisterApi<Program.IUnitProbeApi>(new Program.UnitProbeApi(helper.ModManifest.UniqueID));
+
             string configPath = helper.Config.GetConfigPath(helper.ModManifest);
             string dir = Path.GetDirectoryName(configPath) ?? string.Empty;
             Directory.CreateDirectory(dir);
@@ -668,6 +1096,14 @@ namespace DTMAPI.UnitTests
                 menu.Register(helper.ModManifest, () => { }, () => { });
                 menu.AddParagraph(helper.ModManifest, () => "Hot-load probe config page.");
             }
+        }
+    }
+
+    public sealed class ApiOwnerProbeMod : DtmMod
+    {
+        public override void Entry(IDtmHelper helper)
+        {
+            helper.ModRegistry.RegisterApi<Program.IUnitProbeApi>(new Program.UnitProbeApi(helper.ModManifest.UniqueID));
         }
     }
 }

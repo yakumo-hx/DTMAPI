@@ -19,7 +19,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame);
-            Bridge?.ExperimentalApi?.ResetCameraZoomForLifecycleBoundary("SaveLoaded");
+            Bridge?.ResetCameraForLifecycleBoundary("SaveLoaded");
             Runtime?.NotifySaveLoaded(isNewGame);
             Bridge?.MarkSaveLoadedForSmoke();
         }
@@ -40,13 +40,13 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle();
-            Bridge?.ExperimentalApi?.ResetCameraZoomForLifecycleBoundary("ReturnedToTitle");
+            Bridge?.ResetCameraForLifecycleBoundary("ReturnedToTitle");
             Runtime?.NotifyReturnedToTitle();
         }
 
         public static void DolocApiSetEnvCameraPostfix()
         {
-            Bridge?.ExperimentalApi?.NotifyCameraEnvironmentReset("DolocAPI.SetEnvCamera");
+            Bridge?.NotifyCameraEnvironmentReset("DolocAPI.SetEnvCamera");
         }
 
         public static void ReloadModsPostfix()

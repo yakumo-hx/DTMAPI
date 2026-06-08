@@ -1,6 +1,6 @@
 using DTMAPI.Abstractions;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace HookProbeMod
@@ -110,104 +110,13 @@ namespace HookProbeMod
             };
 
             foreach (string uniqueId in targets)
-                ExerciseConfigPage(helper, menu, uniqueId);
+                ProbeConfigRegistration(helper, menu, uniqueId);
         }
 
-        private void ExerciseConfigPage(IDtmHelper helper, IDtmConfigMenuApi menu, string uniqueId)
+        private void ProbeConfigRegistration(IDtmHelper helper, IDtmConfigMenuApi menu, string uniqueId)
         {
-            IConfigMenuPage? page = menu.GetPage(uniqueId);
-            if (page == null)
-            {
-                helper.Monitor.Log("HookProbe ConfigPage MISSING " + uniqueId, LogLevel.Warn);
-                return;
-            }
-            if (page.IsLocked)
-            {
-                helper.Monitor.Log("HookProbe ConfigPage LOCKED " + uniqueId + " reason=" + page.LockReason, LogLevel.Warn);
-                return;
-            }
-
-            string configPath = helper.Config.GetConfigPath(page.Manifest);
-            string original = File.Exists(configPath) ? File.ReadAllText(configPath) : string.Empty;
-            bool hadOriginal = File.Exists(configPath);
-            try
-            {
-                string kinds = string.Join(",", page.Items.Where(item => item.Kind != "Section" && item.Kind != "Paragraph").Select(item => item.Kind).Distinct().OrderBy(value => value));
-                helper.Monitor.Log("HookProbe ConfigPage Visible OK " + uniqueId + " kinds=" + kinds);
-
-                IConfigMenuItem? item = page.Items.FirstOrDefault(candidate => candidate.CanEdit && candidate.Kind != "Button" && candidate.Kind != "Section" && candidate.Kind != "Paragraph");
-                if (item == null)
-                {
-                    helper.Monitor.Log("HookProbe ConfigPage Editable MISSING " + uniqueId, LogLevel.Warn);
-                    return;
-                }
-
-                page.BeginEditing();
-                string beforeCancel = File.Exists(configPath) ? File.ReadAllText(configPath) : string.Empty;
-                if (!TrySetAlternateValue(item, out string cancelError))
-                {
-                    helper.Monitor.Log("HookProbe ConfigPage Edit MISSING " + uniqueId + " error=" + cancelError, LogLevel.Warn);
-                    return;
-                }
-                page.Cancel();
-                string afterCancel = File.Exists(configPath) ? File.ReadAllText(configPath) : string.Empty;
-                if (afterCancel == beforeCancel)
-                    helper.Monitor.Log("HookProbe ConfigPage CancelNoWrite OK " + uniqueId);
-                else
-                    helper.Monitor.Log("HookProbe ConfigPage CancelNoWrite MISMATCH " + uniqueId, LogLevel.Warn);
-
-                page.BeginEditing();
-                item = page.Items.FirstOrDefault(candidate => candidate.CanEdit && candidate.Kind != "Button" && candidate.Kind != "Section" && candidate.Kind != "Paragraph");
-                string saveError = string.Empty;
-                if (item == null || !TrySetAlternateValue(item, out saveError))
-                {
-                    helper.Monitor.Log("HookProbe ConfigPage SaveEdit MISSING " + uniqueId + " error=" + saveError, LogLevel.Warn);
-                    return;
-                }
-                page.Save();
-                string afterSave = File.Exists(configPath) ? File.ReadAllText(configPath) : string.Empty;
-                if (afterSave != beforeCancel)
-                    helper.Monitor.Log("HookProbe ConfigPage SaveWrite OK " + uniqueId);
-                else
-                    helper.Monitor.Log("HookProbe ConfigPage SaveWrite MISMATCH " + uniqueId, LogLevel.Warn);
-
-                page.Reset();
-                page.Save();
-                string afterReset = File.Exists(configPath) ? File.ReadAllText(configPath) : string.Empty;
-                if (afterReset != afterSave)
-                    helper.Monitor.Log("HookProbe ConfigPage ResetDefault OK " + uniqueId);
-                else
-                    helper.Monitor.Log("HookProbe ConfigPage ResetDefault MISMATCH " + uniqueId, LogLevel.Warn);
-            }
-            finally
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(configPath) ?? ".");
-                if (hadOriginal)
-                    File.WriteAllText(configPath, original);
-                else if (File.Exists(configPath))
-                    File.Delete(configPath);
-            }
-        }
-
-        private static bool TrySetAlternateValue(IConfigMenuItem item, out string error)
-        {
-            string alternate;
-            if (item.Kind.Equals("Bool", StringComparison.OrdinalIgnoreCase))
-                alternate = item.PendingValue.Equals("true", StringComparison.OrdinalIgnoreCase) ? "false" : "true";
-            else if (item.Kind.Equals("Number", StringComparison.OrdinalIgnoreCase))
-            {
-                double max = item.MaxValue ?? 10;
-                double min = item.MinValue ?? 0;
-                alternate = (max > 1 ? max : min).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            }
-            else if (item.Kind.Equals("Choice", StringComparison.OrdinalIgnoreCase))
-                alternate = item.AllowedValues.FirstOrDefault(value => !value.Equals(item.PendingValue, StringComparison.OrdinalIgnoreCase)) ?? item.PendingValue;
-            else if (item.Kind.Equals("Keybind", StringComparison.OrdinalIgnoreCase))
-                alternate = item.PendingValue.Equals("F12", StringComparison.OrdinalIgnoreCase) ? "F7" : "F12";
-            else
-                alternate = item.PendingValue + "-dtmapi-smoke";
-
-            return item.TrySetPendingValue(alternate, out error);
+            IReadOnlyList<string> conflicts = menu.GetKeybindConflicts(uniqueId);
+            helper.Monitor.Log("HookProbe ConfigMenu PublicApi OK " + uniqueId + " conflicts=" + conflicts.Count);
         }
     }
 }

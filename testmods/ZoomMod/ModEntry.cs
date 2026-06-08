@@ -9,7 +9,8 @@ namespace ZoomMod
     {
         private IDtmHelper helper = null!;
         private ZoomConfig config = new ZoomConfig();
-        private ICameraZoomApi? zoomApi;
+        private ICameraViewApi? cameraViewApi;
+        private ICameraViewLease? cameraViewLease;
         private string registeredIncreaseKey = string.Empty;
         private string registeredDecreaseKey = string.Empty;
         private string registeredPlusKey = string.Empty;
@@ -55,36 +56,50 @@ namespace ZoomMod
 
         private void BindZoomApi(string reason)
         {
-            zoomApi = helper.ModRegistry.GetApi<ICameraZoomApi>("DTMAPI.GameBridge.DolocTown");
-            if (zoomApi == null)
+            cameraViewApi = helper.ModRegistry.GetApi<ICameraViewApi>("DTMAPI.GameBridge.DolocTown");
+            if (cameraViewApi == null)
             {
-                helper.Monitor.Log(T("mod.apiMissing", "Camera Zoom API is not available yet.") + " reason=" + reason, LogLevel.Warn);
+                helper.Monitor.Log(T("mod.apiMissing", "Camera View API is not available yet.") + " reason=" + reason, LogLevel.Warn);
                 return;
             }
 
-            CameraZoomRegisterResult result = zoomApi.Register(helper.ModManifest, new CameraZoomOptions
+            var request = new CameraViewRequest
             {
                 Enabled = config.Enabled,
+                ViewScale = cameraViewLease?.GetState().CurrentViewScale ?? 1,
                 MinViewScale = 1,
                 MaxViewScale = config.MaxViewScale,
                 Step = config.Step,
+                Priority = 0,
+                LeaseName = "ZoomMod playable view",
                 VerboseLogging = config.VerboseLogging
-            });
-            helper.Monitor.Log(string.Format(CultureInfo.InvariantCulture, T("mod.register", "Zoom API register: success={0} current={1} message={2}"), result.Success, Format(result.CurrentViewScale), result.Message), result.Success ? LogLevel.Info : LogLevel.Warn);
+            };
+
+            CameraViewResult result;
+            if (cameraViewLease == null || cameraViewLease.IsReleased)
+            {
+                cameraViewLease = cameraViewApi.AcquireLease(helper.ModManifest, request);
+                result = cameraViewLease.LastResult;
+            }
+            else
+            {
+                result = cameraViewLease.Update(request, reason);
+            }
+            helper.Monitor.Log(string.Format(CultureInfo.InvariantCulture, T("mod.register", "CameraView lease: success={0} current={1} message={2}"), result.Success, Format(result.AppliedViewScale), result.Message), result.Success ? LogLevel.Info : LogLevel.Warn);
         }
 
         private string BuildStatusText()
         {
-            if (zoomApi == null)
-                return T("config.status.missing", "Camera Zoom API is not available.");
+            if (cameraViewApi == null)
+                return T("config.status.missing", "Camera View API is not available.");
 
-            CameraZoomState state = zoomApi.GetState(helper.ModManifest.UniqueID);
-            return string.Format(CultureInfo.InvariantCulture, T("config.status", "Status={0}, current={1}, applied={2}, range={3}-{4}, camera={5}, cameraController={6}, background={7}, fog={8}, scanner={9}, lifecycle={10}, vanillaSize={11}, appliedSize={12}. {13}"), state.Status, Format(state.CurrentViewScale), Format(state.AppliedViewScale), Format(state.MinViewScale), Format(state.MaxViewScale), state.CameraAvailable, state.CameraControllerStatus, state.BackgroundCompensationStatus, state.FogCompensationStatus, state.ScannerRefreshStatus, state.LifecycleRestoreStatus, Format(state.VanillaOrthographicSize), Format(state.AppliedOrthographicSize), state.LastMessage);
+            CameraViewState state = cameraViewLease?.GetState() ?? cameraViewApi.GetState(helper.ModManifest.UniqueID);
+            return string.Format(CultureInfo.InvariantCulture, T("config.status", "Status={0}, current={1}, applied={2}, range={3}-{4}, active={5}, arbitration={6}, camera={7}, owner={8}, nativeRefresh={9}, lifecycle={10}, vanillaSize={11}, appliedSize={12}. {13}"), state.Status, Format(state.CurrentViewScale), Format(state.AppliedViewScale), Format(state.MinViewScale), Format(state.MaxViewScale), state.ActiveOwnerId, state.ArbitrationStatus, state.CameraAvailable, state.CameraOwnerStatus, state.NativeRefreshStatus, state.LifecycleStatus, Format(state.VanillaOrthographicSize), Format(state.AppliedOrthographicSize), state.LastMessage);
         }
 
         private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
-            if (!config.Enabled || zoomApi == null)
+            if (!config.Enabled || cameraViewLease == null)
                 return;
 
             if (Matches(e.Button, config.IncreaseKey) || e.Button.Equals("KeypadPlus", StringComparison.OrdinalIgnoreCase) || e.Button.Equals("Plus", StringComparison.OrdinalIgnoreCase))
@@ -99,19 +114,21 @@ namespace ZoomMod
 
         private void StepZoom(int direction, string key)
         {
-            if (zoomApi == null)
+            if (cameraViewLease == null)
                 return;
 
-            CameraZoomResult result = zoomApi.StepViewScale(helper.ModManifest, direction, "hotkey " + key);
+            CameraViewState state = cameraViewLease.GetState();
+            double current = state.CurrentViewScale <= 0 ? 1 : state.CurrentViewScale;
+            CameraViewResult result = cameraViewLease.SetViewScale(current + (config.Step * direction), "hotkey " + key);
             helper.Monitor.Log(string.Format(CultureInfo.InvariantCulture, T("mod.step", "Zoom {0}: success={1} before={2} after={3} message={4}"), direction > 0 ? "+" : "-", result.Success, Format(result.BeforeViewScale), Format(result.AfterViewScale), result.Message), result.Success ? LogLevel.Info : LogLevel.Warn);
         }
 
         private void ResetZoom(string reason)
         {
-            if (zoomApi == null)
+            if (cameraViewLease == null)
                 return;
 
-            CameraZoomResult result = zoomApi.ResetViewScale(helper.ModManifest, reason);
+            CameraViewResult result = cameraViewLease.SetViewScale(1, reason);
             helper.Monitor.Log(string.Format(CultureInfo.InvariantCulture, T("mod.reset", "Zoom restored to vanilla view: success={0} message={1}"), result.Success, result.Message), result.Success ? LogLevel.Info : LogLevel.Warn);
         }
 

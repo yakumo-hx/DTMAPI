@@ -158,6 +158,33 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2")]
+    public interface ICameraViewApi
+    {
+        ICameraViewLease AcquireLease(IManifest owner, CameraViewRequest request);
+        CameraViewState GetState(string uniqueId);
+        CameraViewState GetSnapshot(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
+    public interface ICameraViewLease : IDisposable
+    {
+        string LeaseId { get; }
+        string OwnerId { get; }
+        bool IsReleased { get; }
+        CameraViewResult LastResult { get; }
+        CameraViewResult SetViewScale(double viewScale, string reason);
+        CameraViewResult Update(CameraViewRequest request, string reason);
+        CameraViewResult Release(string reason);
+        CameraViewState GetState();
+    }
+
+    [DtmApiStatus(DtmApiStatus.Proposed, Since = "0.4.2")]
+    public interface IPanoramaCameraApi
+    {
+    }
+
+    [Obsolete("ICameraZoomApi is obsolete. Use lease-based ICameraViewApi for playable camera zoom.")]
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
     public interface ICameraZoomApi
     {
@@ -781,16 +808,89 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    public sealed class CameraViewRequest
+    {
+        public bool Enabled { get; set; } = true;
+        public double ViewScale { get; set; } = 1d;
+        public double MinViewScale { get; set; } = 1d;
+        public double MaxViewScale { get; set; } = 4d;
+        public double Step { get; set; } = 0.25d;
+        public int Priority { get; set; }
+        public string LeaseName { get; set; } = string.Empty;
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class CameraViewResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public string LeaseId { get; set; } = string.Empty;
+        public string ActiveOwnerId { get; set; } = string.Empty;
+        public string ActiveLeaseId { get; set; } = string.Empty;
+        public string ArbitrationStatus { get; set; } = string.Empty;
+        public double RequestedViewScale { get; set; }
+        public double ClampedViewScale { get; set; }
+        public double BeforeViewScale { get; set; }
+        public double AfterViewScale { get; set; }
+        public double AppliedViewScale { get; set; }
+        public double VanillaOrthographicSize { get; set; }
+        public double AppliedOrthographicSize { get; set; }
+        public string CameraOwnerStatus { get; set; } = string.Empty;
+        public string NativeRefreshStatus { get; set; } = string.Empty;
+        public string UiScaleStatus { get; set; } = string.Empty;
+        public string LifecycleStatus { get; set; } = string.Empty;
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class CameraViewState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public string LeaseId { get; set; } = string.Empty;
+        public string LeaseName { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public bool IsReleased { get; set; }
+        public int Priority { get; set; }
+        public int LeaseCount { get; set; }
+        public string ActiveOwnerId { get; set; } = string.Empty;
+        public string ActiveLeaseId { get; set; } = string.Empty;
+        public string ArbitrationStatus { get; set; } = string.Empty;
+        public double MinViewScale { get; set; }
+        public double MaxViewScale { get; set; }
+        public double Step { get; set; }
+        public double RequestedViewScale { get; set; } = 1d;
+        public double ClampedViewScale { get; set; } = 1d;
+        public double CurrentViewScale { get; set; } = 1d;
+        public double AppliedViewScale { get; set; } = 1d;
+        public double VanillaOrthographicSize { get; set; }
+        public double AppliedOrthographicSize { get; set; }
+        public bool CameraAvailable { get; set; }
+        public string CameraOwnerStatus { get; set; } = string.Empty;
+        public string NativeRefreshStatus { get; set; } = string.Empty;
+        public string UiScaleStatus { get; set; } = string.Empty;
+        public string LifecycleStatus { get; set; } = string.Empty;
+        public string CurrentRoomId { get; set; } = string.Empty;
+        public string CurrentRoomTitle { get; set; } = string.Empty;
+        public bool CurrentRoomShowsBackground { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
     public sealed class CameraZoomOptions
     {
         public bool Enabled { get; set; } = true;
         public double MinViewScale { get; set; } = 1d;
         public double MaxViewScale { get; set; } = 4d;
         public double Step { get; set; } = 0.25d;
-        public bool RefreshCameraController { get; set; } = true;
-        public bool CompensateBackground { get; set; } = true;
-        public bool CompensateDepthFog { get; set; } = true;
-        public bool RefreshScanners { get; set; } = true;
+        [Obsolete("Playable camera zoom no longer calls CameraController.RefreshResolution/SetPosition.")]
+        public bool RefreshCameraController { get; set; }
+        [Obsolete("Playable camera zoom no longer performs panorama/background transform compensation.")]
+        public bool CompensateBackground { get; set; }
+        [Obsolete("Playable camera zoom no longer performs panorama/depth-fog transform compensation.")]
+        public bool CompensateDepthFog { get; set; }
+        [Obsolete("Playable camera zoom no longer calls DolocAPI.RefreshScanner.")]
+        public bool RefreshScanners { get; set; }
         public bool VerboseLogging { get; set; }
     }
 
@@ -851,10 +951,10 @@ namespace DTMAPI.Abstractions
         public double VanillaOrthographicSize { get; set; }
         public double AppliedOrthographicSize { get; set; }
         public bool CameraAvailable { get; set; }
-        public bool RefreshCameraController { get; set; } = true;
-        public bool CompensateBackground { get; set; } = true;
-        public bool CompensateDepthFog { get; set; } = true;
-        public bool RefreshScanners { get; set; } = true;
+        public bool RefreshCameraController { get; set; }
+        public bool CompensateBackground { get; set; }
+        public bool CompensateDepthFog { get; set; }
+        public bool RefreshScanners { get; set; }
         public string CameraControllerStatus { get; set; } = string.Empty;
         public string BackgroundCompensationStatus { get; set; } = string.Empty;
         public string FogCompensationStatus { get; set; } = string.Empty;

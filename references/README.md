@@ -2,7 +2,7 @@
 
 This directory contains reference material only. DTMAPI is rebuilt from zero; these files inform design and tests but are not source code to copy into the runtime.
 
-See `COPY-MANIFEST.md` for exact local source paths and explicit exclusions.
+See `COPY-MANIFEST.md` for copy categories and explicit exclusions.
 
 ## Git Scope
 
@@ -24,7 +24,7 @@ Those local-only folders may exist in a developer workspace, but they must not b
 
 ## Doloc Town
 
-- `doloc-town/official-workshop-docs/pdf`: copied official Workshop/modding PDFs from `E:\Python_project\DLK\research\创意工坊说明`.
+- `doloc-town/official-workshop-docs/pdf`: copied official Workshop/modding PDFs from the private predecessor research workspace.
 - `doloc-town/official-workshop-docs/feishu-crawl-20260517`: latest extracted official Workshop documentation crawl.
 - `doloc-town/official-workshop-docs/update-notes`: local notes for Doloc Town Workshop updates `0.96.05` and `0.96.06`.
 - `doloc-town/research-notes`: selected factual notes about Doloc APIs, official Workshop behavior, and vehicle research. These are not old runtime source.
@@ -35,7 +35,7 @@ The reverse build folders include `input/Assembly-CSharp.dll` and decompiled gam
 
 ## Stardew Valley SMAPI
 
-- `stardew-smapi/installed`: installed SMAPI runtime copied from `D:\Steam\steamapps\common\Stardew Valley`.
+- `stardew-smapi/installed`: installed SMAPI runtime copied from a local Stardew Valley install.
 - `stardew-smapi/bundled-mods`: only SMAPI bundled `ConsoleCommands` and `SaveBackup` were copied. Other Stardew Valley user mods were not copied.
 
 Use this as ecosystem/API/diagnostic reference, not as code to paste.

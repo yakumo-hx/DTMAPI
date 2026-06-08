@@ -11,7 +11,7 @@ namespace DTMAPI.BepInExBootstrap
     internal sealed class ReflectedImGuiOverlay
     {
         private readonly DtmApiRuntime runtime;
-        private readonly IDtmConfigMenuApi configMenu;
+        private readonly IConfigMenuRuntime configMenu;
         private readonly DtmUiText text = new DtmUiText();
         private Type? rectType;
         private Type? guiType;
@@ -24,7 +24,7 @@ namespace DTMAPI.BepInExBootstrap
         private string? capturingKeybindItemId;
         private string statusMessage = string.Empty;
 
-        public ReflectedImGuiOverlay(DtmApiRuntime runtime, IDtmConfigMenuApi configMenu)
+        public ReflectedImGuiOverlay(DtmApiRuntime runtime, IConfigMenuRuntime configMenu)
         {
             this.runtime = runtime;
             this.configMenu = configMenu;
@@ -165,7 +165,7 @@ namespace DTMAPI.BepInExBootstrap
                     {
                         IConfigMenuPage? oldPage = configMenu.GetPage(selectedConfigModId);
                         if (oldPage != null && oldPage.HasPendingChanges)
-                            oldPage.Cancel();
+                            configMenu.Cancel(oldPage.Manifest.UniqueID);
                     }
                     selectedConfigModId = pageButton.Manifest.UniqueID;
                     statusMessage = string.Empty;
@@ -176,7 +176,7 @@ namespace DTMAPI.BepInExBootstrap
 
             IConfigMenuPage page = configMenu.GetPage(selectedConfigModId!) ?? pages[0];
             if (!page.IsEditing)
-                page.BeginEditing();
+                configMenu.BeginEditing(page.Manifest.UniqueID);
 
             float contentX = x + listWidth;
             float contentWidth = width - listWidth;
@@ -196,7 +196,7 @@ namespace DTMAPI.BepInExBootstrap
                 TryPageAction(page, "Canceled", () => configMenu.Cancel(page.Manifest.UniqueID));
             line += 2;
 
-            IDisposable? preview = (page as IConfigMenuPendingPreview)?.PreviewPendingValues();
+            IDisposable? preview = configMenu.PreviewPendingValues(page);
             try
             {
                 foreach (string conflict in configMenu.GetKeybindConflicts(page.Manifest.UniqueID).Take(3))

@@ -108,13 +108,13 @@ Build the front loader package:
 The upload-ready loader package is created in both:
 
 ```text
-E:\Python_project\DLK\packages\workshop\WorkshopPackages\DLK_Functional_Mod_Loader
-C:\Users\Administrator\AppData\LocalLow\RedSawGames\DolocTown\MODS\DLK_Functional_Mod_Loader
+private-predecessor-workspace/packages/workshop/WorkshopPackages/DLK_Functional_Mod_Loader
+<DolocTown persistent data>/MODS/DLK_Functional_Mod_Loader
 ```
 
 The upload-ready fishing test package is created in both:
 
 ```text
-E:\Python_project\DLK\packages\workshop\WorkshopPackages\DLK_Fishing_TestMod
-C:\Users\Administrator\AppData\LocalLow\RedSawGames\DolocTown\MODS\DLK_Fishing_TestMod
+private-predecessor-workspace/packages/workshop/WorkshopPackages/DLK_Fishing_TestMod
+<DolocTown persistent data>/MODS/DLK_Fishing_TestMod
 ```

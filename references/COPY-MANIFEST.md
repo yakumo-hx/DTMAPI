@@ -1,62 +1,55 @@
 # Reference Copy Manifest
 
-Copied on 2026-05-30 from local reference folders.
+Copied on 2026-05-30 from private local reference folders.
 
-## Copied From DLK
+This manifest records categories and destination boundaries for public-source hygiene. It intentionally avoids requiring or publishing the original absolute local paths.
 
-- `E:\Python_project\DLK\research\创意工坊说明\*.pdf`
+## Copied From Private Doloc Town Workspace
+
+- Official Workshop/modding PDFs
   -> `references/doloc-town/official-workshop-docs/pdf`
-- `E:\Python_project\DLK\research\创意工坊说明\飞书抓取_20260517`
+- Official Workshop documentation crawl from 2026-05-17
   -> `references/doloc-town/official-workshop-docs/feishu-crawl-20260517`
-- `E:\Python_project\DLK\docs\README-DolocTown-Workshop-Update-0.96.05.md`
+- Doloc Town Workshop update notes for `0.96.05` and `0.96.06`
   -> `references/doloc-town/official-workshop-docs/update-notes`
-- `E:\Python_project\DLK\docs\README-DolocTown-Workshop-Update-0.96.06.md`
-  -> `references/doloc-town/official-workshop-docs/update-notes`
-- `E:\Python_project\DLK\docs\README-DolocTown-Modding-API.md`
+- Doloc Town Modding API and functional Workshop research notes
   -> `references/doloc-town/research-notes`
-- `E:\Python_project\DLK\docs\README-DolocTown-Workshop-Functional-Mods.md`
+- Doloc Town motor/vehicle API research notes
   -> `references/doloc-town/research-notes`
-- `E:\Python_project\DLK\docs\research-DolocTown-Motor-Vehicle-API.md`
-  -> `references/doloc-town/research-notes`
-- `E:\Python_project\DLK\research\reverse\builds\23249387_workshop_247ACD`
+- Reverse research builds `23249387_workshop_247ACD` and `23465763_workshop_38581E`
   -> `references/doloc-town/reverse/builds`
-- `E:\Python_project\DLK\research\reverse\builds\23465763_workshop_38581E`
-  -> `references/doloc-town/reverse/builds`
-- `E:\Python_project\DLK\src\mods\AutoFishingMod`
-  -> `references/doloc-town/own-mod-sources/AutoFishingMod`
-- `E:\Python_project\DLK\src\mods\ActionSpeedMod`
-  -> `references/doloc-town/own-mod-sources/ActionSpeedMod`
-- `E:\Python_project\DLK\src\mods\OneActionCompleteMod`
-  -> `references/doloc-town/own-mod-sources/OneActionCompleteMod`
-- `E:\Python_project\DLK\src\mods\FishBreedingAssistantMod`
-  -> `references/doloc-town/own-mod-sources/FishBreedingAssistantMod`
-- `E:\Python_project\DLK\src\mods\AnimalHusbandryProgressMod`
-  -> `references/doloc-town/own-mod-sources/AnimalHusbandryProgressMod`
+- Selected own mod source copies for migration research:
+  - `AutoFishingMod`
+  - `ActionSpeedMod`
+  - `OneActionCompleteMod`
+  - `FishBreedingAssistantMod`
+  - `AnimalHusbandryProgressMod`
+  -> `references/doloc-town/own-mod-sources`
 
 The five own mod source copies include `src/`, README/maintenance docs, build scripts, and diagnostic reports when present. Old `dist/`, historical `release/` packages, extracted release folders, and binaries were intentionally not copied.
 
-## Explicitly Not Copied From DLK
+## Explicitly Not Copied From Private Doloc Town Workspace
 
-- Old DLKsmapi runtime/framework source under `E:\Python_project\DLK\src`, except the five selected own mod source folders listed above.
-- `E:\Python_project\DLK\packages`
-- `E:\Python_project\DLK\archive`
-- `E:\Python_project\DLK\tmp`
-- `E:\Python_project\DLK\DolocTown_DMAPI`
-- Old DLKsmapi binaries, runtime packages, source backups, and existing DLK mod packages.
+- Old DLKsmapi runtime/framework source, except the five selected own mod source folders listed above.
+- Package caches.
+- Archive folders.
+- Temporary folders.
+- Old generated DTMAPI/DLKsmapi runtime folders.
+- Old DLKsmapi binaries, runtime packages, source backups, and existing packaged mod binaries.
 
-## Copied From Stardew Valley
+## Copied From Stardew Valley SMAPI Install
 
-- `D:\Steam\steamapps\common\Stardew Valley\StardewModdingAPI*`
+- Installed SMAPI runtime files
   -> `references/stardew-smapi/installed`
-- `D:\Steam\steamapps\common\Stardew Valley\smapi-internal`
+- SMAPI internal files
   -> `references/stardew-smapi/installed/smapi-internal`
-- `D:\Steam\steamapps\common\Stardew Valley\Mods\ConsoleCommands`
+- SMAPI bundled `ConsoleCommands`
   -> `references/stardew-smapi/bundled-mods`
-- `D:\Steam\steamapps\common\Stardew Valley\Mods\SaveBackup`
+- SMAPI bundled `SaveBackup`
   -> `references/stardew-smapi/bundled-mods`
 
 Other Stardew Valley user mods were not copied.
 
 ## Moved Existing DTMAPI Workspace Samples
 
-Existing third-party Doloc Town mod archives/extracted folders from the DTMAPI root were moved to `references/third-party-mods`.
+Existing third-party Doloc Town mod archives/extracted folders from the DTMAPI workspace root were moved to `references/third-party-mods`.

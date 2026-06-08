@@ -6,7 +6,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.ModConfigMenu
 {
-    public sealed class ConfigMenuRegistry : IDtmConfigMenuApi
+    public sealed class ConfigMenuRegistry : IDtmConfigMenuApi, IConfigMenuRuntime
     {
         private readonly Dictionary<string, ConfigMenuPage> pages = new Dictionary<string, ConfigMenuPage>(StringComparer.OrdinalIgnoreCase);
 
@@ -29,19 +29,6 @@ namespace DTMAPI.ModConfigMenu
         public void AddKeybindOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue) => GetRequiredPage(mod).AddItem(new StringConfigItem(GetRequiredPage(mod).NextItemId("Keybind"), "Keybind", name, tooltip, getValue, setValue, isKeybind: true));
         public void AddButton(IManifest mod, Func<string> name, Func<string> tooltip, Action onPressed) => GetRequiredPage(mod).AddItem(new ButtonConfigItem(GetRequiredPage(mod).NextItemId("Button"), name, tooltip, onPressed));
         public void SetDisplayName(IManifest mod, Func<string> name) => GetRequiredPage(mod).SetDisplayName(name);
-
-        public IReadOnlyList<IConfigMenuPage> GetPages() => pages.Values.OrderBy(p => p.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase).Cast<IConfigMenuPage>().ToArray();
-        public IConfigMenuPage? GetPage(string uniqueId) => pages.TryGetValue(uniqueId, out ConfigMenuPage page) ? page : null;
-        public void BeginEditing(string uniqueId) => GetRequiredPage(uniqueId).BeginEditing();
-        public void Save(string uniqueId) => GetRequiredPage(uniqueId).Save();
-        public void Reset(string uniqueId) => GetRequiredPage(uniqueId).Reset();
-        public void Cancel(string uniqueId) => GetRequiredPage(uniqueId).Cancel();
-
-        public void SetPageLock(string uniqueId, bool locked, string reason)
-        {
-            if (pages.TryGetValue(uniqueId, out ConfigMenuPage page))
-                page.SetLocked(locked, reason);
-        }
 
         public IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null)
         {
@@ -75,9 +62,28 @@ namespace DTMAPI.ModConfigMenu
             return conflicts;
         }
 
+        IReadOnlyList<IConfigMenuPage> IConfigMenuRuntime.GetPages() => GetPagesCore();
+        IConfigMenuPage? IConfigMenuRuntime.GetPage(string uniqueId) => GetPageCore(uniqueId);
+        void IConfigMenuRuntime.BeginEditing(string uniqueId) => GetRequiredPage(uniqueId).BeginEditing();
+        void IConfigMenuRuntime.Save(string uniqueId) => GetRequiredPage(uniqueId).Save();
+        void IConfigMenuRuntime.Reset(string uniqueId) => GetRequiredPage(uniqueId).Reset();
+        void IConfigMenuRuntime.Cancel(string uniqueId) => GetRequiredPage(uniqueId).Cancel();
+        void IConfigMenuRuntime.SetPageLock(string uniqueId, bool locked, string reason) => SetPageLockCore(uniqueId, locked, reason);
+        IDisposable? IConfigMenuRuntime.PreviewPendingValues(IConfigMenuPage page) => page is IConfigMenuPendingPreview preview ? preview.PreviewPendingValues() : null;
+
         internal bool HasKeybindConflict(ConfigMenuPage page)
         {
             return GetKeybindConflicts(page.Manifest.UniqueID).Count > 0;
+        }
+
+        private IReadOnlyList<IConfigMenuPage> GetPagesCore() => pages.Values.OrderBy(p => p.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase).Cast<IConfigMenuPage>().ToArray();
+
+        private IConfigMenuPage? GetPageCore(string uniqueId) => pages.TryGetValue(uniqueId, out ConfigMenuPage page) ? page : null;
+
+        private void SetPageLockCore(string uniqueId, bool locked, string reason)
+        {
+            if (pages.TryGetValue(uniqueId, out ConfigMenuPage page))
+                page.SetLocked(locked, reason);
         }
 
         private ConfigMenuPage GetRequiredPage(IManifest mod) => GetRequiredPage(mod.UniqueID);

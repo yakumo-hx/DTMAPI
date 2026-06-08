@@ -2,18 +2,18 @@
 
 这份笔记整理自 `AutoFishingMod`、`ActionSpeedMod` 和 `OneActionCompleteMod` 当前实际访问或验证过的 Doloc Town 游戏类型、函数、属性和私有字段，供其他 BepInEx/Harmony Mod 作者参考。
 
-当前项目路径：
+当前参考项目来源：
 
 ```text
-E:\Python_project\DLK\src\mods\AutoFishingMod
-E:\Python_project\DLK\ActionSpeedMod
-E:\Python_project\DLK\OneActionCompleteMod
+private-predecessor-workspace/src/mods/AutoFishingMod
+private-predecessor-workspace/ActionSpeedMod
+private-predecessor-workspace/OneActionCompleteMod
 ```
 
 游戏程序集：
 
 ```text
-D:\Steam\steamapps\common\Doloc Town\DolocTown_Data\Managed\Assembly-CSharp.dll
+<Doloc Town install>/DolocTown_Data/Managed/Assembly-CSharp.dll
 ```
 
 ## 基本结论

@@ -185,8 +185,6 @@ function Find-OfficialVehicleExampleAssetRoot {
 
     $gameSteamApps = [System.IO.Path]::GetFullPath((Join-Path $GameDir '..\..'))
     $candidates += (Join-Path $gameSteamApps 'workshop\content\2285550\3705665433\Content')
-    $candidates += 'D:\Steam\steamapps\workshop\content\2285550\3705665433\Content'
-    $candidates += 'D:\steam\steamapps\workshop\content\2285550\3705665433\Content'
 
     foreach ($candidate in $candidates | Select-Object -Unique) {
         if (-not (Test-Path $candidate)) {

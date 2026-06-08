@@ -9,7 +9,6 @@
     <ProjectReference Include="..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\references\doloc-town\own-mod-sources\FishBreedingAssistantMod\src\FishBreedingLookup.g.cs" Link="FishBreedingLookup.g.cs" />
     <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="i18n\*.json" CopyToOutputDirectory="PreserveNewest" TargetPath="i18n\%(Filename)%(Extension)" />
   </ItemGroup>

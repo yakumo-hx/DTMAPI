@@ -13,7 +13,7 @@ namespace DTMAPI.BepInExBootstrap
     internal sealed class ReflectedTitleMenuSettingsUi
     {
         private readonly DtmApiRuntime runtime;
-        private readonly IDtmConfigMenuApi configMenu;
+        private readonly IConfigMenuRuntime configMenu;
         private readonly DtmUiText text = new DtmUiText();
         private readonly string[] iconCandidates;
         private readonly List<object> renderedObjects = new List<object>();
@@ -65,7 +65,7 @@ namespace DTMAPI.BepInExBootstrap
         private bool trackingRenderedObjects = true;
         private bool buildingStaticUi;
 
-        public ReflectedTitleMenuSettingsUi(DtmApiRuntime runtime, IDtmConfigMenuApi configMenu)
+        public ReflectedTitleMenuSettingsUi(DtmApiRuntime runtime, IConfigMenuRuntime configMenu)
         {
             this.runtime = runtime;
             this.configMenu = configMenu;
@@ -371,13 +371,13 @@ namespace DTMAPI.BepInExBootstrap
 
             IConfigMenuPage selectedPage = configMenu.GetPage(selectedConfigModId!) ?? pages[0];
             if (!selectedPage.IsEditing)
-                selectedPage.BeginEditing();
+                configMenu.BeginEditing(selectedPage.Manifest.UniqueID);
             RenderConfigPage(selectedPage);
         }
 
         private void RenderConfigPage(IConfigMenuPage page)
         {
-            IDisposable? preview = (page as IConfigMenuPendingPreview)?.PreviewPendingValues();
+            IDisposable? preview = configMenu.PreviewPendingValues(page);
             try
             {
                 float x = 326;
@@ -613,7 +613,7 @@ namespace DTMAPI.BepInExBootstrap
             {
                 IConfigMenuPage? oldPage = configMenu.GetPage(selectedConfigModId);
                 if (oldPage != null && oldPage.HasPendingChanges)
-                    oldPage.Cancel();
+                    configMenu.Cancel(oldPage.Manifest.UniqueID);
             }
             selectedConfigModId = uniqueId;
             runtime.UI.OpenConfigPage(uniqueId);
@@ -637,7 +637,7 @@ namespace DTMAPI.BepInExBootstrap
             {
                 IConfigMenuPage? page = configMenu.GetPage(selectedConfigModId);
                 if (page != null && page.HasPendingChanges)
-                    page.Cancel();
+                    configMenu.Cancel(page.Manifest.UniqueID);
             }
             capturingKeybindItemId = null;
             inputValues.Clear();
