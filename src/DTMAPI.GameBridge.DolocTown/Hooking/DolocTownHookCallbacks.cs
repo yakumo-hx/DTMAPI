@@ -19,7 +19,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame);
-            Bridge?.ResetCameraForLifecycleBoundary("SaveLoaded");
+            Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame);
             Runtime?.NotifySaveLoaded(isNewGame);
             Bridge?.MarkSaveLoadedForSmoke();
         }
@@ -40,13 +40,13 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle();
-            Bridge?.ResetCameraForLifecycleBoundary("ReturnedToTitle");
+            Bridge?.NotifyGameBridgeFeaturesReturnedToTitle();
             Runtime?.NotifyReturnedToTitle();
         }
 
         public static void DolocApiSetEnvCameraPostfix()
         {
-            Bridge?.NotifyCameraEnvironmentReset("DolocAPI.SetEnvCamera");
+            Bridge?.NotifyGameBridgeFeaturesEnvironmentReset("DolocAPI.SetEnvCamera");
         }
 
         public static void ReloadModsPostfix()
@@ -111,33 +111,33 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateToolEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyActionSpeedToolEnter(__instance);
+            Bridge?.ActionSpeedService?.ApplyActionSpeedToolEnter(__instance);
         }
 
         public static void AgentStateToolExitPostfix()
         {
-            Bridge?.ExperimentalApi?.RestoreActionSpeed("AgentStateTool.OnExit");
+            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateTool.OnExit");
         }
 
         public static void AgentStateInteractEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyActionSpeedInteractEnter(__instance);
+            Bridge?.ActionSpeedService?.ApplyActionSpeedInteractEnter(__instance);
         }
 
         public static void AgentStateInteractExitPostfix()
         {
             Bridge?.ExperimentalApi?.ApplyOneActionEquipmentFillAfterInteract();
-            Bridge?.ExperimentalApi?.RestoreActionSpeed("AgentStateInteract.OnExit");
+            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateInteract.OnExit");
         }
 
         public static void AgentStateEatEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyActionSpeedEatEnter(__instance);
+            Bridge?.ActionSpeedService?.ApplyActionSpeedEatEnter(__instance);
         }
 
         public static void AgentControllerStateUseItemContinuesPrefix(ref float __0)
         {
-            Bridge?.ExperimentalApi?.AdjustActionSpeedUseItemContinuesDelta(ref __0);
+            Bridge?.ActionSpeedService?.AdjustActionSpeedUseItemContinuesDelta(ref __0);
         }
 
         public static bool AgentControllerStateUseToolPrefix()
@@ -210,7 +210,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateBaseExitPostfix()
         {
-            Bridge?.ExperimentalApi?.RestoreActionSpeed("AgentStateBase.OnExit");
+            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateBase.OnExit");
         }
 
         public static void FishingReadyEnterPostfix(object __instance)

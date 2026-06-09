@@ -3,11 +3,40 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class ActionSpeedService : IActionSpeedApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, ActionSpeedOptions> actionSpeedOptions = new Dictionary<string, ActionSpeedOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedActionSpeedApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
+        private bool actionSpeedToolHooksInstalled;
+        private bool actionSpeedInteractionHooksInstalled;
+        private DateTimeOffset lastActionSpeedAutoFillAt = DateTimeOffset.MinValue;
+        private int actionSpeedAutoFillApplications;
+
+        public ActionSpeedService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
+        internal int ActionSpeedApplicationCount { get; private set; }
+
+        internal string LastActionSpeedApplicationSummary { get; private set; } = string.Empty;
+
+        internal int ActionSpeedContinuousUseApplicationCount { get; private set; }
+
+        internal string LastActionSpeedContinuousUseSummary { get; private set; } = string.Empty;
+
+        internal string LastActionSpeedAutoFillSummary { get; private set; } = string.Empty;
+
+        internal int ActionSpeedAutoFillApplicationCount => actionSpeedAutoFillApplications;
+
+        internal bool SuppressActionSpeedAutoFillForSmoke { get; set; }
+
         internal void SetActionSpeedToolHooksInstalled(bool installed)
         {
             actionSpeedToolHooksInstalled = installed;
@@ -16,6 +45,11 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void SetActionSpeedInteractionHooksInstalled(bool installed)
         {
             actionSpeedInteractionHooksInstalled = installed;
+        }
+
+        internal void Update()
+        {
+            UpdateActionSpeedAutoFill();
         }
 
         public void Configure(IManifest owner, ActionSpeedOptions options)
@@ -568,6 +602,229 @@ namespace DTMAPI.GameBridge.DolocTown
             string equipment = selectedEquipment == null ? "none" : FirstText(ReadStringMember(selectedEquipment, "equipmentName"), selectedEquipment.GetType().Name);
             string interactable = currentInteractable == null ? "none" : FirstText(ReadStringMember(currentInteractable, "VegetationName"), currentInteractable.GetType().Name);
             return "item=" + item + ",equipment=" + equipment + ",interactable=" + interactable;
+        }
+
+        private static bool IsAcceleratedTool(object? tool)
+        {
+            if (tool == null)
+                return false;
+
+            object? toolType = ReadMember(tool, "ToolType");
+            string name = toolType?.ToString() ?? string.Empty;
+            return name.Equals("AXE", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("PICKAXE", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("SICKLE", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private int ApplyAnimatorSpeed(object? animator, double multiplier, string label, List<string> samples)
+        {
+            if (animator == null)
+                return 0;
+
+            double original = ReadAnimatorSpeed(animator, 1);
+            if (!originalAnimatorSpeeds.ContainsKey(animator))
+                originalAnimatorSpeeds[animator] = original;
+            else
+                original = originalAnimatorSpeeds[animator];
+
+            double target = original * multiplier;
+            if (!TryWriteAnimatorSpeed(animator, target))
+                return 0;
+
+            if (samples.Count < 6)
+                samples.Add(label + ":" + original.ToString("0.###") + "->" + target.ToString("0.###"));
+            return 1;
+        }
+
+        private static double ReadAnimatorSpeed(object animator, double fallback)
+        {
+            object? value = animator.GetType().GetProperty("speed", BindingFlags.Public | BindingFlags.Instance)?.GetValue(animator);
+            return value == null ? fallback : Convert.ToDouble(value);
+        }
+
+        private static bool TryWriteAnimatorSpeed(object animator, double value)
+        {
+            try
+            {
+                PropertyInfo? speed = animator.GetType().GetProperty("speed", BindingFlags.Public | BindingFlags.Instance);
+                if (speed == null || !speed.CanWrite)
+                    return false;
+                speed.SetValue(animator, Convert.ChangeType(value, speed.PropertyType));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static double ClampMultiplier(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return 1;
+            return Math.Min(4, Math.Max(1, value));
+        }
+
+        private static double ClampSeconds(double value, double min, double max)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return min;
+            return Math.Min(max, Math.Max(min, value));
+        }
+
+        private static int ReadIntMember(object instance, string name, int fallback)
+        {
+            object? value = ReadMember(instance, name);
+            if (value == null)
+                return fallback;
+
+            try
+            {
+                return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static Type? ResolveType(string assemblyQualifiedName)
+        {
+            Type? type = Type.GetType(assemblyQualifiedName);
+            if (type != null)
+                return type;
+            int comma = assemblyQualifiedName.IndexOf(',');
+            string typeName = comma >= 0 ? assemblyQualifiedName.Substring(0, comma).Trim() : assemblyQualifiedName;
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    type = assembly.GetType(typeName, throwOnError: false);
+                    if (type != null)
+                        return type;
+                }
+                catch
+                {
+                }
+            }
+            return null;
+        }
+
+        private static bool IsTypeOrBase(Type type, string fullName)
+        {
+            for (Type? current = type; current != null; current = current.BaseType)
+            {
+                if (string.Equals(current.FullName, fullName, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool ImplementsInterface(Type? type, string fullName)
+        {
+            if (type == null)
+                return false;
+            foreach (Type interfaceType in type.GetInterfaces())
+            {
+                if (string.Equals(interfaceType.FullName, fullName, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        private static object? ReadStaticMember(Type? type, string name)
+        {
+            if (type == null)
+                return null;
+            FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (field != null)
+            {
+                try
+                {
+                    object? value = field.GetValue(null);
+                    if (value != null)
+                        return value;
+                }
+                catch
+                {
+                }
+            }
+
+            PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (property != null)
+            {
+                try
+                {
+                    return property.GetValue(null);
+                }
+                catch
+                {
+                }
+            }
+            return null;
+        }
+
+        private static bool ReadStaticBoolMember(Type? type, string name, bool fallback)
+        {
+            object? value = ReadStaticMember(type, name);
+            return value is bool result ? result : fallback;
+        }
+
+        private static string FirstText(params string[] values)
+        {
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+            return string.Empty;
+        }
+
+        private static string ReadStringMember(object instance, string name)
+        {
+            object? value = ReadMember(instance, name);
+            return value as string ?? string.Empty;
+        }
+
+        private static bool ReadBoolMember(object instance, string name, bool fallback)
+        {
+            object? value = ReadMember(instance, name);
+            return value is bool result ? result : fallback;
+        }
+
+        private static object? ReadMember(object instance, string name)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    try
+                    {
+                        object? value = field.GetValue(instance);
+                        if (value != null)
+                            return value;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null)
+                {
+                    try
+                    {
+                        object? value = property.GetValue(instance);
+                        if (value != null)
+                            return value;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+            return null;
         }
     }
 }

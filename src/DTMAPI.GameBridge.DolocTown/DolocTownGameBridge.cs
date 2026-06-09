@@ -121,15 +121,14 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool saveSavingPatched;
         private bool saveSavedPatched;
         private bool returnHomePatched;
-        private bool cameraZoomSetEnvCameraPatched;
         private bool workshopReloadPatched;
-        private bool actionSpeedToolEnterPatched;
-        private bool actionSpeedToolExitPatched;
-        private bool actionSpeedInteractEnterPatched;
-        private bool actionSpeedInteractExitPatched;
-        private bool actionSpeedEatEnterPatched;
-        private bool actionSpeedUseItemContinuesPatched;
-        private bool actionSpeedBaseExitPatched;
+        private bool actionSpeedToolEnterPatched => actionSpeedFeature?.HookBridge.ToolEnterPatched == true;
+        private bool actionSpeedToolExitPatched => actionSpeedFeature?.HookBridge.ToolExitPatched == true;
+        private bool actionSpeedInteractEnterPatched => actionSpeedFeature?.HookBridge.InteractEnterPatched == true;
+        private bool actionSpeedInteractExitPatched => actionSpeedFeature?.HookBridge.InteractExitPatched == true;
+        private bool actionSpeedEatEnterPatched => actionSpeedFeature?.HookBridge.EatEnterPatched == true;
+        private bool actionSpeedUseItemContinuesPatched => actionSpeedFeature?.HookBridge.UseItemContinuesPatched == true;
+        private bool actionSpeedBaseExitPatched => actionSpeedFeature?.HookBridge.BaseExitPatched == true;
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;
         private bool debugConsoleEnterUiCheckPatched;
@@ -189,8 +188,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool hookResolutionDiagnosticLogged;
         private bool uiContextDiagnosticLogged;
         private Delegate? saveLoadedUnityEventDelegate;
+        private readonly List<IGameBridgeFeature> features = new List<IGameBridgeFeature>();
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
+        private ActionSpeedFeature? actionSpeedFeature;
 
         public DolocTownGameBridge(DtmApiRuntime runtime, Func<bool>? clickTitleSettingsButton = null, IDebugConsoleApi? debugConsoleApi = null)
         {
@@ -204,6 +205,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal CameraFeature? CameraFeature => cameraFeature;
 
+        internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
+
         public void CleanupSecondMotorForLifecycleBoundary(string reason)
         {
             experimentalApi?.CleanupSecondMotorResidueForBoundary(reason);
@@ -215,7 +218,7 @@ namespace DTMAPI.GameBridge.DolocTown
             DolocTownHookCallbacks.Runtime = runtime;
             DolocTownHookCallbacks.Bridge = this;
             experimentalApi?.PublishHookStatuses();
-            cameraFeature?.PublishHookStatuses();
+            PublishGameBridgeFeatureHookStatuses();
             PublishStableCustomEntityHookStatuses();
             runtime.SetHookStatus("GameLoop.UpdateTicked", "verified", "BepInEx MonoBehaviour.Update", "DTMAPI dispatches UpdateTicked from the bootstrap Update callback.");
             runtime.SetHookStatus("GameLoop.OneSecondUpdateTicked", "verified", "DTMAPI.Core timer", "DTMAPI dispatches a throttled one-second event from Update.");
@@ -227,10 +230,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null)
+            if (experimentalApi != null && cameraFeature != null && actionSpeedFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
-            cameraFeature ??= new CameraFeature(runtime);
+            EnsureGameBridgeFeatures();
+            experimentalApi.AttachActionSpeedService(actionSpeedFeature!.Service);
             var manifest = new ManifestModel
             {
                 Name = "DTMAPI Doloc Town GameBridge",
@@ -241,7 +245,6 @@ namespace DTMAPI.GameBridge.DolocTown
             };
             runtime.RegisterRuntimeApi<IActionCompletionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IFishingAutomationApi>(manifest, experimentalApi);
-            runtime.RegisterRuntimeApi<IActionSpeedApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IItemTooltipApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAnimalViewerApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, experimentalApi);
@@ -255,7 +258,7 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, experimentalApi);
-            cameraFeature.RegisterRuntimeApis(manifest);
+            RegisterGameBridgeFeatureApis(manifest);
             runtime.RegisterRuntimeApi<IChestLocatorEnhancerApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IStrongPlantingGunApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, experimentalApi);
@@ -268,17 +271,93 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
             experimentalApi?.UpdateRuntimeAutomation(forceMachineProductionPoll);
-            cameraFeature?.RefreshForRuntime();
+            UpdateGameBridgeFeatures();
         }
 
-        public void ResetCameraForLifecycleBoundary(string reason)
+        internal void NotifyGameBridgeFeaturesSaveLoaded(bool isNewGame)
         {
-            cameraFeature?.ResetForLifecycleBoundary(reason);
+            DispatchGameBridgeFeatures("SaveLoaded", feature => feature.SaveLoaded(isNewGame));
         }
 
-        public void NotifyCameraEnvironmentReset(string reason)
+        internal void NotifyGameBridgeFeaturesReturnedToTitle()
         {
-            cameraFeature?.NotifyEnvironmentReset(reason);
+            DispatchGameBridgeFeatures("ReturnedToTitle", feature => feature.ReturnedToTitle());
+        }
+
+        internal void NotifyGameBridgeFeaturesEnvironmentReset(string reason)
+        {
+            DispatchGameBridgeFeatures("EnvironmentReset", feature => feature.EnvironmentReset(reason));
+        }
+
+        private void EnsureGameBridgeFeatures()
+        {
+            cameraFeature ??= new CameraFeature(runtime);
+            if (!features.Contains(cameraFeature))
+                features.Add(cameraFeature);
+
+            actionSpeedFeature ??= new ActionSpeedFeature(runtime);
+            if (!features.Contains(actionSpeedFeature))
+                features.Add(actionSpeedFeature);
+        }
+
+        private void RegisterGameBridgeFeatureApis(IManifest manifest)
+        {
+            DispatchGameBridgeFeatures("RegisterApis", feature => feature.RegisterApis(manifest));
+        }
+
+        private void PublishGameBridgeFeatureHookStatuses()
+        {
+            DispatchGameBridgeFeatures("PublishHookStatuses", feature => feature.PublishHookStatuses());
+        }
+
+        private void InstallGameBridgeFeatureHooks(HarmonyReflectionPatcher patcher)
+        {
+            DispatchGameBridgeFeatures("InstallHooks", feature => feature.InstallHooks(patcher));
+        }
+
+        private void UpdateGameBridgeFeatures()
+        {
+            DispatchGameBridgeFeatures("Update", feature => feature.Update());
+        }
+
+        private void DispatchGameBridgeFeatures(string operation, Action<IGameBridgeFeature> action)
+        {
+            foreach (IGameBridgeFeature feature in features)
+                DispatchGameBridgeFeature(feature, operation, action);
+        }
+
+        private void DispatchGameBridgeFeature(IGameBridgeFeature feature, string operation, Action<IGameBridgeFeature> action)
+        {
+            string id = GetGameBridgeFeatureId(feature);
+            try
+            {
+                action(feature);
+                runtime.SetHookStatus(
+                    "Feature." + id,
+                    "ready",
+                    "DTMAPI.GameBridge.DolocTown feature host",
+                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature.");
+            }
+            catch (Exception ex)
+            {
+                string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
+                runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+                runtime.SetHookStatus(
+                    "Feature." + id,
+                    "failed",
+                    "DTMAPI.GameBridge.DolocTown feature host",
+                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        private static string GetGameBridgeFeatureId(IGameBridgeFeature feature)
+        {
+            string id = feature.Id;
+            if (!string.IsNullOrWhiteSpace(id))
+                return id.Trim();
+
+            return feature.GetType().Name;
         }
 
         private void PublishStableCustomEntityHookStatuses()
@@ -432,11 +511,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("GameLoop.ReturnedToTitle", returnHomePatched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.ReturnHome", returnHomePatched ? "Patched ReturnHome; title lifecycle smoke verifies the button remount." : "Waiting for DolocAPI.ReturnHome to become patchable.");
                 }
 
-                if (!cameraZoomSetEnvCameraPatched)
-                {
-                    cameraZoomSetEnvCameraPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetEnvCamera", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix), BindingFlags.Public | BindingFlags.Static), 5);
-                    runtime.SetHookStatus("Camera.ViewEnvironmentLifecycle", cameraZoomSetEnvCameraPatched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.SetEnvCamera", cameraZoomSetEnvCameraPatched ? "Patched the native environment-camera reset boundary so active CameraView leases can reapply orthographic-size-only playable zoom after room transitions." : "Waiting for DolocAPI.SetEnvCamera to become patchable.");
-                }
+                InstallGameBridgeFeatureHooks(patcher);
 
                 if (!workshopReloadPatched)
                 {
@@ -482,48 +557,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 bool strongPlantingGunUiHooksReady = strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
                 experimentalApi?.SetStrongPlantingGunHooksInstalled(strongPlantingGunToolHookReady, strongPlantingGunUiHooksReady, strongPlantingGunCtorPatched);
                 runtime.SetHookStatus("Farming.StrongPlantingGun", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "experimental" : "pending", "Harmony Prefix/Postfix: ItemFarmingGun + FarmingGunUiState", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "Patched official farming gun construction, use, and UI transfer paths so registered DTMAPI policies can expose multi-slot seed/film/fertilizer behavior while delegating plant checks to official methods." : "Waiting for ItemFarmingGun/FarmingGunUiState targets to become patchable.");
-
-                if (!actionSpeedToolEnterPatched)
-                {
-                    actionSpeedToolEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateTool, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateToolEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!actionSpeedToolExitPatched)
-                {
-                    actionSpeedToolExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateTool, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateToolExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!actionSpeedInteractEnterPatched)
-                {
-                    actionSpeedInteractEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateInteract, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateInteractEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!actionSpeedInteractExitPatched)
-                {
-                    actionSpeedInteractExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateInteract, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateInteractExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!actionSpeedEatEnterPatched)
-                {
-                    actionSpeedEatEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateEat, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateEatEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!actionSpeedUseItemContinuesPatched)
-                {
-                    actionSpeedUseItemContinuesPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItemContinues", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemContinuesPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!actionSpeedBaseExitPatched)
-                {
-                    actionSpeedBaseExitPatched = patcher.TryPatchPostfix("AgentStateBase, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateBaseExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                bool actionSpeedToolHooksReady = actionSpeedToolEnterPatched && actionSpeedToolExitPatched;
-                bool actionSpeedInteractionHooksReady = actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched;
-                experimentalApi?.SetActionSpeedToolHooksInstalled(actionSpeedToolHooksReady);
-                experimentalApi?.SetActionSpeedInteractionHooksInstalled(actionSpeedInteractionHooksReady);
-                runtime.SetHookStatus("ActionSpeed.ToolAnimation", actionSpeedToolHooksReady ? "verified" : "pending", "Harmony Postfix: AgentStateTool.OnEnter/OnExit", actionSpeedToolHooksReady ? "Patched tool animation speed and restore points; verified by ACTIONSPEED-001. Selected interaction slices are tracked separately in ACTIONSPEED-002." : "Waiting for AgentStateTool.OnEnter/OnExit to become patchable.");
-                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", actionSpeedInteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues", actionSpeedInteractionHooksReady ? "Patched shared interaction/eat animation speed points plus right-click continuous timer scaling. ACTIONSPEED-002 verifies fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues hooks to become patchable.");
 
                 if (!debugConsoleUseToolPatched)
                 {

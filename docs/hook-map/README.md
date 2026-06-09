@@ -430,6 +430,7 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.AgentStateTool.OnEnter`, `DolocTown.AgentStateTool.OnExit`, `DolocTown.AgentStateInteract.OnEnter/OnExit`, `DolocTown.AgentStateEat.OnEnter`, `DolocTown.AgentControllerState.UseItemContinues(float dt)`, `AgentStateBase.OnExit`, and GameBridge reflection over the body/tool/tool-collider/shared interaction animators owned by active states.
 - Patch type: Harmony Postfix/Prefix plus scoped reflection writes; public API does not expose raw decompiled game types.
+- Feature host owner: `ActionSpeedFeature` registers `IActionSpeedApi` through `ActionSpeedService`; `ActionSpeedHookBridge` owns the hook installation and preserves the original `ActionSpeed.ToolAnimation` / `ActionSpeed.InteractionAnimation` hook IDs and status text.
 - Why this point: keeps fragile animation-speed writes inside `DTMAPI.GameBridge.DolocTown` while the migrated ActionSpeed mod supplies only a policy and player config.
 - Failure behavior: if the hook is not installed or no enabled tool policy exists, ActionSpeed remains configured/pending and no animator speed is changed. Speeds captured during `OnEnter` are restored on `OnExit` and smoke cleanup; continuous-use scaling only changes the `dt` passed to the game's own use-item timer and does not call item logic directly. Auto-fill continues to call native `ItemBottle.UseAsItem`; 0.2.3 normal/strong modes differ only by bridge cooldown and log `strong/cooldownSeconds` for smoke comparison.
 - Mods/tests depending on it: `Yuuka.DTMAPI.ActionSpeed`.
@@ -441,8 +442,9 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Interaction hook log line: `Hook status: ActionSpeed.InteractionAnimation = experimental. ... bottled-water right-click continuous drink ... no-key ItemBottle.UseAsItem auto-fill ...`
   - Interaction gameplay log line: `Smoke exercise ActionSpeedInteraction OK ... eatDrink={item=can ... continuous=none}; bottledWaterRightClick={item=bottle_of_water ... continuousDelta=1}; bottleFillInWater={branch=InteractiveWater.IsInWater ...}; autoFillBottle={... behavior=AutoFillBottle ... applications=1}; ... pending=none`.
   - 0.2.3 strong auto-fill log line: `GAME-SMOKE/20260603-041950` records native `ItemBottle.UseAsItem` with `strong=True`, `cooldownSeconds=0.08`, `normalCooldownSeconds=0.1`, `strongCooldownSeconds=0.08`, and `inventoryChanged=True`.
+  - 2026-06-09 feature-host split log line: `GAME-SMOKE/20260609-120153` records `Feature.ActionSpeed = ready`, `ActionSpeed.ToolAnimation = verified`, `ActionSpeed.InteractionAnimation = experimental`, `Smoke.ActionSpeedTool = verified`, `Smoke.ActionSpeedConfigApply = verified`, and `Smoke.ActionSpeedInteraction = verified`.
   - Config screenshot: `docs/debug/evidence/GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-action-speed.png` shows six inline bool+number rows plus same-row `自动装水` and `强化自动装水`.
-  - Screenshot/report: tool smoke result `docs/debug/evidence/GAME-SMOKE/20260531-044611`; config-apply smoke result `docs/debug/evidence/GAME-SMOKE/20260531-045330`; 0.2.1 interaction smoke result `docs/debug/evidence/GAME-SMOKE/20260602-004823`; 0.2.3 strong interaction smoke result `docs/debug/evidence/GAME-SMOKE/20260603-041950`; final title config screenshot smoke result `docs/debug/evidence/GAME-SMOKE/20260603-052444`.
+  - Screenshot/report: tool smoke result `docs/debug/evidence/GAME-SMOKE/20260531-044611`; config-apply smoke result `docs/debug/evidence/GAME-SMOKE/20260531-045330`; 0.2.1 interaction smoke result `docs/debug/evidence/GAME-SMOKE/20260602-004823`; 0.2.3 strong interaction smoke result `docs/debug/evidence/GAME-SMOKE/20260603-041950`; final title config screenshot smoke result `docs/debug/evidence/GAME-SMOKE/20260603-052444`; feature-host ActionSpeed smoke result `docs/debug/evidence/GAME-SMOKE/20260609-120153`; report zip `docs/debug/evidence/GAME-SMOKE/20260609-120153.zip`.
 - Regression cases: ACTIONSPEED-001, ACTIONSPEED-002, CONFIG-007, CONFIG-008
 - Pending related paths: Recast/minigame fishing remains tracked separately under `Fishing.Automation`.
 
@@ -726,6 +728,24 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-051653`; process check says no `DolocTown.exe`.
 - Regression cases: MANUALQA-029-README, SAVE-001, OFFICIAL-001
 
+## Hook: Feature.Camera
+
+- Status: ready
+- Public surface: internal GameBridge diagnostics/status only; public camera APIs remain `ICameraViewApi` and obsolete `ICameraZoomApi`.
+- Game build: 23465763 workshop
+- Game method/type: no native game hook; this status is emitted by the DTMAPI GameBridge feature host around CameraFeature dispatch.
+- Patch type: GameBridge runtime diagnostics/status.
+- Implementation owner: `DolocTownGameBridge` safe-dispatches every `IGameBridgeFeature` operation and records `Feature.<Id>` hook status; `CameraFeature.Id` is `Camera`; Camera hook installation is dispatched through `InstallHooks`.
+- Why this point: proves the Camera feature is registered with the feature host instead of being a special one-off bridge path.
+- Failure behavior: `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset` dispatches are wrapped per feature. A feature exception records `DTMAPI.GameBridge.Feature.<Id>` diagnostics, marks `Feature.<Id>` failed, logs the exception type/message, and does not block the next feature.
+- Mods/tests depending on it: internal Camera feature host smoke evidence; `DTMAPI.HookProbeMod` observes the hook status.
+- Evidence:
+  - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2.
+  - Latest log line: `GAME-SMOKE/20260609-110528` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`; `Camera.ViewEnvironmentLifecycle = experimental` is emitted during `InstallHooks`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-110528`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-110608.zip`.
+- Regression cases: CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, CAMERA-PLAYABLE
+
 ## Hook: Camera.ViewApi
 
 - Status: experimental
@@ -733,18 +753,21 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: `DolocAPI.mainCamera.orthographicSize`; `DolocAPI.SetEnvCamera(...)` is observed only as a lifecycle boundary where DTMAPI reapplies the active playable-view orthographic size.
 - Patch type: GameBridge runtime reflection plus Harmony Postfix on `DolocAPI.SetEnvCamera`; no raw Unity camera object or decompiled game type is exposed through the public API.
-- Implementation owner: `CameraFeature` registers `ICameraViewApi` through `CameraViewService`, registers diagnostics through `CameraDiagnosticsService`, and receives lifecycle notifications from `DolocTownHookCallbacks`; `DolocTownExperimentalBridgeApi` no longer implements this camera API.
+- Implementation owner: `DolocTownGameBridge` hosts `IGameBridgeFeature` instances and safe-dispatches `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset` to `CameraFeature`; `CameraFeature.Id` is `Camera`, owns `cameraViewSetEnvCameraPatched`, installs the `DolocAPI.SetEnvCamera` postfix, and registers `ICameraViewApi` through `CameraViewService` plus diagnostics through `CameraDiagnosticsService`; `DolocTownGameBridge` no longer stores `cameraZoomSetEnvCameraPatched`; `SmokeHarness` owns `SmokeUpdate()` scheduling only; `Smoke/Cases/CameraPlayableSmokeCase.cs` owns the `AutoExerciseZoom` / `Smoke.CameraPlayable` case implementation; `DolocTownExperimentalBridgeApi` no longer implements this camera API.
 - Why this point: playable zoom should keep the native camera follow/range semantics intact. DTMAPI only changes the gameplay camera orthographic size and lets the native `CameraController.UpdateCamPosition(...)` path continue following the player. The old `CameraController.RefreshResolution()` / `SetPosition(...)` / `RefreshScanner()` / background/fog compensation path is intentionally not used for playable zoom because manual QA showed it mixes panorama semantics into normal play.
-- Failure behavior: leases may report pending while the main camera is unavailable; runtime refresh retries the orthographic write. DTMAPI arbitrates active leases by highest priority, then latest update order. Releasing the active lease falls back to the next active lease or restores vanilla `1x`. `SaveLoaded`, `ReturnedToTitle`, explicit release/reset, and environment-camera transitions restore or reapply only the orthographic-size playable-view state. UI scale remains unchanged.
+- Failure behavior: leases may report pending while the main camera is unavailable; runtime refresh retries the orthographic write. DTMAPI arbitrates active leases by highest priority, then latest update order. Releasing the active lease falls back to the next active lease or restores vanilla `1x`. `SaveLoaded`, `ReturnedToTitle`, explicit release/reset, and environment-camera transitions restore or reapply only the orthographic-size playable-view state. Feature dispatch exceptions are isolated by the GameBridge feature host and recorded under `DTMAPI.GameBridge.Feature.Camera`. UI scale remains unchanged.
 - Mods/tests depending on it: `DTMAPI.ZoomMod`, smoke harness `-AutoExerciseZoom` / `Smoke.CameraPlayable`.
 - Evidence:
   - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2 required.
-  - Latest log line: `GAME-SMOKE/20260609-030107` on merged `Refactor` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
-  - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-030107`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-030147`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-030144.zip`.
+  - Latest log line: `GAME-SMOKE/20260609-110528` on `Refactor` after the CameraPlayable smoke case-file move includes `Feature.Camera = ready`, `Camera.ViewEnvironmentLifecycle = experimental`, `Camera.ViewApi = contract`, `Camera.ZoomApi = obsolete-compatibility`, `HookProbe SaveLoaded OK slot=2 isNewGame=False`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
+  - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-110528`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-110612`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-110608.zip`.
+  - Latest case-file validation: `src/DTMAPI.GameBridge.DolocTown/Smoke/Cases/CameraPlayableSmokeCase.cs` has the same content hash as the previous `Smoke/CameraSmoke.cs`; result schema and screenshot/evidence names stayed unchanged.
+  - Prior feature-host split log line: `GAME-SMOKE/20260609-031302` on `Refactor` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
+  - Prior feature-host split screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-031302`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-031342`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-031339.zip`.
   - Log line: `GAME-SMOKE/20260608-150914` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260608-150914`; camera screenshots and summary under `D:\Steam\steamapps\common\Doloc Town\DTMAPI\evidence\CAMERA-PLAYABLE\20260608-150952`.
-- Regression cases: CAMERA-PLAYABLE, ZOOM-030-F, ZOOM-042-API-REBUILD
+- Regression cases: CAMERA-PLAYABLE, CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, ZOOM-030-F, ZOOM-042-API-REBUILD
 
 ## Hook: Camera.ZoomApi
 
@@ -753,15 +776,15 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: compatibility wrapper over `ICameraViewApi`; no direct CameraController/background/fog/scanner owner path.
 - Patch type: API redirect only.
-- Implementation owner: `CameraFeature` registers `ICameraZoomApi` through `CameraZoomCompatibilityService`; `DolocTownExperimentalBridgeApi` no longer implements this obsolete compatibility API.
+- Implementation owner: `DolocTownGameBridge` feature-host dispatch calls `CameraFeature.RegisterApis(...)`; `CameraFeature` registers `ICameraZoomApi` through `CameraZoomCompatibilityService`; `DolocTownExperimentalBridgeApi` no longer implements this obsolete compatibility API.
 - Why this point: existing migrated mods can continue compiling while moving to lease-based playable camera view. New code should use `ICameraViewApi`.
 - Failure behavior: calls are redirected to a per-owner compatibility lease. Obsolete `CameraZoomOptions.RefreshCameraController`, `CompensateBackground`, `CompensateDepthFog`, and `RefreshScanners` are ignored for playable zoom.
 - Mods/tests depending on it: legacy callers only.
 - Evidence:
   - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
   - Save: n/a for compatibility wrapper by itself; `CAMERA-PLAYABLE` smoke validates the real playable path.
-  - Log line: `GAME-SMOKE/20260609-030107` includes `Camera.ZoomApi = obsolete-compatibility`.
-  - Screenshot/report: use `Camera.ViewApi` evidence from `GAME-SMOKE/20260609-030107` instead.
+  - Log line: `GAME-SMOKE/20260609-031302` includes `Camera.ZoomApi = obsolete-compatibility`.
+  - Screenshot/report: use `Camera.ViewApi` evidence from `GAME-SMOKE/20260609-031302` instead.
 - Regression cases: CAMERA-PLAYABLE
 
 ## Hook: Inventory.ChestLocatorEnhancer
