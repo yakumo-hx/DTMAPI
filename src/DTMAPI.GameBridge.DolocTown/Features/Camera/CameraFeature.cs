@@ -1,3 +1,4 @@
+using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
@@ -5,12 +6,13 @@ using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed class CameraFeature
+    internal sealed class CameraFeature : IGameBridgeFeature
     {
         private readonly DtmApiRuntime runtime;
         private readonly CameraDiagnosticsService diagnostics;
         private readonly CameraViewService viewService;
         private readonly CameraZoomCompatibilityService zoomCompatibilityService;
+        private bool cameraViewSetEnvCameraPatched;
 
         public CameraFeature(DtmApiRuntime runtime)
         {
@@ -25,7 +27,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public ICameraZoomApi ZoomApi => zoomCompatibilityService;
 
-        public void RegisterRuntimeApis(IManifest manifest)
+        public string Id => "Camera";
+
+        internal bool CameraViewSetEnvCameraPatched => cameraViewSetEnvCameraPatched;
+
+        public void RegisterApis(IManifest manifest)
         {
             runtime.RegisterRuntimeApi<ICameraViewApi>(manifest, viewService);
             runtime.RegisterRuntimeApi<ICameraZoomApi>(manifest, zoomCompatibilityService);
@@ -36,17 +42,31 @@ namespace DTMAPI.GameBridge.DolocTown
             diagnostics.PublishHookStatuses();
         }
 
-        public void RefreshForRuntime()
+        public void InstallHooks(HarmonyReflectionPatcher patcher)
+        {
+            if (cameraViewSetEnvCameraPatched)
+                return;
+
+            cameraViewSetEnvCameraPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetEnvCamera", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix), BindingFlags.Public | BindingFlags.Static), 5);
+            diagnostics.SetEnvironmentLifecyclePatched(cameraViewSetEnvCameraPatched);
+        }
+
+        public void Update()
         {
             viewService.RefreshForRuntime();
         }
 
-        public void ResetForLifecycleBoundary(string reason)
+        public void SaveLoaded(bool isNewGame)
         {
-            viewService.ResetForLifecycleBoundary(reason);
+            viewService.ResetForLifecycleBoundary("SaveLoaded");
         }
 
-        public void NotifyEnvironmentReset(string reason)
+        public void ReturnedToTitle()
+        {
+            viewService.ResetForLifecycleBoundary("ReturnedToTitle");
+        }
+
+        public void EnvironmentReset(string reason)
         {
             viewService.NotifyEnvironmentReset(reason);
         }

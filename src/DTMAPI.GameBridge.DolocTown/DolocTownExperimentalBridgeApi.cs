@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IActionCompletionApi, IFishingAutomationApi, IActionSpeedApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IActionCompletionApi, IFishingAutomationApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -26,7 +26,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, ActionCompletionOptions> actionOptions = new Dictionary<string, ActionCompletionOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, ActionSpeedOptions> actionSpeedOptions = new Dictionary<string, ActionSpeedOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishRoeTooltipOptions> fishRoeOptions = new Dictionary<string, FishRoeTooltipOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<string, FishRoeDisplayInfo?>> fishRoeLookups = new Dictionary<string, Func<string, FishRoeDisplayInfo?>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, AnimalHusbandryProgressOptions> animalOptions = new Dictionary<string, AnimalHusbandryProgressOptions>(StringComparer.OrdinalIgnoreCase);
@@ -37,7 +36,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, string> itemTitleCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedActionApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedActionSpeedApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishRoeApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedAnimalApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PendingOilResourceHit> pendingOilResourceHits = new Dictionary<string, PendingOilResourceHit>(StringComparer.Ordinal);
@@ -64,10 +62,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly HashSet<object> secondMotorControllers = new HashSet<object>();
         private readonly HashSet<object> secondMotorInteractables = new HashSet<object>();
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
+        private ActionSpeedService? actionSpeedService;
         private bool actionHooksInstalled;
         private bool fishingHooksInstalled;
-        private bool actionSpeedToolHooksInstalled;
-        private bool actionSpeedInteractionHooksInstalled;
         private bool fishRoeHooksInstalled;
         private bool animalViewerHookInstalled;
         private bool motorVehicleHooksInstalled;
@@ -76,11 +73,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool animalViewerUiDelayedScreenshotRecorded;
         private string? latestAnimalViewerEvidenceDir;
         private string latestAnimalProgressOverlaySummary = string.Empty;
-        private DateTimeOffset lastActionSpeedAutoFillAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastFishingAutoCastAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastFishingFeedbackAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
-        private int actionSpeedAutoFillApplications;
         private int fishingAutoCastApplications;
         private object? originalAgentMotorController;
         private OriginalMotorSnapshot? originalMotorSnapshotBeforeSecondRide;
@@ -113,6 +108,11 @@ namespace DTMAPI.GameBridge.DolocTown
             this.runtime = runtime;
         }
 
+        internal void AttachActionSpeedService(ActionSpeedService service)
+        {
+            actionSpeedService = service;
+        }
+
 
         internal int OneActionApplicationCount { get; private set; }
 
@@ -124,19 +124,50 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal string LastFishingMiniGameCompleteSummary { get; private set; } = string.Empty;
 
-        internal int ActionSpeedApplicationCount { get; private set; }
+        internal int ActionSpeedApplicationCount => actionSpeedService?.ActionSpeedApplicationCount ?? 0;
 
-        internal string LastActionSpeedApplicationSummary { get; private set; } = string.Empty;
+        internal string LastActionSpeedApplicationSummary => actionSpeedService?.LastActionSpeedApplicationSummary ?? string.Empty;
 
-        internal int ActionSpeedContinuousUseApplicationCount { get; private set; }
+        internal int ActionSpeedContinuousUseApplicationCount => actionSpeedService?.ActionSpeedContinuousUseApplicationCount ?? 0;
 
-        internal string LastActionSpeedContinuousUseSummary { get; private set; } = string.Empty;
+        internal string LastActionSpeedContinuousUseSummary => actionSpeedService?.LastActionSpeedContinuousUseSummary ?? string.Empty;
 
-        internal string LastActionSpeedAutoFillSummary { get; private set; } = string.Empty;
+        internal string LastActionSpeedAutoFillSummary => actionSpeedService?.LastActionSpeedAutoFillSummary ?? string.Empty;
 
-        internal int ActionSpeedAutoFillApplicationCount => actionSpeedAutoFillApplications;
+        internal int ActionSpeedAutoFillApplicationCount => actionSpeedService?.ActionSpeedAutoFillApplicationCount ?? 0;
 
-        internal bool SuppressActionSpeedAutoFillForSmoke { get; set; }
+        internal bool SuppressActionSpeedAutoFillForSmoke
+        {
+            get => actionSpeedService?.SuppressActionSpeedAutoFillForSmoke ?? false;
+            set
+            {
+                if (actionSpeedService != null)
+                    actionSpeedService.SuppressActionSpeedAutoFillForSmoke = value;
+            }
+        }
+
+        internal bool TryGetConfiguredActionSpeedOwner(out string ownerId)
+        {
+            if (actionSpeedService != null)
+                return actionSpeedService.TryGetConfiguredActionSpeedOwner(out ownerId);
+
+            ownerId = string.Empty;
+            return false;
+        }
+
+        internal bool TryGetConfiguredActionSpeedInteractionOwner(out string ownerId)
+        {
+            if (actionSpeedService != null)
+                return actionSpeedService.TryGetConfiguredActionSpeedInteractionOwner(out ownerId);
+
+            ownerId = string.Empty;
+            return false;
+        }
+
+        internal void RestoreActionSpeed(string reason)
+        {
+            actionSpeedService?.RestoreActionSpeed(reason);
+        }
 
         internal int FishingAutoCastApplicationCount => fishingAutoCastApplications;
 
@@ -213,7 +244,6 @@ namespace DTMAPI.GameBridge.DolocTown
             RefreshSaveSlotExpansionForRuntime();
             RecoverOrphanEquipmentSlotsIfNeeded();
             UpdateActiveSecondMotorRoomSnapshot();
-            UpdateActionSpeedAutoFill();
             UpdateFishingAutoCast();
             UpdateMachineProduction(forceMachineProductionPoll);
             RefreshAnimalProgressOverlayTexts(force: false);

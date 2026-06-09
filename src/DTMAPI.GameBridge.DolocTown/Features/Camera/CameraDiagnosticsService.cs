@@ -20,6 +20,11 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus("Camera.ZoomApi", "obsolete-compatibility", "ICameraZoomApi -> ICameraViewApi", "ICameraZoomApi is obsolete and redirects to lease-based ICameraViewApi playable zoom.");
         }
 
+        public void SetEnvironmentLifecyclePatched(bool patched)
+        {
+            runtime.SetHookStatus("Camera.ViewEnvironmentLifecycle", patched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.SetEnvCamera", patched ? "Patched the native environment-camera reset boundary so active CameraView leases can reapply orthographic-size-only playable zoom after room transitions." : "Waiting for DolocAPI.SetEnvCamera to become patchable.");
+        }
+
         public void SetViewPending(string message)
         {
             runtime.SetHookStatus("Camera.ViewApi", "pending", "DolocAPI.mainCamera.orthographicSize", message);
