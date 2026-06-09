@@ -31,7 +31,7 @@
 - `docs/api/public-api-matrix.md`
 - `docs/hook-map/README.md`
 - `docs/debug/regressions/smoke-matrix.md`
-- `docs/debug/evidence/GAME-SMOKE/20260609-143612/latest-report.txt`
+- `docs/debug/evidence/GAME-SMOKE/20260609-144458/latest-report.txt`
 - `docs/updates/INDEX.md`
 - `docs/updates/2026/20260609-0021-actioncompletion-feature-split.md`
 
@@ -43,22 +43,24 @@
 - Kept the fuel/feed callback on the existing `AgentStateInteract.OnExit` feature-host route so hook IDs and status text remain stable.
 - Routed `DolocTownHookCallbacks` through `Bridge.ActionCompletionService`.
 - Left OilCoalDrop ownership in the experimental bridge, with only the existing coal-drop helper exposed internally to the ActionCompletion service.
-- Fixed the generated `latest-report.txt` pointer for this smoke evidence to point at `docs/debug/evidence/GAME-SMOKE/20260609-143612.zip`.
+- Fixed the generated `latest-report.txt` pointer for the post-merge smoke evidence to point at `docs/debug/evidence/GAME-SMOKE/20260609-144458.zip`.
 
 ## Validation
 
-- Passed: `tools/scripts/build.ps1 -Configuration Release`
+- Passed on the feature branch and after merge to `Refactor`: `tools/scripts/build.ps1 -Configuration Release`
   - Release build completed with 0 warnings and 0 errors.
   - `DTMAPI.UnitTests: OK`.
-- Passed: `tools/scripts/test.ps1 -Configuration Release`
+- Passed on the feature branch and after merge to `Refactor`: `tools/scripts/test.ps1 -Configuration Release`
   - Release build/test completed with 0 warnings and 0 errors.
   - `DTMAPI.UnitTests: OK`.
-- Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoExerciseOneActionResourceHit -AutoExerciseOneActionWrongTool -AutoExerciseOneActionFuelFeed -AutoExerciseOneActionVegetation -SaveSlot 3 -TimeoutSeconds 360`.
+- Passed on the feature branch and after merge to `Refactor`: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoExerciseOneActionResourceHit -AutoExerciseOneActionWrongTool -AutoExerciseOneActionFuelFeed -AutoExerciseOneActionVegetation -SaveSlot 3 -TimeoutSeconds 360`.
 
 ## Evidence
 
-- Game smoke: `docs/debug/evidence/GAME-SMOKE/20260609-143612`
-- Report zip: `docs/debug/evidence/GAME-SMOKE/20260609-143612.zip`
+- Post-merge `Refactor` game smoke: `docs/debug/evidence/GAME-SMOKE/20260609-144458`
+- Post-merge `Refactor` report zip: `docs/debug/evidence/GAME-SMOKE/20260609-144458.zip`
+- Feature branch game smoke: `docs/debug/evidence/GAME-SMOKE/20260609-143612`
+- Feature branch report zip: `docs/debug/evidence/GAME-SMOKE/20260609-143612.zip`
 - `result.json`: `SchemaVersion=2`, `RunStatus=Passed`, `StartupLog=Passed`, `GameLaunched=Passed`, `SaveLoaded=Passed`, `OneActionResourceHit=Passed`, `OneActionWrongTool=Passed`, `OneActionFuelFeed=Passed`, `OneActionVegetation=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed`.
 - Log evidence: `Feature.ActionCompletion = ready` with `Feature status: id=ActionCompletion, lastOperation=PublishHookStatuses/InstallHooks/Update/ReturnedToTitle/SaveLoaded/EnvironmentReset, success=True, failureCount=0, lastError=none`.
 - Hook status evidence: `Actions.OneActionComplete = verified` and `Actions.OneActionFuelFeed = verified` keep their existing meanings.
