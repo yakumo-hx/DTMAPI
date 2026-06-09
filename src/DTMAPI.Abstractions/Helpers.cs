@@ -164,6 +164,7 @@ namespace DTMAPI.Abstractions
         string EntryType { get; }
         bool Loaded { get; }
         string Status { get; }
+        string StatusCode { get; }
         string Reason { get; }
         string ManifestPath { get; }
         string RootPath { get; }
