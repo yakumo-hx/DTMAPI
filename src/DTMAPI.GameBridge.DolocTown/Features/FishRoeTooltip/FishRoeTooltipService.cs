@@ -2,14 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class FishRoeTooltipService : IItemTooltipApi
     {
-        internal void SetFishRoeHooksInstalled(bool installed)
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, FishRoeTooltipOptions> fishRoeOptions = new Dictionary<string, FishRoeTooltipOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Func<string, FishRoeDisplayInfo?>> fishRoeLookups = new Dictionary<string, Func<string, FishRoeDisplayInfo?>>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedFishRoeApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool hooksInstalled;
+
+        public FishRoeTooltipService(DtmApiRuntime runtime)
         {
-            fishRoeHooksInstalled = installed;
+            this.runtime = runtime;
+        }
+
+        internal void SetHooksInstalled(bool installed)
+        {
+            hooksInstalled = installed;
         }
 
         public void ConfigureFishRoeProvider(IManifest owner, FishRoeTooltipOptions options, Func<string, FishRoeDisplayInfo?> lookup)
@@ -25,7 +38,7 @@ namespace DTMAPI.GameBridge.DolocTown
         BridgeFeatureStatus IItemTooltipApi.GetStatus(string uniqueId)
         {
             return fishRoeOptions.ContainsKey(uniqueId ?? string.Empty)
-                ? new BridgeFeatureStatus(fishRoeHooksInstalled ? "configured-verified-tooltip-hook" : "configured-pending-hook", fishRoeHooksInstalled ? "Lookup provider accepted and item display hooks are installed; fish roe tooltip evidence is recorded, but the API remains experimental." : "Lookup provider accepted; item tooltip hooks are not yet installed.")
+                ? new BridgeFeatureStatus(hooksInstalled ? "configured-verified-tooltip-hook" : "configured-pending-hook", hooksInstalled ? "Lookup provider accepted and item display hooks are installed; fish roe tooltip evidence is recorded, but the API remains experimental." : "Lookup provider accepted; item tooltip hooks are not yet installed.")
                 : new BridgeFeatureStatus("not-configured", "No fish roe tooltip provider was registered for this mod.");
         }
 
@@ -120,6 +133,14 @@ namespace DTMAPI.GameBridge.DolocTown
             object? value = type.GetProperty("fishName", BindingFlags.Public | BindingFlags.Instance)?.GetValue(item);
             fishId = value as string ?? string.Empty;
             return !string.IsNullOrWhiteSpace(fishId);
+        }
+
+        private void LogOnce(HashSet<string> keys, string key, string message)
+        {
+            if (keys.Contains(key))
+                return;
+            keys.Add(key);
+            runtime.RuntimeMonitor.Log(message);
         }
     }
 }

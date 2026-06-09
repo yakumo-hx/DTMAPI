@@ -143,9 +143,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool fishingMiniGameStopPatched;
         private bool fishingPullEnterPatched;
         private bool fishingPullExitPatched;
-        private bool fishRoeTitlePatched;
-        private bool fishRoeDescriptionPatched;
-        private bool fishRoeDetailPatched;
+        private bool fishRoeTitlePatched => fishRoeTooltipFeature?.HookBridge.TitlePatched == true;
+        private bool fishRoeDescriptionPatched => fishRoeTooltipFeature?.HookBridge.DescriptionPatched == true;
+        private bool fishRoeDetailPatched => fishRoeTooltipFeature?.HookBridge.DetailPatched == true;
         private bool animalFullInfoDataPatched;
         private bool animalViewerShowPrefixPatched;
         private bool animalViewerShowPatched;
@@ -192,6 +192,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, GameBridgeFeatureStatus> featureStatuses = new Dictionary<string, GameBridgeFeatureStatus>(StringComparer.OrdinalIgnoreCase);
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
+        private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -207,6 +208,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal DolocTownExperimentalBridgeApi? ExperimentalApi => experimentalApi;
 
         internal CameraFeature? CameraFeature => cameraFeature;
+
+        internal FishRoeTooltipService? FishRoeTooltipService => fishRoeTooltipFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -235,7 +238,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -249,7 +252,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 Type = "RuntimeApi"
             };
             runtime.RegisterRuntimeApi<IFishingAutomationApi>(manifest, experimentalApi);
-            runtime.RegisterRuntimeApi<IItemTooltipApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAnimalViewerApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMailDeliveryApi>(manifest, experimentalApi);
@@ -298,6 +300,10 @@ namespace DTMAPI.GameBridge.DolocTown
             cameraFeature ??= new CameraFeature(runtime);
             if (!features.Contains(cameraFeature))
                 features.Add(cameraFeature);
+
+            fishRoeTooltipFeature ??= new FishRoeTooltipFeature(runtime);
+            if (!features.Contains(fishRoeTooltipFeature))
+                features.Add(fishRoeTooltipFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
@@ -750,25 +756,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 bool fishingHooksReady = fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched;
                 experimentalApi?.SetFishingHooksInstalled(fishingHooksReady);
                 runtime.SetHookStatus("Fishing.Automation", fishingHooksReady ? "experimental" : "pending", "Harmony Postfix: fishing state/input phases", fishingHooksReady ? "Patched fishing phase observation hooks plus native BodyController.UseFishRod auto-cast, wait-phase InstantBite, and delayed FishingGameScrollBar.UpdateGame auto-complete; F6 auto-cast and wait phase verified by AUTOFISH-001." : "Waiting for fishing phase targets to become patchable.");
-
-                if (!fishRoeTitlePatched)
-                {
-                    fishRoeTitlePatched = patcher.TryPatchPostfix("DolocTown.Item, Assembly-CSharp", "get_title", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemTitlePostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishRoeDescriptionPatched)
-                {
-                    fishRoeDescriptionPatched = patcher.TryPatchPostfix("DolocTown.Item, Assembly-CSharp", "get_description", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemDescriptionPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishRoeDetailPatched)
-                {
-                    fishRoeDetailPatched = patcher.TryPatchPostfix("DolocTown.Item, Assembly-CSharp", "GetDetailInfo", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemDetailInfoPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                bool fishRoeHooksReady = fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched;
-                experimentalApi?.SetFishRoeHooksInstalled(fishRoeHooksReady);
-                runtime.SetHookStatus("Items.FishRoeTooltip", fishRoeHooksReady ? "verified" : "pending", "Harmony Postfix: Item.title/description/GetDetailInfo", fishRoeHooksReady ? "Patched item display paths for fish roe providers; verified by FISHROE-001." : "Waiting for item display targets to become patchable.");
 
                 if (!animalFullInfoDataPatched)
                 {
