@@ -61,15 +61,16 @@ namespace DTMAPI.GameBridge.DolocTown
             object? targetRoom = null;
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental bridge API is not available.");
+                ChestLocatorEnhancerService? chestLocatorService = ChestLocatorEnhancerService;
+                if (chestLocatorService == null)
+                    throw new InvalidOperationException("ChestLocatorEnhancer feature service is not available.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
                 if (dolocApi == null)
                     throw new InvalidOperationException("DolocAPI was not available.");
 
-                IChestLocatorEnhancerApi api = experimentalApi;
+                IChestLocatorEnhancerApi api = chestLocatorService;
                 ManifestModel owner = CreateChestLocatorSmokeManifest();
                 ChestLocatorEnhancerRegisterResult register = api.Register(owner, new ChestLocatorEnhancerOptions
                 {
@@ -112,12 +113,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 int afterPlace = CountNativeItemForSmoke(dolocApi, itemId, checkBox: true);
                 if (afterPlace < baseline + 3)
-                    throw new InvalidOperationException("CountItem did not include transient shared Case. item=" + itemId + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}");
+                    throw new InvalidOperationException("CountItem did not include transient shared Case. item=" + itemId + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", bridge={" + chestLocatorService.LastChestLocatorEnhancerSummary + "}");
 
                 bool cost = CostNativeItemForSmoke(dolocApi, itemId, 2, checkBox: true);
                 int afterCost = CountNativeItemForSmoke(dolocApi, itemId, checkBox: true);
                 if (!cost || afterCost < baseline + 1 || afterCost > baseline + 1)
-                    throw new InvalidOperationException("CostItem did not consume through shared inventory array. item=" + itemId + ", cost=" + cost + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", afterCost=" + afterCost + ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}");
+                    throw new InvalidOperationException("CostItem did not consume through shared inventory array. item=" + itemId + ", cost=" + cost + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", afterCost=" + afterCost + ", bridge={" + chestLocatorService.LastChestLocatorEnhancerSummary + "}");
 
                 ChestLocatorEnhancerState state = api.GetState(owner.UniqueID);
                 if (state.LastAppendedInventoryCount <= 0 || state.LastSharedCaseCount <= 0)
@@ -129,7 +130,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", afterCost=" + afterCost +
                     ", room={" + roomSummary + "}" +
                     ", case={" + caseSummary + "}" +
-                    ", bridge={" + experimentalApi.LastChestLocatorEnhancerSummary + "}" +
+                    ", bridge={" + chestLocatorService.LastChestLocatorEnhancerSummary + "}" +
                     ", state={" + FormatChestLocatorState(state) + "}";
                 runtime.RuntimeMonitor.Log("Smoke exercise ChestLocatorEnhancer OK " + summary);
                 runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "verified", "IChestLocatorEnhancerApi -> ArchiveDataHandle.GetAvailableInventories -> CountItem/CostItem", summary);
