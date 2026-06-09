@@ -238,7 +238,8 @@ namespace DTMAPI.UnitTests
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 runtime.Start();
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
-                Assert(snapshot.DiscoveredMods.Single(m => m.Manifest.UniqueID == "DTMAPI.Tests.SelectedEntry").Manifest.EntryType == selectedEntryType, "Manifest should parse and preserve EntryType.");
+                IManifest selectedManifest = snapshot.DiscoveredMods.Single(m => m.Manifest.UniqueID == "DTMAPI.Tests.SelectedEntry").Manifest;
+                Assert(selectedManifest.EntryType == selectedEntryType, "IManifest should expose parsed EntryType.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.AmbiguousEntry"), "DLLs with multiple DtmMod subclasses require EntryType.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.AmbiguousEntry" && e.Message.Contains("EntryType 缺失")), "Missing EntryType in an ambiguous DLL should be diagnosed.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.SelectedEntry"), "EntryType should select the requested DtmMod subclass.");

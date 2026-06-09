@@ -11,6 +11,7 @@ namespace DTMAPI.Abstractions
         string Description { get; }
         string UniqueID { get; }
         string EntryDll { get; }
+        string EntryType { get; }
         string MinimumDTMApiVersion { get; }
         string MinimumGameVersion { get; }
         string Type { get; }
@@ -35,6 +36,7 @@ namespace DTMAPI.Abstractions
         public string Description => string.Empty;
         public string UniqueID => "Unknown.Unknown";
         public string EntryDll => string.Empty;
+        public string EntryType => string.Empty;
         public string MinimumDTMApiVersion => string.Empty;
         public string MinimumGameVersion => string.Empty;
         public string Type => "CodeMod";
