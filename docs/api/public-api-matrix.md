@@ -37,6 +37,7 @@ Static screenshot smoke is allowed as supporting visual evidence, but it is not 
 | Area | API / Contract | Status | Evidence Scope And Current Boundary |
 | --- | --- | --- | --- |
 | Framework | `DtmMod`, `IManifest`, `IManifestDependency`, `IDtmHelper` | Stable | DTMAPI-owned mod entry and helper contracts. No Doloc native owner is implied. Manifest/dependency hardening is tracked separately by Core runtime tests. |
+| Framework | `IManifest.EntryType` | StableCandidate | Public read-only exposure of the already-parsed manifest `EntryType` value. Verified by unit test through the `IManifest` interface on 2026-06-09; runtime entry-type selection already uses the same field internally. This is a small public-surface addition and should stay StableCandidate until the next API review package confirms compatibility. |
 | Framework | `IMonitor.Log`, `LogOnce`, `LogException` | Stable | DTMAPI-owned logging contract used across runtime and mods. |
 | Framework | `IConfigHelper.ReadConfig<T>`, `WriteConfig<T>`, `GetConfigPath` | Stable | DTMAPI-owned config file contract. Stability depends on preserving bad-JSON recovery and atomic write behavior introduced by Core runtime hardening. |
 | Framework | `IConfigHelper.RegisterMigration<T>` | StableCandidate | Contract exists, but needs more real migration cases before stable promotion. |

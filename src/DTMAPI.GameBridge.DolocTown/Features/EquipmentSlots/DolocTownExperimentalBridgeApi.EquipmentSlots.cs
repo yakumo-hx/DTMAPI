@@ -1675,6 +1675,7 @@ namespace DTMAPI.GameBridge.DolocTown
             public string Description => "Runtime owner manifest for DTMAPI extra equipment slot UI callbacks.";
             public string UniqueID { get; }
             public string EntryDll => string.Empty;
+            public string EntryType => string.Empty;
             public string MinimumDTMApiVersion => DTMAPI.Core.Runtime.DtmApiRuntime.ApiVersion;
             public string MinimumGameVersion => string.Empty;
             public string Type => "CodeMod";
