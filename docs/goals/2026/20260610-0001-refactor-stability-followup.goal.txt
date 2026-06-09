@@ -1,0 +1,25 @@
+/goal
+目标：按 Refactor stability follow-up 路线逐分支完成 lifecycle isolation、audit package markdown cleanup、FishRoe smoke case、diagnostics snapshot mod status、ChestLocator feature split、CameraView manual QA gate，并在 Refactor 生成最终 full/web audit packages。详细需求以 docs/goals/2026/20260610-0001-refactor-stability-followup.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260610-0001-refactor-stability-followup.md
+docs/workflows/codex-api-rebuild.md
+docs/reviews/README.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+
+安全约束：
+从干净 Refactor 开始；每项独立 codex/... 分支；验证通过后 --no-ff 合回 Refactor；不提交外部包目录、zip、report zip、完整 evidence、DLL/EXE/PDB、bin/obj/.tools；第三存档 smoke；不改 main/master；不升级 Diagnostics 或 gameplay API 稳定性。
+
+版本要求：
+本轮不 bump DTMAPI 版本。若必须变更版本，先停止并报告。
+
+完成标准：
+每个分支完成代码/文档/验证/提交/merge，所有 required smoke 通过且无 DolocTown.exe 残留；最终 full/web audit packages 刷新并打 tag refactor-stability-followup-20260610。
+
