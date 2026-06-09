@@ -112,6 +112,7 @@ namespace DTMAPI.Core.Diagnostics
             string entryType,
             bool loaded,
             string status,
+            string statusCode,
             string reason,
             string manifestPath,
             string rootPath)
@@ -129,6 +130,7 @@ namespace DTMAPI.Core.Diagnostics
             EntryType = entryType ?? string.Empty;
             Loaded = loaded;
             Status = status ?? string.Empty;
+            StatusCode = statusCode ?? string.Empty;
             Reason = reason ?? string.Empty;
             ManifestPath = manifestPath ?? string.Empty;
             RootPath = rootPath ?? string.Empty;
@@ -147,6 +149,7 @@ namespace DTMAPI.Core.Diagnostics
         public string EntryType { get; }
         public bool Loaded { get; }
         public string Status { get; }
+        public string StatusCode { get; }
         public string Reason { get; }
         public string ManifestPath { get; }
         public string RootPath { get; }

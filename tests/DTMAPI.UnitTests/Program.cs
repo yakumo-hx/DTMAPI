@@ -169,6 +169,12 @@ namespace DTMAPI.UnitTests
                 Assert(snapshot.Errors.Any(e => e.Message.Contains("依赖循环") && e.Details.Contains("DTMAPI.Tests.CycleA") && e.Details.Contains("DTMAPI.Tests.CycleB")), "Circular dependencies should be diagnosed with the cycle path.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.CycleA" && e.Message.Contains("依赖循环阻止加载")), "CycleA should have an owner-specific blocked diagnostic.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.CycleB" && e.Message.Contains("依赖循环阻止加载")), "CycleB should have an owner-specific blocked diagnostic.");
+                IDtmDiagnosticsSnapshot diagnosticsSnapshot = runtime.CreateDiagnosticsSnapshot();
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.Base").StatusCode == "loaded", "Loaded dependency should expose loaded status code.");
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.NeedsBase2").StatusCode == "missing-dependency", "Dependency version failures should expose a dependency status code.");
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.FutureApi").StatusCode == "api-too-new", "Future MinimumDTMApiVersion should expose api-too-new status code.");
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.CycleA").StatusCode == "dependency-cycle", "CycleA should expose dependency-cycle status code.");
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.CycleB").StatusCode == "dependency-cycle", "CycleB should expose dependency-cycle status code.");
             }
             finally
             {
@@ -293,9 +299,20 @@ namespace DTMAPI.UnitTests
                 WriteManifest(dir, "NeedsDiagnostics", "{ \"Name\": \"Needs Diagnostics\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsDiagnostics\", \"Type\": \"ContentPack\", \"MinimumGameVersion\": \"99.0.0\" }");
                 WriteManifest(dir, "NeedsMissingDependency", "{ \"Name\": \"Needs Missing Dependency\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsMissingDependency\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.MissingDependency\", \"Required\": true } ] }");
                 WriteManifest(dir, "BrokenEntryDll", "{ \"Name\": \"Broken Entry DLL\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.BrokenEntryDll\", \"Type\": \"CodeMod\", \"EntryDll\": \"BrokenEntryDll.txt\" }");
+                WriteManifest(dir, "NeedsFutureApi", "{ \"Name\": \"Needs Future API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.DiagnosticsFutureApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"99.0.0\" }");
+                WriteManifest(dir, "UnknownStatus", "{ \"Name\": \"Unknown Status\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.UnknownStatus\", \"Type\": \"ContentPack\" }");
+                string throwingDir = Path.Combine(dir, "Mods", "ThrowingEntry");
+                Directory.CreateDirectory(throwingDir);
+                string assemblyPath = typeof(ThrowingEntryProbeMod).Assembly.Location;
+                string assemblyName = Path.GetFileName(assemblyPath);
+                File.Copy(assemblyPath, Path.Combine(throwingDir, assemblyName), overwrite: true);
+                File.WriteAllText(
+                    Path.Combine(throwingDir, "manifest.json"),
+                    "{ \"Name\": \"Throwing Entry\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.ThrowingEntry\", \"Type\": \"CodeMod\", \"EntryDll\": \"" + assemblyName + "\", \"EntryType\": \"" + (typeof(ThrowingEntryProbeMod).FullName ?? nameof(ThrowingEntryProbeMod)) + "\" }");
 
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 runtime.Start();
+                runtime.Diagnostics.RecordError("DTMAPI.Tests.UnknownStatus", "Unexpected unit diagnostic.", "No known classifier.");
                 runtime.SetHookStatus("Feature.Camera", "ready", "test", "Feature status: id=Camera, lastOperation=InstallHooks, success=True, failureCount=0, lastError=none.");
                 runtime.Diagnostics.SetFeatureStatus("Camera", "ready", "InstallHooks", true, 0, string.Empty, "Feature status: id=Camera, lastOperation=InstallHooks, success=True, failureCount=0, lastError=none.");
                 string report = runtime.ExportLogs();
@@ -307,12 +324,15 @@ namespace DTMAPI.UnitTests
                 IDtmDiagnosticsSnapshot diagnosticSnapshot = api!.GetSnapshot();
                 Assert(diagnosticSnapshot.LoadedMods.Any(m => m.UniqueID == "DTMAPI.Tests.NeedsDiagnostics" && m.Type == "ContentPack"), "Diagnostics snapshot should expose loaded mod rows without Core DiscoveredMod objects.");
                 IDtmModStatusInfo loadedMod = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.NeedsDiagnostics");
-                Assert(loadedMod.Loaded && loadedMod.Status == "loaded" && loadedMod.Type == "ContentPack", "Diagnostics snapshot should expose loaded mod status rows.");
+                Assert(loadedMod.Loaded && loadedMod.Status == "loaded" && loadedMod.StatusCode == "loaded" && loadedMod.Type == "ContentPack", "Diagnostics snapshot should expose loaded mod status rows.");
                 Assert(loadedMod.ManifestPath.EndsWith("manifest.json", StringComparison.OrdinalIgnoreCase) && Directory.Exists(loadedMod.RootPath), "Mod status rows should expose manifest and root paths.");
                 IDtmModStatusInfo dependencyError = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.NeedsMissingDependency");
-                Assert(!dependencyError.Loaded && dependencyError.Status == "error" && dependencyError.Reason.Contains("缺少必需依赖"), "Diagnostics snapshot should expose dependency errors without parsing logs.");
+                Assert(!dependencyError.Loaded && dependencyError.Status == "error" && dependencyError.StatusCode == "missing-dependency" && dependencyError.Reason.Contains("缺少必需依赖"), "Diagnostics snapshot should expose dependency errors without parsing logs.");
                 IDtmModStatusInfo entryDllError = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.BrokenEntryDll");
-                Assert(!entryDllError.Loaded && entryDllError.Status == "error" && entryDllError.EntryDll == "BrokenEntryDll.txt" && entryDllError.Reason.Contains(".dll"), "Diagnostics snapshot should expose EntryDll errors and manifest entry fields.");
+                Assert(!entryDllError.Loaded && entryDllError.Status == "error" && entryDllError.StatusCode == "entry-dll-error" && entryDllError.EntryDll == "BrokenEntryDll.txt" && entryDllError.Reason.Contains(".dll"), "Diagnostics snapshot should expose EntryDll errors and manifest entry fields.");
+                Assert(diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.DiagnosticsFutureApi").StatusCode == "api-too-new", "Diagnostics snapshot should expose API version status codes.");
+                Assert(diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.ThrowingEntry").StatusCode == "code-load-error", "Diagnostics snapshot should expose code-load error status codes.");
+                Assert(diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.UnknownStatus").StatusCode == "unknown-error", "Diagnostics snapshot should expose unknown-error status codes for unclassified errors.");
                 Assert(diagnosticSnapshot.Warnings.Any(w => w.Owner == "DTMAPI.Tests.NeedsDiagnostics" && w.Message.Contains("MinimumGameVersion")), "Diagnostics snapshot should include structured warnings.");
                 Assert(diagnosticSnapshot.HookStatuses.Any(h => h.HookId == "Feature.Camera" && h.Status == "ready"), "Diagnostics snapshot should include hook statuses.");
                 Assert(diagnosticSnapshot.FeatureStatuses.Any(f => f.FeatureId == "Camera" && f.Status == "ready" && f.LastOperation == "InstallHooks" && f.Success), "Diagnostics snapshot should include structured feature statuses.");
@@ -710,7 +730,7 @@ namespace DTMAPI.UnitTests
                 Assert(!disabled.OfficialEnabled, "Official disabled state should prevent loading.");
                 Assert(!disabledSnapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test"), "Official-disabled package must not load.");
                 IDtmModStatusInfo disabledStatus = disabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
-                Assert(!disabledStatus.Loaded && disabledStatus.Status == "disabled" && !disabledStatus.OfficialEnabled && disabledStatus.OfficialEnablementManaged && disabledStatus.EnablementReason.Contains("官方"), "Diagnostics snapshot should expose official disabled mod status and enablement reason.");
+                Assert(!disabledStatus.Loaded && disabledStatus.Status == "disabled" && disabledStatus.StatusCode == "disabled" && !disabledStatus.OfficialEnabled && disabledStatus.OfficialEnablementManaged && disabledStatus.EnablementReason.Contains("官方"), "Diagnostics snapshot should expose official disabled mod status and enablement reason.");
 
                 WriteOfficialModInfos(persistentRoot, "Local.Yuuka_DTMAPI_Test", true);
                 var enabledRuntime = new DtmApiRuntime(new FakeHost(gameDir), new ConfigMenuRegistry());
@@ -719,7 +739,7 @@ namespace DTMAPI.UnitTests
                 Assert(enabledSnapshot.DiscoveredMods.Single(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test").OfficialEnabled, "Official enabled state should be honored.");
                 Assert(enabledSnapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test"), "Official-enabled content package should load/index.");
                 IDtmModStatusInfo enabledStatus = enabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
-                Assert(enabledStatus.Loaded && enabledStatus.Status == "loaded" && enabledStatus.Source == "OfficialLocal", "Diagnostics snapshot should expose official loaded mod status.");
+                Assert(enabledStatus.Loaded && enabledStatus.Status == "loaded" && enabledStatus.StatusCode == "loaded" && enabledStatus.Source == "OfficialLocal", "Diagnostics snapshot should expose official loaded mod status.");
 
                 File.Delete(Path.Combine(persistentRoot, "SAVE", "mod_infos.json"));
                 var unknownRuntime = new DtmApiRuntime(new FakeHost(gameDir), new ConfigMenuRegistry());
@@ -1265,6 +1285,14 @@ namespace DTMAPI.UnitTests
                 menu.Register(helper.ModManifest, () => { }, () => { });
                 menu.AddParagraph(helper.ModManifest, () => "Hot-load probe config page.");
             }
+        }
+    }
+
+    public sealed class ThrowingEntryProbeMod : DtmMod
+    {
+        public override void Entry(IDtmHelper helper)
+        {
+            throw new InvalidOperationException("throwing-entry-probe");
         }
     }
 

@@ -492,21 +492,36 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("LatestReportPath did not match exported report. snapshot=" + snapshot.LatestReportPath + ", exported=" + reportPath);
                 if (snapshot.Mods.Count == 0)
                     throw new InvalidOperationException("Diagnostic mod status rows are missing.");
+                string[] missingStatusCodeRows = snapshot.Mods
+                    .Where(status => string.IsNullOrWhiteSpace(status.StatusCode))
+                    .Select(status => status.UniqueID)
+                    .ToArray();
+                if (missingStatusCodeRows.Length > 0)
+                    throw new InvalidOperationException("Diagnostic mod status rows are missing StatusCode: " + string.Join(",", missingStatusCodeRows));
 
                 var missingLoadedModStatuses = snapshot.LoadedMods
                     .Where(loaded => !snapshot.Mods.Any(status =>
                         status.UniqueID.Equals(loaded.UniqueID, StringComparison.OrdinalIgnoreCase) &&
-                        status.Loaded))
+                        status.Loaded &&
+                        status.StatusCode.Equals("loaded", StringComparison.OrdinalIgnoreCase)))
                     .Select(loaded => loaded.UniqueID)
                     .ToArray();
                 if (missingLoadedModStatuses.Length > 0)
                     throw new InvalidOperationException("Missing loaded mod status rows: " + string.Join(",", missingLoadedModStatuses));
+                string modStatusCodes = string.Join(
+                    ",",
+                    snapshot.Mods
+                        .GroupBy(status => status.StatusCode, StringComparer.OrdinalIgnoreCase)
+                        .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(group => group.Key + "=" + group.Count())
+                        .ToArray());
 
                 string summary =
                     "scenario=" + scenario +
                     ", expectedFeatures=" + string.Join(",", expectedFeatureIds) +
                     ", loadedMods=" + snapshot.LoadedMods.Count +
                     ", mods=" + snapshot.Mods.Count +
+                    ", modStatusCodes=" + modStatusCodes +
                     ", errors=" + snapshot.Errors.Count +
                     ", warnings=" + snapshot.Warnings.Count +
                     ", hooks=" + snapshot.HookStatuses.Count +
