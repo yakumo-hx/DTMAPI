@@ -742,6 +742,25 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-051653`; process check says no `DolocTown.exe`.
 - Regression cases: MANUALQA-029-README, SAVE-001, OFFICIAL-001
 
+## Hook: Smoke.DiagnosticsSnapshot
+
+- Status: verified
+- Public surface: `IDtmDiagnosticsApi.GetSnapshot`
+- Game build: 23465763 workshop
+- Game method/type: no native game hook; this is a DTMAPI smoke status emitted after the runtime diagnostics API exports a report and reads the structured snapshot.
+- Patch type: DTMAPI runtime diagnostics/status.
+- Implementation owner: `DtmApiRuntime` registers `IDtmDiagnosticsApi`; `DiagnosticsService` stores errors, warnings, hook statuses, feature statuses, latest log path, and latest report path; `DolocTownGameBridge` mirrors `Feature.<Id>` dispatch state into structured feature-status rows.
+- Why this point: verifies diagnostics snapshot consumers do not need to parse logs to find loaded mods, warnings/errors, hooks, feature statuses, or report/log paths.
+- Failure behavior: if an expected `Feature.<Id>` hook/status row is missing, or latest log/report paths do not point to existing files, `Smoke.DiagnosticsSnapshot` is marked failed and the focused smoke fails.
+- Mods/tests depending on it: smoke harness `-AutoExerciseZoom` and ActionSpeed interaction smoke; unit test `DiagnosticsSnapshotApiExposesRuntimeState`.
+- Evidence:
+  - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2.
+  - Camera log line: `GAME-SMOKE/20260609-183542` records `Smoke diagnostics snapshot OK scenario=Camera, expectedFeatures=Camera, loadedMods=14, errors=0, warnings=0, hooks=59, features=4, latestLog=..., latestReport=...dtmapi-report-20260609-183724.zip` and `Smoke.DiagnosticsSnapshot = verified`.
+  - ActionSpeed log line: `GAME-SMOKE/20260609-183757` records `Smoke diagnostics snapshot OK scenario=ActionSpeed, expectedFeatures=ActionSpeed, loadedMods=14, errors=0, warnings=0, hooks=63, features=4, latestLog=..., latestReport=...dtmapi-report-20260609-183837.zip` and `Smoke.DiagnosticsSnapshot = verified`.
+  - Report summary: both report zips contain `Errors: 0`, `Warnings: 0`, `Features: 4`, `LatestLogPath`, `LatestReportPath`, the matching `HOOK Feature.Camera` / `HOOK Feature.ActionSpeed` row, and the matching `FEATURE Camera` / `FEATURE ActionSpeed` structured row.
+- Regression cases: DIAGNOSTICS-SNAPSHOT-20260609
+
 ## Hook: Feature.Camera
 
 - Status: ready
@@ -749,16 +768,16 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: no native game hook; this status is emitted by the DTMAPI GameBridge feature host around CameraFeature dispatch.
 - Patch type: GameBridge runtime diagnostics/status.
-- Implementation owner: `DolocTownGameBridge` safe-dispatches every `IGameBridgeFeature` operation, records `Feature.<Id>` hook status, and keeps an internal feature-status model with feature id, last operation, success/failure, failure count, and last error; `CameraFeature.Id` is `Camera`; Camera hook installation is dispatched through `InstallHooks`.
+- Implementation owner: `DolocTownGameBridge` safe-dispatches every `IGameBridgeFeature` operation, records `Feature.<Id>` hook status, mirrors the same state into `DiagnosticsService` feature-status rows, and keeps an internal feature-status model with feature id, last operation, success/failure, failure count, and last error; `CameraFeature.Id` is `Camera`; Camera hook installation is dispatched through `InstallHooks`.
 - Why this point: proves the Camera feature is registered with the feature host instead of being a special one-off bridge path.
 - Failure behavior: `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset` dispatches are wrapped per feature. A feature exception records `DTMAPI.GameBridge.Feature.<Id>` diagnostics, marks `Feature.<Id>` failed, updates the internal failure count and last error, logs the exception type/message, and does not block the next feature.
 - Mods/tests depending on it: internal Camera feature host smoke evidence; `DTMAPI.HookProbeMod` observes the hook status.
 - Evidence:
   - Build: 2026-06-09 Release build/test passed with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2.
-  - Latest log line: `GAME-SMOKE/20260609-141609` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`, with `Feature status: id=Camera, lastOperation=..., success=True, failureCount=0, lastError=none`; `Camera.ViewEnvironmentLifecycle = experimental` is emitted during `InstallHooks`. Earlier CameraPlayable case-file validation remains `GAME-SMOKE/20260609-110528`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-141609`; report zip `docs/debug/evidence/GAME-SMOKE/20260609-141609.zip`.
-- Regression cases: CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, CAMERA-PLAYABLE
+  - Latest log line: `GAME-SMOKE/20260609-183542` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`, with `Feature status: id=Camera, lastOperation=..., success=True, failureCount=0, lastError=none`; `Smoke.DiagnosticsSnapshot = verified` confirms the structured diagnostics snapshot also contains `FEATURE Camera`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-183542`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-183724.zip`.
+- Regression cases: CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, CAMERA-PLAYABLE, DIAGNOSTICS-SNAPSHOT-20260609
 
 ## Hook: Camera.ViewApi
 

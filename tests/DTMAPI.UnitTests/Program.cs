@@ -28,6 +28,7 @@ namespace DTMAPI.UnitTests
                 EntryDllMustBeDllFile();
                 EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll();
                 MinimumGameVersionWithoutDetectedGameVersionLogsWarning();
+                DiagnosticsSnapshotApiExposesRuntimeState();
                 HelperModRegistryBindsApiRegistrationToOwner();
                 HighFrequencyEventsDisableHandlersAfterConsecutiveFailures();
                 EventRemoveIsOwnerBound();
@@ -273,6 +274,47 @@ namespace DTMAPI.UnitTests
                 string report = runtime.ExportLogs();
                 string summary = ReadZipText(report, "dtmapi-summary.txt");
                 Assert(summary.Contains("Warnings: 1") && summary.Contains("WARNING") && summary.Contains("MinimumGameVersion"), "Diagnostic report summary should include structured warnings.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void DiagnosticsSnapshotApiExposesRuntimeState()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                WriteManifest(dir, "NeedsDiagnostics", "{ \"Name\": \"Needs Diagnostics\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsDiagnostics\", \"Type\": \"ContentPack\", \"MinimumGameVersion\": \"99.0.0\" }");
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                runtime.SetHookStatus("Feature.Camera", "ready", "test", "Feature status: id=Camera, lastOperation=InstallHooks, success=True, failureCount=0, lastError=none.");
+                runtime.Diagnostics.SetFeatureStatus("Camera", "ready", "InstallHooks", true, 0, string.Empty, "Feature status: id=Camera, lastOperation=InstallHooks, success=True, failureCount=0, lastError=none.");
+                string report = runtime.ExportLogs();
+
+                IModRegistry registry = GetModRegistry(runtime);
+                IDtmDiagnosticsApi? api = registry.GetApi<IDtmDiagnosticsApi>("DTMAPI");
+                Assert(api != null, "Runtime should register IDtmDiagnosticsApi under the DTMAPI owner.");
+
+                IDtmDiagnosticsSnapshot diagnosticSnapshot = api!.GetSnapshot();
+                Assert(diagnosticSnapshot.LoadedMods.Any(m => m.UniqueID == "DTMAPI.Tests.NeedsDiagnostics" && m.Type == "ContentPack"), "Diagnostics snapshot should expose loaded mod rows without Core DiscoveredMod objects.");
+                Assert(diagnosticSnapshot.Warnings.Any(w => w.Owner == "DTMAPI.Tests.NeedsDiagnostics" && w.Message.Contains("MinimumGameVersion")), "Diagnostics snapshot should include structured warnings.");
+                Assert(diagnosticSnapshot.HookStatuses.Any(h => h.HookId == "Feature.Camera" && h.Status == "ready"), "Diagnostics snapshot should include hook statuses.");
+                Assert(diagnosticSnapshot.FeatureStatuses.Any(f => f.FeatureId == "Camera" && f.Status == "ready" && f.LastOperation == "InstallHooks" && f.Success), "Diagnostics snapshot should include structured feature statuses.");
+                Assert(diagnosticSnapshot.Errors.Count == 0, "Diagnostics snapshot should include current errors without inventing any for this successful run.");
+                Assert(diagnosticSnapshot.LatestLogPath == runtime.Diagnostics.GetLatestLogPath() && File.Exists(diagnosticSnapshot.LatestLogPath), "Diagnostics snapshot should expose the latest log path.");
+                Assert(diagnosticSnapshot.LatestReportPath == report && File.Exists(diagnosticSnapshot.LatestReportPath), "Diagnostics snapshot should expose the latest report path after export.");
+
+                RuntimeSnapshot runtimeSnapshot = runtime.CreateSnapshot();
+                Assert(runtimeSnapshot.FeatureStatuses.Any(f => f.FeatureId == "Camera" && f.LastOperation == "InstallHooks"), "Runtime snapshot should include feature statuses.");
+                Assert(runtimeSnapshot.LatestLogPath == diagnosticSnapshot.LatestLogPath, "Runtime snapshot should include latest log path.");
+                Assert(runtimeSnapshot.LatestReportPath == diagnosticSnapshot.LatestReportPath, "Runtime snapshot should include latest report path.");
+
+                string summary = ReadZipText(report, "dtmapi-summary.txt");
+                Assert(summary.Contains("Features: 1") && summary.Contains("FEATURE Camera: ready") && summary.Contains("LatestLogPath:") && summary.Contains("LatestReportPath:"), "Diagnostic report summary should include feature status and path fields.");
             }
             finally
             {
