@@ -764,14 +764,15 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: `DolocAPI.gameManager.archiveFileCount`, official `LocalSave.GetAllArchiveInfo`, and `GameDataUiState.Show -> GameDataPanel.Render`.
 - Patch type: GameBridge runtime refresh/reflection; no direct save-file edits and no custom replacement save UI.
+- Implementation owner: `SaveSlotsFeature` registers `ISaveSlotsApi`; `SaveSlotsService` owns registration state and runtime `archiveFileCount` refresh; `DolocTownExperimentalBridgeApi` no longer implements the API.
 - Why this point: More Saves should expand the official save screen while the game continues to own archive files, slot rendering, load, delete, and copy behavior.
 - Failure behavior: if `DolocAPI.gameManager` is not available, registration reports pending and runtime refresh retries. Disabling the mod restores the vanilla target count of 6 but does not delete extra files.
 - Mods/tests depending on it: `DTMAPI.MoreSavesMod`, smoke harness official save UI evidence during save-slot selection.
 - Evidence:
-  - Build: DTMAPI 0.2.9 Release build/unit passed 2026-06-06 with 0 errors.
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors after the feature split.
   - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260606-051653` logs `Save.MoreSlotsApi = configured-official-archive-count`, `Official save slot count set 6->12 through DolocAPI.gameManager.archiveFileCount`, and `Smoke.MoreSavesOfficialSaveUi = verified. archiveFileCount=12, panelSlotCount=12, renderedSlots=12, path=DolocAPI.gameManager.archiveFileCount -> GameDataUiState.Show -> GameDataPanel.Render.`
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-051653`; process check says no `DolocTown.exe`.
+  - Log line: `GAME-SMOKE/20260610-051735` logs `Feature.SaveSlots = ready`, `Save.MoreSlotsApi = configured-official-archive-count`, `Official save slot count set 6->12 through DolocAPI.gameManager.archiveFileCount`, and `Smoke.MoreSavesOfficialSaveUi = verified. archiveFileCount=12, panelSlotCount=12, renderedSlots=12, path=DolocAPI.gameManager.archiveFileCount -> GameDataUiState.Show -> GameDataPanel.Render.`
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-051735` and report `dtmapi-report-20260610-051812.zip`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
 - Regression cases: MANUALQA-029-README, SAVE-001, OFFICIAL-001
 
 ## Hook: Smoke.DiagnosticsSnapshot

@@ -1,12 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class SaveSlotsService : ISaveSlotsApi
     {
+        private const int VanillaArchiveSlotCount = 6;
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, SaveSlotsOptions> saveSlotOptions = new Dictionary<string, SaveSlotsOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SaveSlotsState> saveSlotStates = new Dictionary<string, SaveSlotsState>(StringComparer.OrdinalIgnoreCase);
+
+        public SaveSlotsService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
         public SaveSlotsRegisterResult RegisterSlots(IManifest owner, SaveSlotsOptions options)
         {
             if (owner == null)
@@ -48,8 +61,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return new BridgeFeatureStatus(state.Status, state.LastMessage);
         }
 
-
-        private void RefreshSaveSlotExpansionForRuntime()
+        internal void RefreshSaveSlotExpansionForRuntime()
         {
             if (saveSlotOptions.Count == 0)
                 return;
@@ -107,7 +119,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private SaveSlotsState BuildSaveSlotsState(string ownerId, SaveSlotsOptions options, int nativeSlotCount, int appliedSlotCount, string status, string message)
+        private static SaveSlotsState BuildSaveSlotsState(string ownerId, SaveSlotsOptions options, int nativeSlotCount, int appliedSlotCount, string status, string message)
         {
             return new SaveSlotsState
             {
@@ -172,5 +184,30 @@ namespace DTMAPI.GameBridge.DolocTown
                 : 0;
         }
 
+        private static int ClampInt(int value, int min, int max)
+        {
+            return Math.Max(min, Math.Min(max, value));
+        }
+
+        private static bool SetMemberValue(object instance, string name, object value)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null && (value == null || field.FieldType.IsInstanceOfType(value)))
+                {
+                    field.SetValue(instance, value);
+                    return true;
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null && property.CanWrite && (value == null || property.PropertyType.IsInstanceOfType(value)))
+                {
+                    property.SetValue(instance, value);
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

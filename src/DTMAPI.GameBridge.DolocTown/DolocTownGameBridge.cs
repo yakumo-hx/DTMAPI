@@ -194,6 +194,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private CameraFeature? cameraFeature;
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
+        private SaveSlotsFeature? saveSlotsFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -213,6 +214,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal FishRoeTooltipService? FishRoeTooltipService => fishRoeTooltipFeature?.Service;
 
         internal ChestLocatorEnhancerService? ChestLocatorEnhancerService => chestLocatorEnhancerFeature?.Service;
+
+        internal SaveSlotsService? SaveSlotsService => saveSlotsFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -241,7 +244,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -266,7 +269,6 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IMotorVehicleApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
-            runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, experimentalApi);
             RegisterGameBridgeFeatureApis(manifest);
             runtime.RegisterRuntimeApi<IStrongPlantingGunApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, experimentalApi);
@@ -310,6 +312,10 @@ namespace DTMAPI.GameBridge.DolocTown
             chestLocatorEnhancerFeature ??= new ChestLocatorEnhancerFeature(runtime);
             if (!features.Contains(chestLocatorEnhancerFeature))
                 features.Add(chestLocatorEnhancerFeature);
+
+            saveSlotsFeature ??= new SaveSlotsFeature(runtime);
+            if (!features.Contains(saveSlotsFeature))
+                features.Add(saveSlotsFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
