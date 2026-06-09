@@ -132,7 +132,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;
         private bool debugConsoleEnterUiCheckPatched;
-        private bool oneActionToolColliderPatched;
+        private bool oneActionToolColliderPatched => actionCompletionFeature?.HookBridge.ToolColliderPatched == true;
         private bool oilCoalDropCapturePatched;
         private bool fishingReadyEnterPatched;
         private bool fishingCastEnterPatched;
@@ -193,6 +193,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
         private ActionSpeedFeature? actionSpeedFeature;
+        private ActionCompletionFeature? actionCompletionFeature;
 
         public DolocTownGameBridge(DtmApiRuntime runtime, Func<bool>? clickTitleSettingsButton = null, IDebugConsoleApi? debugConsoleApi = null)
         {
@@ -207,6 +208,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal CameraFeature? CameraFeature => cameraFeature;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
+
+        internal ActionCompletionService? ActionCompletionService => actionCompletionFeature?.Service;
 
         public void CleanupSecondMotorForLifecycleBoundary(string reason)
         {
@@ -231,7 +234,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && actionSpeedFeature != null)
+            if (experimentalApi != null && cameraFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -244,7 +247,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 UniqueID = "DTMAPI.GameBridge.DolocTown",
                 Type = "RuntimeApi"
             };
-            runtime.RegisterRuntimeApi<IActionCompletionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IFishingAutomationApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IItemTooltipApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAnimalViewerApi>(manifest, experimentalApi);
@@ -299,6 +301,10 @@ namespace DTMAPI.GameBridge.DolocTown
             actionSpeedFeature ??= new ActionSpeedFeature(runtime);
             if (!features.Contains(actionSpeedFeature))
                 features.Add(actionSpeedFeature);
+
+            actionCompletionFeature ??= new ActionCompletionFeature(runtime, experimentalApi!.TryRollOilDropFromCoal, () => actionSpeedFeature?.HookBridge.InteractExitPatched == true);
+            if (!features.Contains(actionCompletionFeature))
+                features.Add(actionCompletionFeature);
         }
 
         private void RegisterGameBridgeFeatureApis(IManifest manifest)
@@ -690,15 +696,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     oilCoalDropCapturePatched = patcher.TryPatchPrefix("DolocTown.ToolCollider, Assembly-CSharp", "HandleTools", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPrefix), BindingFlags.Public | BindingFlags.Static), 1);
                 }
 
-                if (!oneActionToolColliderPatched)
-                {
-                    oneActionToolColliderPatched = patcher.TryPatchPostfix("DolocTown.ToolCollider, Assembly-CSharp", "HandleTools", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                experimentalApi?.SetActionHooksInstalled(oneActionToolColliderPatched);
-                runtime.SetHookStatus("Actions.OneActionComplete", oneActionToolColliderPatched ? "verified" : "pending", "Harmony Postfix: ToolCollider.HandleTools", oneActionToolColliderPatched ? "Patched resource/tool-hit path with native ResourceFellData validation; verified by ONEACTION-001/002. Fuel/feeder completion is tracked separately and verified by ONEACTION-002. Vegetation/dandelion uses native VegetationRenderer.OnFell and is verified as a non-DungeonResource exception in ONEACTION-003." : "Waiting for ToolCollider.HandleTools to become patchable.");
                 runtime.SetHookStatus("Resources.OilCoalDrop", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: ToolCollider.HandleTools", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "Patched pre-hit coal resource capture plus post-hit oil placement; waiting for OilMod coal mining smoke evidence." : "Waiting for ToolCollider.HandleTools Prefix/Postfix to become patchable.");
-                runtime.SetHookStatus("Actions.OneActionFuelFeed", actionSpeedInteractExitPatched ? "verified" : "pending", "Harmony Postfix: AgentStateInteract.OnExit", actionSpeedInteractExitPatched ? "Patched post-interact native CostSelf/AddFuel/AddFeeds path for fuel/feed targets; verified by ONEACTION-002 fuel/feed smoke." : "Waiting for AgentStateInteract.OnExit to become patchable.");
 
                 if (!fishingReadyEnterPatched)
                 {

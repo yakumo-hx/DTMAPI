@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IActionCompletionApi, IFishingAutomationApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -23,7 +23,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private const double SecondMotorScopedTintB = 1.00;
 
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
-        private readonly Dictionary<string, ActionCompletionOptions> actionOptions = new Dictionary<string, ActionCompletionOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishRoeTooltipOptions> fishRoeOptions = new Dictionary<string, FishRoeTooltipOptions>(StringComparer.OrdinalIgnoreCase);
@@ -34,7 +33,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly List<AnimalProgressRenderRow> activeAnimalProgressOverlayRows = new List<AnimalProgressRenderRow>();
         private readonly Dictionary<string, int> husbandryThresholdCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> itemTitleCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedActionApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishRoeApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedAnimalApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -63,7 +61,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly HashSet<object> secondMotorInteractables = new HashSet<object>();
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
         private ActionSpeedService? actionSpeedService;
-        private bool actionHooksInstalled;
         private bool fishingHooksInstalled;
         private bool fishRoeHooksInstalled;
         private bool animalViewerHookInstalled;
@@ -113,10 +110,6 @@ namespace DTMAPI.GameBridge.DolocTown
             actionSpeedService = service;
         }
 
-
-        internal int OneActionApplicationCount { get; private set; }
-
-        internal string LastOneActionApplicationSummary { get; private set; } = string.Empty;
 
         internal int FishingAutomationApplicationCount { get; private set; }
 
@@ -481,7 +474,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return Math.Min(max, Math.Max(min, value));
         }
 
-        private static object? TryGetDungeonResourceFromCollider(object collider)
+        internal static object? TryGetDungeonResourceFromCollider(object collider)
         {
             Type? rendererType = ResolveType("DolocTown.DungeonResourceRenderer, Assembly-CSharp");
             if (rendererType == null)
@@ -501,31 +494,31 @@ namespace DTMAPI.GameBridge.DolocTown
             return renderer?.GetType().GetProperty("DungeonResource", BindingFlags.Public | BindingFlags.Instance)?.GetValue(renderer);
         }
 
-        private static bool IsResourceRemoved(object resource)
+        internal static bool IsResourceRemoved(object resource)
         {
             object? value = resource.GetType().GetProperty("IsRemoved", BindingFlags.Public | BindingFlags.Instance)?.GetValue(resource);
             return value is bool removed && removed;
         }
 
-        private static string GetResourceName(object resource)
+        internal static string GetResourceName(object resource)
         {
             object? value = resource.GetType().GetProperty("ResourceName", BindingFlags.Public | BindingFlags.Instance)?.GetValue(resource);
             return value as string ?? resource.GetType().Name;
         }
 
-        private static string GetResourceClass(object resource)
+        internal static string GetResourceClass(object resource)
         {
             object? proto = resource.GetType().GetProperty("Proto", BindingFlags.Public | BindingFlags.Instance)?.GetValue(resource);
             object? resourceClass = proto?.GetType().GetProperty("ResourceClass", BindingFlags.Public | BindingFlags.Instance)?.GetValue(proto);
             return resourceClass?.ToString() ?? string.Empty;
         }
 
-        private static string FormatRatio(double value)
+        internal static string FormatRatio(double value)
         {
             return value < 0 ? "unknown" : value.ToString("0.###");
         }
 
-        private static int ReadIntMember(object instance, string name, int fallback)
+        internal static int ReadIntMember(object instance, string name, int fallback)
         {
             Type type = instance.GetType();
             object? value = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(instance) ??
@@ -533,7 +526,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return value == null ? fallback : Convert.ToInt32(value);
         }
 
-        private static double ReadDoubleMember(object instance, string name, double fallback)
+        internal static double ReadDoubleMember(object instance, string name, double fallback)
         {
             object? value = ReadMember(instance, name);
             return value == null ? fallback : Convert.ToDouble(value);
@@ -618,7 +611,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return itemId;
         }
 
-        private static Type? ResolveType(string assemblyQualifiedName)
+        internal static Type? ResolveType(string assemblyQualifiedName)
         {
             Type? type = Type.GetType(assemblyQualifiedName);
             if (type != null)
@@ -640,7 +633,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        private static bool IsTypeOrBase(Type type, string fullName)
+        internal static bool IsTypeOrBase(Type type, string fullName)
         {
             for (Type? current = type; current != null; current = current.BaseType)
             {
@@ -662,7 +655,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return false;
         }
 
-        private static object? ReadStaticMember(Type? type, string name)
+        internal static object? ReadStaticMember(Type? type, string name)
         {
             if (type == null)
                 return null;
@@ -700,7 +693,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return value is bool result ? result : fallback;
         }
 
-        private static string FirstText(params string[] values)
+        internal static string FirstText(params string[] values)
         {
             foreach (string value in values)
             {
@@ -711,19 +704,19 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
 
-        private static string ReadStringMember(object instance, string name)
+        internal static string ReadStringMember(object instance, string name)
         {
             object? value = ReadMember(instance, name);
             return value as string ?? string.Empty;
         }
 
-        private static string ReadStringMember(object instance, string name, string fallback)
+        internal static string ReadStringMember(object instance, string name, string fallback)
         {
             string value = ReadStringMember(instance, name);
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
 
-        private static bool ReadBoolMember(object instance, string name, bool fallback)
+        internal static bool ReadBoolMember(object instance, string name, bool fallback)
         {
             object? value = ReadMember(instance, name);
             return value is bool result ? result : fallback;
@@ -813,7 +806,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static object? ReadMember(object instance, string name)
+        internal static object? ReadMember(object instance, string name)
         {
             for (Type? type = instance.GetType(); type != null; type = type.BaseType)
             {
@@ -994,7 +987,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return Activator.CreateInstance(unityColor, r, g, b, a);
         }
 
-        private static MethodInfo? FindMethodInHierarchy(Type? type, string name, int parameterCount)
+        internal static MethodInfo? FindMethodInHierarchy(Type? type, string name, int parameterCount)
         {
             for (Type? current = type; current != null; current = current.BaseType)
             {

@@ -27,8 +27,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private double advancedTimeScaleMultiplier = 1d;
         public void PublishHookStatuses()
         {
-            runtime.SetHookStatus("Actions.OneActionComplete", "pending", "DTMAPI.GameBridge.DolocTown API", "Resource-hit, wrong-tool, and fuel/feed evidence exists in ONEACTION-001/002; vegetation/dandelion is recorded as the native VegetationRenderer.OnFell exception path in ONEACTION-003; waiting for ToolCollider/interact hooks in this run.");
-            runtime.SetHookStatus("Actions.OneActionFuelFeed", "pending", "DTMAPI.GameBridge.DolocTown API", "Fuel/feeder fill evidence exists in ONEACTION-002; waiting for AgentStateInteract.OnExit to become patchable in this run.");
             runtime.SetHookStatus("Fishing.Automation", "pending", "DTMAPI.GameBridge.DolocTown API", "F6 auto-cast and wait-phase InstantBite evidence exists in AUTOFISH-001; waiting for fishing hook install in this run.");
             runtime.SetHookStatus("ActionSpeed.ToolAnimation", "pending", "DTMAPI.GameBridge.DolocTown API", "Tool-animation evidence exists in ACTIONSPEED-001; waiting for AgentStateTool hook install in this run. ACTIONSPEED-002 now covers fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest.");
             runtime.SetHookStatus("Items.FishRoeTooltip", "pending", "DTMAPI.GameBridge.DolocTown API", "Fish roe tooltip evidence exists in FISHROE-001; waiting for item display hook install in this run.");

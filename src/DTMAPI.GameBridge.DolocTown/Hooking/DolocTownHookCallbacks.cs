@@ -102,7 +102,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ToolColliderHandleToolsPostfix(object __instance, object other)
         {
-            bool oneActionHandled = Bridge?.ExperimentalApi?.ApplyOneActionToolHit(__instance, other) == true;
+            bool oneActionHandled = Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true;
             if (!oneActionHandled)
                 Bridge?.ExperimentalApi?.ApplyOilCoalDropAfterToolHit(__instance, other);
             else
@@ -126,7 +126,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateInteractExitPostfix()
         {
-            Bridge?.ExperimentalApi?.ApplyOneActionEquipmentFillAfterInteract();
+            Bridge?.ActionCompletionService?.ApplyOneActionEquipmentFillAfterInteract();
             Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateInteract.OnExit");
         }
 

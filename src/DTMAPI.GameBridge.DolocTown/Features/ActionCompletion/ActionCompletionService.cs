@@ -2,11 +2,29 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.DolocTownExperimentalBridgeApi;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class ActionCompletionService : IActionCompletionApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Func<string, bool, string, string> rollOilDropFromCoal;
+        private readonly Dictionary<string, ActionCompletionOptions> actionOptions = new Dictionary<string, ActionCompletionOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedActionApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool actionHooksInstalled;
+
+        public ActionCompletionService(DtmApiRuntime runtime, Func<string, bool, string, string> rollOilDropFromCoal)
+        {
+            this.runtime = runtime;
+            this.rollOilDropFromCoal = rollOilDropFromCoal;
+        }
+
+        internal int OneActionApplicationCount { get; private set; }
+
+        internal string LastOneActionApplicationSummary { get; private set; } = string.Empty;
+
         internal void SetActionHooksInstalled(bool installed)
         {
             actionHooksInstalled = installed;
@@ -97,7 +115,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 string toolType = ReadMember(currentTool, "ToolType")?.ToString() ?? "unknown";
                 int afterHealth = ReadIntMember(resource, "currentHealth", 0);
                 bool removed = IsResourceRemoved(resource);
-                string oilDropSummary = TryRollOilDropFromCoal(resourceName, removed, "one-action-tool-hit");
+                string oilDropSummary = rollOilDropFromCoal(resourceName, removed, "one-action-tool-hit");
                 LastOneActionApplicationSummary = "owner=" + ownerId + ", resource=" + resourceName + ", class=" + resourceClass + ", tool=" + toolName + ", toolType=" + toolType + ", toolLevel=" + toolLevel + ", nativeDamage=" + nativeDamage + ", paidExtraHits=" + paidExtraHits + "/" + requiredExtraHits + ", damage=" + damageToApply + ", healthAfter=" + afterHealth + ", removed=" + removed;
                 if (!string.IsNullOrWhiteSpace(oilDropSummary))
                     LastOneActionApplicationSummary += ", " + oilDropSummary;
@@ -443,6 +461,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             object? consumed = costSingle.Invoke(item, new object?[] { false });
             return consumed != null;
+        }
+
+        private void LogOnce(HashSet<string> keys, string key, string message)
+        {
+            if (keys.Contains(key))
+                return;
+            keys.Add(key);
+            runtime.RuntimeMonitor.Log(message);
         }
     }
 }
