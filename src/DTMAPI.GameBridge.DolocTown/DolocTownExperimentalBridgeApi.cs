@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IItemTooltipApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -25,8 +25,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, FishRoeTooltipOptions> fishRoeOptions = new Dictionary<string, FishRoeTooltipOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Func<string, FishRoeDisplayInfo?>> fishRoeLookups = new Dictionary<string, Func<string, FishRoeDisplayInfo?>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, AnimalHusbandryProgressOptions> animalOptions = new Dictionary<string, AnimalHusbandryProgressOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>> animalProgressRowsByData = new Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>>();
         private readonly List<object> activeAnimalProgressOverlayObjects = new List<object>();
@@ -34,7 +32,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, int> husbandryThresholdCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> itemTitleCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedFishRoeApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedAnimalApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PendingOilResourceHit> pendingOilResourceHits = new Dictionary<string, PendingOilResourceHit>(StringComparer.Ordinal);
         private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
@@ -62,7 +59,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
         private ActionSpeedService? actionSpeedService;
         private bool fishingHooksInstalled;
-        private bool fishRoeHooksInstalled;
         private bool animalViewerHookInstalled;
         private bool motorVehicleHooksInstalled;
         private bool animalViewerUiEvidenceRecorded;

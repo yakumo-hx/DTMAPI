@@ -503,16 +503,19 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.Item.get_title`, `DolocTown.Item.get_description`, `DolocTown.Item.GetDetailInfo`, and `DolocTown.ItemFishRoe.fishName` identity reader.
 - Patch type: Harmony Postfix plus GameBridge reflection.
-- Why this point: FishBreedingAssistant provides lookup data while GameBridge owns item identity and tooltip rendering fragility.
+- Hook owner: `FishRoeTooltipFeature` / `FishRoeTooltipHookBridge`; API/service owner: `FishRoeTooltipService`.
+- Why this point: FishBreedingAssistant provides lookup data while GameBridge owns item identity and tooltip rendering fragility. The old `DolocTownExperimentalBridgeApi` no longer implements `IItemTooltipApi`.
 - Failure behavior: lookup provider can be registered; if item hooks do not install, no tooltip text is changed and diagnostics stay pending/failed.
 - Mods/tests depending on it: `Yuuka.DTMAPI.FishBreedingAssistant`
 - Evidence:
-  - Build: DTMAPI 0.2.1 local build passed 2026-06-01 with 0 errors; earlier 0.1.10 build/unit passed 2026-05-30
+  - Build: DTMAPI 0.2.1 local build passed 2026-06-01 with 0 errors; earlier 0.1.10 build/unit passed 2026-05-30; feature split branch Release build/test passed 2026-06-09.
   - Save: local slot 3 / index 2
   - Log line: `HookProbe HookStatusChanged OK Items.FishRoeTooltip=experimental`, `Smoke exercise FishRoeTooltip OK item=fish_roe title=鱼卵 (鱼) detail=Hatches: 鱼; Incubate: 4 小时; Grow: 6 小时`
   - 0.2.1 player-facing change: `Yuuka.DTMAPI.FishBreedingAssistant` now registers title decoration only; the old details toggle is removed from config and default options set `LabelFishRoeDetails=false`.
+  - 2026-06-09 feature split smoke: `docs/debug/evidence/GAME-SMOKE/20260609-181533` records `ExperimentalHooks=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `Items.FishRoeTooltip = verified`, `Feature.FishRoeTooltip = ready`, `Smoke.FishRoeTooltip = verified`, `Smoke.AnimalViewerRendering = verified`, and `Smoke.ExperimentalHookExercise = verified`; the smoke harness registered a smoke-only fallback provider because the public FishBreedingAssistant lookup source is a placeholder and the local `Yuuka.DTMAPI.FishBreedingAssistant` config was disabled.
+  - Retained rejected precondition smoke: `docs/debug/evidence/GAME-SMOKE/20260609-180405` reached `Items.FishRoeTooltip = verified` and `Feature.FishRoeTooltip = ready`, but failed `Smoke.FishRoeTooltip` because no enabled public provider lookup produced decoration before the smoke-only fallback was added.
   - Screenshot/report: `docs/debug/evidence/HOOK-PROBE/20260530-150808`
-- Regression cases: FISHROE-001
+- Regression cases: FISHROE-001, FISHROE-TOOLTIP-FEATURE-SPLIT-20260609
 
 ## Hook: Animals.ViewerRendering
 

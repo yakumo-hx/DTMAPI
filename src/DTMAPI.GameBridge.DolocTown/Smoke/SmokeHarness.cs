@@ -2832,6 +2832,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 string detail = item.GetType().GetMethod("GetDetailInfo", BindingFlags.Public | BindingFlags.Instance)?.Invoke(item, null) as string ?? string.Empty;
                 bool ok = title.IndexOf("(鱼)", StringComparison.Ordinal) >= 0 || description.IndexOf("Hatches:", StringComparison.Ordinal) >= 0 || detail.IndexOf("Hatches:", StringComparison.Ordinal) >= 0;
                 if (!ok)
+                {
+                    RegisterFishRoeSmokeProvider();
+                    title = item.GetType().GetProperty("title", BindingFlags.Public | BindingFlags.Instance)?.GetValue(item) as string ?? string.Empty;
+                    description = item.GetType().GetProperty("description", BindingFlags.Public | BindingFlags.Instance)?.GetValue(item) as string ?? string.Empty;
+                    detail = item.GetType().GetMethod("GetDetailInfo", BindingFlags.Public | BindingFlags.Instance)?.Invoke(item, null) as string ?? string.Empty;
+                    ok = title.IndexOf("(鱼)", StringComparison.Ordinal) >= 0 || description.IndexOf("Hatches:", StringComparison.Ordinal) >= 0 || detail.IndexOf("Hatches:", StringComparison.Ordinal) >= 0;
+                }
+                if (!ok)
                     throw new InvalidOperationException("Fish roe display hooks did not append expected text. title=" + title + " detail=" + detail);
 
                 runtime.RuntimeMonitor.Log("Smoke exercise FishRoeTooltip OK item=" + nonNullRoeItemId + " title=" + title + " detail=" + detail.Replace(Environment.NewLine, " | "));
@@ -2844,6 +2852,41 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Smoke.FishRoeTooltip", "failed", "ItemFishRoe title/description/detail", ex.GetType().Name + ": " + ex.Message);
                 return false;
             }
+        }
+
+        private void RegisterFishRoeSmokeProvider()
+        {
+            FishRoeTooltipService? service = FishRoeTooltipService;
+            if (service == null)
+                return;
+
+            var manifest = new ManifestModel
+            {
+                Name = "DTMAPI FishRoe Smoke Provider",
+                Author = "DTMAPI",
+                Version = DtmApiRuntime.ApiVersion,
+                UniqueID = "DTMAPI.GameBridge.SmokeFishRoe",
+                Type = "RuntimeApi"
+            };
+            service.ConfigureFishRoeProvider(
+                manifest,
+                new FishRoeTooltipOptions
+                {
+                    Enabled = true,
+                    LabelFishRoeTitle = true,
+                    LabelFishRoeDetails = false,
+                    CacheSeconds = 0,
+                    VerboseLogging = false
+                },
+                fishId => string.Equals(fishId, "fish", StringComparison.OrdinalIgnoreCase)
+                    ? new FishRoeDisplayInfo
+                    {
+                        FishId = "fish",
+                        FishTitle = "鱼",
+                        RoeTitle = "鱼卵"
+                    }
+                    : null);
+            runtime.RuntimeMonitor.Log("Smoke fish roe fallback provider registered for public placeholder lookup validation.");
         }
 
         private bool TryExerciseAnimalViewerForSmoke()

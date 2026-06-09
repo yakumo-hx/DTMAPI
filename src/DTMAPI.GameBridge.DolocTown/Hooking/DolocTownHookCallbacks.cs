@@ -58,20 +58,20 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ItemTitlePostfix(object __instance, ref string __result)
         {
-            if (Bridge?.ExperimentalApi != null)
-                __result = Bridge.ExperimentalApi.DecorateFishRoeTitle(__instance, __result);
+            if (Bridge?.FishRoeTooltipService != null)
+                __result = Bridge.FishRoeTooltipService.DecorateFishRoeTitle(__instance, __result);
         }
 
         public static void ItemDescriptionPostfix(object __instance, ref string __result)
         {
-            if (Bridge?.ExperimentalApi != null)
-                __result = Bridge.ExperimentalApi.DecorateFishRoeDetail(__instance, __result);
+            if (Bridge?.FishRoeTooltipService != null)
+                __result = Bridge.FishRoeTooltipService.DecorateFishRoeDetail(__instance, __result);
         }
 
         public static void ItemDetailInfoPostfix(object __instance, ref string __result)
         {
-            if (Bridge?.ExperimentalApi != null)
-                __result = Bridge.ExperimentalApi.DecorateFishRoeDetail(__instance, __result);
+            if (Bridge?.FishRoeTooltipService != null)
+                __result = Bridge.FishRoeTooltipService.DecorateFishRoeDetail(__instance, __result);
         }
 
         public static void AnimalFullInfoDataCtorPostfix(object __instance, object __0)
