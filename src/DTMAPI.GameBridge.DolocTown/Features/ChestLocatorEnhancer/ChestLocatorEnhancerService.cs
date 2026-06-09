@@ -46,14 +46,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
             ChestLocatorEnhancerOptions normalized = NormalizeChestLocatorEnhancerOptions(options);
             chestLocatorOptions[owner.UniqueID] = normalized;
+            UpdateChestLocatorEnhancerRegistrationStates();
             ChestLocatorEnhancerState state = GetChestLocatorEnhancerState(owner.UniqueID);
             state.IsConfigured = true;
             state.Enabled = normalized.Enabled;
             state.HookInstalled = chestLocatorInventoryHookInstalled;
             state.Status = normalized.Enabled ? (chestLocatorInventoryHookInstalled ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
-            state.LastMessage = normalized.Enabled
-                ? "Chest locator enhancer policy registered; shared Case inventories and shared StorageShelf ItemBox inventories are appended to the native inventory array when the hook is installed."
-                : "Chest locator enhancer policy is disabled.";
             chestLocatorStates[owner.UniqueID] = state;
 
             var result = new ChestLocatorEnhancerRegisterResult
@@ -82,9 +80,10 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal Array ExtendAvailableInventoriesForChestLocator(object archive, object anchor, object area, bool useBox, Array nativeResult)
         {
-            if (nativeResult == null || !TryGetChestLocatorPolicy(out string ownerId, out ChestLocatorEnhancerOptions options))
+            if (nativeResult == null || !TryGetChestLocatorPolicy(out EffectiveChestLocatorPolicy policy))
                 return nativeResult!;
 
+            ChestLocatorEnhancerOptions options = policy.Options;
             Type? inventoryType = nativeResult.GetType().GetElementType();
             if (inventoryType == null)
                 return nativeResult;
@@ -147,7 +146,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
             int appended = inventories.Count - baseCount;
             ChestLocatorEnhancerExtensionApplications++;
-            LastChestLocatorEnhancerSummary = "owner=" + ownerId +
+            LastChestLocatorEnhancerSummary = "owner=" + policy.OwnerSummary +
+                ", effectiveOwners=" + policy.OwnerSummary +
+                ", includeSharedCases=" + options.IncludeSharedCases +
+                ", includeSharedStorageShelfBoxes=" + options.IncludeSharedStorageShelfBoxes +
+                ", respectNativeAutoUseBox=" + options.RespectNativeAutoUseBoxSetting +
+                ", verboseLogging=" + options.VerboseLogging +
                 ", useBox=" + useBox +
                 ", nativeAutoUseBox=" + nativeAutoUseBox +
                 ", base=" + baseCount +
@@ -157,7 +161,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", sharedCases=" + sharedCases +
                 ", sharedStorageBoxes=" + sharedStorageBoxes +
                 ", applications=" + ChestLocatorEnhancerExtensionApplications;
-            UpdateChestLocatorEnhancerStates(ownerId, options, baseCount, appended, scannedRoots, scannedEquipment, sharedCases, sharedStorageBoxes, LastChestLocatorEnhancerSummary);
+            UpdateChestLocatorEnhancerStates(baseCount, appended, scannedRoots, scannedEquipment, sharedCases, sharedStorageBoxes, LastChestLocatorEnhancerSummary);
             if (options.VerboseLogging || appended > 0 || ChestLocatorEnhancerExtensionApplications <= 3)
                 runtime.RuntimeMonitor.Log("ChestLocatorEnhancer inventories " + LastChestLocatorEnhancerSummary);
             runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", appended > 0 ? "verified" : "experimental", "Harmony Postfix: ArchiveDataHandle.GetAvailableInventories", LastChestLocatorEnhancerSummary);
@@ -171,24 +175,52 @@ namespace DTMAPI.GameBridge.DolocTown
             return next;
         }
 
-        private bool TryGetChestLocatorPolicy(out string ownerId, out ChestLocatorEnhancerOptions options)
+        private bool TryGetChestLocatorPolicy(out EffectiveChestLocatorPolicy policy)
         {
-            foreach (KeyValuePair<string, ChestLocatorEnhancerOptions> entry in chestLocatorOptions)
+            KeyValuePair<string, ChestLocatorEnhancerOptions>[] enabledOwners = chestLocatorOptions
+                .Select(entry => new KeyValuePair<string, ChestLocatorEnhancerOptions>(entry.Key, entry.Value ?? new ChestLocatorEnhancerOptions { Enabled = false }))
+                .Where(entry => entry.Value.Enabled)
+                .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (enabledOwners.Length > 0)
             {
-                ChestLocatorEnhancerOptions candidate = entry.Value ?? new ChestLocatorEnhancerOptions { Enabled = false };
-                if (!candidate.Enabled)
-                    continue;
-                ownerId = entry.Key;
-                options = candidate;
+                var options = new ChestLocatorEnhancerOptions
+                {
+                    Enabled = true,
+                    IncludeSharedCases = enabledOwners.Any(entry => entry.Value.IncludeSharedCases),
+                    IncludeSharedStorageShelfBoxes = enabledOwners.Any(entry => entry.Value.IncludeSharedStorageShelfBoxes),
+                    RespectNativeAutoUseBoxSetting = enabledOwners.All(entry => entry.Value.RespectNativeAutoUseBoxSetting),
+                    VerboseLogging = enabledOwners.Any(entry => entry.Value.VerboseLogging)
+                };
+                policy = new EffectiveChestLocatorPolicy(string.Join("|", enabledOwners.Select(entry => entry.Key)), options);
                 return true;
             }
 
-            ownerId = string.Empty;
-            options = new ChestLocatorEnhancerOptions { Enabled = false };
+            policy = new EffectiveChestLocatorPolicy("none", new ChestLocatorEnhancerOptions { Enabled = false });
             return false;
         }
 
-        private void UpdateChestLocatorEnhancerStates(string ownerId, ChestLocatorEnhancerOptions options, int baseCount, int appended, int roots, int equipment, int cases, int storageBoxes, string message)
+        private void UpdateChestLocatorEnhancerRegistrationStates()
+        {
+            bool hasEffectivePolicy = TryGetChestLocatorPolicy(out EffectiveChestLocatorPolicy policy);
+            string effectiveSummary = hasEffectivePolicy ? FormatEffectivePolicy(policy) : "effectiveOwners=none.";
+            foreach (KeyValuePair<string, ChestLocatorEnhancerOptions> entry in chestLocatorOptions.ToArray())
+            {
+                ChestLocatorEnhancerOptions entryOptions = entry.Value ?? new ChestLocatorEnhancerOptions();
+                ChestLocatorEnhancerState state = GetChestLocatorEnhancerState(entry.Key);
+                state.IsConfigured = true;
+                state.Enabled = entryOptions.Enabled;
+                state.HookInstalled = chestLocatorInventoryHookInstalled;
+                state.Status = entryOptions.Enabled ? (chestLocatorInventoryHookInstalled ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
+                state.LastMessage = entryOptions.Enabled
+                    ? "Chest locator enhancer policy registered; shared Case inventories and shared StorageShelf ItemBox inventories are appended to the native inventory array when the hook is installed. " + effectiveSummary
+                    : "Chest locator enhancer policy is disabled. " + effectiveSummary;
+                chestLocatorStates[entry.Key] = state;
+            }
+        }
+
+        private void UpdateChestLocatorEnhancerStates(int baseCount, int appended, int roots, int equipment, int cases, int storageBoxes, string message)
         {
             foreach (KeyValuePair<string, ChestLocatorEnhancerOptions> entry in chestLocatorOptions.ToArray())
             {
@@ -204,7 +236,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 state.LastScannedEquipmentCount = equipment;
                 state.LastSharedCaseCount = cases;
                 state.LastSharedStorageBoxCount = storageBoxes;
-                state.Status = entryOptions.Enabled ? (appended > 0 && entry.Key.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? "verified" : "configured-experimental-inventory-hook") : "disabled";
+                state.Status = entryOptions.Enabled ? (appended > 0 ? "verified" : "configured-experimental-inventory-hook") : "disabled";
                 state.LastMessage = message ?? string.Empty;
                 chestLocatorStates[entry.Key] = state;
             }
@@ -263,6 +295,16 @@ namespace DTMAPI.GameBridge.DolocTown
             };
         }
 
+        private static string FormatEffectivePolicy(EffectiveChestLocatorPolicy policy)
+        {
+            ChestLocatorEnhancerOptions options = policy.Options;
+            return "effectiveOwners=" + policy.OwnerSummary +
+                ", includeSharedCases=" + options.IncludeSharedCases +
+                ", includeSharedStorageShelfBoxes=" + options.IncludeSharedStorageShelfBoxes +
+                ", respectNativeAutoUseBox=" + options.RespectNativeAutoUseBoxSetting +
+                ", verboseLogging=" + options.VerboseLogging + ".";
+        }
+
         private static bool AddInventory(object? inventory, Type inventoryType, List<object> inventories, HashSet<int> seen)
         {
             if (inventory == null || !inventoryType.IsInstanceOfType(inventory))
@@ -281,6 +323,19 @@ namespace DTMAPI.GameBridge.DolocTown
             Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
             object? userSettings = ReadStaticMember(dolocApi, "userSettings");
             return userSettings == null || ReadBoolMember(userSettings, "autoUseBox", true);
+        }
+
+        private sealed class EffectiveChestLocatorPolicy
+        {
+            internal EffectiveChestLocatorPolicy(string ownerSummary, ChestLocatorEnhancerOptions options)
+            {
+                OwnerSummary = ownerSummary;
+                Options = options;
+            }
+
+            internal string OwnerSummary { get; }
+
+            internal ChestLocatorEnhancerOptions Options { get; }
         }
 
         private static IEnumerable<object> EnumerateMachineCandidateRooms(Type dolocApi, object archive, object currentRoom)

@@ -43,6 +43,7 @@ namespace DTMAPI.UnitTests
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
+                ChestLocatorPoliciesMergeEnabledOwners();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
@@ -900,6 +901,67 @@ namespace DTMAPI.UnitTests
             {
                 DolocTownHookCallbacks.Runtime = null;
                 DolocTownHookCallbacks.Bridge = null;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void ChestLocatorPoliciesMergeEnabledOwners()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                _ = new DolocTownGameBridge(runtime);
+                IChestLocatorEnhancerApi api = GetModRegistry(runtime).GetApi<IChestLocatorEnhancerApi>("DTMAPI.GameBridge.DolocTown")
+                    ?? throw new InvalidOperationException("ChestLocatorEnhancer API should be registered by the GameBridge runtime owner.");
+                IManifest ownerA = new ManifestModel
+                {
+                    Name = "Chest Policy A",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.ChestPolicyA"
+                };
+                IManifest ownerB = new ManifestModel
+                {
+                    Name = "Chest Policy B",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.ChestPolicyB"
+                };
+
+                ChestLocatorEnhancerRegisterResult first = api.Register(ownerA, new ChestLocatorEnhancerOptions
+                {
+                    Enabled = true,
+                    IncludeSharedCases = false,
+                    IncludeSharedStorageShelfBoxes = false,
+                    RespectNativeAutoUseBoxSetting = false,
+                    VerboseLogging = false
+                });
+                ChestLocatorEnhancerRegisterResult second = api.Register(ownerB, new ChestLocatorEnhancerOptions
+                {
+                    Enabled = true,
+                    IncludeSharedCases = true,
+                    IncludeSharedStorageShelfBoxes = true,
+                    RespectNativeAutoUseBoxSetting = true,
+                    VerboseLogging = true
+                });
+
+                ChestLocatorEnhancerState stateA = api.GetState(ownerA.UniqueID);
+                ChestLocatorEnhancerState stateB = api.GetState(ownerB.UniqueID);
+                string messageA = stateA.LastMessage ?? string.Empty;
+                string messageB = stateB.LastMessage ?? string.Empty;
+                Assert(first.Success && second.Success, "ChestLocatorEnhancer owner registration should continue to succeed.");
+                Assert(messageA.Contains("effectiveOwners=DTMAPI.Tests.ChestPolicyA|DTMAPI.Tests.ChestPolicyB", StringComparison.Ordinal), "Effective owner summary should include every enabled owner in deterministic order.");
+                Assert(messageB.Contains("effectiveOwners=DTMAPI.Tests.ChestPolicyA|DTMAPI.Tests.ChestPolicyB", StringComparison.Ordinal), "Every owner state should expose the same effective owner summary.");
+                Assert(messageA.Contains("includeSharedCases=True", StringComparison.Ordinal), "Merged policy should enable shared Case scanning when any enabled owner requests it.");
+                Assert(messageA.Contains("includeSharedStorageShelfBoxes=True", StringComparison.Ordinal), "Merged policy should enable shared StorageShelf box scanning when any enabled owner requests it.");
+                Assert(messageA.Contains("respectNativeAutoUseBox=False", StringComparison.Ordinal), "Merged policy should allow forced box scans when any enabled owner opts out of native auto-use-box.");
+                Assert(messageA.Contains("verboseLogging=True", StringComparison.Ordinal), "Merged policy should enable verbose logging when any enabled owner requests it.");
+                Assert(stateA.Status == "configured-pending-hook" && stateB.Status == "configured-pending-hook", "Merged policy should keep the existing pending-hook state before Harmony installation.");
+            }
+            finally
+            {
                 RestorePersistentRoot(previousRoot);
             }
         }
