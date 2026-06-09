@@ -1,4 +1,5 @@
 using System;
+using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -12,48 +13,48 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void LoadGamePrefix(int index)
         {
-            Runtime?.NotifyLoadGameRequested(index);
+            SafeCallback("LoadGame.NotifyLoadGameRequested", () => Runtime?.NotifyLoadGameRequested(index));
         }
 
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
-            Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
-            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("SaveLoaded");
-            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame);
-            Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame);
-            Runtime?.NotifySaveLoaded(isNewGame);
-            Bridge?.MarkSaveLoadedForSmoke();
+            SafeCallback("SaveLoaded.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded"));
+            SafeCallback("SaveLoaded.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("SaveLoaded"));
+            SafeCallback("SaveLoaded.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame));
+            SafeCallback("SaveLoaded.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame));
+            SafeCallback("SaveLoaded.NotifyRuntime", () => Runtime?.NotifySaveLoaded(isNewGame));
+            SafeCallback("SaveLoaded.MarkSmoke", () => Bridge?.MarkSaveLoadedForSmoke());
         }
 
         public static void SaveGamePrefix(int index)
         {
-            Runtime?.NotifySaveSaving(index);
+            SafeCallback("SaveGame.NotifySaveSaving", () => Runtime?.NotifySaveSaving(index));
         }
 
         public static void SaveGamePostfix(int index)
         {
-            Runtime?.NotifySaveSaved(index);
-            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveSaved(index);
-            Bridge?.MarkSaveSavedForSmoke();
+            SafeCallback("SaveGame.NotifySaveSaved", () => Runtime?.NotifySaveSaved(index));
+            SafeCallback("SaveGame.NotifyEquipmentSlotsSaved", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveSaved(index));
+            SafeCallback("SaveGame.MarkSmoke", () => Bridge?.MarkSaveSavedForSmoke());
         }
 
         public static void ReturnHomePostfix()
         {
-            Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
-            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle");
-            Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle();
-            Bridge?.NotifyGameBridgeFeaturesReturnedToTitle();
-            Runtime?.NotifyReturnedToTitle();
+            SafeCallback("ReturnedToTitle.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle"));
+            SafeCallback("ReturnedToTitle.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle"));
+            SafeCallback("ReturnedToTitle.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle());
+            SafeCallback("ReturnedToTitle.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesReturnedToTitle());
+            SafeCallback("ReturnedToTitle.NotifyRuntime", () => Runtime?.NotifyReturnedToTitle());
         }
 
         public static void DolocApiSetEnvCameraPostfix()
         {
-            Bridge?.NotifyGameBridgeFeaturesEnvironmentReset("DolocAPI.SetEnvCamera");
+            SafeCallback("EnvironmentReset.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesEnvironmentReset("DolocAPI.SetEnvCamera"));
         }
 
         public static void ReloadModsPostfix()
         {
-            Runtime?.NotifyWorkshopModListChanged();
+            SafeCallback("Workshop.NotifyModListChanged", () => Runtime?.NotifyWorkshopModListChanged());
         }
 
         public static void ItemTitlePostfix(object __instance, ref string __result)
@@ -118,7 +119,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateToolExitPostfix()
         {
-            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateTool.OnExit");
+            SafeCallback("AgentStateTool.OnExit.RestoreActionSpeed", () => Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateTool.OnExit"));
         }
 
         public static void AgentStateInteractEnterPostfix(object __instance)
@@ -128,8 +129,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateInteractExitPostfix()
         {
-            Bridge?.ActionCompletionService?.ApplyOneActionEquipmentFillAfterInteract();
-            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateInteract.OnExit");
+            SafeCallback("AgentStateInteract.OnExit.ApplyOneActionEquipmentFill", () => Bridge?.ActionCompletionService?.ApplyOneActionEquipmentFillAfterInteract());
+            SafeCallback("AgentStateInteract.OnExit.RestoreActionSpeed", () => Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateInteract.OnExit"));
         }
 
         public static void AgentStateEatEnterPostfix(object __instance)
@@ -212,8 +213,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateBaseExitPostfix()
         {
-            Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateBase.OnExit");
-            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateBase.OnExit");
+            SafeCallback("AgentStateBase.OnExit.RestoreActionSpeed", () => Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateBase.OnExit"));
+            SafeCallback("AgentStateBase.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateBase.OnExit"));
         }
 
         public static void FishingReadyEnterPostfix(object __instance)
@@ -258,8 +259,14 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void FishingPullExitPostfix()
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("Cooldown", null);
-            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit");
+            try
+            {
+                SafeCallback("AgentStateFishingPull.OnExit.NotifyCooldown", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Cooldown", null));
+            }
+            finally
+            {
+                SafeCallback("AgentStateFishingPull.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit"));
+            }
         }
 
         public static bool ItemMotorKeyOnUsePrefix(object __instance)
@@ -360,6 +367,31 @@ namespace DTMAPI.GameBridge.DolocTown
         public static bool FarmingGunUiStateHandleSwapOneItemPrefix(object __instance, int __0)
         {
             return Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true;
+        }
+
+        private static void SafeCallback(string operation, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                RecordLifecycleCallbackFailure(operation, ex);
+            }
+        }
+
+        private static void RecordLifecycleCallbackFailure(string operation, Exception ex)
+        {
+            try
+            {
+                Runtime?.Diagnostics.RecordError("DTMAPI.GameBridge.Lifecycle", "Lifecycle callback failed: " + operation + ".", ex.ToString());
+                Runtime?.RuntimeMonitor.Log("Lifecycle callback failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+            }
+            catch
+            {
+                // Harmony callbacks must never rethrow diagnostics failures into native gameplay.
+            }
         }
     }
 }
