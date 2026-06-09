@@ -265,10 +265,12 @@ namespace DTMAPI.Core.Runtime
 
         public IDtmDiagnosticsSnapshot CreateDiagnosticsSnapshot()
         {
+            IReadOnlyList<IDtmErrorInfo> errors = Diagnostics.GetErrors();
             return new DtmDiagnosticsSnapshot(
                 startedAt,
                 loadedMods.Select(m => new DtmLoadedModInfo(m.Manifest)).Cast<IDtmLoadedModInfo>().ToArray(),
-                Diagnostics.GetErrors(),
+                CreateModStatusSnapshot(errors),
+                errors,
                 Diagnostics.GetWarnings(),
                 Diagnostics.GetHookStatuses(),
                 Diagnostics.GetFeatureStatuses(),
@@ -373,6 +375,68 @@ namespace DTMAPI.Core.Runtime
             }
             RefreshConfigPageLocks();
             return loadedNow;
+        }
+
+        private IReadOnlyList<IDtmModStatusInfo> CreateModStatusSnapshot(IReadOnlyList<IDtmErrorInfo> errors)
+        {
+            HashSet<string> loadedIds = new HashSet<string>(loadedMods.Select(m => m.Manifest.UniqueID), StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, List<IDtmErrorInfo>> errorsByOwner = errors
+                .Where(e => !string.IsNullOrWhiteSpace(e.Owner))
+                .GroupBy(e => e.Owner, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+            List<IDtmModStatusInfo> rows = new List<IDtmModStatusInfo>();
+
+            foreach (DiscoveredMod mod in discoveredMods.OrderBy(m => m.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase))
+            {
+                bool loaded = loadedIds.Contains(mod.Manifest.UniqueID);
+                string status;
+                string reason;
+
+                if (!mod.OfficialEnabled)
+                {
+                    status = "disabled";
+                    reason = string.IsNullOrWhiteSpace(mod.EnablementReason)
+                        ? "Disabled by the source enablement path."
+                        : mod.EnablementReason;
+                    if (loaded)
+                        reason += " Already loaded in this process; restart is required for DLL unload.";
+                }
+                else if (errorsByOwner.TryGetValue(mod.Manifest.UniqueID, out List<IDtmErrorInfo>? modErrors) && modErrors.Count > 0)
+                {
+                    status = "error";
+                    reason = string.Join(" | ", modErrors.Select(error => error.Message + (string.IsNullOrWhiteSpace(error.Details) ? string.Empty : " " + error.Details)).ToArray());
+                }
+                else if (loaded)
+                {
+                    status = "loaded";
+                    reason = "Loaded by DTMAPI runtime.";
+                }
+                else
+                {
+                    status = "discovered";
+                    reason = "Discovered by DTMAPI but not loaded yet.";
+                }
+
+                rows.Add(new DtmModStatusInfo(
+                    mod.Manifest.UniqueID,
+                    mod.Manifest.Name,
+                    mod.Manifest.Version,
+                    mod.Manifest.Type,
+                    mod.Source,
+                    mod.OfficialId,
+                    mod.OfficialEnabled,
+                    mod.OfficialEnablementManaged,
+                    mod.EnablementReason,
+                    mod.Manifest.EntryDll,
+                    mod.Manifest.EntryType,
+                    loaded,
+                    status,
+                    reason,
+                    mod.ManifestPath,
+                    mod.RootPath));
+            }
+
+            return rows;
         }
 
         private void RefreshConfigPageLocks()

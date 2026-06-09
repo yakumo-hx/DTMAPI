@@ -96,11 +96,68 @@ namespace DTMAPI.Core.Diagnostics
         public string EntryType { get; }
     }
 
+    public sealed class DtmModStatusInfo : IDtmModStatusInfo
+    {
+        public DtmModStatusInfo(
+            string uniqueId,
+            string name,
+            string version,
+            string type,
+            string source,
+            string officialId,
+            bool officialEnabled,
+            bool officialEnablementManaged,
+            string enablementReason,
+            string entryDll,
+            string entryType,
+            bool loaded,
+            string status,
+            string reason,
+            string manifestPath,
+            string rootPath)
+        {
+            UniqueID = uniqueId ?? string.Empty;
+            Name = name ?? string.Empty;
+            Version = version ?? string.Empty;
+            Type = type ?? string.Empty;
+            Source = source ?? string.Empty;
+            OfficialId = officialId ?? string.Empty;
+            OfficialEnabled = officialEnabled;
+            OfficialEnablementManaged = officialEnablementManaged;
+            EnablementReason = enablementReason ?? string.Empty;
+            EntryDll = entryDll ?? string.Empty;
+            EntryType = entryType ?? string.Empty;
+            Loaded = loaded;
+            Status = status ?? string.Empty;
+            Reason = reason ?? string.Empty;
+            ManifestPath = manifestPath ?? string.Empty;
+            RootPath = rootPath ?? string.Empty;
+        }
+
+        public string UniqueID { get; }
+        public string Name { get; }
+        public string Version { get; }
+        public string Type { get; }
+        public string Source { get; }
+        public string OfficialId { get; }
+        public bool OfficialEnabled { get; }
+        public bool OfficialEnablementManaged { get; }
+        public string EnablementReason { get; }
+        public string EntryDll { get; }
+        public string EntryType { get; }
+        public bool Loaded { get; }
+        public string Status { get; }
+        public string Reason { get; }
+        public string ManifestPath { get; }
+        public string RootPath { get; }
+    }
+
     public sealed class DtmDiagnosticsSnapshot : IDtmDiagnosticsSnapshot
     {
         public DtmDiagnosticsSnapshot(
             DateTimeOffset startedAt,
             IReadOnlyList<IDtmLoadedModInfo> loadedMods,
+            IReadOnlyList<IDtmModStatusInfo> mods,
             IReadOnlyList<IDtmErrorInfo> errors,
             IReadOnlyList<IDtmWarningInfo> warnings,
             IReadOnlyList<IHookStatusInfo> hookStatuses,
@@ -110,6 +167,7 @@ namespace DTMAPI.Core.Diagnostics
         {
             StartedAt = startedAt;
             LoadedMods = loadedMods;
+            Mods = mods;
             Errors = errors;
             Warnings = warnings;
             HookStatuses = hookStatuses;
@@ -120,6 +178,7 @@ namespace DTMAPI.Core.Diagnostics
 
         public DateTimeOffset StartedAt { get; }
         public IReadOnlyList<IDtmLoadedModInfo> LoadedMods { get; }
+        public IReadOnlyList<IDtmModStatusInfo> Mods { get; }
         public IReadOnlyList<IDtmErrorInfo> Errors { get; }
         public IReadOnlyList<IDtmWarningInfo> Warnings { get; }
         public IReadOnlyList<IHookStatusInfo> HookStatuses { get; }

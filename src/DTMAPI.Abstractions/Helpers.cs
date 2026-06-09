@@ -129,6 +129,7 @@ namespace DTMAPI.Abstractions
     {
         DateTimeOffset StartedAt { get; }
         IReadOnlyList<IDtmLoadedModInfo> LoadedMods { get; }
+        IReadOnlyList<IDtmModStatusInfo> Mods { get; }
         IReadOnlyList<IDtmErrorInfo> Errors { get; }
         IReadOnlyList<IDtmWarningInfo> Warnings { get; }
         IReadOnlyList<IHookStatusInfo> HookStatuses { get; }
@@ -145,6 +146,27 @@ namespace DTMAPI.Abstractions
         string Version { get; }
         string Type { get; }
         string EntryType { get; }
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Diagnostic discovered/loaded/disabled/error mod-status snapshot row.")]
+    public interface IDtmModStatusInfo
+    {
+        string UniqueID { get; }
+        string Name { get; }
+        string Version { get; }
+        string Type { get; }
+        string Source { get; }
+        string OfficialId { get; }
+        bool OfficialEnabled { get; }
+        bool OfficialEnablementManaged { get; }
+        string EnablementReason { get; }
+        string EntryDll { get; }
+        string EntryType { get; }
+        bool Loaded { get; }
+        string Status { get; }
+        string Reason { get; }
+        string ManifestPath { get; }
+        string RootPath { get; }
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Diagnostic GameBridge feature-status snapshot row.")]

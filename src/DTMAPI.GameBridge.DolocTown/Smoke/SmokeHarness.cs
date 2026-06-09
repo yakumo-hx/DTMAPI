@@ -490,11 +490,23 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("LatestReportPath is missing or does not exist: " + snapshot.LatestReportPath);
                 if (!snapshot.LatestReportPath.Equals(reportPath, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("LatestReportPath did not match exported report. snapshot=" + snapshot.LatestReportPath + ", exported=" + reportPath);
+                if (snapshot.Mods.Count == 0)
+                    throw new InvalidOperationException("Diagnostic mod status rows are missing.");
+
+                var missingLoadedModStatuses = snapshot.LoadedMods
+                    .Where(loaded => !snapshot.Mods.Any(status =>
+                        status.UniqueID.Equals(loaded.UniqueID, StringComparison.OrdinalIgnoreCase) &&
+                        status.Loaded))
+                    .Select(loaded => loaded.UniqueID)
+                    .ToArray();
+                if (missingLoadedModStatuses.Length > 0)
+                    throw new InvalidOperationException("Missing loaded mod status rows: " + string.Join(",", missingLoadedModStatuses));
 
                 string summary =
                     "scenario=" + scenario +
                     ", expectedFeatures=" + string.Join(",", expectedFeatureIds) +
                     ", loadedMods=" + snapshot.LoadedMods.Count +
+                    ", mods=" + snapshot.Mods.Count +
                     ", errors=" + snapshot.Errors.Count +
                     ", warnings=" + snapshot.Warnings.Count +
                     ", hooks=" + snapshot.HookStatuses.Count +
