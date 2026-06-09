@@ -42,10 +42,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void SaveLoaded(bool isNewGame)
         {
+            Service.RestoreActionSpeed("SaveLoaded");
         }
 
         public void ReturnedToTitle()
         {
+            Service.RestoreActionSpeed("ReturnedToTitle");
         }
 
         public void EnvironmentReset(string reason)
