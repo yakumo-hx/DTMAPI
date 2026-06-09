@@ -384,7 +384,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (smokeSettings.AutoExerciseStrongPlantingGun)
                     runtime.SetHookStatus("Smoke.StrongPlantingGun", "pending", "IStrongPlantingGunApi + ItemFarmingGun", "Waiting after save load to generate an official farming gun, expose three slots, place seed/film/fertilizer, and apply them to a temporary plant basin.");
                 if (smokeSettings.AutoExerciseCustomEntityApis)
-                    runtime.SetHookStatus("Smoke.CustomEntityApis", "pending", "ICustomAnimalApi/ICustomMonsterApi/ICustomAttackApi/ICustomDroneApi", "Waiting after save load to register stable 0.4.0 custom entity definitions, verify snapshots/status, confirm duplicate validation, confirm runtime-creation-blocked request results, and clean up the smoke owner.");
+                    runtime.SetHookStatus("Smoke.CustomEntityApis", "pending", "ICustomAnimalApi/ICustomMonsterApi/ICustomAttackApi/ICustomDroneApi", "Waiting after save load to register StableCandidate custom entity registry contracts, verify snapshots/status, confirm duplicate validation, confirm runtime-creation-blocked request results, and clean up the smoke owner.");
                 return;
             }
             if (smokeSettings.AutoOpenAnimalPanel)

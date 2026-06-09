@@ -50,6 +50,17 @@ RuntimeStatus = RuntimeCreationBlocked
 
 This is deliberate. The GameBridge has identified native adaptation paths, but creating live custom entities requires verified adapters for native proto/table records, scene assets, save data, AI/update loops, collisions, equipment, and cleanup. Until those adapters are proven in game, DTMAPI exposes a registry configured-state path rather than creating unsafe native objects.
 
+Current GameBridge hook/status IDs intentionally use registry-contract naming:
+
+```text
+CustomAnimals.RegistryContract
+CustomMonsters.RegistryContract
+CustomAttacks.RegistryContract
+CustomDrones.RegistryContract
+```
+
+Each family status remains `configured-blocked` with detail `StableCandidate registry contract; runtime creation remains blocked`.
+
 Ordinary mods must not depend on animal or monster `RequestSpawn`, attack
 `SpawnProjectile` or `ExecuteAttack`, drone `RequestSummon`, `Equip`, or
 `SetMode`, native handles, active runtime snapshots, or save restoration for

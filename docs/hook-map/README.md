@@ -44,56 +44,58 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 
 ## Hook: CustomEntities.CoreRegistry
 
-- Status: stable
+- Status: verified
 - Public surface: `ICustomAnimalApi`, `ICustomMonsterApi`, `ICustomAttackApi`, `ICustomDroneApi`
 - Game build: 23465763 workshop
 - Game method/type: DTMAPI Core runtime registry and save-boundary lifecycle
 - Patch type: runtime dispatch
-- Why this point: custom entity definitions, snapshots, lifecycle events, owner cleanup, and failure reasons are stable DTMAPI state and do not require raw game object access.
+- Why this point: custom entity definitions, snapshots, lifecycle events, owner cleanup, and failure reasons are DTMAPI-owned registry state and do not require raw game object access; the public registry contracts remain `StableCandidate`.
 - Failure behavior: invalid IDs and duplicates return result DTO errors; provider/listener exceptions are recorded under the owner; native spawn/summon/execute requests return `runtime-creation-blocked` until GameBridge adapters are verified.
 - Mods/tests depending on it: no player-facing mod in 0.4.0; `DTMAPI.UnitTests` and internal `DTMAPI.CustomEntityApiSmokeHarness`.
 - Evidence:
-  - Build: 0.4.0 Release build/unit passed 2026-06-06 with 0 warnings/0 errors.
-  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260606-191219`.
-  - Log line: unit test `CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots` verifies invalid ID, duplicate ID, four-family registration, snapshots/status, blocked requests, save-boundary cleanup, and owner cleanup.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-191219`; result has `CustomEntityApis=true`, `SaveLoaded=true`, `HookProbe=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, `ForcedClose=false`.
-- Regression cases: CUSTOM-ENTITY-040-STABLE-API
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors; unit test `CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots` verifies invalid ID, duplicate ID, four-family registration, snapshots/status, blocked requests, save-boundary cleanup, and owner cleanup.
+  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260610-045414`.
+  - Log line: `GAME-SMOKE/20260610-045414` logs `CustomEntities.CoreRegistry = verified. StableCandidate 0.4.0 custom entity registry contracts are registered...`, `Smoke.CustomEntityApis = verified`, and blocked request summary `requests=runtime-creation-blocked`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-045414`; result has `CustomEntityApis=Passed`, `SaveLoaded=Passed`, `HookProbe=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed`.
+- Regression cases: CUSTOMENTITY-STATUS-NAMING-20260610, CUSTOM-ENTITY-040-STABLE-API
 
-## Hook: CustomAnimals.StableApi
+## Hook: CustomAnimals.RegistryContract
 
 - Status: configured-blocked
 - Public surface: `ICustomAnimalApi`
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.AnimalManager.CreateAnimal`, `DolocTown.Animal`, animal work classes, `AnimalViewer`, and animal save data paths.
 - Patch type: reflection research/status path; no native creation patch installed in 0.4.0.
-- Why this point: native animals depend on `AnimalInfo` proto data, home/current rooms, feed/excrement/breeding work, produce rules, UI viewer rows, and save data. Stable API DTOs must stay separated from these fragile runtime details.
+- Why this point: native animals depend on `AnimalInfo` proto data, home/current rooms, feed/excrement/breeding work, produce rules, UI viewer rows, and save data. StableCandidate registry DTOs must stay separated from these fragile runtime details.
 - Failure behavior: registration/query/snapshot works; `RequestSpawn` returns `runtime-creation-blocked` with adapter details instead of creating an unsafe animal.
 - Mods/tests depending on it: internal custom entity smoke harness only.
 - Evidence:
-  - Build: 0.4.0 Release build/unit passed 2026-06-06.
-  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260606-191219`.
-  - Log line: `CustomAnimals.StableApi = configured-blocked`; `Smoke exercise CustomEntityApis OK registered=animal,monster,attack,drone; invalidAnimal=invalid-definition; duplicateAnimal=duplicate-definition-id; requests=runtime-creation-blocked; cleanupRemoved=5; lifecycleEvents=2/3/2/2.`
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-191219`.
-- Regression cases: CUSTOM-ENTITY-040-STABLE-API, ANIMAL-001
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260610-045414`.
+  - Latest naming: `GAME-SMOKE/20260610-045414` logs `CustomAnimals.RegistryContract = configured-blocked` with details `StableCandidate registry contract; runtime creation remains blocked`.
+  - Historical smoke summary: `Smoke exercise CustomEntityApis OK registered=animal,monster,attack,drone; invalidAnimal=invalid-definition; duplicateAnimal=duplicate-definition-id; requests=runtime-creation-blocked; cleanupRemoved=5; lifecycleEvents=2/3/2/2.`
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-045414`.
+- Regression cases: CUSTOMENTITY-STATUS-NAMING-20260610, CUSTOM-ENTITY-040-STABLE-API, ANIMAL-001
 
-## Hook: CustomMonsters.StableApi
+## Hook: CustomMonsters.RegistryContract
 
 - Status: configured-blocked
 - Public surface: `ICustomMonsterApi`
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.MonsterController`, `MonsterGroupManager`, `MonsterAI_Target`, `MonsterStateManager`, `MonsterAttackBehaviour`, and `MonsterAttackBehaviourManager`.
 - Patch type: reflection research/status path; no native creation patch installed in 0.4.0.
-- Why this point: native monsters require verified spawn group, AI, movement, attack, damage, death/drop, and despawn adapters. Stable DTOs define the author contract without exposing raw update loops.
+- Why this point: native monsters require verified spawn group, AI, movement, attack, damage, death/drop, and despawn adapters. StableCandidate registry DTOs define the author contract without exposing raw update loops.
 - Failure behavior: registration/query/spawn-table/snapshot works; `RequestSpawn` returns `runtime-creation-blocked` until native adapters are verified.
 - Mods/tests depending on it: internal custom entity smoke harness only.
 - Evidence:
-  - Build: 0.4.0 Release build/unit passed 2026-06-06.
-  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260606-191219`.
-  - Log line: `CustomMonsters.StableApi = configured-blocked`; `Smoke exercise CustomEntityApis OK ... cleanupRemoved=5`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-191219`.
-- Regression cases: CUSTOM-ENTITY-040-STABLE-API
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260610-045414`.
+  - Latest naming: `GAME-SMOKE/20260610-045414` logs `CustomMonsters.RegistryContract = configured-blocked` with details `StableCandidate registry contract; runtime creation remains blocked`.
+  - Historical smoke summary: `Smoke exercise CustomEntityApis OK ... cleanupRemoved=5`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-045414`.
+- Regression cases: CUSTOMENTITY-STATUS-NAMING-20260610, CUSTOM-ENTITY-040-STABLE-API
 
-## Hook: CustomAttacks.ProjectileApi
+## Hook: CustomAttacks.RegistryContract
 
 - Status: configured-blocked
 - Public surface: `ICustomAttackApi`
@@ -104,28 +106,30 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Failure behavior: registration/query/snapshot works; `SpawnProjectile` and `ExecuteAttack` return `runtime-creation-blocked` until BulletManager/collision/damage adapters are verified.
 - Mods/tests depending on it: internal custom entity smoke harness only; future monster and drone APIs reference attack IDs.
 - Evidence:
-  - Build: 0.4.0 Release build/unit passed 2026-06-06.
-  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260606-191219`.
-  - Log line: `CustomAttacks.ProjectileApi = configured-blocked`; `Smoke exercise CustomEntityApis OK ... requests=runtime-creation-blocked`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-191219`.
-- Regression cases: CUSTOM-ENTITY-040-STABLE-API
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260610-045414`.
+  - Latest naming: `GAME-SMOKE/20260610-045414` logs `CustomAttacks.RegistryContract = configured-blocked` with details `StableCandidate registry contract; runtime creation remains blocked`.
+  - Historical smoke summary: `Smoke exercise CustomEntityApis OK ... requests=runtime-creation-blocked`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-045414`.
+- Regression cases: CUSTOMENTITY-STATUS-NAMING-20260610, CUSTOM-ENTITY-040-STABLE-API
 
-## Hook: CustomDrones.StableApi
+## Hook: CustomDrones.RegistryContract
 
 - Status: configured-blocked
 - Public surface: `ICustomDroneApi`
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.Drone`, `DroneController`, `DroneWeapon`, `DroneWeaponGun`, `DroneWeaponSword`, `DronePanel`, and `DolocAPI.EquipDrone`.
 - Patch type: reflection research/status path; no native drone creation/equipment patch installed in 0.4.0.
-- Why this point: native drones combine controller, weapon, equipment, movement, owner binding, UI panel, and save/persistence behavior. Stable API definitions keep future mods away from fragile raw types.
+- Why this point: native drones combine controller, weapon, equipment, movement, owner binding, UI panel, and save/persistence behavior. StableCandidate registry definitions keep future mods away from fragile raw types.
 - Failure behavior: registration/query/snapshot works; `RequestSummon`, `Equip`, and `SetMode` return `runtime-creation-blocked` until drone controller/weapon/equipment adapters are verified.
 - Mods/tests depending on it: internal custom entity smoke harness only.
 - Evidence:
-  - Build: 0.4.0 Release build/unit passed 2026-06-06.
-  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260606-191219`.
-  - Log line: `CustomDrones.StableApi = configured-blocked`; `Smoke exercise CustomEntityApis OK ... requests=runtime-creation-blocked`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-191219`.
-- Regression cases: CUSTOM-ENTITY-040-STABLE-API
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2 in `GAME-SMOKE/20260610-045414`.
+  - Latest naming: `GAME-SMOKE/20260610-045414` logs `CustomDrones.RegistryContract = configured-blocked` with details `StableCandidate registry contract; runtime creation remains blocked`.
+  - Historical smoke summary: `Smoke exercise CustomEntityApis OK ... requests=runtime-creation-blocked`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-045414`.
+- Regression cases: CUSTOMENTITY-STATUS-NAMING-20260610, CUSTOM-ENTITY-040-STABLE-API
 
 ## Diagnostic: Startup.SegmentTiming
 
