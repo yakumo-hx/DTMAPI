@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -265,8 +266,13 @@ namespace DTMAPI.UnitTests
                 runtime.Start();
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsGameVersion"), "Missing game-version detection should warn but not block loading.");
+                Assert(snapshot.Warnings.Any(w => w.Owner == "DTMAPI.Tests.NeedsGameVersion" && w.Message.Contains("MinimumGameVersion")), "Runtime snapshot should include structured MinimumGameVersion warning.");
+                Assert(runtime.Diagnostics.GetWarnings().Any(w => w.Owner == "DTMAPI.Tests.NeedsGameVersion" && w.Details.Contains("MinimumGameVersion=99.0.0")), "Diagnostics helper should expose structured MinimumGameVersion warning.");
                 string log = File.ReadAllText(runtime.Diagnostics.GetLatestLogPath());
                 Assert(log.Contains("[Warn]") && log.Contains("MinimumGameVersion") && log.Contains("cannot detect the game version"), "MinimumGameVersion should emit an explicit warning when game version cannot be detected.");
+                string report = runtime.ExportLogs();
+                string summary = ReadZipText(report, "dtmapi-summary.txt");
+                Assert(summary.Contains("Warnings: 1") && summary.Contains("WARNING") && summary.Contains("MinimumGameVersion"), "Diagnostic report summary should include structured warnings.");
             }
             finally
             {
@@ -956,6 +962,18 @@ namespace DTMAPI.UnitTests
         {
             string path = Path.Combine(gameDir, "DTMAPI", "config", "DTMAPI.Tests.HotLoad.hotload.txt");
             return File.Exists(path) && int.TryParse(File.ReadAllText(path), out int value) ? value : 0;
+        }
+
+        private static string ReadZipText(string zipPath, string entryName)
+        {
+            using (FileStream file = File.OpenRead(zipPath))
+            using (var archive = new ZipArchive(file, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName) ?? throw new InvalidOperationException("Zip entry not found: " + entryName);
+                using (Stream stream = entry.Open())
+                using (var reader = new StreamReader(stream))
+                    return reader.ReadToEnd();
+            }
         }
 
         private static void Assert(bool condition, string message)

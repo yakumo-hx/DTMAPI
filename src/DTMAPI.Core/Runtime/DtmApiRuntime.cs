@@ -253,6 +253,7 @@ namespace DTMAPI.Core.Runtime
                 loadedMods.ToArray(),
                 ModRegistry.GetAll(),
                 Diagnostics.GetErrors(),
+                Diagnostics.GetWarnings(),
                 Diagnostics.GetHookStatuses(),
                 configMenuRuntime?.GetPages() ?? new IConfigMenuPage[0],
                 UI.LastExportPath);
@@ -489,6 +490,10 @@ namespace DTMAPI.Core.Runtime
             if (string.IsNullOrWhiteSpace(minimum))
                 return true;
 
+            Diagnostics.RecordWarning(
+                mod.Manifest.UniqueID,
+                "MinimumGameVersion cannot be verified.",
+                "MinimumGameVersion=" + minimum + "; the current runtime host cannot detect the Doloc Town game version, so DTMAPI continues loading and records this as a structured warning.");
             RuntimeMonitor.Log(
                 "MinimumGameVersion warning for " + mod.Manifest.UniqueID + ": manifest requires Doloc Town >= " + minimum + ", but the current runtime host cannot detect the game version; DTMAPI will continue loading and treat this as an explicit warning instead of silently ignoring it.",
                 LogLevel.Warn);
@@ -734,6 +739,7 @@ namespace DTMAPI.Core.Runtime
             IReadOnlyList<DiscoveredMod> loadedMods,
             IReadOnlyList<IManifest> registry,
             IReadOnlyList<IDtmErrorInfo> errors,
+            IReadOnlyList<IDtmWarningInfo> warnings,
             IReadOnlyList<IHookStatusInfo> hookStatuses,
             IReadOnlyList<IConfigMenuPage> configPages,
             string lastExportPath)
@@ -744,6 +750,7 @@ namespace DTMAPI.Core.Runtime
             LoadedMods = loadedMods;
             Registry = registry;
             Errors = errors;
+            Warnings = warnings;
             HookStatuses = hookStatuses;
             ConfigPages = configPages;
             LastExportPath = lastExportPath;
@@ -755,6 +762,7 @@ namespace DTMAPI.Core.Runtime
         public IReadOnlyList<DiscoveredMod> LoadedMods { get; }
         public IReadOnlyList<IManifest> Registry { get; }
         public IReadOnlyList<IDtmErrorInfo> Errors { get; }
+        public IReadOnlyList<IDtmWarningInfo> Warnings { get; }
         public IReadOnlyList<IHookStatusInfo> HookStatuses { get; }
         public IReadOnlyList<IConfigMenuPage> ConfigPages { get; }
         public string LastExportPath { get; }
