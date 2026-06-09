@@ -59,62 +59,71 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ItemTitlePostfix(object __instance, ref string __result)
         {
-            if (Bridge?.FishRoeTooltipService != null)
-                __result = Bridge.FishRoeTooltipService.DecorateFishRoeTitle(__instance, __result);
+            string original = __result;
+            __result = SafeResult("Items.FishRoeTooltip.ItemTitle", original, () => Bridge?.FishRoeTooltipService?.DecorateFishRoeTitle(__instance, original) ?? original);
         }
 
         public static void ItemDescriptionPostfix(object __instance, ref string __result)
         {
-            if (Bridge?.FishRoeTooltipService != null)
-                __result = Bridge.FishRoeTooltipService.DecorateFishRoeDetail(__instance, __result);
+            string original = __result;
+            __result = SafeResult("Items.FishRoeTooltip.ItemDescription", original, () => Bridge?.FishRoeTooltipService?.DecorateFishRoeDetail(__instance, original) ?? original);
         }
 
         public static void ItemDetailInfoPostfix(object __instance, ref string __result)
         {
-            if (Bridge?.FishRoeTooltipService != null)
-                __result = Bridge.FishRoeTooltipService.DecorateFishRoeDetail(__instance, __result);
+            string original = __result;
+            __result = SafeResult("Items.FishRoeTooltip.ItemDetailInfo", original, () => Bridge?.FishRoeTooltipService?.DecorateFishRoeDetail(__instance, original) ?? original);
         }
 
         public static void AnimalFullInfoDataCtorPostfix(object __instance, object __0)
         {
-            Bridge?.ExperimentalApi?.DecorateAnimalFullInfoData(__instance, __0);
+            SafePostfix("Animals.ViewerRendering.FullInfoDataCtor", () => Bridge?.ExperimentalApi?.DecorateAnimalFullInfoData(__instance, __0));
         }
 
         public static void AnimalViewerShowPrefix(object __instance, object __0)
         {
-            Bridge?.ExperimentalApi?.PrepareAnimalProgressOverlayBeforeShow(__instance, __0);
+            SafePostfix("Animals.ViewerRendering.ViewerShowPrefix", () => Bridge?.ExperimentalApi?.PrepareAnimalProgressOverlayBeforeShow(__instance, __0));
         }
 
         public static void AnimalViewerShowPostfix(object __instance, object __0)
         {
-            Bridge?.ExperimentalApi?.RenderAnimalProgressOverlay(__instance, __0);
-            if (Bridge?.ExperimentalApi?.RecordAnimalViewerUiEvidence(__instance, __0) == true)
-                Bridge.MarkAnimalViewerUiEvidenceForSmoke();
+            SafePostfix("Animals.ViewerRendering.ViewerShowPostfix", () =>
+            {
+                Bridge?.ExperimentalApi?.RenderAnimalProgressOverlay(__instance, __0);
+                if (Bridge?.ExperimentalApi?.RecordAnimalViewerUiEvidence(__instance, __0) == true)
+                    Bridge.MarkAnimalViewerUiEvidenceForSmoke();
+            });
         }
 
         public static void AnimalPanelRefreshViewerPostfix(object __instance, int __0)
         {
-            if (Bridge?.ExperimentalApi?.RecordAnimalPanelUiEvidence(__instance, __0) == true)
-                Bridge.MarkAnimalViewerUiEvidenceForSmoke();
+            SafePostfix("Animals.ViewerRendering.PanelRefreshViewer", () =>
+            {
+                if (Bridge?.ExperimentalApi?.RecordAnimalPanelUiEvidence(__instance, __0) == true)
+                    Bridge.MarkAnimalViewerUiEvidenceForSmoke();
+            });
         }
 
         public static void ToolColliderHandleToolsPrefix(object __instance, object other)
         {
-            Bridge?.ExperimentalApi?.CaptureOilCoalDropBeforeToolHit(__instance, other);
+            SafePostfix("ToolCollider.HandleTools.CaptureOilCoalDrop", () => Bridge?.ExperimentalApi?.CaptureOilCoalDropBeforeToolHit(__instance, other));
         }
 
         public static void ToolColliderHandleToolsPostfix(object __instance, object other)
         {
-            bool oneActionHandled = Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true;
-            if (!oneActionHandled)
-                Bridge?.ExperimentalApi?.ApplyOilCoalDropAfterToolHit(__instance, other);
-            else
-                Bridge?.ExperimentalApi?.ClearCapturedOilCoalDrop(__instance, other);
+            SafePostfix("ToolCollider.HandleTools.ApplyActionCompletionOrOilDrop", () =>
+            {
+                bool oneActionHandled = Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true;
+                if (!oneActionHandled)
+                    Bridge?.ExperimentalApi?.ApplyOilCoalDropAfterToolHit(__instance, other);
+                else
+                    Bridge?.ExperimentalApi?.ClearCapturedOilCoalDrop(__instance, other);
+            });
         }
 
         public static void AgentStateToolEnterPostfix(object __instance)
         {
-            Bridge?.ActionSpeedService?.ApplyActionSpeedToolEnter(__instance);
+            SafePostfix("AgentStateTool.OnEnter.ApplyActionSpeed", () => Bridge?.ActionSpeedService?.ApplyActionSpeedToolEnter(__instance));
         }
 
         public static void AgentStateToolExitPostfix()
@@ -124,7 +133,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateInteractEnterPostfix(object __instance)
         {
-            Bridge?.ActionSpeedService?.ApplyActionSpeedInteractEnter(__instance);
+            SafePostfix("AgentStateInteract.OnEnter.ApplyActionSpeed", () => Bridge?.ActionSpeedService?.ApplyActionSpeedInteractEnter(__instance));
         }
 
         public static void AgentStateInteractExitPostfix()
@@ -135,66 +144,102 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AgentStateEatEnterPostfix(object __instance)
         {
-            Bridge?.ActionSpeedService?.ApplyActionSpeedEatEnter(__instance);
+            SafePostfix("AgentStateEat.OnEnter.ApplyActionSpeed", () => Bridge?.ActionSpeedService?.ApplyActionSpeedEatEnter(__instance));
         }
 
         public static void AgentControllerStateUseItemContinuesPrefix(ref float __0)
         {
-            Bridge?.ActionSpeedService?.AdjustActionSpeedUseItemContinuesDelta(ref __0);
+            float original = __0;
+            try
+            {
+                Bridge?.ActionSpeedService?.AdjustActionSpeedUseItemContinuesDelta(ref __0);
+            }
+            catch (Exception ex)
+            {
+                __0 = original;
+                RecordHookCallbackFailure("AgentControllerState.UseItemContinues.AdjustActionSpeedDelta", ex);
+            }
         }
 
         public static bool AgentControllerStateUseToolPrefix()
         {
-            return AllowNativeGameplayInput("UseTool");
+            return SafePrefix("AgentControllerState.UseTool.InputIsolation", () => AllowNativeGameplayInput("UseTool"));
         }
 
         public static bool AgentControllerStateUseItemPrefix()
         {
-            return AllowNativeGameplayInput("UseItem");
+            return SafePrefix("AgentControllerState.UseItem.InputIsolation", () => AllowNativeGameplayInput("UseItem"));
         }
 
         public static bool AgentControllerStateEnterUiCheckPrefix(ref bool __result)
         {
-            if (!DebugConsoleModalOpen)
-                return true;
-
-            __result = true;
-            if (!debugConsoleInputSuppressionLogged)
+            try
             {
-                debugConsoleInputSuppressionLogged = true;
-                Runtime?.RuntimeMonitor.Log("Debug console native input isolation active: AgentControllerState.EnterUICheck suppressed while DTMAPI console is open.");
-                Runtime?.SetHookStatus("UI.DebugConsoleInputIsolation", "verified", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", "Native backpack/menu/tool/item input is swallowed while the DTMAPI Y console is open.");
+                if (!DebugConsoleModalOpen)
+                    return true;
+
+                __result = true;
+                if (!debugConsoleInputSuppressionLogged)
+                {
+                    debugConsoleInputSuppressionLogged = true;
+                    Runtime?.RuntimeMonitor.Log("Debug console native input isolation active: AgentControllerState.EnterUICheck suppressed while DTMAPI console is open.");
+                    Runtime?.SetHookStatus("UI.DebugConsoleInputIsolation", "verified", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", "Native backpack/menu/tool/item input is swallowed while the DTMAPI Y console is open.");
+                }
+                return false;
             }
-            return false;
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("AgentControllerState.EnterUICheck.InputIsolation", ex);
+                return true;
+            }
         }
 
         public static bool AdvancedCreativeBoolTruePrefix(ref bool __result)
         {
-            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
-                return true;
+            try
+            {
+                if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
+                    return true;
 
-            __result = true;
-            Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("bool-cost-prefix");
-            return false;
+                __result = true;
+                Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("bool-cost-prefix");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Debug.CreativeMode.BoolCostPrefix", ex);
+                return true;
+            }
         }
 
         public static bool AdvancedCreativeVoidSkipPrefix()
         {
-            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
-                return true;
+            return SafePrefix("Debug.CreativeMode.VoidCostPrefix", () =>
+            {
+                if (Bridge?.ExperimentalApi?.ShouldBypassCreativeCostHooks() != true)
+                    return true;
 
-            Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("void-cost-prefix");
-            return false;
+                Bridge.ExperimentalApi.RecordCreativeCostBypassObserved("void-cost-prefix");
+                return false;
+            });
         }
 
         public static void AdvancedCreativeRecipeTimePostfix(ref int __result)
         {
-            if (Bridge?.ExperimentalApi?.ShouldBypassCreativeTimeHooks() != true)
-                return;
-
             int original = __result;
-            __result = 0;
-            Bridge.ExperimentalApi.RecordCreativeNoTimeBypassObserved(original);
+            try
+            {
+                if (Bridge?.ExperimentalApi?.ShouldBypassCreativeTimeHooks() != true)
+                    return;
+
+                __result = 0;
+                Bridge.ExperimentalApi.RecordCreativeNoTimeBypassObserved(original);
+            }
+            catch (Exception ex)
+            {
+                __result = original;
+                RecordHookCallbackFailure("Debug.CreativeMode.RecipeTimePostfix", ex);
+            }
         }
 
         private static bool AllowNativeGameplayInput(string source)
@@ -219,42 +264,42 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void FishingReadyEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("Ready", __instance);
+            SafePostfix("Fishing.Ready.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Ready", __instance));
         }
 
         public static void FishingCastEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("Cast", __instance);
+            SafePostfix("Fishing.Cast.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Cast", __instance));
         }
 
         public static void FishingWaitEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("Wait", __instance);
+            SafePostfix("Fishing.Wait.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Wait", __instance));
         }
 
         public static void FishingWaitPlayPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyFishingWaitAutomation(__instance);
+            SafePostfix("Fishing.Wait.OnPlay.ApplyAutomation", () => Bridge?.ExperimentalApi?.ApplyFishingWaitAutomation(__instance));
         }
 
         public static void FishingMiniGameStartPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingMiniGameStart(__instance);
+            SafePostfix("Fishing.MiniGame.Start", () => Bridge?.ExperimentalApi?.NotifyFishingMiniGameStart(__instance));
         }
 
         public static void FishingMiniGameUpdatePostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyFishingMiniGameAutomationTick(__instance);
+            SafePostfix("Fishing.MiniGame.Update", () => Bridge?.ExperimentalApi?.ApplyFishingMiniGameAutomationTick(__instance));
         }
 
         public static void FishingMiniGameStopPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingMiniGameStop(__instance);
+            SafePostfix("Fishing.MiniGame.Stop", () => Bridge?.ExperimentalApi?.NotifyFishingMiniGameStop(__instance));
         }
 
         public static void FishingPullEnterPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyFishingPhase("Pull", __instance);
+            SafePostfix("Fishing.Pull.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Pull", __instance));
         }
 
         public static void FishingPullExitPostfix()
@@ -271,102 +316,102 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static bool ItemMotorKeyOnUsePrefix(object __instance)
         {
-            return Bridge?.ExperimentalApi?.HandleMotorKeyUse(__instance) ?? true;
+            return SafePrefix("Vehicle.ItemMotorKey.OnUse", () => Bridge?.ExperimentalApi?.HandleMotorKeyUse(__instance) ?? true);
         }
 
         public static bool MotorInteractableOnInteractPrefix(object __instance)
         {
-            return Bridge?.ExperimentalApi?.HandleMotorInteract(__instance) ?? true;
+            return SafePrefix("Vehicle.MotorInteractable.OnInteract", () => Bridge?.ExperimentalApi?.HandleMotorInteract(__instance) ?? true);
         }
 
         public static void AgentControllerStateGetOnMotorPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyMotorGetOn(__instance);
+            SafePostfix("Vehicle.AgentControllerState.GetOnMotor", () => Bridge?.ExperimentalApi?.NotifyMotorGetOn(__instance));
         }
 
         public static void AgentControllerStateGetOffMotorPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.NotifyMotorGetOff(__instance);
+            SafePostfix("Vehicle.AgentControllerState.GetOffMotor", () => Bridge?.ExperimentalApi?.NotifyMotorGetOff(__instance));
         }
 
         public static void MotorControllerOnFixedUpdatePrefix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplySecondMotorTuningForFixedUpdate(__instance);
+            SafePostfix("Vehicle.MotorController.OnFixedUpdate.Prefix", () => Bridge?.ExperimentalApi?.ApplySecondMotorTuningForFixedUpdate(__instance));
         }
 
         public static void MotorControllerOnFixedUpdatePostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.RestoreSecondMotorTuningAfterFixedUpdate(__instance);
+            SafePostfix("Vehicle.MotorController.OnFixedUpdate.Postfix", () => Bridge?.ExperimentalApi?.RestoreSecondMotorTuningAfterFixedUpdate(__instance));
         }
 
         public static void UnlockMotorPostfix()
         {
-            Bridge?.ExperimentalApi?.NotifyOriginalMotorUnlocked();
+            SafePostfix("Vehicle.UnlockMotor.Postfix", () => Bridge?.ExperimentalApi?.NotifyOriginalMotorUnlocked());
         }
 
         public static void SetMotorPositionPostfix(object __0, object __1)
         {
-            Bridge?.ExperimentalApi?.NotifyOriginalMotorPositionChanged(__0, __1);
+            SafePostfix("Vehicle.SetMotorPosition.Postfix", () => Bridge?.ExperimentalApi?.NotifyOriginalMotorPositionChanged(__0, __1));
         }
 
         public static void DolocApiEnterRoomPostfix(object __0, object __1, bool __result)
         {
-            Bridge?.ExperimentalApi?.NotifyEnterRoomForActiveSecondMotor(__0, __1, __result);
+            SafePostfix("Vehicle.DolocAPI.EnterRoom.Postfix", () => Bridge?.ExperimentalApi?.NotifyEnterRoomForActiveSecondMotor(__0, __1, __result));
         }
 
         public static void EquipmentRendererOnReusePostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ResetEquipmentRendererScaleOnReuse(__instance);
+            SafePostfix("Equipment.Renderer.OnReuse", () => Bridge?.ExperimentalApi?.ResetEquipmentRendererScaleOnReuse(__instance));
         }
 
         public static void EquipmentBuilderCreateIndicatorPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.CreateIndicator");
+            SafePostfix("Equipment.Builder.CreateIndicator", () => Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.CreateIndicator"));
         }
 
         public static void EquipmentBuilderTurnIndicatorPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.TurnIndicator");
+            SafePostfix("Equipment.Builder.TurnIndicator", () => Bridge?.ExperimentalApi?.ApplyMineBuilderPreviewScale(__instance, "EquipmentBuilder.TurnIndicator"));
         }
 
         public static void AgentEquipmentReloadParamsPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ApplyEquipmentSlotsAfterReloadParams(__instance);
+            SafePostfix("EquipmentSlots.AgentEquipment.ReloadParams", () => Bridge?.ExperimentalApi?.ApplyEquipmentSlotsAfterReloadParams(__instance));
         }
 
         public static void AccessoriesBarInitPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.__Init");
+            SafePostfix("EquipmentSlots.AccessoriesBar.Init", () => Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.__Init"));
         }
 
         public static void AccessoriesBarOnStartShowPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.OnStartShow");
+            SafePostfix("EquipmentSlots.AccessoriesBar.OnStartShow", () => Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.OnStartShow"));
         }
 
         public static Array ArchiveDataHandleGetAvailableInventoriesPostfix(object __instance, object __0, object __1, bool __2, Array __result)
         {
-            return Bridge?.ChestLocatorEnhancerService?.ExtendAvailableInventoriesForChestLocator(__instance, __0, __1, __2, __result) ?? __result;
+            return SafeResult("Inventory.ChestLocatorEnhancer.GetAvailableInventories", __result, () => Bridge?.ChestLocatorEnhancerService?.ExtendAvailableInventoriesForChestLocator(__instance, __0, __1, __2, __result) ?? __result);
         }
 
         public static void ItemFarmingGunCtorPostfix(object __instance)
         {
-            Bridge?.ExperimentalApi?.ExpandFarmingGunInventoryIfNeeded(__instance, "ItemFarmingGun ctor");
+            SafePostfix("Farming.StrongPlantingGun.ItemFarmingGunCtor", () => Bridge?.ExperimentalApi?.ExpandFarmingGunInventoryIfNeeded(__instance, "ItemFarmingGun ctor"));
         }
 
         public static bool ItemFarmingGunOnUseAsToolPrefix(object __instance)
         {
-            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunToolUse(__instance) ?? true;
+            return SafePrefix("Farming.StrongPlantingGun.OnUseAsTool", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunToolUse(__instance) ?? true);
         }
 
         public static bool FarmingGunUiStateHandlePlaceToOtherSidePrefix(object __instance, int __0)
         {
-            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiPlaceToOtherSide(__instance, __0) ?? true;
+            return SafePrefix("Farming.StrongPlantingGun.UiPlaceToOtherSide", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiPlaceToOtherSide(__instance, __0) ?? true);
         }
 
         public static bool FarmingGunUiStateHandleSwapOneItemPrefix(object __instance, int __0)
         {
-            return Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true;
+            return SafePrefix("Farming.StrongPlantingGun.UiSwapOneItem", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true);
         }
 
         private static void SafeCallback(string operation, Action action)
@@ -381,12 +426,63 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private static void SafePostfix(string operation, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure(operation, ex);
+            }
+        }
+
+        private static T SafeResult<T>(string operation, T fallback, Func<T> action)
+        {
+            try
+            {
+                return action();
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure(operation, ex);
+                return fallback;
+            }
+        }
+
+        private static bool SafePrefix(string operation, Func<bool> action, bool fallback = true)
+        {
+            try
+            {
+                return action();
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure(operation, ex);
+                return fallback;
+            }
+        }
+
         private static void RecordLifecycleCallbackFailure(string operation, Exception ex)
         {
             try
             {
                 Runtime?.Diagnostics.RecordError("DTMAPI.GameBridge.Lifecycle", "Lifecycle callback failed: " + operation + ".", ex.ToString());
                 Runtime?.RuntimeMonitor.Log("Lifecycle callback failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+            }
+            catch
+            {
+                // Harmony callbacks must never rethrow diagnostics failures into native gameplay.
+            }
+        }
+
+        private static void RecordHookCallbackFailure(string operation, Exception ex)
+        {
+            try
+            {
+                Runtime?.Diagnostics.RecordError("DTMAPI.GameBridge.HookCallback", "Hook callback failed: " + operation + ".", ex.ToString());
+                Runtime?.RuntimeMonitor.Log("Hook callback failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
             }
             catch
             {
