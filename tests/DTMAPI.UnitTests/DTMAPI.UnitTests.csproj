@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
   </ItemGroup>
 </Project>

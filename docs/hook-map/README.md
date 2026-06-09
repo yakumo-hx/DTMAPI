@@ -25,6 +25,23 @@ Use this template:
 
 Default preference: Postfix or read-only reflection first, Prefix only when needed, Transpiler only with explicit review and regression evidence.
 
+## Diagnostic: HookCallbackSafeFallbacks
+
+- Status: verified
+- Public surface: none; internal GameBridge/Harmony callback safety policy.
+- Game build: 23465763 workshop
+- Game method/type: non-lifecycle Harmony callback paths owned by `DolocTownHookCallbacks`, including ChestLocator, FishRoe, ActionSpeed enter/continuous-use, ActionCompletion/Oil tool hit, Fishing phase/minigame, Motor, Equipment, StrongPlantingGun, input isolation, creative/debug, and animal viewer callbacks.
+- Patch type: internal callback wrapper around existing Prefix/Postfix bodies; no hook target, hook ID, public API, or smoke schema change.
+- Why this point: ordinary hook callbacks should fail toward native behavior instead of leaking exceptions through Harmony into Doloc Town control flow. Lifecycle cleanup/restore ordering is tracked separately under `LIFECYCLE-CALLBACK-ISOLATION-20260610`.
+- Failure behavior: `SafeResult<T>` returns the original result/fallback on failure, `SafePrefix` returns `true` by default so native logic continues, and `SafePostfix` records diagnostics without throwing back into native code. Failures are recorded under `DTMAPI.GameBridge.HookCallback` with runtime-monitor log details.
+- Mods/tests depending on it: `DTMAPI.UnitTests`, `DTMAPI.ChestLocatorEnhancerMod`, `Yuuka.DTMAPI.FishBreedingAssistant`, `Yuuka.DTMAPI.ActionSpeed`, `Yuuka.DTMAPI.OneActionComplete`, `Yuuka.DTMAPI.AutoFishing`, plus the affected feature smoke harnesses.
+- Evidence:
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors; unit helper coverage verified fallback values and diagnostics recording.
+  - Save: local slot 3 / index 2.
+  - Log line: `GAME-SMOKE/20260610-035216`, `GAME-SMOKE/20260610-035326`, `GAME-SMOKE/20260610-035434`, `GAME-SMOKE/20260610-035639`, and `GAME-SMOKE/20260610-035752` all record their focused smoke cases as passed with clean process/fatal checks after non-lifecycle callbacks were wrapped.
+  - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260610-035216`, `20260610-035326`, `20260610-035434`, `20260610-035639`, and `20260610-035752`; latest runtime report generated during the branch was `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260610-035514.zip`.
+- Regression cases: HOOK-CALLBACK-SAFE-FALLBACKS-20260610
+
 ## Hook: CustomEntities.CoreRegistry
 
 - Status: stable

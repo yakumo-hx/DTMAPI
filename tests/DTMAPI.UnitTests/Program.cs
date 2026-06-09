@@ -9,6 +9,7 @@ using System.Threading;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
+using DTMAPI.GameBridge.DolocTown;
 using DTMAPI.ModConfigMenu;
 
 namespace DTMAPI.UnitTests
@@ -41,6 +42,7 @@ namespace DTMAPI.UnitTests
                 WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod();
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
+                HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
@@ -867,6 +869,37 @@ namespace DTMAPI.UnitTests
             }
             finally
             {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                Type callbacks = typeof(DolocTownHookCallbacks);
+                callbacks.GetProperty(nameof(DolocTownHookCallbacks.Runtime))!.SetValue(null, runtime);
+                callbacks.GetProperty(nameof(DolocTownHookCallbacks.Bridge))!.SetValue(null, null);
+
+                MethodInfo safeResult = callbacks.GetMethod("SafeResult", BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(typeof(string));
+                MethodInfo safePrefix = callbacks.GetMethod("SafePrefix", BindingFlags.NonPublic | BindingFlags.Static)!;
+                MethodInfo safePostfix = callbacks.GetMethod("SafePostfix", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+                string result = (string)safeResult.Invoke(null, new object[] { "Test.SafeResult", "fallback", new Func<string>(() => throw new InvalidOperationException("safe-result-boom")) })!;
+                bool prefix = (bool)safePrefix.Invoke(null, new object[] { "Test.SafePrefix", new Func<bool>(() => throw new InvalidOperationException("safe-prefix-boom")), true })!;
+                safePostfix.Invoke(null, new object[] { "Test.SafePostfix", new Action(() => throw new InvalidOperationException("safe-postfix-boom")) });
+
+                Assert(result == "fallback", "SafeResult should return fallback when a hook callback throws.");
+                Assert(prefix, "SafePrefix should use the native-pass fallback when a hook callback throws.");
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.HookCallback") == 3, "Hook callback safe helpers should record diagnostics errors.");
+            }
+            finally
+            {
+                DolocTownHookCallbacks.Runtime = null;
+                DolocTownHookCallbacks.Bridge = null;
                 RestorePersistentRoot(previousRoot);
             }
         }
