@@ -83,6 +83,7 @@ namespace DTMAPI.Abstractions
     public interface IDiagnosticsHelper
     {
         IReadOnlyList<IDtmErrorInfo> GetErrors();
+        IReadOnlyList<IDtmWarningInfo> GetWarnings();
         IReadOnlyList<IHookStatusInfo> GetHookStatuses();
         string ExportLogs();
         string GetLatestLogPath();
@@ -91,6 +92,15 @@ namespace DTMAPI.Abstractions
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
     public interface IDtmErrorInfo
+    {
+        DateTimeOffset Time { get; }
+        string Owner { get; }
+        string Message { get; }
+        string Details { get; }
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
+    public interface IDtmWarningInfo
     {
         DateTimeOffset Time { get; }
         string Owner { get; }

@@ -12,6 +12,7 @@ namespace DTMAPI.Core.Diagnostics
     {
         private readonly RuntimePaths paths;
         private readonly List<DtmErrorInfo> errors = new List<DtmErrorInfo>();
+        private readonly List<DtmWarningInfo> warnings = new List<DtmWarningInfo>();
         private readonly Dictionary<string, HookStatusInfo> hooks = new Dictionary<string, HookStatusInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly object gate = new object();
 
@@ -28,6 +29,12 @@ namespace DTMAPI.Core.Diagnostics
                 return errors.Cast<IDtmErrorInfo>().ToArray();
         }
 
+        public IReadOnlyList<IDtmWarningInfo> GetWarnings()
+        {
+            lock (gate)
+                return warnings.Cast<IDtmWarningInfo>().ToArray();
+        }
+
         public IReadOnlyList<IHookStatusInfo> GetHookStatuses()
         {
             lock (gate)
@@ -40,6 +47,12 @@ namespace DTMAPI.Core.Diagnostics
         {
             lock (gate)
                 errors.Add(new DtmErrorInfo(owner, message, details));
+        }
+
+        internal void RecordWarning(string owner, string message, string details)
+        {
+            lock (gate)
+                warnings.Add(new DtmWarningInfo(owner, message, details));
         }
 
         public bool SetHookStatus(string hookId, string status, string source, string details)
@@ -87,14 +100,18 @@ namespace DTMAPI.Core.Diagnostics
         private string BuildSummary()
         {
             IReadOnlyList<IDtmErrorInfo> errorSnapshot = GetErrors();
+            IReadOnlyList<IDtmWarningInfo> warningSnapshot = GetWarnings();
             IReadOnlyList<IHookStatusInfo> hookSnapshot = GetHookStatuses();
             return
                 "DTMAPI diagnostic report" + Environment.NewLine +
                 "Generated: " + DateTimeOffset.Now + Environment.NewLine +
                 "Errors: " + errorSnapshot.Count + Environment.NewLine +
+                "Warnings: " + warningSnapshot.Count + Environment.NewLine +
                 "Hooks: " + hookSnapshot.Count + Environment.NewLine +
                 Environment.NewLine +
                 string.Join(Environment.NewLine, hookSnapshot.Select(h => $"HOOK {h.HookId}: {h.Status} - {h.Details}")) +
+                Environment.NewLine +
+                string.Join(Environment.NewLine, warningSnapshot.Select(w => $"WARNING {w.Time:o} [{w.Owner}] {w.Message}: {w.Details}")) +
                 Environment.NewLine +
                 string.Join(Environment.NewLine, errorSnapshot.Select(e => $"ERROR {e.Time:o} [{e.Owner}] {e.Message}: {e.Details}"));
         }
