@@ -123,12 +123,12 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool returnHomePatched;
         private bool workshopReloadPatched;
         private bool actionSpeedToolEnterPatched => actionSpeedFeature?.HookBridge.ToolEnterPatched == true;
-        private bool actionSpeedToolExitPatched => actionSpeedFeature?.HookBridge.ToolExitPatched == true;
+        private bool actionSpeedToolExitPatched => agentStateLifecycleHooks?.ToolExitPatched == true;
         private bool actionSpeedInteractEnterPatched => actionSpeedFeature?.HookBridge.InteractEnterPatched == true;
-        private bool actionSpeedInteractExitPatched => actionSpeedFeature?.HookBridge.InteractExitPatched == true;
+        private bool actionSpeedInteractExitPatched => agentStateLifecycleHooks?.InteractExitPatched == true;
         private bool actionSpeedEatEnterPatched => actionSpeedFeature?.HookBridge.EatEnterPatched == true;
         private bool actionSpeedUseItemContinuesPatched => actionSpeedFeature?.HookBridge.UseItemContinuesPatched == true;
-        private bool actionSpeedBaseExitPatched => actionSpeedFeature?.HookBridge.BaseExitPatched == true;
+        private bool actionSpeedBaseExitPatched => agentStateLifecycleHooks?.BaseExitPatched == true;
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;
         private bool debugConsoleEnterUiCheckPatched;
@@ -192,6 +192,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, GameBridgeFeatureStatus> featureStatuses = new Dictionary<string, GameBridgeFeatureStatus>(StringComparer.OrdinalIgnoreCase);
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
+        private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
 
@@ -298,11 +299,13 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!features.Contains(cameraFeature))
                 features.Add(cameraFeature);
 
-            actionSpeedFeature ??= new ActionSpeedFeature(runtime);
+            agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
+
+            actionSpeedFeature ??= new ActionSpeedFeature(runtime, agentStateLifecycleHooks);
             if (!features.Contains(actionSpeedFeature))
                 features.Add(actionSpeedFeature);
 
-            actionCompletionFeature ??= new ActionCompletionFeature(runtime, experimentalApi!.TryRollOilDropFromCoal, () => actionSpeedFeature?.HookBridge.InteractExitPatched == true);
+            actionCompletionFeature ??= new ActionCompletionFeature(runtime, experimentalApi!.TryRollOilDropFromCoal, () => agentStateLifecycleHooks?.InteractExitPatched == true);
             if (!features.Contains(actionCompletionFeature))
                 features.Add(actionCompletionFeature);
         }
@@ -319,6 +322,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void InstallGameBridgeFeatureHooks(HarmonyReflectionPatcher patcher)
         {
+            agentStateLifecycleHooks?.InstallHooks(patcher);
             DispatchGameBridgeFeatures("InstallHooks", feature => feature.InstallHooks(patcher));
         }
 
