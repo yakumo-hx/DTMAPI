@@ -7,11 +7,11 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly DtmApiRuntime runtime;
 
-        public ActionSpeedFeature(DtmApiRuntime runtime)
+        public ActionSpeedFeature(DtmApiRuntime runtime, AgentStateLifecycleHookBridge lifecycleHooks)
         {
             this.runtime = runtime;
             Service = new ActionSpeedService(runtime);
-            HookBridge = new ActionSpeedHookBridge(runtime, Service);
+            HookBridge = new ActionSpeedHookBridge(runtime, Service, lifecycleHooks);
         }
 
         public string Id => "ActionSpeed";

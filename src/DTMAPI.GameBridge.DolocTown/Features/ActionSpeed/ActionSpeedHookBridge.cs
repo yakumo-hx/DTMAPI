@@ -7,26 +7,28 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly DtmApiRuntime runtime;
         private readonly ActionSpeedService service;
+        private readonly AgentStateLifecycleHookBridge lifecycleHooks;
 
-        public ActionSpeedHookBridge(DtmApiRuntime runtime, ActionSpeedService service)
+        public ActionSpeedHookBridge(DtmApiRuntime runtime, ActionSpeedService service, AgentStateLifecycleHookBridge lifecycleHooks)
         {
             this.runtime = runtime;
             this.service = service;
+            this.lifecycleHooks = lifecycleHooks;
         }
 
         internal bool ToolEnterPatched { get; private set; }
 
-        internal bool ToolExitPatched { get; private set; }
+        internal bool ToolExitPatched => lifecycleHooks.ToolExitPatched;
 
         internal bool InteractEnterPatched { get; private set; }
 
-        internal bool InteractExitPatched { get; private set; }
+        internal bool InteractExitPatched => lifecycleHooks.InteractExitPatched;
 
         internal bool EatEnterPatched { get; private set; }
 
         internal bool UseItemContinuesPatched { get; private set; }
 
-        internal bool BaseExitPatched { get; private set; }
+        internal bool BaseExitPatched => lifecycleHooks.BaseExitPatched;
 
         internal bool ToolHooksReady => ToolEnterPatched && ToolExitPatched;
 
@@ -44,19 +46,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 ToolEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateTool, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateToolEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
             }
 
-            if (!ToolExitPatched)
-            {
-                ToolExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateTool, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateToolExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-            }
-
             if (!InteractEnterPatched)
             {
                 InteractEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateInteract, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateInteractEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-            }
-
-            if (!InteractExitPatched)
-            {
-                InteractExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateInteract, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateInteractExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
             }
 
             if (!EatEnterPatched)
@@ -67,11 +59,6 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!UseItemContinuesPatched)
             {
                 UseItemContinuesPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItemContinues", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemContinuesPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-            }
-
-            if (!BaseExitPatched)
-            {
-                BaseExitPatched = patcher.TryPatchPostfix("AgentStateBase, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentStateBaseExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
             }
 
             service.SetActionSpeedToolHooksInstalled(ToolHooksReady);
