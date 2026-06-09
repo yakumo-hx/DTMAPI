@@ -805,12 +805,13 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Save: local slot 3 / index 2 required.
   - Latest log line: `GAME-SMOKE/20260610-022332` includes `Feature.Camera = ready` with internal feature-status details, `Feature.ActionSpeed = ready`, `Camera.ViewEnvironmentLifecycle = experimental`, `Camera.ViewApi = contract`, `Camera.ZoomApi = obsolete-compatibility`, `Smoke.CameraPlayable = verified`, `Smoke.Zoom = verified`, and `Smoke.DiagnosticsSnapshot = verified` with `mods=14`.
   - Latest screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-022332`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260610-022412`; report zip `docs/debug/evidence/GAME-SMOKE/20260610-022332.zip`.
+  - Manual QA gate: `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md` is pending user confirmation for 2x/4x true-input movement, background flicker, native clamp, building transition, return-to-title reload, and ZoomMod hotkey/config interaction; automated CameraPlayable smoke remains supporting evidence only.
   - Latest case-file validation: `GAME-SMOKE/20260609-110528` plus `src/DTMAPI.GameBridge.DolocTown/Smoke/Cases/CameraPlayableSmokeCase.cs` with the same content hash as the previous `Smoke/CameraSmoke.cs`; result schema and screenshot/evidence names stayed unchanged.
   - Prior feature-host split log line: `GAME-SMOKE/20260609-031302` on `Refactor` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
   - Prior feature-host split screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260609-031302`; camera screenshots, telemetry, and summary under `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-031342`; report zip `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-031339.zip`.
   - Log line: `GAME-SMOKE/20260608-150914` includes `Smoke exercise CameraPlayable OK`, active 4x `DTMAPI.ZoomMod` lease, fallback 2x `DTMAPI.CameraViewCompetingSmoke` lease after high-priority release, reset to 1x, `nativeRefresh=not-called-playable`, `uiScale=unchanged`, `Smoke.CameraPlayable = verified`, and `Smoke.Zoom = verified`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260608-150914`; camera screenshots and summary under `D:\Steam\steamapps\common\Doloc Town\DTMAPI\evidence\CAMERA-PLAYABLE\20260608-150952`.
-- Regression cases: CAMERA-PLAYABLE, CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, ZOOM-030-F, ZOOM-042-API-REBUILD
+- Regression cases: CAMERA-PLAYABLE, CAMERAVIEW-MANUAL-QA-GATE-20260610, CAMERA-HOOK-OWNER-FEATURE-20260609, GAMEBRIDGE-FEATURE-HOST-HARDENING-20260609, ZOOM-030-F, ZOOM-042-API-REBUILD
 
 ## Hook: Camera.ZoomApi
 
