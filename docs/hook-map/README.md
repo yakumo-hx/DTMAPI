@@ -519,9 +519,10 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Log line: `HookProbe HookStatusChanged OK Items.FishRoeTooltip=experimental`, `Smoke exercise FishRoeTooltip OK item=fish_roe title=鱼卵 (鱼) detail=Hatches: 鱼; Incubate: 4 小时; Grow: 6 小时`
   - 0.2.1 player-facing change: `Yuuka.DTMAPI.FishBreedingAssistant` now registers title decoration only; the old details toggle is removed from config and default options set `LabelFishRoeDetails=false`.
   - 2026-06-09 feature split smoke: `docs/debug/evidence/GAME-SMOKE/20260609-181533` records `ExperimentalHooks=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `Items.FishRoeTooltip = verified`, `Feature.FishRoeTooltip = ready`, `Smoke.FishRoeTooltip = verified`, `Smoke.AnimalViewerRendering = verified`, and `Smoke.ExperimentalHookExercise = verified`; the smoke harness registered a smoke-only fallback provider because the public FishBreedingAssistant lookup source is a placeholder and the local `Yuuka.DTMAPI.FishBreedingAssistant` config was disabled.
+  - 2026-06-10 smoke case-file split: `docs/debug/evidence/GAME-SMOKE/20260610-021014` records unchanged `ExperimentalHooks=Passed`, `Items.FishRoeTooltip = verified`, `Feature.FishRoeTooltip = ready`, `Smoke.FishRoeTooltip = verified`, `Smoke.AnimalViewerRendering = verified`, and `Smoke.ExperimentalHookExercise = verified. FishRoeTooltip=True, AnimalViewerRendering=True.` after moving only the FishRoe smoke case body to `Smoke/Cases/FishRoeTooltipSmokeCase.cs`; report/evidence zip `docs/debug/evidence/GAME-SMOKE/20260610-021014.zip`.
   - Retained rejected precondition smoke: `docs/debug/evidence/GAME-SMOKE/20260609-180405` reached `Items.FishRoeTooltip = verified` and `Feature.FishRoeTooltip = ready`, but failed `Smoke.FishRoeTooltip` because no enabled public provider lookup produced decoration before the smoke-only fallback was added.
   - Screenshot/report: `docs/debug/evidence/HOOK-PROBE/20260530-150808`
-- Regression cases: FISHROE-001, FISHROE-TOOLTIP-FEATURE-SPLIT-20260609
+- Regression cases: FISHROE-001, FISHROE-TOOLTIP-FEATURE-SPLIT-20260609, FISHROE-SMOKE-CASE-SPLIT-20260610
 
 ## Hook: Animals.ViewerRendering
 
