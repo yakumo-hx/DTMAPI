@@ -18,6 +18,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded");
+            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("SaveLoaded");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame);
             Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame);
             Runtime?.NotifySaveLoaded(isNewGame);
@@ -39,6 +40,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void ReturnHomePostfix()
         {
             Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle");
+            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle");
             Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle();
             Bridge?.NotifyGameBridgeFeaturesReturnedToTitle();
             Runtime?.NotifyReturnedToTitle();
@@ -211,6 +213,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AgentStateBaseExitPostfix()
         {
             Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateBase.OnExit");
+            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateBase.OnExit");
         }
 
         public static void FishingReadyEnterPostfix(object __instance)
@@ -256,6 +259,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void FishingPullExitPostfix()
         {
             Bridge?.ExperimentalApi?.NotifyFishingPhase("Cooldown", null);
+            Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit");
         }
 
         public static bool ItemMotorKeyOnUsePrefix(object __instance)

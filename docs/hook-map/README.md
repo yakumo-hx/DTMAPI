@@ -479,7 +479,7 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game method/type: phase observation over `AgentStateFishingReady.OnEnter`, `AgentStateFishingCast.OnEnter`, `AgentStateFishingWait.OnEnter`, `AgentStateFishingWait.OnPlay`, `AgentStateFishingPull.OnEnter/OnExit`, `FishingGameScrollBar.StartGame/UpdateGame/StopGame`, native `BodyController.UseFishRod`, selected quick-slot rod placement, fishable pool lookup, cast/pull body animator speed writes, and `FishingGameScrollBar.currentGameStatus=Success` minigame auto-complete.
 - Patch type: Harmony Postfix for phase evidence plus GameBridge-owned native auto-cast and wait-phase `InstantBite` on `AgentStateFishingWait.OnPlay`.
 - Why this point: AutoFishing must enter the game's native fishing state machine; GameBridge owns the fragile pool/rod/native-call reflection while the mod owns F6 policy and config.
-- Failure behavior: policy/state can be registered; if no fishable water or rod is available, DTMAPI logs the state and does not fake fish/item rewards. In 0.2.3 player toasts are intentionally limited to F6 on/off and movement cancel; no-water/no-rod/auto-cast are not player toasts. Skip-minigame routing is smoke-proven through the wait-phase handoff to Pull. Non-skip auto-complete only marks a real `FishingGameScrollBar` as success after it has existed long enough; the smoke-only force-fish gate is used only to guarantee a native fish minigame for regression proof, not to change normal player roll outcomes.
+- Failure behavior: policy/state can be registered; if no fishable water or rod is available, DTMAPI logs the state and does not fake fish/item rewards. In 0.2.3 player toasts are intentionally limited to F6 on/off and movement cancel; no-water/no-rod/auto-cast are not player toasts. Skip-minigame routing is smoke-proven through the wait-phase handoff to Pull. Non-skip auto-complete only marks a real `FishingGameScrollBar` as success after it has existed long enough; the smoke-only force-fish gate is used only to guarantee a native fish minigame for regression proof, not to change normal player roll outcomes. Fast-animation writes keep their original animator speed snapshots inside the experimental bridge and restore them on `AgentStateFishingPull.OnExit`, `AgentStateBase.OnExit`, `SaveLoaded`, and `ReturnedToTitle`.
 - Mods/tests depending on it: `Yuuka.DTMAPI.AutoFishing`
 - Evidence:
   - Build: DTMAPI 0.2.3 local build passed 2026-06-03 with 0 errors.
@@ -487,9 +487,10 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Log line: `Input F6 pressed dispatched to DTMAPI mods`, `AutoFishing automation enabled reason=hotkey F6`, `AutoFishing automation disabled reason=manual-move W`, `Smoke.AutoFishingMovementCancel = verified`, `Fishing automation auto-cast invoked native BodyController.UseFishRod`, `Fishing automation animation speed applied ... phase=Pull multiplier=3`, `Smoke.AutoFishingMiniGameSkip = verified ... autoHook=AgentStateFishingPull ... autoCompleteMiniGame=True, skipMiniGame=True`, and `Smoke.AutoFishingMiniGameComplete = verified ... behavior=AutoCompleteMiniGame, status=Success, skip=false`.
   - 0.2.3 toast-policy partial smoke: `docs/debug/evidence/GAME-SMOKE/20260603-030142` verified `toastPolicy=0.2.3-suppressed-no-water-no-rod-cast`, `ProcessExited=true`, and no fatal popup.
   - 0.2.4 direct skip=false minigame smoke: failed attempt `docs/debug/evidence/GAME-SMOKE/20260603-172124` rolled `waste_plastic_bottle` and correctly did not create the native minigame; passing attempt `docs/debug/evidence/GAME-SMOKE/20260603-173435` logged `FishingGameScrollBar`, `autoHook=AgentStateFishingBattle`, `fish=loach`, `isFish=True`, `forceFishForSmoke=True`, `currentGameStatus=Success`, `visibleSeconds=0.76`, clean exit, and no fatal popup.
+  - 2026-06-09 animator restore smoke: `docs/debug/evidence/GAME-SMOKE/20260609-170646` records `AutoFishingHotkey=Passed`, `AutoFishingPhase=Passed`, `AutoFishingMiniGameComplete=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `Fishing automation animation speed applied ... phase=Pull multiplier=3 animators=2`, and `Experimental animator speeds restored reason=AgentStateFishingPull.OnExit restored=2`; report zip `docs/debug/evidence/GAME-SMOKE/20260609-170646.zip`.
   - Config screenshot: `docs/debug/evidence/GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-auto-fishing.png` shows same-row `自动完成小游戏` and `跳过小游戏`.
   - Screenshot/report: 0.2.3 movement/skip smoke `docs/debug/evidence/GAME-SMOKE/20260603-042437`; 0.2.4 skip=false minigame smoke `docs/debug/evidence/GAME-SMOKE/20260603-173435`; title config screenshot smoke `docs/debug/evidence/GAME-SMOKE/20260603-052444`; final old auto-cast/wait smoke `docs/debug/evidence/GAME-SMOKE/20260602-015720`; earlier wait-phase evidence retained under `GAME-SMOKE/20260531-035217` and external F6 evidence under `GAME-SMOKE/20260531-112959`.
-- Regression cases: AUTOFISH-001, INPUT-004, SMOKE-002
+- Regression cases: AUTOFISH-001, INPUT-004, SMOKE-002, FISHING-ANIMATOR-RESTORE-20260609
 
 ## Hook: Items.FishRoeTooltip
 
@@ -622,14 +623,15 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game method/type: `AgentStateFishingReady`, `AgentStateFishingCast`, `AgentStateFishingWait`, `AgentStateFishingPull`, `FishingGameScrollBar.StartGame/UpdateGame/StopGame`, selected rod renderer animator.
 - Patch type: Harmony phase hooks plus `FishingGameScrollBar.UpdateGame` inspection/update; GameBridge-owned reflected animator writes.
 - Why this point: skip-minigame and auto-complete-minigame are different player choices. Skip routes from wait to pull; auto-complete should only mark the visible mini-game as success after it has existed long enough.
-- Failure behavior: if the mini-game object/status cannot be read safely, the bridge leaves the mini-game alone and records pending evidence rather than faking a fish reward.
+- Failure behavior: if the mini-game object/status cannot be read safely, the bridge leaves the mini-game alone and records pending evidence rather than faking a fish reward. Animator speed writes are restored from the experimental bridge snapshot on fishing/state/lifecycle exits.
 - Mods/tests depending on it: `Yuuka.DTMAPI.AutoFishing`.
 - Evidence:
   - Build: DTMAPI 0.2.4 Release build/unit passed 2026-06-03.
   - Save: local slot 3 / index 2.
   - Log line: `Smoke.AutoFishingAnimationSpeed = experimental ... phase=Pull multiplier=3, animators=2, samples=body:1->3;fishRodRenderer:1->3`, `Smoke.AutoFishingPhase = verified`, `Smoke.AutoFishingMiniGameSkip = verified`, and `Smoke.AutoFishingMiniGameComplete = verified ... status=Success, skip=false, visibleSeconds=0.76`.
-  - Screenshot/report: skip/animation smoke `docs/debug/evidence/GAME-SMOKE/20260603-154816`; skip=false minigame smoke `docs/debug/evidence/GAME-SMOKE/20260603-173435`; process checks say no `DolocTown.exe`.
-- Regression cases: MANUALQA-024-C, AUTOFISH-001
+  - 2026-06-09 restore log line: `GAME-SMOKE/20260609-170646` records `Smoke.AutoFishingAnimationSpeedRestore = experimental. reason=AgentStateFishingPull.OnExit, restored=2` with `RunStatus=Passed`, `AutoFishingMiniGameComplete=Passed`, `ProcessExited=Passed`, and no fatal popup.
+  - Screenshot/report: skip/animation smoke `docs/debug/evidence/GAME-SMOKE/20260603-154816`; skip=false minigame smoke `docs/debug/evidence/GAME-SMOKE/20260603-173435`; animator restore smoke `docs/debug/evidence/GAME-SMOKE/20260609-170646`; process checks say no `DolocTown.exe`.
+- Regression cases: MANUALQA-024-C, AUTOFISH-001, FISHING-ANIMATOR-RESTORE-20260609
 
 ## Hook: Resources.OilCoalDrop
 
