@@ -189,6 +189,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool uiContextDiagnosticLogged;
         private Delegate? saveLoadedUnityEventDelegate;
         private readonly List<IGameBridgeFeature> features = new List<IGameBridgeFeature>();
+        private readonly Dictionary<string, GameBridgeFeatureStatus> featureStatuses = new Dictionary<string, GameBridgeFeatureStatus>(StringComparer.OrdinalIgnoreCase);
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
         private ActionSpeedFeature? actionSpeedFeature;
@@ -332,14 +333,16 @@ namespace DTMAPI.GameBridge.DolocTown
             try
             {
                 action(feature);
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureSuccess(id, operation);
                 runtime.SetHookStatus(
                     "Feature." + id,
                     "ready",
                     "DTMAPI.GameBridge.DolocTown feature host",
-                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature.");
+                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature. " + FormatGameBridgeFeatureStatus(status));
             }
             catch (Exception ex)
             {
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
                 string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
                 runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
@@ -347,8 +350,44 @@ namespace DTMAPI.GameBridge.DolocTown
                     "Feature." + id,
                     "failed",
                     "DTMAPI.GameBridge.DolocTown feature host",
-                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message);
+                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + FormatGameBridgeFeatureStatus(status));
             }
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureSuccess(string id, string operation)
+        {
+            GameBridgeFeatureStatus status = GetGameBridgeFeatureStatus(id);
+            status.LastOperation = operation;
+            status.LastSucceeded = true;
+            status.LastError = string.Empty;
+            return status;
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureFailure(string id, string operation, Exception ex)
+        {
+            GameBridgeFeatureStatus status = GetGameBridgeFeatureStatus(id);
+            status.LastOperation = operation;
+            status.LastSucceeded = false;
+            status.FailureCount++;
+            status.LastError = ex.GetType().Name + ": " + ex.Message;
+            return status;
+        }
+
+        private GameBridgeFeatureStatus GetGameBridgeFeatureStatus(string id)
+        {
+            if (!featureStatuses.TryGetValue(id, out GameBridgeFeatureStatus status))
+            {
+                status = new GameBridgeFeatureStatus(id);
+                featureStatuses[id] = status;
+            }
+
+            return status;
+        }
+
+        private static string FormatGameBridgeFeatureStatus(GameBridgeFeatureStatus status)
+        {
+            string lastError = string.IsNullOrWhiteSpace(status.LastError) ? "none" : status.LastError;
+            return "Feature status: id=" + status.Id + ", lastOperation=" + status.LastOperation + ", success=" + status.LastSucceeded.ToString(CultureInfo.InvariantCulture) + ", failureCount=" + status.FailureCount.ToString(CultureInfo.InvariantCulture) + ", lastError=" + lastError + ".";
         }
 
         private static string GetGameBridgeFeatureId(IGameBridgeFeature feature)
@@ -358,6 +397,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 return id.Trim();
 
             return feature.GetType().Name;
+        }
+
+        private sealed class GameBridgeFeatureStatus
+        {
+            internal GameBridgeFeatureStatus(string id)
+            {
+                Id = id;
+            }
+
+            internal string Id { get; }
+
+            internal string LastOperation { get; set; } = string.Empty;
+
+            internal bool LastSucceeded { get; set; }
+
+            internal int FailureCount { get; set; }
+
+            internal string LastError { get; set; } = string.Empty;
         }
 
         private void PublishStableCustomEntityHookStatuses()

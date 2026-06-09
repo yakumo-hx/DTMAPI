@@ -9,7 +9,7 @@ This focused map covers only the ordinary playable camera view path and the obso
 ## Implementation Owner
 
 - `src/DTMAPI.GameBridge.DolocTown/Features/IGameBridgeFeature.cs` defines the internal feature contract, including stable feature `Id` and feature-owned hook installation.
-- `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs` owns the GameBridge feature list and safe-dispatches `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset`. A feature exception records `DTMAPI.GameBridge.Feature.<Id>` diagnostics, marks `Feature.<Id>` failed, logs the exception type/message, and does not block the next feature.
+- `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs` owns the GameBridge feature list, safe-dispatches `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset`, and keeps the internal feature-status model with feature id, last operation, success/failure, failure count, and last error. A feature exception records `DTMAPI.GameBridge.Feature.<Id>` diagnostics, marks `Feature.<Id>` failed, updates failure count/last error, logs the exception type/message, and does not block the next feature.
 - `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Update.cs` owns the production `public void Update()` entry and calls `RefreshUiContext()`, `UpdateRuntimeAutomation()`, and `SmokeUpdate()`.
 - `src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraFeature.cs` owns camera API registration, lifecycle entry points, and `cameraViewSetEnvCameraPatched`; its feature id is `Camera`.
 - `CameraViewService` implements `ICameraViewApi`, owns camera-view lease state and writes only `DolocAPI.mainCamera.orthographicSize`.
@@ -23,9 +23,9 @@ This focused map covers only the ordinary playable camera view path and the obso
 
 - Status: ready.
 - Public surface: internal DTMAPI diagnostics/status only.
-- Implementation: `DolocTownGameBridge` publishes `Feature.Camera` around safe feature-host dispatch; `CameraFeature.Id` is `Camera`, and `InstallHooks` is now part of the feature dispatch path.
-- Failure behavior: feature dispatch exceptions are isolated per feature and recorded under `DTMAPI.GameBridge.Feature.Camera`, with `Feature.Camera` marked failed.
-- Evidence: `GAME-SMOKE/20260609-110528` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`; `Camera.ViewEnvironmentLifecycle = experimental` is emitted during `InstallHooks`.
+- Implementation: `DolocTownGameBridge` publishes `Feature.Camera` around safe feature-host dispatch; `CameraFeature.Id` is `Camera`, and `InstallHooks` is now part of the feature dispatch path. The host-owned internal status model records `id=Camera`, last operation, success/failure, failure count, and last error without adding public-like members to `IGameBridgeFeature`.
+- Failure behavior: feature dispatch exceptions are isolated per feature and recorded under `DTMAPI.GameBridge.Feature.Camera`, with `Feature.Camera` marked failed and the internal failure count/last error updated.
+- Evidence: `GAME-SMOKE/20260609-141609` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`, with `Feature status: id=Camera, lastOperation=..., success=True, failureCount=0, lastError=none`; `Camera.ViewEnvironmentLifecycle = experimental` is emitted during `InstallHooks`.
 
 ## Hook: Camera.ViewApi
 
@@ -56,17 +56,17 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Release build/test completed with 0 warnings and 0 errors.
   - `DTMAPI.UnitTests: OK`.
 - Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -IncludeHookProbe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
-  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260609-110528` on `Refactor` after the CameraPlayable smoke case-file move.
+  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260609-141609` on `codex/api-feature-status-model`.
   - `result.json`: `RunStatus=Passed`, `StartupLog=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, `Zoom=Passed`, `GameLaunched=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `ForcedClose=Passed`.
-  - HookProbe/status log: `HookProbe GameLaunched OK`, `HookProbe SaveLoaded OK slot=2 isNewGame=False`, `Camera.ViewEnvironmentLifecycle = experimental`, and `Feature.Camera = ready`.
-  - Camera summary: `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-110612/summary.txt`.
-  - 4x dynamic: 30.247s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=67.5-67.5`, active owner `DTMAPI.ZoomMod`.
-  - 2x dynamic fallback: 30.012s, 29 samples, `playerDistance=102.528`, `cameraDistance=67.705`, `orthographicSize=33.75-33.75`, active owner `DTMAPI.CameraViewCompetingSmoke`.
+  - HookProbe/status log: `HookProbe GameLaunched OK`, `HookProbe SaveLoaded OK slot=2 isNewGame=False`, `Camera.ViewEnvironmentLifecycle = experimental`, `Feature.Camera = ready`, `Feature.ActionSpeed = ready`, and feature status details for both hosted features with `success=True`, `failureCount=0`, and `lastError=none`.
+  - Camera summary: `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-141649/summary.txt`.
+  - 4x dynamic: 30s-class sustained movement with stable `orthographicSize=67.5-67.5`, active owner `DTMAPI.ZoomMod`, and unchanged `nativeRefresh=not-called-playable` / `uiScale=unchanged` semantics.
+  - 2x dynamic fallback: 30s-class sustained movement with stable `orthographicSize=33.75-33.75`, active owner `DTMAPI.CameraViewCompetingSmoke`, and the same room/playable-camera boundary.
   - Reset: lower-priority lease release restored vanilla `1x`.
   - Boundary evidence: summary and logs retain `nativeRefresh=not-called-playable` and `uiScale=unchanged`.
-  - Feature-host evidence: `InstallHooks`, `SaveLoaded`, `ReturnedToTitle`, runtime refresh, and `DolocAPI.SetEnvCamera` route through the GameBridge safe-dispatch feature host into `CameraFeature` while preserving CameraView messages.
-  - Case-file evidence: `Smoke/Cases/CameraPlayableSmokeCase.cs` is content-identical to the previous `Smoke/CameraSmoke.cs`; `CameraViewService.cs` has no diff; result schema and screenshot/evidence names are unchanged.
-  - Report zip: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260609-110608.zip`.
+  - Feature-host evidence: `InstallHooks`, `SaveLoaded`, `ReturnedToTitle`, runtime refresh, and `DolocAPI.SetEnvCamera` route through the GameBridge safe-dispatch feature host into `CameraFeature`; the host records structured status fields while preserving CameraView messages.
+  - Case-file evidence: `Smoke/Cases/CameraPlayableSmokeCase.cs` remains the CameraPlayable smoke owner; result schema and screenshot/evidence names are unchanged.
+  - Report zip: `docs/debug/evidence/GAME-SMOKE/20260609-141609.zip`.
 
 ## Related Records
 
@@ -78,6 +78,7 @@ This focused map covers only the ordinary playable camera view path and the obso
 - `docs/updates/2026/20260609-0008-gamebridge-feature-host-hardening.md`
 - `docs/updates/2026/20260609-0010-camera-setenvcamera-hook-owner.md`
 - `docs/updates/2026/20260609-0011-camera-playable-smoke-case-file.md`
+- `docs/updates/2026/20260609-0020-feature-status-model.md`
 - `docs/debug/regressions/smoke-matrix.md` row `CAMERA-PLAYABLE`
 - `docs/api/public-api-matrix.md` Camera rows
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
