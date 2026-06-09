@@ -415,6 +415,22 @@ namespace DTMAPI.GameBridge.DolocTown
             return 1;
         }
 
+        internal void RestoreExperimentalAnimatorSpeeds(string reason)
+        {
+            if (originalAnimatorSpeeds.Count == 0)
+                return;
+
+            int restored = 0;
+            foreach (KeyValuePair<object, double> entry in new List<KeyValuePair<object, double>>(originalAnimatorSpeeds))
+            {
+                if (TryWriteAnimatorSpeed(entry.Key, entry.Value))
+                    restored++;
+            }
+            originalAnimatorSpeeds.Clear();
+            runtime.RuntimeMonitor.Log("Experimental animator speeds restored reason=" + reason + " restored=" + restored + ".");
+            runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeedRestore", "experimental", "Fishing/AgentState lifecycle boundary", "reason=" + reason + ", restored=" + restored);
+        }
+
         private static void ShowNativeSmallMessage(string message, bool error)
         {
             try
