@@ -230,7 +230,7 @@ namespace DTMAPI.GameBridge.DolocTown
             DolocTownHookCallbacks.Bridge = this;
             experimentalApi?.PublishHookStatuses();
             PublishGameBridgeFeatureHookStatuses();
-            PublishStableCustomEntityHookStatuses();
+            PublishCustomEntityRegistryContractHookStatuses();
             runtime.SetHookStatus("GameLoop.UpdateTicked", "verified", "BepInEx MonoBehaviour.Update", "DTMAPI dispatches UpdateTicked from the bootstrap Update callback.");
             runtime.SetHookStatus("GameLoop.OneSecondUpdateTicked", "verified", "DTMAPI.Core timer", "DTMAPI dispatches a throttled one-second event from Update.");
             InstallHarmonyHooks();
@@ -501,33 +501,33 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private void PublishStableCustomEntityHookStatuses()
+        private void PublishCustomEntityRegistryContractHookStatuses()
         {
             runtime.SetHookStatus(
                 "CustomEntities.CoreRegistry",
                 "verified",
                 "DTMAPI.Core.CustomEntityRegistryService",
-                "Stable 0.4.0 custom animal, monster, attack/projectile, and drone APIs are registered with owner-aware validation, duplicate-ID detection, snapshots, save-boundary cleanup, and provider error isolation.");
+                "StableCandidate 0.4.0 custom entity registry contracts are registered with owner-aware validation, duplicate-ID detection, snapshots, save-boundary cleanup, and provider error isolation.");
             runtime.SetHookStatus(
-                "CustomAnimals.StableApi",
+                "CustomAnimals.RegistryContract",
                 "configured-blocked",
                 "AnimalManager.CreateAnimal + Animal lifecycle research",
-                "Registry/status path is verified. Runtime creation remains blocked until AnimalInfo/proto, room/home, food, excrement, breeding, produce, and save adapters are verified without exposing raw Doloc Town types.");
+                "StableCandidate registry contract; runtime creation remains blocked");
             runtime.SetHookStatus(
-                "CustomMonsters.StableApi",
+                "CustomMonsters.RegistryContract",
                 "configured-blocked",
                 "MonsterController + MonsterGroupManager + MonsterAttackBehaviour research",
-                "Registry/status path is verified. Runtime creation remains blocked until spawn groups, AI targeting, movement, attack, damage, drop, and despawn adapters are verified.");
+                "StableCandidate registry contract; runtime creation remains blocked");
             runtime.SetHookStatus(
-                "CustomAttacks.ProjectileApi",
+                "CustomAttacks.RegistryContract",
                 "configured-blocked",
                 "BulletFactory + BulletManager + PhysicalDamageBox research",
-                "Registry/status path is verified. Runtime creation remains blocked until BulletManager/BulletFactory, hitbox/collision, damage ownership, and barrage tick adapters are verified.");
+                "StableCandidate registry contract; runtime creation remains blocked");
             runtime.SetHookStatus(
-                "CustomDrones.StableApi",
+                "CustomDrones.RegistryContract",
                 "configured-blocked",
                 "DroneController + DroneWeapon + DolocAPI.EquipDrone research",
-                "Registry/status path is verified. Runtime creation remains blocked until drone controller, equipment, weapon, movement, and save persistence adapters are verified.");
+                "StableCandidate registry contract; runtime creation remains blocked");
         }
 
         private void RefreshUiContext()
