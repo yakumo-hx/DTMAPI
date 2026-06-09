@@ -13,7 +13,7 @@ using DTMAPI.Core.Services;
 
 namespace DTMAPI.Core.Runtime
 {
-    public sealed class DtmApiRuntime
+    public sealed class DtmApiRuntime : IDtmDiagnosticsApi
     {
         public const string ApiVersion = "0.4.2";
 
@@ -86,6 +86,7 @@ namespace DTMAPI.Core.Runtime
             RuntimeMonitor.Log("ModsPath = " + Paths.ModsPath);
 
             IManifest runtimeManifest = CreateRuntimeManifest();
+            RegisterRuntimeApi<IDtmDiagnosticsApi>(runtimeManifest, this);
             RegisterRuntimeApi<ICustomAnimalApi>(runtimeManifest, CustomEntities);
             RegisterRuntimeApi<ICustomMonsterApi>(runtimeManifest, CustomEntities);
             RegisterRuntimeApi<ICustomAttackApi>(runtimeManifest, CustomEntities);
@@ -255,9 +256,27 @@ namespace DTMAPI.Core.Runtime
                 Diagnostics.GetErrors(),
                 Diagnostics.GetWarnings(),
                 Diagnostics.GetHookStatuses(),
+                Diagnostics.GetFeatureStatuses(),
                 configMenuRuntime?.GetPages() ?? new IConfigMenuPage[0],
+                Diagnostics.GetLatestLogPath(),
+                Diagnostics.GetLatestReportPath(),
                 UI.LastExportPath);
         }
+
+        public IDtmDiagnosticsSnapshot CreateDiagnosticsSnapshot()
+        {
+            return new DtmDiagnosticsSnapshot(
+                startedAt,
+                loadedMods.Select(m => new DtmLoadedModInfo(m.Manifest)).Cast<IDtmLoadedModInfo>().ToArray(),
+                Diagnostics.GetErrors(),
+                Diagnostics.GetWarnings(),
+                Diagnostics.GetHookStatuses(),
+                Diagnostics.GetFeatureStatuses(),
+                Diagnostics.GetLatestLogPath(),
+                Diagnostics.GetLatestReportPath());
+        }
+
+        IDtmDiagnosticsSnapshot IDtmDiagnosticsApi.GetSnapshot() => CreateDiagnosticsSnapshot();
 
         public IReadOnlyList<IContentItemInfo> GetIndexedContentItems() => Content.GetIndexedItems();
 
@@ -741,7 +760,10 @@ namespace DTMAPI.Core.Runtime
             IReadOnlyList<IDtmErrorInfo> errors,
             IReadOnlyList<IDtmWarningInfo> warnings,
             IReadOnlyList<IHookStatusInfo> hookStatuses,
+            IReadOnlyList<IDtmFeatureStatusInfo> featureStatuses,
             IReadOnlyList<IConfigMenuPage> configPages,
+            string latestLogPath,
+            string latestReportPath,
             string lastExportPath)
         {
             StartedAt = startedAt;
@@ -752,7 +774,10 @@ namespace DTMAPI.Core.Runtime
             Errors = errors;
             Warnings = warnings;
             HookStatuses = hookStatuses;
+            FeatureStatuses = featureStatuses;
             ConfigPages = configPages;
+            LatestLogPath = latestLogPath;
+            LatestReportPath = latestReportPath;
             LastExportPath = lastExportPath;
         }
 
@@ -764,7 +789,10 @@ namespace DTMAPI.Core.Runtime
         public IReadOnlyList<IDtmErrorInfo> Errors { get; }
         public IReadOnlyList<IDtmWarningInfo> Warnings { get; }
         public IReadOnlyList<IHookStatusInfo> HookStatuses { get; }
+        public IReadOnlyList<IDtmFeatureStatusInfo> FeatureStatuses { get; }
         public IReadOnlyList<IConfigMenuPage> ConfigPages { get; }
+        public string LatestLogPath { get; }
+        public string LatestReportPath { get; }
         public string LastExportPath { get; }
     }
 }

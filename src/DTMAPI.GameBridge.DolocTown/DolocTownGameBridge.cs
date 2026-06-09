@@ -350,23 +350,27 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 action(feature);
                 GameBridgeFeatureStatus status = RecordGameBridgeFeatureSuccess(id, operation);
+                string details = FormatGameBridgeFeatureStatus(status);
+                runtime.Diagnostics.SetFeatureStatus(id, "ready", status.LastOperation, status.LastSucceeded, status.FailureCount, status.LastError, details);
                 runtime.SetHookStatus(
                     "Feature." + id,
                     "ready",
                     "DTMAPI.GameBridge.DolocTown feature host",
-                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature. " + FormatGameBridgeFeatureStatus(status));
+                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature. " + details);
             }
             catch (Exception ex)
             {
                 GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
+                string details = FormatGameBridgeFeatureStatus(status);
                 string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
                 runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+                runtime.Diagnostics.SetFeatureStatus(id, "failed", status.LastOperation, status.LastSucceeded, status.FailureCount, status.LastError, details);
                 runtime.SetHookStatus(
                     "Feature." + id,
                     "failed",
                     "DTMAPI.GameBridge.DolocTown feature host",
-                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + FormatGameBridgeFeatureStatus(status));
+                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + details);
             }
         }
 

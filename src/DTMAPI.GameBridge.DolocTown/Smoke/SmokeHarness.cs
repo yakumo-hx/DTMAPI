@@ -467,6 +467,52 @@ namespace DTMAPI.GameBridge.DolocTown
             TryQuitApplication("smoke save-loaded evidence captured");
         }
 
+        private bool TryVerifyDiagnosticsSnapshotForSmoke(string scenario, params string[] expectedFeatureIds)
+        {
+            try
+            {
+                string reportPath = runtime.ExportLogs();
+                IDtmDiagnosticsSnapshot snapshot = ((IDtmDiagnosticsApi)runtime).GetSnapshot();
+                var missingFeatureStatuses = expectedFeatureIds
+                    .Where(id => !snapshot.FeatureStatuses.Any(status => status.FeatureId.Equals(id, StringComparison.OrdinalIgnoreCase) && status.Status.Equals("ready", StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+                var missingFeatureHooks = expectedFeatureIds
+                    .Where(id => !snapshot.HookStatuses.Any(status => status.HookId.Equals("Feature." + id, StringComparison.OrdinalIgnoreCase) && status.Status.Equals("ready", StringComparison.OrdinalIgnoreCase)))
+                    .ToArray();
+
+                if (missingFeatureStatuses.Length > 0)
+                    throw new InvalidOperationException("Missing feature statuses: " + string.Join(",", missingFeatureStatuses));
+                if (missingFeatureHooks.Length > 0)
+                    throw new InvalidOperationException("Missing feature hook statuses: " + string.Join(",", missingFeatureHooks));
+                if (string.IsNullOrWhiteSpace(snapshot.LatestLogPath) || !File.Exists(snapshot.LatestLogPath))
+                    throw new InvalidOperationException("LatestLogPath is missing or does not exist: " + snapshot.LatestLogPath);
+                if (string.IsNullOrWhiteSpace(snapshot.LatestReportPath) || !File.Exists(snapshot.LatestReportPath))
+                    throw new InvalidOperationException("LatestReportPath is missing or does not exist: " + snapshot.LatestReportPath);
+                if (!snapshot.LatestReportPath.Equals(reportPath, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("LatestReportPath did not match exported report. snapshot=" + snapshot.LatestReportPath + ", exported=" + reportPath);
+
+                string summary =
+                    "scenario=" + scenario +
+                    ", expectedFeatures=" + string.Join(",", expectedFeatureIds) +
+                    ", loadedMods=" + snapshot.LoadedMods.Count +
+                    ", errors=" + snapshot.Errors.Count +
+                    ", warnings=" + snapshot.Warnings.Count +
+                    ", hooks=" + snapshot.HookStatuses.Count +
+                    ", features=" + snapshot.FeatureStatuses.Count +
+                    ", latestLog=" + snapshot.LatestLogPath +
+                    ", latestReport=" + snapshot.LatestReportPath;
+                runtime.RuntimeMonitor.Log("Smoke diagnostics snapshot OK " + summary);
+                runtime.SetHookStatus("Smoke.DiagnosticsSnapshot", "verified", "IDtmDiagnosticsApi.GetSnapshot", summary);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke diagnostics snapshot exercise failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.DiagnosticsSnapshot", "failed", "IDtmDiagnosticsApi.GetSnapshot", scenario + ": " + ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
+        }
+
         public void MarkAnimalViewerUiEvidenceForSmoke()
         {
             if (smokeSettings == null || !smokeSettings.Enabled || !smokeSettings.AutoOpenAnimalPanel || !smokeSettings.AutoExitAfterSaveLoaded || autoExitAttempted)

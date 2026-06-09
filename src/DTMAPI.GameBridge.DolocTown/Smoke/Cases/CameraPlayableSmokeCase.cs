@@ -177,6 +177,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.RuntimeMonitor.Log("Smoke exercise CameraPlayable OK " + summary);
                     runtime.SetHookStatus("Smoke.CameraPlayable", "verified", "ICameraViewApi -> DolocAPI.mainCamera.orthographicSize", summary);
                     runtime.SetHookStatus("Smoke.Zoom", "verified", "AutoExerciseZoom compatibility flag", "AutoExerciseZoom now verifies Smoke.CameraPlayable.");
+                    if (!TryVerifyDiagnosticsSnapshotForSmoke("Camera", "Camera"))
+                    {
+                        zoomSmokeRun = null;
+                        return SmokeAttemptResult.Failed;
+                    }
                     zoomSmokeRun = null;
                     return SmokeAttemptResult.Succeeded;
                 }

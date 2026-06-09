@@ -14,6 +14,7 @@ namespace DTMAPI.Core.Diagnostics
         private readonly List<DtmErrorInfo> errors = new List<DtmErrorInfo>();
         private readonly List<DtmWarningInfo> warnings = new List<DtmWarningInfo>();
         private readonly Dictionary<string, HookStatusInfo> hooks = new Dictionary<string, HookStatusInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, DtmFeatureStatusInfo> features = new Dictionary<string, DtmFeatureStatusInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly object gate = new object();
 
         public DiagnosticsService(RuntimePaths paths)
@@ -22,6 +23,8 @@ namespace DTMAPI.Core.Diagnostics
         }
 
         public string LatestLogPath { get; set; } = string.Empty;
+
+        public string LatestReportPath { get; private set; } = string.Empty;
 
         public IReadOnlyList<IDtmErrorInfo> GetErrors()
         {
@@ -41,7 +44,32 @@ namespace DTMAPI.Core.Diagnostics
                 return hooks.Values.OrderBy(h => h.HookId, StringComparer.OrdinalIgnoreCase).Cast<IHookStatusInfo>().ToArray();
         }
 
+        public IReadOnlyList<IDtmFeatureStatusInfo> GetFeatureStatuses()
+        {
+            lock (gate)
+                return features.Values.OrderBy(f => f.FeatureId, StringComparer.OrdinalIgnoreCase).Cast<IDtmFeatureStatusInfo>().ToArray();
+        }
+
         public string GetLatestLogPath() => LatestLogPath;
+
+        public string GetLatestReportPath()
+        {
+            if (!string.IsNullOrWhiteSpace(LatestReportPath))
+                return LatestReportPath;
+
+            string pointer = Path.Combine(paths.ReportsPath, "latest-report.txt");
+            if (!File.Exists(pointer))
+                return string.Empty;
+
+            try
+            {
+                return File.ReadAllText(pointer).Trim();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
 
         public void RecordError(string owner, string message, string details)
         {
@@ -69,11 +97,21 @@ namespace DTMAPI.Core.Diagnostics
             }
         }
 
+        public void SetFeatureStatus(string featureId, string status, string lastOperation, bool success, int failureCount, string lastError, string details)
+        {
+            if (string.IsNullOrWhiteSpace(featureId))
+                return;
+
+            lock (gate)
+                features[featureId] = new DtmFeatureStatusInfo(featureId, status, lastOperation, success, failureCount, lastError, details);
+        }
+
         public string ExportLogs()
         {
             Directory.CreateDirectory(paths.ReportsPath);
             string stamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
             string zipPath = Path.Combine(paths.ReportsPath, $"dtmapi-report-{stamp}.zip");
+            LatestReportPath = zipPath;
             using (FileStream file = File.Create(zipPath))
             using (var archive = new ZipArchive(file, ZipArchiveMode.Create))
             {
@@ -102,14 +140,20 @@ namespace DTMAPI.Core.Diagnostics
             IReadOnlyList<IDtmErrorInfo> errorSnapshot = GetErrors();
             IReadOnlyList<IDtmWarningInfo> warningSnapshot = GetWarnings();
             IReadOnlyList<IHookStatusInfo> hookSnapshot = GetHookStatuses();
+            IReadOnlyList<IDtmFeatureStatusInfo> featureSnapshot = GetFeatureStatuses();
             return
                 "DTMAPI diagnostic report" + Environment.NewLine +
                 "Generated: " + DateTimeOffset.Now + Environment.NewLine +
                 "Errors: " + errorSnapshot.Count + Environment.NewLine +
                 "Warnings: " + warningSnapshot.Count + Environment.NewLine +
                 "Hooks: " + hookSnapshot.Count + Environment.NewLine +
+                "Features: " + featureSnapshot.Count + Environment.NewLine +
+                "LatestLogPath: " + GetLatestLogPath() + Environment.NewLine +
+                "LatestReportPath: " + GetLatestReportPath() + Environment.NewLine +
                 Environment.NewLine +
                 string.Join(Environment.NewLine, hookSnapshot.Select(h => $"HOOK {h.HookId}: {h.Status} - {h.Details}")) +
+                Environment.NewLine +
+                string.Join(Environment.NewLine, featureSnapshot.Select(f => $"FEATURE {f.FeatureId}: {f.Status} lastOperation={f.LastOperation} success={f.Success} failureCount={f.FailureCount} lastError={f.LastError} details={f.Details}")) +
                 Environment.NewLine +
                 string.Join(Environment.NewLine, warningSnapshot.Select(w => $"WARNING {w.Time:o} [{w.Owner}] {w.Message}: {w.Details}")) +
                 Environment.NewLine +

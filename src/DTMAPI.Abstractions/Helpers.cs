@@ -118,6 +118,48 @@ namespace DTMAPI.Abstractions
         DateTimeOffset UpdatedAt { get; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Diagnostic runtime snapshot; not a stable gameplay API.")]
+    public interface IDtmDiagnosticsApi
+    {
+        IDtmDiagnosticsSnapshot GetSnapshot();
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Read-only diagnostic snapshot model.")]
+    public interface IDtmDiagnosticsSnapshot
+    {
+        DateTimeOffset StartedAt { get; }
+        IReadOnlyList<IDtmLoadedModInfo> LoadedMods { get; }
+        IReadOnlyList<IDtmErrorInfo> Errors { get; }
+        IReadOnlyList<IDtmWarningInfo> Warnings { get; }
+        IReadOnlyList<IHookStatusInfo> HookStatuses { get; }
+        IReadOnlyList<IDtmFeatureStatusInfo> FeatureStatuses { get; }
+        string LatestLogPath { get; }
+        string LatestReportPath { get; }
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Diagnostic loaded-mod snapshot row.")]
+    public interface IDtmLoadedModInfo
+    {
+        string UniqueID { get; }
+        string Name { get; }
+        string Version { get; }
+        string Type { get; }
+        string EntryType { get; }
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Diagnostic GameBridge feature-status snapshot row.")]
+    public interface IDtmFeatureStatusInfo
+    {
+        string FeatureId { get; }
+        string Status { get; }
+        string LastOperation { get; }
+        bool Success { get; }
+        int FailureCount { get; }
+        string LastError { get; }
+        string Details { get; }
+        DateTimeOffset UpdatedAt { get; }
+    }
+
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
     public interface IContentQueryHelper
     {
