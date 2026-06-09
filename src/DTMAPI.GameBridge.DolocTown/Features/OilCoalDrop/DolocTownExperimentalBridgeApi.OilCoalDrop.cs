@@ -68,7 +68,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return summary.IndexOf("oilDrop=crude_oil", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private string TryRollOilDropFromCoal(string resourceName, bool removed, string source)
+        internal string TryRollOilDropFromCoal(string resourceName, bool removed, string source)
         {
             if (!removed || !IsCoalResourceName(resourceName))
                 return string.Empty;

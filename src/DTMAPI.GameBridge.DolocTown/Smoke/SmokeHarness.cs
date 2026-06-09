@@ -1407,8 +1407,9 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+                ActionCompletionService? actionCompletion = ActionCompletionService;
+                if (actionCompletion == null)
+                    throw new InvalidOperationException("ActionCompletion feature service was not registered.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -1456,7 +1457,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     int healthBefore = ReadIntMember(resource, "currentHealth", 0);
                     if (healthBefore <= 0)
                         continue;
-                    bool policyMatch = experimentalApi.TryFindOneActionPolicyForSmoke(resource, out string ownerId);
+                    bool policyMatch = actionCompletion.TryFindOneActionPolicyForSmoke(resource, out string ownerId);
                     string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
                     string resourceClass = ReadResourceClass(resource);
                     if (samples.Count < 8)
@@ -1484,7 +1485,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         WriteIntMember(resource, "currentHealth", seededHealth);
                     }
 
-                    int appliedBefore = experimentalApi.OneActionApplicationCount;
+                    int appliedBefore = actionCompletion.OneActionApplicationCount;
                     resetTool.Invoke(toolCollider, new object[] { tool });
                     resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                     handleTools.Invoke(toolCollider, new object[] { collider });
@@ -1492,9 +1493,9 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     int healthAfter = ReadIntMember(resource, "currentHealth", 0);
                     bool removedAfter = IsRemoved(resource);
-                    if (experimentalApi.OneActionApplicationCount > appliedBefore)
+                    if (actionCompletion.OneActionApplicationCount > appliedBefore)
                     {
-                        string summary = "owner=" + ownerId + ", resource=" + resourceName + ", tool=" + toolId + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", toolDamage=" + toolDamage + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", bridge=" + experimentalApi.LastOneActionApplicationSummary;
+                        string summary = "owner=" + ownerId + ", resource=" + resourceName + ", tool=" + toolId + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", toolDamage=" + toolDamage + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", bridge=" + actionCompletion.LastOneActionApplicationSummary;
                         runtime.RuntimeMonitor.Log("Smoke exercise OneActionResourceHit OK " + summary);
                         runtime.SetHookStatus("Smoke.OneActionResourceHit", "verified", "ToolCollider.HandleTools private path on real DungeonResourceRenderer", summary);
                         return SmokeAttemptResult.Succeeded;
@@ -1515,8 +1516,9 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+                ActionCompletionService? actionCompletion = ActionCompletionService;
+                if (actionCompletion == null)
+                    throw new InvalidOperationException("ActionCompletion feature service was not registered.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -1571,7 +1573,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (healthBefore <= 0)
                         continue;
 
-                    bool policyMatch = experimentalApi.TryFindOneActionPolicyForSmoke(resource, out string ownerId);
+                    bool policyMatch = actionCompletion.TryFindOneActionPolicyForSmoke(resource, out string ownerId);
                     string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
                     string resourceClass = ReadResourceClass(resource);
                     if (samples.Count < 8)
@@ -1598,13 +1600,13 @@ namespace DTMAPI.GameBridge.DolocTown
                         continue;
                     toolCount++;
 
-                    int appliedBefore = experimentalApi.OneActionApplicationCount;
+                    int appliedBefore = actionCompletion.OneActionApplicationCount;
                     resetTool.Invoke(toolCollider, new object[] { wrongTool });
                     resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                     handleTools.Invoke(toolCollider, new object[] { collider });
                     invokedCount++;
 
-                    int appliedAfter = experimentalApi.OneActionApplicationCount;
+                    int appliedAfter = actionCompletion.OneActionApplicationCount;
                     int healthAfter = ReadIntMember(resource, "currentHealth", 0);
                     bool removedAfter = IsRemoved(resource);
                     if (appliedAfter == appliedBefore && healthAfter == healthBefore && !removedAfter)
@@ -1649,8 +1651,8 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+                if (ActionCompletionService == null)
+                    throw new InvalidOperationException("ActionCompletion feature service was not registered.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -1714,8 +1716,9 @@ namespace DTMAPI.GameBridge.DolocTown
             object? vegetation = null;
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+                ActionCompletionService? actionCompletion = ActionCompletionService;
+                if (actionCompletion == null)
+                    throw new InvalidOperationException("ActionCompletion feature service was not registered.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -1772,20 +1775,20 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (wrongTool == null || expectedTool == null)
                     throw new InvalidOperationException("Could not generate vegetation smoke tools. expected=" + expectedToolId + ", wrong=" + wrongToolId);
 
-                int appBeforeWrong = experimentalApi.OneActionApplicationCount;
+                int appBeforeWrong = actionCompletion.OneActionApplicationCount;
                 resetTool.Invoke(toolCollider, new object[] { wrongTool });
                 resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                 handleTools.Invoke(toolCollider, new object[] { collider });
-                int appAfterWrong = experimentalApi.OneActionApplicationCount;
+                int appAfterWrong = actionCompletion.OneActionApplicationCount;
                 bool removedAfterWrong = ReadMember(renderer, "Vegetation") == null;
                 if (removedAfterWrong || appAfterWrong != appBeforeWrong)
                     throw new InvalidOperationException("Wrong-tool vegetation hit was not a clean negative. removed=" + removedAfterWrong + ", oneActionDelta=" + (appAfterWrong - appBeforeWrong));
 
-                int appBeforeCorrect = experimentalApi.OneActionApplicationCount;
+                int appBeforeCorrect = actionCompletion.OneActionApplicationCount;
                 resetTool.Invoke(toolCollider, new object[] { expectedTool });
                 resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                 handleTools.Invoke(toolCollider, new object[] { collider });
-                int appAfterCorrect = experimentalApi.OneActionApplicationCount;
+                int appAfterCorrect = actionCompletion.OneActionApplicationCount;
                 bool removedAfterCorrect = ReadMember(renderer, "Vegetation") == null;
                 if (!removedAfterCorrect || appAfterCorrect != appBeforeCorrect)
                     throw new InvalidOperationException("Correct-tool vegetation hit did not stay on the native one-fell path. removed=" + removedAfterCorrect + ", oneActionDelta=" + (appAfterCorrect - appBeforeCorrect));
@@ -1884,7 +1887,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
-                int beforeApplications = experimentalApi?.OneActionApplicationCount ?? 0;
+                ActionCompletionService? actionCompletion = ActionCompletionService;
+                int beforeApplications = actionCompletion?.OneActionApplicationCount ?? 0;
                 int beforeCount = ReadQuickSlotItemCount(inventory, quickSlot);
                 double beforeRatio = ReadDoubleMember(equipment, ratioMember, -1);
                 MethodInfo? decoratedInteract = FindMethod(equipment.GetType(), "DecoratedInteract", 0);
@@ -1901,7 +1905,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
-                int afterApplications = experimentalApi?.OneActionApplicationCount ?? 0;
+                int afterApplications = actionCompletion?.OneActionApplicationCount ?? 0;
                 int afterCount = ReadQuickSlotItemCount(inventory, quickSlot);
                 double afterRatio = ReadDoubleMember(equipment, ratioMember, -1);
                 int totalConsumed = beforeCount - afterCount;
@@ -1916,7 +1920,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         ", ratio=" + FormatRatio(beforeRatio) + "->" + FormatRatio(afterRatio) +
                         ", oneActionDelta=" + (afterApplications - beforeApplications) +
                         ", nativeInteract={" + interactSummary + "}" +
-                        ", bridge=" + (experimentalApi?.LastOneActionApplicationSummary ?? "none");
+                        ", bridge=" + (actionCompletion?.LastOneActionApplicationSummary ?? "none");
                     return false;
                 }
 
@@ -1929,7 +1933,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", ratio=" + FormatRatio(beforeRatio) + "->" + FormatRatio(afterRatio) +
                     ", oneActionDelta=" + (afterApplications - beforeApplications) +
                     ", nativeInteract={" + interactSummary + "}" +
-                    ", bridge=" + (experimentalApi?.LastOneActionApplicationSummary ?? "none");
+                    ", bridge=" + (actionCompletion?.LastOneActionApplicationSummary ?? "none");
                 runtime.RuntimeMonitor.Log("Smoke exercise OneActionFuelFeed sample OK " + summary);
                 return true;
             }
@@ -3080,9 +3084,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            int before = experimentalApi?.OneActionApplicationCount ?? 0;
+            ActionCompletionService? actionCompletion = ActionCompletionService;
+            int before = actionCompletion?.OneActionApplicationCount ?? 0;
             onExit.Invoke(current, null);
-            int after = experimentalApi?.OneActionApplicationCount ?? 0;
+            int after = actionCompletion?.OneActionApplicationCount ?? 0;
             summary = "state=" + current.GetType().Name + ", oneActionDelta=" + (after - before);
             return true;
         }
