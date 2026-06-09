@@ -5,11 +5,40 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class ChestLocatorEnhancerService : IChestLocatorEnhancerApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, ChestLocatorEnhancerOptions> chestLocatorOptions = new Dictionary<string, ChestLocatorEnhancerOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ChestLocatorEnhancerState> chestLocatorStates = new Dictionary<string, ChestLocatorEnhancerState>(StringComparer.OrdinalIgnoreCase);
+        private bool chestLocatorInventoryHookInstalled;
+
+        public ChestLocatorEnhancerService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
+        internal string LastChestLocatorEnhancerSummary { get; private set; } = string.Empty;
+
+        internal int ChestLocatorEnhancerExtensionApplications { get; private set; }
+
+        internal void SetInventoryHookInstalled(bool installed)
+        {
+            chestLocatorInventoryHookInstalled = installed;
+            foreach (KeyValuePair<string, ChestLocatorEnhancerState> entry in chestLocatorStates.ToArray())
+            {
+                ChestLocatorEnhancerState state = entry.Value;
+                state.HookInstalled = installed;
+                if (state.IsConfigured)
+                    state.Status = state.Enabled ? (installed ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
+                chestLocatorStates[entry.Key] = state;
+            }
+        }
+
         public ChestLocatorEnhancerRegisterResult Register(IManifest owner, ChestLocatorEnhancerOptions options)
         {
             if (owner == null)
@@ -245,6 +274,77 @@ namespace DTMAPI.GameBridge.DolocTown
 
             inventories.Add(inventory);
             return true;
+        }
+
+        private static bool IsNativeAutoUseBoxEnabled()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? userSettings = ReadStaticMember(dolocApi, "userSettings");
+            return userSettings == null || ReadBoolMember(userSettings, "autoUseBox", true);
+        }
+
+        private static IEnumerable<object> EnumerateMachineCandidateRooms(Type dolocApi, object archive, object currentRoom)
+        {
+            var visitedRooms = new HashSet<int>();
+            void AddRoom(object? room, List<object> rooms)
+            {
+                if (room == null)
+                    return;
+                int key = RuntimeHelpers.GetHashCode(room);
+                if (visitedRooms.Add(key))
+                    rooms.Add(room);
+            }
+
+            var result = new List<object>();
+            AddRoom(currentRoom, result);
+            AddRoom(ReadMember(currentRoom, "RootRoom"), result);
+            AddRoom(ReadStaticMember(dolocApi, "CurrentRootRoom"), result);
+            AddRoom(ReadMember(archive, "currentRoom"), result);
+            AddRoom(ReadMember(archive, "MainFarm"), result);
+            object? farmData = ReadMember(archive, "farmData");
+            AddRoom(farmData == null ? null : ReadMember(farmData, "currentRoom"), result);
+            AddRoom(farmData == null ? null : ReadMember(farmData, "MainFarm"), result);
+            return result;
+        }
+
+        private static IEnumerable<object> EnumerateEquipments(object room)
+        {
+            var visitedRooms = new HashSet<object>();
+            foreach (object equipment in EnumerateEquipments(room, visitedRooms))
+                yield return equipment;
+        }
+
+        private static IEnumerable<object> EnumerateEquipments(object room, HashSet<object> visitedRooms)
+        {
+            if (room == null || !visitedRooms.Add(room))
+                yield break;
+
+            object? equipmentManager = ReadMember(room, "DM_equipment");
+            object? allEquipments = equipmentManager == null ? null : ReadMember(equipmentManager, "AllEquipments");
+            if (allEquipments is IEnumerable enumerable)
+            {
+                foreach (object? equipment in enumerable)
+                {
+                    if (equipment != null)
+                        yield return equipment;
+                }
+            }
+
+            object? buildingManager = ReadMember(room, "DM_building");
+            object? buildings = buildingManager == null ? null : ReadMember(buildingManager, "Buildings");
+            if (!(buildings is IEnumerable buildingEnumerable))
+                yield break;
+
+            foreach (object? building in buildingEnumerable)
+            {
+                if (building == null)
+                    continue;
+                object? childRoom = ReadMember(building, "room");
+                if (childRoom == null)
+                    continue;
+                foreach (object childEquipment in EnumerateEquipments(childRoom, visitedRooms))
+                    yield return childEquipment;
+            }
         }
 
     }

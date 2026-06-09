@@ -165,7 +165,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsReloadParamsPatched;
         private bool equipmentSlotsAccessoriesInitPatched;
         private bool equipmentSlotsAccessoriesStartShowPatched;
-        private bool chestLocatorAvailableInventoriesPatched;
         private bool strongPlantingGunCtorPatched;
         private bool strongPlantingGunToolPatched;
         private bool strongPlantingGunUiPlacePatched;
@@ -193,6 +192,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
+        private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -210,6 +210,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal CameraFeature? CameraFeature => cameraFeature;
 
         internal FishRoeTooltipService? FishRoeTooltipService => fishRoeTooltipFeature?.Service;
+
+        internal ChestLocatorEnhancerService? ChestLocatorEnhancerService => chestLocatorEnhancerFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -238,7 +240,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -265,7 +267,6 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, experimentalApi);
             RegisterGameBridgeFeatureApis(manifest);
-            runtime.RegisterRuntimeApi<IChestLocatorEnhancerApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IStrongPlantingGunApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<ICustomAnimalApi>(manifest, runtime.CustomEntities);
@@ -304,6 +305,10 @@ namespace DTMAPI.GameBridge.DolocTown
             fishRoeTooltipFeature ??= new FishRoeTooltipFeature(runtime);
             if (!features.Contains(fishRoeTooltipFeature))
                 features.Add(fishRoeTooltipFeature);
+
+            chestLocatorEnhancerFeature ??= new ChestLocatorEnhancerFeature(runtime);
+            if (!features.Contains(chestLocatorEnhancerFeature))
+                features.Add(chestLocatorEnhancerFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
@@ -594,17 +599,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 {
                     workshopReloadPatched = patcher.TryPatchPostfix("DolocTown.Config.ModManager, Assembly-CSharp", "ReloadMods", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReloadModsPostfix), BindingFlags.Public | BindingFlags.Static));
                     runtime.SetHookStatus("Workshop.ReloadMods", workshopReloadPatched ? "experimental" : "pending", "Harmony Postfix: ModManager.ReloadMods", workshopReloadPatched ? "Patched to refresh DTMAPI diagnostics after official reload." : "Waiting for Assembly-CSharp/ModManager to become patchable.");
-                }
-
-                if (!chestLocatorAvailableInventoriesPatched)
-                {
-                    chestLocatorAvailableInventoriesPatched = patcher.TryPatchArrayResultPostfix(
-                        "DolocTown.GameData.ArchiveDataHandle, Assembly-CSharp",
-                        "GetAvailableInventories",
-                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ArchiveDataHandleGetAvailableInventoriesPostfix), BindingFlags.Public | BindingFlags.Static),
-                        3);
-                    experimentalApi?.SetChestLocatorInventoryHookInstalled(chestLocatorAvailableInventoriesPatched);
-                    runtime.SetHookStatus("Inventory.ChestLocatorEnhancer", chestLocatorAvailableInventoriesPatched ? "experimental" : "pending", "Harmony Postfix: ArchiveDataHandle.GetAvailableInventories", chestLocatorAvailableInventoriesPatched ? "Patched native inventory array enumeration so registered DTMAPI policies can append official shared container inventories without replacing CountItem/CostItem transaction logic." : "Waiting for ArchiveDataHandle.GetAvailableInventories to become patchable.");
                 }
 
                 if (!strongPlantingGunCtorPatched)

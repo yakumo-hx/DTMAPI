@@ -346,7 +346,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static Array ArchiveDataHandleGetAvailableInventoriesPostfix(object __instance, object __0, object __1, bool __2, Array __result)
         {
-            return Bridge?.ExperimentalApi?.ExtendAvailableInventoriesForChestLocator(__instance, __0, __1, __2, __result) ?? __result;
+            return Bridge?.ChestLocatorEnhancerService?.ExtendAvailableInventoriesForChestLocator(__instance, __0, __1, __2, __result) ?? __result;
         }
 
         public static void ItemFarmingGunCtorPostfix(object __instance)

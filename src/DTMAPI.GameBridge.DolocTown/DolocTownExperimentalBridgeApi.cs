@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IChestLocatorEnhancerApi, IStrongPlantingGunApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, ISaveSlotsApi, IStrongPlantingGunApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -43,8 +43,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Random machineRandom = new Random();
         private readonly Dictionary<string, SaveSlotsOptions> saveSlotOptions = new Dictionary<string, SaveSlotsOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, SaveSlotsState> saveSlotStates = new Dictionary<string, SaveSlotsState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, ChestLocatorEnhancerOptions> chestLocatorOptions = new Dictionary<string, ChestLocatorEnhancerOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, ChestLocatorEnhancerState> chestLocatorStates = new Dictionary<string, ChestLocatorEnhancerState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, StrongPlantingGunOptions> strongPlantingGunOptions = new Dictionary<string, StrongPlantingGunOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, StrongPlantingGunState> strongPlantingGunStates = new Dictionary<string, StrongPlantingGunState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, EquipmentSlotsOptions> equipmentSlotOptions = new Dictionary<string, EquipmentSlotsOptions>(StringComparer.OrdinalIgnoreCase);
@@ -80,7 +78,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool machineRuntimeLoopInstalled;
         private bool equipmentSlotsRuntimeHooksInstalled;
         private bool equipmentSlotsUiHooksInstalled;
-        private bool chestLocatorInventoryHookInstalled;
         private bool strongPlantingGunToolHookInstalled;
         private bool strongPlantingGunUiHookInstalled;
         private bool strongPlantingGunCtorHookInstalled;
@@ -182,25 +179,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal bool ForceMachineProductionDueForSmoke { get; set; }
 
-        internal string LastChestLocatorEnhancerSummary { get; private set; } = string.Empty;
-
-        internal int ChestLocatorEnhancerExtensionApplications { get; private set; }
-
-
-
-        internal void SetChestLocatorInventoryHookInstalled(bool installed)
-        {
-            chestLocatorInventoryHookInstalled = installed;
-            foreach (KeyValuePair<string, ChestLocatorEnhancerState> entry in chestLocatorStates.ToArray())
-            {
-                ChestLocatorEnhancerState state = entry.Value;
-                state.HookInstalled = installed;
-                if (state.IsConfigured)
-                    state.Status = state.Enabled ? (installed ? "configured-experimental-inventory-hook" : "configured-pending-hook") : "disabled";
-                chestLocatorStates[entry.Key] = state;
-            }
-        }
-
         internal void SetStrongPlantingGunHooksInstalled(bool toolInstalled, bool uiInstalled, bool ctorInstalled)
         {
             strongPlantingGunToolHookInstalled = toolInstalled;
@@ -215,15 +193,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     state.Status = state.Enabled ? ((toolInstalled && uiInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook") : "disabled";
                 strongPlantingGunStates[entry.Key] = state;
             }
-        }
-
-
-
-        private static bool IsNativeAutoUseBoxEnabled()
-        {
-            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
-            object? userSettings = ReadStaticMember(dolocApi, "userSettings");
-            return userSettings == null || ReadBoolMember(userSettings, "autoUseBox", true);
         }
 
 

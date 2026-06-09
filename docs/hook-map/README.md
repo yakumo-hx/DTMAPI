@@ -836,16 +836,16 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Public surface: `IChestLocatorEnhancerApi`, `ChestLocatorEnhancerOptions`, `ChestLocatorEnhancerRegisterResult`, and `ChestLocatorEnhancerState`.
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.GameData.ArchiveDataHandle.GetAvailableInventories(Vector2Int anchor, Vector2Int area, bool useBox)`, native `LinearInventory[]`, reflected current/root/farm/building-room enumeration, shared `Case` inventories, and shared `StorageShelf` item boxes.
-- Patch type: Harmony postfix over the native inventory-array return value. GameBridge appends native inventory instances; ordinary mods register policy only and do not own reflection/Harmony traversal.
+- Patch type: Harmony postfix over the native inventory-array return value. `ChestLocatorEnhancerFeature` registers `IChestLocatorEnhancerApi` through `ChestLocatorEnhancerService`; `ChestLocatorEnhancerHookBridge` owns the patch installation. GameBridge appends native inventory instances; ordinary mods register policy only and do not own reflection/Harmony traversal.
 - Why this point: native recipe/material code already calls `CountItem`, `MaxCostItem`, and `TryCostItem` extension methods over the available-inventory array. Extending the array keeps native transaction behavior while letting shared chests outside the immediate room participate.
 - Failure behavior: if the postfix is missing, the API state stays configured/pending and native behavior is unchanged. DTMAPI only appends inventories when an owner is enabled and native `useBox` plus `autoUseBox` are active by default; inventories are deduped and raw game types are not exposed through public DTOs.
 - Mods/tests depending on it: `DTMAPI.ChestLocatorEnhancerMod`, smoke harness `-AutoExerciseChestLocatorEnhancer`.
 - Evidence:
-  - Build: DTMAPI 0.3.1 Release build/unit passed 2026-06-06 with 0 errors; only restricted-network NU1900 warnings occurred.
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260606-163226` logs `ChestLocatorEnhancer API register success=True`, `Inventory.ChestLocatorEnhancer = verified`, `ChestLocatorEnhancer inventories owner=DTMAPI.ChestLocatorEnhancerMod, useBox=True, nativeAutoUseBox=True, base=1, appended=5, roots=1, equipments=283, sharedCases=5, sharedStorageBoxes=0`, and `Smoke exercise ChestLocatorEnhancer OK item=dtmapi_mine, baseline=0, afterPlace=3, afterCost=1`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-163226`; result has `ChestLocatorEnhancer=true`, `SaveLoaded=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, and `ForcedClose=false`.
-- Regression cases: CHESTLOCATOR-030-G
+  - Latest log line: `GAME-SMOKE/20260610-024237` logs `Feature.ChestLocatorEnhancer = ready`, `ChestLocatorEnhancer API register success=True`, `Inventory.ChestLocatorEnhancer = verified`, `ChestLocatorEnhancer inventories owner=DTMAPI.ChestLocatorEnhancerMod, useBox=True, nativeAutoUseBox=True, base=1, appended=5, roots=1, equipments=283, sharedCases=5, sharedStorageBoxes=0`, and `Smoke.ChestLocatorEnhancer = verified` with `item=dtmapi_mine, baseline=0, afterPlace=3, afterCost=1`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-024237`; report zip `docs/debug/evidence/GAME-SMOKE/20260610-024237.zip`; result has `ChestLocatorEnhancer=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed`.
+- Regression cases: CHESTLOCATOR-030-G, CHESTLOCATOR-FEATURE-SPLIT-20260610
 
 ## Hook: Farming.StrongPlantingGun
 
