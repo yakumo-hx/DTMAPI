@@ -127,14 +127,19 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ToolColliderHandleToolsPostfix(object __instance, object other)
         {
-            SafePostfix("ToolCollider.HandleTools.ApplyActionCompletionOrOilDrop", () =>
-            {
-                bool oneActionHandled = Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true;
-                if (!oneActionHandled)
-                    Bridge?.OilCoalDropService?.ApplyOilCoalDropAfterToolHit(__instance, other);
-                else
-                    Bridge?.OilCoalDropService?.ClearCapturedOilCoalDrop(__instance, other);
-            });
+            RunToolColliderHandleToolsPostfixRoutes(
+                () => Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true,
+                () => Bridge?.OilCoalDropService?.ApplyOilCoalDropAfterToolHit(__instance, other),
+                () => Bridge?.OilCoalDropService?.ClearCapturedOilCoalDrop(__instance, other));
+        }
+
+        private static void RunToolColliderHandleToolsPostfixRoutes(Func<bool> applyActionCompletion, Action applyOilDrop, Action clearCapturedOilDrop)
+        {
+            bool oneActionHandled = SafeResult("ToolCollider.HandleTools.ActionCompletion", false, applyActionCompletion);
+            if (oneActionHandled)
+                SafePostfix("ToolCollider.HandleTools.OilCoalDrop.ClearCaptured", clearCapturedOilDrop);
+            else
+                SafePostfix("ToolCollider.HandleTools.OilCoalDrop.ApplyAfterHit", applyOilDrop);
         }
 
         public static void AgentStateToolEnterPostfix(object __instance)
