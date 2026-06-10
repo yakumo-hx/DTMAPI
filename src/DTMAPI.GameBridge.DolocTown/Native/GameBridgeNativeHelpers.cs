@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -61,6 +63,75 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             object? value = ReadMember(instance, name);
             return value == null ? fallback : Convert.ToDouble(value);
+        }
+
+        internal static void ShowNativeSmallMessage(string message, bool error)
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                string methodName = error ? "ShowMessageBoxSmallErr" : "ShowMessageBoxSmall";
+                MethodInfo? method = null;
+                foreach (MethodInfo candidate in dolocApi?.GetMethods(BindingFlags.Public | BindingFlags.Static) ?? Array.Empty<MethodInfo>())
+                {
+                    ParameterInfo[] parameters = candidate.GetParameters();
+                    if (candidate.Name == methodName && parameters.Length >= 1 && parameters[0].ParameterType == typeof(string))
+                    {
+                        method = candidate;
+                        break;
+                    }
+                }
+
+                if (method == null)
+                    return;
+
+                ParameterInfo[] methodParameters = method.GetParameters();
+                object?[] args = methodParameters.Length == 1
+                    ? new object?[] { message }
+                    : methodParameters.Length == 2
+                        ? new object?[] { message, 1.2f }
+                        : new object?[] { message, 1.2f, false };
+                method.Invoke(null, args);
+            }
+            catch
+            {
+            }
+        }
+
+        internal static double ReadAnimatorSpeed(object animator, double fallback)
+        {
+            object? value = animator.GetType().GetProperty("speed", BindingFlags.Public | BindingFlags.Instance)?.GetValue(animator);
+            return value == null ? fallback : Convert.ToDouble(value);
+        }
+
+        internal static bool TryWriteAnimatorSpeed(object animator, double value)
+        {
+            try
+            {
+                PropertyInfo? speed = animator.GetType().GetProperty("speed", BindingFlags.Public | BindingFlags.Instance);
+                if (speed == null || !speed.CanWrite)
+                    return false;
+                speed.SetValue(animator, Convert.ChangeType(value, speed.PropertyType));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        internal static double ClampMultiplier(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return 1;
+            return Math.Min(4, Math.Max(1, value));
+        }
+
+        internal static double ClampSeconds(double value, double min, double max)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+                return min;
+            return Math.Min(max, Math.Max(min, value));
         }
 
         internal static Type? ResolveType(string assemblyQualifiedName)
@@ -127,6 +198,12 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
+        internal static bool ReadStaticBoolMember(Type? type, string name, bool fallback)
+        {
+            object? value = ReadStaticMember(type, name);
+            return value is bool result ? result : fallback;
+        }
+
         internal static string FirstText(params string[] values)
         {
             foreach (string value in values)
@@ -153,6 +230,58 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             object? value = ReadMember(instance, name);
             return value is bool result ? result : fallback;
+        }
+
+        internal static bool WriteBoolMember(object instance, string name, bool value)
+        {
+            return WriteMember(instance, name, typeof(bool), value);
+        }
+
+        internal static bool WriteFloatMember(object instance, string name, float value)
+        {
+            return WriteMember(instance, name, typeof(float), value);
+        }
+
+        private static bool WriteMember(object instance, string name, Type expectedType, object value)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null && field.FieldType == expectedType)
+                {
+                    field.SetValue(instance, value);
+                    return true;
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null && property.CanWrite && property.PropertyType == expectedType)
+                {
+                    property.SetValue(instance, value);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool SetMemberValue(object instance, string name, object value)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null && (value == null || field.FieldType.IsInstanceOfType(value)))
+                {
+                    field.SetValue(instance, value);
+                    return true;
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null && property.CanWrite && (value == null || property.PropertyType.IsInstanceOfType(value)))
+                {
+                    property.SetValue(instance, value);
+                    return true;
+                }
+            }
+            return false;
         }
 
         internal static object? ReadMember(object instance, string name)
@@ -201,6 +330,20 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
             }
             return null;
+        }
+
+        internal static IEnumerable<object> EnumerateObjects(object? value)
+        {
+            if (value == null)
+                yield break;
+            if (value is IEnumerable enumerable)
+            {
+                foreach (object? item in enumerable)
+                {
+                    if (item != null)
+                        yield return item;
+                }
+            }
         }
     }
 }
