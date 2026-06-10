@@ -233,6 +233,17 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
+        [pscustomobject]@{ Id = "20260610-092620"; Label = "Hook callback failure throttle ChestLocator" },
+        [pscustomobject]@{ Id = "20260610-092819"; Label = "Hook callback failure throttle FishRoe" },
+        [pscustomobject]@{ Id = "20260610-092928"; Label = "Hook callback failure throttle ActionSpeed" },
+        [pscustomobject]@{ Id = "20260610-093037"; Label = "Hook callback failure throttle OneAction" },
+        [pscustomobject]@{ Id = "20260610-093148"; Label = "Hook callback failure throttle AutoFishing" },
+        [pscustomobject]@{ Id = "20260610-094039"; Label = "Optional dependency warning Camera snapshot" },
+        [pscustomobject]@{ Id = "20260610-094313"; Label = "Optional dependency warning ActionSpeed snapshot" },
+        [pscustomobject]@{ Id = "20260610-095455"; Label = "SaveSlots refresh throttle" },
+        [pscustomobject]@{ Id = "20260610-100337"; Label = "SaveSlots smoke case split" },
+        [pscustomobject]@{ Id = "20260610-101436"; Label = "StrongPlantingGun feature split" },
+        [pscustomobject]@{ Id = "20260610-103119"; Label = "AnimalViewer feature split" },
         [pscustomobject]@{ Id = "20260610-012052"; Label = "Lifecycle isolation AutoFishing" },
         [pscustomobject]@{ Id = "20260610-012242"; Label = "Lifecycle isolation ActionSpeed" },
         [pscustomobject]@{ Id = "20260610-012400"; Label = "Lifecycle isolation OneAction" },
