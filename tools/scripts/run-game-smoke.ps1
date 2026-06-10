@@ -934,6 +934,7 @@ $autoFishingMovementCancelOk = -not [bool]$AutoExerciseAutoFishingPhase
 $autoFishingPhaseOk = -not [bool]$AutoExerciseAutoFishingPhase
 $autoFishingMiniGameSkipOk = -not [bool]$AutoExerciseAutoFishingPhase
 $autoFishingMiniGameCompleteOk = -not [bool]$AutoExerciseAutoFishingMiniGameComplete
+$autoFishingReportExportOk = -not [bool]$AutoExerciseAutoFishingPhase
 $instantSaveOk = -not [bool]$AutoExerciseInstantSave
 $debugConsoleOpenY1Ok = -not $requiresDebugConsoleKeySmoke
 $debugConsoleMouseGiveOk = -not [bool]$AutoExerciseDebugConsoleMouseGive
@@ -1097,6 +1098,7 @@ if ($startupOk) {
             else {
                 $autoFishingMiniGameSkipOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingMiniGameSkip = verified' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
             }
+            $autoFishingReportExportOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DiagnosticsSnapshot = verified. scenario=AutoFishing' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
         }
         else {
             $autoFishingHotkeyOk = $false
@@ -1104,6 +1106,7 @@ if ($startupOk) {
             $autoFishingPhaseOk = $false
             $autoFishingMiniGameSkipOk = $false
             $autoFishingMiniGameCompleteOk = $false
+            $autoFishingReportExportOk = $false
         }
     }
     if ($saveLoadedOk -and $AutoExerciseInstantSave) {
@@ -1300,7 +1303,7 @@ if ($AutoExerciseMineContentApis -and (Test-Path $logPath)) {
     }
 }
 $runAborted = ($fatalWindows.Count -gt 0) -or $forcedClose -or [bool]$leftover
-$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $strongPlantingGunOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
+$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $autoFishingReportExportOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $strongPlantingGunOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
 $runStatus = if ($runAborted) { 'Aborted' } elseif ($runFailed) { 'Failed' } else { 'Passed' }
 $result = @{
     SchemaVersion = 2
@@ -1333,6 +1336,7 @@ $result = @{
     AutoFishingPhase = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingPhaseOk
     AutoFishingMiniGameSkip = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and -not [bool]$AutoExerciseAutoFishingMiniGameComplete) -Passed $autoFishingMiniGameSkipOk
     AutoFishingMiniGameComplete = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingMiniGameComplete) -Passed $autoFishingMiniGameCompleteOk
+    AutoFishingReportExport = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingReportExportOk
     InstantSave = Get-SmokeStatus -Requested ([bool]$AutoExerciseInstantSave) -Passed $instantSaveOk
     DebugConsoleOpenY1 = Get-SmokeStatus -Requested $requiresDebugConsoleKeySmoke -Passed $debugConsoleOpenY1Ok
     DebugConsoleMouseGive = Get-SmokeStatus -Requested ([bool]$AutoExerciseDebugConsoleMouseGive) -Passed $debugConsoleMouseGiveOk
