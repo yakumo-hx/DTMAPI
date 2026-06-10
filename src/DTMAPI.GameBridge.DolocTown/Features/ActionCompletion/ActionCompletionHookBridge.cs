@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -8,22 +7,18 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly DtmApiRuntime runtime;
         private readonly ActionCompletionService service;
+        private readonly Func<bool> isToolColliderPostfixPatched;
         private readonly Func<bool> isInteractExitPatched;
 
-        public ActionCompletionHookBridge(DtmApiRuntime runtime, ActionCompletionService service, Func<bool> isInteractExitPatched)
+        public ActionCompletionHookBridge(DtmApiRuntime runtime, ActionCompletionService service, Func<bool> isToolColliderPostfixPatched, Func<bool> isInteractExitPatched)
         {
             this.runtime = runtime;
             this.service = service;
+            this.isToolColliderPostfixPatched = isToolColliderPostfixPatched;
             this.isInteractExitPatched = isInteractExitPatched;
         }
 
-        internal bool ToolColliderPrefixPatched { get; private set; }
-
-        internal bool ToolColliderPostfixPatched { get; private set; }
-
-        internal bool ToolColliderPatched => ToolColliderPostfixPatched;
-
-        internal bool OilCoalDropRoutePatched => ToolColliderPrefixPatched && ToolColliderPostfixPatched;
+        internal bool ToolColliderPatched => isToolColliderPostfixPatched();
 
         internal bool InteractExitPatched => isInteractExitPatched();
 
@@ -34,24 +29,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
-            if (!ToolColliderPrefixPatched)
-            {
-                ToolColliderPrefixPatched = patcher.TryPatchPrefix(
-                    "DolocTown.ToolCollider, Assembly-CSharp",
-                    "HandleTools",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPrefix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-            }
-
-            if (!ToolColliderPostfixPatched)
-            {
-                ToolColliderPostfixPatched = patcher.TryPatchPostfix(
-                    "DolocTown.ToolCollider, Assembly-CSharp",
-                    "HandleTools",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPostfix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-            }
-
             service.SetActionHooksInstalled(ToolColliderPatched);
             PublishStatuses();
         }
