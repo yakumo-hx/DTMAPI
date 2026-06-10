@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IStrongPlantingGunApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -41,8 +41,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, MachineProductionState> machineStates = new Dictionary<string, MachineProductionState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, MachineRuntimeEntry> machineRuntimeEntries = new Dictionary<string, MachineRuntimeEntry>(StringComparer.OrdinalIgnoreCase);
         private readonly Random machineRandom = new Random();
-        private readonly Dictionary<string, StrongPlantingGunOptions> strongPlantingGunOptions = new Dictionary<string, StrongPlantingGunOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, StrongPlantingGunState> strongPlantingGunStates = new Dictionary<string, StrongPlantingGunState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, EquipmentSlotsOptions> equipmentSlotOptions = new Dictionary<string, EquipmentSlotsOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, EquipmentSlotsState> equipmentSlotStates = new Dictionary<string, EquipmentSlotsState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<EquipmentSlotRuntimeEntry>> equipmentSlotEntries = new Dictionary<string, List<EquipmentSlotRuntimeEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -76,9 +74,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool machineRuntimeLoopInstalled;
         private bool equipmentSlotsRuntimeHooksInstalled;
         private bool equipmentSlotsUiHooksInstalled;
-        private bool strongPlantingGunToolHookInstalled;
-        private bool strongPlantingGunUiHookInstalled;
-        private bool strongPlantingGunCtorHookInstalled;
         private bool equipmentSlotsUiRendered;
         private bool equipmentSlotsUiEvidenceRecorded;
         private bool equipmentSlotsUiBindDiagnosticLogged;
@@ -176,24 +171,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal string LastOilMiningDropSummary { get; private set; } = string.Empty;
 
         internal bool ForceMachineProductionDueForSmoke { get; set; }
-
-        internal void SetStrongPlantingGunHooksInstalled(bool toolInstalled, bool uiInstalled, bool ctorInstalled)
-        {
-            strongPlantingGunToolHookInstalled = toolInstalled;
-            strongPlantingGunUiHookInstalled = uiInstalled;
-            strongPlantingGunCtorHookInstalled = ctorInstalled;
-            foreach (KeyValuePair<string, StrongPlantingGunState> entry in strongPlantingGunStates.ToArray())
-            {
-                StrongPlantingGunState state = entry.Value;
-                state.ToolHookInstalled = toolInstalled;
-                state.UiHookInstalled = uiInstalled;
-                if (state.IsConfigured)
-                    state.Status = state.Enabled ? ((toolInstalled && uiInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook") : "disabled";
-                strongPlantingGunStates[entry.Key] = state;
-            }
-        }
-
-
 
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
