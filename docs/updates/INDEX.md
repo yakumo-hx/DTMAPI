@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0004 | 2026-06-11 | verified | docs/roadmap/community | Added the mid/long product roadmap, long-term module refactor route, player feedback/community loop, and Manager MVP support-loop requirements. | [20260611-0004-product-roadmap-community-loop.md](2026/20260611-0004-product-roadmap-community-loop.md) |
 | 20260611-0003 | 2026-06-11 | verified | core/manager-ui/runtime | Added an internal Manager runtime model provider and wired `UiRuntimeService` report export to refresh diagnostics snapshots and detect report-path mismatch. | [20260611-0003-manager-ui-runtime-skeleton.md](2026/20260611-0003-manager-ui-runtime-skeleton.md) |
 | 20260611-0002 | 2026-06-11 | verified | tools/smoke/diagnostics | Added global `DiagnosticsReportExport` smoke result aggregation for Camera, ActionSpeed interaction, and AutoFishing report-export evidence while retaining `AutoFishingReportExport`. | [20260611-0002-diagnostics-report-export-result.md](2026/20260611-0002-diagnostics-report-export-result.md) |
 | 20260611-0001 | 2026-06-11 | verified | core/manager-ui/diagnostics | Added internal Manager summary counters and support-oriented row sorting over diagnostics snapshot rows without adding public API members. | [20260611-0001-manager-viewmodel-summary-counters.md](2026/20260611-0001-manager-viewmodel-summary-counters.md) |
