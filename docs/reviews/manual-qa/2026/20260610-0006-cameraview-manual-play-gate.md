@@ -3,10 +3,11 @@
 ## Manual QA Record Header
 
 - Date: 2026-06-10
-- Source: User requested the Refactor stability follow-up route, step `codex/qa-camera-view-manual-play`; refreshed by the mid/long follow-up branch `codex/qa-camera-view-manual-gate-refresh`.
+- Source: User requested the Refactor stability follow-up route, step `codex/qa-camera-view-manual-play`; refreshed by the mid/long follow-up branch `codex/qa-camera-view-manual-gate-refresh`; refreshed again by `codex/qa-camera-view-manual-play-handoff` to add a dedicated manual handoff goal.
 - Scope: CameraView manual acceptance gate for the lease-based playable camera path.
 - Status: pending user confirmation.
-- Last refresh: 2026-06-10. No new manual confirmation was supplied, so every required user-visible check below remains pending.
+- Last refresh: 2026-06-11. No new manual confirmation was supplied, so every required user-visible check below remains pending.
+- Manual handoff goal: `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md` and sibling prompt backup `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.goal.txt`.
 - This record does not promote `ICameraViewApi`, `ICameraViewLease`, or `ICameraZoomApi`.
 
 ## Baseline
@@ -14,7 +15,7 @@
 - `ICameraZoomApi` 0.4.2 remains `Failed / ObsoleteCompatibility` after the manual failure review in `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`.
 - `ICameraViewApi` is the current ordinary playable camera route. It writes only `DolocAPI.mainCamera.orthographicSize`, keeps native camera follow/range ownership, and does not call `CameraController.RefreshResolution`, `CameraController.SetPosition`, `DolocAPI.RefreshScanner`, background compensation, fog compensation, or UI scaling.
 - Automated CameraPlayable smoke evidence is supporting evidence only. It is not a substitute for this manual play gate.
-- Latest supporting automated evidence: `GAME-SMOKE/20260610-043619`, with `Feature.Camera = ready`, `Smoke.CameraPlayable = verified`, `Smoke.DiagnosticsSnapshot = verified`, `mods=14`, `modStatusCodes=loaded=14`, `features=5`, matching `LatestReportPath`, and clean process/fatal checks.
+- Latest supporting automated evidence: `GAME-SMOKE/20260611-024629`, with `Zoom=Passed`, `Feature.Camera = ready`, `Smoke.CameraPlayable = verified`, `Smoke.DiagnosticsSnapshot = verified`, `DiagnosticsReportExport=Passed`, report `dtmapi-report-20260611-024813.zip`, and clean process/fatal checks. Prior supporting diagnostics snapshot evidence remains `GAME-SMOKE/20260610-043619`.
 
 ## Required Manual Checks
 
@@ -54,12 +55,16 @@ All checks use the local third save slot unless a later user note says otherwise
 - Automated `Smoke.CameraPlayable` can continue to validate lease arbitration, orthographic-size-only writes, diagnostics snapshot presence, and clean process/fatal checks.
 - This refresh does not claim pass/fail results for the 2x/4x movement, flicker, boundary clamp, building transition, title reload, or ZoomMod interaction checklist.
 - Future completion claims for CameraView must cite this record or a successor manual/video review that covers the same user-visible failure modes.
+- The 2026-06-11 handoff goal is a checklist transfer only. It does not authorize runtime edits or API promotion.
 
 ## Related Records
 
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
 - `docs/debug/issues/ISSUE-009-20260608-camera-playable-dynamic-qa.md`
 - `docs/debug/evidence/GAME-SMOKE/20260610-043619`
+- `docs/debug/evidence/GAME-SMOKE/20260611-024629`
+- `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`
+- `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.goal.txt`
 - `docs/api/public-api-matrix.md`
 - `docs/hook-map/focused/Camera.md`
 - `docs/debug/regressions/smoke-matrix.md`
