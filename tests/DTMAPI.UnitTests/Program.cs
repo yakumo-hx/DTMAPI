@@ -408,6 +408,22 @@ namespace DTMAPI.UnitTests
                 Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
                 Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
                 Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
+
+                string aggregateDir = NewTempGameDir();
+                var aggregateRuntime = new DtmApiRuntime(new FakeHost(aggregateDir), new ConfigMenuRegistry());
+                for (int i = 0; i < 1005; i++)
+                {
+                    aggregateRuntime.Diagnostics.RecordError("DTMAPI.Tests.DiagnosticsAggregate", "same-error", "error-details-" + i);
+                    recordWarning.Invoke(aggregateRuntime.Diagnostics, new object[] { "DTMAPI.Tests.DiagnosticsAggregate", "same-warning", "warning-details-" + i });
+                }
+
+                string aggregateReport = aggregateRuntime.ExportLogs();
+                string aggregateSummary = ReadZipText(aggregateReport, "dtmapi-summary.txt");
+                Assert(aggregateRuntime.Diagnostics.GetErrors().Count == 1000 && aggregateRuntime.Diagnostics.GetWarnings().Count == 1000, "Diagnostics retained windows should remain capped when aggregate counters keep total counts.");
+                Assert(aggregateSummary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Aggregate diagnostics summary should still include trim summary.");
+                Assert(aggregateSummary.Contains("DiagnosticsAggregates: totalKeys=2, top=2."), "Diagnostic report summary should include aggregate counter header.");
+                Assert(aggregateSummary.Contains("DIAGNOSTIC-AGGREGATE Error owner=DTMAPI.Tests.DiagnosticsAggregate message=same-error count=1005") && aggregateSummary.Contains("lastDetails=error-details-1004"), "Diagnostic aggregate counters should retain total repeated error count and last details.");
+                Assert(aggregateSummary.Contains("DIAGNOSTIC-AGGREGATE Warning owner=DTMAPI.Tests.DiagnosticsAggregate message=same-warning count=1005") && aggregateSummary.Contains("lastDetails=warning-details-1004"), "Diagnostic aggregate counters should retain total repeated warning count and last details.");
             }
             finally
             {
