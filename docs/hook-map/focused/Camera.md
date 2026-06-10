@@ -53,6 +53,7 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Status: pending user confirmation.
   - Record: `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md`.
   - Required checks: 2x true-input movement for at least 1 minute, 4x true-input movement for at least 1 minute, background flicker review, map-boundary native clamp review, enter/exit building, return to title then reload save, and ZoomMod hotkey/config interaction.
+  - Refresh: 2026-06-10 refresh keeps the gate pending and updates the supporting automated evidence to `GAME-SMOKE/20260610-043619`.
   - Boundary: automated `Smoke.CameraPlayable` evidence is supporting proof only; `ICameraViewApi` remains `Experimental` until manual play is confirmed.
 - Passed: `tools/scripts/build.ps1 -Configuration Release`
   - Release build completed with 0 warnings and 0 errors.
@@ -85,6 +86,7 @@ This focused map covers only the ordinary playable camera view path and the obso
 - `docs/updates/2026/20260609-0011-camera-playable-smoke-case-file.md`
 - `docs/updates/2026/20260609-0020-feature-status-model.md`
 - `docs/updates/2026/20260610-0006-camera-view-manual-qa-gate.md`
+- `docs/updates/2026/20260610-0057-camera-view-manual-gate-refresh.md`
 - `docs/debug/regressions/smoke-matrix.md` row `CAMERA-PLAYABLE`
 - `docs/api/public-api-matrix.md` Camera rows
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
