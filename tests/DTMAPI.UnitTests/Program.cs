@@ -46,6 +46,7 @@ namespace DTMAPI.UnitTests
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
+                ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
@@ -996,6 +997,61 @@ namespace DTMAPI.UnitTests
                 Assert(prefix, "SafePrefix should use the native-pass fallback when a hook callback throws.");
                 Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.HookCallback") == 4, "Hook callback safe helpers should record one diagnostics error per failed operation.");
                 Assert(runtime.Diagnostics.GetErrors().Count(e => e.Message.Contains("Test.SafePostfix.Repeated", StringComparison.Ordinal)) == 1, "Repeated hook callback failures should be throttled in diagnostics.");
+            }
+            finally
+            {
+                DolocTownHookCallbacks.Runtime = null;
+                DolocTownHookCallbacks.Bridge = null;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                Type callbacks = typeof(DolocTownHookCallbacks);
+                callbacks.GetProperty(nameof(DolocTownHookCallbacks.Runtime))!.SetValue(null, runtime);
+                callbacks.GetProperty(nameof(DolocTownHookCallbacks.Bridge))!.SetValue(null, null);
+
+                MethodInfo route = callbacks.GetMethod("RunToolColliderHandleToolsPostfixRoutes", BindingFlags.NonPublic | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("ToolCollider postfix route helper should exist.");
+                int applyOilDropCount = 0;
+                int clearCapturedCount = 0;
+
+                route.Invoke(null, new object[]
+                {
+                    new Func<bool>(() => throw new InvalidOperationException("one-action-boom")),
+                    new Action(() => applyOilDropCount++),
+                    new Action(() => clearCapturedCount++)
+                });
+                route.Invoke(null, new object[]
+                {
+                    new Func<bool>(() => true),
+                    new Action(() => applyOilDropCount++),
+                    new Action(() => clearCapturedCount++)
+                });
+                route.Invoke(null, new object[]
+                {
+                    new Func<bool>(() => false),
+                    new Action(() => throw new InvalidOperationException("oil-apply-boom")),
+                    new Action(() => clearCapturedCount++)
+                });
+                route.Invoke(null, new object[]
+                {
+                    new Func<bool>(() => true),
+                    new Action(() => applyOilDropCount++),
+                    new Action(() => throw new InvalidOperationException("oil-clear-boom"))
+                });
+
+                Assert(applyOilDropCount == 1, "OilCoalDrop apply should still run once when ActionCompletion fails and falls back to false.");
+                Assert(clearCapturedCount == 1, "OilCoalDrop clear should run only when ActionCompletion reports the hit was handled.");
+                Assert(runtime.Diagnostics.GetErrors().Any(e => e.Message.Contains("ToolCollider.HandleTools.ActionCompletion", StringComparison.Ordinal)), "ActionCompletion route failures should use their own diagnostics key.");
+                Assert(runtime.Diagnostics.GetErrors().Any(e => e.Message.Contains("ToolCollider.HandleTools.OilCoalDrop.ApplyAfterHit", StringComparison.Ordinal)), "OilCoalDrop apply failures should use their own diagnostics key.");
+                Assert(runtime.Diagnostics.GetErrors().Any(e => e.Message.Contains("ToolCollider.HandleTools.OilCoalDrop.ClearCaptured", StringComparison.Ordinal)), "OilCoalDrop clear failures should use their own diagnostics key.");
             }
             finally
             {
