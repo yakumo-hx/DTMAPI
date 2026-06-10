@@ -389,23 +389,29 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
-                GameBridgeFeatureStatus status = RecordGameBridgeFeatureDispatchFailure(id, operation, ex);
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureDispatchFailure(id, operation, ex, out GameBridgeFeatureFailurePublication publication);
                 string details = FormatGameBridgeFeatureStatus(status);
                 PublishGameBridgeFeatureStatusIfNeeded(
                     status,
                     "failed",
                     operation,
-                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + details);
+                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + details,
+                    publication.ShouldPublishHookStatus);
             }
         }
 
         private void PublishGameBridgeFeatureStatusIfNeeded(GameBridgeFeatureStatus status, string hookStatus, string operation, string details)
         {
+            PublishGameBridgeFeatureStatusIfNeeded(status, hookStatus, operation, details, forceHookStatusPublication: false);
+        }
+
+        private void PublishGameBridgeFeatureStatusIfNeeded(GameBridgeFeatureStatus status, string hookStatus, string operation, string details, bool forceHookStatusPublication)
+        {
             DateTimeOffset now = DateTimeOffset.Now;
-            if (!ShouldPublishGameBridgeFeatureStatus(status, hookStatus, operation, now))
+            runtime.Diagnostics.SetFeatureStatus(status.Id, hookStatus, status.LastOperation, status.LastSucceeded, status.FailureCount, status.LastError, FormatGameBridgeFeatureStatus(status));
+            if (!ShouldPublishGameBridgeFeatureStatus(status, hookStatus, operation, now, forceHookStatusPublication))
                 return;
 
-            runtime.Diagnostics.SetFeatureStatus(status.Id, hookStatus, status.LastOperation, status.LastSucceeded, status.FailureCount, status.LastError, FormatGameBridgeFeatureStatus(status));
             runtime.SetHookStatus(
                 "Feature." + status.Id,
                 hookStatus,
@@ -414,21 +420,18 @@ namespace DTMAPI.GameBridge.DolocTown
             status.MarkPublished(hookStatus, now);
         }
 
-        private static bool ShouldPublishGameBridgeFeatureStatus(GameBridgeFeatureStatus status, string hookStatus, string operation, DateTimeOffset now)
+        private static bool ShouldPublishGameBridgeFeatureStatus(GameBridgeFeatureStatus status, string hookStatus, string operation, DateTimeOffset now, bool forceHookStatusPublication)
         {
             if (!status.HasPublished)
+                return true;
+
+            if (forceHookStatusPublication)
                 return true;
 
             if (!string.Equals(status.PublishedHookStatus, hookStatus, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             if (status.PublishedSucceeded != status.LastSucceeded)
-                return true;
-
-            if (status.PublishedFailureCount != status.FailureCount)
-                return true;
-
-            if (!string.Equals(status.PublishedLastError, status.LastError, StringComparison.Ordinal))
                 return true;
 
             if (!string.Equals(operation, "Update", StringComparison.OrdinalIgnoreCase))
@@ -456,10 +459,10 @@ namespace DTMAPI.GameBridge.DolocTown
             return status;
         }
 
-        private GameBridgeFeatureStatus RecordGameBridgeFeatureDispatchFailure(string id, string operation, Exception ex)
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureDispatchFailure(string id, string operation, Exception ex, out GameBridgeFeatureFailurePublication publication)
         {
             GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
-            GameBridgeFeatureFailurePublication publication = RecordGameBridgeFeatureFailurePublication(id, operation, ex);
+            publication = RecordGameBridgeFeatureFailurePublication(id, operation, ex);
             string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
 
             if (publication.RecordDiagnosticsError)
@@ -559,10 +562,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
             internal bool PublishedSucceeded { get; private set; }
 
-            internal int PublishedFailureCount { get; private set; }
-
-            internal string PublishedLastError { get; private set; } = string.Empty;
-
             internal DateTimeOffset LastPublishedAt { get; private set; } = DateTimeOffset.MinValue;
 
             internal void MarkPublished(string hookStatus, DateTimeOffset publishedAt)
@@ -570,8 +569,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 HasPublished = true;
                 PublishedHookStatus = hookStatus;
                 PublishedSucceeded = LastSucceeded;
-                PublishedFailureCount = FailureCount;
-                PublishedLastError = LastError;
                 LastPublishedAt = publishedAt;
             }
         }
@@ -598,6 +595,8 @@ namespace DTMAPI.GameBridge.DolocTown
             internal GameBridgeFeatureFailureLogMode LogMode { get; }
 
             internal int Count { get; }
+
+            internal bool ShouldPublishHookStatus => LogMode != GameBridgeFeatureFailureLogMode.None;
         }
 
         private enum GameBridgeFeatureFailureLogMode

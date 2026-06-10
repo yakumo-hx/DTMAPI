@@ -996,13 +996,36 @@ namespace DTMAPI.UnitTests
                 string dir = NewTempGameDir();
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 var bridge = new DolocTownGameBridge(runtime);
+                IEventsHelper events = CreateEventsProxy(runtime, "DTMAPI.Tests.FeatureStatusObserver");
+                int featureHookStatusEvents = 0;
+                events.Diagnostics.HookStatusChanged += (_, e) =>
+                {
+                    if (e.HookId == "Feature.UnitFeature")
+                        featureHookStatusEvents++;
+                };
+
                 MethodInfo recordFailure = typeof(DolocTownGameBridge).GetMethod("RecordGameBridgeFeatureDispatchFailure", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("Feature failure throttle helper should exist.");
+                MethodInfo publishStatus = typeof(DolocTownGameBridge)
+                    .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Single(m => m.Name == "PublishGameBridgeFeatureStatusIfNeeded" && m.GetParameters().Length == 5);
+                MethodInfo formatStatus = typeof(DolocTownGameBridge).GetMethod("FormatGameBridgeFeatureStatus", BindingFlags.NonPublic | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("Feature status formatter should exist.");
 
                 for (int i = 0; i < 6; i++)
-                    recordFailure.Invoke(bridge, new object[] { "UnitFeature", "Update", new InvalidOperationException("feature-update-boom") });
+                {
+                    object?[] args = new object?[] { "UnitFeature", "Update", new InvalidOperationException("feature-update-boom"), null };
+                    object dispatchStatus = recordFailure.Invoke(bridge, args) ?? throw new InvalidOperationException("Feature status should be returned.");
+                    object publication = args[3] ?? throw new InvalidOperationException("Feature failure publication should be returned.");
+                    PropertyInfo shouldPublishHookStatusProperty = publication.GetType().GetProperty("ShouldPublishHookStatus", BindingFlags.NonPublic | BindingFlags.Instance)
+                        ?? throw new InvalidOperationException("Feature failure publication should expose hook-status publication decision.");
+                    bool shouldPublishHookStatus = (bool)shouldPublishHookStatusProperty.GetValue(publication)!;
+                    string details = "Update failed: InvalidOperationException: feature-update-boom. " + (string)formatStatus.Invoke(null, new[] { dispatchStatus })!;
+                    publishStatus.Invoke(bridge, new object[] { dispatchStatus, "failed", "Update", details, shouldPublishHookStatus });
+                }
 
                 Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.Feature.UnitFeature") == 1, "Repeated feature-host failures for the same operation should record only the first diagnostics error.");
+                Assert(featureHookStatusEvents == 3, "Repeated feature-host failures should publish Feature.UnitFeature hook status only for the first full error and two short warnings.");
 
                 FieldInfo featureStatusesField = typeof(DolocTownGameBridge).GetField("featureStatuses", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("Feature status dictionary should exist.");
@@ -1015,6 +1038,12 @@ namespace DTMAPI.UnitTests
 
                 Assert((int)failureCountProperty.GetValue(status)! == 6, "Feature status failure count should still grow for repeated failures.");
                 Assert(((string)lastErrorProperty.GetValue(status)!).Contains("feature-update-boom"), "Feature status should keep the latest error text.");
+                IDtmFeatureStatusInfo diagnosticStatus = runtime.Diagnostics.GetFeatureStatuses().Single(s => s.FeatureId == "UnitFeature");
+                Assert(diagnosticStatus.FailureCount == 6, "Diagnostics feature snapshot should keep the latest failure count even when hook-status publication is throttled.");
+                Assert(diagnosticStatus.LastError.Contains("feature-update-boom"), "Diagnostics feature snapshot should keep the latest error text.");
+                IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Feature.UnitFeature");
+                Assert(hookStatus.Details.Contains("failureCount=3"), "Published hook status should stop at the last allowed short-warning publication.");
+                Assert(!hookStatus.Details.Contains("failureCount=6"), "Suppressed repeated failures should not rewrite the hook status details every time failureCount changes.");
             }
             finally
             {
