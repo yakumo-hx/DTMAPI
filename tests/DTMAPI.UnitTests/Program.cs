@@ -912,10 +912,13 @@ namespace DTMAPI.UnitTests
                 string result = (string)safeResult.Invoke(null, new object[] { "Test.SafeResult", "fallback", new Func<string>(() => throw new InvalidOperationException("safe-result-boom")) })!;
                 bool prefix = (bool)safePrefix.Invoke(null, new object[] { "Test.SafePrefix", new Func<bool>(() => throw new InvalidOperationException("safe-prefix-boom")), true })!;
                 safePostfix.Invoke(null, new object[] { "Test.SafePostfix", new Action(() => throw new InvalidOperationException("safe-postfix-boom")) });
+                for (int i = 0; i < 6; i++)
+                    safePostfix.Invoke(null, new object[] { "Test.SafePostfix.Repeated", new Action(() => throw new InvalidOperationException("safe-postfix-repeat-boom")) });
 
                 Assert(result == "fallback", "SafeResult should return fallback when a hook callback throws.");
                 Assert(prefix, "SafePrefix should use the native-pass fallback when a hook callback throws.");
-                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.HookCallback") == 3, "Hook callback safe helpers should record diagnostics errors.");
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.HookCallback") == 4, "Hook callback safe helpers should record one diagnostics error per failed operation.");
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Message.Contains("Test.SafePostfix.Repeated", StringComparison.Ordinal)) == 1, "Repeated hook callback failures should be throttled in diagnostics.");
             }
             finally
             {
