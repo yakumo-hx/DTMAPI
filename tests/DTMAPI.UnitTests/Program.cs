@@ -47,6 +47,7 @@ namespace DTMAPI.UnitTests
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
+                FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
@@ -1058,6 +1059,37 @@ namespace DTMAPI.UnitTests
             {
                 DolocTownHookCallbacks.Runtime = null;
                 DolocTownHookCallbacks.Bridge = null;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type experimentalBridgeType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.DolocTownExperimentalBridgeApi")
+                ?? throw new InvalidOperationException("DolocTownExperimentalBridgeApi type should exist.");
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            Type featureType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationFeature")
+                ?? throw new InvalidOperationException("FishingAutomationFeature type should exist.");
+
+            Assert(!typeof(IFishingAutomationApi).IsAssignableFrom(experimentalBridgeType), "DolocTownExperimentalBridgeApi should no longer implement IFishingAutomationApi.");
+            Assert(typeof(IFishingAutomationApi).IsAssignableFrom(serviceType), "FishingAutomationService should implement IFishingAutomationApi.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object feature = Activator.CreateInstance(featureType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationFeature should be constructable for unit tests.");
+                string id = (string)(featureType.GetProperty("Id", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(feature) ?? string.Empty);
+                object? service = featureType.GetProperty("Service", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(feature);
+                Assert(id == "FishingAutomation", "FishingAutomationFeature should publish the FishingAutomation feature id.");
+                Assert(service is IFishingAutomationApi, "FishingAutomationFeature should own the IFishingAutomationApi service.");
+            }
+            finally
+            {
                 RestorePersistentRoot(previousRoot);
             }
         }

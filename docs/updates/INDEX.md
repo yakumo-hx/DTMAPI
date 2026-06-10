@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260610-0040 | 2026-06-10 | implemented | gamebridge/autofishing/feature-host/smoke | Moved FishingAutomation API, state, hook installation, and runtime update ownership into `FishingAutomationFeature`/service/hook bridge while preserving public contract, hook IDs, and AutoFishing behavior. | [20260610-0040-fishingautomation-feature-split.md](2026/20260610-0040-fishingautomation-feature-split.md) |
 | 20260530-0001 | 2026-05-30 | implemented | docs/assets | Added DTMAPI branding assets and established update-record rules for future traceability. | [20260530-0001-branding-and-update-record-system.md](2026/20260530-0001-branding-and-update-record-system.md) |
 | 20260530-0002 | 2026-05-30 | implemented | runtime/ui/config | Added title-homepage DTMAPI Settings entry, official-path-aware mod/config status, migrated config smoke evidence, and 0.1.11 versioning. | [20260530-0002-title-settings-entry.md](2026/20260530-0002-title-settings-entry.md) |
 | 20260530-0003 | 2026-05-30 | implemented | runtime/ui/localization/official-mods | Moved migrated mods to official local `Yuuka_DTMAPI_*` packages, added Chinese-first DTMAPI UI/config localization, and verified official enablement gating. | [20260530-0003-official-local-mods-localization.md](2026/20260530-0003-official-local-mods-localization.md) |
