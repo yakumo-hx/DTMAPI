@@ -48,6 +48,7 @@ namespace DTMAPI.UnitTests
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
+                GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
@@ -1116,7 +1117,73 @@ namespace DTMAPI.UnitTests
                 Assert(diagnosticStatus.LastError.Contains("feature-update-boom"), "Diagnostics feature snapshot should keep the latest error text.");
                 IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Feature.UnitFeature");
                 Assert(hookStatus.Details.Contains("failureCount=3"), "Published hook status should stop at the last allowed short-warning publication.");
+                Assert(hookStatus.Details.Contains("consecutiveFailureCount=3"), "Published hook status should expose the consecutive failure count from the last allowed short-warning publication.");
                 Assert(!hookStatus.Details.Contains("failureCount=6"), "Suppressed repeated failures should not rewrite the hook status details every time failureCount changes.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                var bridge = new DolocTownGameBridge(runtime);
+                MethodInfo recordFailure = typeof(DolocTownGameBridge).GetMethod("RecordGameBridgeFeatureDispatchFailure", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature failure throttle helper should exist.");
+                MethodInfo recordSuccess = typeof(DolocTownGameBridge).GetMethod("RecordGameBridgeFeatureSuccess", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature success helper should exist.");
+                MethodInfo publishStatus = typeof(DolocTownGameBridge)
+                    .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Single(m => m.Name == "PublishGameBridgeFeatureStatusIfNeeded" && m.GetParameters().Length == 5);
+                MethodInfo formatStatus = typeof(DolocTownGameBridge).GetMethod("FormatGameBridgeFeatureStatus", BindingFlags.NonPublic | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("Feature status formatter should exist.");
+
+                void PublishFailure(string message)
+                {
+                    object?[] args = new object?[] { "UnitFeature", "Update", new InvalidOperationException(message), null };
+                    object dispatchStatus = recordFailure.Invoke(bridge, args) ?? throw new InvalidOperationException("Feature status should be returned.");
+                    object publication = args[3] ?? throw new InvalidOperationException("Feature failure publication should be returned.");
+                    PropertyInfo shouldPublishHookStatusProperty = publication.GetType().GetProperty("ShouldPublishHookStatus", BindingFlags.NonPublic | BindingFlags.Instance)
+                        ?? throw new InvalidOperationException("Feature failure publication should expose hook-status publication decision.");
+                    bool shouldPublishHookStatus = (bool)shouldPublishHookStatusProperty.GetValue(publication)!;
+                    string details = "Update failed: InvalidOperationException: " + message + ". " + (string)formatStatus.Invoke(null, new[] { dispatchStatus })!;
+                    publishStatus.Invoke(bridge, new object[] { dispatchStatus, "failed", "Update", details, shouldPublishHookStatus });
+                }
+
+                void PublishSuccess()
+                {
+                    object dispatchStatus = recordSuccess.Invoke(bridge, new object[] { "UnitFeature", "Update" })
+                        ?? throw new InvalidOperationException("Feature status should be returned.");
+                    string details = "Update recovered. " + (string)formatStatus.Invoke(null, new[] { dispatchStatus })!;
+                    publishStatus.Invoke(bridge, new object[] { dispatchStatus, "ready", "Update", details, false });
+                }
+
+                for (int i = 0; i < 6; i++)
+                    PublishFailure("feature-update-boom");
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.Feature.UnitFeature") == 1, "The initial repeated failure episode should record one diagnostics error.");
+
+                for (int i = 0; i < 3; i++)
+                    PublishSuccess();
+
+                IDtmFeatureStatusInfo recoveredStatus = runtime.Diagnostics.GetFeatureStatuses().Single(s => s.FeatureId == "UnitFeature");
+                Assert(recoveredStatus.Success, "Recovered feature status should report success after stable successes.");
+                Assert(recoveredStatus.FailureCount == 6, "Recovered feature status should preserve cumulative failure count.");
+                Assert(recoveredStatus.Details.Contains("consecutiveFailureCount=0"), "Recovered feature status should reset the consecutive failure count.");
+                Assert(recoveredStatus.Details.Contains("lastRecoveredAt=") && !recoveredStatus.Details.Contains("lastRecoveredAt=none"), "Recovered feature status should record the recovery timestamp.");
+
+                PublishFailure("feature-update-boom-after-recovery");
+
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.Feature.UnitFeature") == 2, "A new failure after stable recovery should start a fresh diagnostics episode.");
+                IDtmFeatureStatusInfo failedAgainStatus = runtime.Diagnostics.GetFeatureStatuses().Single(s => s.FeatureId == "UnitFeature");
+                Assert(failedAgainStatus.FailureCount == 7, "FailureCount should remain cumulative across recovery episodes.");
+                Assert(failedAgainStatus.Details.Contains("consecutiveFailureCount=1"), "A new episode should start with one consecutive failure.");
+                Assert(failedAgainStatus.LastError.Contains("feature-update-boom-after-recovery"), "Diagnostics feature status should keep the newest post-recovery error.");
             }
             finally
             {

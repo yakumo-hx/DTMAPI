@@ -21,6 +21,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private static readonly TimeSpan FeatureStatusPublishHeartbeat = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan FeatureFailureSummaryInterval = TimeSpan.FromSeconds(30);
         private const int FeatureFailureShortLogLimit = 3;
+        private const int FeatureFailureRecoverySuccessThreshold = 3;
         private readonly DtmApiRuntime runtime;
         private readonly Func<bool>? clickTitleSettingsButton;
         private readonly IDebugConsoleApi? debugConsoleApi;
@@ -447,9 +448,14 @@ namespace DTMAPI.GameBridge.DolocTown
         private GameBridgeFeatureStatus RecordGameBridgeFeatureSuccess(string id, string operation)
         {
             GameBridgeFeatureStatus status = GetGameBridgeFeatureStatus(id);
+            bool recovered = status.ConsecutiveFailureCount > 0 || (!status.LastSucceeded && status.FailureCount > 0);
             status.LastOperation = operation;
             status.LastSucceeded = true;
+            status.ConsecutiveFailureCount = 0;
             status.LastError = string.Empty;
+            if (recovered)
+                status.LastRecoveredAtUtc = DateTimeOffset.UtcNow;
+            RecordGameBridgeFeatureRecoverySuccess(id, operation);
             return status;
         }
 
@@ -459,6 +465,7 @@ namespace DTMAPI.GameBridge.DolocTown
             status.LastOperation = operation;
             status.LastSucceeded = false;
             status.FailureCount++;
+            status.ConsecutiveFailureCount++;
             status.LastError = ex.GetType().Name + ": " + ex.Message;
             return status;
         }
@@ -484,7 +491,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private GameBridgeFeatureFailurePublication RecordGameBridgeFeatureFailurePublication(string id, string operation, Exception ex)
         {
-            string key = (string.IsNullOrWhiteSpace(id) ? "<unknown>" : id.Trim()) + "::" + (string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation.Trim());
+            string key = GetGameBridgeFeatureFailureKey(id, operation);
             DateTimeOffset now = DateTimeOffset.UtcNow;
             if (!featureFailures.TryGetValue(key, out GameBridgeFeatureFailureState state))
             {
@@ -493,6 +500,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             state.Count++;
+            state.ConsecutiveSuccessCount = 0;
             state.LastError = ex.GetType().Name + ": " + ex.Message;
             state.LastSeenAtUtc = now;
 
@@ -517,6 +525,22 @@ namespace DTMAPI.GameBridge.DolocTown
             return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.None, state.Count);
         }
 
+        private void RecordGameBridgeFeatureRecoverySuccess(string id, string operation)
+        {
+            string key = GetGameBridgeFeatureFailureKey(id, operation);
+            if (!featureFailures.TryGetValue(key, out GameBridgeFeatureFailureState state))
+                return;
+
+            state.ConsecutiveSuccessCount++;
+            if (state.ConsecutiveSuccessCount >= FeatureFailureRecoverySuccessThreshold)
+                featureFailures.Remove(key);
+        }
+
+        private static string GetGameBridgeFeatureFailureKey(string id, string operation)
+        {
+            return (string.IsNullOrWhiteSpace(id) ? "<unknown>" : id.Trim()) + "::" + (string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation.Trim());
+        }
+
         private GameBridgeFeatureStatus GetGameBridgeFeatureStatus(string id)
         {
             if (!featureStatuses.TryGetValue(id, out GameBridgeFeatureStatus status))
@@ -531,7 +555,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private static string FormatGameBridgeFeatureStatus(GameBridgeFeatureStatus status)
         {
             string lastError = string.IsNullOrWhiteSpace(status.LastError) ? "none" : status.LastError;
-            return "Feature status: id=" + status.Id + ", lastOperation=" + status.LastOperation + ", success=" + status.LastSucceeded.ToString(CultureInfo.InvariantCulture) + ", failureCount=" + status.FailureCount.ToString(CultureInfo.InvariantCulture) + ", lastError=" + lastError + ".";
+            string recoveredAt = status.LastRecoveredAtUtc.HasValue ? status.LastRecoveredAtUtc.Value.ToString("O", CultureInfo.InvariantCulture) : "none";
+            return "Feature status: id=" + status.Id + ", lastOperation=" + status.LastOperation + ", success=" + status.LastSucceeded.ToString(CultureInfo.InvariantCulture) + ", failureCount=" + status.FailureCount.ToString(CultureInfo.InvariantCulture) + ", consecutiveFailureCount=" + status.ConsecutiveFailureCount.ToString(CultureInfo.InvariantCulture) + ", lastRecoveredAt=" + recoveredAt + ", lastError=" + lastError + ".";
         }
 
         private static string GetGameBridgeFeatureId(IGameBridgeFeature feature)
@@ -558,7 +583,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
             internal int FailureCount { get; set; }
 
+            internal int ConsecutiveFailureCount { get; set; }
+
             internal string LastError { get; set; } = string.Empty;
+
+            internal DateTimeOffset? LastRecoveredAtUtc { get; set; }
 
             internal bool HasPublished { get; private set; }
 
@@ -580,6 +609,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private sealed class GameBridgeFeatureFailureState
         {
             internal int Count { get; set; }
+            internal int ConsecutiveSuccessCount { get; set; }
             internal string LastError { get; set; } = string.Empty;
             internal DateTimeOffset LastSeenAtUtc { get; set; }
             internal DateTimeOffset LastPublishedAtUtc { get; set; }
