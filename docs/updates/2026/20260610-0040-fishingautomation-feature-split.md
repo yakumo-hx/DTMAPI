@@ -25,7 +25,7 @@ User requested the e904d04 post-review stabilization route, third branch `codex/
 - `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationFeature.cs`
 - `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationHookBridge.cs`
 - `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationService.cs`
-- `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/DolocTownExperimentalBridgeApi.FishingAutomation.cs`
+- FishingAutomation implementation migrated out of the old experimental-bridge partial route and into `FishingAutomationService.cs`; no separate `DolocTownExperimentalBridgeApi.FishingAutomation.cs` file is present in this final source snapshot.
 - `src/DTMAPI.GameBridge.DolocTown/Hooking/DolocTownHookCallbacks.cs`
 - `src/DTMAPI.GameBridge.DolocTown/Smoke/AutoFishingSmoke.cs`
 - `tests/DTMAPI.UnitTests/Program.cs`
