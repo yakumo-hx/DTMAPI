@@ -233,19 +233,24 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
-        [pscustomobject]@{ Id = "20260610-113540"; Label = "Feature host throttle Camera" },
-        [pscustomobject]@{ Id = "20260610-113752"; Label = "Feature host throttle ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-113902"; Label = "Feature host throttle SaveSlots HookProbe" },
-        [pscustomobject]@{ Id = "20260610-114008"; Label = "Feature host throttle AnimalViewer" },
-        [pscustomobject]@{ Id = "20260610-115014"; Label = "Diagnostics entry cap Camera snapshot" },
-        [pscustomobject]@{ Id = "20260610-115225"; Label = "Diagnostics entry cap ActionSpeed snapshot" },
-        [pscustomobject]@{ Id = "20260610-120641"; Label = "API version alpha BepInEx failure evidence" },
-        [pscustomobject]@{ Id = "20260610-121420"; Label = "API version 0.5.0-alpha Camera" },
-        [pscustomobject]@{ Id = "20260610-121631"; Label = "API version 0.5.0-alpha ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-122933"; Label = "StrongPlantingGun smoke case split" },
-        [pscustomobject]@{ Id = "20260610-123042"; Label = "AnimalViewer smoke case split" },
-        [pscustomobject]@{ Id = "20260610-124357"; Label = "OilCoalDrop feature NewContent smoke" },
-        [pscustomobject]@{ Id = "20260610-124511"; Label = "OilCoalDrop feature OneAction regression" }
+        [pscustomobject]@{ Id = "20260610-133933"; Label = "Feature failure status throttle Camera" },
+        [pscustomobject]@{ Id = "20260610-134145"; Label = "Feature failure status throttle ActionSpeed" },
+        [pscustomobject]@{ Id = "20260610-134259"; Label = "Feature failure status throttle SaveSlots HookProbe" },
+        [pscustomobject]@{ Id = "20260610-134406"; Label = "Feature failure status throttle AnimalViewer" },
+        [pscustomobject]@{ Id = "20260610-135456"; Label = "OilCoalDrop pending cleanup OneAction regression" },
+        [pscustomobject]@{ Id = "20260610-135605"; Label = "OilCoalDrop pending cleanup NewContent/Oil" },
+        [pscustomobject]@{ Id = "20260610-140419"; Label = "Shared ToolCollider owner OneAction regression" },
+        [pscustomobject]@{ Id = "20260610-140641"; Label = "Shared ToolCollider owner Oil route" },
+        [pscustomobject]@{ Id = "20260610-141632"; Label = "OilCoalDrop smoke case split" },
+        [pscustomobject]@{ Id = "20260610-142415"; Label = "Diagnostics aggregate counters Camera snapshot" },
+        [pscustomobject]@{ Id = "20260610-142626"; Label = "Diagnostics aggregate counters ActionSpeed snapshot" },
+        [pscustomobject]@{ Id = "20260610-120641"; Label = "API version policy BepInEx prerelease metadata failure" },
+        [pscustomobject]@{ Id = "20260610-121420"; Label = "API version policy Camera alpha-baseline" },
+        [pscustomobject]@{ Id = "20260610-121631"; Label = "API version policy ActionSpeed alpha-baseline" },
+        [pscustomobject]@{ Id = "20260608-080848"; Label = "Fishing native responsibility baseline automation" },
+        [pscustomobject]@{ Id = "20260609-170646"; Label = "Fishing animator restore evidence" },
+        [pscustomobject]@{ Id = "20260610-012052"; Label = "Fishing lifecycle isolation evidence" },
+        [pscustomobject]@{ Id = "20260610-035752"; Label = "Fishing safe fallback regression" }
     )
 }
 
