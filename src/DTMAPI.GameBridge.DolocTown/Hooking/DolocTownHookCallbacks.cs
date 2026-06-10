@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
@@ -6,7 +7,22 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     public static class DolocTownHookCallbacks
     {
-        public static DtmApiRuntime? Runtime { get; set; }
+        private const int HookCallbackShortLogLimit = 3;
+        private static readonly TimeSpan HookCallbackSummaryInterval = TimeSpan.FromSeconds(30);
+        private static readonly object hookCallbackFailureGate = new object();
+        private static readonly Dictionary<string, HookCallbackFailureState> hookCallbackFailures = new Dictionary<string, HookCallbackFailureState>(StringComparer.Ordinal);
+        private static DtmApiRuntime? runtime;
+
+        public static DtmApiRuntime? Runtime
+        {
+            get => runtime;
+            set
+            {
+                runtime = value;
+                ResetHookCallbackFailureThrottle();
+            }
+        }
+
         public static DolocTownGameBridge? Bridge { get; set; }
         public static bool DebugConsoleModalOpen { get; set; }
         private static bool debugConsoleInputSuppressionLogged;
@@ -481,13 +497,97 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                Runtime?.Diagnostics.RecordError("DTMAPI.GameBridge.HookCallback", "Hook callback failed: " + operation + ".", ex.ToString());
-                Runtime?.RuntimeMonitor.Log("Hook callback failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+                HookCallbackFailurePublication publication = RecordHookCallbackFailureState(operation, ex);
+                if (publication.RecordDiagnosticsError)
+                    Runtime?.Diagnostics.RecordError("DTMAPI.GameBridge.HookCallback", "Hook callback failed: " + operation + ".", ex.ToString());
+
+                if (publication.LogMode == HookCallbackFailureLogMode.Full)
+                    Runtime?.RuntimeMonitor.Log("Hook callback failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+                else if (publication.LogMode == HookCallbackFailureLogMode.Short)
+                    Runtime?.RuntimeMonitor.Log("Repeated hook callback failure operation=" + operation + " count=" + publication.Count + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+                else if (publication.LogMode == HookCallbackFailureLogMode.Summary)
+                    Runtime?.RuntimeMonitor.Log("Throttled hook callback failures operation=" + operation + " count=" + publication.Count + " lastError=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
             }
             catch
             {
                 // Harmony callbacks must never rethrow diagnostics failures into native gameplay.
             }
+        }
+
+        private static HookCallbackFailurePublication RecordHookCallbackFailureState(string operation, Exception ex)
+        {
+            string key = string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            lock (hookCallbackFailureGate)
+            {
+                if (!hookCallbackFailures.TryGetValue(key, out HookCallbackFailureState? state))
+                {
+                    state = new HookCallbackFailureState();
+                    hookCallbackFailures[key] = state;
+                }
+
+                state.Count++;
+                state.LastError = ex.GetType().Name + ": " + ex.Message;
+                state.LastSeenAtUtc = now;
+
+                if (state.Count == 1)
+                {
+                    state.LastPublishedAtUtc = now;
+                    return new HookCallbackFailurePublication(true, HookCallbackFailureLogMode.Full, state.Count);
+                }
+
+                if (state.Count <= HookCallbackShortLogLimit)
+                {
+                    state.LastPublishedAtUtc = now;
+                    return new HookCallbackFailurePublication(false, HookCallbackFailureLogMode.Short, state.Count);
+                }
+
+                if (now - state.LastPublishedAtUtc >= HookCallbackSummaryInterval)
+                {
+                    state.LastPublishedAtUtc = now;
+                    return new HookCallbackFailurePublication(false, HookCallbackFailureLogMode.Summary, state.Count);
+                }
+
+                return new HookCallbackFailurePublication(false, HookCallbackFailureLogMode.None, state.Count);
+            }
+        }
+
+        private static void ResetHookCallbackFailureThrottle()
+        {
+            lock (hookCallbackFailureGate)
+                hookCallbackFailures.Clear();
+        }
+
+        private sealed class HookCallbackFailureState
+        {
+            public int Count { get; set; }
+            public string LastError { get; set; } = string.Empty;
+            public DateTimeOffset LastSeenAtUtc { get; set; }
+            public DateTimeOffset LastPublishedAtUtc { get; set; }
+        }
+
+        private readonly struct HookCallbackFailurePublication
+        {
+            public HookCallbackFailurePublication(bool recordDiagnosticsError, HookCallbackFailureLogMode logMode, int count)
+            {
+                RecordDiagnosticsError = recordDiagnosticsError;
+                LogMode = logMode;
+                Count = count;
+            }
+
+            public bool RecordDiagnosticsError { get; }
+
+            public HookCallbackFailureLogMode LogMode { get; }
+
+            public int Count { get; }
+        }
+
+        private enum HookCallbackFailureLogMode
+        {
+            None,
+            Full,
+            Short,
+            Summary
         }
     }
 }

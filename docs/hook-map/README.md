@@ -42,6 +42,23 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260610-035216`, `20260610-035326`, `20260610-035434`, `20260610-035639`, and `20260610-035752`; latest runtime report generated during the branch was `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260610-035514.zip`.
 - Regression cases: HOOK-CALLBACK-SAFE-FALLBACKS-20260610
 
+## Diagnostic: HookCallbackFailureThrottle
+
+- Status: verified
+- Public surface: none; internal GameBridge/Harmony callback failure diagnostics policy.
+- Game build: 23465763 workshop
+- Game method/type: `DolocTownHookCallbacks.RecordHookCallbackFailure` for non-lifecycle callback failures recorded by `SafeResult<T>`, `SafePrefix`, `SafePostfix`, and direct guarded callback bodies.
+- Patch type: internal diagnostics throttling around existing callback wrappers; no hook target, hook ID, public API, or smoke schema change.
+- Why this point: a repeated per-frame hook failure should not flood diagnostics and runtime logs after the first actionable error, but the callback must still fail toward native behavior.
+- Failure behavior: first failure per operation records a full `DTMAPI.GameBridge.HookCallback` diagnostics error and error log; the next two repeats write short warning logs; later repeats are suppressed until a 30-second summary window. Prefix callbacks still return the native-pass fallback, result callbacks still return fallback/original values, and void callbacks still do not throw into Harmony/native code.
+- Mods/tests depending on it: `DTMAPI.UnitTests`, plus ChestLocator, FishRoe, ActionSpeed, OneAction, and AutoFishing smoke paths that use the affected callback wrappers.
+- Evidence:
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors; unit coverage verifies fallback values and one diagnostics error per repeated operation.
+  - Save: local slot 3 / index 2.
+  - Log line: `GAME-SMOKE/20260610-092620`, `GAME-SMOKE/20260610-092819`, `GAME-SMOKE/20260610-092928`, `GAME-SMOKE/20260610-093037`, and `GAME-SMOKE/20260610-093148` all passed their focused cases with clean process/fatal checks and no hook-callback failure entries.
+  - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260610-092620`, `20260610-092819`, `20260610-092928`, `20260610-093037`, and `20260610-093148`.
+- Regression cases: HOOK-CALLBACK-FAILURE-THROTTLE-20260610
+
 ## Hook: CustomEntities.CoreRegistry
 
 - Status: verified
