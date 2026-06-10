@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -43,6 +44,7 @@ namespace DTMAPI.UnitTests
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
+                GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 ChestLocatorPoliciesMergeEnabledOwners();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
@@ -930,6 +932,40 @@ namespace DTMAPI.UnitTests
             {
                 DolocTownHookCallbacks.Runtime = null;
                 DolocTownHookCallbacks.Bridge = null;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                var bridge = new DolocTownGameBridge(runtime);
+                MethodInfo recordFailure = typeof(DolocTownGameBridge).GetMethod("RecordGameBridgeFeatureDispatchFailure", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature failure throttle helper should exist.");
+
+                for (int i = 0; i < 6; i++)
+                    recordFailure.Invoke(bridge, new object[] { "UnitFeature", "Update", new InvalidOperationException("feature-update-boom") });
+
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.Feature.UnitFeature") == 1, "Repeated feature-host failures for the same operation should record only the first diagnostics error.");
+
+                FieldInfo featureStatusesField = typeof(DolocTownGameBridge).GetField("featureStatuses", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature status dictionary should exist.");
+                var featureStatuses = (IDictionary)featureStatusesField.GetValue(bridge)!;
+                object status = featureStatuses["UnitFeature"] ?? throw new InvalidOperationException("Feature status should be recorded.");
+                PropertyInfo failureCountProperty = status.GetType().GetProperty("FailureCount", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature status failure count should be readable.");
+                PropertyInfo lastErrorProperty = status.GetType().GetProperty("LastError", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("Feature status last error should be readable.");
+
+                Assert((int)failureCountProperty.GetValue(status)! == 6, "Feature status failure count should still grow for repeated failures.");
+                Assert(((string)lastErrorProperty.GetValue(status)!).Contains("feature-update-boom"), "Feature status should keep the latest error text.");
+            }
+            finally
+            {
                 RestorePersistentRoot(previousRoot);
             }
         }

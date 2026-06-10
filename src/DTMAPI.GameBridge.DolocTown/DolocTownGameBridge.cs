@@ -19,6 +19,8 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private static readonly string[] OneActionWrongToolTargetKinds = { "Tree", "Ore", "Garbage", "Weeds" };
         private static readonly TimeSpan FeatureStatusPublishHeartbeat = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan FeatureFailureSummaryInterval = TimeSpan.FromSeconds(30);
+        private const int FeatureFailureShortLogLimit = 3;
         private readonly DtmApiRuntime runtime;
         private readonly Func<bool>? clickTitleSettingsButton;
         private readonly IDebugConsoleApi? debugConsoleApi;
@@ -186,6 +188,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private Delegate? saveLoadedUnityEventDelegate;
         private readonly List<IGameBridgeFeature> features = new List<IGameBridgeFeature>();
         private readonly Dictionary<string, GameBridgeFeatureStatus> featureStatuses = new Dictionary<string, GameBridgeFeatureStatus>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, GameBridgeFeatureFailureState> featureFailures = new Dictionary<string, GameBridgeFeatureFailureState>(StringComparer.OrdinalIgnoreCase);
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
@@ -379,11 +382,8 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
-                GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureDispatchFailure(id, operation, ex);
                 string details = FormatGameBridgeFeatureStatus(status);
-                string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
-                runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
                 PublishGameBridgeFeatureStatusIfNeeded(
                     status,
                     "failed",
@@ -447,6 +447,60 @@ namespace DTMAPI.GameBridge.DolocTown
             status.FailureCount++;
             status.LastError = ex.GetType().Name + ": " + ex.Message;
             return status;
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureDispatchFailure(string id, string operation, Exception ex)
+        {
+            GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
+            GameBridgeFeatureFailurePublication publication = RecordGameBridgeFeatureFailurePublication(id, operation, ex);
+            string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
+
+            if (publication.RecordDiagnosticsError)
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
+
+            if (publication.LogMode == GameBridgeFeatureFailureLogMode.Full)
+                runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+            else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Short)
+                runtime.RuntimeMonitor.Log("Repeated GameBridge feature failure feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+            else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Summary)
+                runtime.RuntimeMonitor.Log("Throttled GameBridge feature failures feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " lastError=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+
+            return status;
+        }
+
+        private GameBridgeFeatureFailurePublication RecordGameBridgeFeatureFailurePublication(string id, string operation, Exception ex)
+        {
+            string key = (string.IsNullOrWhiteSpace(id) ? "<unknown>" : id.Trim()) + "::" + (string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation.Trim());
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (!featureFailures.TryGetValue(key, out GameBridgeFeatureFailureState state))
+            {
+                state = new GameBridgeFeatureFailureState();
+                featureFailures[key] = state;
+            }
+
+            state.Count++;
+            state.LastError = ex.GetType().Name + ": " + ex.Message;
+            state.LastSeenAtUtc = now;
+
+            if (state.Count == 1)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(true, GameBridgeFeatureFailureLogMode.Full, state.Count);
+            }
+
+            if (state.Count <= FeatureFailureShortLogLimit)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.Short, state.Count);
+            }
+
+            if (now - state.LastPublishedAtUtc >= FeatureFailureSummaryInterval)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.Summary, state.Count);
+            }
+
+            return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.None, state.Count);
         }
 
         private GameBridgeFeatureStatus GetGameBridgeFeatureStatus(string id)
@@ -513,6 +567,38 @@ namespace DTMAPI.GameBridge.DolocTown
                 PublishedLastError = LastError;
                 LastPublishedAt = publishedAt;
             }
+        }
+
+        private sealed class GameBridgeFeatureFailureState
+        {
+            internal int Count { get; set; }
+            internal string LastError { get; set; } = string.Empty;
+            internal DateTimeOffset LastSeenAtUtc { get; set; }
+            internal DateTimeOffset LastPublishedAtUtc { get; set; }
+        }
+
+        private readonly struct GameBridgeFeatureFailurePublication
+        {
+            internal GameBridgeFeatureFailurePublication(bool recordDiagnosticsError, GameBridgeFeatureFailureLogMode logMode, int count)
+            {
+                RecordDiagnosticsError = recordDiagnosticsError;
+                LogMode = logMode;
+                Count = count;
+            }
+
+            internal bool RecordDiagnosticsError { get; }
+
+            internal GameBridgeFeatureFailureLogMode LogMode { get; }
+
+            internal int Count { get; }
+        }
+
+        private enum GameBridgeFeatureFailureLogMode
+        {
+            None,
+            Full,
+            Short,
+            Summary
         }
 
         private void PublishCustomEntityRegistryContractHookStatuses()
