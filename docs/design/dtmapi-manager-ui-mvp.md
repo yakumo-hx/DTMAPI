@@ -1,6 +1,6 @@
 # DTMAPI Manager UI MVP
 
-Status: design only, no runtime implementation.
+Status: design with internal view-model skeleton; no player-facing UI implementation.
 
 Date: 2026-06-10
 
@@ -14,6 +14,10 @@ DTMAPI Manager is a developer/support UI for the current Refactor runtime. The M
 4. Can the user change registered DTMAPI config and export a report for review?
 
 The MVP is not a Stable API promotion gate. It consumes existing Diagnostic/Experimental surfaces and must display their status honestly.
+
+## 2026-06-10 Internal Skeleton Note
+
+`DTMAPI.Core.Manager` now contains internal view-model rows and a snapshot mapper for the MVP surface. It maps `IDtmDiagnosticsSnapshot` into Mods, Errors, Warnings, Hooks, Features, latest log/report paths, and report-export path state. This is intentionally internal and covered by unit tests; it does not add public API, game UI, ConfigMenu integration, official enablement writes, or a stable Diagnostics promotion.
 
 ## Non-Goals
 
