@@ -1125,10 +1125,26 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    /// <summary>
+    /// Experimental AutoFishing policy options. In the 0.5.0-alpha GameBridge these
+    /// options are accepted for compatibility, but some fields are normalized by
+    /// the experimental FishingAutomation service until their wider semantics are
+    /// proven.
+    /// </summary>
     public sealed class FishingAutomationOptions
     {
+        /// <summary>
+        /// Requested automatic recast behavior. In 0.5.0-alpha this field is
+        /// accepted but normalized to <c>true</c> by the experimental service, so
+        /// callers should not rely on <c>false</c> being honored yet.
+        /// </summary>
         public bool AutoRecast { get; set; } = true;
         public bool StopOnManualMove { get; set; } = true;
+        /// <summary>
+        /// Requested selected-rod-only policy. In 0.5.0-alpha this field is
+        /// accepted but normalized to <c>true</c> by the experimental service,
+        /// keeping automation on the conservative selected fishing rod path.
+        /// </summary>
         public bool RequireSelectedFishingRod { get; set; }
         public double CastReleaseProgress { get; set; }
         public double RecastDelaySeconds { get; set; } = 0.25;
