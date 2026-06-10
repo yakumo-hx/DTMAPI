@@ -20,22 +20,23 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool TryExerciseAutoFishingAutoCastForSmoke(Type dolocApi, Type fishingPoolType, out string summary)
         {
             summary = string.Empty;
+            FishingAutomationService? fishingService = FishingAutomationService;
             object? inventory = null;
             object? originalSlotItem = null;
             int quickSlot = 0;
 
             try
             {
-                if (experimentalApi == null)
+                if (fishingService == null)
                 {
-                    summary = "Experimental API unavailable.";
+                    summary = "FishingAutomation service unavailable.";
                     return false;
                 }
 
-                experimentalApi.SuppressFishingAutoCastForSmoke = false;
+                fishingService.SuppressFishingAutoCastForSmoke = false;
 
-                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
-                experimentalApi.ForceFishingNoWaterForSmoke = true;
+                fishingService.ResetFishingFeedbackCooldownForSmoke();
+                fishingService.ForceFishingNoWaterForSmoke = true;
                 UpdateRuntimeAutomation();
 
                 object? fishingPool = FindOrCreateFishingPoolForSmoke(fishingPoolType, dolocApi, out string poolSource);
@@ -44,13 +45,13 @@ namespace DTMAPI.GameBridge.DolocTown
                     summary = "No fishing pool was available for auto-cast smoke. " + poolSource;
                     return false;
                 }
-                experimentalApi.FishingPoolOverrideForSmoke = fishingPool;
+                fishingService.FishingPoolOverrideForSmoke = fishingPool;
 
-                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
-                experimentalApi.ForceFishingNoRodForSmoke = true;
+                fishingService.ResetFishingFeedbackCooldownForSmoke();
+                fishingService.ForceFishingNoRodForSmoke = true;
                 UpdateRuntimeAutomation();
-                experimentalApi.ForceFishingNoWaterForSmoke = false;
-                experimentalApi.ForceFishingNoRodForSmoke = false;
+                fishingService.ForceFishingNoWaterForSmoke = false;
+                fishingService.ForceFishingNoRodForSmoke = false;
 
                 object? fishingRod = GenerateFishingRodForSmoke(dolocApi);
                 if (fishingRod == null)
@@ -66,19 +67,19 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
 
                 TryEnterIdleStateForSmoke(dolocApi);
-                int beforeAutoCast = experimentalApi.FishingAutoCastApplicationCount;
-                experimentalApi.ResetFishingFeedbackCooldownForSmoke();
+                int beforeAutoCast = fishingService.FishingAutoCastApplicationCount;
+                fishingService.ResetFishingFeedbackCooldownForSmoke();
                 int afterAutoCast = beforeAutoCast;
                 for (int attempt = 1; attempt <= 24; attempt++)
                 {
                     UpdateRuntimeAutomation();
-                    afterAutoCast = experimentalApi.FishingAutoCastApplicationCount;
+                    afterAutoCast = fishingService.FishingAutoCastApplicationCount;
                     if (afterAutoCast > beforeAutoCast)
                         break;
                     Thread.Sleep(125);
                 }
-                string bridgeSummary = experimentalApi.LastFishingAutomationApplicationSummary;
-                string attemptSummary = experimentalApi.LastFishingAutoCastAttemptSummary;
+                string bridgeSummary = fishingService.LastFishingAutomationApplicationSummary;
+                string attemptSummary = fishingService.LastFishingAutoCastAttemptSummary;
                 bool invoked = afterAutoCast > beforeAutoCast && bridgeSummary.IndexOf("AutoCast", StringComparison.OrdinalIgnoreCase) >= 0;
                 if (!invoked)
                 {
@@ -95,7 +96,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", place={" + placeSummary + "}" +
                     ", toastPolicy=0.2.3-suppressed-no-water-no-rod-cast" +
                     ", bridge=" + bridgeSummary;
-                experimentalApi.SuppressFishingAutoCastForSmoke = true;
+                fishingService.SuppressFishingAutoCastForSmoke = true;
                 return true;
             }
             catch (TargetInvocationException ex) when (ex.InnerException != null)
@@ -114,21 +115,22 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 TryEnterIdleStateForSmoke(dolocApi);
                 RestoreSmokeQuickSlot(dolocApi, inventory, quickSlot, originalSlotItem);
-                if (experimentalApi != null)
+                if (fishingService != null)
                 {
-                    experimentalApi.ForceFishingNoWaterForSmoke = false;
-                    experimentalApi.ForceFishingNoRodForSmoke = false;
-                    experimentalApi.FishingPoolOverrideForSmoke = null;
+                    fishingService.ForceFishingNoWaterForSmoke = false;
+                    fishingService.ForceFishingNoRodForSmoke = false;
+                    fishingService.FishingPoolOverrideForSmoke = null;
                 }
             }
         }
 
         private SmokeAttemptResult TryExerciseAutoFishingPhaseForSmoke()
         {
+            FishingAutomationService? fishingService = FishingAutomationService;
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+                if (fishingService == null)
+                    throw new InvalidOperationException("FishingAutomation service was not registered.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -145,7 +147,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 if (!autoFishingHotkeyInjected)
                 {
-                    if (experimentalApi.TryGetEnabledFishingAutomationOwner(out string externallyEnabledOwner))
+                    if (fishingService.TryGetEnabledFishingAutomationOwner(out string externallyEnabledOwner))
                     {
                         autoFishingHotkeyInjected = true;
                         runtime.RuntimeMonitor.Log("Smoke automation observed AutoFishing already enabled before synthetic input; treating F6 input chain as external/real path. owner=" + externallyEnabledOwner + ".");
@@ -171,14 +173,14 @@ namespace DTMAPI.GameBridge.DolocTown
                     }
                 }
 
-                if (!experimentalApi.TryGetEnabledFishingAutomationOwner(out string ownerId))
+                if (!fishingService.TryGetEnabledFishingAutomationOwner(out string ownerId))
                     throw new InvalidOperationException("AutoFishing policy was not enabled after the F6 input dispatch. Is the official AutoFishing package enabled?");
 
                 if (!autoExerciseAutoFishingMovementCancelVerified)
                 {
                     runtime.RecordInputPressed("W");
                     runtime.RecordInputReleased("W");
-                    if (experimentalApi.TryGetEnabledFishingAutomationOwner(out string stillEnabledOwner))
+                    if (fishingService.TryGetEnabledFishingAutomationOwner(out string stillEnabledOwner))
                         throw new InvalidOperationException("AutoFishing movement cancel did not disable automation. owner=" + stillEnabledOwner);
 
                     autoExerciseAutoFishingMovementCancelVerified = true;
@@ -187,7 +189,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     runtime.RecordInputPressed("F6");
                     runtime.RecordInputReleased("F6");
-                    if (!experimentalApi.TryGetEnabledFishingAutomationOwner(out ownerId))
+                    if (!fishingService.TryGetEnabledFishingAutomationOwner(out ownerId))
                         throw new InvalidOperationException("AutoFishing policy did not re-enable after movement-cancel re-toggle.");
                     runtime.RuntimeMonitor.Log("Smoke automation re-enabled AutoFishing after movement-cancel proof through F6 input. owner=" + ownerId + ".");
                     runtime.SetHookStatus("Smoke.AutoFishingHotkey", "verified", "DtmApiRuntime.RecordInputPressed", "F6 enabled automation and re-enabled it after movement-cancel proof.");
@@ -232,20 +234,20 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (overwrite == null)
                         throw new MissingMethodException("AgentStateManager.Overwrite<T>(bool) was not found.");
 
-                    autoFishingApplicationBaseline = experimentalApi.FishingAutomationApplicationCount;
-                    autoFishingMiniGameCompleteBaseline = experimentalApi.FishingMiniGameCompleteApplicationCount;
+                    autoFishingApplicationBaseline = fishingService.FishingAutomationApplicationCount;
+                    autoFishingMiniGameCompleteBaseline = fishingService.FishingMiniGameCompleteApplicationCount;
                     autoFishingPhaseStartedAt = DateTimeOffset.Now;
                     autoExerciseAutoFishingPhaseStarted = true;
-                    experimentalApi.ForceFishingFishForSmoke = smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true;
+                    fishingService.ForceFishingFishForSmoke = smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true;
                     runtime.RuntimeMonitor.Log("Smoke automation entering AgentStateFishingWait for AutoFishing phase evidence. owner=" + ownerId + ", rod=" + fishingRod.GetType().Name + ", poolSource=" + poolSource + ".");
                     runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateManager.Overwrite<AgentStateFishingWait>", "Entered real AgentStateFishingWait; waiting for OnPlay instant-bite automation.");
                     overwrite.MakeGenericMethod(fishingWaitType).Invoke(stateManager, new object[] { true });
                     return SmokeAttemptResult.Pending;
                 }
 
-                if (experimentalApi.FishingAutomationApplicationCount > autoFishingApplicationBaseline)
+                if (fishingService.FishingAutomationApplicationCount > autoFishingApplicationBaseline)
                 {
-                    string summary = experimentalApi.LastFishingAutomationApplicationSummary;
+                    string summary = fishingService.LastFishingAutomationApplicationSummary;
                     if (!autoExerciseAutoFishingPhaseVerified)
                     {
                         autoExerciseAutoFishingPhaseVerified = true;
@@ -255,12 +257,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     if (smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true)
                     {
-                        if (experimentalApi.FishingMiniGameCompleteApplicationCount > autoFishingMiniGameCompleteBaseline)
+                        if (fishingService.FishingMiniGameCompleteApplicationCount > autoFishingMiniGameCompleteBaseline)
                         {
-                            experimentalApi.ForceFishingFishForSmoke = false;
-                            string completeSummary = string.IsNullOrWhiteSpace(experimentalApi.LastFishingMiniGameCompleteSummary)
-                                ? experimentalApi.LastFishingAutomationApplicationSummary
-                                : experimentalApi.LastFishingMiniGameCompleteSummary;
+                            fishingService.ForceFishingFishForSmoke = false;
+                            string completeSummary = string.IsNullOrWhiteSpace(fishingService.LastFishingMiniGameCompleteSummary)
+                                ? fishingService.LastFishingAutomationApplicationSummary
+                                : fishingService.LastFishingMiniGameCompleteSummary;
                             runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMiniGameComplete OK " + completeSummary);
                             runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", completeSummary);
                             return SmokeAttemptResult.Succeeded;
@@ -269,24 +271,24 @@ namespace DTMAPI.GameBridge.DolocTown
                         if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 30)
                             throw new TimeoutException("AutoFishing skip=false minigame completion did not apply within 30 seconds after entering AgentStateFishingWait.");
 
-                        LogAutoFishingPending("Waiting for FishingGameScrollBar.UpdateGame auto-complete skip=false. miniGameApplications=" + experimentalApi.FishingMiniGameCompleteApplicationCount + ".");
+                        LogAutoFishingPending("Waiting for FishingGameScrollBar.UpdateGame auto-complete skip=false. miniGameApplications=" + fishingService.FishingMiniGameCompleteApplicationCount + ".");
                         return SmokeAttemptResult.Pending;
                     }
 
-                    experimentalApi.ForceFishingFishForSmoke = false;
+                    fishingService.ForceFishingFishForSmoke = false;
                     return SmokeAttemptResult.Succeeded;
                 }
 
                 if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 20)
                     throw new TimeoutException("AutoFishing wait-phase automation did not apply within 20 seconds after entering AgentStateFishingWait.");
 
-                LogAutoFishingPending("Waiting for AgentStateFishingWait.OnPlay instant-bite application. applications=" + experimentalApi.FishingAutomationApplicationCount + ".");
+                LogAutoFishingPending("Waiting for AgentStateFishingWait.OnPlay instant-bite application. applications=" + fishingService.FishingAutomationApplicationCount + ".");
                 return SmokeAttemptResult.Pending;
             }
             catch (Exception ex)
             {
-                if (experimentalApi != null)
-                    experimentalApi.ForceFishingFishForSmoke = false;
+                if (fishingService != null)
+                    fishingService.ForceFishingFishForSmoke = false;
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-fishing phase exercise failed.", ex.ToString());
                 runtime.SetHookStatus("Smoke.AutoFishingPhase", "failed", "AgentStateFishingWait.OnPlay", ex.GetType().Name + ": " + ex.Message);
                 return SmokeAttemptResult.Failed;

@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -23,10 +23,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private const double SecondMotorScopedTintB = 1.00;
 
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
-        private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
         private readonly Dictionary<string, SecondMotorRuntime> secondMotors = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, SecondMotorRuntime> secondMotorsByKeyItemId = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<MachineDefinition>> machineDefinitions = new Dictionary<string, List<MachineDefinition>>(StringComparer.OrdinalIgnoreCase);
@@ -42,13 +38,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
         private readonly HashSet<object> secondMotorControllers = new HashSet<object>();
         private readonly HashSet<object> secondMotorInteractables = new HashSet<object>();
-        private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
         private ActionSpeedService? actionSpeedService;
-        private bool fishingHooksInstalled;
         private bool motorVehicleHooksInstalled;
-        private DateTimeOffset lastFishingAutoCastAt = DateTimeOffset.MinValue;
-        private DateTimeOffset lastFishingFeedbackAt = DateTimeOffset.MinValue;
-        private int fishingAutoCastApplications;
         private object? originalAgentMotorController;
         private OriginalMotorSnapshot? originalMotorSnapshotBeforeSecondRide;
         private SecondMotorRuntime? activeSecondMotor;
@@ -81,12 +72,6 @@ namespace DTMAPI.GameBridge.DolocTown
             actionSpeedService = service;
         }
 
-
-        internal int FishingAutomationApplicationCount { get; private set; }
-
-        internal string LastFishingAutomationApplicationSummary { get; private set; } = string.Empty;
-
-        internal string LastFishingMiniGameCompleteSummary { get; private set; } = string.Empty;
 
         internal int ActionSpeedApplicationCount => actionSpeedService?.ActionSpeedApplicationCount ?? 0;
 
@@ -133,29 +118,12 @@ namespace DTMAPI.GameBridge.DolocTown
             actionSpeedService?.RestoreActionSpeed(reason);
         }
 
-        internal int FishingAutoCastApplicationCount => fishingAutoCastApplications;
-
-        internal string LastFishingAutoCastAttemptSummary { get; private set; } = string.Empty;
-
-        internal int FishingMiniGameCompleteApplicationCount { get; private set; }
-
-        internal bool SuppressFishingAutoCastForSmoke { get; set; }
-
-        internal bool ForceFishingNoWaterForSmoke { get; set; }
-
-        internal bool ForceFishingNoRodForSmoke { get; set; }
-
-        internal object? FishingPoolOverrideForSmoke { get; set; }
-
-        internal bool ForceFishingFishForSmoke { get; set; }
-
         internal bool ForceMachineProductionDueForSmoke { get; set; }
 
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
             RecoverOrphanEquipmentSlotsIfNeeded();
             UpdateActiveSecondMotorRoomSnapshot();
-            UpdateFishingAutoCast();
             UpdateMachineProduction(forceMachineProductionPoll);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
         }
@@ -312,43 +280,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 name.Equals("SICKLE", StringComparison.OrdinalIgnoreCase);
         }
 
-        private int ApplyAnimatorSpeed(object? animator, double multiplier, string label, List<string> samples)
-        {
-            if (animator == null)
-                return 0;
-
-            double original = ReadAnimatorSpeed(animator, 1);
-            if (!originalAnimatorSpeeds.ContainsKey(animator))
-                originalAnimatorSpeeds[animator] = original;
-            else
-                original = originalAnimatorSpeeds[animator];
-
-            double target = original * multiplier;
-            if (!TryWriteAnimatorSpeed(animator, target))
-                return 0;
-
-            if (samples.Count < 6)
-                samples.Add(label + ":" + original.ToString("0.###") + "->" + target.ToString("0.###"));
-            return 1;
-        }
-
-        internal void RestoreExperimentalAnimatorSpeeds(string reason)
-        {
-            if (originalAnimatorSpeeds.Count == 0)
-                return;
-
-            int restored = 0;
-            foreach (KeyValuePair<object, double> entry in new List<KeyValuePair<object, double>>(originalAnimatorSpeeds))
-            {
-                if (TryWriteAnimatorSpeed(entry.Key, entry.Value))
-                    restored++;
-            }
-            originalAnimatorSpeeds.Clear();
-            runtime.RuntimeMonitor.Log("Experimental animator speeds restored reason=" + reason + " restored=" + restored + ".");
-            runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeedRestore", "experimental", "Fishing/AgentState lifecycle boundary", "reason=" + reason + ", restored=" + restored);
-        }
-
-        private static void ShowNativeSmallMessage(string message, bool error)
+        internal static void ShowNativeSmallMessage(string message, bool error)
         {
             try
             {
@@ -371,13 +303,13 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static double ReadAnimatorSpeed(object animator, double fallback)
+        internal static double ReadAnimatorSpeed(object animator, double fallback)
         {
             object? value = animator.GetType().GetProperty("speed", BindingFlags.Public | BindingFlags.Instance)?.GetValue(animator);
             return value == null ? fallback : Convert.ToDouble(value);
         }
 
-        private static bool TryWriteAnimatorSpeed(object animator, double value)
+        internal static bool TryWriteAnimatorSpeed(object animator, double value)
         {
             try
             {
@@ -393,14 +325,14 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static double ClampMultiplier(double value)
+        internal static double ClampMultiplier(double value)
         {
             if (double.IsNaN(value) || double.IsInfinity(value))
                 return 1;
             return Math.Min(4, Math.Max(1, value));
         }
 
-        private static double ClampSeconds(double value, double min, double max)
+        internal static double ClampSeconds(double value, double min, double max)
         {
             if (double.IsNaN(value) || double.IsInfinity(value))
                 return min;
@@ -520,7 +452,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.ReadStaticMember(type, name);
         }
 
-        private static bool ReadStaticBoolMember(Type? type, string name, bool fallback)
+        internal static bool ReadStaticBoolMember(Type? type, string name, bool fallback)
         {
             object? value = ReadStaticMember(type, name);
             return value is bool result ? result : fallback;
@@ -547,12 +479,12 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.ReadBoolMember(instance, name, fallback);
         }
 
-        private static bool WriteBoolMember(object instance, string name, bool value)
+        internal static bool WriteBoolMember(object instance, string name, bool value)
         {
             return WriteMember(instance, name, typeof(bool), value);
         }
 
-        private static bool WriteFloatMember(object instance, string name, float value)
+        internal static bool WriteFloatMember(object instance, string name, float value)
         {
             return WriteMember(instance, name, typeof(float), value);
         }

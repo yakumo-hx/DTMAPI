@@ -138,15 +138,15 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool debugConsoleEnterUiCheckPatched;
         private bool toolColliderHitPostfixPatched => toolColliderHitHooks?.PostfixPatched == true;
         private bool oilCoalDropRoutePatched => toolColliderHitHooks?.RoutePatched == true;
-        private bool fishingReadyEnterPatched;
-        private bool fishingCastEnterPatched;
-        private bool fishingWaitEnterPatched;
-        private bool fishingWaitPlayPatched;
-        private bool fishingMiniGameStartPatched;
-        private bool fishingMiniGameUpdatePatched;
-        private bool fishingMiniGameStopPatched;
-        private bool fishingPullEnterPatched;
-        private bool fishingPullExitPatched;
+        private bool fishingReadyEnterPatched => fishingAutomationFeature?.HookBridge.ReadyEnterPatched == true;
+        private bool fishingCastEnterPatched => fishingAutomationFeature?.HookBridge.CastEnterPatched == true;
+        private bool fishingWaitEnterPatched => fishingAutomationFeature?.HookBridge.WaitEnterPatched == true;
+        private bool fishingWaitPlayPatched => fishingAutomationFeature?.HookBridge.WaitPlayPatched == true;
+        private bool fishingMiniGameStartPatched => fishingAutomationFeature?.HookBridge.MiniGameStartPatched == true;
+        private bool fishingMiniGameUpdatePatched => fishingAutomationFeature?.HookBridge.MiniGameUpdatePatched == true;
+        private bool fishingMiniGameStopPatched => fishingAutomationFeature?.HookBridge.MiniGameStopPatched == true;
+        private bool fishingPullEnterPatched => fishingAutomationFeature?.HookBridge.PullEnterPatched == true;
+        private bool fishingPullExitPatched => fishingAutomationFeature?.HookBridge.PullExitPatched == true;
         private bool fishRoeTitlePatched => fishRoeTooltipFeature?.HookBridge.TitlePatched == true;
         private bool fishRoeDescriptionPatched => fishRoeTooltipFeature?.HookBridge.DescriptionPatched == true;
         private bool fishRoeDetailPatched => fishRoeTooltipFeature?.HookBridge.DetailPatched == true;
@@ -192,6 +192,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, GameBridgeFeatureFailureState> featureFailures = new Dictionary<string, GameBridgeFeatureFailureState>(StringComparer.OrdinalIgnoreCase);
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private CameraFeature? cameraFeature;
+        private FishingAutomationFeature? fishingAutomationFeature;
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private SaveSlotsFeature? saveSlotsFeature;
@@ -214,6 +215,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal DolocTownExperimentalBridgeApi? ExperimentalApi => experimentalApi;
 
         internal CameraFeature? CameraFeature => cameraFeature;
+
+        internal FishingAutomationService? FishingAutomationService => fishingAutomationFeature?.Service;
 
         internal FishRoeTooltipService? FishRoeTooltipService => fishRoeTooltipFeature?.Service;
 
@@ -254,7 +257,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -267,7 +270,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 UniqueID = "DTMAPI.GameBridge.DolocTown",
                 Type = "RuntimeApi"
             };
-            runtime.RegisterRuntimeApi<IFishingAutomationApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMailDeliveryApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IWeatherDebugApi>(manifest, experimentalApi);
@@ -312,6 +314,10 @@ namespace DTMAPI.GameBridge.DolocTown
             cameraFeature ??= new CameraFeature(runtime);
             if (!features.Contains(cameraFeature))
                 features.Add(cameraFeature);
+
+            fishingAutomationFeature ??= new FishingAutomationFeature(runtime);
+            if (!features.Contains(fishingAutomationFeature))
+                features.Add(fishingAutomationFeature);
 
             fishRoeTooltipFeature ??= new FishRoeTooltipFeature(runtime);
             if (!features.Contains(fishRoeTooltipFeature))
@@ -869,55 +875,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     advancedCreativeCanAffordMoneyPatched;
                 experimentalApi?.SetAdvancedCreativeHooksInstalled(advancedCreativeCostHooksReady, advancedCreativeRecipeTimePatched);
                 runtime.SetHookStatus("Debug.CreativeModeHooks", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: DolocAPI cost/afford APIs + Synthesizer.GetRecipeTime", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "Patched no-cost/no-energy checks and synthesizer recipe time for the Y-console creative toggle; GameInitConfig material/shop/spirit flags are applied only while creative mode is enabled." : "Waiting for all advanced creative cost/time targets to become patchable.");
-
-                if (!fishingReadyEnterPatched)
-                {
-                    fishingReadyEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingReady, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingReadyEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingCastEnterPatched)
-                {
-                    fishingCastEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingCast, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingCastEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingWaitEnterPatched)
-                {
-                    fishingWaitEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingWait, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingWaitEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingWaitPlayPatched)
-                {
-                    fishingWaitPlayPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingWait, Assembly-CSharp", "OnPlay", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingWaitPlayPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingMiniGameStartPatched)
-                {
-                    fishingMiniGameStartPatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "StartGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameStartPostfix), BindingFlags.Public | BindingFlags.Static), 2);
-                }
-
-                if (!fishingMiniGameUpdatePatched)
-                {
-                    fishingMiniGameUpdatePatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "UpdateGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameUpdatePostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!fishingMiniGameStopPatched)
-                {
-                    fishingMiniGameStopPatched = patcher.TryPatchPostfix("DolocTown.FishingGameScrollBar, Assembly-CSharp", "StopGame", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingMiniGameStopPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingPullEnterPatched)
-                {
-                    fishingPullEnterPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingPull, Assembly-CSharp", "OnEnter", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingPullEnterPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!fishingPullExitPatched)
-                {
-                    fishingPullExitPatched = patcher.TryPatchPostfix("DolocTown.AgentStateFishingPull, Assembly-CSharp", "OnExit", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FishingPullExitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                bool fishingHooksReady = fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched;
-                experimentalApi?.SetFishingHooksInstalled(fishingHooksReady);
-                runtime.SetHookStatus("Fishing.Automation", fishingHooksReady ? "experimental" : "pending", "Harmony Postfix: fishing state/input phases", fishingHooksReady ? "Patched fishing phase observation hooks plus native BodyController.UseFishRod auto-cast, wait-phase InstantBite, and delayed FishingGameScrollBar.UpdateGame auto-complete; F6 auto-cast and wait phase verified by AUTOFISH-001." : "Waiting for fishing phase targets to become patchable.");
 
                 if (!motorKeyUsePatched)
                 {

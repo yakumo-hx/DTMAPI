@@ -35,7 +35,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
             SafeCallback("SaveLoaded.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded"));
-            SafeCallback("SaveLoaded.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("SaveLoaded"));
+            SafeCallback("SaveLoaded.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("SaveLoaded"));
             SafeCallback("SaveLoaded.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyRuntime", () => Runtime?.NotifySaveLoaded(isNewGame));
@@ -57,7 +57,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void ReturnHomePostfix()
         {
             SafeCallback("ReturnedToTitle.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle"));
-            SafeCallback("ReturnedToTitle.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle"));
+            SafeCallback("ReturnedToTitle.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle"));
             SafeCallback("ReturnedToTitle.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyRuntime", () => Runtime?.NotifyReturnedToTitle());
@@ -280,58 +280,58 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AgentStateBaseExitPostfix()
         {
             SafeCallback("AgentStateBase.OnExit.RestoreActionSpeed", () => Bridge?.ActionSpeedService?.RestoreActionSpeed("AgentStateBase.OnExit"));
-            SafeCallback("AgentStateBase.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateBase.OnExit"));
+            SafeCallback("AgentStateBase.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("AgentStateBase.OnExit"));
         }
 
         public static void FishingReadyEnterPostfix(object __instance)
         {
-            SafePostfix("Fishing.Ready.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Ready", __instance));
+            SafePostfix("Fishing.Ready.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Ready", __instance));
         }
 
         public static void FishingCastEnterPostfix(object __instance)
         {
-            SafePostfix("Fishing.Cast.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Cast", __instance));
+            SafePostfix("Fishing.Cast.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Cast", __instance));
         }
 
         public static void FishingWaitEnterPostfix(object __instance)
         {
-            SafePostfix("Fishing.Wait.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Wait", __instance));
+            SafePostfix("Fishing.Wait.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Wait", __instance));
         }
 
         public static void FishingWaitPlayPostfix(object __instance)
         {
-            SafePostfix("Fishing.Wait.OnPlay.ApplyAutomation", () => Bridge?.ExperimentalApi?.ApplyFishingWaitAutomation(__instance));
+            SafePostfix("Fishing.Wait.OnPlay.ApplyAutomation", () => Bridge?.FishingAutomationService?.ApplyFishingWaitAutomation(__instance));
         }
 
         public static void FishingMiniGameStartPostfix(object __instance)
         {
-            SafePostfix("Fishing.MiniGame.Start", () => Bridge?.ExperimentalApi?.NotifyFishingMiniGameStart(__instance));
+            SafePostfix("Fishing.MiniGame.Start", () => Bridge?.FishingAutomationService?.NotifyFishingMiniGameStart(__instance));
         }
 
         public static void FishingMiniGameUpdatePostfix(object __instance)
         {
-            SafePostfix("Fishing.MiniGame.Update", () => Bridge?.ExperimentalApi?.ApplyFishingMiniGameAutomationTick(__instance));
+            SafePostfix("Fishing.MiniGame.Update", () => Bridge?.FishingAutomationService?.ApplyFishingMiniGameAutomationTick(__instance));
         }
 
         public static void FishingMiniGameStopPostfix(object __instance)
         {
-            SafePostfix("Fishing.MiniGame.Stop", () => Bridge?.ExperimentalApi?.NotifyFishingMiniGameStop(__instance));
+            SafePostfix("Fishing.MiniGame.Stop", () => Bridge?.FishingAutomationService?.NotifyFishingMiniGameStop(__instance));
         }
 
         public static void FishingPullEnterPostfix(object __instance)
         {
-            SafePostfix("Fishing.Pull.OnEnter.NotifyPhase", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Pull", __instance));
+            SafePostfix("Fishing.Pull.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Pull", __instance));
         }
 
         public static void FishingPullExitPostfix()
         {
             try
             {
-                SafeCallback("AgentStateFishingPull.OnExit.NotifyCooldown", () => Bridge?.ExperimentalApi?.NotifyFishingPhase("Cooldown", null));
+                SafeCallback("AgentStateFishingPull.OnExit.NotifyCooldown", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Cooldown", null));
             }
             finally
             {
-                SafeCallback("AgentStateFishingPull.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.ExperimentalApi?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit"));
+                SafeCallback("AgentStateFishingPull.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit"));
             }
         }
 

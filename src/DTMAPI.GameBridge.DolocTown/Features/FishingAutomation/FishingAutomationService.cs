@@ -4,11 +4,56 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.DolocTownExperimentalBridgeApi;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class FishingAutomationService : IFishingAutomationApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
+        private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
+        private bool fishingHooksInstalled;
+        private DateTimeOffset lastFishingAutoCastAt = DateTimeOffset.MinValue;
+        private DateTimeOffset lastFishingFeedbackAt = DateTimeOffset.MinValue;
+        private int fishingAutoCastApplications;
+
+        internal FishingAutomationService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
+        internal int FishingAutomationApplicationCount { get; private set; }
+
+        internal string LastFishingAutomationApplicationSummary { get; private set; } = string.Empty;
+
+        internal string LastFishingMiniGameCompleteSummary { get; private set; } = string.Empty;
+
+        internal int FishingAutoCastApplicationCount => fishingAutoCastApplications;
+
+        internal string LastFishingAutoCastAttemptSummary { get; private set; } = string.Empty;
+
+        internal int FishingMiniGameCompleteApplicationCount { get; private set; }
+
+        internal bool SuppressFishingAutoCastForSmoke { get; set; }
+
+        internal bool ForceFishingNoWaterForSmoke { get; set; }
+
+        internal bool ForceFishingNoRodForSmoke { get; set; }
+
+        internal object? FishingPoolOverrideForSmoke { get; set; }
+
+        internal bool ForceFishingFishForSmoke { get; set; }
+
+        internal void Update()
+        {
+            UpdateFishingAutoCast();
+        }
+
         internal void ResetFishingFeedbackCooldownForSmoke()
         {
             lastFishingFeedbackAt = DateTimeOffset.MinValue;
@@ -537,6 +582,49 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             lastFishingFeedbackAt = DateTimeOffset.Now;
             ShowNativeSmallMessage(message, error);
+        }
+
+        private void LogOnce(HashSet<string> keys, string key, string message)
+        {
+            if (!keys.Add(key))
+                return;
+            runtime.RuntimeMonitor.Log(message);
+        }
+
+        private int ApplyAnimatorSpeed(object? animator, double multiplier, string label, List<string> samples)
+        {
+            if (animator == null)
+                return 0;
+
+            double original = ReadAnimatorSpeed(animator, 1);
+            if (!originalAnimatorSpeeds.ContainsKey(animator))
+                originalAnimatorSpeeds[animator] = original;
+            else
+                original = originalAnimatorSpeeds[animator];
+
+            double target = original * multiplier;
+            if (!TryWriteAnimatorSpeed(animator, target))
+                return 0;
+
+            if (samples.Count < 6)
+                samples.Add(label + ":" + original.ToString("0.###") + "->" + target.ToString("0.###"));
+            return 1;
+        }
+
+        internal void RestoreExperimentalAnimatorSpeeds(string reason)
+        {
+            if (originalAnimatorSpeeds.Count == 0)
+                return;
+
+            int restored = 0;
+            foreach (KeyValuePair<object, double> entry in new List<KeyValuePair<object, double>>(originalAnimatorSpeeds))
+            {
+                if (TryWriteAnimatorSpeed(entry.Key, entry.Value))
+                    restored++;
+            }
+            originalAnimatorSpeeds.Clear();
+            runtime.RuntimeMonitor.Log("Experimental animator speeds restored reason=" + reason + " restored=" + restored + ".");
+            runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeedRestore", "experimental", "Fishing/AgentState lifecycle boundary", "reason=" + reason + ", restored=" + restored);
         }
     }
 }
