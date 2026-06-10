@@ -450,6 +450,13 @@ namespace DTMAPI.UnitTests
 
             try
             {
+                var olderError = new DtmErrorInfo("Example.Mod", "older error", "older stack");
+                Thread.Sleep(2);
+                var newerError = new DtmErrorInfo("Example.Mod", "failed to load asset", "stack trace");
+                var olderWarning = new DtmWarningInfo("Example.Optional", "older warning", "older warning details");
+                Thread.Sleep(2);
+                var newerWarning = new DtmWarningInfo("Example.Optional", "optional dependency version too low", "wanted 1.0");
+
                 var snapshot = new DtmDiagnosticsSnapshot(
                     DateTimeOffset.Now,
                     Array.Empty<IDtmLoadedModInfo>(),
@@ -472,38 +479,106 @@ namespace DTMAPI.UnitTests
                             "loaded",
                             "OK",
                             Path.Combine(longRootPath, "manifest.json"),
-                            longRootPath)
+                            longRootPath),
+                        new DtmModStatusInfo(
+                            "Blocked.Mod",
+                            "Blocked Mod",
+                            "1.0.0",
+                            "Code",
+                            "Workshop",
+                            "Workshop.Blocked.Mod",
+                            true,
+                            true,
+                            "official-enabled",
+                            "Blocked.dll",
+                            "ModEntry",
+                            false,
+                            "error",
+                            "missing-dependency",
+                            "Missing dependency",
+                            Path.Combine(Path.GetTempPath(), "blocked-manifest.json"),
+                            Path.Combine(Path.GetTempPath(), "Blocked")),
+                        new DtmModStatusInfo(
+                            "Warning.Mod",
+                            "Warning Mod",
+                            "1.0.0",
+                            "Code",
+                            "Workshop",
+                            "Workshop.Warning.Mod",
+                            true,
+                            true,
+                            "official-enabled",
+                            "Warning.dll",
+                            "ModEntry",
+                            true,
+                            "warning",
+                            "warning",
+                            "Loaded with warning",
+                            Path.Combine(Path.GetTempPath(), "warning-manifest.json"),
+                            Path.Combine(Path.GetTempPath(), "Warning")),
+                        new DtmModStatusInfo(
+                            "Disabled.Mod",
+                            "Disabled Mod",
+                            "1.0.0",
+                            "Code",
+                            "Local",
+                            "Local.Disabled.Mod",
+                            false,
+                            true,
+                            "official-disabled",
+                            "Disabled.dll",
+                            "ModEntry",
+                            false,
+                            "disabled",
+                            "disabled",
+                            "Disabled by official mod list",
+                            Path.Combine(Path.GetTempPath(), "disabled-manifest.json"),
+                            Path.Combine(Path.GetTempPath(), "Disabled"))
                     },
                     new IDtmErrorInfo[]
                     {
-                        new DtmErrorInfo("Example.Mod", "failed to load asset", "stack trace")
+                        olderError,
+                        newerError
                     },
                     new IDtmWarningInfo[]
                     {
-                        new DtmWarningInfo("Example.Optional", "optional dependency version too low", "wanted 1.0")
+                        olderWarning,
+                        newerWarning
                     },
                     new IHookStatusInfo[]
                     {
-                        new HookStatusInfo("Fishing.Automation", "experimental", "AgentStateFishingWait.OnPlay", "ready")
+                        new HookStatusInfo("Fishing.Automation", "experimental", "AgentStateFishingWait.OnPlay", "ready"),
+                        new HookStatusInfo("Feature.Camera", "ready", "CameraFeature", "ready"),
+                        new HookStatusInfo("Feature.Broken", "failed", "BrokenFeature", "failed"),
+                        new HookStatusInfo("Save.MoreSlotsApi", "missing", "SaveSlotsFeature", "missing")
                     },
                     new IDtmFeatureStatusInfo[]
                     {
-                        new DtmFeatureStatusInfo("FishingAutomation", "ready", "Update", true, 2, string.Empty, "cumulative=2")
+                        new DtmFeatureStatusInfo("FishingAutomation", "ready", "Update", true, 2, string.Empty, "cumulative=2"),
+                        new DtmFeatureStatusInfo("Camera", "ready", "Update", true, 0, string.Empty, "ready"),
+                        new DtmFeatureStatusInfo("BrokenFeature", "failed", "Update", false, 3, "boom", "failed")
                     },
                     latestLogPath,
                     missingReportPath);
 
                 DtmManagerViewModel model = DtmManagerViewModelFactory.FromSnapshot(snapshot);
 
-                Assert(model.Mods.Count == 1, "Manager model should map mod status rows.");
-                Assert(model.Mods[0].UniqueID == "Example.Mod", "Manager mod row should keep UniqueID.");
-                Assert(model.Mods[0].StatusCode == "loaded", "Manager mod row should keep structured status code.");
-                Assert(model.Mods[0].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
-                Assert(model.Errors.Count == 1 && model.Errors[0].Severity == "Error", "Manager model should map diagnostics errors.");
-                Assert(model.Warnings.Count == 1 && model.Warnings[0].Severity == "Warning", "Manager model should map diagnostics warnings.");
-                Assert(model.Hooks.Count == 1 && model.Hooks[0].HookId == "Fishing.Automation", "Manager model should map hook rows.");
-                Assert(model.Features.Count == 1 && model.Features[0].FeatureId == "FishingAutomation", "Manager model should map feature rows.");
-                Assert(model.Features[0].FailureCount == 2, "Manager feature row should keep cumulative failure count.");
+                Assert(model.Mods.Count == 4, "Manager model should map mod status rows.");
+                Assert(model.Mods[0].UniqueID == "Blocked.Mod" && model.Mods[1].UniqueID == "Warning.Mod" && model.Mods[2].UniqueID == "Disabled.Mod" && model.Mods[3].UniqueID == "Example.Mod", "Manager mods should sort blocked, warning, disabled, then loaded rows.");
+                Assert(model.Mods[3].StatusCode == "loaded", "Manager mod row should keep structured status code.");
+                Assert(model.Mods[3].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
+                Assert(model.Errors.Count == 2 && model.Errors[0].Severity == "Error" && model.Errors[0].Message == "failed to load asset", "Manager model should map diagnostics errors newest first.");
+                Assert(model.Warnings.Count == 2 && model.Warnings[0].Severity == "Warning" && model.Warnings[0].Message == "optional dependency version too low", "Manager model should map diagnostics warnings newest first.");
+                Assert(model.Hooks.Count == 4 && model.Hooks[0].HookId == "Feature.Broken" && model.Hooks[1].HookId == "Save.MoreSlotsApi", "Manager hooks should sort failed and missing before experimental/ready rows.");
+                Assert(model.Features.Count == 3 && model.Features[0].FeatureId == "BrokenFeature" && model.Features[1].FeatureId == "FishingAutomation" && model.Features[2].FeatureId == "Camera", "Manager features should sort failed, degraded, then ready rows.");
+                Assert(model.Features[1].FailureCount == 2, "Manager feature row should keep cumulative failure count.");
+                Assert(model.Summary.LoadedModCount == 2, "Manager summary should count loaded mods.");
+                Assert(model.Summary.BlockedModCount == 1, "Manager summary should count blocked mods.");
+                Assert(model.Summary.DisabledModCount == 1, "Manager summary should count disabled mods.");
+                Assert(model.Summary.ErrorCount == 2 && model.Summary.WarningCount == 2, "Manager summary should count diagnostics rows.");
+                Assert(model.Summary.FailedHookCount == 2, "Manager summary should count failed/missing hooks.");
+                Assert(model.Summary.FailedFeatureCount == 1, "Manager summary should count failed features.");
+                Assert(model.Summary.OverallStatus == "failed", "Manager summary should mark blocked/error state as failed.");
                 Assert(model.LatestLogPath == latestLogPath, "Manager model should expose latest log path.");
                 Assert(model.LatestReportPath == missingReportPath, "Manager model should expose latest report path.");
                 Assert(model.ExportReport.HasLatestLogPath && model.ExportReport.LatestLogExists, "Manager export status should detect an existing latest log path.");

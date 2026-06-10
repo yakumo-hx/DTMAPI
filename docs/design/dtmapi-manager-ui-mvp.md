@@ -19,6 +19,10 @@ The MVP is not a Stable API promotion gate. It consumes existing Diagnostic/Expe
 
 `DTMAPI.Core.Manager` now contains internal view-model rows and a snapshot mapper for the MVP surface. It maps `IDtmDiagnosticsSnapshot` into Mods, Errors, Warnings, Hooks, Features, latest log/report paths, and report-export path state. This is intentionally internal and covered by unit tests; it does not add public API, game UI, ConfigMenu integration, official enablement writes, or a stable Diagnostics promotion.
 
+## 2026-06-11 Summary And Sorting Note
+
+The internal Manager view model now publishes a support-oriented summary over the existing diagnostics snapshot: loaded, blocked, and disabled mod counts; error and warning counts; failed hook and feature counts; and an `OverallStatus` of `ready`, `warning`, or `failed`. Rows are pre-sorted for a real UI: blocked/error mods before warning, disabled, and loaded rows; diagnostics newest first; hooks by failed/missing/experimental/verified/ready; and features by failed/degraded/ready. These rules are internal view-model policy only and do not add public diagnostics members.
+
 ## Non-Goals
 
 - Do not implement UI in this design branch.
@@ -90,6 +94,13 @@ Expected states:
 - API too new
 - Unknown error
 
+Sorting:
+
+- Blocking/error rows first.
+- Warning rows next.
+- Officially disabled rows next.
+- Loaded/ready rows last, then source, name, and unique ID.
+
 Interactions:
 
 - Filter by status.
@@ -122,6 +133,7 @@ Detail panel:
 Behavior:
 
 - Errors and warnings come from retained diagnostics windows.
+- Errors and warnings are shown newest first.
 - If the retained window has been trimmed, show the report summary note from diagnostics export when available.
 - Optional dependency version mismatches should appear as warnings, not blocking errors.
 
@@ -152,6 +164,7 @@ Recommended grouping:
 Behavior:
 
 - Use current hook status text as diagnostics, not as proof of gameplay completion.
+- Sort failed and missing hooks first, then experimental, verified, ready, and other rows.
 - Failed hooks should provide a direct path to Errors / Warnings and Export Report.
 - Experimental/verified wording should remain exactly what the runtime reports; the UI should not relabel it as stable.
 
@@ -175,6 +188,7 @@ Detail panel:
 Behavior:
 
 - Feature statuses are read from `IDtmDiagnosticsSnapshot.FeatureStatuses`.
+- Sort failed features first, then degraded rows with historical failures, then ready rows.
 - The UI should distinguish feature-host health from gameplay/API stability. `Feature.<Id>=ready` means the host route is functioning, not that the public API is Stable.
 
 ## Config
@@ -251,6 +265,7 @@ Failure states:
 Before implementation is considered complete:
 
 - Unit coverage for view-model mapping from diagnostics snapshot rows.
+- Unit coverage for summary counters, overall status, and row ordering.
 - Manual UI check for table overflow, long mod names, long paths, and long error messages.
 - Runtime smoke with Camera and AutoFishing/ActionSpeed to prove feature/hook statuses appear.
 - Report export check verifies returned report path equals snapshot `LatestReportPath`.
