@@ -49,6 +49,7 @@ namespace DTMAPI.UnitTests
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
                 FishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation();
+                FishingAutomationServiceFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 FishingAutomationRuntimeStateResetClearsTransientState();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
@@ -1128,6 +1129,47 @@ namespace DTMAPI.UnitTests
                 IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Smoke.AutoFishingMiniGameComplete");
                 Assert(hookStatus.Details.Contains("failureCount=3", StringComparison.Ordinal), "Repeated high-frequency FishingAutomation failures should publish hook status only through the short-warning limit.");
                 Assert(!hookStatus.Details.Contains("failureCount=6", StringComparison.Ordinal), "Suppressed high-frequency FishingAutomation failures should not rewrite hook status on every repeat.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void FishingAutomationServiceFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                MethodInfo recordFailure = serviceType.GetMethod("RecordFishingAutomationFailure", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService failure throttle helper should exist.");
+                MethodInfo recordSuccess = serviceType.GetMethod("RecordFishingAutomationSuccess", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService success recovery helper should exist.");
+                IDictionary failureEpisodes = (IDictionary)(serviceType.GetField("fishingAutomationFailures", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep service failure throttle state."));
+
+                for (int i = 0; i < 6; i++)
+                    recordFailure.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update", new InvalidOperationException("mini-game-boom"), true, "Smoke.AutoFishingMiniGameComplete", "FishingGameScrollBar.UpdateGame Postfix" });
+
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.FishingAutomation") == 1, "Initial repeated FishingAutomation failures should record one diagnostics error.");
+                recordSuccess.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update" });
+                recordSuccess.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update" });
+                Assert(failureEpisodes.Count == 1, "Two stable FishingAutomation successes should not clear a failure episode yet.");
+                recordSuccess.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update" });
+                Assert(failureEpisodes.Count == 0, "Three stable FishingAutomation successes should clear the failure episode.");
+
+                recordFailure.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update", new InvalidOperationException("mini-game-boom-again"), true, "Smoke.AutoFishingMiniGameComplete", "FishingGameScrollBar.UpdateGame Postfix" });
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.FishingAutomation") == 2, "A post-recovery FishingAutomation failure should start a new diagnostics episode.");
+                IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Smoke.AutoFishingMiniGameComplete");
+                Assert(hookStatus.Details.Contains("failureCount=1", StringComparison.Ordinal), "Post-recovery FishingAutomation failure should publish as a fresh first failure.");
             }
             finally
             {
