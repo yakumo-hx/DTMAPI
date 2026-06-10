@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0006 | 2026-06-11 | verified | audit/package/web | Recorded final manager/feedback/roadmap validation, narrowed compact web package default evidence to the final current smoke set, and prepared the web-only audit package route. | [20260611-0006-manager-feedback-roadmap-web-audit-package.md](2026/20260611-0006-manager-feedback-roadmap-web-audit-package.md) |
 | 20260611-0005 | 2026-06-11 | verified | docs/manual-qa/camera | Added a dedicated CameraView manual-play handoff goal and refreshed the pending gate to latest supporting automated evidence without claiming manual pass or API promotion. | [20260611-0005-camera-view-manual-play-handoff.md](2026/20260611-0005-camera-view-manual-play-handoff.md) |
 | 20260611-0004 | 2026-06-11 | verified | docs/roadmap/community | Added the mid/long product roadmap, long-term module refactor route, player feedback/community loop, and Manager MVP support-loop requirements. | [20260611-0004-product-roadmap-community-loop.md](2026/20260611-0004-product-roadmap-community-loop.md) |
 | 20260611-0003 | 2026-06-11 | verified | core/manager-ui/runtime | Added an internal Manager runtime model provider and wired `UiRuntimeService` report export to refresh diagnostics snapshots and detect report-path mismatch. | [20260611-0003-manager-ui-runtime-skeleton.md](2026/20260611-0003-manager-ui-runtime-skeleton.md) |

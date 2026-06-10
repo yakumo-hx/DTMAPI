@@ -233,30 +233,10 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
-        [pscustomobject]@{ Id = "20260610-163813"; Label = "ToolCollider callback isolation OneAction regression" },
-        [pscustomobject]@{ Id = "20260610-163928"; Label = "ToolCollider callback isolation Oil route" },
-        [pscustomobject]@{ Id = "20260610-164830"; Label = "Feature failure recovery Camera" },
-        [pscustomobject]@{ Id = "20260610-165043"; Label = "Feature failure recovery ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-170950"; Label = "FishingAutomation feature split ActionSpeed regression" },
-        [pscustomobject]@{ Id = "20260611-002930"; Label = "Midlong follow-up final AutoFishing report-export result" },
-        [pscustomobject]@{ Id = "20260610-133933"; Label = "Feature failure status throttle Camera" },
-        [pscustomobject]@{ Id = "20260610-134145"; Label = "Feature failure status throttle ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-134259"; Label = "Feature failure status throttle SaveSlots HookProbe" },
-        [pscustomobject]@{ Id = "20260610-134406"; Label = "Feature failure status throttle AnimalViewer" },
-        [pscustomobject]@{ Id = "20260610-135456"; Label = "OilCoalDrop pending cleanup OneAction regression" },
-        [pscustomobject]@{ Id = "20260610-135605"; Label = "OilCoalDrop pending cleanup NewContent/Oil" },
-        [pscustomobject]@{ Id = "20260610-140419"; Label = "Shared ToolCollider owner OneAction regression" },
-        [pscustomobject]@{ Id = "20260610-140641"; Label = "Shared ToolCollider owner Oil route" },
-        [pscustomobject]@{ Id = "20260610-141632"; Label = "OilCoalDrop smoke case split" },
-        [pscustomobject]@{ Id = "20260610-142415"; Label = "Diagnostics aggregate counters Camera snapshot" },
-        [pscustomobject]@{ Id = "20260610-142626"; Label = "Diagnostics aggregate counters ActionSpeed snapshot" },
-        [pscustomobject]@{ Id = "20260610-120641"; Label = "API version policy BepInEx prerelease metadata failure" },
-        [pscustomobject]@{ Id = "20260610-121420"; Label = "API version policy Camera alpha-baseline" },
-        [pscustomobject]@{ Id = "20260610-121631"; Label = "API version policy ActionSpeed alpha-baseline" },
-        [pscustomobject]@{ Id = "20260608-080848"; Label = "Fishing native responsibility baseline automation" },
-        [pscustomobject]@{ Id = "20260609-170646"; Label = "Fishing animator restore evidence" },
-        [pscustomobject]@{ Id = "20260610-012052"; Label = "Fishing lifecycle isolation evidence" },
-        [pscustomobject]@{ Id = "20260610-035752"; Label = "Fishing safe fallback regression" }
+        [pscustomobject]@{ Id = "20260611-031502"; Label = "Final Camera diagnostics report-export smoke" },
+        [pscustomobject]@{ Id = "20260611-031721"; Label = "Final ActionSpeed diagnostics report-export smoke" },
+        [pscustomobject]@{ Id = "20260611-031838"; Label = "Final AutoFishing behavior and report-export smoke" },
+        [pscustomobject]@{ Id = "20260611-031954"; Label = "Final HookProbe UI/runtime smoke" }
     )
 }
 

@@ -40,15 +40,15 @@ This is a manual QA handoff, not a runtime implementation goal. Do not change Ca
 
 ## Supporting Automated Evidence
 
-Latest supporting automated evidence at handoff time:
+Latest supporting automated evidence at handoff time, refreshed after final merge validation:
 
-- `GAME-SMOKE/20260611-024629`
+- `GAME-SMOKE/20260611-031502`
 - `Zoom=Passed`
 - `Smoke.CameraPlayable=verified`
 - `Smoke.DiagnosticsSnapshot=verified`
 - `DiagnosticsReportExport=Passed`
 - `Feature.Camera=ready`
-- report: `dtmapi-report-20260611-024813.zip`
+- report: `dtmapi-report-20260611-031644.zip`
 - clean process/fatal checks
 
 This evidence does not close the manual gate by itself.

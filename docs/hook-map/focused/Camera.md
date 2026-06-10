@@ -53,7 +53,7 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Status: pending user confirmation.
   - Record: `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md`.
   - Required checks: 2x true-input movement for at least 1 minute, 4x true-input movement for at least 1 minute, background flicker review, map-boundary native clamp review, enter/exit building, return to title then reload save, and ZoomMod hotkey/config interaction.
-  - Refresh: 2026-06-11 handoff keeps the gate pending, adds `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`, and updates the supporting automated evidence to `GAME-SMOKE/20260611-024629`.
+  - Refresh: 2026-06-11 handoff keeps the gate pending, adds `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`, and updates the supporting automated evidence to final `Refactor` smoke `GAME-SMOKE/20260611-031502`.
   - Boundary: automated `Smoke.CameraPlayable` evidence is supporting proof only; `ICameraViewApi` remains `Experimental` until manual play is confirmed.
 - Passed: `tools/scripts/build.ps1 -Configuration Release`
   - Release build completed with 0 warnings and 0 errors.
@@ -74,10 +74,10 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Case-file evidence: `Smoke/Cases/CameraPlayableSmokeCase.cs` remains the CameraPlayable smoke owner; result schema and screenshot/evidence names are unchanged.
   - Report zip: `docs/debug/evidence/GAME-SMOKE/20260609-141609.zip`.
 - Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
-  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-024629` on `codex/test-diagnostics-report-export-result`.
+  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-031502` on final merged `Refactor`.
   - `result.json`: `RunStatus=Passed`, `Zoom=Passed`, `DiagnosticsReportExport=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
   - Diagnostics log: `Smoke.DiagnosticsSnapshot = verified. scenario=Camera`, `Feature.Camera = ready`, and `Smoke.CameraPlayable = verified`.
-  - Report zip pointer: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-024813.zip`.
+  - Report zip pointer: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-031644.zip`.
   - Boundary: this is still automated support evidence only; it does not close the manual play gate.
 
 ## Related Records

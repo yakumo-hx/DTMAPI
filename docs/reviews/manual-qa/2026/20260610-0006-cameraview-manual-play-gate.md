@@ -15,7 +15,7 @@
 - `ICameraZoomApi` 0.4.2 remains `Failed / ObsoleteCompatibility` after the manual failure review in `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`.
 - `ICameraViewApi` is the current ordinary playable camera route. It writes only `DolocAPI.mainCamera.orthographicSize`, keeps native camera follow/range ownership, and does not call `CameraController.RefreshResolution`, `CameraController.SetPosition`, `DolocAPI.RefreshScanner`, background compensation, fog compensation, or UI scaling.
 - Automated CameraPlayable smoke evidence is supporting evidence only. It is not a substitute for this manual play gate.
-- Latest supporting automated evidence: `GAME-SMOKE/20260611-024629`, with `Zoom=Passed`, `Feature.Camera = ready`, `Smoke.CameraPlayable = verified`, `Smoke.DiagnosticsSnapshot = verified`, `DiagnosticsReportExport=Passed`, report `dtmapi-report-20260611-024813.zip`, and clean process/fatal checks. Prior supporting diagnostics snapshot evidence remains `GAME-SMOKE/20260610-043619`.
+- Latest supporting automated evidence: final `Refactor` smoke `GAME-SMOKE/20260611-031502`, with `Zoom=Passed`, `Feature.Camera = ready`, `Smoke.CameraPlayable = verified`, `Smoke.DiagnosticsSnapshot = verified`, `DiagnosticsReportExport=Passed`, report `dtmapi-report-20260611-031644.zip`, and clean process/fatal checks. Prior supporting diagnostics report-export evidence remains `GAME-SMOKE/20260611-024629`; prior diagnostics snapshot evidence remains `GAME-SMOKE/20260610-043619`.
 
 ## Required Manual Checks
 
@@ -62,7 +62,7 @@ All checks use the local third save slot unless a later user note says otherwise
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
 - `docs/debug/issues/ISSUE-009-20260608-camera-playable-dynamic-qa.md`
 - `docs/debug/evidence/GAME-SMOKE/20260610-043619`
-- `docs/debug/evidence/GAME-SMOKE/20260611-024629`
+- `docs/debug/evidence/GAME-SMOKE/20260611-031502`
 - `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`
 - `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.goal.txt`
 - `docs/api/public-api-matrix.md`
