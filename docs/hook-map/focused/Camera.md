@@ -1,6 +1,6 @@
 # Camera Hook Map
 
-Last updated: 2026-06-10
+Last updated: 2026-06-11
 
 ## Scope
 
@@ -53,7 +53,7 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Status: pending user confirmation.
   - Record: `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md`.
   - Required checks: 2x true-input movement for at least 1 minute, 4x true-input movement for at least 1 minute, background flicker review, map-boundary native clamp review, enter/exit building, return to title then reload save, and ZoomMod hotkey/config interaction.
-  - Refresh: 2026-06-10 refresh keeps the gate pending and updates the supporting automated evidence to `GAME-SMOKE/20260610-043619`.
+  - Refresh: 2026-06-11 handoff keeps the gate pending, adds `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`, and updates the supporting automated evidence to `GAME-SMOKE/20260611-024629`.
   - Boundary: automated `Smoke.CameraPlayable` evidence is supporting proof only; `ICameraViewApi` remains `Experimental` until manual play is confirmed.
 - Passed: `tools/scripts/build.ps1 -Configuration Release`
   - Release build completed with 0 warnings and 0 errors.
@@ -73,6 +73,12 @@ This focused map covers only the ordinary playable camera view path and the obso
   - Feature-host evidence: `InstallHooks`, `SaveLoaded`, `ReturnedToTitle`, runtime refresh, and `DolocAPI.SetEnvCamera` route through the GameBridge safe-dispatch feature host into `CameraFeature`; the host records structured status fields while preserving CameraView messages.
   - Case-file evidence: `Smoke/Cases/CameraPlayableSmokeCase.cs` remains the CameraPlayable smoke owner; result schema and screenshot/evidence names are unchanged.
   - Report zip: `docs/debug/evidence/GAME-SMOKE/20260609-141609.zip`.
+- Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
+  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-024629` on `codex/test-diagnostics-report-export-result`.
+  - `result.json`: `RunStatus=Passed`, `Zoom=Passed`, `DiagnosticsReportExport=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
+  - Diagnostics log: `Smoke.DiagnosticsSnapshot = verified. scenario=Camera`, `Feature.Camera = ready`, and `Smoke.CameraPlayable = verified`.
+  - Report zip pointer: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-024813.zip`.
+  - Boundary: this is still automated support evidence only; it does not close the manual play gate.
 
 ## Related Records
 
@@ -87,6 +93,8 @@ This focused map covers only the ordinary playable camera view path and the obso
 - `docs/updates/2026/20260609-0020-feature-status-model.md`
 - `docs/updates/2026/20260610-0006-camera-view-manual-qa-gate.md`
 - `docs/updates/2026/20260610-0057-camera-view-manual-gate-refresh.md`
+- `docs/updates/2026/20260611-0005-camera-view-manual-play-handoff.md`
+- `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`
 - `docs/debug/regressions/smoke-matrix.md` row `CAMERA-PLAYABLE`
 - `docs/api/public-api-matrix.md` Camera rows
 - `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`

@@ -1,0 +1,32 @@
+/goal
+目标：执行 CameraView 手测交接并更新 pending gate；详细清单与验收标准以 docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md 为准。本轮不做代码改动、不提升 API 稳定级别。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md
+docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.goal.txt
+docs/reviews/README.md
+docs/workflows/codex-feedback-to-goal.md
+docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md
+docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/hook-map/focused/Camera.md
+docs/api/public-api-matrix.md
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；CameraView 仍为 Experimental；不要把自动 smoke 当成人工通过；不要改 hook/status ID、smoke schema、public API 或 CameraView runtime；普通 DTMAPI mod 不放 BepInEx/plugins；若产生后续实现需求，另建新的 implementation goal。
+
+版本要求：
+本轮不改代码、不升版本；当前 Refactor 仍按现有 0.5.0-alpha 开发基线处理。
+
+任务 A：按第三存档执行 2x/4x 真输入移动、背景 flicker、地图边界 clamp、建筑进出、返回标题再读档、ZoomMod hotkey/config 手测。
+任务 B：把每项结果写回 manual QA gate 或 successor review，未确认项保持 pending，失败项写清复现细节。
+任务 C：如有文档更新，同步 update record、API matrix、hook map、smoke matrix；不做 runtime 修复。
+
+完成标准：
+只有当 docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md 中所有手测项都有明确人工/user 确认或 successor review 记录了 blocker，才认为本 handoff 完成。若任何强制项未测或失败，保持 pending/blocked，报告已验证事实、缺口和下一步。
