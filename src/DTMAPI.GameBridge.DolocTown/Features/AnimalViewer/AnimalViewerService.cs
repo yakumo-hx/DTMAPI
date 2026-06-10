@@ -6,11 +6,34 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.DolocTownExperimentalBridgeApi;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class AnimalViewerService : IAnimalViewerApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, AnimalHusbandryProgressOptions> animalOptions = new Dictionary<string, AnimalHusbandryProgressOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>> animalProgressRowsByData = new Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>>();
+        private readonly List<object> activeAnimalProgressOverlayObjects = new List<object>();
+        private readonly List<AnimalProgressRenderRow> activeAnimalProgressOverlayRows = new List<AnimalProgressRenderRow>();
+        private readonly Dictionary<string, int> husbandryThresholdCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> itemTitleCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedAnimalApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool animalViewerHookInstalled;
+        private bool animalViewerUiEvidenceRecorded;
+        private bool animalPanelUiProbeLogged;
+        private bool animalViewerUiDelayedScreenshotRecorded;
+        private string? latestAnimalViewerEvidenceDir;
+        private string latestAnimalProgressOverlaySummary = string.Empty;
+        private DateTimeOffset lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
+
+        public AnimalViewerService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
         internal void SetAnimalViewerHookInstalled(bool installed)
         {
             animalViewerHookInstalled = installed;
@@ -513,7 +536,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return notEmpty && visible;
         }
 
-        private void RefreshAnimalProgressOverlayTexts(bool force)
+        internal void RefreshAnimalProgressOverlayTexts(bool force)
         {
             if (activeAnimalProgressOverlayObjects.Count == 0 || activeAnimalProgressOverlayRows.Count == 0)
                 return;
@@ -603,6 +626,47 @@ namespace DTMAPI.GameBridge.DolocTown
             object? localScale = ReadMember(sourceTransform, "localScale");
             if (localScale != null)
                 SetMemberValue(rowTransform, "localScale", localScale);
+        }
+
+        private string ResolveItemTitle(string itemId)
+        {
+            if (itemTitleCache.TryGetValue(itemId, out string title))
+                return title;
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? queryItemProto = dolocApi?.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
+                if (queryItemProto != null)
+                {
+                    object?[] args = new object?[] { itemId, null };
+                    object? result = queryItemProto.Invoke(null, args);
+                    if (result is bool ok && ok && args[1] != null)
+                    {
+                        title = args[1]!.GetType().GetProperty("Title", BindingFlags.Public | BindingFlags.Instance)?.GetValue(args[1]) as string ?? itemId;
+                        itemTitleCache[itemId] = title;
+                        return title;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to query item title for " + itemId + ".", ex.ToString());
+            }
+            itemTitleCache[itemId] = itemId;
+            return itemId;
+        }
+
+        private static object? GetDolocTables()
+        {
+            Type? dolocConfig = ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            return ReadStaticMember(dolocConfig, "Tables");
+        }
+
+        private void LogOnce(HashSet<string> keys, string key, string message)
+        {
+            if (!keys.Add(key))
+                return;
+            runtime.RuntimeMonitor.Log(message);
         }
 
         private sealed class AnimalProgressInfo

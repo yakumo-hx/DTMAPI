@@ -93,20 +93,20 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AnimalFullInfoDataCtorPostfix(object __instance, object __0)
         {
-            SafePostfix("Animals.ViewerRendering.FullInfoDataCtor", () => Bridge?.ExperimentalApi?.DecorateAnimalFullInfoData(__instance, __0));
+            SafePostfix("Animals.ViewerRendering.FullInfoDataCtor", () => Bridge?.AnimalViewerService?.DecorateAnimalFullInfoData(__instance, __0));
         }
 
         public static void AnimalViewerShowPrefix(object __instance, object __0)
         {
-            SafePostfix("Animals.ViewerRendering.ViewerShowPrefix", () => Bridge?.ExperimentalApi?.PrepareAnimalProgressOverlayBeforeShow(__instance, __0));
+            SafePostfix("Animals.ViewerRendering.ViewerShowPrefix", () => Bridge?.AnimalViewerService?.PrepareAnimalProgressOverlayBeforeShow(__instance, __0));
         }
 
         public static void AnimalViewerShowPostfix(object __instance, object __0)
         {
             SafePostfix("Animals.ViewerRendering.ViewerShowPostfix", () =>
             {
-                Bridge?.ExperimentalApi?.RenderAnimalProgressOverlay(__instance, __0);
-                if (Bridge?.ExperimentalApi?.RecordAnimalViewerUiEvidence(__instance, __0) == true)
+                Bridge?.AnimalViewerService?.RenderAnimalProgressOverlay(__instance, __0);
+                if (Bridge?.AnimalViewerService?.RecordAnimalViewerUiEvidence(__instance, __0) == true)
                     Bridge.MarkAnimalViewerUiEvidenceForSmoke();
             });
         }
@@ -115,7 +115,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             SafePostfix("Animals.ViewerRendering.PanelRefreshViewer", () =>
             {
-                if (Bridge?.ExperimentalApi?.RecordAnimalPanelUiEvidence(__instance, __0) == true)
+                if (Bridge?.AnimalViewerService?.RecordAnimalPanelUiEvidence(__instance, __0) == true)
                     Bridge.MarkAnimalViewerUiEvidenceForSmoke();
             });
         }
