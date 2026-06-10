@@ -9,6 +9,8 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Diagnostics;
+using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 using DTMAPI.GameBridge.DolocTown;
@@ -33,6 +35,7 @@ namespace DTMAPI.UnitTests
                 MinimumGameVersionWithoutDetectedGameVersionLogsWarning();
                 DiagnosticsSnapshotApiExposesRuntimeState();
                 DiagnosticsServiceCapsErrorsWarningsAndSummary();
+                ManagerViewModelMapsDiagnosticsSnapshot();
                 HelperModRegistryBindsApiRegistrationToOwner();
                 HighFrequencyEventsDisableHandlersAfterConsecutiveFailures();
                 EventRemoveIsOwnerBound();
@@ -434,6 +437,82 @@ namespace DTMAPI.UnitTests
             finally
             {
                 RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void ManagerViewModelMapsDiagnosticsSnapshot()
+        {
+            string latestLogPath = Path.GetTempFileName();
+            string longRootPath = Path.Combine(Path.GetTempPath(), "DTMAPI", new string('x', 128), "Mods", "Example");
+            string missingReportPath = Path.Combine(Path.GetTempPath(), "dtmapi-manager-missing-report.zip");
+            if (File.Exists(missingReportPath))
+                File.Delete(missingReportPath);
+
+            try
+            {
+                var snapshot = new DtmDiagnosticsSnapshot(
+                    DateTimeOffset.Now,
+                    Array.Empty<IDtmLoadedModInfo>(),
+                    new IDtmModStatusInfo[]
+                    {
+                        new DtmModStatusInfo(
+                            "Example.Mod",
+                            "Example Mod",
+                            "1.2.3",
+                            "Code",
+                            "Local",
+                            "Local.Example.Mod",
+                            true,
+                            true,
+                            "official-enabled",
+                            "Example.dll",
+                            "ModEntry",
+                            true,
+                            "loaded",
+                            "loaded",
+                            "OK",
+                            Path.Combine(longRootPath, "manifest.json"),
+                            longRootPath)
+                    },
+                    new IDtmErrorInfo[]
+                    {
+                        new DtmErrorInfo("Example.Mod", "failed to load asset", "stack trace")
+                    },
+                    new IDtmWarningInfo[]
+                    {
+                        new DtmWarningInfo("Example.Optional", "optional dependency version too low", "wanted 1.0")
+                    },
+                    new IHookStatusInfo[]
+                    {
+                        new HookStatusInfo("Fishing.Automation", "experimental", "AgentStateFishingWait.OnPlay", "ready")
+                    },
+                    new IDtmFeatureStatusInfo[]
+                    {
+                        new DtmFeatureStatusInfo("FishingAutomation", "ready", "Update", true, 2, string.Empty, "cumulative=2")
+                    },
+                    latestLogPath,
+                    missingReportPath);
+
+                DtmManagerViewModel model = DtmManagerViewModelFactory.FromSnapshot(snapshot);
+
+                Assert(model.Mods.Count == 1, "Manager model should map mod status rows.");
+                Assert(model.Mods[0].UniqueID == "Example.Mod", "Manager mod row should keep UniqueID.");
+                Assert(model.Mods[0].StatusCode == "loaded", "Manager mod row should keep structured status code.");
+                Assert(model.Mods[0].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
+                Assert(model.Errors.Count == 1 && model.Errors[0].Severity == "Error", "Manager model should map diagnostics errors.");
+                Assert(model.Warnings.Count == 1 && model.Warnings[0].Severity == "Warning", "Manager model should map diagnostics warnings.");
+                Assert(model.Hooks.Count == 1 && model.Hooks[0].HookId == "Fishing.Automation", "Manager model should map hook rows.");
+                Assert(model.Features.Count == 1 && model.Features[0].FeatureId == "FishingAutomation", "Manager model should map feature rows.");
+                Assert(model.Features[0].FailureCount == 2, "Manager feature row should keep cumulative failure count.");
+                Assert(model.LatestLogPath == latestLogPath, "Manager model should expose latest log path.");
+                Assert(model.LatestReportPath == missingReportPath, "Manager model should expose latest report path.");
+                Assert(model.ExportReport.HasLatestLogPath && model.ExportReport.LatestLogExists, "Manager export status should detect an existing latest log path.");
+                Assert(model.ExportReport.HasLatestReportPath && !model.ExportReport.LatestReportExists, "Manager export status should detect a missing latest report path.");
+                Assert(model.ExportReport.Status == "missing-report", "Manager export status should mark a missing report path.");
+            }
+            finally
+            {
+                File.Delete(latestLogPath);
             }
         }
 
