@@ -233,6 +233,12 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
+        [pscustomobject]@{ Id = "20260610-163813"; Label = "ToolCollider callback isolation OneAction regression" },
+        [pscustomobject]@{ Id = "20260610-163928"; Label = "ToolCollider callback isolation Oil route" },
+        [pscustomobject]@{ Id = "20260610-164830"; Label = "Feature failure recovery Camera" },
+        [pscustomobject]@{ Id = "20260610-165043"; Label = "Feature failure recovery ActionSpeed" },
+        [pscustomobject]@{ Id = "20260610-170839"; Label = "FishingAutomation feature split AutoFishing" },
+        [pscustomobject]@{ Id = "20260610-170950"; Label = "FishingAutomation feature split ActionSpeed regression" },
         [pscustomobject]@{ Id = "20260610-133933"; Label = "Feature failure status throttle Camera" },
         [pscustomobject]@{ Id = "20260610-134145"; Label = "Feature failure status throttle ActionSpeed" },
         [pscustomobject]@{ Id = "20260610-134259"; Label = "Feature failure status throttle SaveSlots HookProbe" },
