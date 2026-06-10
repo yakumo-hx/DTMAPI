@@ -8,11 +8,11 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly DtmApiRuntime runtime;
 
-        public ActionCompletionFeature(DtmApiRuntime runtime, Func<string, bool, string, string> rollOilDropFromCoal, Func<bool> isInteractExitPatched)
+        public ActionCompletionFeature(DtmApiRuntime runtime, Func<string, bool, string, string> rollOilDropFromCoal, Func<bool> isToolColliderPostfixPatched, Func<bool> isInteractExitPatched)
         {
             this.runtime = runtime;
             Service = new ActionCompletionService(runtime, rollOilDropFromCoal);
-            HookBridge = new ActionCompletionHookBridge(runtime, Service, isInteractExitPatched);
+            HookBridge = new ActionCompletionHookBridge(runtime, Service, isToolColliderPostfixPatched, isInteractExitPatched);
         }
 
         public string Id => "ActionCompletion";

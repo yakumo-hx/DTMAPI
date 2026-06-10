@@ -135,7 +135,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;
         private bool debugConsoleEnterUiCheckPatched;
-        private bool oilCoalDropRoutePatched => actionCompletionFeature?.HookBridge.OilCoalDropRoutePatched == true;
+        private bool toolColliderHitPostfixPatched => toolColliderHitHooks?.PostfixPatched == true;
+        private bool oilCoalDropRoutePatched => toolColliderHitHooks?.RoutePatched == true;
         private bool fishingReadyEnterPatched;
         private bool fishingCastEnterPatched;
         private bool fishingWaitEnterPatched;
@@ -197,6 +198,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private AnimalViewerFeature? animalViewerFeature;
         private OilCoalDropFeature? oilCoalDropFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
+        private ToolColliderHitHookBridge? toolColliderHitHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
 
@@ -330,15 +332,16 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!features.Contains(animalViewerFeature))
                 features.Add(animalViewerFeature);
 
-            oilCoalDropFeature ??= new OilCoalDropFeature(runtime, () => oilCoalDropRoutePatched);
-
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
+            toolColliderHitHooks ??= new ToolColliderHitHookBridge();
+
+            oilCoalDropFeature ??= new OilCoalDropFeature(runtime, () => oilCoalDropRoutePatched);
 
             actionSpeedFeature ??= new ActionSpeedFeature(runtime, agentStateLifecycleHooks);
             if (!features.Contains(actionSpeedFeature))
                 features.Add(actionSpeedFeature);
 
-            actionCompletionFeature ??= new ActionCompletionFeature(runtime, oilCoalDropFeature.Service.TryRollOilDropFromCoal, () => agentStateLifecycleHooks?.InteractExitPatched == true);
+            actionCompletionFeature ??= new ActionCompletionFeature(runtime, oilCoalDropFeature.Service.TryRollOilDropFromCoal, () => toolColliderHitPostfixPatched, () => agentStateLifecycleHooks?.InteractExitPatched == true);
             if (!features.Contains(actionCompletionFeature))
                 features.Add(actionCompletionFeature);
 
@@ -359,6 +362,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private void InstallGameBridgeFeatureHooks(HarmonyReflectionPatcher patcher)
         {
             agentStateLifecycleHooks?.InstallHooks(patcher);
+            toolColliderHitHooks?.InstallHooks(patcher);
             DispatchGameBridgeFeatures("InstallHooks", feature => feature.InstallHooks(patcher));
         }
 
