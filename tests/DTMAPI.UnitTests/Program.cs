@@ -48,6 +48,7 @@ namespace DTMAPI.UnitTests
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
+                FishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
@@ -1087,6 +1088,45 @@ namespace DTMAPI.UnitTests
                 object? service = featureType.GetProperty("Service", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(feature);
                 Assert(id == "FishingAutomation", "FishingAutomationFeature should publish the FishingAutomation feature id.");
                 Assert(service is IFishingAutomationApi, "FishingAutomationFeature should own the IFishingAutomationApi service.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void FishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                MethodInfo recordFailure = serviceType.GetMethod("RecordFishingAutomationFailure", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService failure throttle helper should exist.");
+
+                for (int i = 0; i < 6; i++)
+                {
+                    recordFailure.Invoke(service, new object?[]
+                    {
+                        "FishingAutomation.MiniGame.Update",
+                        new InvalidOperationException("mini-game-boom"),
+                        true,
+                        "Smoke.AutoFishingMiniGameComplete",
+                        "FishingGameScrollBar.UpdateGame Postfix"
+                    });
+                }
+
+                Assert(runtime.Diagnostics.GetErrors().Count(e => e.Owner == "DTMAPI.GameBridge.FishingAutomation") == 1, "Repeated FishingAutomation service failures for the same operation should record only the first diagnostics error.");
+                IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Smoke.AutoFishingMiniGameComplete");
+                Assert(hookStatus.Details.Contains("failureCount=3", StringComparison.Ordinal), "Repeated high-frequency FishingAutomation failures should publish hook status only through the short-warning limit.");
+                Assert(!hookStatus.Details.Contains("failureCount=6", StringComparison.Ordinal), "Suppressed high-frequency FishingAutomation failures should not rewrite hook status on every repeat.");
             }
             finally
             {

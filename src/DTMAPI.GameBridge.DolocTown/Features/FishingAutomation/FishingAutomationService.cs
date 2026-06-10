@@ -11,12 +11,16 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     internal sealed class FishingAutomationService : IFishingAutomationApi
     {
+        private const int FishingAutomationFailureShortLogLimit = 3;
+        private static readonly TimeSpan FishingAutomationFailureSummaryInterval = TimeSpan.FromSeconds(30);
+
         private readonly DtmApiRuntime runtime;
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
+        private readonly Dictionary<string, FishingAutomationFailureState> fishingAutomationFailures = new Dictionary<string, FishingAutomationFailureState>(StringComparer.Ordinal);
         private bool fishingHooksInstalled;
         private DateTimeOffset lastFishingAutoCastAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastFishingFeedbackAt = DateTimeOffset.MinValue;
@@ -234,7 +238,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 state.Phase = "AutoCastFailed";
                 state.LastReason = ex.GetType().Name;
                 LastFishingAutoCastAttemptSummary = "failed=" + ex.GetType().Name + ": " + ex.Message;
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Fishing auto-cast failed.", ex.ToString());
+                RecordFishingAutomationFailure("FishingAutomation.AutoCast", ex, highFrequency: true);
             }
         }
 
@@ -351,8 +355,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Fishing wait automation failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AutoFishingPhase", "failed", "AgentStateFishingWait.OnPlay Postfix", ex.GetType().Name + ": " + ex.Message);
+                RecordFishingAutomationFailure("FishingAutomation.Wait.OnPlay", ex, true, "Smoke.AutoFishingPhase", "AgentStateFishingWait.OnPlay Postfix");
                 return false;
             }
         }
@@ -524,8 +527,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Fishing minigame completion failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "failed", "FishingGameScrollBar.UpdateGame Postfix", ex.GetType().Name + ": " + ex.Message);
+                RecordFishingAutomationFailure("FishingAutomation.MiniGame.Update", ex, true, "Smoke.AutoFishingMiniGameComplete", "FishingGameScrollBar.UpdateGame Postfix");
             }
         }
 
@@ -625,6 +627,100 @@ namespace DTMAPI.GameBridge.DolocTown
             originalAnimatorSpeeds.Clear();
             runtime.RuntimeMonitor.Log("Experimental animator speeds restored reason=" + reason + " restored=" + restored + ".");
             runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeedRestore", "experimental", "Fishing/AgentState lifecycle boundary", "reason=" + reason + ", restored=" + restored);
+        }
+
+        private void RecordFishingAutomationFailure(string operation, Exception ex, bool highFrequency, string? hookId = null, string? source = null)
+        {
+            FishingAutomationFailurePublication publication = highFrequency
+                ? RecordFishingAutomationFailurePublication(operation, ex)
+                : new FishingAutomationFailurePublication(true, FishingAutomationFailureLogMode.Full, 1);
+
+            if (publication.RecordDiagnosticsError)
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.FishingAutomation", "Fishing automation service failed: " + operation + ".", ex.ToString());
+
+            if (publication.LogMode == FishingAutomationFailureLogMode.Full)
+                runtime.RuntimeMonitor.Log("Fishing automation service failed operation=" + operation + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+            else if (publication.LogMode == FishingAutomationFailureLogMode.Short)
+                runtime.RuntimeMonitor.Log("Repeated FishingAutomation service failure operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+            else if (publication.LogMode == FishingAutomationFailureLogMode.Summary)
+                runtime.RuntimeMonitor.Log("Throttled FishingAutomation service failures operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " lastError=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+
+            if (!string.IsNullOrWhiteSpace(hookId) && publication.ShouldPublishHookStatus)
+            {
+                string actualHookId = hookId!;
+                string actualSource = string.IsNullOrWhiteSpace(source) ? operation : source!;
+                string details = ex.GetType().Name + ": " + ex.Message + "; operation=" + operation + "; failureCount=" + publication.Count.ToString(CultureInfo.InvariantCulture) + ".";
+                runtime.SetHookStatus(actualHookId, "failed", actualSource, details);
+            }
+        }
+
+        private FishingAutomationFailurePublication RecordFishingAutomationFailurePublication(string operation, Exception ex)
+        {
+            string key = string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (!fishingAutomationFailures.TryGetValue(key, out FishingAutomationFailureState state))
+            {
+                state = new FishingAutomationFailureState();
+                fishingAutomationFailures[key] = state;
+            }
+
+            state.Count++;
+            state.LastError = ex.GetType().Name + ": " + ex.Message;
+            state.LastSeenAtUtc = now;
+
+            if (state.Count == 1)
+            {
+                state.LastPublishedAtUtc = now;
+                return new FishingAutomationFailurePublication(true, FishingAutomationFailureLogMode.Full, state.Count);
+            }
+
+            if (state.Count <= FishingAutomationFailureShortLogLimit)
+            {
+                state.LastPublishedAtUtc = now;
+                return new FishingAutomationFailurePublication(false, FishingAutomationFailureLogMode.Short, state.Count);
+            }
+
+            if (now - state.LastPublishedAtUtc >= FishingAutomationFailureSummaryInterval)
+            {
+                state.LastPublishedAtUtc = now;
+                return new FishingAutomationFailurePublication(false, FishingAutomationFailureLogMode.Summary, state.Count);
+            }
+
+            return new FishingAutomationFailurePublication(false, FishingAutomationFailureLogMode.None, state.Count);
+        }
+
+        private sealed class FishingAutomationFailureState
+        {
+            public int Count { get; set; }
+            public string LastError { get; set; } = string.Empty;
+            public DateTimeOffset LastSeenAtUtc { get; set; }
+            public DateTimeOffset LastPublishedAtUtc { get; set; }
+        }
+
+        private readonly struct FishingAutomationFailurePublication
+        {
+            public FishingAutomationFailurePublication(bool recordDiagnosticsError, FishingAutomationFailureLogMode logMode, int count)
+            {
+                RecordDiagnosticsError = recordDiagnosticsError;
+                LogMode = logMode;
+                Count = count;
+            }
+
+            public bool RecordDiagnosticsError { get; }
+
+            public FishingAutomationFailureLogMode LogMode { get; }
+
+            public int Count { get; }
+
+            public bool ShouldPublishHookStatus => LogMode != FishingAutomationFailureLogMode.None;
+        }
+
+        private enum FishingAutomationFailureLogMode
+        {
+            None,
+            Full,
+            Short,
+            Summary
         }
     }
 }
