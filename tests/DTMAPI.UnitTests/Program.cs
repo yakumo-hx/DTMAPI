@@ -152,6 +152,7 @@ namespace DTMAPI.UnitTests
                 string dir = NewTempGameDir();
                 WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
                 WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
+                WriteManifest(dir, "OptionalNeedsBase2", "{ \"Name\": \"Optional Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalNeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": false } ] }");
                 WriteManifest(dir, "NeedsFutureApi", "{ \"Name\": \"Needs Future API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"99.0.0\" }");
                 WriteManifest(dir, "CycleA", "{ \"Name\": \"Cycle A\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Required\": true } ] }");
                 WriteManifest(dir, "CycleB", "{ \"Name\": \"Cycle B\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Required\": true } ] }");
@@ -161,10 +162,13 @@ namespace DTMAPI.UnitTests
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Base"), "Base dependency should load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsBase2"), "Required dependency version mismatch should block loading.");
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.OptionalNeedsBase2"), "Optional dependency version mismatch should warn but not block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureApi"), "Future MinimumDTMApiVersion should block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleA"), "CycleA should be blocked and must not load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleB"), "CycleB should be blocked and must not load.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.NeedsBase2" && e.Message.Contains("依赖版本")), "Dependency version mismatch should be diagnosed.");
+                Assert(!snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.OptionalNeedsBase2"), "Optional dependency version mismatch should not be recorded as an error.");
+                Assert(snapshot.Warnings.Any(w => w.Owner == "DTMAPI.Tests.OptionalNeedsBase2" && w.Message.Contains("可选依赖版本过低")), "Optional dependency version mismatch should be recorded as a structured warning.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.FutureApi" && e.Message.Contains("API 版本")), "MinimumDTMApiVersion mismatch should be diagnosed.");
                 Assert(snapshot.Errors.Any(e => e.Message.Contains("依赖循环") && e.Details.Contains("DTMAPI.Tests.CycleA") && e.Details.Contains("DTMAPI.Tests.CycleB")), "Circular dependencies should be diagnosed with the cycle path.");
                 Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.CycleA" && e.Message.Contains("依赖循环阻止加载")), "CycleA should have an owner-specific blocked diagnostic.");
@@ -172,6 +176,8 @@ namespace DTMAPI.UnitTests
                 IDtmDiagnosticsSnapshot diagnosticsSnapshot = runtime.CreateDiagnosticsSnapshot();
                 Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.Base").StatusCode == "loaded", "Loaded dependency should expose loaded status code.");
                 Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.NeedsBase2").StatusCode == "missing-dependency", "Dependency version failures should expose a dependency status code.");
+                Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.OptionalNeedsBase2").Loaded && diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.OptionalNeedsBase2").StatusCode == "loaded", "Optional dependency warnings should leave loaded mods in loaded status.");
+                Assert(diagnosticsSnapshot.Warnings.Any(w => w.Owner == "DTMAPI.Tests.OptionalNeedsBase2"), "Diagnostics snapshot should include optional dependency warnings.");
                 Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.FutureApi").StatusCode == "api-too-new", "Future MinimumDTMApiVersion should expose api-too-new status code.");
                 Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.CycleA").StatusCode == "dependency-cycle", "CycleA should expose dependency-cycle status code.");
                 Assert(diagnosticsSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.CycleB").StatusCode == "dependency-cycle", "CycleB should expose dependency-cycle status code.");
