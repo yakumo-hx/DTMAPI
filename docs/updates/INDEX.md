@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0002 | 2026-06-11 | verified | tools/smoke/diagnostics | Added global `DiagnosticsReportExport` smoke result aggregation for Camera, ActionSpeed interaction, and AutoFishing report-export evidence while retaining `AutoFishingReportExport`. | [20260611-0002-diagnostics-report-export-result.md](2026/20260611-0002-diagnostics-report-export-result.md) |
 | 20260611-0001 | 2026-06-11 | verified | core/manager-ui/diagnostics | Added internal Manager summary counters and support-oriented row sorting over diagnostics snapshot rows without adding public API members. | [20260611-0001-manager-viewmodel-summary-counters.md](2026/20260611-0001-manager-viewmodel-summary-counters.md) |
 | 20260610-0058 | 2026-06-10 | verified | audit/package/web-upload | Refreshed the mid/long follow-up compact web audit package defaults to use final AutoFishing report-export result evidence, with no full package generation for this route. | [20260610-0058-midlong-manager-fishing-web-audit-package.md](2026/20260610-0058-midlong-manager-fishing-web-audit-package.md) |
 | 20260610-0057 | 2026-06-10 | verified | docs/manual-qa/camera | Refreshed the CameraView manual QA gate to current supporting automated evidence while keeping all manual checks pending and CameraView Experimental. | [20260610-0057-camera-view-manual-gate-refresh.md](2026/20260610-0057-camera-view-manual-gate-refresh.md) |
