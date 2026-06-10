@@ -232,6 +232,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 LastFishingAutoCastAttemptSummary = LastFishingAutomationApplicationSummary;
                 runtime.RuntimeMonitor.Log("Fishing automation auto-cast invoked native BodyController.UseFishRod summary=" + LastFishingAutomationApplicationSummary + ".");
                 runtime.SetHookStatus("Smoke.AutoFishingAutoCast", "experimental", "BodyController.UseFishRod", LastFishingAutomationApplicationSummary);
+                RecordFishingAutomationSuccess("FishingAutomation.AutoCast");
             }
             catch (Exception ex)
             {
@@ -351,6 +352,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "AgentStateFishingWait.OnPlay Postfix", LastFishingAutomationApplicationSummary);
                 if (options.SkipMiniGame && autoHook.Equals("AgentStateFishingPull", StringComparison.OrdinalIgnoreCase))
                     runtime.SetHookStatus("Smoke.AutoFishingMiniGameSkip", "verified", "AgentStateFishingWait.OnPlay -> AgentStateFishingPull", LastFishingAutomationApplicationSummary);
+                RecordFishingAutomationSuccess("FishingAutomation.Wait.OnPlay");
                 return true;
             }
             catch (Exception ex)
@@ -524,6 +526,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 LastFishingMiniGameCompleteSummary = LastFishingAutomationApplicationSummary;
                 runtime.RuntimeMonitor.Log("Fishing automation completed minigame status by " + ownerId + " through delayed FishingGameScrollBar.UpdateGame currentGameStatus=Success visibleSeconds=" + visibleSeconds.ToString("0.###", CultureInfo.InvariantCulture) + ".");
                 runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", LastFishingAutomationApplicationSummary);
+                RecordFishingAutomationSuccess("FishingAutomation.MiniGame.Update");
             }
             catch (Exception ex)
             {
@@ -698,6 +701,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             state.Count++;
+            state.ConsecutiveSuccessCount = 0;
             state.LastError = ex.GetType().Name + ": " + ex.Message;
             state.LastSeenAtUtc = now;
 
@@ -722,9 +726,21 @@ namespace DTMAPI.GameBridge.DolocTown
             return new FishingAutomationFailurePublication(false, FishingAutomationFailureLogMode.None, state.Count);
         }
 
+        private void RecordFishingAutomationSuccess(string operation)
+        {
+            string key = string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation;
+            if (!fishingAutomationFailures.TryGetValue(key, out FishingAutomationFailureState state))
+                return;
+
+            state.ConsecutiveSuccessCount++;
+            if (state.ConsecutiveSuccessCount >= 3)
+                fishingAutomationFailures.Remove(key);
+        }
+
         private sealed class FishingAutomationFailureState
         {
             public int Count { get; set; }
+            public int ConsecutiveSuccessCount { get; set; }
             public string LastError { get; set; } = string.Empty;
             public DateTimeOffset LastSeenAtUtc { get; set; }
             public DateTimeOffset LastPublishedAtUtc { get; set; }
