@@ -586,7 +586,10 @@ namespace DTMAPI.Core.Runtime
 
                 string message = dependency.Required ? "必需依赖版本过低。" : "可选依赖版本过低。";
                 string details = dependency.UniqueID + " requires >= " + dependency.MinimumVersion + ", loaded " + loadedDependency.Version + ". " + dependencyVersionReason;
-                Diagnostics.RecordError(mod.Manifest.UniqueID, message, details);
+                if (dependency.Required)
+                    Diagnostics.RecordError(mod.Manifest.UniqueID, message, details);
+                else
+                    Diagnostics.RecordWarning(mod.Manifest.UniqueID, message, details);
                 RuntimeMonitor.Log(
                     (dependency.Required ? "跳过 " + mod.Manifest.UniqueID + "：" : "诊断 " + mod.Manifest.UniqueID + "：") +
                     dependency.UniqueID + " 版本不满足要求 " + dependency.MinimumVersion + "，当前 " + loadedDependency.Version + "。",
