@@ -13,7 +13,7 @@ using DTMAPI.ModConfigMenu;
 
 namespace DTMAPI.BepInExBootstrap
 {
-    [BepInPlugin("dev.dtmapi.bootstrap", "DTMAPI Bootstrap", DtmApiRuntime.ApiVersion)]
+    [BepInPlugin("dev.dtmapi.bootstrap", "DTMAPI Bootstrap", DtmApiRuntime.BinaryVersion)]
     public sealed class BootstrapPlugin : BaseUnityPlugin
     {
         private DtmApiRuntime? runtime;

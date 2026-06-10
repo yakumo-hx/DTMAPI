@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DTMAPI.Abstractions
 {
-    [DtmApiStatus(DtmApiStatus.Stable, Since = "0.1.0")]
+    [DtmApiStatus(DtmApiStatus.Stable, Since = "0.1.0", Notes = "The helper container shape is stable; individual helper surfaces exposed from this container keep their own DtmApiStatus and may be Experimental, Diagnostic, Proposed, or StableCandidate.")]
     public interface IDtmHelper
     {
         IManifest ModManifest { get; }
