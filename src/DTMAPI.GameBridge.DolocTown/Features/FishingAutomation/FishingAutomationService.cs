@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
-using static DTMAPI.GameBridge.DolocTown.DolocTownExperimentalBridgeApi;
+using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
