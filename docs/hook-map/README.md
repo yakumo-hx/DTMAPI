@@ -25,6 +25,23 @@ Use this template:
 
 Default preference: Postfix or read-only reflection first, Prefix only when needed, Transpiler only with explicit review and regression evidence.
 
+## Diagnostic: Smoke.DiagnosticsReportExport
+
+- Status: verified
+- Public surface: none; `run-game-smoke.ps1` result-field evidence only.
+- Game build: 23465763 workshop
+- Game method/type: smoke harness log/result validation around `Smoke.DiagnosticsSnapshot = verified` entries produced by `IDtmDiagnosticsApi.GetSnapshot` after `runtime.ExportLogs()`.
+- Patch type: smoke script result aggregation; no Harmony hook, public API, hook/status ID, or gameplay behavior change.
+- Why this point: report export proof should be comparable across Camera, ActionSpeed, AutoFishing, and future diagnostics snapshot smokes instead of being locked to a per-feature result field.
+- Failure behavior: if any requested diagnostics-export scenario does not log `Smoke.DiagnosticsSnapshot = verified`, the new `DiagnosticsReportExport` result field is `Failed` and the overall smoke run fails; existing behavior fields and `AutoFishingReportExport` stay separate for compatibility.
+- Mods/tests depending on it: Camera/ActionSpeed/AutoFishing smoke harness routes and final web audit package evidence selection.
+- Evidence:
+  - Build: 2026-06-11 `git diff --check`, PowerShell script syntax parsing, Release build, and Release unit tests passed.
+  - Save: local slot 3 / index 2.
+  - Log line: `GAME-SMOKE/20260611-024629` logs `Smoke.DiagnosticsSnapshot = verified. scenario=Camera` and result `DiagnosticsReportExport=Passed`; `GAME-SMOKE/20260611-024851` logs `scenario=ActionSpeed` and result `DiagnosticsReportExport=Passed`; `GAME-SMOKE/20260611-025010` logs `scenario=AutoFishing AutoFishingMiniGameComplete report export` with result `DiagnosticsReportExport=Passed` and compatibility `AutoFishingReportExport=Passed`.
+  - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260611-024629`, `20260611-024851`, and `20260611-025010`; report zips `dtmapi-report-20260611-024813.zip`, `dtmapi-report-20260611-024931.zip`, and `dtmapi-report-20260611-025050.zip`.
+- Regression cases: DIAGNOSTICS-REPORT-EXPORT-FIELD-20260611
+
 ## Diagnostic: HookCallbackSafeFallbacks
 
 - Status: verified
