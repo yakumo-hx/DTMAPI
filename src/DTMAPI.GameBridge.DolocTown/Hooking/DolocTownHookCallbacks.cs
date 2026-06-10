@@ -35,7 +35,6 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
             SafeCallback("SaveLoaded.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded"));
-            SafeCallback("SaveLoaded.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("SaveLoaded"));
             SafeCallback("SaveLoaded.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyRuntime", () => Runtime?.NotifySaveLoaded(isNewGame));
@@ -57,7 +56,6 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void ReturnHomePostfix()
         {
             SafeCallback("ReturnedToTitle.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle"));
-            SafeCallback("ReturnedToTitle.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle"));
             SafeCallback("ReturnedToTitle.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyRuntime", () => Runtime?.NotifyReturnedToTitle());

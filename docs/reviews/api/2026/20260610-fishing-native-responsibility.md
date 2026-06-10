@@ -1,5 +1,11 @@
 # Fishing Native Responsibility Review - 2026-06-10
 
+## 2026-06-10 Addendum After Feature Split
+
+This review was written before the mechanical `FishingAutomationFeature` split. The current `Refactor` implementation now registers `IFishingAutomationApi` through `FishingAutomationFeature`, `FishingAutomationService`, and `FishingAutomationHookBridge`; it no longer uses `DolocTownExperimentalBridgeApi` as the Fishing API owner.
+
+The native responsibility conclusions below remain valid: `IFishingAutomationApi` stays Experimental, observation hooks and intervention callbacks must remain distinct, `FishingAutomationOptions.AutoRecast` and `RequireSelectedFishingRod` are documented separately as accepted-but-normalized experimental fields, and this review must not be read as current file-layout truth.
+
 ## Scope
 
 Public symbol/domain: `IFishingAutomationApi`, `FishingAutomationOptions`, `FishingAutomationState`, `Fishing.Automation`, `Fishing.MiniGameUpdate`, and AutoFishing smoke paths.
