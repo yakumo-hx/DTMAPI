@@ -237,13 +237,8 @@ function Get-DefaultEvidence {
         [pscustomobject]@{ Id = "20260610-163928"; Label = "ToolCollider callback isolation Oil route" },
         [pscustomobject]@{ Id = "20260610-164830"; Label = "Feature failure recovery Camera" },
         [pscustomobject]@{ Id = "20260610-165043"; Label = "Feature failure recovery ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-170839"; Label = "FishingAutomation feature split AutoFishing" },
         [pscustomobject]@{ Id = "20260610-170950"; Label = "FishingAutomation feature split ActionSpeed regression" },
-        [pscustomobject]@{ Id = "20260610-202047"; Label = "Fishing service failure throttle AutoFishing" },
-        [pscustomobject]@{ Id = "20260610-203301"; Label = "Fishing runtime state reset AutoFishing" },
-        [pscustomobject]@{ Id = "20260610-204134"; Label = "Fishing native helper dependency AutoFishing" },
-        [pscustomobject]@{ Id = "20260610-205153"; Label = "AutoFishing smoke case split" },
-        [pscustomobject]@{ Id = "20260610-205841"; Label = "Fishing hardening final Refactor AutoFishing" },
+        [pscustomobject]@{ Id = "20260610-221703"; Label = "AutoFishing fresh report export" },
         [pscustomobject]@{ Id = "20260610-133933"; Label = "Feature failure status throttle Camera" },
         [pscustomobject]@{ Id = "20260610-134145"; Label = "Feature failure status throttle ActionSpeed" },
         [pscustomobject]@{ Id = "20260610-134259"; Label = "Feature failure status throttle SaveSlots HookProbe" },
@@ -384,8 +379,6 @@ function Write-PackageMarkdown {
         "- GAME-SMOKE/$($item.Id) $($item.Label)"
     }
 
-    $reportFreshnessLine = "- Report freshness caveat: AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; their latest-report.txt files point to stale dtmapi-report-20260610-171030.zip, so those pointers are retained only as stale-report context and not cited as fresh report evidence."
-
     $reportLine = if ($Compact) {
         "- Web package: keeps source/docs/key logs/result files and omits screenshot-heavy DTMAPI-evidence directories plus report zip payloads. See audit/report/WEB-REPORT-NOTE.md."
     }
@@ -417,7 +410,6 @@ function Write-PackageMarkdown {
         "## Package Split",
         "",
         $reportLine,
-        $reportFreshnessLine,
         "",
         "## Boundary",
         "",
@@ -440,8 +432,6 @@ function Write-ValidationSummary {
         "- $($item.Label): GAME-SMOKE/$($item.Id)."
     }
 
-    $reportFreshnessLine = "- Report freshness caveat: AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; stale latest-report.txt pointers are preserved for context but are not fresh report evidence."
-
     $content = @(
         "# Validation Summary",
         "",
@@ -454,7 +444,6 @@ function Write-ValidationSummary {
         "- Package cleanup audit: no .git, .tools, bin, or obj directories are allowed in the package snapshot.",
         "- Package binary audit: no DLL/EXE/PDB/NuGet/RAR/7Z payloads are allowed; zip payloads are allowed only under audit/report in the full package.",
         "- Package type: $(if ($Compact) { 'web upload compact package' } else { 'full audit package' }).",
-        $reportFreshnessLine,
         "",
         "## Evidence",
         ""
@@ -477,8 +466,6 @@ function Write-ReportNotes {
         "- GAME-SMOKE/$($item.Id) $($item.Label)"
     }
 
-    $reportFreshnessLine = "AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; their latest-report.txt files point to stale dtmapi-report-20260610-171030.zip and are retained only as stale-report context."
-
     if ($Compact) {
         @(
             "# Web Report Note",
@@ -489,7 +476,7 @@ function Write-ReportNotes {
             "",
             "Compact logs, result.json, startup analysis, Unity-Player.log, BepInEx-LogOutput.log, process check, and fatal-window check are preserved under audit/evidence/GAME-SMOKE/.",
             "",
-            $reportFreshnessLine,
+            "Report zip payloads are omitted from this web package; fresh report pointers such as latest-report.txt are preserved with the compact smoke evidence when the smoke exported a report.",
             "",
             "## Evidence",
             ""
