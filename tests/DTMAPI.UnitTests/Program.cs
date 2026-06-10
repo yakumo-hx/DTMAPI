@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -31,6 +32,7 @@ namespace DTMAPI.UnitTests
                 EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll();
                 MinimumGameVersionWithoutDetectedGameVersionLogsWarning();
                 DiagnosticsSnapshotApiExposesRuntimeState();
+                DiagnosticsServiceCapsErrorsWarningsAndSummary();
                 HelperModRegistryBindsApiRegistrationToOwner();
                 HighFrequencyEventsDisableHandlersAfterConsecutiveFailures();
                 EventRemoveIsOwnerBound();
@@ -355,6 +357,41 @@ namespace DTMAPI.UnitTests
 
                 string summary = ReadZipText(report, "dtmapi-summary.txt");
                 Assert(summary.Contains("Features: 1") && summary.Contains("FEATURE Camera: ready") && summary.Contains("LatestLogPath:") && summary.Contains("LatestReportPath:"), "Diagnostic report summary should include feature status and path fields.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void DiagnosticsServiceCapsErrorsWarningsAndSummary()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                MethodInfo recordWarning = runtime.Diagnostics.GetType().GetMethod("RecordWarning", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("DiagnosticsService.RecordWarning should be available for runtime warnings.");
+
+                for (int i = 0; i < 1005; i++)
+                {
+                    runtime.Diagnostics.RecordError("DTMAPI.Tests.DiagnosticsCap", "error-" + i, "details-" + i);
+                    recordWarning.Invoke(runtime.Diagnostics, new object[] { "DTMAPI.Tests.DiagnosticsCap", "warning-" + i, "details-" + i });
+                }
+
+                IReadOnlyList<IDtmErrorInfo> errors = runtime.Diagnostics.GetErrors();
+                IReadOnlyList<IDtmWarningInfo> warnings = runtime.Diagnostics.GetWarnings();
+                Assert(errors.Count == 1000, "Diagnostics errors should be capped at 1000 entries.");
+                Assert(warnings.Count == 1000, "Diagnostics warnings should be capped at 1000 entries.");
+                Assert(errors[0].Message == "error-5" && errors[999].Message == "error-1004", "Diagnostics errors should drop the oldest entries and keep the latest window.");
+                Assert(warnings[0].Message == "warning-5" && warnings[999].Message == "warning-1004", "Diagnostics warnings should drop the oldest entries and keep the latest window.");
+
+                string report = runtime.ExportLogs();
+                string summary = ReadZipText(report, "dtmapi-summary.txt");
+                Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
+                Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
+                Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
             }
             finally
             {

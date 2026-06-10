@@ -10,12 +10,15 @@ namespace DTMAPI.Core.Diagnostics
 {
     public sealed class DiagnosticsService : IDiagnosticsHelper
     {
+        private const int MaxDiagnosticEntriesPerKind = 1000;
         private readonly RuntimePaths paths;
         private readonly List<DtmErrorInfo> errors = new List<DtmErrorInfo>();
         private readonly List<DtmWarningInfo> warnings = new List<DtmWarningInfo>();
         private readonly Dictionary<string, HookStatusInfo> hooks = new Dictionary<string, HookStatusInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DtmFeatureStatusInfo> features = new Dictionary<string, DtmFeatureStatusInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly object gate = new object();
+        private int trimmedErrorCount;
+        private int trimmedWarningCount;
 
         public DiagnosticsService(RuntimePaths paths)
         {
@@ -74,13 +77,13 @@ namespace DTMAPI.Core.Diagnostics
         public void RecordError(string owner, string message, string details)
         {
             lock (gate)
-                errors.Add(new DtmErrorInfo(owner, message, details));
+                AddBounded(errors, new DtmErrorInfo(owner, message, details), ref trimmedErrorCount);
         }
 
         internal void RecordWarning(string owner, string message, string details)
         {
             lock (gate)
-                warnings.Add(new DtmWarningInfo(owner, message, details));
+                AddBounded(warnings, new DtmWarningInfo(owner, message, details), ref trimmedWarningCount);
         }
 
         public bool SetHookStatus(string hookId, string status, string source, string details)
@@ -141,6 +144,18 @@ namespace DTMAPI.Core.Diagnostics
             IReadOnlyList<IDtmWarningInfo> warningSnapshot = GetWarnings();
             IReadOnlyList<IHookStatusInfo> hookSnapshot = GetHookStatuses();
             IReadOnlyList<IDtmFeatureStatusInfo> featureSnapshot = GetFeatureStatuses();
+            int trimmedErrors;
+            int trimmedWarnings;
+            lock (gate)
+            {
+                trimmedErrors = trimmedErrorCount;
+                trimmedWarnings = trimmedWarningCount;
+            }
+
+            string trimSummary = trimmedErrors > 0 || trimmedWarnings > 0
+                ? "DiagnosticsTrimmed: errors=" + trimmedErrors + ", warnings=" + trimmedWarnings + ", maxPerKind=" + MaxDiagnosticEntriesPerKind + "." + Environment.NewLine
+                : string.Empty;
+
             return
                 "DTMAPI diagnostic report" + Environment.NewLine +
                 "Generated: " + DateTimeOffset.Now + Environment.NewLine +
@@ -148,6 +163,7 @@ namespace DTMAPI.Core.Diagnostics
                 "Warnings: " + warningSnapshot.Count + Environment.NewLine +
                 "Hooks: " + hookSnapshot.Count + Environment.NewLine +
                 "Features: " + featureSnapshot.Count + Environment.NewLine +
+                trimSummary +
                 "LatestLogPath: " + GetLatestLogPath() + Environment.NewLine +
                 "LatestReportPath: " + GetLatestReportPath() + Environment.NewLine +
                 Environment.NewLine +
@@ -198,6 +214,17 @@ namespace DTMAPI.Core.Diagnostics
             foreach (char c in Path.GetInvalidFileNameChars())
                 value = value.Replace(c, '_');
             return value;
+        }
+
+        private static void AddBounded<T>(List<T> list, T item, ref int trimmedCount)
+        {
+            list.Add(item);
+            if (list.Count <= MaxDiagnosticEntriesPerKind)
+                return;
+
+            int removeCount = list.Count - MaxDiagnosticEntriesPerKind;
+            list.RemoveRange(0, removeCount);
+            trimmedCount += removeCount;
         }
     }
 }
