@@ -384,6 +384,8 @@ function Write-PackageMarkdown {
         "- GAME-SMOKE/$($item.Id) $($item.Label)"
     }
 
+    $reportFreshnessLine = "- Report freshness caveat: AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; their latest-report.txt files point to stale dtmapi-report-20260610-171030.zip, so those pointers are retained only as stale-report context and not cited as fresh report evidence."
+
     $reportLine = if ($Compact) {
         "- Web package: keeps source/docs/key logs/result files and omits screenshot-heavy DTMAPI-evidence directories plus report zip payloads. See audit/report/WEB-REPORT-NOTE.md."
     }
@@ -415,6 +417,7 @@ function Write-PackageMarkdown {
         "## Package Split",
         "",
         $reportLine,
+        $reportFreshnessLine,
         "",
         "## Boundary",
         "",
@@ -437,6 +440,8 @@ function Write-ValidationSummary {
         "- $($item.Label): GAME-SMOKE/$($item.Id)."
     }
 
+    $reportFreshnessLine = "- Report freshness caveat: AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; stale latest-report.txt pointers are preserved for context but are not fresh report evidence."
+
     $content = @(
         "# Validation Summary",
         "",
@@ -449,6 +454,7 @@ function Write-ValidationSummary {
         "- Package cleanup audit: no .git, .tools, bin, or obj directories are allowed in the package snapshot.",
         "- Package binary audit: no DLL/EXE/PDB/NuGet/RAR/7Z payloads are allowed; zip payloads are allowed only under audit/report in the full package.",
         "- Package type: $(if ($Compact) { 'web upload compact package' } else { 'full audit package' }).",
+        $reportFreshnessLine,
         "",
         "## Evidence",
         ""
@@ -471,6 +477,8 @@ function Write-ReportNotes {
         "- GAME-SMOKE/$($item.Id) $($item.Label)"
     }
 
+    $reportFreshnessLine = "AutoFishing hardening smoke ids 20260610-202047, 20260610-203301, 20260610-204134, 20260610-205153, and 20260610-205841 did not export fresh report zips; their latest-report.txt files point to stale dtmapi-report-20260610-171030.zip and are retained only as stale-report context."
+
     if ($Compact) {
         @(
             "# Web Report Note",
@@ -480,6 +488,8 @@ function Write-ReportNotes {
             "The full audit package contains complete evidence directories for all listed smoke ids and report zip payloads under audit/report/.",
             "",
             "Compact logs, result.json, startup analysis, Unity-Player.log, BepInEx-LogOutput.log, process check, and fatal-window check are preserved under audit/evidence/GAME-SMOKE/.",
+            "",
+            $reportFreshnessLine,
             "",
             "## Evidence",
             ""
@@ -492,6 +502,8 @@ function Write-ReportNotes {
             "The full package keeps complete selected audit/evidence/GAME-SMOKE/<id>/ directories. The compact web package keeps only key logs, result.json, startup analysis, Player/BepInEx logs, process checks, and fatal-window checks.",
             "",
             "Report zip payloads, when available, are kept under this audit/report directory.",
+            "",
+            $reportFreshnessLine,
             "",
             "Evidence included in this package:",
             ""
