@@ -788,8 +788,8 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Evidence:
   - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors after the refresh throttle.
   - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260610-095455` logs `Feature.SaveSlots = ready`, `Save.MoreSlotsApi = configured-official-archive-count`, one runtime correction `Official save slot count set 6->12 ... reason=runtime refresh native=6 target=12`, one load-boundary force refresh `Official save slot count set 12->12 ... reason=SaveLoaded native=12 target=12`, and `Smoke.MoreSavesOfficialSaveUi = verified. archiveFileCount=12, panelSlotCount=12, renderedSlots=12, path=DolocAPI.gameManager.archiveFileCount -> GameDataUiState.Show -> GameDataPanel.Render.`
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-095455` and report `dtmapi-report-20260610-095531.zip`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
+  - Log line: `GAME-SMOKE/20260610-100337` logs `Feature.SaveSlots = ready`, `Save.MoreSlotsApi = configured-official-archive-count`, one runtime correction `Official save slot count set 6->12 ... reason=runtime refresh native=6 target=12`, one load-boundary force refresh `Official save slot count set 12->12 ... reason=SaveLoaded native=12 target=12`, and `Smoke.MoreSavesOfficialSaveUi = verified. archiveFileCount=12, panelSlotCount=12, renderedSlots=12, path=DolocAPI.gameManager.archiveFileCount -> GameDataUiState.Show -> GameDataPanel.Render.` after moving the evidence recorder into `Smoke/Cases/SaveSlotsSmokeCase.cs`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-100337` and report `dtmapi-report-20260610-100413.zip`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
 - Regression cases: MANUALQA-029-README, SAVE-001, OFFICIAL-001
 
 ## Hook: Smoke.DiagnosticsSnapshot
