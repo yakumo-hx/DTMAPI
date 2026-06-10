@@ -42,17 +42,17 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void SaveLoaded(bool isNewGame)
         {
-            Service.RestoreExperimentalAnimatorSpeeds("SaveLoaded");
+            Service.ResetFishingRuntimeState("SaveLoaded");
         }
 
         public void ReturnedToTitle()
         {
-            Service.RestoreExperimentalAnimatorSpeeds("ReturnedToTitle");
+            Service.ResetFishingRuntimeState("ReturnedToTitle");
         }
 
         public void EnvironmentReset(string reason)
         {
-            Service.RestoreExperimentalAnimatorSpeeds(reason);
+            Service.ResetFishingRuntimeState(reason);
         }
     }
 }

@@ -629,6 +629,39 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeedRestore", "experimental", "Fishing/AgentState lifecycle boundary", "reason=" + reason + ", restored=" + restored);
         }
 
+        internal void ResetFishingRuntimeState(string reason)
+        {
+            int miniGameHandles = fishingMiniGameStartedAt.Count;
+            int loggedPhaseCount = loggedFishingPhases.Count;
+            int failureEpisodes = fishingAutomationFailures.Count;
+            bool smokeOverrides = SuppressFishingAutoCastForSmoke ||
+                ForceFishingNoWaterForSmoke ||
+                ForceFishingNoRodForSmoke ||
+                ForceFishingFishForSmoke ||
+                FishingPoolOverrideForSmoke != null;
+
+            fishingMiniGameStartedAt.Clear();
+            loggedFishingPhases.Clear();
+            fishingAutomationFailures.Clear();
+            lastFishingAutoCastAt = DateTimeOffset.MinValue;
+            lastFishingFeedbackAt = DateTimeOffset.MinValue;
+            LastFishingAutomationApplicationSummary = string.Empty;
+            LastFishingMiniGameCompleteSummary = string.Empty;
+            LastFishingAutoCastAttemptSummary = string.Empty;
+            SuppressFishingAutoCastForSmoke = false;
+            ForceFishingNoWaterForSmoke = false;
+            ForceFishingNoRodForSmoke = false;
+            ForceFishingFishForSmoke = false;
+            FishingPoolOverrideForSmoke = null;
+
+            RestoreExperimentalAnimatorSpeeds(reason);
+            runtime.RuntimeMonitor.Log("Fishing automation runtime state reset reason=" + reason +
+                " miniGameHandles=" + miniGameHandles.ToString(CultureInfo.InvariantCulture) +
+                " loggedPhases=" + loggedPhaseCount.ToString(CultureInfo.InvariantCulture) +
+                " failureEpisodes=" + failureEpisodes.ToString(CultureInfo.InvariantCulture) +
+                " smokeOverrides=" + (smokeOverrides ? "true" : "false") + ".");
+        }
+
         private void RecordFishingAutomationFailure(string operation, Exception ex, bool highFrequency, string? hookId = null, string? source = null)
         {
             FishingAutomationFailurePublication publication = highFrequency

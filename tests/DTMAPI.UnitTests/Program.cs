@@ -49,6 +49,7 @@ namespace DTMAPI.UnitTests
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
                 FishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation();
+                FishingAutomationRuntimeStateResetClearsTransientState();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
@@ -1134,6 +1135,66 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void FishingAutomationRuntimeStateResetClearsTransientState()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+
+                object miniGameHandle = new object();
+                object poolOverride = new object();
+                var animator = new FakeAnimator { speed = 3.0 };
+                IDictionary miniGameStartedAt = (IDictionary)(serviceType.GetField("fishingMiniGameStartedAt", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep mini-game handle state."));
+                object loggedPhases = serviceType.GetField("loggedFishingPhases", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep phase log cooldown state.");
+                IDictionary failureEpisodes = (IDictionary)(serviceType.GetField("fishingAutomationFailures", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep service failure throttle state."));
+                IDictionary animatorSpeeds = (IDictionary)(serviceType.GetField("originalAnimatorSpeeds", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep original animator speed state."));
+
+                miniGameStartedAt[miniGameHandle] = DateTimeOffset.UtcNow;
+                loggedPhases.GetType().GetMethod("Add", new[] { typeof(string) })?.Invoke(loggedPhases, new object[] { "Pull" });
+                MethodInfo recordFailure = serviceType.GetMethod("RecordFishingAutomationFailure", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService failure throttle helper should exist.");
+                recordFailure.Invoke(service, new object?[] { "FishingAutomation.MiniGame.Update", new InvalidOperationException("mini-game-boom"), true, null, null });
+                animatorSpeeds[animator] = 1.25;
+
+                serviceType.GetProperty("SuppressFishingAutoCastForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
+                serviceType.GetProperty("ForceFishingNoWaterForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
+                serviceType.GetProperty("ForceFishingNoRodForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
+                serviceType.GetProperty("ForceFishingFishForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
+                serviceType.GetProperty("FishingPoolOverrideForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, poolOverride);
+
+                MethodInfo reset = serviceType.GetMethod("ResetFishingRuntimeState", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService reset helper should exist.");
+                reset.Invoke(service, new object[] { "unit-test-reset" });
+
+                Assert(miniGameStartedAt.Count == 0, "FishingAutomation reset should clear mini-game handle state.");
+                int loggedPhaseCount = (int)(loggedPhases.GetType().GetProperty("Count")?.GetValue(loggedPhases) ?? -1);
+                Assert(loggedPhaseCount == 0, "FishingAutomation reset should clear phase log cooldown state.");
+                Assert(failureEpisodes.Count == 0, "FishingAutomation reset should clear service failure throttle state.");
+                Assert(animatorSpeeds.Count == 0 && Math.Abs(animator.speed - 1.25) < 0.0001, "FishingAutomation reset should restore and clear animator speed snapshots.");
+                Assert((bool)(serviceType.GetProperty("SuppressFishingAutoCastForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear suppress-auto-cast smoke override.");
+                Assert((bool)(serviceType.GetProperty("ForceFishingNoWaterForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear no-water smoke override.");
+                Assert((bool)(serviceType.GetProperty("ForceFishingNoRodForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear no-rod smoke override.");
+                Assert((bool)(serviceType.GetProperty("ForceFishingFishForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear force-fish smoke override.");
+                Assert(serviceType.GetProperty("FishingPoolOverrideForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) == null, "FishingAutomation reset should clear fishing-pool smoke override.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -1642,6 +1703,11 @@ namespace DTMAPI.UnitTests
         {
             public void Configure(IManifest owner, ActionCompletionOptions options) { }
             public BridgeFeatureStatus GetStatus(string uniqueId) => new BridgeFeatureStatus("test", uniqueId);
+        }
+
+        private sealed class FakeAnimator
+        {
+            public double speed { get; set; }
         }
 
         [DataContract]
