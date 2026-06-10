@@ -233,34 +233,19 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
-        [pscustomobject]@{ Id = "20260610-092620"; Label = "Hook callback failure throttle ChestLocator" },
-        [pscustomobject]@{ Id = "20260610-092819"; Label = "Hook callback failure throttle FishRoe" },
-        [pscustomobject]@{ Id = "20260610-092928"; Label = "Hook callback failure throttle ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-093037"; Label = "Hook callback failure throttle OneAction" },
-        [pscustomobject]@{ Id = "20260610-093148"; Label = "Hook callback failure throttle AutoFishing" },
-        [pscustomobject]@{ Id = "20260610-094039"; Label = "Optional dependency warning Camera snapshot" },
-        [pscustomobject]@{ Id = "20260610-094313"; Label = "Optional dependency warning ActionSpeed snapshot" },
-        [pscustomobject]@{ Id = "20260610-095455"; Label = "SaveSlots refresh throttle" },
-        [pscustomobject]@{ Id = "20260610-100337"; Label = "SaveSlots smoke case split" },
-        [pscustomobject]@{ Id = "20260610-101436"; Label = "StrongPlantingGun feature split" },
-        [pscustomobject]@{ Id = "20260610-103119"; Label = "AnimalViewer feature split" },
-        [pscustomobject]@{ Id = "20260610-012052"; Label = "Lifecycle isolation AutoFishing" },
-        [pscustomobject]@{ Id = "20260610-012242"; Label = "Lifecycle isolation ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-012400"; Label = "Lifecycle isolation OneAction" },
-        [pscustomobject]@{ Id = "20260610-012750"; Label = "Lifecycle isolation InstantSave" },
-        [pscustomobject]@{ Id = "20260610-012907"; Label = "Lifecycle isolation returned-to-title" },
-        [pscustomobject]@{ Id = "20260610-021014"; Label = "FishRoe smoke case split" },
-        [pscustomobject]@{ Id = "20260610-022332"; Label = "Diagnostics mod status Camera" },
-        [pscustomobject]@{ Id = "20260610-022543"; Label = "Diagnostics mod status ActionSpeed" },
-        [pscustomobject]@{ Id = "20260610-024237"; Label = "ChestLocator feature split" },
-        [pscustomobject]@{ Id = "20260609-170646"; Label = "Fishing animator restore" },
-        [pscustomobject]@{ Id = "20260609-171936"; Label = "ActionCompletion smoke case split" },
-        [pscustomobject]@{ Id = "20260609-172748"; Label = "Shared lifecycle OneAction" },
-        [pscustomobject]@{ Id = "20260609-172903"; Label = "Shared lifecycle ActionSpeed" },
-        [pscustomobject]@{ Id = "20260609-174124"; Label = "Native helper OneAction" },
-        [pscustomobject]@{ Id = "20260609-181533"; Label = "FishRoe tooltip feature" },
-        [pscustomobject]@{ Id = "20260609-183542"; Label = "Diagnostics snapshot Camera" },
-        [pscustomobject]@{ Id = "20260609-183757"; Label = "Diagnostics snapshot ActionSpeed" }
+        [pscustomobject]@{ Id = "20260610-113540"; Label = "Feature host throttle Camera" },
+        [pscustomobject]@{ Id = "20260610-113752"; Label = "Feature host throttle ActionSpeed" },
+        [pscustomobject]@{ Id = "20260610-113902"; Label = "Feature host throttle SaveSlots HookProbe" },
+        [pscustomobject]@{ Id = "20260610-114008"; Label = "Feature host throttle AnimalViewer" },
+        [pscustomobject]@{ Id = "20260610-115014"; Label = "Diagnostics entry cap Camera snapshot" },
+        [pscustomobject]@{ Id = "20260610-115225"; Label = "Diagnostics entry cap ActionSpeed snapshot" },
+        [pscustomobject]@{ Id = "20260610-120641"; Label = "API version alpha BepInEx failure evidence" },
+        [pscustomobject]@{ Id = "20260610-121420"; Label = "API version 0.5.0-alpha Camera" },
+        [pscustomobject]@{ Id = "20260610-121631"; Label = "API version 0.5.0-alpha ActionSpeed" },
+        [pscustomobject]@{ Id = "20260610-122933"; Label = "StrongPlantingGun smoke case split" },
+        [pscustomobject]@{ Id = "20260610-123042"; Label = "AnimalViewer smoke case split" },
+        [pscustomobject]@{ Id = "20260610-124357"; Label = "OilCoalDrop feature NewContent smoke" },
+        [pscustomobject]@{ Id = "20260610-124511"; Label = "OilCoalDrop feature OneAction regression" }
     )
 }
 
