@@ -1,11 +1,41 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using DTMAPI.Core.Runtime;
+using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class OilCoalDropService
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, PendingOilResourceHit> pendingOilResourceHits = new Dictionary<string, PendingOilResourceHit>(StringComparer.Ordinal);
+        private readonly Random random = new Random();
+
+        public OilCoalDropService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
+        internal bool ForceOilDropForSmoke { get; set; }
+
+        internal int OilMiningDropCount { get; private set; }
+
+        internal string LastOilMiningDropSummary { get; private set; } = string.Empty;
+
+        internal void PublishHookStatuses(bool toolColliderRouteReady)
+        {
+            runtime.SetHookStatus(
+                "Resources.OilCoalDrop",
+                toolColliderRouteReady ? "experimental" : "pending",
+                "Harmony Prefix/Postfix: ToolCollider.HandleTools",
+                toolColliderRouteReady
+                    ? "Patched pre-hit coal resource capture plus post-hit oil placement; waiting for OilMod coal mining smoke evidence."
+                    : "Waiting for the shared ToolCollider.HandleTools Prefix/Postfix route to become patchable.");
+        }
+
         internal void CaptureOilCoalDropBeforeToolHit(object toolCollider, object collider)
         {
             if (toolCollider == null || collider == null)
@@ -39,9 +69,7 @@ namespace DTMAPI.GameBridge.DolocTown
             pendingOilResourceHits.TryGetValue(key, out PendingOilResourceHit? pending);
             pendingOilResourceHits.Remove(key);
 
-            object? resource = TryGetDungeonResourceFromCollider(collider);
-            if (resource == null)
-                resource = pending?.Resource;
+            object? resource = TryGetDungeonResourceFromCollider(collider) ?? pending?.Resource;
             if (resource == null)
             {
                 if (ForceOilDropForSmoke)
@@ -74,7 +102,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 return string.Empty;
 
             bool forced = ForceOilDropForSmoke;
-            double roll = machineRandom.NextDouble();
+            double roll = random.NextDouble();
             if (!forced && roll > 0.08)
                 return string.Empty;
 
@@ -96,6 +124,54 @@ namespace DTMAPI.GameBridge.DolocTown
             LastOilMiningDropSummary = "source=" + source + ", resource=" + resourceName + ", forced=" + forced + ", roll=" + roll.ToString("0.0000", CultureInfo.InvariantCulture) + ", oilDrop=failed:" + message;
             runtime.SetHookStatus("OilMod.MiningDrop", "failed", "ToolCollider.HandleTools Postfix -> DolocAPI.TryPlaceInBackpack", message);
             return "oilDrop=failed:" + message;
+        }
+
+        private static bool TryPlaceNativeItemInBackpack(Type dolocApi, string itemId, int count, out string message)
+        {
+            message = string.Empty;
+            if (dolocApi == null)
+            {
+                message = "DolocAPI is not available.";
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(itemId) || count <= 0)
+            {
+                message = "Invalid item id or count.";
+                return false;
+            }
+
+            MethodInfo? queryItemProto = dolocApi.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
+            object?[] queryArgs = new object?[] { itemId, null };
+            if (!(queryItemProto?.Invoke(null, queryArgs) is bool found) || !found || queryArgs[1] == null)
+            {
+                message = "Item " + itemId + " is not present in DolocConfig.Tables.TbItem.";
+                return false;
+            }
+
+            MethodInfo? canPlaceItem = dolocApi.GetMethod("CanPlaceItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(int) }, null);
+            MethodInfo? tryPlaceInBackpack = dolocApi.GetMethod("TryPlaceInBackpack", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string), typeof(int), typeof(bool) }, null);
+            if (canPlaceItem == null || tryPlaceInBackpack == null)
+            {
+                message = "Native backpack placement methods are not available.";
+                return false;
+            }
+
+            object? canPlace = canPlaceItem.Invoke(null, new object?[] { itemId, count });
+            if (!(canPlace is bool okToPlace) || !okToPlace)
+            {
+                message = "Backpack cannot place " + itemId + " x" + count + ".";
+                return false;
+            }
+
+            object? placed = tryPlaceInBackpack.Invoke(null, new object?[] { itemId, count, false });
+            if (!(placed is bool ok) || !ok)
+            {
+                message = "DolocAPI.TryPlaceInBackpack returned false for " + itemId + " x" + count + ".";
+                return false;
+            }
+
+            message = "Placed " + itemId + " x" + count + " through native backpack placement.";
+            return true;
         }
 
         private static string BuildOilResourceHitKey(object toolCollider, object collider)
