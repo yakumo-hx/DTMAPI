@@ -1,10 +1,10 @@
 # Fishing Native Responsibility Review - 2026-06-10
 
-## 2026-06-10 Addendum After Feature Split
+## 2026-06-10 Current-State Addendum
 
 This review was written before the mechanical `FishingAutomationFeature` split. The current `Refactor` implementation now registers `IFishingAutomationApi` through `FishingAutomationFeature`, `FishingAutomationService`, and `FishingAutomationHookBridge`; it no longer uses `DolocTownExperimentalBridgeApi` as the Fishing API owner.
 
-The native responsibility conclusions below remain valid: `IFishingAutomationApi` stays Experimental, observation hooks and intervention callbacks must remain distinct, `FishingAutomationOptions.AutoRecast` and `RequireSelectedFishingRod` are documented separately as accepted-but-normalized experimental fields, and this review must not be read as current file-layout truth.
+This document now separates the original review's historical path snapshot from the current implementation after feature split. The native responsibility conclusions remain valid: `IFishingAutomationApi` stays Experimental, observation hooks and intervention callbacks must remain distinct, `FishingAutomationOptions.AutoRecast` and `RequireSelectedFishingRod` are documented separately as accepted-but-normalized experimental fields, and the ownership split must not be read as stability promotion.
 
 ## Scope
 
@@ -12,7 +12,7 @@ Public symbol/domain: `IFishingAutomationApi`, `FishingAutomationOptions`, `Fish
 
 Current matrix status: `Experimental`.
 
-Recommended status after this review: keep `Experimental`. Do not split `FishingAutomationFeature` in this branch. The current bridge reaches important native fishing owners, but the automation policy, F6 enablement, movement cancel, smoke force-fish gate, and animator restore sidecar remain DTMAPI-owned and too stateful for ordinary-mod stability.
+Recommended status after this review: keep `Experimental`. The current feature/service/hook split reaches important native fishing owners, but the automation policy, F6 enablement, movement cancel, smoke force-fish gate, multi-owner behavior, and animator restore sidecar remain DTMAPI-owned and too stateful for ordinary-mod stability.
 
 This review is docs-only. It does not change runtime, public API, mods, game files, Workshop files, official DLLs, or reverse/decompiled reference material.
 
@@ -21,9 +21,12 @@ This review is docs-only. It does not change runtime, public API, mods, game fil
 - `src/DTMAPI.Abstractions/ExperimentalGameBridge.cs`
 - `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs`
 - `src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs`
+- `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationFeature.cs`
+- `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationService.cs`
+- `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationHookBridge.cs`
 - `src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/DolocTownExperimentalBridgeApi.FishingAutomation.cs`
 - `src/DTMAPI.GameBridge.DolocTown/Hooking/DolocTownHookCallbacks.cs`
-- `src/DTMAPI.GameBridge.DolocTown/Smoke/AutoFishingSmoke.cs`
+- `src/DTMAPI.GameBridge.DolocTown/Smoke/Cases/AutoFishingSmokeCase.cs`
 - `testmods/AutoFishingMod/ModEntry.cs`
 - `testmods/AutoFishingMod/README.md`
 - `docs/api/public-api-matrix.md`
@@ -38,7 +41,7 @@ This review is docs-only. It does not change runtime, public API, mods, game fil
 - `references/doloc-town/reverse/builds/23465763_workshop_38581E/maps/Action_Interaction.md`
 - `references/doloc-town/reverse/builds/23465763_workshop_38581E/maps/Input.md`
 
-## Current DTMAPI Path
+## Historical DTMAPI Path At Original Review Time
 
 ```text
 AutoFishingMod
@@ -51,7 +54,23 @@ AutoFishingMod
   -> native BodyController.UseFishRod / AgentStateFishingWait.RollFish / StateManager.Overwrite / FishingGameScrollBar.currentGameStatus
 ```
 
-`DolocTownGameBridge` still registers `IFishingAutomationApi` through `DolocTownExperimentalBridgeApi`; there is no dedicated `FishingAutomationFeature`/service yet. This branch intentionally records the boundary only.
+At the time of the original review, `DolocTownGameBridge` still registered `IFishingAutomationApi` through `DolocTownExperimentalBridgeApi`; there was no dedicated `FishingAutomationFeature`/service yet. Keep this section as historical layout context only.
+
+## Current Implementation After Feature Split
+
+```text
+AutoFishingMod
+  -> helper.ModRegistry.GetApi<IFishingAutomationApi>("DTMAPI.GameBridge.DolocTown")
+  -> FishingAutomationFeature registers IFishingAutomationApi
+  -> FishingAutomationService owns per-owner options, runtime state, failure throttle, runtime reset, and animator restore snapshots
+  -> FishingAutomationHookBridge owns existing Fishing.Automation / Fishing.MiniGameUpdate hook installation and status publication
+  -> AutoFishingSmokeCase verifies phase/minigame behavior and fresh diagnostics report export
+  -> native BodyController.UseFishRod / AgentStateFishingWait.RollFish / StateManager.Overwrite / FishingGameScrollBar.currentGameStatus
+```
+
+Current fresh evidence `GAME-SMOKE/20260610-223354` verifies the post-split route on local save slot 3: `Feature.FishingAutomation=ready`, `Fishing.Automation=experimental`, AutoFishing hotkey/input/movement cancel, native auto-cast, wait phase, skip-false minigame completion, clean exit, and `Smoke.DiagnosticsSnapshot=verified` with matching `LatestReportPath`. The implementation also has service-level failure throttling, three-success recovery episodes, lifecycle runtime reset on save/title/environment boundaries, and the smoke case moved into `Smoke/Cases/AutoFishingSmokeCase.cs`.
+
+The current route is still a single effective automation owner at runtime. Multiple enabled owners are not merged or arbitrated by a stable policy, so ordinary mods must not treat this as a general fishing automation platform.
 
 ## Native Owner Map
 
@@ -85,7 +104,7 @@ Intervention-oriented hooks or callbacks:
 - `TryApplyFishingAnimationSpeed(...)` -> body and fishing-rod renderer animator speed writes
 - `AgentStateFishingPull.OnExit`, `AgentStateBase.OnExit`, `SaveLoaded`, `ReturnedToTitle` -> DTMAPI sidecar animator-speed restore
 
-The future feature split should preserve this distinction. Observation hooks may become a shared lifecycle/status bridge; intervention hooks should remain behind explicit `FishingAutomationOptions` policy and safety checks.
+Future Fishing work should preserve this distinction. Observation hooks may become a shared lifecycle/status bridge; intervention hooks should remain behind explicit `FishingAutomationOptions` policy and safety checks.
 
 ## Current Evidence
 
@@ -93,6 +112,7 @@ The future feature split should preserve this distinction. Observation hooks may
 - `GAME-SMOKE/20260609-170646`: animator restore evidence; logs include fast Pull animation application and `Experimental animator speeds restored reason=AgentStateFishingPull.OnExit restored=2`.
 - `GAME-SMOKE/20260610-012052`: lifecycle callback isolation evidence; AutoFishing hotkey/input/movement cancel/phase/minigame-complete passed and `FishingPullExitPostfix` kept animator restore in a finally-equivalent path.
 - `GAME-SMOKE/20260610-035752`: safe fallback wrapper regression for AutoFishing phase/minigame paths.
+- `GAME-SMOKE/20260610-223354`: current post-feature-split final Refactor evidence; AutoFishing behavior passed, `Feature.FishingAutomation=ready`, fresh diagnostics report export is verified, and `latest-report.txt` points to existing `dtmapi-report-20260610-223436.zip`.
 
 These evidence rows prove scoped AutoFishing behavior for the migrated official-local mod on local save slot 3. They do not prove a stable public fishing controller API for arbitrary mods.
 
