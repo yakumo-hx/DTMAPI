@@ -896,13 +896,13 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Public surface: `IStrongPlantingGunApi`, `StrongPlantingGunOptions`, `StrongPlantingGunRegisterResult`, and `StrongPlantingGunState`.
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.ItemFarmingGun` constructors, `ItemFarmingGun.OnUseAsTool`, `DolocTown.FarmingGunUiState.HandlePlaceToOtherSide/HandleSwapOneItem`, official `ItemFunctionFarmingGun` capacity fields, native `LinearInventory`, and official private farming-gun `CheckCanInteract` / `DoInteract` basin checks.
-- Patch type: Harmony constructor postfix and tool/UI transfer prefixes. GameBridge expands native inventory capacity and routes multi-slot use; ordinary mods register policy only.
+- Patch type: Harmony constructor postfix and tool/UI transfer prefixes owned by `StrongPlantingGunHookBridge`. `StrongPlantingGunService` expands native inventory capacity and routes multi-slot use; ordinary mods register policy only.
 - Why this point: the official farming gun already owns basin area selection and per-item plant/film/fertilizer checks. Expanding its storage and delegating to those checks keeps slot behavior compatible with native farming rules instead of hand-rolling crop placement.
 - Failure behavior: if tool/UI hooks are missing, registration reports configured/pending and native one-slot behavior remains unchanged. Inventory expansion is scoped to official farming gun instances, UI transfer hooks preserve native backpack cost/place transactions, and public DTOs expose only policy/status/count telemetry.
 - Mods/tests depending on it: `DTMAPI.StrongPlantingGunMod`, smoke harness `-AutoExerciseStrongPlantingGun`.
 - Evidence:
-  - Build: DTMAPI 0.3.1 Release build/unit passed 2026-06-06 with 0 errors; only restricted-network NU1900 warnings occurred.
+  - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors after the feature split.
   - Save: local slot 3 / index 2.
-  - Log line: `GAME-SMOKE/20260606-170334` logs `Farming.StrongPlantingGun = experimental`, `StrongPlantingGun expanded official farming gun storage owner=DTMAPI.StrongPlantingGunMod slots=3`, `StrongPlantingGun use owner=DTMAPI.StrongPlantingGunMod, slots=3, equipments=1, seedActions=1, filmActions=1, fertilizerActions=1, waterActions=0, consumed=3`, `Farming.StrongPlantingGun = verified`, and `Smoke exercise StrongPlantingGun OK ... capacities=inventory:3/total:3/line:3 ... basinState=planted:True,protected:True,fertilized:True`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260606-170334`; result has `StrongPlantingGun=true`, `SaveLoaded=true`, `ProcessExited=true`, `NoFatalInstanceWindow=true`, and `ForcedClose=false`.
-- Regression cases: STRONGPLANT-030-H
+  - Log line: `GAME-SMOKE/20260610-101436` logs `Feature.StrongPlantingGun = ready`, `Farming.StrongPlantingGun = experimental`, `StrongPlantingGun API register success=True ... toolHook=True uiHook=True`, `StrongPlantingGun use owner=DTMAPI.StrongPlantingGunMod, slots=3, equipments=1, seedActions=1, filmActions=1, fertilizerActions=1, waterActions=0, consumed=3`, `Farming.StrongPlantingGun = verified`, and `Smoke.StrongPlantingGun = verified ... capacities=inventory:3/total:3/line:3 ... basinState=planted:True,protected:True,fertilized:True`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-101436` and report `dtmapi-report-20260610-101512.zip`; result has `StrongPlantingGun=Passed`, `SaveLoaded=Passed`, `HookProbe=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed`.
+- Regression cases: STRONGPLANTINGGUN-FEATURE-SPLIT-20260610, STRONGPLANT-030-H

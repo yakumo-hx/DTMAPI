@@ -412,22 +412,22 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ItemFarmingGunCtorPostfix(object __instance)
         {
-            SafePostfix("Farming.StrongPlantingGun.ItemFarmingGunCtor", () => Bridge?.ExperimentalApi?.ExpandFarmingGunInventoryIfNeeded(__instance, "ItemFarmingGun ctor"));
+            SafePostfix("Farming.StrongPlantingGun.ItemFarmingGunCtor", () => Bridge?.StrongPlantingGunService?.ExpandFarmingGunInventoryIfNeeded(__instance, "ItemFarmingGun ctor"));
         }
 
         public static bool ItemFarmingGunOnUseAsToolPrefix(object __instance)
         {
-            return SafePrefix("Farming.StrongPlantingGun.OnUseAsTool", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunToolUse(__instance) ?? true);
+            return SafePrefix("Farming.StrongPlantingGun.OnUseAsTool", () => Bridge?.StrongPlantingGunService?.HandleStrongPlantingGunToolUse(__instance) ?? true);
         }
 
         public static bool FarmingGunUiStateHandlePlaceToOtherSidePrefix(object __instance, int __0)
         {
-            return SafePrefix("Farming.StrongPlantingGun.UiPlaceToOtherSide", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiPlaceToOtherSide(__instance, __0) ?? true);
+            return SafePrefix("Farming.StrongPlantingGun.UiPlaceToOtherSide", () => Bridge?.StrongPlantingGunService?.HandleStrongPlantingGunUiPlaceToOtherSide(__instance, __0) ?? true);
         }
 
         public static bool FarmingGunUiStateHandleSwapOneItemPrefix(object __instance, int __0)
         {
-            return SafePrefix("Farming.StrongPlantingGun.UiSwapOneItem", () => Bridge?.ExperimentalApi?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true);
+            return SafePrefix("Farming.StrongPlantingGun.UiSwapOneItem", () => Bridge?.StrongPlantingGunService?.HandleStrongPlantingGunUiSwapOneItem(__instance, __0) ?? true);
         }
 
         private static void SafeCallback(string operation, Action action)

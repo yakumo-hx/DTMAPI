@@ -65,8 +65,9 @@ namespace DTMAPI.GameBridge.DolocTown
 
             try
             {
-                if (experimentalApi == null)
-                    throw new InvalidOperationException("Experimental bridge API is not available.");
+                StrongPlantingGunService? strongPlantingGunService = StrongPlantingGunService;
+                if (strongPlantingGunService == null)
+                    throw new InvalidOperationException("StrongPlantingGun feature service is not available.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -74,7 +75,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("DolocAPI was not available.");
                 dolocApiForCleanup = dolocApi;
 
-                IStrongPlantingGunApi api = experimentalApi;
+                IStrongPlantingGunApi api = strongPlantingGunService;
                 ManifestModel owner = CreateStrongPlantingGunSmokeManifest();
                 StrongPlantingGunRegisterResult register = api.Register(owner, new StrongPlantingGunOptions
                 {
@@ -103,7 +104,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (gun == null || !IsTypeOrBase(gun.GetType(), "DolocTown.ItemFarmingGun"))
                     throw new InvalidOperationException("Could not generate official farming_gun item.");
 
-                experimentalApi.ExpandFarmingGunInventoryIfNeeded(gun, "StrongPlantingGun smoke");
+                strongPlantingGunService.ExpandFarmingGunInventoryIfNeeded(gun, "StrongPlantingGun smoke");
                 object? gunInventory = ReadMember(gun, "inventory");
                 if (gunInventory == null)
                     throw new InvalidOperationException("Generated farming gun did not expose inventory.");

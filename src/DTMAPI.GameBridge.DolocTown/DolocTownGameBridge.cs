@@ -166,10 +166,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsReloadParamsPatched;
         private bool equipmentSlotsAccessoriesInitPatched;
         private bool equipmentSlotsAccessoriesStartShowPatched;
-        private bool strongPlantingGunCtorPatched;
-        private bool strongPlantingGunToolPatched;
-        private bool strongPlantingGunUiPlacePatched;
-        private bool strongPlantingGunUiSwapOnePatched;
         private bool advancedCreativeCostEnergyPatched;
         private bool advancedCreativeCostToolEnergyPatched;
         private bool advancedCreativeHasEnoughEnergyPatched;
@@ -195,6 +191,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private SaveSlotsFeature? saveSlotsFeature;
+        private StrongPlantingGunFeature? strongPlantingGunFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -216,6 +213,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal ChestLocatorEnhancerService? ChestLocatorEnhancerService => chestLocatorEnhancerFeature?.Service;
 
         internal SaveSlotsService? SaveSlotsService => saveSlotsFeature?.Service;
+
+        internal StrongPlantingGunService? StrongPlantingGunService => strongPlantingGunFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -244,7 +243,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -270,7 +269,6 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
             RegisterGameBridgeFeatureApis(manifest);
-            runtime.RegisterRuntimeApi<IStrongPlantingGunApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<ICustomAnimalApi>(manifest, runtime.CustomEntities);
             runtime.RegisterRuntimeApi<ICustomMonsterApi>(manifest, runtime.CustomEntities);
@@ -316,6 +314,10 @@ namespace DTMAPI.GameBridge.DolocTown
             saveSlotsFeature ??= new SaveSlotsFeature(runtime);
             if (!features.Contains(saveSlotsFeature))
                 features.Add(saveSlotsFeature);
+
+            strongPlantingGunFeature ??= new StrongPlantingGunFeature(runtime);
+            if (!features.Contains(strongPlantingGunFeature))
+                features.Add(strongPlantingGunFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
@@ -665,34 +667,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     workshopReloadPatched = patcher.TryPatchPostfix("DolocTown.Config.ModManager, Assembly-CSharp", "ReloadMods", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReloadModsPostfix), BindingFlags.Public | BindingFlags.Static));
                     runtime.SetHookStatus("Workshop.ReloadMods", workshopReloadPatched ? "experimental" : "pending", "Harmony Postfix: ModManager.ReloadMods", workshopReloadPatched ? "Patched to refresh DTMAPI diagnostics after official reload." : "Waiting for Assembly-CSharp/ModManager to become patchable.");
                 }
-
-                if (!strongPlantingGunCtorPatched)
-                {
-                    MethodInfo? ctorPostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemFarmingGunCtorPostfix), BindingFlags.Public | BindingFlags.Static);
-                    strongPlantingGunCtorPatched =
-                        patcher.TryPatchConstructorPostfix("DolocTown.ItemFarmingGun, Assembly-CSharp", ctorPostfix, 2) |
-                        patcher.TryPatchConstructorPostfix("DolocTown.ItemFarmingGun, Assembly-CSharp", ctorPostfix, 3);
-                }
-
-                if (!strongPlantingGunToolPatched)
-                {
-                    strongPlantingGunToolPatched = patcher.TryPatchPrefix("DolocTown.ItemFarmingGun, Assembly-CSharp", "OnUseAsTool", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemFarmingGunOnUseAsToolPrefix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!strongPlantingGunUiPlacePatched)
-                {
-                    strongPlantingGunUiPlacePatched = patcher.TryPatchPrefix("DolocTown.FarmingGunUiState, Assembly-CSharp", "HandlePlaceToOtherSide", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FarmingGunUiStateHandlePlaceToOtherSidePrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!strongPlantingGunUiSwapOnePatched)
-                {
-                    strongPlantingGunUiSwapOnePatched = patcher.TryPatchPrefix("DolocTown.FarmingGunUiState, Assembly-CSharp", "HandleSwapOneItem", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.FarmingGunUiStateHandleSwapOneItemPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                bool strongPlantingGunToolHookReady = strongPlantingGunToolPatched;
-                bool strongPlantingGunUiHooksReady = strongPlantingGunUiPlacePatched && strongPlantingGunUiSwapOnePatched;
-                experimentalApi?.SetStrongPlantingGunHooksInstalled(strongPlantingGunToolHookReady, strongPlantingGunUiHooksReady, strongPlantingGunCtorPatched);
-                runtime.SetHookStatus("Farming.StrongPlantingGun", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "experimental" : "pending", "Harmony Prefix/Postfix: ItemFarmingGun + FarmingGunUiState", (strongPlantingGunToolHookReady && strongPlantingGunUiHooksReady) ? "Patched official farming gun construction, use, and UI transfer paths so registered DTMAPI policies can expose multi-slot seed/film/fertilizer behavior while delegating plant checks to official methods." : "Waiting for ItemFarmingGun/FarmingGunUiState targets to become patchable.");
 
                 if (!debugConsoleUseToolPatched)
                 {

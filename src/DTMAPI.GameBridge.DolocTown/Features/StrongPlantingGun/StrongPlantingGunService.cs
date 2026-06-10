@@ -1,15 +1,43 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi
+    internal sealed class StrongPlantingGunService : IStrongPlantingGunApi
     {
+        private readonly DtmApiRuntime runtime;
+        private readonly Dictionary<string, StrongPlantingGunOptions> strongPlantingGunOptions = new Dictionary<string, StrongPlantingGunOptions>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, StrongPlantingGunState> strongPlantingGunStates = new Dictionary<string, StrongPlantingGunState>(StringComparer.OrdinalIgnoreCase);
+        private bool strongPlantingGunToolHookInstalled;
+        private bool strongPlantingGunUiHookInstalled;
+
+        public StrongPlantingGunService(DtmApiRuntime runtime)
+        {
+            this.runtime = runtime;
+        }
+
+        internal void SetHooksInstalled(bool toolInstalled, bool uiInstalled, bool ctorInstalled)
+        {
+            strongPlantingGunToolHookInstalled = toolInstalled;
+            strongPlantingGunUiHookInstalled = uiInstalled;
+            foreach (KeyValuePair<string, StrongPlantingGunState> entry in strongPlantingGunStates.ToArray())
+            {
+                StrongPlantingGunState state = entry.Value;
+                state.ToolHookInstalled = toolInstalled;
+                state.UiHookInstalled = uiInstalled;
+                if (state.IsConfigured)
+                    state.Status = state.Enabled ? ((toolInstalled && uiInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook") : "disabled";
+                strongPlantingGunStates[entry.Key] = state;
+            }
+        }
+
         public StrongPlantingGunRegisterResult Register(IManifest owner, StrongPlantingGunOptions options)
         {
             if (owner == null)
@@ -647,6 +675,161 @@ namespace DTMAPI.GameBridge.DolocTown
             backpackInventory = possibleBackpackInventory;
             selectedItem = possibleSelectedItem;
             return true;
+        }
+
+        private static Type? ResolveType(string assemblyQualifiedName)
+        {
+            Type? type = Type.GetType(assemblyQualifiedName);
+            if (type != null)
+                return type;
+            int comma = assemblyQualifiedName.IndexOf(',');
+            string typeName = comma >= 0 ? assemblyQualifiedName.Substring(0, comma).Trim() : assemblyQualifiedName;
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    type = assembly.GetType(typeName, throwOnError: false);
+                    if (type != null)
+                        return type;
+                }
+                catch
+                {
+                }
+            }
+            return null;
+        }
+
+        private static object? ReadStaticMember(Type? type, string name)
+        {
+            if (type == null)
+                return null;
+
+            FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (field != null)
+            {
+                try
+                {
+                    object? value = field.GetValue(null);
+                    if (value != null)
+                        return value;
+                }
+                catch
+                {
+                }
+            }
+
+            PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (property != null)
+            {
+                try
+                {
+                    return property.GetValue(null);
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+
+        private static object? ReadMember(object instance, string name)
+        {
+            for (Type? type = instance.GetType(); type != null; type = type.BaseType)
+            {
+                FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    try
+                    {
+                        object? value = field.GetValue(instance);
+                        if (value != null)
+                            return value;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property != null)
+                {
+                    try
+                    {
+                        object? value = property.GetValue(instance);
+                        if (value != null)
+                            return value;
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static int ReadIntMember(object instance, string name, int fallback)
+        {
+            object? value = ReadMember(instance, name);
+            if (value is int result)
+                return result;
+            if (value is long longValue)
+                return (int)longValue;
+            return value is short shortValue ? shortValue : fallback;
+        }
+
+        private static bool ReadBoolMember(object instance, string name, bool fallback)
+        {
+            object? value = ReadMember(instance, name);
+            return value is bool result ? result : fallback;
+        }
+
+        private static string ReadStringMember(object instance, string name)
+        {
+            object? value = ReadMember(instance, name);
+            return value as string ?? string.Empty;
+        }
+
+        private static MethodInfo? FindMethodInHierarchy(Type? type, string name, int parameterCount)
+        {
+            for (Type? current = type; current != null; current = current.BaseType)
+            {
+                MethodInfo? method = current.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                    .FirstOrDefault(candidate => candidate.Name == name && candidate.GetParameters().Length == parameterCount);
+                if (method != null)
+                    return method;
+            }
+
+            return null;
+        }
+
+        private static bool IsTypeOrBase(Type type, string fullName)
+        {
+            for (Type? current = type; current != null; current = current.BaseType)
+            {
+                if (string.Equals(current.FullName, fullName, StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        private static IEnumerable<object> EnumerateObjects(object? value)
+        {
+            if (value == null)
+                yield break;
+
+            if (value is IEnumerable enumerable)
+            {
+                foreach (object? item in enumerable)
+                {
+                    if (item != null)
+                        yield return item;
+                }
+                yield break;
+            }
+
+            yield return value;
         }
 
         private sealed class StrongPlantingGunSlotItem
