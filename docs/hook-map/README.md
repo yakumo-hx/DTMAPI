@@ -571,17 +571,18 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Public surface: `IAnimalViewerApi.ConfigureSpecialProduceProgress`
 - Game build: 23465763 workshop
 - Game method/type: `DolocTown.UI.AnimalFullInfoData(Animal)` constructor, `DolocTown.UI.AnimalViewer.Show`, `DolocTown.UI.AnimalPanel.RefreshViewer`, native `ProgressBar` cloning, `Animal.husbandryValues`, `Animal.protoName`, and `DolocTown.Config.DolocConfig.Tables.TbHusbandry` enumeration/threshold lookup.
-- Patch type: Harmony constructor/Viewer/Panel Postfix plus `AnimalViewer.Show` Prefix preparation, cached GameBridge reflection, and smoke-only official `AnimalPanelUiState` open path. 0.3.1 pre-fills independent cloned native progress rows before the viewer is visible, keeping native mood/state data intact.
+- Patch type: `AnimalViewerFeature`/`AnimalViewerHookBridge` owned Harmony constructor/Viewer/Panel Postfix plus `AnimalViewer.Show` Prefix preparation, cached GameBridge reflection, and smoke-only official `AnimalPanelUiState` open path. 0.3.1 pre-fills independent cloned native progress rows before the viewer is visible, keeping native mood/state data intact.
 - Why this point: AnimalHusbandryProgress stays an event/config mod while GameBridge owns private animal viewer data extraction and UI extension.
 - Failure behavior: display policy can be registered; if viewer hooks do not install, no progress text is added and diagnostics stay pending/failed. The 0.3.1 path records whether hidden-produce rows were prefilled, independent, and whether mood/state fields were overridden.
 - Mods/tests depending on it: `Yuuka.DTMAPI.AnimalHusbandryProgress`
 - Evidence:
   - Build: DTMAPI 0.3.1 Release build/unit passed 2026-06-06 with 0 errors; earlier 0.2.3 build passed 2026-06-03
   - Save: local slot 3 / index 2
-  - Log line: 0.3.1 Animal-only smoke `GAME-SMOKE/20260606-150721` logs `Smoke.AnimalViewerProgressUi = pending. independent-row pending=羊毛脂 0/100`, then `Smoke.AnimalViewerProgressUi = verified. independent cloned ProgressBar prefilled rows=1, primary=羊毛脂 0/100, moodOverride=False, stateDescriptionOverride=False`.
+  - Log line: 2026-06-10 feature split smoke `GAME-SMOKE/20260610-103119` logs `Feature.AnimalViewer = ready`, `Animals.ViewerRendering = verified`, `Smoke.AnimalViewerProgressUi = verified. independent cloned ProgressBar prefilled rows=1, primary=羊毛脂 0/100, moodOverride=False, stateDescriptionOverride=False`, `Smoke.AnimalPanelUi = verified`, and `Smoke.AnimalViewerUi = verified`.
+  - Earlier 0.3.1 Animal-only smoke `GAME-SMOKE/20260606-150721` logs the same independent cloned progress-row path and remains retained as pre-feature-host evidence.
   - Historical note: 0.2.7 `single-pass native moodBar` evidence is retained as the rejected mood-row strategy; 0.2.3 cloned-row evidence remains historical for the original UI extension path.
-  - Screenshot/report: current evidence `docs/debug/evidence/GAME-SMOKE/20260606-150721`; config swatch/Custom screenshot evidence `docs/debug/evidence/GAME-SMOKE/20260606-150928/DTMAPI-evidence/UI-004/20260606-150959/title-settings-config-animal-husbandry-progress.png` and `title-settings-config-animal-husbandry-progress-custom.png`.
-  - Exit check: `docs/debug/evidence/GAME-SMOKE/20260606-150721/process-check.txt` says no `DolocTown.exe`; fatal-window check says no fatal instance popup.
+  - Screenshot/report: current feature-host evidence `docs/debug/evidence/GAME-SMOKE/20260610-103119`; report pointer `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260610-103155.zip`; config swatch/Custom screenshot evidence `docs/debug/evidence/GAME-SMOKE/20260606-150928/DTMAPI-evidence/UI-004/20260606-150959/title-settings-config-animal-husbandry-progress.png` and `title-settings-config-animal-husbandry-progress-custom.png`.
+  - Exit check: `docs/debug/evidence/GAME-SMOKE/20260610-103119/process-check.txt` says no `DolocTown.exe`; fatal-window check says no fatal instance popup.
 - Regression cases: ANIMAL-001, MANUALQA-027-ROOT-CAUSE, MANUALQA-028-README, MANUALQA-029-README, MANUALQA-031-REGRESSION-NEWCONTENT, CONFIG-008
 
 ## Diagnostic: Content.OfficialItemSourceIndex

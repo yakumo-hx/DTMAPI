@@ -325,7 +325,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 1.5)
             {
                 animalViewerUiDelayedScreenshotRequested = true;
-                experimentalApi?.CaptureDelayedAnimalViewerUiEvidenceScreenshot();
+                AnimalViewerService?.CaptureDelayedAnimalViewerUiEvidenceScreenshot();
             }
             if (!titleSettingsMenuScreenshotRequested && titleSettingsMenuEvidenceAt != default &&
                 (DateTimeOffset.Now - titleSettingsMenuEvidenceAt).TotalSeconds >= 1.5)
@@ -2859,7 +2859,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 for (int i = 0; i < array.Length; i++)
                 {
                     object? data = array.GetValue(i);
-                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
+                    if (AnimalViewerService != null && AnimalViewerService.HasAnimalProgressRowsForSmoke(data, out _))
                         return i;
                 }
             }
@@ -2885,7 +2885,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (!TryConstructAnimalViewerData(dataType, animal, out object? data, out string stateDescription))
                         continue;
                     lastDescription = stateDescription;
-                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
+                    if (AnimalViewerService != null && AnimalViewerService.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
                     {
                         runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " rows=" + rowSummary + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
                         runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed independent hidden-produce progress row.");
@@ -2902,7 +2902,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (!TryConstructAnimalViewerData(dataType, animal, out object? data, out string stateDescription))
                         continue;
                     lastDescription = stateDescription;
-                    if (experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
+                    if (AnimalViewerService != null && AnimalViewerService.HasAnimalProgressRowsForSmoke(data, out string rowSummary))
                     {
                         runtime.RuntimeMonitor.Log("Smoke exercise AnimalViewerRendering OK animal=" + GetAnimalId(animal) + " rows=" + rowSummary + " stateDescription=" + stateDescription.Replace(Environment.NewLine, " | "));
                         runtime.SetHookStatus("Smoke.AnimalViewerRendering", "verified", "AnimalFullInfoData(Animal)", "Constructed animal viewer data and observed independent hidden-produce progress row after transient in-memory husbandry progress seed.");
@@ -2931,7 +2931,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 foreach (object animal in animals)
                 {
-                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
+                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && AnimalViewerService != null && AnimalViewerService.HasAnimalProgressRowsForSmoke(data, out _))
                         return;
                 }
 
@@ -2940,7 +2940,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (!TrySeedAnimalHusbandryForSmoke(animal, out string seedSummary))
                         continue;
                     runtime.RuntimeMonitor.Log("Smoke exercise seeded transient animal husbandry progress for real UI path " + seedSummary + ".");
-                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && experimentalApi != null && experimentalApi.HasAnimalProgressRowsForSmoke(data, out _))
+                    if (TryConstructAnimalViewerData(dataType, animal, out object? data, out _) && AnimalViewerService != null && AnimalViewerService.HasAnimalProgressRowsForSmoke(data, out _))
                         return;
                 }
             }

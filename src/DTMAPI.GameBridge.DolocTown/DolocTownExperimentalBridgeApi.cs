@@ -14,7 +14,7 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IAnimalViewerApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IFishingAutomationApi, IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
         private const string SecondMotorScopedTintHex = "#8CE6FF";
@@ -25,14 +25,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, AnimalHusbandryProgressOptions> animalOptions = new Dictionary<string, AnimalHusbandryProgressOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>> animalProgressRowsByData = new Dictionary<object, IReadOnlyList<AnimalProgressRenderRow>>();
-        private readonly List<object> activeAnimalProgressOverlayObjects = new List<object>();
-        private readonly List<AnimalProgressRenderRow> activeAnimalProgressOverlayRows = new List<AnimalProgressRenderRow>();
-        private readonly Dictionary<string, int> husbandryThresholdCache = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, string> itemTitleCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedAnimalApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, PendingOilResourceHit> pendingOilResourceHits = new Dictionary<string, PendingOilResourceHit>(StringComparer.Ordinal);
         private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
         private readonly Dictionary<string, SecondMotorRuntime> secondMotors = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
@@ -53,16 +46,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<object, double> originalAnimatorSpeeds = new Dictionary<object, double>();
         private ActionSpeedService? actionSpeedService;
         private bool fishingHooksInstalled;
-        private bool animalViewerHookInstalled;
         private bool motorVehicleHooksInstalled;
-        private bool animalViewerUiEvidenceRecorded;
-        private bool animalPanelUiProbeLogged;
-        private bool animalViewerUiDelayedScreenshotRecorded;
-        private string? latestAnimalViewerEvidenceDir;
-        private string latestAnimalProgressOverlaySummary = string.Empty;
         private DateTimeOffset lastFishingAutoCastAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastFishingFeedbackAt = DateTimeOffset.MinValue;
-        private DateTimeOffset lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
         private int fishingAutoCastApplications;
         private object? originalAgentMotorController;
         private OriginalMotorSnapshot? originalMotorSnapshotBeforeSecondRide;
@@ -178,7 +164,6 @@ namespace DTMAPI.GameBridge.DolocTown
             UpdateActiveSecondMotorRoomSnapshot();
             UpdateFishingAutoCast();
             UpdateMachineProduction(forceMachineProductionPoll);
-            RefreshAnimalProgressOverlayTexts(force: false);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
         }
 
@@ -515,34 +500,6 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private string ResolveItemTitle(string itemId)
-        {
-            if (itemTitleCache.TryGetValue(itemId, out string title))
-                return title;
-            try
-            {
-                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
-                MethodInfo? queryItemProto = dolocApi?.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
-                if (queryItemProto != null)
-                {
-                    object?[] args = new object?[] { itemId, null };
-                    object? result = queryItemProto.Invoke(null, args);
-                    if (result is bool ok && ok && args[1] != null)
-                    {
-                        title = args[1]!.GetType().GetProperty("Title", BindingFlags.Public | BindingFlags.Instance)?.GetValue(args[1]) as string ?? itemId;
-                        itemTitleCache[itemId] = title;
-                        return title;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to query item title for " + itemId + ".", ex.ToString());
-            }
-            itemTitleCache[itemId] = itemId;
-            return itemId;
-        }
-
         internal static Type? ResolveType(string assemblyQualifiedName)
         {
             return GameBridgeNativeHelpers.ResolveType(assemblyQualifiedName);
@@ -628,7 +585,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return false;
         }
 
-        private static bool SetMemberValue(object instance, string name, object value)
+        internal static bool SetMemberValue(object instance, string name, object value)
         {
             for (Type? type = instance.GetType(); type != null; type = type.BaseType)
             {
@@ -686,7 +643,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.ReadMember(instance, name);
         }
 
-        private static object? CloneUnityObject(object original)
+        internal static object? CloneUnityObject(object original)
         {
             Type? objectType = ResolveType("UnityEngine.Object, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Object, UnityEngine");
             MethodInfo? instantiate = objectType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -695,14 +652,14 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
 
-        private static void DestroyUnityObject(object instance)
+        internal static void DestroyUnityObject(object instance)
         {
             Type? objectType = ResolveType("UnityEngine.Object, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Object, UnityEngine");
             MethodInfo? destroy = objectType?.GetMethod("Destroy", BindingFlags.Public | BindingFlags.Static, null, new[] { objectType }, null);
             destroy?.Invoke(null, new[] { instance });
         }
 
-        private static object? GetComponent(object gameObject, Type componentType)
+        internal static object? GetComponent(object gameObject, Type componentType)
         {
             if (gameObject == null || componentType == null)
                 return null;
@@ -787,7 +744,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return false;
         }
 
-        private static void SetParent(object transform, object parent, bool worldPositionStays)
+        internal static void SetParent(object transform, object parent, bool worldPositionStays)
         {
             MethodInfo? setParent = transform.GetType().GetMethod("SetParent", BindingFlags.Public | BindingFlags.Instance, null, new[] { parent.GetType(), typeof(bool) }, null)
                 ?? transform.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
@@ -795,14 +752,14 @@ namespace DTMAPI.GameBridge.DolocTown
             setParent?.Invoke(transform, new object[] { parent, worldPositionStays });
         }
 
-        private static void SetActive(object gameObject, bool active)
+        internal static void SetActive(object gameObject, bool active)
         {
             MethodInfo? setActive = gameObject.GetType().GetMethod("SetActive", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
             setActive?.Invoke(gameObject, new object[] { active });
         }
 
 
-        private static object? CreateUnityVector3(double x, double y, double z)
+        internal static object? CreateUnityVector3(double x, double y, double z)
         {
             Type? vector3 = ResolveType("UnityEngine.Vector3, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Vector3, UnityEngine");
             return vector3 == null ? null : Activator.CreateInstance(vector3, (float)x, (float)y, (float)z);
@@ -837,7 +794,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.FindMethodInHierarchy(type, name, parameterCount);
         }
 
-        private static bool TryCaptureScreenshot(string path)
+        internal static bool TryCaptureScreenshot(string path)
         {
             try
             {
@@ -938,7 +895,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        private static IEnumerable<object> EnumerateObjects(object? value)
+        internal static IEnumerable<object> EnumerateObjects(object? value)
         {
             if (value == null)
                 yield break;
@@ -966,7 +923,7 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
 
-        private static double ReadVectorComponent(object? vector, string name)
+        internal static double ReadVectorComponent(object? vector, string name)
         {
             if (vector == null)
                 return double.NaN;

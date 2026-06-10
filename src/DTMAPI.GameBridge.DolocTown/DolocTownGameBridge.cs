@@ -147,10 +147,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool fishRoeTitlePatched => fishRoeTooltipFeature?.HookBridge.TitlePatched == true;
         private bool fishRoeDescriptionPatched => fishRoeTooltipFeature?.HookBridge.DescriptionPatched == true;
         private bool fishRoeDetailPatched => fishRoeTooltipFeature?.HookBridge.DetailPatched == true;
-        private bool animalFullInfoDataPatched;
-        private bool animalViewerShowPrefixPatched;
-        private bool animalViewerShowPatched;
-        private bool animalPanelRefreshViewerPatched;
+        private bool animalFullInfoDataPatched => animalViewerFeature?.HookBridge.FullInfoDataPatched == true;
+        private bool animalViewerShowPrefixPatched => animalViewerFeature?.HookBridge.ViewerShowPrefixPatched == true;
+        private bool animalViewerShowPatched => animalViewerFeature?.HookBridge.ViewerShowPatched == true;
+        private bool animalPanelRefreshViewerPatched => animalViewerFeature?.HookBridge.PanelRefreshViewerPatched == true;
         private bool motorKeyUsePatched;
         private bool motorInteractPatched;
         private bool motorGetOnPatched;
@@ -192,6 +192,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private SaveSlotsFeature? saveSlotsFeature;
         private StrongPlantingGunFeature? strongPlantingGunFeature;
+        private AnimalViewerFeature? animalViewerFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -215,6 +216,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal SaveSlotsService? SaveSlotsService => saveSlotsFeature?.Service;
 
         internal StrongPlantingGunService? StrongPlantingGunService => strongPlantingGunFeature?.Service;
+
+        internal AnimalViewerService? AnimalViewerService => animalViewerFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -243,7 +246,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -257,7 +260,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 Type = "RuntimeApi"
             };
             runtime.RegisterRuntimeApi<IFishingAutomationApi>(manifest, experimentalApi);
-            runtime.RegisterRuntimeApi<IAnimalViewerApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMailDeliveryApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IWeatherDebugApi>(manifest, experimentalApi);
@@ -318,6 +320,10 @@ namespace DTMAPI.GameBridge.DolocTown
             strongPlantingGunFeature ??= new StrongPlantingGunFeature(runtime);
             if (!features.Contains(strongPlantingGunFeature))
                 features.Add(strongPlantingGunFeature);
+
+            animalViewerFeature ??= new AnimalViewerFeature(runtime);
+            if (!features.Contains(animalViewerFeature))
+                features.Add(animalViewerFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
@@ -793,26 +799,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 bool fishingHooksReady = fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched;
                 experimentalApi?.SetFishingHooksInstalled(fishingHooksReady);
                 runtime.SetHookStatus("Fishing.Automation", fishingHooksReady ? "experimental" : "pending", "Harmony Postfix: fishing state/input phases", fishingHooksReady ? "Patched fishing phase observation hooks plus native BodyController.UseFishRod auto-cast, wait-phase InstantBite, and delayed FishingGameScrollBar.UpdateGame auto-complete; F6 auto-cast and wait phase verified by AUTOFISH-001." : "Waiting for fishing phase targets to become patchable.");
-
-                if (!animalFullInfoDataPatched)
-                {
-                    animalFullInfoDataPatched = patcher.TryPatchConstructorPostfix("DolocTown.UI.AnimalFullInfoData, Assembly-CSharp", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalFullInfoDataCtorPostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!animalViewerShowPatched)
-                {
-                    animalViewerShowPrefixPatched = patcher.TryPatchPrefix("DolocTown.UI.AnimalViewer, Assembly-CSharp", "Show", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalViewerShowPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                    animalViewerShowPatched = patcher.TryPatchPostfix("DolocTown.UI.AnimalViewer, Assembly-CSharp", "Show", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalViewerShowPostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!animalPanelRefreshViewerPatched)
-                {
-                    animalPanelRefreshViewerPatched = patcher.TryPatchPostfix("DolocTown.UI.AnimalPanel, Assembly-CSharp", "RefreshViewer", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalPanelRefreshViewerPostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                bool animalViewerHooksReady = animalFullInfoDataPatched && animalViewerShowPrefixPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched;
-                experimentalApi?.SetAnimalViewerHookInstalled(animalViewerHooksReady);
-                runtime.SetHookStatus("Animals.ViewerRendering", animalViewerHooksReady ? "verified" : "pending", "Harmony Prefix/Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer", animalViewerHooksReady ? "Patched animal viewer data construction plus prefilled independent progress rows before native Show settles, with real UI refresh evidence in ANIMAL-001." : "Waiting for animal viewer data/UI targets to become patchable.");
 
                 if (!motorKeyUsePatched)
                 {
