@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Json;
+using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 
@@ -447,6 +448,9 @@ namespace DTMAPI.Core.Services
         public string DrawBoundaryReason { get; private set; } = string.Empty;
         public bool BlocksGameplayHotkeys => IsOpen || !GameplayHotkeysAllowed;
         public bool BlocksModUpdates => IsOpen;
+        internal DtmManagerRuntimeModelProvider? ManagerModelProvider { get; set; }
+        internal DtmManagerViewModel? CurrentManagerModel { get; private set; }
+        internal DtmManagerReportExportResult? LastManagerReportExport { get; private set; }
 
         public void Toggle()
         {
@@ -497,7 +501,16 @@ namespace DTMAPI.Core.Services
 
         public string ExportLogs()
         {
-            LastExportPath = exportLogs();
+            if (ManagerModelProvider != null)
+            {
+                LastManagerReportExport = ManagerModelProvider.ExportReportAndRefresh();
+                CurrentManagerModel = LastManagerReportExport.RefreshedModel;
+                LastExportPath = LastManagerReportExport.ExportedReportPath;
+            }
+            else
+            {
+                LastExportPath = exportLogs();
+            }
             CurrentPage = DtmOverlayPage.Logs;
             Open(DtmOverlayPage.Logs);
             return LastExportPath;
@@ -509,8 +522,17 @@ namespace DTMAPI.Core.Services
             CurrentPage = page;
             ActiveMenuId = "DTMAPI." + page;
             IsOpen = true;
+            RefreshManagerModel();
             if (!wasOpen)
                 opened(ActiveMenuId);
+        }
+
+        private void RefreshManagerModel()
+        {
+            if (ManagerModelProvider == null)
+                return;
+
+            CurrentManagerModel = ManagerModelProvider.GetCurrentModel();
         }
     }
 }

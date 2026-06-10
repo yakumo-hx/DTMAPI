@@ -8,6 +8,7 @@ using System.Threading;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Logging;
+using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Services;
 
@@ -49,6 +50,7 @@ namespace DTMAPI.Core.Runtime
             Input = new InputService();
             CustomEntities = new CustomEntityRegistryService(Diagnostics);
             UI = new UiRuntimeService(ExportLogs, Events.DispatchMenuOpened, Events.DispatchMenuClosed);
+            UI.ManagerModelProvider = new DtmManagerRuntimeModelProvider(this, ExportLogs);
         }
 
         public RuntimePaths Paths { get; }

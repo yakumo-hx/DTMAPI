@@ -23,6 +23,10 @@ The MVP is not a Stable API promotion gate. It consumes existing Diagnostic/Expe
 
 The internal Manager view model now publishes a support-oriented summary over the existing diagnostics snapshot: loaded, blocked, and disabled mod counts; error and warning counts; failed hook and feature counts; and an `OverallStatus` of `ready`, `warning`, or `failed`. Rows are pre-sorted for a real UI: blocked/error mods before warning, disabled, and loaded rows; diagnostics newest first; hooks by failed/missing/experimental/verified/ready; and features by failed/degraded/ready. These rules are internal view-model policy only and do not add public diagnostics members.
 
+## 2026-06-11 Runtime Skeleton Note
+
+`UiRuntimeService` now owns an internal Manager model provider. Opening a DTMAPI Manager page refreshes the model from `IDtmDiagnosticsApi.GetSnapshot()`, and Export Report calls the existing report export path, refreshes the snapshot, and records whether the returned report path matches the refreshed `LatestReportPath`. This gives future UI pages a non-stale model and explicit `exported` / `missing-export-path` / `report-path-mismatch` states without adding public API or implementing full player-facing UI.
+
 ## Non-Goals
 
 - Do not implement UI in this design branch.
