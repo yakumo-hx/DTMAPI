@@ -122,7 +122,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ToolColliderHandleToolsPrefix(object __instance, object other)
         {
-            SafePostfix("ToolCollider.HandleTools.CaptureOilCoalDrop", () => Bridge?.ExperimentalApi?.CaptureOilCoalDropBeforeToolHit(__instance, other));
+            SafePostfix("ToolCollider.HandleTools.CaptureOilCoalDrop", () => Bridge?.OilCoalDropService?.CaptureOilCoalDropBeforeToolHit(__instance, other));
         }
 
         public static void ToolColliderHandleToolsPostfix(object __instance, object other)
@@ -131,9 +131,9 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 bool oneActionHandled = Bridge?.ActionCompletionService?.ApplyOneActionToolHit(__instance, other) == true;
                 if (!oneActionHandled)
-                    Bridge?.ExperimentalApi?.ApplyOilCoalDropAfterToolHit(__instance, other);
+                    Bridge?.OilCoalDropService?.ApplyOilCoalDropAfterToolHit(__instance, other);
                 else
-                    Bridge?.ExperimentalApi?.ClearCapturedOilCoalDrop(__instance, other);
+                    Bridge?.OilCoalDropService?.ClearCapturedOilCoalDrop(__instance, other);
             });
         }
 

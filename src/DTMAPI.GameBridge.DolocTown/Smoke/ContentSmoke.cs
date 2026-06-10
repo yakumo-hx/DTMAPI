@@ -169,9 +169,10 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 if (experimentalApi != null)
                 {
-                    experimentalApi.ForceOilDropForSmoke = false;
                     experimentalApi.ForceMachineProductionDueForSmoke = false;
                 }
+                if (OilCoalDropService != null)
+                    OilCoalDropService.ForceOilDropForSmoke = false;
                 if (room != null && transientMine != null)
                     TryRemoveTransientEquipmentForSmoke(room, transientMine);
             }
@@ -684,8 +685,9 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private string TryExerciseOilCoalDropForSmoke(Type dolocApi, object room)
         {
-            if (experimentalApi == null)
-                throw new InvalidOperationException("Experimental GameBridge API was not registered.");
+            OilCoalDropService? oilCoalDropService = OilCoalDropService;
+            if (oilCoalDropService == null)
+                throw new InvalidOperationException("OilCoalDrop feature service is not available.");
 
             if (!TryQueryNativeItemProto(dolocApi, "crude_oil", out string oilProbe))
             {
@@ -721,7 +723,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
             string toolName = ReadStringMember(tool, "name", tool.GetType().Name);
             int toolDamage = ReadIntMember(tool, "ChopNumber", 0);
-            int beforeDrops = experimentalApi.OilMiningDropCount;
+            int beforeDrops = oilCoalDropService.OilMiningDropCount;
             int rendererCount = 0;
             int coalCount = 0;
             int invokedCount = 0;
@@ -730,7 +732,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
             try
             {
-                experimentalApi.ForceOilDropForSmoke = true;
+                oilCoalDropService.ForceOilDropForSmoke = true;
                 foreach (object renderer in FindUnityObjects(resourceRendererType))
                 {
                     rendererCount++;
@@ -761,10 +763,10 @@ namespace DTMAPI.GameBridge.DolocTown
                     int healthAfter = ReadIntMember(resource, "currentHealth", 0);
                     bool removedAfter = IsRemoved(resource);
                     if (attempts.Count < 8)
-                        attempts.Add(resourceName + "/tool=" + toolName + "/toolDamage=" + toolDamage + "/health=" + healthBefore + "->" + healthAfter + "/seeded=" + seededHealth + "/removed=" + removedAfter + "/drops=" + beforeDrops + "->" + experimentalApi.OilMiningDropCount + "/bridge={" + experimentalApi.LastOilMiningDropSummary + "}");
-                    if (experimentalApi.OilMiningDropCount > beforeDrops)
+                        attempts.Add(resourceName + "/tool=" + toolName + "/toolDamage=" + toolDamage + "/health=" + healthBefore + "->" + healthAfter + "/seeded=" + seededHealth + "/removed=" + removedAfter + "/drops=" + beforeDrops + "->" + oilCoalDropService.OilMiningDropCount + "/bridge={" + oilCoalDropService.LastOilMiningDropSummary + "}");
+                    if (oilCoalDropService.OilMiningDropCount > beforeDrops)
                     {
-                        string summary = "setup={" + setupSummary + "}, resource=" + resourceName + ", class=" + resourceClass + ", tool=" + toolName + ", toolDamage=" + toolDamage + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", bridge={" + experimentalApi.LastOilMiningDropSummary + "}";
+                        string summary = "setup={" + setupSummary + "}, resource=" + resourceName + ", class=" + resourceClass + ", tool=" + toolName + ", toolDamage=" + toolDamage + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", beforeDrops=" + beforeDrops + ", afterDrops=" + oilCoalDropService.OilMiningDropCount + ", bridge={" + oilCoalDropService.LastOilMiningDropSummary + "}";
                         runtime.RuntimeMonitor.Log("Smoke exercise NewContentOilCoalDrop OK " + summary);
                         runtime.SetHookStatus("Smoke.NewContentOilCoalDrop", "verified", "ToolCollider.HandleTools private path + OilMod.MiningDrop", summary);
                         return summary;
@@ -773,10 +775,10 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             finally
             {
-                experimentalApi.ForceOilDropForSmoke = false;
+                oilCoalDropService.ForceOilDropForSmoke = false;
             }
 
-            throw new InvalidOperationException("No coal resource produced crude_oil during OilMod smoke. renderers=" + rendererCount + ", coalResources=" + coalCount + ", invoked=" + invokedCount + ", beforeDrops=" + beforeDrops + ", afterDrops=" + experimentalApi.OilMiningDropCount + ", setup={" + setupSummary + "}, attempts=" + (attempts.Count == 0 ? "none" : string.Join(" ; ", attempts)) + ", samples=" + string.Join(" ; ", samples));
+            throw new InvalidOperationException("No coal resource produced crude_oil during OilMod smoke. renderers=" + rendererCount + ", coalResources=" + coalCount + ", invoked=" + invokedCount + ", beforeDrops=" + beforeDrops + ", afterDrops=" + oilCoalDropService.OilMiningDropCount + ", setup={" + setupSummary + "}, attempts=" + (attempts.Count == 0 ? "none" : string.Join(" ; ", attempts)) + ", samples=" + string.Join(" ; ", samples));
         }
 
         private static bool TryQueryNativeItemProto(Type dolocApi, string itemId, out string detail)

@@ -135,8 +135,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;
         private bool debugConsoleEnterUiCheckPatched;
-        private bool oneActionToolColliderPatched => actionCompletionFeature?.HookBridge.ToolColliderPatched == true;
-        private bool oilCoalDropCapturePatched;
+        private bool oilCoalDropRoutePatched => actionCompletionFeature?.HookBridge.OilCoalDropRoutePatched == true;
         private bool fishingReadyEnterPatched;
         private bool fishingCastEnterPatched;
         private bool fishingWaitEnterPatched;
@@ -196,6 +195,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private SaveSlotsFeature? saveSlotsFeature;
         private StrongPlantingGunFeature? strongPlantingGunFeature;
         private AnimalViewerFeature? animalViewerFeature;
+        private OilCoalDropFeature? oilCoalDropFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ActionSpeedFeature? actionSpeedFeature;
         private ActionCompletionFeature? actionCompletionFeature;
@@ -221,6 +221,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal StrongPlantingGunService? StrongPlantingGunService => strongPlantingGunFeature?.Service;
 
         internal AnimalViewerService? AnimalViewerService => animalViewerFeature?.Service;
+
+        internal OilCoalDropService? OilCoalDropService => oilCoalDropFeature?.Service;
 
         internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
 
@@ -249,7 +251,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -328,15 +330,20 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!features.Contains(animalViewerFeature))
                 features.Add(animalViewerFeature);
 
+            oilCoalDropFeature ??= new OilCoalDropFeature(runtime, () => oilCoalDropRoutePatched);
+
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
 
             actionSpeedFeature ??= new ActionSpeedFeature(runtime, agentStateLifecycleHooks);
             if (!features.Contains(actionSpeedFeature))
                 features.Add(actionSpeedFeature);
 
-            actionCompletionFeature ??= new ActionCompletionFeature(runtime, experimentalApi!.TryRollOilDropFromCoal, () => agentStateLifecycleHooks?.InteractExitPatched == true);
+            actionCompletionFeature ??= new ActionCompletionFeature(runtime, oilCoalDropFeature.Service.TryRollOilDropFromCoal, () => agentStateLifecycleHooks?.InteractExitPatched == true);
             if (!features.Contains(actionCompletionFeature))
                 features.Add(actionCompletionFeature);
+
+            if (!features.Contains(oilCoalDropFeature))
+                features.Add(oilCoalDropFeature);
         }
 
         private void RegisterGameBridgeFeatureApis(IManifest manifest)
@@ -829,13 +836,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     advancedCreativeCanAffordMoneyPatched;
                 experimentalApi?.SetAdvancedCreativeHooksInstalled(advancedCreativeCostHooksReady, advancedCreativeRecipeTimePatched);
                 runtime.SetHookStatus("Debug.CreativeModeHooks", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: DolocAPI cost/afford APIs + Synthesizer.GetRecipeTime", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "Patched no-cost/no-energy checks and synthesizer recipe time for the Y-console creative toggle; GameInitConfig material/shop/spirit flags are applied only while creative mode is enabled." : "Waiting for all advanced creative cost/time targets to become patchable.");
-
-                if (!oilCoalDropCapturePatched)
-                {
-                    oilCoalDropCapturePatched = patcher.TryPatchPrefix("DolocTown.ToolCollider, Assembly-CSharp", "HandleTools", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                runtime.SetHookStatus("Resources.OilCoalDrop", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: ToolCollider.HandleTools", (oneActionToolColliderPatched && oilCoalDropCapturePatched) ? "Patched pre-hit coal resource capture plus post-hit oil placement; waiting for OilMod coal mining smoke evidence." : "Waiting for ToolCollider.HandleTools Prefix/Postfix to become patchable.");
 
                 if (!fishingReadyEnterPatched)
                 {

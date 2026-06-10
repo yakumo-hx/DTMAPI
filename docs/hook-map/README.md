@@ -714,7 +714,7 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Public surface: OilMod content plus GameBridge resource-hit bridge; no stable public API yet.
 - Game build: 23465763 workshop
 - Game method/type: native `DolocTown.ToolCollider.HandleTools` prefix/postfix around resource removal, existing one-action resource-hit completion path, and native item generation/backpack placement for `crude_oil`.
-- Patch type: GameBridge runtime logic plus prefix capture of the pre-hit coal resource; no official/Workshop JSON mutation.
+- Patch type: `OilCoalDropFeature`/`OilCoalDropService` runtime logic using the shared `ToolCollider.HandleTools` Prefix/Postfix installed by `ActionCompletionHookBridge`; no official/Workshop JSON mutation.
 - Why this point: Oil should remain an official JSON item while DTMAPI supplies the fragile coal-drop behavior through the bridge.
 - Failure behavior: if the selected resource is not recognized as coal or the item cannot be generated/placed, no extra drop is awarded and the result summary records the skipped/failed path.
 - Mods/tests depending on it: `DTMAPI.OilMod`.
@@ -722,7 +722,10 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Build: DTMAPI 0.2.8 Release build/unit passed 2026-06-06 with 0 errors.
   - Save: local slot 3 / index 2.
   - Log line: 0.2.8 new-content smoke `GAME-SMOKE/20260606-031316` logs `OilMod content item=crude_oil fuelEnergy=1500 officialJson=item_tbitem.json`, `Smoke.NewContentOilItemMetadata = verified` with `id=crude_oil`, native probe `found crude_oil in DolocConfig.Tables.TbItem`, and `OilMod mining drop OK ... oilDrop=crude_oil ... placement={Placed crude_oil x1 through native backpack placement.}`.
+  - Feature split log line: `GAME-SMOKE/20260610-124357` records `Feature.OilCoalDrop = ready`, `Resources.OilCoalDrop = experimental`, `OilMod mining drop OK source=native-tool-hit`, `OilMod.MiningDrop = experimental`, `Smoke.NewContentOilCoalDrop = verified`, `NewContentOilCoalDrop=Passed`, `NewContentApis=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed` after Oil coal-drop state and the smoke force flag moved into `OilCoalDropService`.
+  - Shared-route regression: `GAME-SMOKE/20260610-124511` records `Feature.ActionCompletion = ready`, `Feature.OilCoalDrop = ready`, unchanged `Actions.OneActionComplete = verified` and `Actions.OneActionFuelFeed = verified`, plus `OneActionResourceHit=Passed`, `OneActionWrongTool=Passed`, `OneActionFuelFeed=Passed`, `OneActionVegetation=Passed`, and clean process/fatal checks; this verifies the shared ToolCollider postfix still dispatches ActionCompletion before OilCoalDrop.
   - Screenshot/report: current metadata + coal-drop evidence `docs/debug/evidence/GAME-SMOKE/20260606-031316` with `NewContentOilItemMetadata=true`, `NewContentOilCoalDrop=true`, clean exit, and no fatal popup. The 0.2.4 `dtmapi_oil` evidence is retained as historical pre-rename proof.
+  - Report note: the 2026-06-10 Oil feature split smokes did not export a fresh report zip; their `latest-report.txt` files still point to the previous diagnostics/AnimalViewer report and are not cited as OilCoalDrop report evidence.
 - Regression cases: NEWCONTENT-024-F, MANUALQA-028-README
 
 ## Hook: Machine.ProductionRuntimeLoop

@@ -17,7 +17,13 @@ namespace DTMAPI.GameBridge.DolocTown
             this.isInteractExitPatched = isInteractExitPatched;
         }
 
-        internal bool ToolColliderPatched { get; private set; }
+        internal bool ToolColliderPrefixPatched { get; private set; }
+
+        internal bool ToolColliderPostfixPatched { get; private set; }
+
+        internal bool ToolColliderPatched => ToolColliderPostfixPatched;
+
+        internal bool OilCoalDropRoutePatched => ToolColliderPrefixPatched && ToolColliderPostfixPatched;
 
         internal bool InteractExitPatched => isInteractExitPatched();
 
@@ -28,9 +34,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
-            if (!ToolColliderPatched)
+            if (!ToolColliderPrefixPatched)
             {
-                ToolColliderPatched = patcher.TryPatchPostfix(
+                ToolColliderPrefixPatched = patcher.TryPatchPrefix(
+                    "DolocTown.ToolCollider, Assembly-CSharp",
+                    "HandleTools",
+                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPrefix), BindingFlags.Public | BindingFlags.Static),
+                    1);
+            }
+
+            if (!ToolColliderPostfixPatched)
+            {
+                ToolColliderPostfixPatched = patcher.TryPatchPostfix(
                     "DolocTown.ToolCollider, Assembly-CSharp",
                     "HandleTools",
                     typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ToolColliderHandleToolsPostfix), BindingFlags.Public | BindingFlags.Static),

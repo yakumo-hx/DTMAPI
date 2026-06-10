@@ -26,7 +26,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, FishingAutomationOptions> fishingOptions = new Dictionary<string, FishingAutomationOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FishingAutomationState> fishingStates = new Dictionary<string, FishingAutomationState>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishingPhases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, PendingOilResourceHit> pendingOilResourceHits = new Dictionary<string, PendingOilResourceHit>(StringComparer.Ordinal);
         private readonly Dictionary<object, DateTimeOffset> fishingMiniGameStartedAt = new Dictionary<object, DateTimeOffset>();
         private readonly Dictionary<string, SecondMotorRuntime> secondMotors = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, SecondMotorRuntime> secondMotorsByKeyItemId = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
@@ -149,12 +148,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal object? FishingPoolOverrideForSmoke { get; set; }
 
         internal bool ForceFishingFishForSmoke { get; set; }
-
-        internal bool ForceOilDropForSmoke { get; set; }
-
-        internal int OilMiningDropCount { get; private set; }
-
-        internal string LastOilMiningDropSummary { get; private set; } = string.Empty;
 
         internal bool ForceMachineProductionDueForSmoke { get; set; }
 
