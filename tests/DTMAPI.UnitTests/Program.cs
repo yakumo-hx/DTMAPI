@@ -47,6 +47,7 @@ namespace DTMAPI.UnitTests
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
+                OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
@@ -1044,6 +1045,65 @@ namespace DTMAPI.UnitTests
                 IHookStatusInfo hookStatus = runtime.Diagnostics.GetHookStatuses().Single(s => s.HookId == "Feature.UnitFeature");
                 Assert(hookStatus.Details.Contains("failureCount=3"), "Published hook status should stop at the last allowed short-warning publication.");
                 Assert(!hookStatus.Details.Contains("failureCount=6"), "Suppressed repeated failures should not rewrite the hook status details every time failureCount changes.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void OilCoalDropFeatureLifecycleClearsPendingHits()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                Type featureType = typeof(DolocTownGameBridge).Assembly.GetType("DTMAPI.GameBridge.DolocTown.OilCoalDropFeature")
+                    ?? throw new InvalidOperationException("OilCoalDropFeature should exist.");
+                object feature = Activator.CreateInstance(
+                    featureType,
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
+                    args: new object[] { runtime, new Func<bool>(() => true) },
+                    culture: null)
+                    ?? throw new InvalidOperationException("OilCoalDropFeature should be constructable.");
+                object service = featureType.GetProperty("Service", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(feature)
+                    ?? throw new InvalidOperationException("OilCoalDropFeature.Service should be available.");
+                FieldInfo pendingHitsField = service.GetType().GetField("pendingOilResourceHits", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("OilCoalDropService should retain pending hits internally.");
+                var pendingHits = (IDictionary)pendingHitsField.GetValue(service)!;
+                Type pendingHitType = service.GetType().GetNestedType("PendingOilResourceHit", BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("OilCoalDropService pending hit type should exist.");
+                MethodInfo saveLoaded = featureType.GetMethod("SaveLoaded", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("OilCoalDropFeature.SaveLoaded should exist.");
+                MethodInfo returnedToTitle = featureType.GetMethod("ReturnedToTitle", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("OilCoalDropFeature.ReturnedToTitle should exist.");
+                MethodInfo environmentReset = featureType.GetMethod("EnvironmentReset", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?? throw new InvalidOperationException("OilCoalDropFeature.EnvironmentReset should exist.");
+
+                void SeedPendingHit(string key)
+                {
+                    pendingHits[key] = Activator.CreateInstance(
+                        pendingHitType,
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                        binder: null,
+                        args: new object[] { new object(), "coal_mine", 7 },
+                        culture: null)
+                        ?? throw new InvalidOperationException("OilCoalDrop pending hit should be constructable.");
+                }
+
+                SeedPendingHit("save-loaded");
+                saveLoaded.Invoke(feature, new object[] { false });
+                Assert(pendingHits.Count == 0, "OilCoalDrop pending hits should clear when a save is loaded.");
+
+                SeedPendingHit("returned-to-title");
+                returnedToTitle.Invoke(feature, Array.Empty<object>());
+                Assert(pendingHits.Count == 0, "OilCoalDrop pending hits should clear when returning to title.");
+
+                SeedPendingHit("environment-reset");
+                environmentReset.Invoke(feature, new object[] { "unit-test" });
+                Assert(pendingHits.Count == 0, "OilCoalDrop pending hits should clear when the environment resets.");
             }
             finally
             {

@@ -37,14 +37,17 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void SaveLoaded(bool isNewGame)
         {
+            Service.ClearPendingOilResourceHits("SaveLoaded");
         }
 
         public void ReturnedToTitle()
         {
+            Service.ClearPendingOilResourceHits("ReturnedToTitle");
         }
 
         public void EnvironmentReset(string reason)
         {
+            Service.ClearPendingOilResourceHits("EnvironmentReset:" + reason);
         }
     }
 }

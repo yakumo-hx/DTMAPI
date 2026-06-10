@@ -60,6 +60,16 @@ namespace DTMAPI.GameBridge.DolocTown
             pendingOilResourceHits.Remove(BuildOilResourceHitKey(toolCollider, collider));
         }
 
+        internal void ClearPendingOilResourceHits(string reason)
+        {
+            if (pendingOilResourceHits.Count <= 0)
+                return;
+
+            int count = pendingOilResourceHits.Count;
+            pendingOilResourceHits.Clear();
+            runtime.RuntimeMonitor.Log("OilMod pending coal-drop hit cache cleared reason=" + reason + ", count=" + count + ".");
+        }
+
         internal bool ApplyOilCoalDropAfterToolHit(object toolCollider, object collider)
         {
             if (toolCollider == null || collider == null)
