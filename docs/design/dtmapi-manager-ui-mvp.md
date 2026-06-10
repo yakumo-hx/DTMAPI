@@ -27,6 +27,10 @@ The internal Manager view model now publishes a support-oriented summary over th
 
 `UiRuntimeService` now owns an internal Manager model provider. Opening a DTMAPI Manager page refreshes the model from `IDtmDiagnosticsApi.GetSnapshot()`, and Export Report calls the existing report export path, refreshes the snapshot, and records whether the returned report path matches the refreshed `LatestReportPath`. This gives future UI pages a non-stale model and explicit `exported` / `missing-export-path` / `report-path-mismatch` states without adding public API or implementing full player-facing UI.
 
+## 2026-06-11 Roadmap And Feedback Loop Note
+
+The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.
+
 ## Non-Goals
 
 - Do not implement UI in this design branch.
