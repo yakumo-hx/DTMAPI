@@ -67,14 +67,15 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Game method/type: `DolocTownGameBridge.DispatchGameBridgeFeature(...)` catch path for feature-host operations such as `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and environment reset.
 - Patch type: internal diagnostics throttling around existing feature-host dispatch; no hook target, hook ID, public API, feature service behavior, or smoke schema change.
 - Why this point: repeated high-frequency feature-host failures, especially `Update()`, should not flood diagnostics and runtime logs after the first actionable error, while structured `Feature.<Id>` state still needs current failure counts and latest error text.
-- Failure behavior: first failure per `featureId + operation` records a full diagnostics error and error log; the next two repeats write short warning logs; later repeats are suppressed until a 30-second summary window. Internal `GameBridgeFeatureStatus` still increments `FailureCount` and updates `LastError` on every failure.
+- Failure behavior: first failure per `featureId + operation` records a full diagnostics error and error log; the next two repeats write short warning logs; later repeats are suppressed until a 30-second summary window. Internal `GameBridgeFeatureStatus` and diagnostics feature snapshots still increment `FailureCount` and update `LastError` on every failure, while `Feature.<Id>` hook-status publication follows the throttled publication decision instead of rewriting on every failure-count change.
 - Mods/tests depending on it: `DTMAPI.UnitTests`, diagnostics snapshot/status UI, and all feature-hosted GameBridge features.
 - Evidence:
   - Build: 2026-06-10 Release build/test passed with 0 warnings and 0 errors; unit coverage verifies one diagnostics error for six repeated `UnitFeature/Update` failures while failure count reaches 6.
   - Save: local slot 3 / index 2.
   - Log line: `GAME-SMOKE/20260610-113540`, `GAME-SMOKE/20260610-113752`, `GAME-SMOKE/20260610-113902`, and `GAME-SMOKE/20260610-114008` all record focused feature-host smokes as passed with clean process/fatal checks and no GameBridge feature failure entries.
+  - Hook-status publication split: 2026-06-10 unit coverage verifies the diagnostics feature snapshot reaches `FailureCount=6` and latest error text while `Feature.UnitFeature` hook status stops at the third allowed failure publication; focused smokes `GAME-SMOKE/20260610-133933`, `20260610-134145`, `20260610-134259`, and `20260610-134406` pass Camera, ActionSpeed, SaveSlots/HookProbe, and AnimalViewer with no GameBridge feature failure entries.
   - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260610-113540`, `20260610-113752`, `20260610-113902`, and `20260610-114008`; report zips `dtmapi-report-20260610-113722.zip`, `dtmapi-report-20260610-113832.zip`, `dtmapi-report-20260610-113939.zip`, and `dtmapi-report-20260610-114044.zip`.
-- Regression cases: FEATURE-HOST-FAILURE-THROTTLE-20260610
+- Regression cases: FEATURE-HOST-FAILURE-THROTTLE-20260610, FEATURE-FAILURE-STATUS-THROTTLE-20260610
 
 ## Hook: CustomEntities.CoreRegistry
 
