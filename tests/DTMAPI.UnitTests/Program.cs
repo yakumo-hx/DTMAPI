@@ -36,6 +36,7 @@ namespace DTMAPI.UnitTests
                 DiagnosticsSnapshotApiExposesRuntimeState();
                 DiagnosticsServiceCapsErrorsWarningsAndSummary();
                 ManagerViewModelMapsDiagnosticsSnapshot();
+                ManagerRuntimeProviderRefreshesSnapshotAfterReportExport();
                 HelperModRegistryBindsApiRegistrationToOwner();
                 HighFrequencyEventsDisableHandlersAfterConsecutiveFailures();
                 EventRemoveIsOwnerBound();
@@ -588,6 +589,64 @@ namespace DTMAPI.UnitTests
             finally
             {
                 File.Delete(latestLogPath);
+            }
+        }
+
+        private static void ManagerRuntimeProviderRefreshesSnapshotAfterReportExport()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+
+                runtime.UI.OpenDtmApiStatusPage();
+                Assert(runtime.UI.CurrentManagerModel != null, "Opening a DTMAPI manager page should refresh the internal manager view model.");
+
+                string report = runtime.UI.ExportLogs();
+                Assert(File.Exists(report), "UI report export should return an existing report path.");
+                DtmManagerReportExportResult exportResult = runtime.UI.LastManagerReportExport ?? throw new InvalidOperationException("UI report export should retain the manager export result.");
+                Assert(exportResult.Status == "exported", "UI report export should verify the refreshed snapshot report path.");
+                Assert(exportResult.SnapshotReportPathMatched, "UI report export should match the exported path to snapshot LatestReportPath.");
+                Assert(runtime.UI.CurrentManagerModel != null && runtime.UI.CurrentManagerModel.LatestReportPath == report, "UI report export should refresh the current manager model after export.");
+
+                string latestLogPath = Path.GetTempFileName();
+                string exportedPath = Path.Combine(Path.GetTempPath(), "dtmapi-manager-exported.zip");
+                string staleSnapshotPath = Path.Combine(Path.GetTempPath(), "dtmapi-manager-stale.zip");
+                try
+                {
+                    File.WriteAllText(exportedPath, "exported");
+                    File.WriteAllText(staleSnapshotPath, "stale");
+                    var mismatchProvider = new DtmManagerRuntimeModelProvider(
+                        new FakeDiagnosticsApi(() => new DtmDiagnosticsSnapshot(
+                            DateTimeOffset.Now,
+                            Array.Empty<IDtmLoadedModInfo>(),
+                            Array.Empty<IDtmModStatusInfo>(),
+                            Array.Empty<IDtmErrorInfo>(),
+                            Array.Empty<IDtmWarningInfo>(),
+                            Array.Empty<IHookStatusInfo>(),
+                            Array.Empty<IDtmFeatureStatusInfo>(),
+                            latestLogPath,
+                            staleSnapshotPath)),
+                        () => exportedPath);
+
+                    DtmManagerReportExportResult mismatch = mismatchProvider.ExportReportAndRefresh();
+                    Assert(mismatch.Status == "report-path-mismatch", "Manager provider should flag report path mismatch after export and snapshot refresh.");
+                    Assert(!mismatch.SnapshotReportPathMatched, "Manager provider mismatch result should expose unmatched report paths.");
+                    Assert(mismatch.ExportedReportPath == exportedPath, "Manager provider mismatch result should keep the exported path.");
+                    Assert(mismatch.RefreshedModel.LatestReportPath == staleSnapshotPath, "Manager provider mismatch result should keep the refreshed snapshot path.");
+                }
+                finally
+                {
+                    File.Delete(latestLogPath);
+                    File.Delete(exportedPath);
+                    File.Delete(staleSnapshotPath);
+                }
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
             }
         }
 
@@ -1893,6 +1952,21 @@ namespace DTMAPI.UnitTests
             public void Log(string message) { }
             public void LogWarning(string message) { }
             public void LogError(string message, Exception? exception = null) { }
+        }
+
+        private sealed class FakeDiagnosticsApi : IDtmDiagnosticsApi
+        {
+            private readonly Func<IDtmDiagnosticsSnapshot> getSnapshot;
+
+            public FakeDiagnosticsApi(Func<IDtmDiagnosticsSnapshot> getSnapshot)
+            {
+                this.getSnapshot = getSnapshot;
+            }
+
+            public IDtmDiagnosticsSnapshot GetSnapshot()
+            {
+                return getSnapshot();
+            }
         }
 
         private sealed class FakeActionCompletionApi : IActionCompletionApi
