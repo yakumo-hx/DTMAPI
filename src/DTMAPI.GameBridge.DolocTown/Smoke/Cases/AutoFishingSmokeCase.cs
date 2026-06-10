@@ -265,6 +265,7 @@ namespace DTMAPI.GameBridge.DolocTown
                                 : fishingService.LastFishingMiniGameCompleteSummary;
                             runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMiniGameComplete OK " + completeSummary);
                             runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", completeSummary);
+                            VerifyAutoFishingReportExportForSmoke("AutoFishingMiniGameComplete");
                             return SmokeAttemptResult.Succeeded;
                         }
 
@@ -276,6 +277,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     }
 
                     fishingService.ForceFishingFishForSmoke = false;
+                    VerifyAutoFishingReportExportForSmoke("AutoFishingPhase");
                     return SmokeAttemptResult.Succeeded;
                 }
 
@@ -302,6 +304,17 @@ namespace DTMAPI.GameBridge.DolocTown
             lastAutoFishingReadinessLog = DateTimeOffset.Now;
             runtime.RuntimeMonitor.Log("Smoke auto-fishing waiting: " + message);
             runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateFishingWait.OnPlay", message);
+        }
+
+        private void VerifyAutoFishingReportExportForSmoke(string scenario)
+        {
+            if (autoFishingReportExported)
+                return;
+
+            if (!TryVerifyDiagnosticsSnapshotForSmoke("AutoFishing " + scenario + " report export", "FishingAutomation"))
+                throw new InvalidOperationException("AutoFishing smoke report export verification failed for " + scenario + ".");
+
+            autoFishingReportExported = true;
         }
 
         private object? GenerateFishingRodForSmoke(Type dolocApi)

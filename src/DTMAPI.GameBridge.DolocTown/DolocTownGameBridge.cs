@@ -47,6 +47,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseAutoFishingAutoCastVerified;
         private bool autoExerciseAutoFishingMovementCancelVerified;
         private bool autoExerciseAutoFishingPhaseVerified;
+        private bool autoFishingReportExported;
         private int autoFishingMiniGameCompleteBaseline;
         private bool autoExerciseTitleButtonLifecycleAttempted;
         private bool autoExerciseInstantSaveAttempted;
