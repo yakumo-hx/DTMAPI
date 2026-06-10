@@ -37,12 +37,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void Update()
         {
-            Service.RefreshSaveSlotExpansionForRuntime();
+            Service.RefreshSaveSlotExpansionForRuntime(force: false, reason: "runtime refresh");
         }
 
         public void SaveLoaded(bool isNewGame)
         {
-            Service.RefreshSaveSlotExpansionForRuntime();
+            Service.RefreshSaveSlotExpansionForRuntime(force: true, reason: "SaveLoaded");
         }
 
         public void ReturnedToTitle()

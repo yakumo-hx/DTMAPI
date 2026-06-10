@@ -11,9 +11,13 @@ namespace DTMAPI.GameBridge.DolocTown
     internal sealed class SaveSlotsService : ISaveSlotsApi
     {
         private const int VanillaArchiveSlotCount = 6;
+        private static readonly TimeSpan PendingRefreshInterval = TimeSpan.FromMilliseconds(750);
+        private static readonly TimeSpan ConfiguredRefreshInterval = TimeSpan.FromSeconds(3);
         private readonly DtmApiRuntime runtime;
         private readonly Dictionary<string, SaveSlotsOptions> saveSlotOptions = new Dictionary<string, SaveSlotsOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, SaveSlotsState> saveSlotStates = new Dictionary<string, SaveSlotsState>(StringComparer.OrdinalIgnoreCase);
+        private DateTimeOffset lastRuntimeRefreshAttemptAtUtc = DateTimeOffset.MinValue;
+        private bool nativeArchiveSlotManagerPending;
 
         public SaveSlotsService(DtmApiRuntime runtime)
         {
@@ -61,15 +65,33 @@ namespace DTMAPI.GameBridge.DolocTown
             return new BridgeFeatureStatus(state.Status, state.LastMessage);
         }
 
-        internal void RefreshSaveSlotExpansionForRuntime()
+        internal void RefreshSaveSlotExpansionForRuntime(bool force, string reason)
         {
             if (saveSlotOptions.Count == 0)
                 return;
 
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (!force && !ShouldRefreshForRuntime(now))
+                return;
+
+            lastRuntimeRefreshAttemptAtUtc = now;
             int target = ComputeRequestedSaveSlotCount();
             int native = GetNativeArchiveSlotCount();
-            if (native != target)
-                ApplySaveSlotExpansion(string.Empty, "runtime refresh native=" + native + " target=" + target);
+            if (force || native != target || HasPendingNativeManagerState())
+                ApplySaveSlotExpansion(string.Empty, (reason ?? "runtime refresh") + " native=" + native + " target=" + target);
+        }
+
+        private bool ShouldRefreshForRuntime(DateTimeOffset now)
+        {
+            TimeSpan interval = nativeArchiveSlotManagerPending || HasPendingNativeManagerState()
+                ? PendingRefreshInterval
+                : ConfiguredRefreshInterval;
+            return now - lastRuntimeRefreshAttemptAtUtc >= interval;
+        }
+
+        private bool HasPendingNativeManagerState()
+        {
+            return saveSlotStates.Values.Any(state => state.Status == "pending-native-game-manager");
         }
 
         private SaveSlotsRegisterResult ApplySaveSlotExpansion(string ownerId, string reason)
@@ -85,6 +107,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (!TryGetNativeArchiveSlotManager(out object? manager, out string managerMessage))
             {
+                nativeArchiveSlotManagerPending = true;
                 result.Success = false;
                 result.FailureReason = "missing-game-manager";
                 result.Message = managerMessage;
@@ -92,6 +115,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Save.MoreSlotsApi", "pending", "DolocAPI.gameManager.archiveFileCount", managerMessage);
                 return result;
             }
+
+            nativeArchiveSlotManagerPending = false;
+            if (ownerId.Length == 0)
+                saveSlotStates.Remove(string.Empty);
 
             int previous = ReadIntMember(manager!, "archiveFileCount", VanillaArchiveSlotCount);
             int applied = ComputeRequestedSaveSlotCount();
