@@ -684,6 +684,14 @@ namespace DTMAPI.UnitTests
                 Assert(exportResult.Status == "exported", "UI report export should verify the refreshed snapshot report path.");
                 Assert(exportResult.SnapshotReportPathMatched, "UI report export should match the exported path to snapshot LatestReportPath.");
                 Assert(runtime.UI.CurrentManagerModel != null && runtime.UI.CurrentManagerModel.LatestReportPath == report, "UI report export should refresh the current manager model after export.");
+                ManagerLogsPageState exportedLogsState = ManagerLogsPageState.From(exportResult, runtime.UI.CurrentManagerModel);
+                Assert(exportedLogsState.ExportStatus == "exported", "Manager Logs state should expose the exported status.");
+                Assert(exportedLogsState.ExportedReportPath == report, "Manager Logs state should expose the exported report path.");
+                Assert(exportedLogsState.SnapshotLatestReportPath == report, "Manager Logs state should expose the refreshed snapshot report path.");
+                Assert(exportedLogsState.PathMatchStatus == "matched" && exportedLogsState.SnapshotReportPathMatched, "Manager Logs state should expose the matched report path state.");
+
+                ManagerLogsPageState notExportedLogsState = ManagerLogsPageState.From(null, runtime.UI.CurrentManagerModel);
+                Assert(notExportedLogsState.ExportStatus == "not-exported" && notExportedLogsState.PathMatchStatus == "not-exported", "Manager Logs state should expose not-exported before an export result exists.");
 
                 string latestLogPath = Path.GetTempFileName();
                 string exportedPath = Path.Combine(Path.GetTempPath(), "dtmapi-manager-exported.zip");
@@ -709,7 +717,20 @@ namespace DTMAPI.UnitTests
                     Assert(mismatch.Status == "report-path-mismatch", "Manager provider should flag report path mismatch after export and snapshot refresh.");
                     Assert(!mismatch.SnapshotReportPathMatched, "Manager provider mismatch result should expose unmatched report paths.");
                     Assert(mismatch.ExportedReportPath == exportedPath, "Manager provider mismatch result should keep the exported path.");
-                    Assert(mismatch.RefreshedModel != null && mismatch.RefreshedModel.LatestReportPath == staleSnapshotPath, "Manager provider mismatch result should keep the refreshed snapshot path.");
+                    DtmManagerViewModel mismatchModel = mismatch.RefreshedModel ?? throw new InvalidOperationException("Manager provider mismatch result should keep a refreshed snapshot model.");
+                    Assert(mismatchModel.LatestReportPath == staleSnapshotPath, "Manager provider mismatch result should keep the refreshed snapshot path.");
+                    ManagerLogsPageState mismatchLogsState = ManagerLogsPageState.From(mismatch, null);
+                    Assert(mismatchLogsState.ExportStatus == "report-path-mismatch", "Manager Logs state should expose report-path-mismatch export status.");
+                    Assert(mismatchLogsState.ExportedReportPath == exportedPath, "Manager Logs state should expose the mismatched exported path.");
+                    Assert(mismatchLogsState.SnapshotLatestReportPath == staleSnapshotPath, "Manager Logs state should expose the mismatched snapshot report path.");
+                    Assert(mismatchLogsState.PathMatchStatus == "report-path-mismatch" && !mismatchLogsState.SnapshotReportPathMatched, "Manager Logs state should expose path mismatch.");
+
+                    DtmManagerReportExportResult missingExportPath = DtmManagerReportExportResult.FromExport(string.Empty, mismatchModel);
+                    ManagerLogsPageState missingExportPathState = ManagerLogsPageState.From(missingExportPath, mismatchModel);
+                    Assert(missingExportPathState.ExportStatus == "missing-export-path", "Manager Logs state should expose missing-export-path export status.");
+                    Assert(missingExportPathState.ExportedReportPath == string.Empty, "Manager Logs state should keep an empty exported path for missing export path.");
+                    Assert(missingExportPathState.SnapshotLatestReportPath == staleSnapshotPath, "Manager Logs state should keep the refreshed snapshot path when export path is missing.");
+                    Assert(missingExportPathState.PathMatchStatus == "missing-export-path", "Manager Logs state should expose missing export path as its path-match state.");
                 }
                 finally
                 {
@@ -752,6 +773,11 @@ namespace DTMAPI.UnitTests
                 DtmManagerReportExportResult exportFailureResult = exportFailureUi.LastManagerReportExport ?? throw new InvalidOperationException("Manager UI export failure should retain an export-failed result.");
                 Assert(exportFailureResult.Status == "export-failed", "Manager UI export failure should retain an export-failed result.");
                 Assert(exportFailureResult.ErrorMessage.IndexOf("simulated export failure", StringComparison.Ordinal) >= 0, "Manager UI export failure should expose the internal error text.");
+                ManagerLogsPageState exportFailureLogsState = ManagerLogsPageState.From(exportFailureResult, exportFailureUi.CurrentManagerModel);
+                Assert(exportFailureLogsState.ExportStatus == "export-failed", "Manager Logs state should expose export-failed status.");
+                Assert(exportFailureLogsState.ExportedReportPath == string.Empty, "Manager Logs state should clear exported path after export failure.");
+                Assert(exportFailureLogsState.PathMatchStatus == "export-failed", "Manager Logs state should expose export-failed path-match status.");
+                Assert(exportFailureLogsState.ExportErrorMessage.IndexOf("simulated export failure", StringComparison.Ordinal) >= 0, "Manager Logs state should expose export failure error text.");
                 Assert(exportFailureRecorded, "Manager UI export failure should record diagnostics with DTMAPI.ManagerUI owner.");
 
                 bool refreshFailureRecorded = false;

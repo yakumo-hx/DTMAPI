@@ -386,4 +386,67 @@ namespace DTMAPI.Core.Manager
             return "no-report";
         }
     }
+
+    internal sealed class ManagerLogsPageState
+    {
+        private ManagerLogsPageState(
+            string latestLogPath,
+            string snapshotLatestReportPath,
+            string snapshotReportStatus,
+            string exportStatus,
+            string exportedReportPath,
+            string pathMatchStatus,
+            bool snapshotReportPathMatched,
+            string exportErrorMessage)
+        {
+            LatestLogPath = latestLogPath;
+            SnapshotLatestReportPath = snapshotLatestReportPath;
+            SnapshotReportStatus = snapshotReportStatus;
+            ExportStatus = exportStatus;
+            ExportedReportPath = exportedReportPath;
+            PathMatchStatus = pathMatchStatus;
+            SnapshotReportPathMatched = snapshotReportPathMatched;
+            ExportErrorMessage = exportErrorMessage;
+        }
+
+        internal static ManagerLogsPageState From(DtmManagerReportExportResult? lastExport, DtmManagerViewModel? currentModel)
+        {
+            DtmManagerViewModel? snapshotModel = lastExport?.RefreshedModel ?? currentModel;
+            string exportStatus = lastExport?.Status ?? "not-exported";
+            string pathMatchStatus = GetPathMatchStatus(lastExport);
+
+            return new ManagerLogsPageState(
+                snapshotModel?.LatestLogPath ?? string.Empty,
+                snapshotModel?.LatestReportPath ?? string.Empty,
+                snapshotModel?.ExportReport.Status ?? "unavailable",
+                exportStatus,
+                lastExport?.ExportedReportPath ?? string.Empty,
+                pathMatchStatus,
+                lastExport?.SnapshotReportPathMatched ?? false,
+                lastExport?.ErrorMessage ?? string.Empty);
+        }
+
+        internal string LatestLogPath { get; }
+        internal string SnapshotLatestReportPath { get; }
+        internal string SnapshotReportStatus { get; }
+        internal string ExportStatus { get; }
+        internal string ExportedReportPath { get; }
+        internal string PathMatchStatus { get; }
+        internal bool SnapshotReportPathMatched { get; }
+        internal string ExportErrorMessage { get; }
+
+        private static string GetPathMatchStatus(DtmManagerReportExportResult? lastExport)
+        {
+            if (lastExport == null)
+                return "not-exported";
+
+            if (string.Equals(lastExport.Status, "export-failed", StringComparison.OrdinalIgnoreCase))
+                return "export-failed";
+
+            if (string.IsNullOrWhiteSpace(lastExport.ExportedReportPath))
+                return "missing-export-path";
+
+            return lastExport.SnapshotReportPathMatched ? "matched" : "report-path-mismatch";
+        }
+    }
 }
