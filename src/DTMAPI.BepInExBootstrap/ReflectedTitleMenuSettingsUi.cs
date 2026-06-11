@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Manager;
 using DTMAPI.Core.Runtime;
 using DTMAPI.Core.Services;
 
@@ -554,17 +555,47 @@ namespace DTMAPI.BepInExBootstrap
 
         private void RenderStatus(RuntimeSnapshot snapshot)
         {
-            string[] lines =
+            CreateButton(panelContentRoot!, "DTMAPI.Status.Refresh", T("status.refresh", "Refresh"), () =>
             {
-                T("status.runtimeActiveSince", "Runtime active since ") + snapshot.StartedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                T("status.gamePath", "Game path: ") + snapshot.Paths.GamePath,
-                string.Format(CultureInfo.InvariantCulture, T("status.modsSummary", "Mods discovered: {0} | loaded: {1} | config pages: {2}"), snapshot.DiscoveredMods.Count, snapshot.LoadedMods.Count, snapshot.ConfigPages.Count),
+                runtime.UI.RefreshDtmManagerModel();
+                statusMessage = T("status.refreshed", "Manager status refreshed.");
+                dirty = true;
+            }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), 52, -132, 120, 30);
+
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            string[] lines = manager == null
+                ? new[]
+                {
+                    T("status.managerUnavailable", "Manager model unavailable."),
+                    T("status.runtimeActiveSince", "Runtime active since ") + snapshot.StartedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    T("status.gamePath", "Game path: ") + snapshot.Paths.GamePath,
+                    T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
+                    T("status.officialEnablement", "Official enablement remains source-owned; DTMAPI config editing does not hot-unload DLLs or override official state."),
+                    T("status.diagnosticsHotkey", "F8 diagnostics overlay is disabled by default; use the title-page DTMAPI Settings entry.")
+                }
+                : new[]
+            {
+                T("status.managerOverall", "Overall status: ") + manager.Summary.OverallStatus,
+                string.Format(CultureInfo.InvariantCulture, T("status.managerMods", "Mods loaded: {0} | blocked: {1} | disabled: {2}"), manager.Summary.LoadedModCount, manager.Summary.BlockedModCount, manager.Summary.DisabledModCount),
+                string.Format(CultureInfo.InvariantCulture, T("status.managerDiagnostics", "Diagnostics errors: {0} | warnings: {1}"), manager.Summary.ErrorCount, manager.Summary.WarningCount),
+                string.Format(CultureInfo.InvariantCulture, T("status.managerHooksFeatures", "Failed hooks: {0} | failed features: {1}"), manager.Summary.FailedHookCount, manager.Summary.FailedFeatureCount),
+                T("status.managerReport", "Report export: ") + manager.ExportReport.Status,
+                FormatManagerPathStatus(T("status.latestLog", "Latest log"), manager.ExportReport.HasLatestLogPath, manager.ExportReport.LatestLogExists, manager.LatestLogPath),
+                FormatManagerPathStatus(T("status.latestReport", "Latest report"), manager.ExportReport.HasLatestReportPath, manager.ExportReport.LatestReportExists, manager.LatestReportPath),
                 T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
                 T("status.officialEnablement", "Official enablement remains source-owned; DTMAPI config editing does not hot-unload DLLs or override official state."),
                 T("status.diagnosticsHotkey", "F8 diagnostics overlay is disabled by default; use the title-page DTMAPI Settings entry.")
             };
             for (int i = 0; i < lines.Length; i++)
-                AddText(panelContentRoot!, "DTMAPI.Status.Row." + i, lines[i], 15, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -140 - i * 32, 930, 26);
+                AddText(panelContentRoot!, "DTMAPI.Status.Row." + i, Truncate(lines[i], 140), 15, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -176 - i * 32, 930, 26);
+        }
+
+        private string FormatManagerPathStatus(string label, bool hasPath, bool exists, string path)
+        {
+            string status = !hasPath
+                ? T("status.pathUnavailable", "unavailable")
+                : exists ? T("status.pathPresent", "present") : T("status.pathMissing", "missing");
+            return label + ": " + status + (hasPath ? " | " + path : string.Empty);
         }
 
         private void RenderErrors(RuntimeSnapshot snapshot)

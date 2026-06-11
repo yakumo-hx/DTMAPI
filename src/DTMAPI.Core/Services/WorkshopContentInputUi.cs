@@ -522,12 +522,12 @@ namespace DTMAPI.Core.Services
             CurrentPage = page;
             ActiveMenuId = "DTMAPI." + page;
             IsOpen = true;
-            RefreshManagerModel();
+            RefreshDtmManagerModel();
             if (!wasOpen)
                 opened(ActiveMenuId);
         }
 
-        private void RefreshManagerModel()
+        internal void RefreshDtmManagerModel()
         {
             if (ManagerModelProvider == null)
                 return;
