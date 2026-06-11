@@ -429,7 +429,8 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Log line: DirectExe smoke `GAME-SMOKE/20260611-100827` logs `Smoke automation opened DTMAPI Manager Status page.`, `Manager Status summary text OK overall=ready; mods=loaded:16,blocked:0,disabled:0; diagnostics=errors:0,warnings:0; hooks=failed:0,missing:0; features=failed:0,degraded:0; report=ready; ...`, and `Manager Status page screenshot OK screenshot=...manager-status-page.png`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260611-100827`; copied title/menu/status screenshots exist under the smoke evidence package, while the source screenshot folder contains `title-settings-button.png`, `title-settings-menu.png`, `manager-status-page.png`, and `summary.txt`.
   - Severity model: branch `codex/refactor-manager-status-severity-model` keeps the same smoke status IDs while moving missing hook and degraded feature counts into first-class internal `ManagerSummary` fields; DirectExe Status smoke `GAME-SMOKE/20260611-101818` verified `ManagerStatusPage`, `ManagerStatusSummaryText`, `ManagerStatusPageScreenshot`, screenshot file existence, clean exit, and summary text with `hooks=failed:0,missing:0` and `features=failed:0,degraded:0`.
-- Regression cases: MANAGER-STATUS-PAGE-SMOKE-20260611, MANAGER-STATUS-SEVERITY-MODEL-20260611, UI-003, UI-004
+  - Final hardening: `GAME-SMOKE/20260611-103601` on final `Refactor` verifies `ManagerStatusPage=Passed`, `ManagerStatusSummaryText=Passed`, `ManagerStatusPageScreenshot=Passed`, `ManagerStatusPageScreenshotFile=Passed`, title/menu screenshot checks, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed` after export/refresh safety, dedicated Status smoke, severity model, and Logs report-state branches merged.
+- Regression cases: MANAGER-STATUS-PAGE-SMOKE-20260611, MANAGER-STATUS-SEVERITY-MODEL-20260611, MANAGER-STATUS-HARDENING-FINAL-20260611, UI-003, UI-004
 
 ## Hook: UI.ConfigMenuAdvancedControls
 

@@ -233,11 +233,11 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
-        [pscustomobject]@{ Id = "20260611-092012"; Label = "Final Manager Status title UI smoke" },
+        [pscustomobject]@{ Id = "20260611-103601"; Label = "Final Manager Status hardening smoke" },
         [pscustomobject]@{ Id = "20260611-031502"; Label = "Final Camera diagnostics report-export smoke" },
         [pscustomobject]@{ Id = "20260611-031721"; Label = "Final ActionSpeed diagnostics report-export smoke" },
         [pscustomobject]@{ Id = "20260611-031838"; Label = "Final AutoFishing behavior and report-export smoke" },
-        [pscustomobject]@{ Id = "20260611-031954"; Label = "Final HookProbe UI/runtime smoke" }
+        [pscustomobject]@{ Id = "20260611-103701"; Label = "Final HookProbe UI/runtime smoke" }
     )
 }
 
