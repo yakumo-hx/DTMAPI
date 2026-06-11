@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0015 | 2026-06-11 | verified | audit/package/web | Refreshed the compact web audit package defaults after Manager UI MVP Phase 1, using final post-merge Manager MVP and HookProbe evidence without generating a full package. | [20260611-0015-manager-ui-mvp-phase1-web-audit-package.md](2026/20260611-0015-manager-ui-mvp-phase1-web-audit-package.md) |
 | 20260611-0014 | 2026-06-11 | verified | core/manager-ui/smoke | Wired the title Settings Manager MVP pages to the internal Manager view model and added Manager MVP smoke fields for Mods, Errors, Hooks, Features, Logs, and Logs export state. | [20260611-0014-manager-ui-mvp-phase1.md](2026/20260611-0014-manager-ui-mvp-phase1.md) |
 | 20260611-0013 | 2026-06-11 | verified | audit/package/web | Refreshed compact web audit package defaults after Manager Status hardening and updated final Manager Status/HookProbe evidence IDs without generating a full package. | [20260611-0013-manager-status-hardening-web-audit-package.md](2026/20260611-0013-manager-status-hardening-web-audit-package.md) |
 | 20260611-0012 | 2026-06-11 | verified | manager-ui/logs | Wired the title Settings Logs page to internal Manager report-export state, including export status, exported path, snapshot report path, path-match state, and failure text. | [20260611-0012-manager-logs-page-report-state.md](2026/20260611-0012-manager-logs-page-report-state.md) |

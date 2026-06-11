@@ -448,7 +448,9 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Log line: DirectExe smoke `GAME-SMOKE/20260611-112148` logs `Smoke automation opened DTMAPI Manager Mods page.`, `Errors page.`, `Hooks page.`, `Features page.`, `Logs page.`, `Manager Logs export button OK status=exported pathMatch=matched path=D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-112232.zip`, `Manager Logs export state OK export=exported; pathMatch=matched; snapshotReport=ready`, and `Manager Logs page screenshot OK screenshot=...manager-logs-page.png`.
   - Result fields: `GAME-SMOKE/20260611-112148` records `ManagerStatusPage=Passed`, `ManagerStatusSummaryText=Passed`, `ManagerStatusPageScreenshotFile=Passed`, `ManagerModsPage=Passed`, `ManagerErrorsPage=Passed`, `ManagerHooksPage=Passed`, `ManagerFeaturesPage=Passed`, `ManagerLogsPage=Passed`, `ManagerLogsExportButton=Passed`, `ManagerLogsExportStateText=Passed`, `ManagerLogsPageScreenshotFile=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
   - Runtime regression: `GAME-SMOKE/20260611-112402` records `HookProbe=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
-- Regression cases: MANAGER-UI-MVP-PHASE1-20260611, UI-003, UI-004
+  - Final `Refactor` evidence: `GAME-SMOKE/20260611-113018` records all Manager MVP page/export/screenshot result fields as `Passed`, including `ManagerLogsExportButton=Passed` and `ManagerLogsExportStateText=Passed`; logs show `Manager Logs export button OK status=exported pathMatch=matched path=D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-113103.zip`.
+  - Final runtime regression: `GAME-SMOKE/20260611-113156` records `HookProbe=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
+- Regression cases: MANAGER-UI-MVP-PHASE1-20260611, MANAGER-UI-MVP-PHASE1-FINAL-20260611, UI-003, UI-004
 
 ## Hook: UI.ConfigMenuAdvancedControls
 
