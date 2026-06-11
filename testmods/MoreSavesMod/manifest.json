@@ -1,6 +1,7 @@
 {
   "Name": "DTMAPI More Saves",
   "Author": "Yuuka",
+  "Description": "依赖 DTMAPI Runtime；扩展官方存档界面槽位，不改变存档格式，禁用不会删除额外存档。",
   "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.MoreSavesMod",
   "EntryDll": "MoreSavesMod.dll",

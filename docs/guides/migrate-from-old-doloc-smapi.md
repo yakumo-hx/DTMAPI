@@ -30,6 +30,22 @@ Steam unsubscribe normally removes Workshop-downloaded content after Steam and t
 
 Old AutoFishing-like code mods may also remain loaded until the game process restarts. Always restart the game after unsubscribe/disable before judging whether the old mod is gone.
 
+## DTMAPI-Owned Local Packages
+
+New DTMAPI local official packages use this marker:
+
+```text
+Content/DTMAPI/dtmapi-package.json
+```
+
+The DTMAPI uninstaller keeps these packages by default. If you explicitly run:
+
+```powershell
+tools/scripts/uninstall-dtmapi.ps1 -RemoveOfficialLocalPackages
+```
+
+only marker-owned DTMAPI packages are backed up and removed. Old `MODS/DLK_*` folders and Steam Workshop cache remain detected-only migration items; remove them through Steam/game UI or by deliberate manual cleanup after backup.
+
 ## Never Deleted Automatically
 
 DTMAPI does not delete Steam Workshop content, player save files, `DTMAPI/reports`, `DTMAPI/config`, or `DTMAPI/backups` during migration.

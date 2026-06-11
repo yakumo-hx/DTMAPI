@@ -26,6 +26,7 @@ if (Test-Path $latestReportPointer) {
     $latestReport = (Get-Content -Raw -LiteralPath $latestReportPointer).Trim()
 }
 $legacyDetections = @(Get-DtmApiLegacyDetections -GameDir $GameDir)
+$officialLocalPackages = @(Get-DtmApiOwnedOfficialLocalPackages)
 
 Write-Host "DTMAPI status"
 Write-Host "GameDir: $GameDir"
@@ -40,7 +41,15 @@ if ([string]::IsNullOrWhiteSpace($latestReport)) {
 else {
     Write-Host "Latest report: $(if (Test-Path $latestReport) { 'present' } else { 'missing' }) ($latestReport)"
 }
+Write-Host "DTMAPI-owned official local packages: $($officialLocalPackages.Count)"
+foreach ($package in $officialLocalPackages) {
+    Write-Host (" - {0}: {1} {2}" -f $package.OfficialFolder, $package.UniqueID, $package.Version)
+}
 Write-Host "Legacy detections: $($legacyDetections.Count)"
 foreach ($item in $legacyDetections) {
     Write-Host (" - {0}: {1} [{2}]" -f $item.Kind, $item.Path, $item.Action)
 }
+Write-Host "Next steps:"
+Write-Host " - If old DLK/SMAPI items are listed, unsubscribe/disable them in Steam or the in-game mod list, then restart Steam and Doloc Town."
+Write-Host " - Use DTMAPI Settings > Logs > Export Report when asking for help."
+Write-Host " - Run uninstall-dtmapi.ps1 -DryRun before uninstalling; add -RemoveOfficialLocalPackages only when you want DTMAPI-owned local packages backed up and removed."

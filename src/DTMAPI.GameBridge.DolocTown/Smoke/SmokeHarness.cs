@@ -420,6 +420,15 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Smoke.CustomEntityApis", "pending", "ICustomAnimalApi/ICustomMonsterApi/ICustomAttackApi/ICustomDroneApi", "Waiting after save load to register StableCandidate custom entity registry contracts, verify snapshots/status, confirm duplicate validation, confirm runtime-creation-blocked request results, and clean up the smoke owner.");
                 return;
             }
+            if (smokeSettings.AutoExerciseMoreSavesOfficialSaveUi)
+            {
+                if (!autoExitAttempted)
+                {
+                    autoExitAttempted = true;
+                    TryQuitApplication("smoke MoreSaves official save UI evidence captured");
+                }
+                return;
+            }
             if (smokeSettings.AutoOpenAnimalPanel)
             {
                 runtime.SetHookStatus("Smoke.AnimalPanelUi", "pending", "AnimalPanelUiState", "Waiting after save load to open the official animal panel UI.");
@@ -4195,6 +4204,7 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseZoomDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseChestLocatorEnhancer { get; set; }
             [DataMember] public int AutoExerciseChestLocatorEnhancerDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseMoreSavesOfficialSaveUi { get; set; }
             [DataMember] public bool AutoExerciseStrongPlantingGun { get; set; }
             [DataMember] public int AutoExerciseStrongPlantingGunDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseCustomEntityApis { get; set; }

@@ -124,6 +124,175 @@ function Get-DtmApiPublishedModDefinitions {
     )
 }
 
+function Get-DtmApiDeveloperOfficialModDefinitions {
+    $items = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($item in @(Get-DtmApiPublishedModDefinitions)) {
+        $items.Add($item) | Out-Null
+    }
+
+    foreach ($item in @(
+        [ordered]@{
+            OfficialFolder = 'Yuuka_DTMAPI_AutoFishing'
+            Project = 'AutoFishingMod'
+            SourceDll = 'AutoFishingMod.dll'
+            PackageDll = 'Yuuka.DTMAPI.AutoFishing.dll'
+            UniqueID = 'Yuuka.DTMAPI.AutoFishing'
+            DisplayName = '自动钓鱼（DTMAPI）'
+            PackageName = 'DTMAPI-AutoFishing'
+            DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_SecondMotor'
+            Project = 'SecondMotorMod'
+            SourceDll = 'SecondMotorMod.dll'
+            PackageDll = 'DTMAPI.SecondMotor.dll'
+            UniqueID = 'DTMAPI.SecondMotorMod'
+            DisplayName = 'DTMAPI 异色飞行摩托'
+            PackageName = 'DTMAPI-SecondMotor'
+            CopyOfficialVehicleExampleAssets = $true
+            DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_Oil'
+            Project = 'OilMod'
+            SourceDll = 'OilMod.dll'
+            PackageDll = 'DTMAPI.Oil.dll'
+            UniqueID = 'DTMAPI.OilMod'
+            DisplayName = 'DTMAPI 石油'
+            PackageName = 'DTMAPI-Oil'
+            DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_Mine'
+            Project = 'MineMod'
+            SourceDll = 'MineMod.dll'
+            PackageDll = 'DTMAPI.Mine.dll'
+            UniqueID = 'DTMAPI.MineMod'
+            DisplayName = 'DTMAPI 矿井'
+            PackageName = 'DTMAPI-Mine'
+            DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_MoreEquipmentSlots'
+            Project = 'MoreEquipmentSlotsMod'
+            SourceDll = 'MoreEquipmentSlotsMod.dll'
+            PackageDll = 'DTMAPI.MoreEquipmentSlots.dll'
+            UniqueID = 'DTMAPI.MoreEquipmentSlotsMod'
+            DisplayName = 'DTMAPI 更多装备栏'
+            PackageName = 'DTMAPI-MoreEquipmentSlots'
+            DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_StrongPlantingGun'
+            Project = 'StrongPlantingGunMod'
+            SourceDll = 'StrongPlantingGunMod.dll'
+            PackageDll = 'DTMAPI.StrongPlantingGun.dll'
+            UniqueID = 'DTMAPI.StrongPlantingGunMod'
+            DisplayName = 'DTMAPI 强化种植枪'
+            PackageName = 'DTMAPI-StrongPlantingGun'
+            DeveloperOnly = $true
+        }
+    )) {
+        $items.Add($item) | Out-Null
+    }
+
+    return $items.ToArray()
+}
+
+function Test-DtmApiMapKey {
+    param(
+        [Parameter(Mandatory = $true)] $Map,
+        [Parameter(Mandatory = $true)] [string] $Key
+    )
+
+    if ($Map -is [System.Collections.IDictionary]) {
+        return $Map.Contains($Key)
+    }
+
+    return $null -ne $Map.PSObject.Properties[$Key]
+}
+
+function Get-DtmApiMapValue {
+    param(
+        [Parameter(Mandatory = $true)] $Map,
+        [Parameter(Mandatory = $true)] [string] $Key,
+        $Default = $null
+    )
+
+    if ($Map -is [System.Collections.IDictionary]) {
+        if ($Map.Contains($Key)) {
+            return $Map[$Key]
+        }
+
+        return $Default
+    }
+
+    $property = $Map.PSObject.Properties[$Key]
+    if ($property) {
+        return $property.Value
+    }
+
+    return $Default
+}
+
+function Get-DtmApiOwnedOfficialLocalPackages {
+    param(
+        [string] $PersistentRoot = (Get-DtmApiPersistentRoot)
+    )
+
+    $modsRoot = Join-Path $PersistentRoot 'MODS'
+    if (-not (Test-Path -LiteralPath $modsRoot -PathType Container)) {
+        return @()
+    }
+
+    $items = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($dir in @(Get-ChildItem -LiteralPath $modsRoot -Directory -ErrorAction SilentlyContinue)) {
+        $marker = Join-Path $dir.FullName 'Content\DTMAPI\dtmapi-package.json'
+        if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
+            continue
+        }
+
+        $uniqueId = ''
+        $version = ''
+        try {
+            $markerData = Get-Content -Raw -Encoding UTF8 -LiteralPath $marker | ConvertFrom-Json
+            if ($markerData.PSObject.Properties['uniqueId']) {
+                $uniqueId = [string]$markerData.uniqueId
+            }
+        }
+        catch {
+            $uniqueId = ''
+        }
+
+        $manifest = Join-Path $dir.FullName 'Content\DTMAPI\manifest.json'
+        if (Test-Path -LiteralPath $manifest -PathType Leaf) {
+            try {
+                $manifestData = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json
+                if (-not $uniqueId -and $manifestData.PSObject.Properties['UniqueID']) {
+                    $uniqueId = [string]$manifestData.UniqueID
+                }
+                if ($manifestData.PSObject.Properties['Version']) {
+                    $version = [string]$manifestData.Version
+                }
+            }
+            catch {
+                $version = ''
+            }
+        }
+
+        $items.Add([ordered]@{
+            OfficialFolder = $dir.Name
+            ModInfoId = 'Local.' + $dir.Name
+            Path = [System.IO.Path]::GetFullPath($dir.FullName)
+            MarkerPath = [System.IO.Path]::GetFullPath($marker)
+            UniqueID = $uniqueId
+            Version = $version
+        }) | Out-Null
+    }
+
+    return $items.ToArray()
+}
+
 function Add-DtmApiLegacyDetection {
     param(
         [Parameter(Mandatory = $true)] [AllowEmptyCollection()] [System.Collections.Generic.List[object]] $Items,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
@@ -128,6 +129,8 @@ namespace DTMAPI.Core.Diagnostics
                 AddFileIfExists(archive, LatestLogPath, "DTMAPI-latest.log");
                 AddFileIfExists(archive, Path.Combine(paths.GamePath, "BepInEx", "LogOutput.log"), "BepInEx-LogOutput.log");
                 AddFileIfExists(archive, FindPlayerLogPath(), "Unity-Player.log");
+                AddFileIfExists(archive, Path.Combine(paths.DtmApiPath, "install-state.json"), "install-state.json");
+                AddFileIfExists(archive, Path.Combine(paths.DtmApiPath, "release-manifest.json"), "release-manifest.json");
                 AddText(archive, "dtmapi-summary.txt", BuildSummary());
             }
 
@@ -189,6 +192,7 @@ namespace DTMAPI.Core.Diagnostics
                 "Features: " + featureSnapshot.Count + Environment.NewLine +
                 trimSummary +
                 aggregateSummary +
+                BuildInstallReleaseSummary() +
                 "LatestLogPath: " + GetLatestLogPath() + Environment.NewLine +
                 "LatestReportPath: " + GetLatestReportPath() + Environment.NewLine +
                 Environment.NewLine +
@@ -199,6 +203,59 @@ namespace DTMAPI.Core.Diagnostics
                 string.Join(Environment.NewLine, warningSnapshot.Select(w => $"WARNING {w.Time:o} [{w.Owner}] {w.Message}: {w.Details}")) +
                 Environment.NewLine +
                 string.Join(Environment.NewLine, errorSnapshot.Select(e => $"ERROR {e.Time:o} [{e.Owner}] {e.Message}: {e.Details}"));
+        }
+
+        private string BuildInstallReleaseSummary()
+        {
+            string installPath = Path.Combine(paths.DtmApiPath, "install-state.json");
+            string releasePath = Path.Combine(paths.DtmApiPath, "release-manifest.json");
+            return BuildJsonStatus("InstallState", installPath, includeLegacyCounts: true) +
+                BuildJsonStatus("ReleaseManifest", releasePath, includeLegacyCounts: false);
+        }
+
+        private static string BuildJsonStatus(string label, string path, bool includeLegacyCounts)
+        {
+            if (!File.Exists(path))
+                return label + ": missing" + Environment.NewLine;
+
+            try
+            {
+                string text = File.ReadAllText(path);
+                string version = ExtractJsonString(text, "DTMAPIVersion");
+                string binaryVersion = ExtractJsonString(text, "BinaryVersion");
+                string result = label + ": present" + Environment.NewLine +
+                    label + "Path: " + path + Environment.NewLine;
+                if (!string.IsNullOrWhiteSpace(version))
+                    result += label + "DTMAPIVersion: " + version + Environment.NewLine;
+                if (!string.IsNullOrWhiteSpace(binaryVersion))
+                    result += label + "BinaryVersion: " + binaryVersion + Environment.NewLine;
+                if (includeLegacyCounts)
+                {
+                    result += label + "LegacyMovedCount: " + CountJsonArrayObjects(text, "LegacyModsMoved") + Environment.NewLine;
+                    result += label + "LegacyDetectedCount: " + CountJsonArrayObjects(text, "LegacyDetections") + Environment.NewLine;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return label + ": read-error " + ex.GetType().Name + ": " + ex.Message + Environment.NewLine;
+            }
+        }
+
+        private static string ExtractJsonString(string json, string propertyName)
+        {
+            Match match = Regex.Match(json, "\"" + Regex.Escape(propertyName) + "\"\\s*:\\s*\"(?<value>[^\"]*)\"");
+            return match.Success ? match.Groups["value"].Value : string.Empty;
+        }
+
+        private static int CountJsonArrayObjects(string json, string propertyName)
+        {
+            Match match = Regex.Match(json, "\"" + Regex.Escape(propertyName) + "\"\\s*:\\s*\\[(?<value>.*?)\\]", RegexOptions.Singleline);
+            if (!match.Success)
+                return 0;
+
+            return Regex.Matches(match.Groups["value"].Value, "\\{").Count;
         }
 
         private static void AddFileIfExists(ZipArchive archive, string path, string entryName)

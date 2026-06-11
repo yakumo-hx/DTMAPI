@@ -400,6 +400,15 @@ namespace DTMAPI.UnitTests
             {
                 string dir = NewTempGameDir();
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Paths.Ensure();
+                File.WriteAllText(
+                    Path.Combine(runtime.Paths.DtmApiPath, "install-state.json"),
+                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
+                    new UTF8Encoding(false));
+                File.WriteAllText(
+                    Path.Combine(runtime.Paths.DtmApiPath, "release-manifest.json"),
+                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"PackageKind\": \"unit-test\" }",
+                    new UTF8Encoding(false));
                 MethodInfo recordWarning = runtime.Diagnostics.GetType().GetMethod("RecordWarning", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("DiagnosticsService.RecordWarning should be available for runtime warnings.");
 
@@ -418,7 +427,11 @@ namespace DTMAPI.UnitTests
 
                 string report = runtime.ExportLogs();
                 string summary = ReadZipText(report, "dtmapi-summary.txt");
+                Assert(ReadZipText(report, "install-state.json").Contains("Old.AutoFishing"), "Diagnostic report zip should include install-state.json when present.");
+                Assert(ReadZipText(report, "release-manifest.json").Contains("unit-test"), "Diagnostic report zip should include release-manifest.json when present.");
                 Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
+                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.0-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.0.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
+                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.0-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.0.0"), "Diagnostic report summary should include release manifest version fields.");
                 Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
                 Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
 

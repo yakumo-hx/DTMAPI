@@ -8,6 +8,8 @@ param(
     [switch] $SkipOfficialLocalMods,
     [switch] $KeepLegacyMigratedGameMods,
     [switch] $DryRun,
+    [switch] $InstallPublishedModsOnly,
+    [switch] $InstallAllDevOfficialMods,
     [string] $PackagePayloadRoot = ''
 )
 
@@ -27,6 +29,9 @@ if ($usingPackagePayload) {
 if ($DryRun) {
     $SkipBuild = $true
 }
+if ($InstallPublishedModsOnly -and $InstallAllDevOfficialMods) {
+    throw "Use only one of -InstallPublishedModsOnly or -InstallAllDevOfficialMods."
+}
 if (-not $SkipBuild) {
     & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
 }
@@ -41,6 +46,8 @@ $script:DtmInstallFilesInstalled = New-Object 'System.Collections.Generic.List[o
 $script:DtmInstallBackupsCreated = New-Object 'System.Collections.Generic.List[object]'
 $script:DtmInstallLegacyModsMoved = New-Object 'System.Collections.Generic.List[object]'
 $script:DtmInstallBundledMods = New-Object 'System.Collections.Generic.List[object]'
+$script:DtmInstallStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$script:DtmInstallModInfosBackupPath = ''
 
 $runtimeFiles = @(
     'DTMAPI.BepInExBootstrap.dll',
@@ -57,6 +64,10 @@ if ($DryRun) {
     Write-Host "DRY RUN: would write release manifest to $(Join-Path $stateDir 'release-manifest.json')"
     Write-Host "DRY RUN: would write install state to $(Join-Path $stateDir 'install-state.json')"
     Write-Host "DRY RUN: detected legacy item count = $($legacyDetections.Count)"
+    if (-not $SkipOfficialLocalMods) {
+        $mode = if ($InstallPublishedModsOnly) { 'published release mods only' } else { 'developer local official mods' }
+        Write-Host "DRY RUN: official local mod install mode = $mode"
+    }
     $plannedState | ConvertTo-Json -Depth 12
     return
 }
@@ -222,6 +233,61 @@ function Write-JsonObject {
     [System.IO.File]::WriteAllText($Path, $json, $utf8NoBom)
 }
 
+function Write-JsonObjectAtomic {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [Parameter(Mandatory = $true)] $Value
+    )
+
+    $parent = Split-Path -Parent $Path
+    if ($parent) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+
+    $tempPath = $Path + ".tmp"
+    Write-JsonObject -Path $tempPath -Value $Value
+    Move-Item -LiteralPath $tempPath -Destination $Path -Force
+}
+
+function Backup-ModInfosBeforeWrite {
+    param([Parameter(Mandatory = $true)] [string] $EnablementPath)
+
+    if (-not (Test-Path -LiteralPath $EnablementPath -PathType Leaf)) {
+        return
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($script:DtmInstallModInfosBackupPath)) {
+        return
+    }
+
+    $backupRoot = Join-Path $stateDir ('backups\install-' + $script:DtmInstallStamp)
+    New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
+    $backupPath = Join-Path $backupRoot 'mod_infos.before.json'
+    Copy-Item -LiteralPath $EnablementPath -Destination $backupPath -Force
+    $script:DtmInstallModInfosBackupPath = [System.IO.Path]::GetFullPath($backupPath)
+    $script:DtmInstallBackupsCreated.Add([ordered]@{
+        Kind = 'mod-infos-before-install'
+        Path = [System.IO.Path]::GetFullPath($EnablementPath)
+        BackupPath = $script:DtmInstallModInfosBackupPath
+        Reason = 'Before adding DTMAPI official-local enablement entries'
+    }) | Out-Null
+}
+
+function Get-NumericPriorityOrNull {
+    param($Value)
+
+    if ($null -eq $Value) {
+        return $null
+    }
+
+    try {
+        return [int]$Value
+    }
+    catch {
+        return $null
+    }
+}
+
 function Find-OfficialVehicleExampleAssetRoot {
     param(
         [Parameter(Mandatory = $true)] [string] $GameDir
@@ -277,7 +343,7 @@ function Install-OfficialVehicleExampleAssets {
 
 function Install-OfficialLocalDtmApiMod {
     param(
-        [hashtable] $Mod
+        $Mod
     )
 
     $persistentRoot = Get-DolocTownPersistentRoot
@@ -343,7 +409,7 @@ function Install-OfficialLocalDtmApiMod {
         Copy-DirectoryContents -Source (Split-Path -Parent $contentSource) -Destination $dest -Include @('Content')
     }
 
-    if ($Mod.ContainsKey('CopyOfficialVehicleExampleAssets') -and $Mod.CopyOfficialVehicleExampleAssets) {
+    if ((Test-DtmApiMapKey -Map $Mod -Key 'CopyOfficialVehicleExampleAssets') -and $Mod.CopyOfficialVehicleExampleAssets) {
         Install-OfficialVehicleExampleAssets -GameDir $gameDir -Destination $dest
     }
 
@@ -397,7 +463,12 @@ function Ensure-OfficialLocalDtmApiEnablement {
     New-Item -ItemType Directory -Force -Path $saveRoot | Out-Null
     $enablementPath = Join-Path $saveRoot 'mod_infos.json'
     if (Test-Path $enablementPath) {
-        $data = Get-Content -Raw -Encoding UTF8 -LiteralPath $enablementPath | ConvertFrom-Json
+        try {
+            $data = Get-Content -Raw -Encoding UTF8 -LiteralPath $enablementPath | ConvertFrom-Json
+        }
+        catch {
+            throw "Could not read $enablementPath. Refusing to overwrite mod_infos.json. $($_.Exception.Message)"
+        }
     }
     else {
         $data = [pscustomobject]@{ modInfos = [pscustomobject]@{} }
@@ -414,8 +485,11 @@ function Ensure-OfficialLocalDtmApiEnablement {
     $priority = 0
     foreach ($property in $data.modInfos.PSObject.Properties) {
         $value = $property.Value
-        if ($value -and $value.enabled -and $value.priority -is [int]) {
-            $priority = [Math]::Max($priority, [int]$value.priority + 1)
+        if ($value -and $value.PSObject.Properties['enabled'] -and [bool]$value.enabled -and $value.PSObject.Properties['priority']) {
+            $existingPriority = Get-NumericPriorityOrNull -Value $value.priority
+            if ($null -ne $existingPriority) {
+                $priority = [Math]::Max($priority, $existingPriority + 1)
+            }
         }
     }
 
@@ -440,99 +514,22 @@ function Ensure-OfficialLocalDtmApiEnablement {
         source = 'Local'
         title = $title
     }
+    Backup-ModInfosBeforeWrite -EnablementPath $enablementPath
     $data.modInfos | Add-Member -MemberType NoteProperty -Name $id -Value ([pscustomobject]$entry)
-    Write-JsonObject -Path $enablementPath -Value $data
+    Write-JsonObjectAtomic -Path $enablementPath -Value $data
     Write-Host "Added official local enablement entry for $id"
 }
 
 if (-not $SkipOfficialLocalMods) {
-    $officialLocalMods = @(
-        @{
-            OfficialFolder = 'Yuuka_DTMAPI_ActionSpeed'
-            Project = 'ActionSpeedMod'
-            SourceDll = 'ActionSpeedMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.ActionSpeed.dll'
-        },
-        @{
-            OfficialFolder = 'Yuuka_DTMAPI_AutoFishing'
-            Project = 'AutoFishingMod'
-            SourceDll = 'AutoFishingMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.AutoFishing.dll'
-        },
-        @{
-            OfficialFolder = 'Yuuka_DTMAPI_OneActionComplete'
-            Project = 'OneActionCompleteMod'
-            SourceDll = 'OneActionCompleteMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.OneActionComplete.dll'
-        },
-        @{
-            OfficialFolder = 'Yuuka_DTMAPI_FishBreedingAssistant'
-            Project = 'FishBreedingAssistantMod'
-            SourceDll = 'FishBreedingAssistantMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.FishBreedingAssistant.dll'
-        },
-        @{
-            OfficialFolder = 'Yuuka_DTMAPI_AnimalHusbandryProgress'
-            Project = 'AnimalHusbandryProgressMod'
-            SourceDll = 'AnimalHusbandryProgressMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.AnimalHusbandryProgress.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_YKeyConsole'
-            Project = 'DebugConsoleMod'
-            SourceDll = 'DebugConsoleMod.dll'
-            PackageDll = 'DTMAPI.YKeyConsole.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_SecondMotor'
-            Project = 'SecondMotorMod'
-            SourceDll = 'SecondMotorMod.dll'
-            PackageDll = 'DTMAPI.SecondMotor.dll'
-            CopyOfficialVehicleExampleAssets = $true
-        },
-        @{
-            OfficialFolder = 'DTMAPI_Oil'
-            Project = 'OilMod'
-            SourceDll = 'OilMod.dll'
-            PackageDll = 'DTMAPI.Oil.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_Mine'
-            Project = 'MineMod'
-            SourceDll = 'MineMod.dll'
-            PackageDll = 'DTMAPI.Mine.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_MoreEquipmentSlots'
-            Project = 'MoreEquipmentSlotsMod'
-            SourceDll = 'MoreEquipmentSlotsMod.dll'
-            PackageDll = 'DTMAPI.MoreEquipmentSlots.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_MoreSaves'
-            Project = 'MoreSavesMod'
-            SourceDll = 'MoreSavesMod.dll'
-            PackageDll = 'DTMAPI.MoreSaves.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_Zoom'
-            Project = 'ZoomMod'
-            SourceDll = 'ZoomMod.dll'
-            PackageDll = 'DTMAPI.Zoom.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_ChestLocatorEnhancer'
-            Project = 'ChestLocatorEnhancerMod'
-            SourceDll = 'ChestLocatorEnhancerMod.dll'
-            PackageDll = 'DTMAPI.ChestLocatorEnhancer.dll'
-        },
-        @{
-            OfficialFolder = 'DTMAPI_StrongPlantingGun'
-            Project = 'StrongPlantingGunMod'
-            SourceDll = 'StrongPlantingGunMod.dll'
-            PackageDll = 'DTMAPI.StrongPlantingGun.dll'
-        }
-    )
+    $officialLocalMods = if ($InstallPublishedModsOnly) {
+        @(Get-DtmApiPublishedModDefinitions)
+    }
+    else {
+        @(Get-DtmApiDeveloperOfficialModDefinitions)
+    }
+
+    $installMode = if ($InstallPublishedModsOnly) { 'published release mods only' } else { 'developer local official mods' }
+    Write-Host "Installing official local DTMAPI packages using mode: $installMode"
 
     foreach ($mod in $officialLocalMods) {
         Install-OfficialLocalDtmApiMod -Mod $mod

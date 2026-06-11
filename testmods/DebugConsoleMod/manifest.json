@@ -1,6 +1,7 @@
 {
   "Name": "Y键控制台",
   "Author": "Yuuka",
+  "Description": "依赖 DTMAPI Runtime；在存档内按 Y 打开调试控制台，提供物品、天气、传送、时间和移速工具。",
   "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.DebugConsoleMod",
   "EntryDll": "DebugConsoleMod.dll",

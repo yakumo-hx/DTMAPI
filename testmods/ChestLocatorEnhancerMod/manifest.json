@@ -1,6 +1,7 @@
 {
   "Name": "DTMAPI Chest Locator Enhancer",
   "Author": "Yuuka",
+  "Description": "依赖 DTMAPI Runtime；扩展官方箱子定位器的共享容器范围，基于 DTMAPI ChestLocator API。",
   "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.ChestLocatorEnhancerMod",
   "EntryDll": "ChestLocatorEnhancerMod.dll",
