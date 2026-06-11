@@ -43,6 +43,10 @@ The Manager Status page now has a dedicated title-page smoke route. `run-game-sm
 
 The internal Manager summary now separates failed hooks from missing hooks and failed features from degraded features. Missing hooks and degraded features are support warnings, not hard failures, while diagnostics errors, blocked mods, failed hooks, and failed features still make the overall status `failed`. Mod row severity is based on structured `StatusCode` or exact `Status` values, not free-text `Reason`, so localized explanations cannot accidentally reorder a loaded mod as blocked or warning.
 
+## 2026-06-11 Logs Page Report State Note
+
+The title-page DTMAPI Settings `Logs` page now consumes the internal Manager report-export result instead of only showing the legacy last-export path. It displays export status, exported report path, the refreshed snapshot `LatestReportPath`, path-match state, snapshot report status, and `export-failed` error text. The Export logs button still calls the existing internal export path and refreshes the Manager model through `UiRuntimeService`; no public diagnostics or UI helper contract changed.
+
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.

@@ -638,13 +638,22 @@ namespace DTMAPI.BepInExBootstrap
             {
                 string path = runtime.UI.ExportLogs();
                 DtmManagerReportExportResult? export = runtime.UI.LastManagerReportExport;
-                statusMessage = export?.Status == "export-failed"
-                    ? T("logs.exportFailed", "Export failed: ") + export.ErrorMessage
-                    : T("logs.exported", "Exported logs: ") + path;
+                ManagerLogsPageState logsState = ManagerLogsPageState.From(export, runtime.UI.CurrentManagerModel);
+                statusMessage = logsState.ExportStatus == "export-failed"
+                    ? T("logs.exportFailed", "Export failed: ") + logsState.ExportErrorMessage
+                    : T("logs.exported", "Exported logs: ") + (string.IsNullOrWhiteSpace(path) ? logsState.ExportStatus : path);
                 dirty = true;
             }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), 52, -144, 148, 30);
-            AddText(panelContentRoot!, "DTMAPI.Logs.Latest", T("logs.latest", "Latest log: ") + runtime.Diagnostics.GetLatestLogPath(), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -192, 930, 24);
-            AddText(panelContentRoot!, "DTMAPI.Logs.ExportPath", T("logs.latestExport", "Latest export: ") + (string.IsNullOrWhiteSpace(snapshot.LastExportPath) ? T("common.none", "(none)") : snapshot.LastExportPath), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -222, 930, 24);
+            ManagerLogsPageState state = ManagerLogsPageState.From(runtime.UI.LastManagerReportExport, runtime.UI.CurrentManagerModel);
+            string latestLogPath = string.IsNullOrWhiteSpace(state.LatestLogPath) ? runtime.Diagnostics.GetLatestLogPath() : state.LatestLogPath;
+            string exportedPath = string.IsNullOrWhiteSpace(state.ExportedReportPath) ? snapshot.LastExportPath : state.ExportedReportPath;
+            AddText(panelContentRoot!, "DTMAPI.Logs.Latest", T("logs.latest", "Latest log: ") + Truncate(latestLogPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -192, 930, 24);
+            AddText(panelContentRoot!, "DTMAPI.Logs.ExportStatus", T("logs.exportStatus", "Export status: ") + state.ExportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -222, 930, 24);
+            AddText(panelContentRoot!, "DTMAPI.Logs.ExportPath", T("logs.latestExport", "Exported path: ") + Truncate(string.IsNullOrWhiteSpace(exportedPath) ? T("common.none", "(none)") : exportedPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -252, 930, 24);
+            AddText(panelContentRoot!, "DTMAPI.Logs.SnapshotReport", T("logs.snapshotReport", "Snapshot report: ") + Truncate(string.IsNullOrWhiteSpace(state.SnapshotLatestReportPath) ? T("common.none", "(none)") : state.SnapshotLatestReportPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -282, 930, 24);
+            AddText(panelContentRoot!, "DTMAPI.Logs.PathMatch", T("logs.pathMatch", "Path match: ") + state.PathMatchStatus + T("logs.snapshotReportStatus", " | snapshot report: ") + state.SnapshotReportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -312, 930, 24);
+            if (state.ExportStatus == "export-failed")
+                AddText(panelContentRoot!, "DTMAPI.Logs.ExportError", T("logs.exportError", "Export error: ") + Truncate(state.ExportErrorMessage, 120), 14, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -342, 930, 24);
         }
 
         private void SelectConfigPage(string uniqueId)

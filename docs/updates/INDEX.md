@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0012 | 2026-06-11 | verified | manager-ui/logs | Wired the title Settings Logs page to internal Manager report-export state, including export status, exported path, snapshot report path, path-match state, and failure text. | [20260611-0012-manager-logs-page-report-state.md](2026/20260611-0012-manager-logs-page-report-state.md) |
 | 20260611-0011 | 2026-06-11 | verified | core/manager-ui/severity | Split Manager missing-hook and degraded-feature severity from failed counters and switched mod severity to structured status codes/exact status text. | [20260611-0011-manager-status-severity-model.md](2026/20260611-0011-manager-status-severity-model.md) |
 | 20260611-0010 | 2026-06-11 | verified | tools/smoke/manager-ui | Added a dedicated Manager Status page smoke path with Status page result fields, screenshot validation, and summary text evidence. | [20260611-0010-manager-status-page-smoke.md](2026/20260611-0010-manager-status-page-smoke.md) |
 | 20260611-0009 | 2026-06-11 | verified | core/manager-ui/safety | Added internal exception safety for Manager report export and model refresh so UI callbacks show failure state instead of throwing. | [20260611-0009-manager-export-refresh-safety.md](2026/20260611-0009-manager-export-refresh-safety.md) |
