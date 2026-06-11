@@ -421,6 +421,7 @@ namespace DTMAPI.Core.Services
         Config,
         Errors,
         Hooks,
+        Features,
         Logs
     }
 
@@ -489,6 +490,7 @@ namespace DTMAPI.Core.Services
         }
         public void OpenErrorPage() => Open(DtmOverlayPage.Errors);
         public void OpenHookStatusPage() => Open(DtmOverlayPage.Hooks);
+        public void OpenFeatureStatusPage() => Open(DtmOverlayPage.Features);
         public void OpenLogsPage() => Open(DtmOverlayPage.Logs);
         public void SetPage(DtmOverlayPage page) => Open(page);
 

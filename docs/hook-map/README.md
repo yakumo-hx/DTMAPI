@@ -432,6 +432,24 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Final hardening: `GAME-SMOKE/20260611-103601` on final `Refactor` verifies `ManagerStatusPage=Passed`, `ManagerStatusSummaryText=Passed`, `ManagerStatusPageScreenshot=Passed`, `ManagerStatusPageScreenshotFile=Passed`, title/menu screenshot checks, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed` after export/refresh safety, dedicated Status smoke, severity model, and Logs report-state branches merged.
 - Regression cases: MANAGER-STATUS-PAGE-SMOKE-20260611, MANAGER-STATUS-SEVERITY-MODEL-20260611, MANAGER-STATUS-HARDENING-FINAL-20260611, UI-003, UI-004
 
+## Diagnostic: Smoke.ManagerMvpPages
+
+- Status: verified
+- Public surface: none; `run-game-smoke.ps1 -AutoOpenTitleSettingsManagerMvp` title Settings result-field evidence only.
+- Game build: 23465763 workshop
+- Game method/type: DTMAPI title settings UI opened from `HomePageUiState`, then `UiRuntimeService` refreshes the internal Manager model while smoke automation visits Status, Mods, Errors, Hooks, Features, and Logs.
+- Patch type: smoke harness automation, internal Manager view-model UI rendering, report export, and reflected Unity screenshot capture; no Harmony hook, public API, gameplay feature, or ConfigMenu contract change.
+- Why this point: validates the Manager MVP support loop as a real UI consumer instead of a design-only view model: summary, row pages, and Logs export can be checked from the title page without raw log parsing.
+- Failure behavior: if any page cannot open, Logs export does not reach `exported`, the exported report path does not match the refreshed snapshot, or Status/Logs screenshots are missing, the corresponding `Manager*` result field fails and the smoke run fails.
+- Mods/tests depending on it: compact web audit package Manager MVP evidence and future Manager UI page slices.
+- Evidence:
+  - Build: 2026-06-11 Release build/test and PowerShell AST parse passed.
+  - Save: title homepage for Manager MVP; local slot 3 / index 2 for HookProbe regression.
+  - Log line: DirectExe smoke `GAME-SMOKE/20260611-112148` logs `Smoke automation opened DTMAPI Manager Mods page.`, `Errors page.`, `Hooks page.`, `Features page.`, `Logs page.`, `Manager Logs export button OK status=exported pathMatch=matched path=D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-112232.zip`, `Manager Logs export state OK export=exported; pathMatch=matched; snapshotReport=ready`, and `Manager Logs page screenshot OK screenshot=...manager-logs-page.png`.
+  - Result fields: `GAME-SMOKE/20260611-112148` records `ManagerStatusPage=Passed`, `ManagerStatusSummaryText=Passed`, `ManagerStatusPageScreenshotFile=Passed`, `ManagerModsPage=Passed`, `ManagerErrorsPage=Passed`, `ManagerHooksPage=Passed`, `ManagerFeaturesPage=Passed`, `ManagerLogsPage=Passed`, `ManagerLogsExportButton=Passed`, `ManagerLogsExportStateText=Passed`, `ManagerLogsPageScreenshotFile=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
+  - Runtime regression: `GAME-SMOKE/20260611-112402` records `HookProbe=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
+- Regression cases: MANAGER-UI-MVP-PHASE1-20260611, UI-003, UI-004
+
 ## Hook: UI.ConfigMenuAdvancedControls
 
 - Status: experimental
