@@ -624,6 +624,10 @@ namespace DTMAPI.UnitTests
                 Assert(degradedFeatureLine.Contains("FishingAutomation") && degradedFeatureLine.Contains("success=true") && degradedFeatureLine.Contains("failures=2"), "Manager feature formatter should include degraded feature counters.");
                 string logsStateLine = ManagerPageRowFormatter.FormatLogsExportState(ManagerLogsPageState.From(null, model));
                 Assert(logsStateLine.Contains("not-exported") && logsStateLine.Contains("missing-report"), "Manager logs formatter should expose not-exported and snapshot report status.");
+                string statusSummary = ManagerPageRowFormatter.FormatStatusSummary(model, string.Empty, null);
+                Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters and report/log state.");
+                Assert(ManagerPageRowFormatter.FormatShowingFirst("Hooks", 17, 64) == "Hooks: showing first 17 of 64", "Manager formatter should expose showing-first row counts.");
+                Assert(ManagerPageRowFormatter.FormatShowingFirst("Rows", 99, 3) == "Rows: showing first 3 of 3", "Manager formatter should clamp showing-first counts to total.");
 
                 var warningOnlySnapshot = new DtmDiagnosticsSnapshot(
                     DateTimeOffset.Now,
@@ -667,6 +671,20 @@ namespace DTMAPI.UnitTests
                 Assert(warningOnlyModel.Summary.FailedFeatureCount == 0 && warningOnlyModel.Summary.DegradedFeatureCount == 1, "Historical successful feature failures should be degraded but not failed.");
                 Assert(warningOnlyModel.Summary.OverallStatus == "warning", "Manager summary should mark missing hooks or degraded features as warning when there are no failed/error states.");
                 Assert(!warningOnlyModel.Mods[0].IsWarning && !warningOnlyModel.Mods[0].IsBlocked, "Manager mod severity should ignore free-text Reason when structured status is loaded.");
+
+                var emptyPathSnapshot = new DtmDiagnosticsSnapshot(
+                    DateTimeOffset.Now,
+                    Array.Empty<IDtmLoadedModInfo>(),
+                    Array.Empty<IDtmModStatusInfo>(),
+                    Array.Empty<IDtmErrorInfo>(),
+                    Array.Empty<IDtmWarningInfo>(),
+                    Array.Empty<IHookStatusInfo>(),
+                    Array.Empty<IDtmFeatureStatusInfo>(),
+                    string.Empty,
+                    string.Empty);
+                DtmManagerViewModel emptyPathModel = DtmManagerViewModelFactory.FromSnapshot(emptyPathSnapshot);
+                string emptyPathSummary = ManagerPageRowFormatter.FormatStatusSummary(emptyPathModel, string.Empty, null);
+                Assert(emptyPathSummary.Contains("log=unavailable") && emptyPathSummary.Contains("reportPath=unavailable"), "Manager status summary should tolerate null/empty log and report paths.");
             }
             finally
             {
@@ -691,6 +709,8 @@ namespace DTMAPI.UnitTests
                 runtime.Diagnostics.RecordError("DTMAPI.Tests.ManagerRefresh", "manager refresh test error", "details");
                 runtime.UI.RefreshDtmManagerModel();
                 Assert(runtime.UI.CurrentManagerModel != null && runtime.UI.CurrentManagerModel.Summary.ErrorCount == errorCountBeforeRefresh + 1, "Explicit manager refresh should update summary counters from diagnostics.");
+                DtmManagerCopySummaryResult copyFallback = runtime.UI.CopyManagerSummary(_ => throw new InvalidOperationException("simulated clipboard unavailable"));
+                Assert(copyFallback.Status == "copy-unavailable" && copyFallback.Text.Contains("overall=") && copyFallback.Text.Contains("report="), "Manager Copy Summary fallback should not throw and should keep the support summary text.");
 
                 string report = runtime.UI.ExportLogs();
                 Assert(File.Exists(report), "UI report export should return an existing report path.");

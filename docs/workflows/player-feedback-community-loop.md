@@ -12,10 +12,11 @@ This workflow defines how player reports should move from Manager UI evidence in
 
 1. Open DTMAPI Manager.
 2. Check Status for overall status, loaded/blocked/disabled mods, errors, warnings, failed/missing hooks, failed/degraded features, and latest log/report state.
-3. Open Mods, Errors/Warnings, Hooks, or Features to find the failed or warning row that best matches the issue.
-4. Open Logs and click Export logs.
-5. Upload the generated report zip, or the compact web evidence package when a zip is too large for the review channel.
-6. Include a short description of what the player expected, what happened, and whether the issue repeats after restart.
+3. Use Copy Summary when support asks for a compact text summary. If the local clipboard is unavailable, the Manager should report `copy-unavailable` and write the same summary to the runtime log.
+4. Open Mods, Errors/Warnings, Hooks, or Features to find the failed or warning row that best matches the issue.
+5. Open Logs and click Export logs.
+6. Upload the generated report zip, or the compact web evidence package when a zip is too large for the review channel.
+7. Include a short description of what the player expected, what happened, and whether the issue repeats after restart.
 
 The player should not need to read raw logs before sharing the report.
 
@@ -81,6 +82,7 @@ Manager should support this loop by:
 - Sorting failed and blocked rows first.
 - Showing enough detail to identify owner, status, reason, and path.
 - Showing Status, Mods, Errors/Warnings, Hooks, Features, and Logs as real view-model consumers in the title Settings UI.
+- Copying the Status support summary as text, with a runtime-log fallback when the local clipboard is unavailable.
 - Copying selected rows as text in a future slice.
 - Exporting a report through the runtime diagnostics helper.
 - Refreshing the snapshot after export and showing whether the returned report path matches `LatestReportPath`.
@@ -89,7 +91,9 @@ Manager should support this loop by:
 
 ## Phase 1 Implemented Support Path
 
-As of `GAME-SMOKE/20260611-112148`, the title Settings Manager MVP supports the first support loop without raw log reading: Status summary, Mods, Errors/Warnings, Hooks, Features, Logs, and Logs Export Report all consume the internal Manager model or report-export state. Copy Summary and Copy selected row remain future Developer Preview work.
+As of `GAME-SMOKE/20260611-112148`, the title Settings Manager MVP supports the first support loop without raw log reading: Status summary, Mods, Errors/Warnings, Hooks, Features, Logs, and Logs Export Report all consume the internal Manager model or report-export state.
+
+The Developer Preview polish slice adds Status Copy Summary over the same internal Manager model. The copied/fallback text includes overall status, mod counts, diagnostics counts, failed/missing hook counts, failed/degraded feature counts, refresh state, report/export state, latest log state, and latest report path state. Copy selected row and row-detail panels remain future work.
 
 ## Boundaries
 

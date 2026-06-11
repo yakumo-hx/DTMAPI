@@ -75,6 +75,33 @@ namespace DTMAPI.Core.Manager
             return line;
         }
 
+        internal static string FormatStatusSummary(DtmManagerViewModel? manager, string refreshError, DtmManagerReportExportResult? lastExport)
+        {
+            if (manager == null)
+                return ModelUnavailable(refreshError);
+
+            ManagerReportExportStatus report = manager.ExportReport;
+            string refresh = string.IsNullOrWhiteSpace(refreshError)
+                ? "refreshed"
+                : "refresh failed: " + refreshError;
+            string exportStatus = lastExport?.Status ?? report.Status;
+
+            return "overall=" + FirstText(manager.Summary.OverallStatus, "unknown") +
+                "; mods=loaded:" + manager.Summary.LoadedModCount.ToString(CultureInfo.InvariantCulture) +
+                    ",blocked:" + manager.Summary.BlockedModCount.ToString(CultureInfo.InvariantCulture) +
+                    ",disabled:" + manager.Summary.DisabledModCount.ToString(CultureInfo.InvariantCulture) +
+                "; diagnostics=errors:" + manager.Summary.ErrorCount.ToString(CultureInfo.InvariantCulture) +
+                    ",warnings:" + manager.Summary.WarningCount.ToString(CultureInfo.InvariantCulture) +
+                "; hooks=failed:" + manager.Summary.FailedHookCount.ToString(CultureInfo.InvariantCulture) +
+                    ",missing:" + manager.Summary.MissingHookCount.ToString(CultureInfo.InvariantCulture) +
+                "; features=failed:" + manager.Summary.FailedFeatureCount.ToString(CultureInfo.InvariantCulture) +
+                    ",degraded:" + manager.Summary.DegradedFeatureCount.ToString(CultureInfo.InvariantCulture) +
+                "; refresh=" + refresh +
+                "; report=" + exportStatus +
+                "; log=" + FormatPathState(report.HasLatestLogPath, report.LatestLogExists, manager.LatestLogPath) +
+                "; reportPath=" + FormatPathState(report.HasLatestReportPath, report.LatestReportExists, manager.LatestReportPath);
+        }
+
         internal static string FormatLogsExportState(ManagerLogsPageState state)
         {
             if (state == null)
@@ -87,6 +114,28 @@ namespace DTMAPI.Core.Manager
                 line += "; error=" + state.ExportErrorMessage;
 
             return line;
+        }
+
+        internal static string FormatShowingFirst(string label, int shown, int total)
+        {
+            if (shown < 0)
+                shown = 0;
+            if (total < 0)
+                total = 0;
+            if (shown > total)
+                shown = total;
+
+            return FirstText(label, "Rows") +
+                ": showing first " + shown.ToString(CultureInfo.InvariantCulture) +
+                " of " + total.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatPathState(bool hasPath, bool exists, string path)
+        {
+            if (!hasPath)
+                return "unavailable";
+
+            return (exists ? "present" : "missing") + "|" + FirstText(path, "(empty)");
         }
 
         private static string FirstText(params string[] values)

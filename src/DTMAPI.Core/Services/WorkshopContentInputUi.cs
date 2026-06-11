@@ -461,6 +461,7 @@ namespace DTMAPI.Core.Services
         internal DtmManagerRuntimeModelProvider? ManagerModelProvider { get; set; }
         internal DtmManagerViewModel? CurrentManagerModel { get; private set; }
         internal DtmManagerReportExportResult? LastManagerReportExport { get; private set; }
+        internal DtmManagerCopySummaryResult? LastManagerSummaryCopy { get; private set; }
         internal string LastManagerRefreshError { get; private set; } = string.Empty;
 
         public void Toggle()
@@ -564,6 +565,29 @@ namespace DTMAPI.Core.Services
                 LastManagerRefreshError = ex.GetType().Name + ": " + ex.Message;
                 RecordManagerUiFailure("RefreshDtmManagerModel", ex);
             }
+        }
+
+        internal DtmManagerCopySummaryResult CopyManagerSummary(Func<string, bool> copyText)
+        {
+            string summary = ManagerPageRowFormatter.FormatStatusSummary(CurrentManagerModel, LastManagerRefreshError, LastManagerReportExport);
+            try
+            {
+                bool copied = copyText != null && copyText(summary);
+                LastManagerSummaryCopy = copied
+                    ? DtmManagerCopySummaryResult.FromCopied(summary)
+                    : DtmManagerCopySummaryResult.FromUnavailable(summary, "Clipboard unavailable.");
+            }
+            catch (Exception ex)
+            {
+                LastManagerSummaryCopy = DtmManagerCopySummaryResult.FromUnavailable(summary, ex.GetType().Name + ": " + ex.Message);
+            }
+
+            if (LastManagerSummaryCopy.Copied)
+                log?.Invoke("Manager UI Copy Summary copied.", LogLevel.Info);
+            else
+                log?.Invoke("Manager UI Copy Summary unavailable; summary text retained in runtime log. " + LastManagerSummaryCopy.Text, LogLevel.Warn);
+
+            return LastManagerSummaryCopy;
         }
 
         private void RecordManagerUiFailure(string operation, Exception exception)

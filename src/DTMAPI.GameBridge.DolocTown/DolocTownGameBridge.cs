@@ -85,6 +85,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset titleSettingsStatusPageEvidenceAt;
         private bool titleSettingsStatusPageScreenshotRequested;
         private bool titleSettingsStatusSummaryTextRecorded;
+        private bool titleSettingsStatusSummaryCopyRecorded;
         private int titleSettingsManagerMvpStage;
         private DateTimeOffset titleSettingsManagerMvpStageAt;
         private int titleSettingsConfigScreenshotStage;

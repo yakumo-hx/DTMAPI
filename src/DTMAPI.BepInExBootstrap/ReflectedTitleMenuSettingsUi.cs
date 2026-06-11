@@ -547,16 +547,20 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
 
+            const int rowLimit = 16;
+            int shown = Math.Min(rowLimit, manager.Mods.Count);
+            AddText(panelContentRoot!, "DTMAPI.Mods.Count", ManagerPageRowFormatter.FormatShowingFirst("Mods", shown, manager.Mods.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -160, 900, 22);
+
             if (manager.Mods.Count == 0)
             {
-                AddText(panelContentRoot!, "DTMAPI.Mods.Empty", T("mods.empty", "No discovered DTMAPI mods recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -172, 600, 26);
+                AddText(panelContentRoot!, "DTMAPI.Mods.Empty", T("mods.empty", "No discovered DTMAPI mods recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -190, 600, 26);
                 return;
             }
 
             int i = 0;
-            foreach (ManagerModRow mod in manager.Mods.Take(16))
+            foreach (ManagerModRow mod in manager.Mods.Take(rowLimit))
             {
-                AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(ManagerPageRowFormatter.FormatModRow(mod), 136), 13, GetModRowColor(mod), TextAnchorMiddleLeft, 52, -172 - i * 30, 930, 24);
+                AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(ManagerPageRowFormatter.FormatModRow(mod), 136), 13, GetModRowColor(mod), TextAnchorMiddleLeft, 52, -190 - i * 30, 930, 24);
                 i++;
             }
         }
@@ -566,9 +570,19 @@ namespace DTMAPI.BepInExBootstrap
             CreateButton(panelContentRoot!, "DTMAPI.Status.Refresh", T("status.refresh", "Refresh"), () =>
             {
                 runtime.UI.RefreshDtmManagerModel();
-                statusMessage = T("status.refreshed", "Manager status refreshed.");
+                statusMessage = string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
+                    ? T("status.refreshed", "Manager status refreshed.")
+                    : T("status.refreshFailed", "Manager refresh failed: ") + runtime.UI.LastManagerRefreshError;
                 dirty = true;
             }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), 52, -132, 120, 30);
+            CreateButton(panelContentRoot!, "DTMAPI.Status.CopySummary", T("status.copySummary", "Copy Summary"), () =>
+            {
+                DtmManagerCopySummaryResult result = runtime.UI.CopyManagerSummary(TrySetClipboardText);
+                statusMessage = result.Copied
+                    ? T("status.summaryCopied", "Manager summary copied.")
+                    : T("status.summaryCopyUnavailable", "Copy unavailable; summary written to runtime log.");
+                dirty = true;
+            }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), 184, -132, 148, 30);
 
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
             string[] lines = manager == null
@@ -591,8 +605,9 @@ namespace DTMAPI.BepInExBootstrap
                 string.Format(CultureInfo.InvariantCulture, T("status.managerHooks", "Hooks failed: {0} | missing: {1}"), manager.Summary.FailedHookCount, manager.Summary.MissingHookCount),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerFeatures", "Features failed: {0} | degraded: {1}"), manager.Summary.FailedFeatureCount, manager.Summary.DegradedFeatureCount),
                 string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
-                    ? T("status.managerRefreshOk", "Manager refresh: ready")
+                    ? T("status.managerRefreshOk", "Manager refresh: refreshed")
                     : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
+                T("status.summaryCopy", "Copy Summary: ") + (runtime.UI.LastManagerSummaryCopy?.Status ?? T("status.notCopied", "not-copied")),
                 T("status.managerReport", "Report export: ") + (runtime.UI.LastManagerReportExport?.Status ?? manager.ExportReport.Status),
                 FormatManagerPathStatus(T("status.latestLog", "Latest log"), manager.ExportReport.HasLatestLogPath, manager.ExportReport.LatestLogExists, manager.LatestLogPath),
                 FormatManagerPathStatus(T("status.latestReport", "Latest report"), manager.ExportReport.HasLatestReportPath, manager.ExportReport.LatestReportExists, manager.LatestReportPath),
@@ -623,12 +638,14 @@ namespace DTMAPI.BepInExBootstrap
 
             if (manager.Errors.Count == 0 && manager.Warnings.Count == 0)
             {
-                AddText(panelContentRoot!, "DTMAPI.Errors.Empty", T("errors.empty", "No DTMAPI errors or warnings recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 700, 26);
+                AddText(panelContentRoot!, "DTMAPI.Errors.Count", ManagerPageRowFormatter.FormatShowingFirst("Errors", 0, 0) + " | " + ManagerPageRowFormatter.FormatShowingFirst("Warnings", 0, 0), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -136, 900, 22);
+                AddText(panelContentRoot!, "DTMAPI.Errors.Empty", T("errors.empty", "No DTMAPI errors or warnings recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 700, 26);
                 return;
             }
 
             int line = 0;
             AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsTitle", T("errors.errorsTitle", "Errors"), 15, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -136, 160, 24);
+            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsCount", ManagerPageRowFormatter.FormatShowingFirst("Errors", Math.Min(7, manager.Errors.Count), manager.Errors.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -136, 360, 22);
             if (manager.Errors.Count == 0)
             {
                 AddText(panelContentRoot!, "DTMAPI.Errors.NoErrors", T("errors.noErrors", "No DTMAPI errors recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 720, 22);
@@ -645,6 +662,7 @@ namespace DTMAPI.BepInExBootstrap
 
             int warningStart = line + 1;
             AddText(panelContentRoot!, "DTMAPI.Errors.WarningsTitle", T("errors.warningsTitle", "Warnings"), 15, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -164 - warningStart * 28, 160, 24);
+            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsCount", ManagerPageRowFormatter.FormatShowingFirst("Warnings", Math.Min(7, manager.Warnings.Count), manager.Warnings.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -164 - warningStart * 28, 360, 22);
             if (manager.Warnings.Count == 0)
             {
                 AddText(panelContentRoot!, "DTMAPI.Errors.NoWarnings", T("errors.noWarnings", "No DTMAPI warnings recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28, 720, 22);
@@ -674,10 +692,12 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
             AddText(panelContentRoot!, "DTMAPI.Hooks.Title", T("hooks.title", "Hooks"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
-            for (int i = 0; i < Math.Min(17, manager.Hooks.Count); i++)
+            int hookLimit = Math.Min(17, manager.Hooks.Count);
+            AddText(panelContentRoot!, "DTMAPI.Hooks.Count", ManagerPageRowFormatter.FormatShowingFirst("Hooks", hookLimit, manager.Hooks.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 900, 22);
+            for (int i = 0; i < hookLimit; i++)
             {
                 ManagerHookRow hook = manager.Hooks[i];
-                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(ManagerPageRowFormatter.FormatHookRow(hook), 132), 13, GetHookRowColor(hook), TextAnchorMiddleLeft, 52, -164 - i * 28, 930, 22);
+                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(ManagerPageRowFormatter.FormatHookRow(hook), 132), 13, GetHookRowColor(hook), TextAnchorMiddleLeft, 52, -188 - i * 28, 930, 22);
             }
         }
 
@@ -697,10 +717,12 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             AddText(panelContentRoot!, "DTMAPI.Features.Title", T("features.title", "Features"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
-            for (int i = 0; i < Math.Min(17, manager.Features.Count); i++)
+            int featureLimit = Math.Min(17, manager.Features.Count);
+            AddText(panelContentRoot!, "DTMAPI.Features.Count", ManagerPageRowFormatter.FormatShowingFirst("Features", featureLimit, manager.Features.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 900, 22);
+            for (int i = 0; i < featureLimit; i++)
             {
                 ManagerFeatureRow feature = manager.Features[i];
-                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -164 - i * 28, 930, 22);
+                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -188 - i * 28, 930, 22);
             }
         }
 
@@ -720,7 +742,10 @@ namespace DTMAPI.BepInExBootstrap
             string latestLogPath = string.IsNullOrWhiteSpace(state.LatestLogPath) ? runtime.Diagnostics.GetLatestLogPath() : state.LatestLogPath;
             string exportedPath = string.IsNullOrWhiteSpace(state.ExportedReportPath) ? snapshot.LastExportPath : state.ExportedReportPath;
             AddText(panelContentRoot!, "DTMAPI.Logs.Latest", T("logs.latest", "Latest log: ") + Truncate(latestLogPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -192, 930, 24);
-            AddText(panelContentRoot!, "DTMAPI.Logs.ExportStatus", T("logs.exportStatus", "Export status: ") + state.ExportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -222, 930, 24);
+            string exportStatusText = state.ExportStatus == "export-failed"
+                ? T("logs.exportFailedClear", "Export status: export-failed; see error below")
+                : T("logs.exportStatus", "Export status: ") + state.ExportStatus;
+            AddText(panelContentRoot!, "DTMAPI.Logs.ExportStatus", exportStatusText, 14, GetLogsStatusColor(state), TextAnchorMiddleLeft, 52, -222, 930, 24);
             AddText(panelContentRoot!, "DTMAPI.Logs.ExportPath", T("logs.latestExport", "Exported path: ") + Truncate(string.IsNullOrWhiteSpace(exportedPath) ? T("common.none", "(none)") : exportedPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -252, 930, 24);
             AddText(panelContentRoot!, "DTMAPI.Logs.SnapshotReport", T("logs.snapshotReport", "Snapshot report: ") + Truncate(string.IsNullOrWhiteSpace(state.SnapshotLatestReportPath) ? T("common.none", "(none)") : state.SnapshotLatestReportPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -282, 930, 24);
             AddText(panelContentRoot!, "DTMAPI.Logs.PathMatch", T("logs.pathMatch", "Path match: ") + state.PathMatchStatus + T("logs.snapshotReportStatus", " | snapshot report: ") + state.SnapshotReportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -312, 930, 24);
@@ -756,6 +781,19 @@ namespace DTMAPI.BepInExBootstrap
                 return Color(1f, 0.76f, 0.70f, 1f);
             if (feature.IsDegraded)
                 return Color(1f, 0.88f, 0.62f, 1f);
+            return Color(0.88f, 1f, 0.88f, 1f);
+        }
+
+        private object GetLogsStatusColor(ManagerLogsPageState state)
+        {
+            if (state.ExportStatus.Equals("export-failed", StringComparison.OrdinalIgnoreCase) ||
+                state.PathMatchStatus.Equals("report-path-mismatch", StringComparison.OrdinalIgnoreCase) ||
+                state.PathMatchStatus.Equals("missing-export-path", StringComparison.OrdinalIgnoreCase))
+                return Color(1f, 0.76f, 0.70f, 1f);
+
+            if (state.ExportStatus.Equals("not-exported", StringComparison.OrdinalIgnoreCase))
+                return Color(1f, 0.88f, 0.62f, 1f);
+
             return Color(0.88f, 1f, 0.88f, 1f);
         }
 
@@ -1200,6 +1238,56 @@ namespace DTMAPI.BepInExBootstrap
                     return value.Trim();
             }
             return string.Empty;
+        }
+
+        private bool TrySetClipboardText(string value)
+        {
+            value ??= string.Empty;
+            if (TrySetUnityClipboardText(value))
+                return true;
+
+            return TrySetWindowsFormsClipboardText(value);
+        }
+
+        private bool TrySetUnityClipboardText(string value)
+        {
+            foreach (string typeName in new[] { "UnityEngine.GUIUtility, UnityEngine", "UnityEngine.GUIUtility, UnityEngine.CoreModule" })
+            {
+                try
+                {
+                    Type? guiUtility = Type.GetType(typeName);
+                    PropertyInfo? systemCopyBuffer = guiUtility?.GetProperty("systemCopyBuffer", BindingFlags.Public | BindingFlags.Static);
+                    if (systemCopyBuffer == null || !systemCopyBuffer.CanWrite)
+                        continue;
+
+                    systemCopyBuffer.SetValue(null, value, null);
+                    return true;
+                }
+                catch
+                {
+                    // Fall through to the next clipboard provider.
+                }
+            }
+
+            return false;
+        }
+
+        private bool TrySetWindowsFormsClipboardText(string value)
+        {
+            try
+            {
+                Type? clipboard = Type.GetType("System.Windows.Forms.Clipboard, System.Windows.Forms");
+                MethodInfo? setText = clipboard?.GetMethod("SetText", new[] { typeof(string) });
+                if (setText == null)
+                    return false;
+
+                setText.Invoke(null, new object[] { value });
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private const int TextAnchorMiddleLeft = 3;
