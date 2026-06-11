@@ -800,10 +800,11 @@ elseif (($AutoOpenTitleSettingsMenu -or $AutoOpenOfficialModUi) -and $SaveSlot -
 else {
     [Math]::Max(90, $TimeoutSeconds - 30)
 }
+$autoLoadDelaySeconds = if ($AutoOpenTitleSettingsMenu) { 30 } else { 8 }
 $smokeSettings = @{
     Enabled = $true
     AutoLoadSaveSlot = $SaveSlot
-    AutoLoadDelaySeconds = 8
+    AutoLoadDelaySeconds = $autoLoadDelaySeconds
     AutoExitAfterSeconds = $autoExitAfterSeconds
     AutoExitAfterSaveLoaded = $true
     AutoSaveAfterLoad = [bool]$AutoSaveAfterLoad

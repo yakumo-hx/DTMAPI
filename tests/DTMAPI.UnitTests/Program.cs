@@ -13,6 +13,7 @@ using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
+using DTMAPI.Core.Services;
 using DTMAPI.GameBridge.DolocTown;
 using DTMAPI.ModConfigMenu;
 
@@ -602,7 +603,12 @@ namespace DTMAPI.UnitTests
                 runtime.Start();
 
                 runtime.UI.OpenDtmApiStatusPage();
-                Assert(runtime.UI.CurrentManagerModel != null, "Opening a DTMAPI manager page should refresh the internal manager view model.");
+                DtmManagerViewModel openedModel = runtime.UI.CurrentManagerModel ?? throw new InvalidOperationException("Opening a DTMAPI manager page should refresh the internal manager view model.");
+
+                int errorCountBeforeRefresh = openedModel.Summary.ErrorCount;
+                runtime.Diagnostics.RecordError("DTMAPI.Tests.ManagerRefresh", "manager refresh test error", "details");
+                runtime.UI.RefreshDtmManagerModel();
+                Assert(runtime.UI.CurrentManagerModel != null && runtime.UI.CurrentManagerModel.Summary.ErrorCount == errorCountBeforeRefresh + 1, "Explicit manager refresh should update summary counters from diagnostics.");
 
                 string report = runtime.UI.ExportLogs();
                 Assert(File.Exists(report), "UI report export should return an existing report path.");
@@ -643,6 +649,11 @@ namespace DTMAPI.UnitTests
                     File.Delete(exportedPath);
                     File.Delete(staleSnapshotPath);
                 }
+
+                var uiWithoutProvider = new UiRuntimeService(() => string.Empty, _ => { }, _ => { });
+                uiWithoutProvider.OpenDtmApiStatusPage();
+                uiWithoutProvider.RefreshDtmManagerModel();
+                Assert(uiWithoutProvider.CurrentManagerModel == null, "Manager refresh without a provider should leave the model unavailable for UI fallback.");
             }
             finally
             {
