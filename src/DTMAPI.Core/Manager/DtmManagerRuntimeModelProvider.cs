@@ -77,4 +77,29 @@ namespace DTMAPI.Core.Manager
         internal string Status { get; }
         internal string ErrorMessage { get; }
     }
+
+    internal sealed class DtmManagerCopySummaryResult
+    {
+        private DtmManagerCopySummaryResult(string status, string text, string errorMessage)
+        {
+            Status = status;
+            Text = text ?? string.Empty;
+            ErrorMessage = errorMessage ?? string.Empty;
+        }
+
+        internal static DtmManagerCopySummaryResult FromCopied(string text)
+        {
+            return new DtmManagerCopySummaryResult("copied", text, string.Empty);
+        }
+
+        internal static DtmManagerCopySummaryResult FromUnavailable(string text, string errorMessage)
+        {
+            return new DtmManagerCopySummaryResult("copy-unavailable", text, errorMessage);
+        }
+
+        internal string Status { get; }
+        internal string Text { get; }
+        internal string ErrorMessage { get; }
+        internal bool Copied => string.Equals(Status, "copied", StringComparison.OrdinalIgnoreCase);
+    }
 }

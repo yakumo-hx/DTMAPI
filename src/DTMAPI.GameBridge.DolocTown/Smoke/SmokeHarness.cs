@@ -329,6 +329,11 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 titleSettingsStatusSummaryTextRecorded = RecordTitleSettingsStatusSummaryText();
             }
+            if (smokeSettings.AutoOpenTitleSettingsManagerMvp && titleSettingsStatusSummaryTextRecorded && !titleSettingsStatusSummaryCopyRecorded &&
+                (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 1.15)
+            {
+                titleSettingsStatusSummaryCopyRecorded = TryExerciseManagerStatusSummaryCopyForSmoke();
+            }
             if (!animalViewerUiDelayedScreenshotRequested && animalViewerUiEvidenceAt != default &&
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 1.5)
             {
@@ -349,7 +354,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 titleSettingsStatusPageScreenshotRequested = true;
                 CaptureTitleSettingsStatusPageEvidenceScreenshot();
             }
-            if (smokeSettings.AutoOpenTitleSettingsManagerMvp && titleSettingsStatusSummaryTextRecorded && titleSettingsStatusPageScreenshotRequested)
+            if (smokeSettings.AutoOpenTitleSettingsManagerMvp && titleSettingsStatusSummaryTextRecorded && titleSettingsStatusSummaryCopyRecorded && titleSettingsStatusPageScreenshotRequested)
                 UpdateTitleSettingsManagerMvpEvidence();
             if (!autoExitAttempted && animalViewerUiEvidenceAt != default &&
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 5)
@@ -1143,15 +1148,40 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static string BuildManagerStatusSmokeSummary(DtmManagerViewModel manager)
         {
-            string reportStatus = manager.ExportReport.Status;
-            return "overall=" + manager.Summary.OverallStatus +
-                "; mods=loaded:" + manager.Summary.LoadedModCount + ",blocked:" + manager.Summary.BlockedModCount + ",disabled:" + manager.Summary.DisabledModCount +
-                "; diagnostics=errors:" + manager.Summary.ErrorCount + ",warnings:" + manager.Summary.WarningCount +
-                "; hooks=failed:" + manager.Summary.FailedHookCount + ",missing:" + manager.Summary.MissingHookCount +
-                "; features=failed:" + manager.Summary.FailedFeatureCount + ",degraded:" + manager.Summary.DegradedFeatureCount +
-                "; report=" + reportStatus +
-                "; logPath=" + (string.IsNullOrWhiteSpace(manager.LatestLogPath) ? "unavailable" : manager.LatestLogPath) +
-                "; reportPath=" + (string.IsNullOrWhiteSpace(manager.LatestReportPath) ? "unavailable" : manager.LatestReportPath);
+            return ManagerPageRowFormatter.FormatStatusSummary(manager, string.Empty, null);
+        }
+
+        private bool TryExerciseManagerStatusSummaryCopyForSmoke()
+        {
+            try
+            {
+                string evidenceDir = EnsureTitleSettingsEvidenceDir();
+                DtmManagerCopySummaryResult result = runtime.UI.CopyManagerSummary(_ => false);
+                bool ok = !string.IsNullOrWhiteSpace(result.Text) &&
+                    result.Text.IndexOf("overall=", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("mods=loaded:", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("diagnostics=errors:", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("hooks=failed:", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("features=failed:", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("report=", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    result.Text.IndexOf("log=", StringComparison.OrdinalIgnoreCase) >= 0;
+                File.AppendAllText(
+                    Path.Combine(evidenceDir, "summary.txt"),
+                    "ManagerStatusSummaryCopyCaptured=" + DateTimeOffset.Now.ToString("o") + Environment.NewLine +
+                    "ManagerStatusSummaryCopyStatus=" + result.Status + Environment.NewLine +
+                    "ManagerStatusSummaryCopyText=" + result.Text + Environment.NewLine +
+                    "ManagerStatusSummaryCopyError=" + result.ErrorMessage + Environment.NewLine);
+
+                runtime.RuntimeMonitor.Log("Manager Status summary copy " + (ok ? "OK" : "failed") + " status=" + result.Status + " text=" + result.Text + ".");
+                runtime.SetHookStatus("Smoke.ManagerStatusSummaryCopy", ok ? "verified" : "failed", "DTMAPI Manager Status Copy Summary", result.Status + "; " + result.Text);
+                return ok;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to exercise Manager Status summary copy.", ex.ToString());
+                runtime.SetHookStatus("Smoke.ManagerStatusSummaryCopy", "failed", "DTMAPI Manager Status Copy Summary", ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
         }
 
         private bool CaptureTitleSettingsStatusPageEvidenceScreenshot()

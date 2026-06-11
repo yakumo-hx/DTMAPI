@@ -53,18 +53,27 @@ The title-page DTMAPI Settings Manager MVP now has real read-only consumers for 
 
 The smoke route `run-game-smoke.ps1 -AutoOpenTitleSettingsManagerMvp` opens the title Settings menu, visits Status, Mods, Errors, Hooks, Features, and Logs, clicks Export logs, verifies `exported` plus `pathMatch=matched`, and checks Status/Logs screenshots. Branch evidence `GAME-SMOKE/20260611-112148` passed all Manager MVP fields.
 
+## 2026-06-11 Developer Preview Polish Note
+
+Phase 1+ adds support-facing polish without changing public APIs or gameplay hooks. The Status page now has a Copy Summary action over the internal Manager model. It attempts to copy the support summary to the local clipboard; if the clipboard provider is unavailable, the UI records `copy-unavailable`, writes the summary to the runtime log, and keeps the page usable instead of throwing. The summary contains overall status, mod counts, diagnostics counts, failed/missing hooks, failed/degraded features, refresh state, report state, and log/report path state.
+
+Mods, Errors/Warnings, Hooks, and Features now show `showing first N of total` so Phase 1 can remain a compact first page set without adding scrolling or row detail panels. Logs keeps the existing export path, snapshot latest report path, path-match state, snapshot report status, and explicit `export-failed` text. `run-game-smoke.ps1 -AutoOpenTitleSettingsManagerMvp` now reports `ManagerStatusSummaryCopy` in addition to the existing Manager page and Logs export fields; branch evidence `GAME-SMOKE/20260611-123852` verifies the fallback path with `copy-unavailable` plus passing Logs export/path-match fields.
+
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.
 
 ## Non-Goals
 
-- Do not implement UI in this design branch.
+- Historical note: the early design branch did not implement UI. Current Phase 1 has implemented read-only title-page UI consumers for Status, Mods, Errors/Warnings, Hooks, Features, and Logs.
 - Do not add, remove, or rename public API members.
 - Do not promote `IDtmDiagnosticsApi`, UI helpers, config-menu runtime, or gameplay APIs beyond their current stability level.
 - Do not parse raw logs as the primary data source when a runtime API already exposes the same information.
 - Do not manage Steam Workshop subscriptions or write official enablement state in MVP.
 - Do not provide native save repair, mod dependency resolution, or gameplay feature toggles beyond existing config registry writes.
+- Do not implement row selection/detail panels in Phase 1+; selected-row copy remains future work.
+- Do not treat Copy Summary as a public mod API. It is internal product UI behavior over existing diagnostics/runtime data.
+- Do not start a full visual redesign before manual UI overflow checks and Developer Preview feedback identify the highest-value layout changes.
 
 ## Data Sources
 
@@ -313,3 +322,5 @@ Before implementation is considered complete:
 - Report bundle preview and one-click compact web package export.
 - Runtime aggregate diagnostics display if an internal UI data source exposes aggregate counters.
 - Manual QA record linking from UI rows to docs/reviews records.
+- Copy selected row and row detail panels for Mods, Errors/Warnings, Hooks, and Features.
+- Visual density polish after Developer Preview feedback, especially long paths, long mod names, and long diagnostics messages.

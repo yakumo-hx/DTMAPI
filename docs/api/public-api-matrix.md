@@ -32,6 +32,12 @@ An API may move to `Stable` only after all relevant gates are satisfied:
 
 Static screenshot smoke is allowed as supporting visual evidence, but it is not completion evidence for a visual/UI/camera API unless manual QA or an equivalent targeted visual review covers the same failure mode.
 
+## Internal Product UI Boundary
+
+The title-page DTMAPI Manager UI is an internal product UI over existing Diagnostic and Experimental runtime data. `DtmManagerViewModel`, Manager row formatters, Manager report/export state, and Status Copy Summary are not `DTMAPI.Abstractions` public mod APIs. Their presence in the first-party Bootstrap assembly does not promote `IDtmDiagnosticsApi`, `IUiHelper`, CameraView, FishingAutomation, SaveSlots, or any GameBridge feature API to `Stable` or `StableCandidate`.
+
+Manager UI smoke evidence may prove that support rows, summary text, and report export are visible in the title settings UI. It must not be cited by itself as native-owner proof for gameplay, save/load, camera, fishing, vehicle, equipment, machine, or content APIs.
+
 ## Stability Matrix
 
 | Area | API / Contract | Status | Evidence Scope And Current Boundary |
