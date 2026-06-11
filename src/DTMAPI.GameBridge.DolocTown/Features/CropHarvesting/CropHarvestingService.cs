@@ -43,12 +43,12 @@ namespace DTMAPI.GameBridge.DolocTown
             if (uniqueId != null && statuses.TryGetValue(uniqueId, out BridgeFeatureStatus status))
                 return status;
 
-            return new BridgeFeatureStatus("experimental", "Crop harvesting API is available. It scans native PlantBasin equipment and only executes the reviewed ordinary PlantBasin.Harvest path.");
+            return new BridgeFeatureStatus("experimental", "Crop harvesting API is available. It scans native crop-container equipment and only executes the reviewed PlantBasin.Harvest(bool,bool) path; tree-basin cocoa and grass/forage containers are scan-only until separate native-owner review.");
         }
 
         internal void PublishHookStatus()
         {
-            runtime.SetHookStatus("Crops.HarvestingApi", "experimental", "ICropHarvestingApi -> PlantBasin.CouldHarvest/Harvest", "No Harmony hook is installed; calls are explicit API requests and use native PlantBasin harvest responsibility.");
+            runtime.SetHookStatus("Crops.HarvestingApi", "experimental", "ICropHarvestingApi -> PlantBasin.CouldHarvest/Harvest", "No Harmony hook is installed; calls are explicit API requests and use native crop-container harvest responsibility.");
         }
 
         internal void ResetRuntimeState(string reason)
@@ -85,7 +85,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 List<CropHarvestTargetResult> targets = new List<CropHarvestTargetResult>();
                 HashSet<int> roomKeys = new HashSet<int>();
                 int harvested = 0;
-                foreach (RoomCandidate room in EnumerateCandidateRooms(dolocApi, archive, currentRoom))
+                RoomCandidate[] roomCandidates = EnumerateCandidateRooms(dolocApi, archive, currentRoom).ToArray();
+                if (roomCandidates.Length == 0)
+                    return Finish(result, "no-farm-scope", "No current farm root or farm building rooms were available; crop harvesting did not scan arbitrary current rooms.", "pending", owner.UniqueID);
+
+                foreach (RoomCandidate room in roomCandidates)
                 {
                     if (room.Room == null)
                         continue;
@@ -129,7 +133,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 result.HarvestedCount = targets.Count(t => t.Status == CropHarvestTargetStatus.Harvested);
                 result.FailedCount = targets.Count(t => t.Status == CropHarvestTargetStatus.NativeHarvestFailed || t.Status == CropHarvestTargetStatus.Busy);
                 result.SkippedCount = targets.Count - result.HarvestedCount - result.FailedCount - (dryRun ? result.MatureTargetsFound : 0);
-                result.Success = result.FailedCount == 0 && (dryRun ? result.MatureTargetsFound > 0 : result.HarvestedCount > 0);
+                result.Success = result.FailedCount == 0;
                 result.Message = (dryRun ? "Scan" : "Harvest") +
                     " owner=" + owner.UniqueID +
                     " rooms=" + result.RoomsVisited +
@@ -167,7 +171,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (revalidated.Status != CropHarvestTargetStatus.Pending)
                 return revalidated;
 
-            MethodInfo? harvest = FindMethodInHierarchy(equipment.GetType(), "Harvest", 2);
+            MethodInfo? harvest = FindHarvestMethod(equipment.GetType());
             if (harvest == null)
             {
                 revalidated.Status = CropHarvestTargetStatus.UnsupportedBasinType;
@@ -179,9 +183,9 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 harvest.Invoke(equipment, new object[] { true, sendNativeMessage });
                 object? afterCrop = ReadMember(equipment, "Crop") ?? ReadMember(equipment, "crop");
-                bool afterMature = afterCrop != null && ReadBoolMember(afterCrop, "isMature", false);
-                bool afterCouldHarvest = ReadBoolMember(equipment, "CouldHarvest", false) || ReadBoolMember(equipment, "IsCropMature", false);
-                if (afterCrop != null && afterMature && afterCouldHarvest)
+                bool afterCropMature = IsCropMatureForDiagnostics(afterCrop);
+                bool afterCouldHarvest = IsBasinHarvestable(equipment);
+                if (afterCrop != null && afterCropMature && afterCouldHarvest)
                 {
                     revalidated.Status = CropHarvestTargetStatus.NativeHarvestFailed;
                     revalidated.Message = "Native Harvest returned but target still appears mature/harvestable.";
@@ -214,9 +218,9 @@ namespace DTMAPI.GameBridge.DolocTown
             object? crop = ReadMember(equipment, "Crop") ?? ReadMember(equipment, "crop");
             CropHarvestTargetKind kind = ClassifyTarget(equipment, crop);
             bool hasCrop = ReadBoolMember(equipment, "HasCrop", crop != null);
-            bool isMature = ReadBoolMember(equipment, "CouldHarvest", false) ||
-                ReadBoolMember(equipment, "IsCropMature", false) ||
-                (crop != null && (ReadBoolMember(crop, "isMature", false) || ReadBoolMember(crop, "IsMature", false)));
+            bool basinHarvestable = IsBasinHarvestable(equipment);
+            bool cropMature = IsCropMatureForDiagnostics(crop);
+            bool isMature = basinHarvestable || cropMature;
             bool hasHarvested = crop != null && ReadBoolMember(crop, "hasHarvested", false);
             string cropId = crop == null ? string.Empty : FirstText(
                 ReadStringMember(crop, "SeedId"),
@@ -241,7 +245,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!IsSupportedHarvestKind(kind, equipment))
             {
                 target.Status = CropHarvestTargetStatus.UnsupportedBasinType;
-                target.Message = "This crop family is visible to scan, but first-version API only executes ordinary PlantBasin.Harvest.";
+                target.Message = BuildUnsupportedFamilyMessage(kind);
             }
             else if (!hasCrop)
             {
@@ -253,15 +257,17 @@ namespace DTMAPI.GameBridge.DolocTown
                 target.Status = CropHarvestTargetStatus.AlreadyHarvested;
                 target.Message = "Native crop state reports hasHarvested.";
             }
-            else if (!isMature)
+            else if (!basinHarvestable)
             {
                 target.Status = CropHarvestTargetStatus.NotMature;
-                target.Message = "Crop is not currently mature/harvestable.";
+                target.Message = cropMature
+                    ? "Crop state appears mature, but basin-level harvestability is false; first-version API will not execute native Harvest."
+                    : "Crop is not currently mature/harvestable.";
             }
             else
             {
                 target.Status = CropHarvestTargetStatus.Pending;
-                target.Message = "Mature ordinary PlantBasin crop.";
+                target.Message = "Mature crop-container target guarded by basin-level harvestability.";
             }
 
             return target;
@@ -279,8 +285,9 @@ namespace DTMAPI.GameBridge.DolocTown
             bool included =
                 (target.Kind == CropHarvestTargetKind.OrdinaryCrop && request.IncludeOrdinaryCrops) ||
                 (target.Kind == CropHarvestTargetKind.Vine && request.IncludeVines) ||
-                (target.Kind == CropHarvestTargetKind.Mushroom && request.IncludeMushrooms) ||
-                (target.Kind == CropHarvestTargetKind.Tree && request.IncludeTrees);
+                (target.Kind == CropHarvestTargetKind.MushroomBag && request.IncludeMushroomBags) ||
+                (target.Kind == CropHarvestTargetKind.Bush && request.IncludeBushes) ||
+                (target.Kind == CropHarvestTargetKind.TreeBasinCrop && request.IncludeTreeBasinCrops);
             if (!included && target.Status == CropHarvestTargetStatus.Pending)
             {
                 target.Status = CropHarvestTargetStatus.SkippedByRequestFilter;
@@ -292,18 +299,20 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             Type equipmentType = equipment.GetType();
             if (IsTypeOrBase(equipmentType, "DolocTown.PlantBasinTree"))
-                return CropHarvestTargetKind.Tree;
+                return CropHarvestTargetKind.TreeBasinCrop;
             if (IsTypeOrBase(equipmentType, "DolocTown.PlantBasinGrass"))
-                return CropHarvestTargetKind.Grass;
+                return CropHarvestTargetKind.GrassForageBasin;
 
             string text = (ReadStringMember(equipment, "Name") + " " +
                 ReadStringMember(equipment, "EquipmentTypeName") + " " +
                 ReadStringMember(equipment, "CropTitle") + " " +
                 (crop == null ? string.Empty : ReadStringMember(crop, "SeedId") + " " + ReadStringMember(crop, "seedName"))).ToLowerInvariant();
-            if (text.IndexOf("mushroom", StringComparison.Ordinal) >= 0 || text.IndexOf("fungus", StringComparison.Ordinal) >= 0 || text.IndexOf("fugus", StringComparison.Ordinal) >= 0)
-                return CropHarvestTargetKind.Mushroom;
-            if (text.IndexOf("vine", StringComparison.Ordinal) >= 0)
+            if (text.IndexOf("mushroom", StringComparison.Ordinal) >= 0 || text.IndexOf("fungus", StringComparison.Ordinal) >= 0 || text.IndexOf("fugus", StringComparison.Ordinal) >= 0 || text.IndexOf("菌", StringComparison.Ordinal) >= 0)
+                return CropHarvestTargetKind.MushroomBag;
+            if (text.IndexOf("vine", StringComparison.Ordinal) >= 0 || text.IndexOf("藤", StringComparison.Ordinal) >= 0)
                 return CropHarvestTargetKind.Vine;
+            if (text.IndexOf("bush", StringComparison.Ordinal) >= 0 || text.IndexOf("shrub", StringComparison.Ordinal) >= 0 || text.IndexOf("灌木", StringComparison.Ordinal) >= 0)
+                return CropHarvestTargetKind.Bush;
             if (IsTypeOrBase(equipmentType, "DolocTown.PlantBasin"))
                 return CropHarvestTargetKind.OrdinaryCrop;
             return CropHarvestTargetKind.Unknown;
@@ -311,11 +320,22 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static bool IsSupportedHarvestKind(CropHarvestTargetKind kind, object equipment)
         {
-            if (kind == CropHarvestTargetKind.Tree || kind == CropHarvestTargetKind.Grass || kind == CropHarvestTargetKind.Unknown)
+            if (kind == CropHarvestTargetKind.TreeBasinCrop || kind == CropHarvestTargetKind.GrassForageBasin || kind == CropHarvestTargetKind.Unknown)
                 return false;
             return IsTypeOrBase(equipment.GetType(), "DolocTown.PlantBasin") &&
                 !IsTypeOrBase(equipment.GetType(), "DolocTown.PlantBasinTree") &&
                 !IsTypeOrBase(equipment.GetType(), "DolocTown.PlantBasinGrass");
+        }
+
+        private static string BuildUnsupportedFamilyMessage(CropHarvestTargetKind kind)
+        {
+            if (kind == CropHarvestTargetKind.TreeBasinCrop)
+                return "Tree-basin crop container is visible to scan, but cocoa/tree-basin harvest uses a different native owner and is not executed by this PlantBasin.Harvest API slice.";
+            if (kind == CropHarvestTargetKind.GrassForageBasin)
+                return "Grass/forage basin is visible to scan, but forage harvesting is not part of this crop-container Harvest API slice.";
+            if (kind == CropHarvestTargetKind.Unknown)
+                return "Unknown crop container is visible to scan, but first-version API only executes reviewed PlantBasin.Harvest(bool,bool) targets.";
+            return "This crop container is visible to scan, but its native owner has not been approved for execution.";
         }
 
         private static bool IsPlantBasinFamily(object equipment)
@@ -370,8 +390,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 Scope = CropHarvestScope.CurrentFarmAndFarmRooms,
                 IncludeOrdinaryCrops = request.IncludeOrdinaryCrops,
                 IncludeVines = request.IncludeVines,
-                IncludeTrees = request.IncludeTrees,
-                IncludeMushrooms = request.IncludeMushrooms,
+                IncludeMushroomBags = request.IncludeMushroomBags,
+                IncludeBushes = request.IncludeBushes,
+                IncludeTreeBasinCrops = request.IncludeTreeBasinCrops,
                 MaxHarvests = Math.Max(1, Math.Min(MaxSafeHarvests, request.MaxHarvests <= 0 ? DefaultMaxHarvests : request.MaxHarvests)),
                 DryRun = request.DryRun,
                 SendNativeMessage = request.SendNativeMessage,
@@ -397,14 +418,37 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static IEnumerable<object?> EnumerateRootRooms(Type dolocApi, object archive, object currentRoom)
         {
-            yield return currentRoom;
-            yield return ReadMember(currentRoom, "RootRoom");
-            yield return ReadStaticMember(dolocApi, "CurrentRootRoom");
-            yield return ReadMember(archive, "currentRoom") ?? ReadMember(archive, "CurrentRoom");
-            yield return ReadMember(archive, "MainFarm");
             object? farmData = ReadMember(archive, "farmData");
-            yield return farmData == null ? null : ReadMember(farmData, "currentRoom");
-            yield return farmData == null ? null : ReadMember(farmData, "MainFarm");
+            List<object> farmRoots = new List<object>();
+            AddUniqueRoom(farmRoots, ReadMember(archive, "MainFarm"));
+            AddUniqueRoom(farmRoots, farmData == null ? null : ReadMember(farmData, "MainFarm"));
+
+            List<object> candidates = new List<object>();
+            foreach (object root in farmRoots)
+                AddUniqueRoom(candidates, root);
+
+            object? currentRoot = ReadMember(currentRoom, "RootRoom");
+            object? staticRoot = ReadStaticMember(dolocApi, "CurrentRootRoom");
+            object? archiveCurrent = ReadMember(archive, "currentRoom") ?? ReadMember(archive, "CurrentRoom");
+            object? farmCurrent = farmData == null ? null : ReadMember(farmData, "currentRoom");
+
+            foreach (object? candidate in new[] { currentRoom, currentRoot, staticRoot, archiveCurrent, farmCurrent })
+            {
+                if (IsFarmScopeCandidate(candidate, farmRoots))
+                    AddUniqueRoom(candidates, candidate);
+            }
+
+            if (farmRoots.Count == 0)
+            {
+                foreach (object? candidate in new[] { currentRoot, currentRoom })
+                {
+                    if (IsFarmLikeRoom(candidate))
+                        AddUniqueRoom(candidates, candidate);
+                }
+            }
+
+            foreach (object candidate in candidates)
+                yield return candidate;
         }
 
         private static IEnumerable<RoomCandidate> EnumerateRoomAndBuildingRooms(object? room, HashSet<int> visitedRooms)
@@ -443,6 +487,70 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (equipment != null)
                     yield return equipment;
             }
+        }
+
+        private static MethodInfo? FindHarvestMethod(Type? type)
+        {
+            MethodInfo? method = FindMethodInHierarchy(type, "Harvest", 2);
+            if (method == null)
+                return null;
+
+            ParameterInfo[] parameters = method.GetParameters();
+            if (parameters.Length == 2 && parameters[0].ParameterType == typeof(bool) && parameters[1].ParameterType == typeof(bool))
+                return method;
+
+            return null;
+        }
+
+        private static bool IsBasinHarvestable(object equipment)
+        {
+            return ReadBoolMember(equipment, "CouldHarvest", false) ||
+                ReadBoolMember(equipment, "IsCropMature", false);
+        }
+
+        private static bool IsCropMatureForDiagnostics(object? crop)
+        {
+            return crop != null && (ReadBoolMember(crop, "isMature", false) || ReadBoolMember(crop, "IsMature", false));
+        }
+
+        private static void AddUniqueRoom(List<object> rooms, object? room)
+        {
+            if (room == null)
+                return;
+
+            int key = RuntimeHelpers.GetHashCode(room);
+            if (rooms.Any(existing => RuntimeHelpers.GetHashCode(existing) == key))
+                return;
+
+            rooms.Add(room);
+        }
+
+        private static bool IsFarmScopeCandidate(object? room, IReadOnlyList<object> farmRoots)
+        {
+            if (room == null)
+                return false;
+
+            if (farmRoots.Count == 0)
+                return IsFarmLikeRoom(room);
+
+            if (farmRoots.Any(root => RuntimeHelpers.GetHashCode(root) == RuntimeHelpers.GetHashCode(room)))
+                return true;
+
+            object? rootRoom = ReadMember(room, "RootRoom");
+            return rootRoom != null && farmRoots.Any(root => RuntimeHelpers.GetHashCode(root) == RuntimeHelpers.GetHashCode(rootRoom));
+        }
+
+        private static bool IsFarmLikeRoom(object? room)
+        {
+            if (room == null)
+                return false;
+
+            string text = (ReadStringMember(room, "RoomId") + " " +
+                ReadStringMember(room, "Id") + " " +
+                ReadStringMember(room, "Name") + " " +
+                ReadStringMember(room, "Title") + " " +
+                ReadStringMember(room, "RoomTitle")).ToLowerInvariant();
+            return text.IndexOf("farm", StringComparison.Ordinal) >= 0;
         }
 
         private sealed class RoomCandidate

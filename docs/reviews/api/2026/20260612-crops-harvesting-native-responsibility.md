@@ -6,7 +6,23 @@ Public symbol/domain: `ICropHarvestingApi`, `CropHarvestRequest`, `CropHarvestRe
 
 Current matrix status before this work: no public DTMAPI crop harvesting API.
 
-Recommended status after this review: open a narrow `Experimental` API for ordinary mature crop scan/harvest requests, backed by the native `PlantBasin.CouldHarvest` / `PlantBasin.Harvest(bool putInBackpack, bool sendMessage)` responsibility path. Do not stabilize trees, grass/forage, mushroom/vine special families, auto-harvest scheduling, save/load crop mutation, or item spawning.
+Recommended status after this review: open a narrow `Experimental` API for ordinary mature crop-container scan/harvest requests, backed by the native `PlantBasin.CouldHarvest` / `PlantBasin.Harvest(bool putInBackpack, bool sendMessage)` responsibility path. Do not stabilize tree-basin cocoa execution, grass/forage basins, non-PlantBasin special families, auto-harvest scheduling, save/load crop mutation, or item spawning.
+
+## 2026-06-12 Hardening Addendum
+
+After review of the first audit package, the public wording must be narrower than "auto harvest trees/grass." The API is a crop-container harvesting API, not a wild tree, forage, or grass automation API.
+
+Current classification policy:
+
+- `OrdinaryCrop`, `Vine`, `MushroomBag`, and `Bush` are PlantBasin-family crop-container categories. They may execute only when the target is still backed by the reviewed `PlantBasin.Harvest(bool,bool)` native owner and basin-level harvestability is true.
+- `TreeBasinCrop` means a `PlantBasinTree` crop container. In the current game this is the cocoa-style tree-basin crop path, not a generic wild-tree harvest path. It does not expose `PlantBasin.Harvest(bool,bool)` and must stay scan-only/unsupported until a separate native-owner review proves the `TreeCrop` / `PlantBasinTree.GenerateCropOutput` route.
+- `GrassForageBasin` means `PlantBasinGrass` / forage-style basin content. It is outside this API's execution scope and must not be described as crop harvesting support.
+
+Execution gate policy:
+
+- `Pending` / executable harvest targets must be based on basin-level `CouldHarvest` or `IsCropMature`.
+- `Crop.isMature` and `TreeCrop.isMature` are diagnostic/display facts only. They must not by themselves cause DTMAPI to invoke a native harvest.
+- `ScanMatureCrops` with no mature executable targets is a successful no-op, not an API failure.
 
 ## Files Read
 
@@ -62,8 +78,8 @@ Review conclusion: the old package proves demand and suggests native responsibil
 | Crop container | `DolocTown.PlantBasin` with `HasCrop`, `Crop`, `CouldHarvest`, and `Harvest(bool,bool)` | DTMAPI may scan and execute this path when a caller explicitly requests harvest. | First API version can use this native owner. |
 | Official harvest side effects | `PlantBasin.Harvest` calling native output, broadcast, `Crop.GenCropOutput`, `Crop.AfterHarvest`, and `PlantBasin.AfterHarvest` | DTMAPI delegates to this method and does not hand-spawn items. | Required execution path. |
 | Automation discovery | `AutomateSystemEnv.GetMatureCropNearStation` and `AutomateTaskHarvestCrop.OnExecute` | DTMAPI uses these as proof that native automation already treats mature `PlantBasin` as harvest target; DTMAPI does not copy station routing. | Supporting native-owner evidence only. |
-| Trees | `PlantBasinTree` / `TreeCrop` families | DTMAPI classifies these as separate targets and does not execute harvest in the first API. | Unsupported in v1. |
-| Grass/forage | `PlantBasinGrass` / `ForageGrass.Harvest` families | DTMAPI classifies as unsupported to avoid conflating ordinary crop harvest with grass/forage. | Unsupported in v1. |
+| Tree-basin crop container | `PlantBasinTree` / `TreeCrop` families, currently cocoa-style crop container rather than generic wild tree harvest | DTMAPI classifies as `TreeBasinCrop` and does not execute harvest in the first API. | Scan-only/unsupported in v1 until separate native-owner review. |
+| Grass/forage basin | `PlantBasinGrass` / `ForageGrass.Harvest` families | DTMAPI classifies as `GrassForageBasin` to avoid conflating ordinary crop harvest with forage/grass. | Unsupported in v1. |
 | Room/equipment scan | `Room.DM_equipment.AllEquipments` and farm/building room graph | DTMAPI scans current farm and farm rooms for explicit API calls. | Experimental scan policy, not stable global crop ownership. |
 
 ## Chosen API Shape
@@ -83,7 +99,7 @@ Important safety choices:
 - A batch lock prevents overlapping scan/harvest operations.
 - Harvest revalidates the target immediately before invoking native harvest.
 - Harvest is limited by `MaxHarvests` and optional `TargetIds`.
-- The first version only executes the reviewed ordinary `PlantBasin.Harvest` route.
+- The first version only executes reviewed `PlantBasin.Harvest(bool,bool)` targets, gated by basin-level harvestability.
 - Unsupported target kinds are reported rather than force-harvested.
 - No item output is spawned by DTMAPI code.
 
@@ -107,7 +123,7 @@ Ordinary mods should use this API for conservative automation and previews only.
 ## Risks And Open Questions
 
 - Room traversal is limited to current farm/current room/building-room relationships; broader map ownership needs more native review.
-- Tree, grass, forage, and special crop families need separate native-owner reviews before execution support.
+- Tree-basin cocoa, grass/forage, and any crop container not backed by the reviewed `PlantBasin.Harvest(bool,bool)` path need separate native-owner reviews before execution support.
 - Multi-owner scheduling is not merged; each mod call is explicit and isolated by the batch lock.
 - Save/load, season rollover, and growth tick ownership are intentionally untouched.
 - Real player acceptance still needs longer manual play with multiple mature crop types before any stability promotion.

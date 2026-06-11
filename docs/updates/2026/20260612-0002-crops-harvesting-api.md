@@ -41,7 +41,7 @@ User asked to complete a Crops / Harvesting API based on native responsibility f
 - Added `CropHarvestingFeature` to register the API through the feature host and publish `Feature.CropHarvesting` / `Crops.HarvestingApi` status.
 - Added `CropHarvestingService` with a batch lock, normalized request limits, current-farm/farm-room scan, opaque target ids, family filters, dry-run support, revalidation before harvest, and native `PlantBasin.Harvest` execution.
 - Materialized each room's equipment list before native harvest, because `PlantBasin.Harvest` can mutate native equipment/crop collections while the API is processing targets.
-- Classifies unsupported native crop families instead of force-harvesting them. Trees and grass/forage-style basins remain unsupported in the first API version.
+- Classifies unsupported native crop-container families instead of force-harvesting them. Tree-basin cocoa-style containers and grass/forage-style basins remain unsupported in the first API version.
 - Added `run-game-smoke.ps1 -AutoExerciseCropHarvestingApi` and smoke fields `CropHarvestingApi` / `CropHarvestingApiEvidence`.
 - Added smoke-only transient mature `PlantBasin` setup using existing GameBridge smoke helpers: place seed in quick slot, point the native agent cell tip at the transient basin, call native `ItemSeed.PlantSeed`, run the native interact-exit path, force mature for smoke only, then scan/harvest through the public API.
 - Added the new CropHarvesting result fields to the global smoke failure calculation so future failures cannot be reported as an overall passed run.
@@ -75,7 +75,7 @@ Rollback by reverting this update. The rollback removes the new public experimen
 
 ## Follow-Up
 
-- Add native-owner reviews for tree crops, forage/grass harvest, and any mushroom/vine special cases before supporting those target families.
+- Add native-owner reviews for tree-basin cocoa execution, forage/grass harvest, and any non-PlantBasin special cases before supporting those target families.
 - Add longer manual QA with real mature crop fields across seasons and building rooms.
 - Decide multi-owner scheduling/lease policy before treating auto-harvest as stable ordinary-mod behavior.
 - Consider player-facing Workshop release only after the API has more crop-family evidence.

@@ -33,7 +33,7 @@ namespace AutoHarvestMod
             IDtmConfigMenuApi? menu = helper.ModRegistry.GetApi<IDtmConfigMenuApi>("DTMAPI.ModConfigMenu");
             if (menu == null)
             {
-                helper.Monitor.Log(T("mod.apiMissing", "CropHarvesting API is not available yet."), LogLevel.Warn);
+                helper.Monitor.Log(T("mod.configMenuMissing", "DTMAPI config menu API is not available yet."), LogLevel.Warn);
                 return;
             }
 
@@ -52,7 +52,8 @@ namespace AutoHarvestMod
             menu.AddNumberOption(helper.ModManifest, () => T("config.interval.name", "Scan interval"), () => T("config.interval.tooltip", "Seconds between automatic scans while enabled."), () => config.IntervalSeconds, value => config.IntervalSeconds = (int)Math.Round(value), 5, 600, 5);
             menu.AddNumberOption(helper.ModManifest, () => T("config.maxHarvests.name", "Max harvests per run"), () => T("config.maxHarvests.tooltip", "Limits how many mature crops one API call can harvest."), () => config.MaxHarvestsPerRun, value => config.MaxHarvestsPerRun = (int)Math.Round(value), 1, 200, 1);
             menu.AddBoolOption(helper.ModManifest, () => T("config.includeVines.name", "Include vines"), () => T("config.includeVines.tooltip", "Includes PlantBasin crops classified as vines by the API."), () => config.IncludeVines, value => config.IncludeVines = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.includeMushrooms.name", "Include mushrooms"), () => T("config.includeMushrooms.tooltip", "Includes PlantBasin crops classified as mushrooms/fungi by the API."), () => config.IncludeMushrooms, value => config.IncludeMushrooms = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.includeMushroomBags.name", "Include mushroom bags"), () => T("config.includeMushroomBags.tooltip", "Includes PlantBasin-family crop containers classified as mushroom bags by the API."), () => config.IncludeMushroomBags, value => config.IncludeMushroomBags = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.includeBushes.name", "Include bushes"), () => T("config.includeBushes.tooltip", "Includes PlantBasin-family crop containers classified as bushes by the API."), () => config.IncludeBushes, value => config.IncludeBushes = value);
             menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Writes scan/harvest summaries to the DTMAPI log."), () => config.VerboseLogging, value => config.VerboseLogging = value);
         }
 
@@ -119,8 +120,9 @@ namespace AutoHarvestMod
             {
                 IncludeOrdinaryCrops = true,
                 IncludeVines = config.IncludeVines,
-                IncludeMushrooms = config.IncludeMushrooms,
-                IncludeTrees = false,
+                IncludeMushroomBags = config.IncludeMushroomBags,
+                IncludeBushes = config.IncludeBushes,
+                IncludeTreeBasinCrops = false,
                 MaxHarvests = config.MaxHarvestsPerRun,
                 DryRun = dryRun,
                 SendNativeMessage = config.SendNativeMessage,
@@ -142,7 +144,8 @@ namespace AutoHarvestMod
         {
             UnregisterKey(registeredManualKey);
             registeredManualKey = NormalizeKey(config.ManualHarvestKey);
-            helper.Input.RegisterButton(registeredManualKey);
+            if (!registeredManualKey.Equals("None", StringComparison.OrdinalIgnoreCase))
+                helper.Input.RegisterButton(registeredManualKey);
         }
 
         private void UnregisterKey(string key)
@@ -187,7 +190,8 @@ namespace AutoHarvestMod
             [DataMember] public int IntervalSeconds { get; set; } = 30;
             [DataMember] public int MaxHarvestsPerRun { get; set; } = 24;
             [DataMember] public bool IncludeVines { get; set; } = true;
-            [DataMember] public bool IncludeMushrooms { get; set; } = true;
+            [DataMember] public bool IncludeMushroomBags { get; set; } = true;
+            [DataMember] public bool IncludeBushes { get; set; } = true;
             [DataMember] public bool SendNativeMessage { get; set; }
             [DataMember] public bool VerboseLogging { get; set; }
         }

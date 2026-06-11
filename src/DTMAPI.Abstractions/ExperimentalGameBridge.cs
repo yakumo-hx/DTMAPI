@@ -213,7 +213,7 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.0-alpha", Notes = "Semantic crop-harvesting bridge backed by native PlantBasin maturity and harvest responsibility; first version only executes ordinary PlantBasin harvests and keeps tree/grass/special crop families unsupported until their native ownership is reviewed.")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.0-alpha", Notes = "Semantic crop-container harvesting bridge backed by native PlantBasin maturity and harvest responsibility; first version only executes ordinary PlantBasin-family Harvest(bool,bool) paths and keeps tree-basin cocoa, grass/forage, and other native-owner families unsupported until their ownership is reviewed.")]
     public interface ICropHarvestingApi
     {
         CropHarvestResult ScanMatureCrops(IManifest owner, CropHarvestRequest request);
@@ -1069,9 +1069,10 @@ namespace DTMAPI.Abstractions
         Unknown,
         OrdinaryCrop,
         Vine,
-        Tree,
-        Mushroom,
-        Grass
+        MushroomBag,
+        Bush,
+        TreeBasinCrop,
+        GrassForageBasin
     }
 
     public enum CropHarvestTargetStatus
@@ -1091,8 +1092,9 @@ namespace DTMAPI.Abstractions
         public CropHarvestScope Scope { get; set; } = CropHarvestScope.CurrentFarmAndFarmRooms;
         public bool IncludeOrdinaryCrops { get; set; } = true;
         public bool IncludeVines { get; set; }
-        public bool IncludeTrees { get; set; }
-        public bool IncludeMushrooms { get; set; }
+        public bool IncludeMushroomBags { get; set; }
+        public bool IncludeBushes { get; set; }
+        public bool IncludeTreeBasinCrops { get; set; }
         public int MaxHarvests { get; set; } = 24;
         public bool DryRun { get; set; }
         public bool SendNativeMessage { get; set; } = true;
@@ -1120,6 +1122,9 @@ namespace DTMAPI.Abstractions
 
     public sealed class CropHarvestTargetResult
     {
+        /// <summary>
+        /// Opaque transient target id. It is only valid for an immediate follow-up harvest request in the same loaded world/session and must not be persisted.
+        /// </summary>
         public string TargetId { get; set; } = string.Empty;
         public string RoomId { get; set; } = string.Empty;
         public string RoomTitle { get; set; } = string.Empty;

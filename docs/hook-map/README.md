@@ -1039,14 +1039,15 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Status: experimental
 - Public surface: `ICropHarvestingApi`, `CropHarvestRequest`, `CropHarvestResult`, `CropHarvestTargetResult`, `CropHarvestScope`, `CropHarvestTargetKind`, and `CropHarvestTargetStatus`.
 - Game build: 23465763 workshop
-- Game method/type: `DolocTown.PlantBasin.CouldHarvest`, `DolocTown.PlantBasin.Harvest(bool putInBackpack, bool sendMessage)`, `DolocTown.Crop.isMature`, current room/farm equipment containers, and farm building-room traversal.
+- Game method/type: `DolocTown.PlantBasin.CouldHarvest`, `DolocTown.PlantBasin.IsCropMature`, `DolocTown.PlantBasin.Harvest(bool putInBackpack, bool sendMessage)`, diagnostic `DolocTown.Crop.isMature`, farm-root equipment containers, and farm building-room traversal.
 - Patch type: explicit GameBridge API request through `CropHarvestingFeature` / `CropHarvestingService`; no Harmony patch is installed for ordinary crop harvesting.
 - Why this point: official `PlantBasin.Harvest` owns crop output, broadcast, crop after-harvest state, and basin cleanup. DTMAPI should delegate to this native responsibility instead of hand-spawning harvested items or exposing raw `PlantBasin` / `Crop` objects to ordinary mods.
-- Failure behavior: overlapping batches return `Busy`; non-mature or already-harvested targets are reported without mutation; unsupported tree/grass/special basin families are classified instead of executed; native invocation failures are recorded as diagnostics and `NativeHarvestFailed`.
+- Failure behavior: overlapping batches return `Busy`; no mature executable targets are successful no-ops; non-mature or already-harvested targets are reported without mutation; `TreeBasinCrop`/cocoa-style `PlantBasinTree` and `GrassForageBasin` are classified as scan-only/unsupported instead of executed; native invocation failures are recorded as diagnostics and `NativeHarvestFailed`.
 - Mods/tests depending on it: `Yuuka.DTMAPI.AutoHarvest` test mod, smoke harness `-AutoExerciseCropHarvestingApi`.
 - Evidence:
   - Build: 2026-06-12 Release build/test passed with 0 warnings and 0 errors.
   - Save: local slot 3 / index 2.
+  - Hardening log line: `GAME-SMOKE/20260612-072544` logs `CropHarvesting API Scan ... mature=0 harvested=0 skipped=172 failed=0 targetFilter=1` and `noTargetScan={success=True ... mature=0 ... failed=0}`, then logs the ordinary transient `PlantBasinSimple` path with `scan={success=True ... mature=1 ... failed=0}`, `harvest={success=True ... harvested=1 ... failed=0}`, `Crops.HarvestingApi = verified`, and `Smoke.CropHarvestingApi = verified`.
   - Log line: `GAME-SMOKE/20260612-062154` logs `Feature.CropHarvesting = ready`, `Crops.HarvestingApi = scan-verified`, `Crops.HarvestingApi = verified`, and `Smoke.CropHarvestingApi = verified` with a transient `PlantBasinSimple`, `seed_endyam`, native planting setup, `mature=False->True`, `scan={success=True ... mature=1 harvested=0 skipped=171 failed=0 targetFilter=1}`, and `harvest={success=True ... mature=1 harvested=1 skipped=171 failed=0 targetFilter=1}`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260612-062154`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
 - Regression cases: CROPS-HARVESTING-API-20260612

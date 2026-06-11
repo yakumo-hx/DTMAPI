@@ -46,13 +46,30 @@ namespace DTMAPI.GameBridge.DolocTown
                 {
                     IncludeOrdinaryCrops = true,
                     IncludeVines = true,
-                    IncludeMushrooms = true,
-                    IncludeTrees = false,
+                    IncludeMushroomBags = true,
+                    IncludeBushes = true,
+                    IncludeTreeBasinCrops = false,
                     MaxHarvests = 1,
                     SendNativeMessage = false,
                     VerboseLogging = true,
                     TargetIds = new[] { targetId }
                 };
+
+                var noTargetRequest = new CropHarvestRequest
+                {
+                    IncludeOrdinaryCrops = true,
+                    IncludeVines = true,
+                    IncludeMushroomBags = true,
+                    IncludeBushes = true,
+                    IncludeTreeBasinCrops = false,
+                    MaxHarvests = 1,
+                    SendNativeMessage = false,
+                    VerboseLogging = true,
+                    TargetIds = new[] { "equipment:missing-crop-harvesting-smoke" }
+                };
+                CropHarvestResult noTargetScan = api.ScanMatureCrops(owner, noTargetRequest);
+                if (!noTargetScan.Success || noTargetScan.MatureTargetsFound != 0 || noTargetScan.FailedCount != 0)
+                    throw new InvalidOperationException("Crop harvesting no-target scan should be a successful no-op. result={" + FormatCropHarvestResult(noTargetScan) + "}");
 
                 CropHarvestResult scan = api.ScanMatureCrops(owner, request);
                 if (!scan.Success || scan.MatureTargetsFound <= 0 || !scan.Targets.Any(target => target.TargetId.Equals(targetId, StringComparison.OrdinalIgnoreCase) && target.Status == CropHarvestTargetStatus.Pending))
@@ -70,6 +87,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", basin={" + DescribeEquipmentForSmoke(transientBasin) + " source=" + basinSource + "}" +
                     ", setup={" + setupSummary + "}" +
                     ", mature={" + matureSummary + "}" +
+                    ", noTargetScan={" + FormatCropHarvestResult(noTargetScan) + "}" +
                     ", scan={" + FormatCropHarvestResult(scan) + "}" +
                     ", harvest={" + FormatCropHarvestResult(harvest) + "}" +
                     ", status=" + status.Status +
