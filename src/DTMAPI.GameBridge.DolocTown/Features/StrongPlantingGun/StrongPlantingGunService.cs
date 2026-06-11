@@ -12,6 +12,7 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     internal sealed class StrongPlantingGunService : IStrongPlantingGunApi
     {
+        private const int SupportedSlotCount = 3;
         private readonly DtmApiRuntime runtime;
         private readonly Dictionary<string, StrongPlantingGunOptions> strongPlantingGunOptions = new Dictionary<string, StrongPlantingGunOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, StrongPlantingGunState> strongPlantingGunStates = new Dictionary<string, StrongPlantingGunState>(StringComparer.OrdinalIgnoreCase);
@@ -55,8 +56,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 ? ((strongPlantingGunToolHookInstalled && strongPlantingGunUiHookInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook")
                 : "disabled";
             state.LastMessage = normalized.Enabled
-                ? "Strong planting gun policy registered; DTMAPI expands official farming gun storage and uses official basin interaction checks across seed, film, and fertilizer slots."
-                : "Strong planting gun policy is disabled.";
+                ? "Strong planting gun policy registered; DTMAPI exposes the fixed seed/film/fertilizer three-slot contract and uses official basin interaction checks."
+                : "Strong planting gun policy is disabled; native one-slot behavior is restored, but previously expanded visible slots may remain inactive until re-equip or restart.";
             strongPlantingGunStates[owner.UniqueID] = state;
 
             var result = new StrongPlantingGunRegisterResult
@@ -95,7 +96,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
 
             int currentCapacity = ReadIntMember(inventory, "capacity", 0);
-            int targetCapacity = Math.Max(currentCapacity, options.SlotCount);
+            int targetCapacity = Math.Max(currentCapacity, SupportedSlotCount);
             if (targetCapacity <= 0)
                 return;
 
@@ -129,7 +130,7 @@ namespace DTMAPI.GameBridge.DolocTown
             state.ToolHookInstalled = strongPlantingGunToolHookInstalled;
             state.UiHookInstalled = strongPlantingGunUiHookInstalled;
             state.Status = (strongPlantingGunToolHookInstalled && strongPlantingGunUiHookInstalled) ? "configured-experimental-tool-ui-hooks" : "configured-pending-hook";
-            state.LastMessage = "Strong planting gun storage prepared slots=" + targetCapacity + " previousSlots=" + currentCapacity + " reason=" + reason + ".";
+            state.LastMessage = "Strong planting gun storage prepared visibleCapacity=" + targetCapacity + " previousCapacity=" + currentCapacity + " supportedSlots=3 contract=fixed-seed-film-fertilizer reason=" + reason + ".";
             strongPlantingGunStates[ownerId] = state;
 
             if (expanded || options.VerboseLogging)
@@ -342,7 +343,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 OwnerId = ownerId,
                 IsConfigured = strongPlantingGunOptions.ContainsKey(ownerId),
                 Enabled = options.Enabled && strongPlantingGunOptions.ContainsKey(ownerId),
-                SlotCount = Math.Max(1, options.SlotCount),
+                SlotCount = SupportedSlotCount,
                 ToolHookInstalled = strongPlantingGunToolHookInstalled,
                 UiHookInstalled = strongPlantingGunUiHookInstalled,
                 Status = strongPlantingGunOptions.ContainsKey(ownerId) ? (options.Enabled ? "registered" : "disabled") : "not-configured",
@@ -378,7 +379,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return new StrongPlantingGunOptions
             {
                 Enabled = options.Enabled,
-                SlotCount = Math.Max(1, Math.Min(12, options.SlotCount)),
+                SlotCount = SupportedSlotCount,
                 IncludeSeeds = options.IncludeSeeds,
                 IncludeFilms = options.IncludeFilms,
                 IncludeFertilizers = options.IncludeFertilizers,
@@ -421,8 +422,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private static List<StrongPlantingGunSlotItem> ReadStrongPlantingGunSlotItems(object inventory, StrongPlantingGunOptions options)
         {
             int capacity = Math.Max(0, ReadIntMember(inventory, "capacity", 0));
+            int readableSlots = Math.Min(capacity, Math.Max(0, options.SlotCount));
             var items = new List<StrongPlantingGunSlotItem>();
-            for (int i = 0; i < capacity; i++)
+            for (int i = 0; i < readableSlots; i++)
             {
                 object? item = ReadInventoryItemAt(inventory, i);
                 if (item != null && IsStrongPlantingGunItemAllowed(options, item))

@@ -73,6 +73,18 @@ That means a caller can pass `AutoRecast=false` or `RequireSelectedFishingRod=fa
 - Keep `IFishingAutomationApi`, `FishingAutomationOptions`, and `FishingAutomationState` Experimental.
 - Document `AutoRecast` and `RequireSelectedFishingRod` as semantically unstable fields whose caller-provided values are currently normalized to safe defaults.
 
+## 2026-06-11 Addendum - Manual QA Batch 1 UI Alignment
+
+Manual QA Batch 1 did not change the FishingAutomation runtime contract or hook targets. It aligned the migrated AutoFishing mod's config page, i18n text, manifest summary, README, and XML comments with the current experimental behavior:
+
+- `AutoRecast` remains accepted by the DTO but normalized on by the service.
+- `RequireSelectedFishingRod` remains accepted by the DTO but normalized on by the service.
+- `AutoCompleteMiniGame` is documented as delayed native minigame success forcing after a real minigame exists briefly, not as progress solving.
+- `SkipMiniGame` is documented as the instant-bite handoff path, not as an independent minigame-skip switch.
+- `FastAnimations` is documented as best-effort and may safely no-op when the expected native animator path is unavailable.
+
+This narrows player-facing expectations without promoting `IFishingAutomationApi` beyond Experimental. Future stabilization still needs either real support for caller-controlled values or an explicit deprecation/lease/arbitration design.
+
 ## Future API Choices
 
 Future work should pick one of these directions before promoting the API:

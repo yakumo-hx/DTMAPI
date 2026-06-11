@@ -60,6 +60,8 @@ namespace DTMAPI.UnitTests
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
+                StrongPlantingGunNormalizesToThreeSlotContract();
+                AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
@@ -1907,6 +1909,42 @@ namespace DTMAPI.UnitTests
             {
                 RestorePersistentRoot(previousRoot);
             }
+        }
+
+        private static void StrongPlantingGunNormalizesToThreeSlotContract()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.StrongPlantingGunService")
+                ?? throw new InvalidOperationException("StrongPlantingGunService type should exist.");
+            MethodInfo normalize = serviceType.GetMethod("NormalizeStrongPlantingGunOptions", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("StrongPlantingGunService should keep an internal normalize helper.");
+
+            var oversized = new StrongPlantingGunOptions { Enabled = true, SlotCount = 12, IncludeSeeds = true, IncludeFilms = true, IncludeFertilizers = true, IncludeWater = true };
+            var undersized = new StrongPlantingGunOptions { Enabled = true, SlotCount = 1, IncludeSeeds = true, IncludeFilms = true, IncludeFertilizers = true };
+            var disabled = new StrongPlantingGunOptions { Enabled = false, SlotCount = 6 };
+
+            StrongPlantingGunOptions normalizedOversized = (StrongPlantingGunOptions)(normalize.Invoke(null, new object?[] { oversized }) ?? throw new InvalidOperationException("Normalize should return options."));
+            StrongPlantingGunOptions normalizedUndersized = (StrongPlantingGunOptions)(normalize.Invoke(null, new object?[] { undersized }) ?? throw new InvalidOperationException("Normalize should return options."));
+            StrongPlantingGunOptions normalizedDisabled = (StrongPlantingGunOptions)(normalize.Invoke(null, new object?[] { disabled }) ?? throw new InvalidOperationException("Normalize should return options."));
+
+            Assert(normalizedOversized.SlotCount == 3, "StrongPlantingGun oversized requests should normalize to the fixed three-slot contract.");
+            Assert(normalizedUndersized.SlotCount == 3, "StrongPlantingGun undersized requests should normalize to the fixed three-slot contract.");
+            Assert(!normalizedDisabled.Enabled && normalizedDisabled.SlotCount == 3, "StrongPlantingGun disabled policies should still report the fixed three-slot contract for compatibility.");
+            Assert(normalizedOversized.IncludeWater, "StrongPlantingGun normalize should not silently rewrite unrelated option booleans.");
+        }
+
+        private static void AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.AnimalViewerService")
+                ?? throw new InvalidOperationException("AnimalViewerService type should exist.");
+            MethodInfo looksLikeLocalization = serviceType.GetMethod("LooksLikeLocalizationComponent", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("AnimalViewerService should keep a localization guard helper.");
+
+            Assert((bool)(looksLikeLocalization.Invoke(null, new object[] { "DolocTown.UI.UILocalization" }) ?? false), "AnimalViewer localization guard should recognize Doloc UI localization components.");
+            Assert((bool)(looksLikeLocalization.Invoke(null, new object[] { "Some.Namespace.LocalizeText" }) ?? false), "AnimalViewer localization guard should recognize Localize-style components.");
+            Assert(!(bool)(looksLikeLocalization.Invoke(null, new object[] { "UnityEngine.UI.Text" }) ?? true), "AnimalViewer localization guard must not disable plain text components.");
+            Assert(!(bool)(looksLikeLocalization.Invoke(null, new object[] { "DolocTown.UI.ProgressBar" }) ?? true), "AnimalViewer localization guard must not disable the ProgressBar component itself.");
         }
 
         private static void CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots()
