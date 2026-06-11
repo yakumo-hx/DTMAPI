@@ -11,9 +11,9 @@ This workflow defines how player reports should move from Manager UI evidence in
 ## Expected Player Flow
 
 1. Open DTMAPI Manager.
-2. Check the summary state: overall status, loaded/blocked/disabled mods, errors, warnings, failed hooks, and failed features.
-3. Open the failed or warning row that best matches the issue.
-4. Click Export Report.
+2. Check Status for overall status, loaded/blocked/disabled mods, errors, warnings, failed/missing hooks, failed/degraded features, and latest log/report state.
+3. Open Mods, Errors/Warnings, Hooks, or Features to find the failed or warning row that best matches the issue.
+4. Open Logs and click Export logs.
 5. Upload the generated report zip, or the compact web evidence package when a zip is too large for the review channel.
 6. Include a short description of what the player expected, what happened, and whether the issue repeats after restart.
 
@@ -80,11 +80,16 @@ Manager should support this loop by:
 
 - Sorting failed and blocked rows first.
 - Showing enough detail to identify owner, status, reason, and path.
-- Copying selected rows as text.
+- Showing Status, Mods, Errors/Warnings, Hooks, Features, and Logs as real view-model consumers in the title Settings UI.
+- Copying selected rows as text in a future slice.
 - Exporting a report through the runtime diagnostics helper.
 - Refreshing the snapshot after export and showing whether the returned report path matches `LatestReportPath`.
 - Showing when no report path or log path is available.
 - Avoiding Stable wording for Experimental or Diagnostic surfaces.
+
+## Phase 1 Implemented Support Path
+
+As of `GAME-SMOKE/20260611-112148`, the title Settings Manager MVP supports the first support loop without raw log reading: Status summary, Mods, Errors/Warnings, Hooks, Features, Logs, and Logs Export Report all consume the internal Manager model or report-export state. Copy Summary and Copy selected row remain future Developer Preview work.
 
 ## Boundaries
 

@@ -303,6 +303,7 @@ namespace DTMAPI.BepInExBootstrap
                 Tuple.Create(T("tab.status", "Status"), DtmOverlayPage.Status),
                 Tuple.Create(T("tab.errors", "Errors"), DtmOverlayPage.Errors),
                 Tuple.Create(T("tab.hooks", "Hooks"), DtmOverlayPage.Hooks),
+                Tuple.Create(T("tab.features", "Features"), DtmOverlayPage.Features),
                 Tuple.Create(T("tab.logs", "Logs"), DtmOverlayPage.Logs)
             };
             for (int i = 0; i < tabs.Length; i++)
@@ -332,6 +333,9 @@ namespace DTMAPI.BepInExBootstrap
                     break;
                 case DtmOverlayPage.Hooks:
                     RenderHooks(snapshot);
+                    break;
+                case DtmOverlayPage.Features:
+                    RenderFeatures(snapshot);
                     break;
                 case DtmOverlayPage.Logs:
                     RenderLogs(snapshot);
@@ -536,19 +540,23 @@ namespace DTMAPI.BepInExBootstrap
         private void RenderMods(RuntimeSnapshot snapshot)
         {
             AddText(panelContentRoot!, "DTMAPI.Mods.Title", T("mods.notice", "DTMAPI shows status only. Enable, disable, and ordering stay with Doloc Town or Steam Workshop."), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 46, -132, 900, 26);
-            int i = 0;
-            foreach (var mod in snapshot.DiscoveredMods.OrderBy(m => m.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase).Take(16))
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            if (manager == null)
             {
-                bool loaded = snapshot.LoadedMods.Any(m => m.Manifest.UniqueID.Equals(mod.Manifest.UniqueID, StringComparison.OrdinalIgnoreCase));
-                string state = loaded && !mod.OfficialEnabled
-                    ? T("mods.state.loadedDisabled", "loaded; restart to stop")
-                    : loaded ? T("mods.state.loaded", "loaded") : (mod.OfficialEnabled ? T("mods.state.restart", "restart/dependency required") : T("mods.state.locked", "locked by official path"));
-                string manage = mod.CanDtmApiToggle ? T("mods.source.local", "local DTMAPI file") : T("mods.source.official", "official/Steam managed");
-                string reason = loaded && !mod.OfficialEnabled
-                    ? text.TranslateEnablementReason("此 Mod 已经加载；官方禁用会在重启游戏后完全停用。")
-                    : loaded ? string.Empty : text.TranslateEnablementReason(mod.EnablementReason);
-                string line = mod.Manifest.UniqueID + "  [" + state + "]  " + T("mods.sourceLabel", "source") + "=" + mod.Source + "  " + manage + (string.IsNullOrWhiteSpace(reason) ? string.Empty : "  " + reason);
-                AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(line, 130), 14, loaded ? Color(0.88f, 1f, 0.88f, 1f) : Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -172 - i * 30, 920, 24);
+                AddText(panelContentRoot!, "DTMAPI.Mods.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -172, 900, 26);
+                return;
+            }
+
+            if (manager.Mods.Count == 0)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Mods.Empty", T("mods.empty", "No discovered DTMAPI mods recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -172, 600, 26);
+                return;
+            }
+
+            int i = 0;
+            foreach (ManagerModRow mod in manager.Mods.Take(16))
+            {
+                AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(ManagerPageRowFormatter.FormatModRow(mod), 136), 13, GetModRowColor(mod), TextAnchorMiddleLeft, 52, -172 - i * 30, 930, 24);
                 i++;
             }
         }
@@ -606,29 +614,93 @@ namespace DTMAPI.BepInExBootstrap
 
         private void RenderErrors(RuntimeSnapshot snapshot)
         {
-            if (snapshot.Errors.Count == 0)
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            if (manager == null)
             {
-                AddText(panelContentRoot!, "DTMAPI.Errors.Empty", T("errors.empty", "No DTMAPI errors recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 600, 26);
+                AddText(panelContentRoot!, "DTMAPI.Errors.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
                 return;
             }
-            for (int i = 0; i < Math.Min(16, snapshot.Errors.Count); i++)
+
+            if (manager.Errors.Count == 0 && manager.Warnings.Count == 0)
             {
-                IDtmErrorInfo error = snapshot.Errors[i];
-                AddText(panelContentRoot!, "DTMAPI.Errors.Row." + i, Truncate(error.Time.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + " [" + error.Owner + "] " + error.Message, 120), 13, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -140 - i * 30, 930, 24);
+                AddText(panelContentRoot!, "DTMAPI.Errors.Empty", T("errors.empty", "No DTMAPI errors or warnings recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 700, 26);
+                return;
+            }
+
+            int line = 0;
+            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsTitle", T("errors.errorsTitle", "Errors"), 15, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -136, 160, 24);
+            if (manager.Errors.Count == 0)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Errors.NoErrors", T("errors.noErrors", "No DTMAPI errors recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 720, 22);
+                line = 1;
+            }
+            else
+            {
+                foreach (ManagerDiagnosticRow error in manager.Errors.Take(7))
+                {
+                    AddText(panelContentRoot!, "DTMAPI.Errors.Row." + line, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(error), 132), 13, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -164 - line * 28, 930, 22);
+                    line++;
+                }
+            }
+
+            int warningStart = line + 1;
+            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsTitle", T("errors.warningsTitle", "Warnings"), 15, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -164 - warningStart * 28, 160, 24);
+            if (manager.Warnings.Count == 0)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Errors.NoWarnings", T("errors.noWarnings", "No DTMAPI warnings recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28, 720, 22);
+                return;
+            }
+
+            int warningLine = 0;
+            foreach (ManagerDiagnosticRow warning in manager.Warnings.Take(7))
+            {
+                AddText(panelContentRoot!, "DTMAPI.Warnings.Row." + warningLine, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(warning), 132), 13, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28 - warningLine * 28, 930, 22);
+                warningLine++;
             }
         }
 
         private void RenderHooks(RuntimeSnapshot snapshot)
         {
-            if (snapshot.HookStatuses.Count == 0)
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            if (manager == null)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Hooks.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
+                return;
+            }
+
+            if (manager.Hooks.Count == 0)
             {
                 AddText(panelContentRoot!, "DTMAPI.Hooks.Empty", T("hooks.empty", "No hook statuses recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 600, 26);
                 return;
             }
-            for (int i = 0; i < Math.Min(17, snapshot.HookStatuses.Count); i++)
+            AddText(panelContentRoot!, "DTMAPI.Hooks.Title", T("hooks.title", "Hooks"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
+            for (int i = 0; i < Math.Min(17, manager.Hooks.Count); i++)
             {
-                IHookStatusInfo hook = snapshot.HookStatuses[i];
-                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(hook.HookId + ": " + hook.Status + " | " + hook.Source, 120), 13, Color(0.86f, 0.92f, 1f, 1f), TextAnchorMiddleLeft, 52, -140 - i * 28, 930, 22);
+                ManagerHookRow hook = manager.Hooks[i];
+                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(ManagerPageRowFormatter.FormatHookRow(hook), 132), 13, GetHookRowColor(hook), TextAnchorMiddleLeft, 52, -164 - i * 28, 930, 22);
+            }
+        }
+
+        private void RenderFeatures(RuntimeSnapshot snapshot)
+        {
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            if (manager == null)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Features.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
+                return;
+            }
+
+            if (manager.Features.Count == 0)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Features.Empty", T("features.empty", "No feature statuses recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 600, 26);
+                return;
+            }
+
+            AddText(panelContentRoot!, "DTMAPI.Features.Title", T("features.title", "Features"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
+            for (int i = 0; i < Math.Min(17, manager.Features.Count); i++)
+            {
+                ManagerFeatureRow feature = manager.Features[i];
+                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -164 - i * 28, 930, 22);
             }
         }
 
@@ -654,6 +726,37 @@ namespace DTMAPI.BepInExBootstrap
             AddText(panelContentRoot!, "DTMAPI.Logs.PathMatch", T("logs.pathMatch", "Path match: ") + state.PathMatchStatus + T("logs.snapshotReportStatus", " | snapshot report: ") + state.SnapshotReportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -312, 930, 24);
             if (state.ExportStatus == "export-failed")
                 AddText(panelContentRoot!, "DTMAPI.Logs.ExportError", T("logs.exportError", "Export error: ") + Truncate(state.ExportErrorMessage, 120), 14, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -342, 930, 24);
+        }
+
+        private object GetModRowColor(ManagerModRow mod)
+        {
+            if (mod.IsBlocked)
+                return Color(1f, 0.76f, 0.70f, 1f);
+            if (mod.IsWarning || mod.IsDisabled)
+                return Color(1f, 0.88f, 0.62f, 1f);
+            if (mod.IsLoaded)
+                return Color(0.88f, 1f, 0.88f, 1f);
+            return Color(0.86f, 0.92f, 1f, 1f);
+        }
+
+        private object GetHookRowColor(ManagerHookRow hook)
+        {
+            if (hook.IsFailed)
+                return Color(1f, 0.76f, 0.70f, 1f);
+            if (hook.IsMissing)
+                return Color(1f, 0.88f, 0.62f, 1f);
+            if (hook.Status.Equals("verified", StringComparison.OrdinalIgnoreCase) || hook.Status.Equals("ready", StringComparison.OrdinalIgnoreCase))
+                return Color(0.88f, 1f, 0.88f, 1f);
+            return Color(0.86f, 0.92f, 1f, 1f);
+        }
+
+        private object GetFeatureRowColor(ManagerFeatureRow feature)
+        {
+            if (feature.IsFailed)
+                return Color(1f, 0.76f, 0.70f, 1f);
+            if (feature.IsDegraded)
+                return Color(1f, 0.88f, 0.62f, 1f);
+            return Color(0.88f, 1f, 0.88f, 1f);
         }
 
         private void SelectConfigPage(string uniqueId)

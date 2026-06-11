@@ -610,6 +610,20 @@ namespace DTMAPI.UnitTests
                 Assert(model.ExportReport.HasLatestLogPath && model.ExportReport.LatestLogExists, "Manager export status should detect an existing latest log path.");
                 Assert(model.ExportReport.HasLatestReportPath && !model.ExportReport.LatestReportExists, "Manager export status should detect a missing latest report path.");
                 Assert(model.ExportReport.Status == "missing-report", "Manager export status should mark a missing report path.");
+                Assert(ManagerPageRowFormatter.ModelUnavailable(string.Empty) == "Manager model unavailable.", "Manager formatter should expose the empty-model fallback text.");
+                Assert(ManagerPageRowFormatter.ModelUnavailable("IOException: boom").Contains("refresh failed"), "Manager formatter should expose refresh failure text.");
+                string blockedModLine = ManagerPageRowFormatter.FormatModRow(model.Mods[0]);
+                Assert(blockedModLine.Contains("missing-dependency") && blockedModLine.Contains("Blocked Mod") && blockedModLine.Contains("Blocked.Mod") && blockedModLine.Contains("loaded=false") && blockedModLine.Contains("Missing dependency"), "Manager mod formatter should include status code, name, id, loaded state, and blocked reason.");
+                string diagnosticLine = ManagerPageRowFormatter.FormatDiagnosticRow(model.Errors[0]);
+                Assert(diagnosticLine.Contains("[Example.Mod]") && diagnosticLine.Contains("failed to load asset"), "Manager diagnostic formatter should include owner and message.");
+                string missingHookLine = ManagerPageRowFormatter.FormatHookRow(model.Hooks[1]);
+                Assert(missingHookLine.Contains("Save.MoreSlotsApi") && missingHookLine.Contains("missing") && !model.Hooks[1].IsFailed && model.Hooks[1].IsMissing, "Manager hook formatter should keep missing hooks warning-like instead of failed.");
+                string failedFeatureLine = ManagerPageRowFormatter.FormatFeatureRow(model.Features[0]);
+                string degradedFeatureLine = ManagerPageRowFormatter.FormatFeatureRow(model.Features[1]);
+                Assert(failedFeatureLine.Contains("BrokenFeature") && failedFeatureLine.Contains("failures=3") && failedFeatureLine.Contains("boom"), "Manager feature formatter should include failed feature details.");
+                Assert(degradedFeatureLine.Contains("FishingAutomation") && degradedFeatureLine.Contains("success=true") && degradedFeatureLine.Contains("failures=2"), "Manager feature formatter should include degraded feature counters.");
+                string logsStateLine = ManagerPageRowFormatter.FormatLogsExportState(ManagerLogsPageState.From(null, model));
+                Assert(logsStateLine.Contains("not-exported") && logsStateLine.Contains("missing-report"), "Manager logs formatter should expose not-exported and snapshot report status.");
 
                 var warningOnlySnapshot = new DtmDiagnosticsSnapshot(
                     DateTimeOffset.Now,
@@ -778,6 +792,7 @@ namespace DTMAPI.UnitTests
                 Assert(exportFailureLogsState.ExportedReportPath == string.Empty, "Manager Logs state should clear exported path after export failure.");
                 Assert(exportFailureLogsState.PathMatchStatus == "export-failed", "Manager Logs state should expose export-failed path-match status.");
                 Assert(exportFailureLogsState.ExportErrorMessage.IndexOf("simulated export failure", StringComparison.Ordinal) >= 0, "Manager Logs state should expose export failure error text.");
+                Assert(ManagerPageRowFormatter.FormatLogsExportState(exportFailureLogsState).Contains("export-failed"), "Manager Logs formatter should expose export-failed text.");
                 Assert(exportFailureRecorded, "Manager UI export failure should record diagnostics with DTMAPI.ManagerUI owner.");
 
                 bool refreshFailureRecorded = false;

@@ -1,6 +1,6 @@
 # DTMAPI Manager UI MVP
 
-Status: design with internal view-model skeleton; no player-facing UI implementation.
+Status: Phase 1 title-page UI wiring implemented over the internal view-model skeleton.
 
 Date: 2026-06-10
 
@@ -46,6 +46,12 @@ The internal Manager summary now separates failed hooks from missing hooks and f
 ## 2026-06-11 Logs Page Report State Note
 
 The title-page DTMAPI Settings `Logs` page now consumes the internal Manager report-export result instead of only showing the legacy last-export path. It displays export status, exported report path, the refreshed snapshot `LatestReportPath`, path-match state, snapshot report status, and `export-failed` error text. The Export logs button still calls the existing internal export path and refreshes the Manager model through `UiRuntimeService`; no public diagnostics or UI helper contract changed.
+
+## 2026-06-11 Phase 1 Page Wiring Note
+
+The title-page DTMAPI Settings Manager MVP now has real read-only consumers for Status, Mods, Errors/Warnings, Hooks, Features, and Logs. Mods, Errors, Hooks, and Features read `runtime.UI.CurrentManagerModel`; if the model is unavailable they show `Manager model unavailable` rather than parsing raw logs. A new `Features` tab displays feature id, status, last operation, success/failure count, and last error/details. `OpenFromTitleButton()` still opens Config first, and Config page save/reset/cancel/keybind behavior is unchanged.
+
+The smoke route `run-game-smoke.ps1 -AutoOpenTitleSettingsManagerMvp` opens the title Settings menu, visits Status, Mods, Errors, Hooks, Features, and Logs, clicks Export logs, verifies `exported` plus `pathMatch=matched`, and checks Status/Logs screenshots. Branch evidence `GAME-SMOKE/20260611-112148` passed all Manager MVP fields.
 
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
