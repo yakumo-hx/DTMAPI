@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Threading;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 
@@ -38,7 +39,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     TryQuitApplication(lifecycleResult == SmokeAttemptResult.Succeeded ? "smoke title button lifecycle evidence captured" : "smoke title button lifecycle failed");
                 }
             }
-            if (!autoOpenTitleSettingsAttempted && smokeSettings.AutoOpenTitleSettingsMenu && seconds >= Math.Max(1, smokeSettings.AutoOpenTitleSettingsDelaySeconds))
+            if (!autoOpenTitleSettingsAttempted && (smokeSettings.AutoOpenTitleSettingsMenu || smokeSettings.AutoOpenTitleSettingsStatusPage) && seconds >= Math.Max(1, smokeSettings.AutoOpenTitleSettingsDelaySeconds))
             {
                 autoOpenTitleSettingsAttempted = TryAutoOpenTitleSettingsMenu();
             }
@@ -321,6 +322,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     TryQuitApplication("smoke auto-fishing phase evidence captured");
                 }
             }
+            if (smokeSettings.AutoOpenTitleSettingsStatusPage && !titleSettingsStatusSummaryTextRecorded && titleSettingsStatusPageEvidenceAt != default &&
+                (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 0.75)
+            {
+                titleSettingsStatusSummaryTextRecorded = RecordTitleSettingsStatusSummaryText();
+            }
             if (!animalViewerUiDelayedScreenshotRequested && animalViewerUiEvidenceAt != default &&
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 1.5)
             {
@@ -335,11 +341,23 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 9)
                 UpdateTitleSettingsConfigEvidenceScreenshots();
+            if (smokeSettings.AutoOpenTitleSettingsStatusPage && !titleSettingsStatusPageScreenshotRequested && titleSettingsStatusPageEvidenceAt != default &&
+                (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 3)
+            {
+                titleSettingsStatusPageScreenshotRequested = true;
+                CaptureTitleSettingsStatusPageEvidenceScreenshot();
+            }
             if (!autoExitAttempted && animalViewerUiEvidenceAt != default &&
                 (DateTimeOffset.Now - animalViewerUiEvidenceAt).TotalSeconds >= 5)
             {
                 autoExitAttempted = true;
                 TryQuitApplication("smoke animal viewer UI evidence captured");
+            }
+            if (!autoExitAttempted && smokeSettings.AutoOpenTitleSettingsStatusPage && titleSettingsStatusSummaryTextRecorded && titleSettingsStatusPageScreenshotRequested &&
+                (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 5)
+            {
+                autoExitAttempted = true;
+                TryQuitApplication("smoke manager status page evidence captured");
             }
 
             if (!autoExitAttempted && smokeSettings.AutoExitAfterSeconds > 0 && seconds >= smokeSettings.AutoExitAfterSeconds)
@@ -628,6 +646,13 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RuntimeMonitor.Log("Smoke automation opened DTMAPI title settings menu.");
             runtime.SetHookStatus("Smoke.TitleSettingsMenu", "verified", "DTMAPI title settings button/menu", "Opened the title settings menu while HomePageUiState was active.");
             titleSettingsMenuEvidenceAt = DateTimeOffset.Now;
+            if (smokeSettings?.AutoOpenTitleSettingsStatusPage == true)
+            {
+                runtime.UI.OpenDtmApiStatusPage();
+                titleSettingsStatusPageEvidenceAt = DateTimeOffset.Now;
+                runtime.RuntimeMonitor.Log("Smoke automation opened DTMAPI Manager Status page.");
+                runtime.SetHookStatus("Smoke.ManagerStatusPage", "verified", "DTMAPI Manager Status page", "Opened the title settings menu and switched to the Status page.");
+            }
             return true;
         }
 
@@ -1067,6 +1092,84 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to capture title settings menu screenshot.", ex.ToString());
                 runtime.SetHookStatus("Smoke.TitleSettingsMenuScreenshot", "failed", "UnityEngine.ScreenCapture.CaptureScreenshot", ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
+        }
+
+        private bool RecordTitleSettingsStatusSummaryText()
+        {
+            try
+            {
+                string evidenceDir = EnsureTitleSettingsEvidenceDir();
+                DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+                if (manager == null)
+                {
+                    File.AppendAllText(
+                        Path.Combine(evidenceDir, "summary.txt"),
+                        "ManagerStatusSummaryCaptured=" + DateTimeOffset.Now.ToString("o") + Environment.NewLine +
+                        "ManagerStatusSummaryText=Manager model unavailable." + Environment.NewLine);
+                    runtime.RuntimeMonitor.Log("Manager Status summary text unavailable: Manager model unavailable.");
+                    runtime.SetHookStatus("Smoke.ManagerStatusSummaryText", "failed", "DTMAPI Manager Status view model", "Manager model unavailable.");
+                    return false;
+                }
+
+                string summary = BuildManagerStatusSmokeSummary(manager);
+                File.AppendAllText(
+                    Path.Combine(evidenceDir, "summary.txt"),
+                    "ManagerStatusSummaryCaptured=" + DateTimeOffset.Now.ToString("o") + Environment.NewLine +
+                    "ManagerStatusSummaryText=" + summary + Environment.NewLine);
+
+                runtime.RuntimeMonitor.Log("Manager Status summary text OK " + summary + ".");
+                runtime.SetHookStatus("Smoke.ManagerStatusSummaryText", "verified", "DTMAPI Manager Status view model", summary);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to record Manager Status summary text.", ex.ToString());
+                runtime.SetHookStatus("Smoke.ManagerStatusSummaryText", "failed", "DTMAPI Manager Status view model", ex.GetType().Name + ": " + ex.Message);
+                return false;
+            }
+        }
+
+        private static string BuildManagerStatusSmokeSummary(DtmManagerViewModel manager)
+        {
+            int missingHookCount = manager.Hooks.Count(h => string.Equals(h.Status, "missing", StringComparison.OrdinalIgnoreCase));
+            int degradedFeatureCount = manager.Features.Count(f => f.IsDegraded);
+            string reportStatus = manager.ExportReport.Status;
+            return "overall=" + manager.Summary.OverallStatus +
+                "; mods=loaded:" + manager.Summary.LoadedModCount + ",blocked:" + manager.Summary.BlockedModCount + ",disabled:" + manager.Summary.DisabledModCount +
+                "; diagnostics=errors:" + manager.Summary.ErrorCount + ",warnings:" + manager.Summary.WarningCount +
+                "; hooks=failed:" + manager.Summary.FailedHookCount + ",missing:" + missingHookCount +
+                "; features=failed:" + manager.Summary.FailedFeatureCount + ",degraded:" + degradedFeatureCount +
+                "; report=" + reportStatus +
+                "; logPath=" + (string.IsNullOrWhiteSpace(manager.LatestLogPath) ? "unavailable" : manager.LatestLogPath) +
+                "; reportPath=" + (string.IsNullOrWhiteSpace(manager.LatestReportPath) ? "unavailable" : manager.LatestReportPath);
+        }
+
+        private bool CaptureTitleSettingsStatusPageEvidenceScreenshot()
+        {
+            try
+            {
+                string evidenceDir = EnsureTitleSettingsEvidenceDir();
+
+                string screenshotPath = Path.Combine(evidenceDir, "manager-status-page.png");
+                bool screenshotRequested = TryCaptureScreenshot(screenshotPath);
+                string summaryPath = Path.Combine(evidenceDir, "summary.txt");
+                File.AppendAllText(summaryPath,
+                    "ManagerStatusPageCaptured=" + DateTimeOffset.Now.ToString("o") + Environment.NewLine +
+                    "ManagerStatusPageInputContext=" + runtime.UI.InputContext + Environment.NewLine +
+                    "ManagerStatusPageCurrentPage=" + runtime.UI.CurrentPage + Environment.NewLine +
+                    "ManagerStatusPageScreenshotRequested=" + screenshotRequested + Environment.NewLine +
+                    "ManagerStatusPageScreenshot=" + screenshotPath + Environment.NewLine);
+
+                runtime.RuntimeMonitor.Log("Manager Status page screenshot " + (screenshotRequested ? "OK" : "unavailable") + " screenshot=" + screenshotPath + ".");
+                runtime.SetHookStatus("Smoke.ManagerStatusPageScreenshot", screenshotRequested ? "verified" : "pending", "UnityEngine.ScreenCapture.CaptureScreenshot", "Manager Status page screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") + ".");
+                return screenshotRequested;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to capture Manager Status page screenshot.", ex.ToString());
+                runtime.SetHookStatus("Smoke.ManagerStatusPageScreenshot", "failed", "UnityEngine.ScreenCapture.CaptureScreenshot", ex.GetType().Name + ": " + ex.Message);
                 return false;
             }
         }
@@ -3929,6 +4032,7 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseCustomEntityApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsMenu { get; set; }
+            [DataMember] public bool AutoOpenTitleSettingsStatusPage { get; set; }
             [DataMember] public int AutoOpenTitleSettingsDelaySeconds { get; set; } = 12;
             [DataMember] public bool AutoOpenOfficialModUi { get; set; }
             [DataMember] public int AutoOpenOfficialModUiDelaySeconds { get; set; } = 12;

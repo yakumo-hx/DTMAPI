@@ -413,6 +413,23 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: title UI visual evidence `docs/debug/evidence/GAME-SMOKE/20260531-042239/DTMAPI-evidence/UI-004/20260531-042057/title-settings-menu.png`; lifecycle smoke result `docs/debug/evidence/GAME-SMOKE/20260531-111831`; logs/screenshots `docs/debug/evidence/GAME-SMOKE/20260531-111940`.
 - Regression cases: UI-003, UI-004, UI-006, CONFIG-003
 
+## Diagnostic: Smoke.ManagerStatusPage
+
+- Status: verified
+- Public surface: none; `run-game-smoke.ps1` Status page result-field evidence only.
+- Game build: 23465763 workshop
+- Game method/type: DTMAPI title settings UI opened from `HomePageUiState`, then `UiRuntimeService.OpenDtmApiStatusPage()` refreshes the internal Manager view model.
+- Patch type: smoke harness automation and reflected Unity screenshot capture; no Harmony hook, public API, or ConfigMenu contract change.
+- Why this point: validates that the first real Manager UI consumer is visible on the title page and that support-facing summary text can be captured independently from the older Config screenshot rotation.
+- Failure behavior: if the Status page cannot open, the Manager model is unavailable, summary text is missing, or screenshot capture does not produce a file, `ManagerStatusPage`, `ManagerStatusSummaryText`, `ManagerStatusPageScreenshot`, or `ManagerStatusPageScreenshotFile` fails and the smoke run fails.
+- Mods/tests depending on it: compact web audit package Manager Status evidence and future Manager UI page work.
+- Evidence:
+  - Build: 2026-06-11 `git diff --check`, PowerShell AST parse, Release build, and Release unit tests passed.
+  - Save: local slot 3 / index 2.
+  - Log line: DirectExe smoke `GAME-SMOKE/20260611-100827` logs `Smoke automation opened DTMAPI Manager Status page.`, `Manager Status summary text OK overall=ready; mods=loaded:16,blocked:0,disabled:0; diagnostics=errors:0,warnings:0; hooks=failed:0,missing:0; features=failed:0,degraded:0; report=ready; ...`, and `Manager Status page screenshot OK screenshot=...manager-status-page.png`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260611-100827`; copied title/menu/status screenshots exist under the smoke evidence package, while the source screenshot folder contains `title-settings-button.png`, `title-settings-menu.png`, `manager-status-page.png`, and `summary.txt`.
+- Regression cases: MANAGER-STATUS-PAGE-SMOKE-20260611, UI-003, UI-004
+
 ## Hook: UI.ConfigMenuAdvancedControls
 
 - Status: experimental

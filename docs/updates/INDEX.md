@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0010 | 2026-06-11 | verified | tools/smoke/manager-ui | Added a dedicated Manager Status page smoke path with Status page result fields, screenshot validation, and summary text evidence. | [20260611-0010-manager-status-page-smoke.md](2026/20260611-0010-manager-status-page-smoke.md) |
 | 20260611-0009 | 2026-06-11 | verified | core/manager-ui/safety | Added internal exception safety for Manager report export and model refresh so UI callbacks show failure state instead of throwing. | [20260611-0009-manager-export-refresh-safety.md](2026/20260611-0009-manager-export-refresh-safety.md) |
 | 20260611-0008 | 2026-06-11 | verified | audit/package/web | Refreshed the compact web audit package defaults after Manager Status page wiring and added final title UI smoke evidence without generating a full package. | [20260611-0008-manager-status-page-web-audit-package.md](2026/20260611-0008-manager-status-page-web-audit-package.md) |
 | 20260611-0007 | 2026-06-11 | verified | core/manager-ui/status | Wired the title settings Status tab to the internal Manager view model, added a manual refresh path, and verified build/test plus title UI and HookProbe smokes. | [20260611-0007-manager-ui-status-page.md](2026/20260611-0007-manager-ui-status-page.md) |
