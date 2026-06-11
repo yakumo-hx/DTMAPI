@@ -41,6 +41,9 @@ User requested the Manager Status page real wiring plan from clean `Refactor` / 
 - Passed HookProbe runtime smoke:
   - Command: `tools/scripts/run-game-smoke.ps1 -DirectExe -IncludeHookProbe -SaveSlot 3 -TimeoutSeconds 240`
   - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-091349`
+- Passed final merged `Refactor` title UI smoke:
+  - Command: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoOpenTitleSettingsMenu -SaveSlot 3 -TimeoutSeconds 240`
+  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-092012`
 
 ## Evidence
 
@@ -62,6 +65,16 @@ User requested the Manager Status page real wiring plan from clean `Refactor` / 
   - `RunStatus=Passed`
   - `HookProbe=Passed`
   - `SaveLoaded=Passed`
+  - `ProcessExited=Passed`
+  - `NoFatalInstanceWindow=Passed`
+- Final merged title UI smoke `GAME-SMOKE/20260611-092012`:
+  - `RunStatus=Passed`
+  - `TitleSettingsButton=Passed`
+  - `TitleSettingsButtonScreenshot=Passed`
+  - `TitleSettingsButtonScreenshotFile=Passed`
+  - `TitleSettingsMenu=Passed`
+  - `TitleSettingsMenuScreenshot=Passed`
+  - `TitleSettingsMenuScreenshotFile=Passed`
   - `ProcessExited=Passed`
   - `NoFatalInstanceWindow=Passed`
 
