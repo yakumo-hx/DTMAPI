@@ -429,12 +429,21 @@ namespace DTMAPI.Core.Services
         private readonly Func<string> exportLogs;
         private readonly Action<string> opened;
         private readonly Action<string> closed;
+        private readonly Action<string, string, string>? recordError;
+        private readonly Action<string, LogLevel>? log;
 
-        public UiRuntimeService(Func<string> exportLogs, Action<string> opened, Action<string> closed)
+        public UiRuntimeService(
+            Func<string> exportLogs,
+            Action<string> opened,
+            Action<string> closed,
+            Action<string, string, string>? recordError = null,
+            Action<string, LogLevel>? log = null)
         {
             this.exportLogs = exportLogs;
             this.opened = opened;
             this.closed = closed;
+            this.recordError = recordError;
+            this.log = log;
         }
 
         public bool IsOpen { get; private set; }
@@ -451,6 +460,7 @@ namespace DTMAPI.Core.Services
         internal DtmManagerRuntimeModelProvider? ManagerModelProvider { get; set; }
         internal DtmManagerViewModel? CurrentManagerModel { get; private set; }
         internal DtmManagerReportExportResult? LastManagerReportExport { get; private set; }
+        internal string LastManagerRefreshError { get; private set; } = string.Empty;
 
         public void Toggle()
         {
@@ -501,16 +511,26 @@ namespace DTMAPI.Core.Services
 
         public string ExportLogs()
         {
-            if (ManagerModelProvider != null)
+            try
             {
-                LastManagerReportExport = ManagerModelProvider.ExportReportAndRefresh();
-                CurrentManagerModel = LastManagerReportExport.RefreshedModel;
-                LastExportPath = LastManagerReportExport.ExportedReportPath;
+                if (ManagerModelProvider != null)
+                {
+                    LastManagerReportExport = ManagerModelProvider.ExportReportAndRefresh();
+                    CurrentManagerModel = LastManagerReportExport.RefreshedModel;
+                    LastExportPath = LastManagerReportExport.ExportedReportPath;
+                }
+                else
+                {
+                    LastExportPath = exportLogs() ?? string.Empty;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                LastExportPath = exportLogs();
+                LastExportPath = string.Empty;
+                LastManagerReportExport = DtmManagerReportExportResult.FromFailure(ex, CurrentManagerModel);
+                RecordManagerUiFailure("ExportLogs", ex);
             }
+
             CurrentPage = DtmOverlayPage.Logs;
             Open(DtmOverlayPage.Logs);
             return LastExportPath;
@@ -532,7 +552,23 @@ namespace DTMAPI.Core.Services
             if (ManagerModelProvider == null)
                 return;
 
-            CurrentManagerModel = ManagerModelProvider.GetCurrentModel();
+            try
+            {
+                CurrentManagerModel = ManagerModelProvider.GetCurrentModel();
+                LastManagerRefreshError = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                LastManagerRefreshError = ex.GetType().Name + ": " + ex.Message;
+                RecordManagerUiFailure("RefreshDtmManagerModel", ex);
+            }
+        }
+
+        private void RecordManagerUiFailure(string operation, Exception exception)
+        {
+            string message = "Manager UI " + operation + " failed.";
+            recordError?.Invoke("DTMAPI.ManagerUI", message, exception.ToString());
+            log?.Invoke(message + " " + exception.GetType().Name + ": " + exception.Message, LogLevel.Warn);
         }
     }
 }

@@ -49,7 +49,12 @@ namespace DTMAPI.Core.Runtime
             Content = new ContentQueryService(Paths);
             Input = new InputService();
             CustomEntities = new CustomEntityRegistryService(Diagnostics);
-            UI = new UiRuntimeService(ExportLogs, Events.DispatchMenuOpened, Events.DispatchMenuClosed);
+            UI = new UiRuntimeService(
+                ExportLogs,
+                Events.DispatchMenuOpened,
+                Events.DispatchMenuClosed,
+                Diagnostics.RecordError,
+                (message, level) => RuntimeMonitor.Log(message, level));
             UI.ManagerModelProvider = new DtmManagerRuntimeModelProvider(this, ExportLogs);
         }
 

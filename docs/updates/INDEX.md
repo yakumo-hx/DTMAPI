@@ -4,6 +4,7 @@ This is the chronological index for traceable DTMAPI updates. Add every update r
 
 | Update ID | Date | Status | Area | Summary | Record |
 | --- | --- | --- | --- | --- | --- |
+| 20260611-0009 | 2026-06-11 | verified | core/manager-ui/safety | Added internal exception safety for Manager report export and model refresh so UI callbacks show failure state instead of throwing. | [20260611-0009-manager-export-refresh-safety.md](2026/20260611-0009-manager-export-refresh-safety.md) |
 | 20260611-0008 | 2026-06-11 | verified | audit/package/web | Refreshed the compact web audit package defaults after Manager Status page wiring and added final title UI smoke evidence without generating a full package. | [20260611-0008-manager-status-page-web-audit-package.md](2026/20260611-0008-manager-status-page-web-audit-package.md) |
 | 20260611-0007 | 2026-06-11 | verified | core/manager-ui/status | Wired the title settings Status tab to the internal Manager view model, added a manual refresh path, and verified build/test plus title UI and HookProbe smokes. | [20260611-0007-manager-ui-status-page.md](2026/20260611-0007-manager-ui-status-page.md) |
 | 20260611-0006 | 2026-06-11 | verified | audit/package/web | Recorded final manager/feedback/roadmap validation, narrowed compact web package default evidence to the final current smoke set, and prepared the web-only audit package route. | [20260611-0006-manager-feedback-roadmap-web-audit-package.md](2026/20260611-0006-manager-feedback-roadmap-web-audit-package.md) |
