@@ -641,7 +641,7 @@ namespace DTMAPI.UnitTests
                     Assert(mismatch.Status == "report-path-mismatch", "Manager provider should flag report path mismatch after export and snapshot refresh.");
                     Assert(!mismatch.SnapshotReportPathMatched, "Manager provider mismatch result should expose unmatched report paths.");
                     Assert(mismatch.ExportedReportPath == exportedPath, "Manager provider mismatch result should keep the exported path.");
-                    Assert(mismatch.RefreshedModel.LatestReportPath == staleSnapshotPath, "Manager provider mismatch result should keep the refreshed snapshot path.");
+                    Assert(mismatch.RefreshedModel != null && mismatch.RefreshedModel.LatestReportPath == staleSnapshotPath, "Manager provider mismatch result should keep the refreshed snapshot path.");
                 }
                 finally
                 {
@@ -654,6 +654,76 @@ namespace DTMAPI.UnitTests
                 uiWithoutProvider.OpenDtmApiStatusPage();
                 uiWithoutProvider.RefreshDtmManagerModel();
                 Assert(uiWithoutProvider.CurrentManagerModel == null, "Manager refresh without a provider should leave the model unavailable for UI fallback.");
+
+                bool exportFailureRecorded = false;
+                var exportFailureUi = new UiRuntimeService(
+                    () => throw new IOException("simulated export failure"),
+                    _ => { },
+                    _ => { },
+                    (owner, message, details) =>
+                    {
+                        exportFailureRecorded = owner == "DTMAPI.ManagerUI" &&
+                            message.IndexOf("ExportLogs", StringComparison.Ordinal) >= 0 &&
+                            details.IndexOf("simulated export failure", StringComparison.Ordinal) >= 0;
+                    },
+                    (_, _) => { });
+                exportFailureUi.ManagerModelProvider = new DtmManagerRuntimeModelProvider(
+                    new FakeDiagnosticsApi(() => new DtmDiagnosticsSnapshot(
+                        DateTimeOffset.Now,
+                        Array.Empty<IDtmLoadedModInfo>(),
+                        Array.Empty<IDtmModStatusInfo>(),
+                        Array.Empty<IDtmErrorInfo>(),
+                        Array.Empty<IDtmWarningInfo>(),
+                        Array.Empty<IHookStatusInfo>(),
+                        Array.Empty<IDtmFeatureStatusInfo>(),
+                        string.Empty,
+                        string.Empty)),
+                    () => throw new IOException("simulated export failure"));
+                string failedReport = exportFailureUi.ExportLogs();
+                Assert(failedReport == string.Empty, "Manager UI export failure should return an empty path instead of throwing.");
+                DtmManagerReportExportResult exportFailureResult = exportFailureUi.LastManagerReportExport ?? throw new InvalidOperationException("Manager UI export failure should retain an export-failed result.");
+                Assert(exportFailureResult.Status == "export-failed", "Manager UI export failure should retain an export-failed result.");
+                Assert(exportFailureResult.ErrorMessage.IndexOf("simulated export failure", StringComparison.Ordinal) >= 0, "Manager UI export failure should expose the internal error text.");
+                Assert(exportFailureRecorded, "Manager UI export failure should record diagnostics with DTMAPI.ManagerUI owner.");
+
+                bool refreshFailureRecorded = false;
+                bool throwOnRefresh = false;
+                var refreshFailureUi = new UiRuntimeService(
+                    () => string.Empty,
+                    _ => { },
+                    _ => { },
+                    (owner, message, details) =>
+                    {
+                        refreshFailureRecorded = owner == "DTMAPI.ManagerUI" &&
+                            message.IndexOf("RefreshDtmManagerModel", StringComparison.Ordinal) >= 0 &&
+                            details.IndexOf("simulated snapshot failure", StringComparison.Ordinal) >= 0;
+                    },
+                    (_, _) => { });
+                refreshFailureUi.ManagerModelProvider = new DtmManagerRuntimeModelProvider(
+                    new FakeDiagnosticsApi(() =>
+                    {
+                        if (throwOnRefresh)
+                            throw new InvalidOperationException("simulated snapshot failure");
+
+                        return new DtmDiagnosticsSnapshot(
+                            DateTimeOffset.Now,
+                            Array.Empty<IDtmLoadedModInfo>(),
+                            Array.Empty<IDtmModStatusInfo>(),
+                            Array.Empty<IDtmErrorInfo>(),
+                            Array.Empty<IDtmWarningInfo>(),
+                            Array.Empty<IHookStatusInfo>(),
+                            Array.Empty<IDtmFeatureStatusInfo>(),
+                            string.Empty,
+                            string.Empty);
+                    }),
+                    () => string.Empty);
+                refreshFailureUi.RefreshDtmManagerModel();
+                DtmManagerViewModel stableModel = refreshFailureUi.CurrentManagerModel ?? throw new InvalidOperationException("Initial manager refresh should create a model.");
+                throwOnRefresh = true;
+                refreshFailureUi.RefreshDtmManagerModel();
+                Assert(refreshFailureUi.CurrentManagerModel == stableModel, "Manager refresh failure should preserve the last known model.");
+                Assert(refreshFailureUi.LastManagerRefreshError.IndexOf("simulated snapshot failure", StringComparison.Ordinal) >= 0, "Manager refresh failure should retain an internal refresh error message.");
+                Assert(refreshFailureRecorded, "Manager refresh failure should record diagnostics with DTMAPI.ManagerUI owner.");
             }
             finally
             {

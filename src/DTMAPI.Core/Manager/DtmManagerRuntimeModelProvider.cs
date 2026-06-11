@@ -29,12 +29,13 @@ namespace DTMAPI.Core.Manager
 
     internal sealed class DtmManagerReportExportResult
     {
-        private DtmManagerReportExportResult(string exportedReportPath, DtmManagerViewModel refreshedModel, bool snapshotReportPathMatched, string status)
+        private DtmManagerReportExportResult(string exportedReportPath, DtmManagerViewModel? refreshedModel, bool snapshotReportPathMatched, string status, string errorMessage)
         {
             ExportedReportPath = exportedReportPath;
             RefreshedModel = refreshedModel;
             SnapshotReportPathMatched = snapshotReportPathMatched;
             Status = status;
+            ErrorMessage = errorMessage;
         }
 
         internal static DtmManagerReportExportResult FromExport(string exportedReportPath, DtmManagerViewModel refreshedModel)
@@ -54,12 +55,26 @@ namespace DTMAPI.Core.Manager
             else
                 status = "exported";
 
-            return new DtmManagerReportExportResult(normalizedExportedPath, refreshedModel, matched, status);
+            return new DtmManagerReportExportResult(normalizedExportedPath, refreshedModel, matched, status, string.Empty);
+        }
+
+        internal static DtmManagerReportExportResult FromFailure(Exception exception, DtmManagerViewModel? refreshedModel)
+        {
+            if (exception == null)
+                throw new ArgumentNullException(nameof(exception));
+
+            return new DtmManagerReportExportResult(
+                string.Empty,
+                refreshedModel,
+                false,
+                "export-failed",
+                exception.GetType().Name + ": " + exception.Message);
         }
 
         internal string ExportedReportPath { get; }
-        internal DtmManagerViewModel RefreshedModel { get; }
+        internal DtmManagerViewModel? RefreshedModel { get; }
         internal bool SnapshotReportPathMatched { get; }
         internal string Status { get; }
+        internal string ErrorMessage { get; }
     }
 }

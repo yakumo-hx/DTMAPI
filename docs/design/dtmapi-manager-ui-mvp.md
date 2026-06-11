@@ -31,6 +31,10 @@ The internal Manager view model now publishes a support-oriented summary over th
 
 The title-page DTMAPI Settings `Status` tab is now the first real UI consumer of the internal Manager view model. It displays `ManagerSummary` overall status, loaded/blocked/disabled mod counts, diagnostics counts, failed hook/feature counts, report export status, and latest log/report path state. A manual Refresh button calls the internal Manager model refresh path without exporting a report. This is intentionally a narrow first page: Config remains the default title-button page, the fallback ImGui overlay still uses the older runtime snapshot route, and the remaining Manager pages are future UI slices.
 
+## 2026-06-11 Export And Refresh Safety Note
+
+Manager report export and Manager model refresh now have internal exception safety. Export failures are retained as `export-failed` Manager report results with internal error text, refresh failures are retained as `LastManagerRefreshError`, and the title-page UI keeps the last known Manager model visible instead of throwing from a button callback. This remains internal UI/runtime behavior and does not add public helper or diagnostics API members.
+
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.

@@ -566,7 +566,9 @@ namespace DTMAPI.BepInExBootstrap
             string[] lines = manager == null
                 ? new[]
                 {
-                    T("status.managerUnavailable", "Manager model unavailable."),
+                    string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
+                        ? T("status.managerUnavailable", "Manager model unavailable.")
+                        : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
                     T("status.runtimeActiveSince", "Runtime active since ") + snapshot.StartedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
                     T("status.gamePath", "Game path: ") + snapshot.Paths.GamePath,
                     T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
@@ -579,7 +581,10 @@ namespace DTMAPI.BepInExBootstrap
                 string.Format(CultureInfo.InvariantCulture, T("status.managerMods", "Mods loaded: {0} | blocked: {1} | disabled: {2}"), manager.Summary.LoadedModCount, manager.Summary.BlockedModCount, manager.Summary.DisabledModCount),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerDiagnostics", "Diagnostics errors: {0} | warnings: {1}"), manager.Summary.ErrorCount, manager.Summary.WarningCount),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerHooksFeatures", "Failed hooks: {0} | failed features: {1}"), manager.Summary.FailedHookCount, manager.Summary.FailedFeatureCount),
-                T("status.managerReport", "Report export: ") + manager.ExportReport.Status,
+                string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
+                    ? T("status.managerRefreshOk", "Manager refresh: ready")
+                    : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
+                T("status.managerReport", "Report export: ") + (runtime.UI.LastManagerReportExport?.Status ?? manager.ExportReport.Status),
                 FormatManagerPathStatus(T("status.latestLog", "Latest log"), manager.ExportReport.HasLatestLogPath, manager.ExportReport.LatestLogExists, manager.LatestLogPath),
                 FormatManagerPathStatus(T("status.latestReport", "Latest report"), manager.ExportReport.HasLatestReportPath, manager.ExportReport.LatestReportExists, manager.LatestReportPath),
                 T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
@@ -631,7 +636,10 @@ namespace DTMAPI.BepInExBootstrap
             CreateButton(panelContentRoot!, "DTMAPI.Logs.Export", T("logs.export", "Export logs"), () =>
             {
                 string path = runtime.UI.ExportLogs();
-                statusMessage = T("logs.exported", "Exported logs: ") + path;
+                DtmManagerReportExportResult? export = runtime.UI.LastManagerReportExport;
+                statusMessage = export?.Status == "export-failed"
+                    ? T("logs.exportFailed", "Export failed: ") + export.ErrorMessage
+                    : T("logs.exported", "Exported logs: ") + path;
                 dirty = true;
             }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), 52, -144, 148, 30);
             AddText(panelContentRoot!, "DTMAPI.Logs.Latest", T("logs.latest", "Latest log: ") + runtime.Diagnostics.GetLatestLogPath(), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -192, 930, 24);
