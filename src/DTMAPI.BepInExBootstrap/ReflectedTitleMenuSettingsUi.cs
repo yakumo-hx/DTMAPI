@@ -580,7 +580,8 @@ namespace DTMAPI.BepInExBootstrap
                 T("status.managerOverall", "Overall status: ") + manager.Summary.OverallStatus,
                 string.Format(CultureInfo.InvariantCulture, T("status.managerMods", "Mods loaded: {0} | blocked: {1} | disabled: {2}"), manager.Summary.LoadedModCount, manager.Summary.BlockedModCount, manager.Summary.DisabledModCount),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerDiagnostics", "Diagnostics errors: {0} | warnings: {1}"), manager.Summary.ErrorCount, manager.Summary.WarningCount),
-                string.Format(CultureInfo.InvariantCulture, T("status.managerHooksFeatures", "Failed hooks: {0} | failed features: {1}"), manager.Summary.FailedHookCount, manager.Summary.FailedFeatureCount),
+                string.Format(CultureInfo.InvariantCulture, T("status.managerHooks", "Hooks failed: {0} | missing: {1}"), manager.Summary.FailedHookCount, manager.Summary.MissingHookCount),
+                string.Format(CultureInfo.InvariantCulture, T("status.managerFeatures", "Features failed: {0} | degraded: {1}"), manager.Summary.FailedFeatureCount, manager.Summary.DegradedFeatureCount),
                 string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
                     ? T("status.managerRefreshOk", "Manager refresh: ready")
                     : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,

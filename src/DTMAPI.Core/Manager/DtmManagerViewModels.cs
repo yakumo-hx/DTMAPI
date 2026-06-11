@@ -73,7 +73,9 @@ namespace DTMAPI.Core.Manager
             int errorCount,
             int warningCount,
             int failedHookCount,
+            int missingHookCount,
             int failedFeatureCount,
+            int degradedFeatureCount,
             string overallStatus)
         {
             LoadedModCount = loadedModCount;
@@ -82,7 +84,9 @@ namespace DTMAPI.Core.Manager
             ErrorCount = errorCount;
             WarningCount = warningCount;
             FailedHookCount = failedHookCount;
+            MissingHookCount = missingHookCount;
             FailedFeatureCount = failedFeatureCount;
+            DegradedFeatureCount = degradedFeatureCount;
             OverallStatus = overallStatus;
         }
 
@@ -100,17 +104,19 @@ namespace DTMAPI.Core.Manager
             int errorCount = errors.Count;
             int warningCount = warnings.Count;
             int failedHookCount = hooks.Count(h => h.IsFailed);
+            int missingHookCount = hooks.Count(h => h.IsMissing);
             int failedFeatureCount = features.Count(f => f.IsFailed);
+            int degradedFeatureCount = features.Count(f => f.IsDegraded);
 
             string overallStatus;
             if (blockedModCount > 0 || errorCount > 0 || failedHookCount > 0 || failedFeatureCount > 0)
                 overallStatus = "failed";
-            else if (warningCount > 0 || disabledModCount > 0 || exportReport.Status == "missing-report" || exportReport.Status == "missing-log" || exportReport.Status == "unavailable")
+            else if (warningCount > 0 || disabledModCount > 0 || missingHookCount > 0 || degradedFeatureCount > 0 || exportReport.Status == "missing-report" || exportReport.Status == "missing-log" || exportReport.Status == "unavailable")
                 overallStatus = "warning";
             else
                 overallStatus = "ready";
 
-            return new ManagerSummary(loadedModCount, blockedModCount, disabledModCount, errorCount, warningCount, failedHookCount, failedFeatureCount, overallStatus);
+            return new ManagerSummary(loadedModCount, blockedModCount, disabledModCount, errorCount, warningCount, failedHookCount, missingHookCount, failedFeatureCount, degradedFeatureCount, overallStatus);
         }
 
         internal int LoadedModCount { get; }
@@ -119,7 +125,9 @@ namespace DTMAPI.Core.Manager
         internal int ErrorCount { get; }
         internal int WarningCount { get; }
         internal int FailedHookCount { get; }
+        internal int MissingHookCount { get; }
         internal int FailedFeatureCount { get; }
+        internal int DegradedFeatureCount { get; }
         internal string OverallStatus { get; }
     }
 
@@ -145,8 +153,8 @@ namespace DTMAPI.Core.Manager
             RootPath = mod.RootPath;
             IsLoaded = Loaded || IsStatus("loaded");
             IsDisabled = IsStatus("disabled") || (OfficialEnablementManaged && !OfficialEnabled);
-            IsBlocked = !IsDisabled && (IsStatus("missing-dependency") || IsStatus("dependency-cycle") || IsStatus("entry-dll-error") || IsStatus("code-load-error") || IsStatus("api-too-new") || IsStatus("unknown-error") || IsStatus("blocked") || IsStatus("error") || Contains(Status, "error") || Contains(Status, "blocked"));
-            IsWarning = IsStatus("warning") || Contains(Status, "warning") || Contains(Reason, "warning");
+            IsBlocked = !IsDisabled && (IsStatus("missing-dependency") || IsStatus("dependency-cycle") || IsStatus("entry-dll-error") || IsStatus("code-load-error") || IsStatus("api-too-new") || IsStatus("unknown-error") || IsStatus("blocked") || IsStatus("error"));
+            IsWarning = IsStatus("warning");
             SortRank = GetSortRank();
         }
 
@@ -199,10 +207,6 @@ namespace DTMAPI.Core.Manager
             return string.Equals(StatusCode, value, StringComparison.OrdinalIgnoreCase) || string.Equals(Status, value, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool Contains(string text, string value)
-        {
-            return !string.IsNullOrWhiteSpace(text) && text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
     }
 
     internal sealed class ManagerDiagnosticRow
@@ -242,7 +246,8 @@ namespace DTMAPI.Core.Manager
             Target = hook.Source;
             Details = hook.Details;
             UpdatedAt = hook.UpdatedAt;
-            IsFailed = IsStatus("failed") || IsStatus("missing");
+            IsFailed = IsStatus("failed");
+            IsMissing = IsStatus("missing");
             SortRank = GetSortRank();
         }
 
@@ -257,6 +262,7 @@ namespace DTMAPI.Core.Manager
         internal string Details { get; }
         internal DateTimeOffset UpdatedAt { get; }
         internal bool IsFailed { get; }
+        internal bool IsMissing { get; }
         internal int SortRank { get; }
 
         private int GetSortRank()

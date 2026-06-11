@@ -1133,14 +1133,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static string BuildManagerStatusSmokeSummary(DtmManagerViewModel manager)
         {
-            int missingHookCount = manager.Hooks.Count(h => string.Equals(h.Status, "missing", StringComparison.OrdinalIgnoreCase));
-            int degradedFeatureCount = manager.Features.Count(f => f.IsDegraded);
             string reportStatus = manager.ExportReport.Status;
             return "overall=" + manager.Summary.OverallStatus +
                 "; mods=loaded:" + manager.Summary.LoadedModCount + ",blocked:" + manager.Summary.BlockedModCount + ",disabled:" + manager.Summary.DisabledModCount +
                 "; diagnostics=errors:" + manager.Summary.ErrorCount + ",warnings:" + manager.Summary.WarningCount +
-                "; hooks=failed:" + manager.Summary.FailedHookCount + ",missing:" + missingHookCount +
-                "; features=failed:" + manager.Summary.FailedFeatureCount + ",degraded:" + degradedFeatureCount +
+                "; hooks=failed:" + manager.Summary.FailedHookCount + ",missing:" + manager.Summary.MissingHookCount +
+                "; features=failed:" + manager.Summary.FailedFeatureCount + ",degraded:" + manager.Summary.DegradedFeatureCount +
                 "; report=" + reportStatus +
                 "; logPath=" + (string.IsNullOrWhiteSpace(manager.LatestLogPath) ? "unavailable" : manager.LatestLogPath) +
                 "; reportPath=" + (string.IsNullOrWhiteSpace(manager.LatestReportPath) ? "unavailable" : manager.LatestReportPath);
