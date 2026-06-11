@@ -35,6 +35,10 @@ The title-page DTMAPI Settings `Status` tab is now the first real UI consumer of
 
 Manager report export and Manager model refresh now have internal exception safety. Export failures are retained as `export-failed` Manager report results with internal error text, refresh failures are retained as `LastManagerRefreshError`, and the title-page UI keeps the last known Manager model visible instead of throwing from a button callback. This remains internal UI/runtime behavior and does not add public helper or diagnostics API members.
 
+## 2026-06-11 Status Page Smoke Note
+
+The Manager Status page now has a dedicated title-page smoke route. `run-game-smoke.ps1 -AutoOpenTitleSettingsStatusPage` opens the DTMAPI Settings menu, switches to the Status page, captures a Status screenshot, and records a summary text line with overall/mod/diagnostic/hook/feature/report/log state. The legacy `-AutoOpenTitleSettingsMenu` Config screenshot rotation is unchanged; the Status-only smoke validates the first real Manager consumer without implying the remaining Mods, Errors, Hooks, Logs, or Config pages are complete.
+
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.

@@ -21,6 +21,7 @@ param(
     [int] $AutoExerciseInstantSaveDelaySeconds = 3,
     [switch] $AutoPressAutoFishingHotkey,
     [switch] $AutoOpenTitleSettingsMenu,
+    [switch] $AutoOpenTitleSettingsStatusPage,
     [switch] $AutoOpenOfficialModUi,
     [switch] $AutoOpenAnimalPanel,
     [switch] $AutoExerciseDebugConsole,
@@ -193,7 +194,8 @@ if ($existingFatalWindow) {
     exit 1
 }
 
-$includeRuntimeTestMods = [bool]$IncludeHookProbe -or [bool]$AutoOpenTitleSettingsMenu
+$titleSettingsRequested = [bool]$AutoOpenTitleSettingsMenu -or [bool]$AutoOpenTitleSettingsStatusPage
+$includeRuntimeTestMods = [bool]$IncludeHookProbe -or $titleSettingsRequested
 $includeDebugConsoleMod = [bool]$AutoExerciseDebugConsole -or [bool]$AutoExerciseDebugConsoleMouseGive -or [bool]$AutoExerciseAdvancedDebug
 $requiresDebugConsoleKeySmoke = [bool]$AutoExerciseDebugConsole -or [bool]$AutoExerciseDebugConsoleMouseGive
 & "$PSScriptRoot\install-to-game.ps1" -IncludeTestMods:$includeRuntimeTestMods -IncludeDebugConsoleMod:$includeDebugConsoleMod -IncludeHookProbe:$IncludeHookProbe -SkipBuild:$SkipBuild
@@ -794,16 +796,17 @@ function Invoke-DebugConsoleMouseGiveSmoke {
 $autoExitAfterSeconds = if ($AutoExitAfterSecondsOverride -gt 0) {
     $AutoExitAfterSecondsOverride
 }
-elseif (($AutoOpenTitleSettingsMenu -or $AutoOpenOfficialModUi) -and $SaveSlot -le 0) {
+elseif (($titleSettingsRequested -or $AutoOpenOfficialModUi) -and $SaveSlot -le 0) {
     [Math]::Max(25, $TimeoutSeconds - 20)
 }
 else {
     [Math]::Max(90, $TimeoutSeconds - 30)
 }
-$autoLoadDelaySeconds = if ($AutoOpenTitleSettingsMenu) { 30 } else { 8 }
+$autoLoadDelaySeconds = if ($titleSettingsRequested) { 30 } else { 8 }
+$smokeAutoLoadSaveSlot = if ($AutoOpenTitleSettingsStatusPage) { 0 } else { $SaveSlot }
 $smokeSettings = @{
     Enabled = $true
-    AutoLoadSaveSlot = $SaveSlot
+    AutoLoadSaveSlot = $smokeAutoLoadSaveSlot
     AutoLoadDelaySeconds = $autoLoadDelaySeconds
     AutoExitAfterSeconds = $autoExitAfterSeconds
     AutoExitAfterSaveLoaded = $true
@@ -863,6 +866,7 @@ $smokeSettings = @{
     AutoExerciseCustomEntityApisDelaySeconds = 3
     AutoFishingExternalHotkeyRequired = [bool]$AutoPressAutoFishingHotkey
     AutoOpenTitleSettingsMenu = [bool]$AutoOpenTitleSettingsMenu
+    AutoOpenTitleSettingsStatusPage = [bool]$AutoOpenTitleSettingsStatusPage
     AutoOpenTitleSettingsDelaySeconds = 12
     AutoOpenOfficialModUi = [bool]$AutoOpenOfficialModUi
     AutoOpenOfficialModUiDelaySeconds = 12
@@ -879,7 +883,7 @@ if (Test-Path $freshBepLogPath) {
     Remove-Item -Force -LiteralPath $freshBepLogPath
 }
 
-"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseInstantSaveDelaySeconds=$AutoExerciseInstantSaveDelaySeconds`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseAdvancedDebug=$AutoExerciseAdvancedDebug`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoExerciseZoom=$AutoExerciseZoom`nAutoExerciseChestLocatorEnhancer=$AutoExerciseChestLocatorEnhancer`nAutoExerciseStrongPlantingGun=$AutoExerciseStrongPlantingGun`nAutoExerciseCustomEntityApis=$AutoExerciseCustomEntityApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseInstantSaveDelaySeconds=$AutoExerciseInstantSaveDelaySeconds`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseAdvancedDebug=$AutoExerciseAdvancedDebug`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoExerciseZoom=$AutoExerciseZoom`nAutoExerciseChestLocatorEnhancer=$AutoExerciseChestLocatorEnhancer`nAutoExerciseStrongPlantingGun=$AutoExerciseStrongPlantingGun`nAutoExerciseCustomEntityApis=$AutoExerciseCustomEntityApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenTitleSettingsStatusPage=$AutoOpenTitleSettingsStatusPage`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
 
 $launchCommandStartedAt = Get-Date
 if ($launchViaSteam) {
@@ -915,10 +919,14 @@ $saveLoadedRequested = (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [boo
 $probeOk = -not [bool]$IncludeHookProbe
 $saveLoadedOk = -not $saveLoadedRequested
 $titleLifecycleOk = -not [bool]$AutoExerciseTitleButtonLifecycle
-$titleButtonOk = -not [bool]$AutoOpenTitleSettingsMenu
-$titleButtonScreenshotOk = -not [bool]$AutoOpenTitleSettingsMenu
-$titleMenuOk = -not [bool]$AutoOpenTitleSettingsMenu
-$titleMenuScreenshotOk = -not [bool]$AutoOpenTitleSettingsMenu
+$titleButtonOk = -not $titleSettingsRequested
+$titleButtonScreenshotOk = -not $titleSettingsRequested
+$titleMenuOk = -not $titleSettingsRequested
+$titleMenuScreenshotOk = -not $titleSettingsRequested
+$managerStatusPageOk = -not [bool]$AutoOpenTitleSettingsStatusPage
+$managerStatusPageScreenshotOk = -not [bool]$AutoOpenTitleSettingsStatusPage
+$managerStatusPageScreenshotFileOk = -not [bool]$AutoOpenTitleSettingsStatusPage
+$managerStatusSummaryTextOk = -not [bool]$AutoOpenTitleSettingsStatusPage
 $officialModUiOk = -not [bool]$AutoOpenOfficialModUi
 $animalViewerUiOk = -not [bool]$AutoOpenAnimalPanel
 $experimentalHooksOk = -not [bool]$AutoExerciseExperimentalHooks
@@ -980,17 +988,26 @@ $customEntityApisOk = -not [bool]$AutoExerciseCustomEntityApis
 
 if ($startupOk) {
     $gameLaunchedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'GameLaunched dispatched.' -TimeoutSeconds 60 -AbortOnFatalInstanceWindow
-    if ($gameLaunchedOk -and $AutoOpenTitleSettingsMenu) {
+    if ($gameLaunchedOk -and $titleSettingsRequested) {
         $titleButtonOk = Wait-ForLogLine -LogPath $logPath -Pattern 'DTMAPI title settings button visible on HomePageUiState.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
-    if ($titleButtonOk -and $AutoOpenTitleSettingsMenu) {
+    if ($titleButtonOk -and $titleSettingsRequested) {
         $titleButtonScreenshotOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Title settings button screenshot OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
-    if ($titleButtonScreenshotOk -and $AutoOpenTitleSettingsMenu) {
+    if ($titleButtonScreenshotOk -and $titleSettingsRequested) {
         $titleMenuOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke automation opened DTMAPI title settings menu.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
-    if ($titleMenuOk -and $AutoOpenTitleSettingsMenu) {
+    if ($titleMenuOk -and $titleSettingsRequested) {
         $titleMenuScreenshotOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Title settings menu screenshot OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($titleMenuOk -and $AutoOpenTitleSettingsStatusPage) {
+        $managerStatusPageOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke automation opened DTMAPI Manager Status page.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($managerStatusPageOk -and $AutoOpenTitleSettingsStatusPage) {
+        $managerStatusSummaryTextOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Manager Status summary text OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
+    if ($managerStatusSummaryTextOk -and $AutoOpenTitleSettingsStatusPage) {
+        $managerStatusPageScreenshotOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Manager Status page screenshot OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
     if ($gameLaunchedOk -and $AutoOpenOfficialModUi) {
         $officialModUiOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Official Mod UI evidence OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
@@ -1308,11 +1325,11 @@ if ($usesActionSpeedConfigSmoke) {
     }
 }
 Restore-SmokeSecondMotorEnablement
-$titleButtonScreenshotFileOk = -not [bool]$AutoOpenTitleSettingsMenu
-$titleMenuScreenshotFileOk = -not [bool]$AutoOpenTitleSettingsMenu
+$titleButtonScreenshotFileOk = -not $titleSettingsRequested
+$titleMenuScreenshotFileOk = -not $titleSettingsRequested
 $officialModUiScreenshotFileOk = -not [bool]$AutoOpenOfficialModUi
 $newContentMineOfficialTechTreeUiScreenshotFileOk = -not [bool]$AutoExerciseMineContentApis
-if ($AutoOpenTitleSettingsMenu -and (Test-Path $logPath)) {
+if ($titleSettingsRequested -and (Test-Path $logPath)) {
     $buttonScreenshotLine = Select-String -Path $logPath -Pattern 'Title settings button screenshot OK screenshot=' | Select-Object -Last 1
     if ($buttonScreenshotLine) {
         $buttonScreenshotPath = $buttonScreenshotLine.Line -replace '^.*screenshot=', '' -replace '\.$', ''
@@ -1322,6 +1339,13 @@ if ($AutoOpenTitleSettingsMenu -and (Test-Path $logPath)) {
     if ($menuScreenshotLine) {
         $menuScreenshotPath = $menuScreenshotLine.Line -replace '^.*screenshot=', '' -replace '\.$', ''
         $titleMenuScreenshotFileOk = Test-Path -LiteralPath $menuScreenshotPath
+    }
+    if ($AutoOpenTitleSettingsStatusPage) {
+        $statusScreenshotLine = Select-String -Path $logPath -Pattern 'Manager Status page screenshot OK screenshot=' | Select-Object -Last 1
+        if ($statusScreenshotLine) {
+            $statusScreenshotPath = $statusScreenshotLine.Line -replace '^.*screenshot=', '' -replace '\.$', ''
+            $managerStatusPageScreenshotFileOk = Test-Path -LiteralPath $statusScreenshotPath
+        }
     }
 }
 if ($AutoOpenOfficialModUi -and (Test-Path $logPath)) {
@@ -1340,7 +1364,7 @@ if ($AutoExerciseMineContentApis -and (Test-Path $logPath)) {
 }
 $runAborted = ($fatalWindows.Count -gt 0) -or $forcedClose -or [bool]$leftover
 $diagnosticsReportExportOk = (-not $diagnosticsReportExportRequested) -or ($diagnosticsReportExportPassedScenarios.Count -eq $diagnosticsReportExportScenarios.Count)
-$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $autoFishingReportExportOk -or -not $diagnosticsReportExportOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $strongPlantingGunOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
+$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $managerStatusPageOk -or -not $managerStatusPageScreenshotOk -or -not $managerStatusPageScreenshotFileOk -or -not $managerStatusSummaryTextOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $autoFishingReportExportOk -or -not $diagnosticsReportExportOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $strongPlantingGunOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
 $runStatus = if ($runAborted) { 'Aborted' } elseif ($runFailed) { 'Failed' } else { 'Passed' }
 $result = @{
     SchemaVersion = 2
@@ -1349,13 +1373,17 @@ $result = @{
     GameLaunched = Get-SmokeAlwaysStatus -Passed $gameLaunchedOk
     HookProbe = Get-SmokeStatus -Requested ([bool]$IncludeHookProbe) -Passed $probeOk
     SaveLoaded = Get-SmokeStatus -Requested $saveLoadedRequested -Passed $saveLoadedOk
-    TitleSettingsButton = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleButtonOk
-    TitleSettingsButtonScreenshot = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleButtonScreenshotOk
-    TitleSettingsButtonScreenshotFile = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleButtonScreenshotFileOk
+    TitleSettingsButton = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleButtonOk
+    TitleSettingsButtonScreenshot = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleButtonScreenshotOk
+    TitleSettingsButtonScreenshotFile = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleButtonScreenshotFileOk
     TitleButtonLifecycle = Get-SmokeStatus -Requested ([bool]$AutoExerciseTitleButtonLifecycle) -Passed $titleLifecycleOk
-    TitleSettingsMenu = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleMenuOk
-    TitleSettingsMenuScreenshot = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleMenuScreenshotOk
-    TitleSettingsMenuScreenshotFile = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsMenu) -Passed $titleMenuScreenshotFileOk
+    TitleSettingsMenu = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleMenuOk
+    TitleSettingsMenuScreenshot = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleMenuScreenshotOk
+    TitleSettingsMenuScreenshotFile = Get-SmokeStatus -Requested $titleSettingsRequested -Passed $titleMenuScreenshotFileOk
+    ManagerStatusPage = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsStatusPage) -Passed $managerStatusPageOk
+    ManagerStatusPageScreenshot = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsStatusPage) -Passed $managerStatusPageScreenshotOk
+    ManagerStatusPageScreenshotFile = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsStatusPage) -Passed $managerStatusPageScreenshotFileOk
+    ManagerStatusSummaryText = Get-SmokeStatus -Requested ([bool]$AutoOpenTitleSettingsStatusPage) -Passed $managerStatusSummaryTextOk
     OfficialModUi = Get-SmokeStatus -Requested ([bool]$AutoOpenOfficialModUi) -Passed $officialModUiOk
     OfficialModUiScreenshotFile = Get-SmokeStatus -Requested ([bool]$AutoOpenOfficialModUi) -Passed $officialModUiScreenshotFileOk
     AnimalViewerUi = Get-SmokeStatus -Requested ([bool]$AutoOpenAnimalPanel) -Passed $animalViewerUiOk
