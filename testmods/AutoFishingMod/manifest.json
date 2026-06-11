@@ -2,7 +2,7 @@
   "Name": "Auto Fishing",
   "Author": "Yuuka",
   "Version": "1.4.3-dtmapi",
-  "Description": "DTMAPI migration of AutoFishing config/input/state policy.",
+  "Description": "DTMAPI AutoFishing migration with selected-rod-only safe automation and experimental wait/minigame semantics.",
   "UniqueID": "Yuuka.DTMAPI.AutoFishing",
   "EntryDll": "AutoFishingMod.dll",
   "MinimumDTMApiVersion": "0.2.5",

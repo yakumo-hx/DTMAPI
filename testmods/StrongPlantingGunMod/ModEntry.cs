@@ -7,6 +7,7 @@ namespace StrongPlantingGunMod
 {
     public sealed class ModEntry : DtmMod
     {
+        private const int SupportedSlotCount = 3;
         private IDtmHelper helper = null!;
         private StrongPlantingGunConfig config = new StrongPlantingGunConfig();
         private IStrongPlantingGunApi? strongPlantingGunApi;
@@ -16,6 +17,7 @@ namespace StrongPlantingGunMod
         {
             this.helper = helper;
             config = helper.ReadConfig<StrongPlantingGunConfig>();
+            NormalizeConfig();
             RegisterConfigMenu();
             BindStrongPlantingGunApi("Entry");
             helper.Events.Save.SaveLoaded += (_, e) => BindStrongPlantingGunApi("SaveLoaded slot=" + (e.SaveSlot?.ToString(CultureInfo.InvariantCulture) ?? "unknown"));
@@ -32,11 +34,12 @@ namespace StrongPlantingGunMod
             menu.SetDisplayName(helper.ModManifest, () => T("mod.name", "DTMAPI Strong Planting Gun"));
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.main", "Strong planting gun"));
             menu.AddParagraph(helper.ModManifest, BuildStatusText);
+            menu.AddParagraph(helper.ModManifest, () => T("config.contract", "Current contract: fixed three slots for seed, film, and fertilizer. Larger slot counts and range expansion are not supported by the current native-use path."));
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Expands the official farming gun and applies supported seed, film, and fertilizer slots."), () => config.Enabled, value => config.Enabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.slots.name", "Slots"), () => T("config.slots.tooltip", "Number of official farming gun slots to expose. Three slots match seed, film, and fertilizer."), () => config.SlotCount, value => config.SlotCount = (int)Math.Round(value), 1, 6, 1);
             menu.AddBoolOption(helper.ModManifest, () => T("config.seeds.name", "Use seeds"), () => T("config.seeds.tooltip", "Plant seeds from farming gun slots using official basin checks."), () => config.IncludeSeeds, value => config.IncludeSeeds = value);
             menu.AddBoolOption(helper.ModManifest, () => T("config.films.name", "Use films"), () => T("config.films.tooltip", "Apply film from farming gun slots when official checks allow it."), () => config.IncludeFilms, value => config.IncludeFilms = value);
             menu.AddBoolOption(helper.ModManifest, () => T("config.fertilizers.name", "Use fertilizers"), () => T("config.fertilizers.tooltip", "Apply fertilizer from farming gun slots when official checks allow it."), () => config.IncludeFertilizers, value => config.IncludeFertilizers = value);
+            menu.AddParagraph(helper.ModManifest, () => T("config.disableNote", "When disabled, native one-slot behavior is restored. Any already-expanded visible slots may remain inactive until the farming gun is re-equipped or the game is restarted; do not store items there while disabled."));
             menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency Strong Planting Gun diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
         }
 
@@ -52,7 +55,7 @@ namespace StrongPlantingGunMod
             lastRegisterResult = strongPlantingGunApi.Register(helper.ModManifest, new StrongPlantingGunOptions
             {
                 Enabled = config.Enabled,
-                SlotCount = config.SlotCount,
+                SlotCount = SupportedSlotCount,
                 IncludeSeeds = config.IncludeSeeds,
                 IncludeFilms = config.IncludeFilms,
                 IncludeFertilizers = config.IncludeFertilizers,
@@ -84,6 +87,7 @@ namespace StrongPlantingGunMod
 
         private void SaveConfig()
         {
+            NormalizeConfig();
             helper.WriteConfig(config);
             BindStrongPlantingGunApi("config saved");
         }
@@ -91,6 +95,12 @@ namespace StrongPlantingGunMod
         private void ResetConfig()
         {
             config = new StrongPlantingGunConfig();
+            NormalizeConfig();
+        }
+
+        private void NormalizeConfig()
+        {
+            config.SlotCount = SupportedSlotCount;
         }
 
         private string T(string key, string fallback) => helper.Translation.Get(key, fallback);

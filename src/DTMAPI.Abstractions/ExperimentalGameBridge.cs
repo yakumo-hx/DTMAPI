@@ -1007,6 +1007,11 @@ namespace DTMAPI.Abstractions
     public sealed class StrongPlantingGunOptions
     {
         public bool Enabled { get; set; } = true;
+        /// <summary>
+        /// Requested farming-gun slot count. In 0.5.0-alpha this value is accepted
+        /// for compatibility but normalized by the Doloc Town GameBridge to the
+        /// verified three-slot seed/film/fertilizer contract.
+        /// </summary>
         public int SlotCount { get; set; } = 3;
         public bool IncludeSeeds { get; set; } = true;
         public bool IncludeFilms { get; set; } = true;
@@ -1148,9 +1153,24 @@ namespace DTMAPI.Abstractions
         public bool RequireSelectedFishingRod { get; set; }
         public double CastReleaseProgress { get; set; }
         public double RecastDelaySeconds { get; set; } = 0.25;
+        /// <summary>
+        /// Experimental InstantBite transition option. In 0.5.0-alpha this is
+        /// not an independent minigame skip; it only affects the wait-phase route
+        /// that DTMAPI advances after a bite is forced.
+        /// </summary>
         public bool SkipMiniGame { get; set; }
+        /// <summary>
+        /// Experimental delayed minigame success forcing. In 0.5.0-alpha this
+        /// waits until a real minigame has been visible briefly, then writes the
+        /// native minigame status to Success; it is not a progress-aware solver.
+        /// </summary>
         public bool AutoCompleteMiniGame { get; set; }
         public bool InstantBite { get; set; }
+        /// <summary>
+        /// Attempts to scale cast/pull animator speed when supported animator
+        /// fields are reachable. The request may safely no-op on unsupported
+        /// native paths.
+        /// </summary>
         public bool FastAnimations { get; set; }
         public double FastAnimationMultiplier { get; set; } = 3;
         public bool VerboseLogging { get; set; }

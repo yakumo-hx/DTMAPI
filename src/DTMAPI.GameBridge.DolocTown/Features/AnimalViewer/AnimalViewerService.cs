@@ -134,6 +134,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ClearAnimalProgressOverlay(parent);
                 activeAnimalProgressOverlayRows.Clear();
                 int rendered = 0;
+                int localizationComponentsDisabled = 0;
                 foreach (AnimalProgressRenderRow row in rows
                     .OrderByDescending(row => row.Progress)
                     .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
@@ -153,6 +154,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     SetParent(rowTransform, parent, worldPositionStays: false);
                     PositionAnimalProgressRow(moodTransform, rowTransform, rendered);
+                    localizationComponentsDisabled += DisableAnimalProgressCloneLocalization(clone);
                     activeAnimalProgressOverlayObjects.Add(clone);
                     activeAnimalProgressOverlayRows.Add(row);
                     rendered++;
@@ -161,9 +163,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 RefreshAnimalProgressOverlayTexts(force: true);
                 foreach (object clone in activeAnimalProgressOverlayObjects)
                     SetActive(clone, true);
-                latestAnimalProgressOverlaySummary = "independent cloned ProgressBar prefilled rows=" + rendered + ", primary=" + rows[0].OutputTitle + " " + rows[0].Current + "/" + rows[0].Threshold + ", moodOverride=False, stateDescriptionOverride=False";
+                RefreshAnimalProgressOverlayTexts(force: true);
+                string firstFrameGuardSummary = ValidateAnimalProgressOverlayTextsForFirstFrameGuard();
+                AnimalProgressRenderRow primary = rows
+                    .OrderByDescending(row => row.Progress)
+                    .ThenBy(row => row.OutputTitle, StringComparer.OrdinalIgnoreCase)
+                    .First();
+                latestAnimalProgressOverlaySummary = "independent cloned ProgressBar prefilled rows=" + rendered +
+                    ", primary=" + primary.OutputTitle + " " + primary.Current + "/" + primary.Threshold +
+                    ", localizationDisabled=" + localizationComponentsDisabled +
+                    ", firstFrameGuard=" + firstFrameGuardSummary +
+                    ", moodOverride=False, stateDescriptionOverride=False";
                 runtime.RuntimeMonitor.Log("Animal viewer progress independent row active " + latestAnimalProgressOverlaySummary + ".");
                 runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", rendered > 0 ? "verified" : "pending", "AnimalFullInfoData ctor -> AnimalViewer.Show cloned ProgressBar", latestAnimalProgressOverlaySummary);
+                runtime.SetHookStatus(
+                    "Smoke.AnimalViewerFirstFrameFlickerGuard",
+                    rendered > 0 && firstFrameGuardSummary.IndexOf("moodTitleHits=0", StringComparison.Ordinal) >= 0 ? "verified" : "pending",
+                    "AnimalViewer.Show inactive-prefill-activate",
+                    firstFrameGuardSummary + "; manual repeated animal-switch confirmation is still required for visual first-frame QA.");
                 return rendered > 0;
             }
             catch (Exception ex)
@@ -600,6 +617,116 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             return "textChildren=" + seen + ", titleWrites=" + titleWrites + ", progressWrites=" + progressWrites + ", samples=" + string.Join("|", samples.ToArray());
+        }
+
+        private static int DisableAnimalProgressCloneLocalization(object gameObject)
+        {
+            Type? componentType = ResolveType("UnityEngine.Component, UnityEngine.CoreModule") ??
+                ResolveType("UnityEngine.Component, UnityEngine");
+            if (componentType == null)
+                return 0;
+
+            MethodInfo? getComponents = gameObject.GetType().GetMethod("GetComponentsInChildren", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Type), typeof(bool) }, null);
+            object? result = getComponents?.Invoke(gameObject, new object[] { componentType, true });
+            if (!(result is IEnumerable components))
+                return 0;
+
+            int disabled = 0;
+            foreach (object component in components)
+            {
+                string typeName = component.GetType().FullName ?? component.GetType().Name;
+                if (!LooksLikeLocalizationComponent(typeName))
+                    continue;
+
+                if (TrySetComponentEnabled(component, false))
+                    disabled++;
+            }
+
+            return disabled;
+        }
+
+        private static bool LooksLikeLocalizationComponent(string typeName)
+        {
+            return typeName.IndexOf("Localization", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                typeName.IndexOf("Localisation", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                typeName.IndexOf("Localize", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool TrySetComponentEnabled(object component, bool enabled)
+        {
+            try
+            {
+                for (Type? type = component.GetType(); type != null; type = type.BaseType)
+                {
+                    PropertyInfo? property = type.GetProperty("enabled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (property != null && property.CanWrite && property.PropertyType == typeof(bool))
+                    {
+                        property.SetValue(component, enabled);
+                        return true;
+                    }
+
+                    FieldInfo? field = type.GetField("enabled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (field != null && field.FieldType == typeof(bool))
+                    {
+                        field.SetValue(component, enabled);
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private string ValidateAnimalProgressOverlayTextsForFirstFrameGuard()
+        {
+            Type? textType = ResolveType("UnityEngine.UI.Text, UnityEngine.UI");
+            if (textType == null)
+                return "textType=missing";
+
+            int inspectedTexts = 0;
+            int moodTitleHits = 0;
+            int expectedTitleHits = 0;
+            int expectedProgressHits = 0;
+            int count = Math.Min(activeAnimalProgressOverlayObjects.Count, activeAnimalProgressOverlayRows.Count);
+            for (int i = 0; i < count; i++)
+            {
+                object clone = activeAnimalProgressOverlayObjects[i];
+                AnimalProgressRenderRow row = activeAnimalProgressOverlayRows[i];
+                string progressText = row.Current + "/" + row.Threshold;
+                MethodInfo? getComponents = clone.GetType().GetMethod("GetComponentsInChildren", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Type), typeof(bool) }, null);
+                object? result = getComponents?.Invoke(clone, new object[] { textType, true });
+                if (!(result is IEnumerable components))
+                    continue;
+
+                foreach (object component in components)
+                {
+                    string text = ReadStringMember(component, "text");
+                    if (string.IsNullOrWhiteSpace(text))
+                        continue;
+                    inspectedTexts++;
+                    if (IsNativeMoodTitleText(text))
+                        moodTitleHits++;
+                    if (text.IndexOf(row.OutputTitle, StringComparison.Ordinal) >= 0)
+                        expectedTitleHits++;
+                    if (text.IndexOf(progressText, StringComparison.Ordinal) >= 0)
+                        expectedProgressHits++;
+                }
+            }
+
+            return "sameCallbackTextCheck texts=" + inspectedTexts.ToString(CultureInfo.InvariantCulture) +
+                ", expectedTitleHits=" + expectedTitleHits.ToString(CultureInfo.InvariantCulture) +
+                ", expectedProgressHits=" + expectedProgressHits.ToString(CultureInfo.InvariantCulture) +
+                ", moodTitleHits=" + moodTitleHits.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static bool IsNativeMoodTitleText(string text)
+        {
+            text = (text ?? string.Empty).Trim();
+            return text.Equals("心情", StringComparison.Ordinal) ||
+                text.Equals("Mood", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void SetUnityText(object? textComponent, string value)
