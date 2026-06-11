@@ -55,7 +55,7 @@ namespace DTMAPI.Core.Runtime
                 Events.DispatchMenuClosed,
                 Diagnostics.RecordError,
                 (message, level) => RuntimeMonitor.Log(message, level));
-            UI.ManagerModelProvider = new DtmManagerRuntimeModelProvider(this, ExportLogs);
+            UI.ManagerModelProvider = new DtmManagerRuntimeModelProvider(this, ExportLogs, () => ManagerInstallStateSummary.FromRuntimePaths(Paths));
         }
 
         public RuntimePaths Paths { get; }

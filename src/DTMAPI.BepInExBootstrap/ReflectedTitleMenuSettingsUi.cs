@@ -608,6 +608,8 @@ namespace DTMAPI.BepInExBootstrap
                     ? T("status.managerRefreshOk", "Manager refresh: refreshed")
                     : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
                 T("status.summaryCopy", "Copy Summary: ") + (runtime.UI.LastManagerSummaryCopy?.Status ?? T("status.notCopied", "not-copied")),
+                T("status.installState", "Install state: ") + ManagerPageRowFormatter.FormatInstallState(manager.InstallState),
+                T("status.uninstallScript", "Uninstall script: ") + (manager.InstallState.UninstallScriptAvailable ? T("common.available", "available") : T("common.missing", "missing")),
                 T("status.managerReport", "Report export: ") + (runtime.UI.LastManagerReportExport?.Status ?? manager.ExportReport.Status),
                 FormatManagerPathStatus(T("status.latestLog", "Latest log"), manager.ExportReport.HasLatestLogPath, manager.ExportReport.LatestLogExists, manager.LatestLogPath),
                 FormatManagerPathStatus(T("status.latestReport", "Latest report"), manager.ExportReport.HasLatestReportPath, manager.ExportReport.LatestReportExists, manager.LatestReportPath),
@@ -749,8 +751,11 @@ namespace DTMAPI.BepInExBootstrap
             AddText(panelContentRoot!, "DTMAPI.Logs.ExportPath", T("logs.latestExport", "Exported path: ") + Truncate(string.IsNullOrWhiteSpace(exportedPath) ? T("common.none", "(none)") : exportedPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -252, 930, 24);
             AddText(panelContentRoot!, "DTMAPI.Logs.SnapshotReport", T("logs.snapshotReport", "Snapshot report: ") + Truncate(string.IsNullOrWhiteSpace(state.SnapshotLatestReportPath) ? T("common.none", "(none)") : state.SnapshotLatestReportPath, 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -282, 930, 24);
             AddText(panelContentRoot!, "DTMAPI.Logs.PathMatch", T("logs.pathMatch", "Path match: ") + state.PathMatchStatus + T("logs.snapshotReportStatus", " | snapshot report: ") + state.SnapshotReportStatus, 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -312, 930, 24);
+            DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
+            if (manager != null)
+                AddText(panelContentRoot!, "DTMAPI.Logs.InstallState", T("logs.installState", "Install state: ") + Truncate(ManagerPageRowFormatter.FormatInstallState(manager.InstallState), 120), 14, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -342, 930, 24);
             if (state.ExportStatus == "export-failed")
-                AddText(panelContentRoot!, "DTMAPI.Logs.ExportError", T("logs.exportError", "Export error: ") + Truncate(state.ExportErrorMessage, 120), 14, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -342, 930, 24);
+                AddText(panelContentRoot!, "DTMAPI.Logs.ExportError", T("logs.exportError", "Export error: ") + Truncate(state.ExportErrorMessage, 120), 14, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -372, 930, 24);
         }
 
         private object GetModRowColor(ManagerModRow mod)

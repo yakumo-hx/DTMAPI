@@ -627,7 +627,12 @@ namespace DTMAPI.UnitTests
                 string logsStateLine = ManagerPageRowFormatter.FormatLogsExportState(ManagerLogsPageState.From(null, model));
                 Assert(logsStateLine.Contains("not-exported") && logsStateLine.Contains("missing-report"), "Manager logs formatter should expose not-exported and snapshot report status.");
                 string statusSummary = ManagerPageRowFormatter.FormatStatusSummary(model, string.Empty, null);
-                Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters and report/log state.");
+                Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("install=missing") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters, install state, and report/log state.");
+                DtmManagerViewModel installedModel = DtmManagerViewModelFactory.FromSnapshot(
+                    snapshot,
+                    ManagerInstallStateSummary.Present("0.5.0-alpha", "0.5.0.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
+                string installStateLine = ManagerPageRowFormatter.FormatInstallState(installedModel.InstallState);
+                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.0-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Hooks", 17, 64) == "Hooks: showing first 17 of 64", "Manager formatter should expose showing-first row counts.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Rows", 99, 3) == "Rows: showing first 3 of 3", "Manager formatter should clamp showing-first counts to total.");
 

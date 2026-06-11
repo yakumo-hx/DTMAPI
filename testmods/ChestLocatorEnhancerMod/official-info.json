@@ -1,8 +1,8 @@
 {
   "name": "DTMAPI 箱子定位器增强",
-  "author": "DTMAPI",
+  "author": "Yuuka",
   "version": "0.3.1-dtmapi",
-  "description": "DTMAPI experimental 箱子定位器增强。让官方箱子定位器标记为共享的容器可跨农场建筑房间参与材料统计与扣除。",
+  "description": "依赖 DTMAPI Runtime。扩展官方箱子定位器共享容器范围，基于 DTMAPI ChestLocator API。",
   "tags": [
     "Mod",
     "Utility",
@@ -16,8 +16,8 @@
     "english": "DTMAPI Chest Locator Enhancer"
   },
   "localized_description": {
-    "schinese": "扩展官方箱子定位器的共享容器范围，让贴了定位器的箱子和储物架纸箱在不同建筑房间也能参与制作、研究等材料路径。",
-    "tchinese": "擴展官方箱子定位器的共享容器範圍，讓貼了定位器的箱子和儲物架紙箱在不同建築房間也能參與製作、研究等材料路徑。",
-    "english": "Extends official locator-marked shared containers so chests and storage-shelf boxes across farm building rooms can participate in material lookup and consume paths."
+    "schinese": "依赖 DTMAPI Runtime。扩展官方箱子定位器的共享容器范围，让贴了定位器的箱子和储物架纸箱在不同建筑房间也能参与制作、研究等材料路径。基于 DTMAPI ChestLocator API。",
+    "tchinese": "依賴 DTMAPI Runtime。擴展官方箱子定位器的共享容器範圍，讓貼了定位器的箱子和儲物架紙箱在不同建築房間也能參與製作、研究等材料路徑。基於 DTMAPI ChestLocator API。",
+    "english": "Requires DTMAPI Runtime. Extends official locator-marked shared containers so chests and storage-shelf boxes across farm building rooms can participate in material lookup and consume paths. Built on the DTMAPI ChestLocator API."
   }
 }

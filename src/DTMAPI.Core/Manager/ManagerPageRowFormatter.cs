@@ -96,10 +96,29 @@ namespace DTMAPI.Core.Manager
                     ",missing:" + manager.Summary.MissingHookCount.ToString(CultureInfo.InvariantCulture) +
                 "; features=failed:" + manager.Summary.FailedFeatureCount.ToString(CultureInfo.InvariantCulture) +
                     ",degraded:" + manager.Summary.DegradedFeatureCount.ToString(CultureInfo.InvariantCulture) +
+                "; install=" + FormatInstallState(manager.InstallState) +
                 "; refresh=" + refresh +
                 "; report=" + exportStatus +
                 "; log=" + FormatPathState(report.HasLatestLogPath, report.LatestLogExists, manager.LatestLogPath) +
                 "; reportPath=" + FormatPathState(report.HasLatestReportPath, report.LatestReportExists, manager.LatestReportPath);
+        }
+
+        internal static string FormatInstallState(ManagerInstallStateSummary installState)
+        {
+            if (installState == null)
+                throw new ArgumentNullException(nameof(installState));
+
+            string version = FirstText(installState.InstalledVersion, "(no version)");
+            string uninstall = installState.UninstallScriptAvailable ? "uninstall:available" : "uninstall:missing";
+            string line = installState.Status +
+                "|version:" + version +
+                "|legacyMoved:" + installState.LegacyMovedCount.ToString(CultureInfo.InvariantCulture) +
+                "|legacyDetected:" + installState.LegacyDetectedCount.ToString(CultureInfo.InvariantCulture) +
+                "|" + uninstall;
+            if (!string.IsNullOrWhiteSpace(installState.ErrorMessage))
+                line += "|error:" + installState.ErrorMessage;
+
+            return line;
         }
 
         internal static string FormatLogsExportState(ManagerLogsPageState state)

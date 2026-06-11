@@ -7,16 +7,19 @@ namespace DTMAPI.Core.Manager
     {
         private readonly IDtmDiagnosticsApi diagnosticsApi;
         private readonly Func<string> exportReport;
+        private readonly Func<ManagerInstallStateSummary>? installStateProvider;
 
-        internal DtmManagerRuntimeModelProvider(IDtmDiagnosticsApi diagnosticsApi, Func<string> exportReport)
+        internal DtmManagerRuntimeModelProvider(IDtmDiagnosticsApi diagnosticsApi, Func<string> exportReport, Func<ManagerInstallStateSummary>? installStateProvider = null)
         {
             this.diagnosticsApi = diagnosticsApi ?? throw new ArgumentNullException(nameof(diagnosticsApi));
             this.exportReport = exportReport ?? throw new ArgumentNullException(nameof(exportReport));
+            this.installStateProvider = installStateProvider;
         }
 
         internal DtmManagerViewModel GetCurrentModel()
         {
-            return DtmManagerViewModelFactory.FromSnapshot(diagnosticsApi.GetSnapshot());
+            ManagerInstallStateSummary? installState = installStateProvider?.Invoke();
+            return DtmManagerViewModelFactory.FromSnapshot(diagnosticsApi.GetSnapshot(), installState);
         }
 
         internal DtmManagerReportExportResult ExportReportAndRefresh()

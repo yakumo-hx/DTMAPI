@@ -5,12 +5,12 @@
   "Description": "DTMAPI migration of the ActionSpeed mod settings/update/input shell.",
   "UniqueID": "Yuuka.DTMAPI.ActionSpeed",
   "EntryDll": "ActionSpeedMod.dll",
-  "MinimumDTMApiVersion": "0.2.5",
+  "MinimumDTMApiVersion": "0.5.0-alpha",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.2.5",
+      "MinimumVersion": "0.5.0-alpha",
       "Required": true
     }
   ]

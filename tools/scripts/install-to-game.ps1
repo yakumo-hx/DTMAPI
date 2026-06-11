@@ -6,20 +6,41 @@ param(
     [switch] $SkipBuild,
     [switch] $InstallBepInEx,
     [switch] $SkipOfficialLocalMods,
-    [switch] $KeepLegacyMigratedGameMods
+    [switch] $KeepLegacyMigratedGameMods,
+    [switch] $DryRun,
+    [string] $PackagePayloadRoot = ''
 )
 
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\release-common.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
+$detectedPackagePayloadRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\Payload'))
+if ([string]::IsNullOrWhiteSpace($PackagePayloadRoot) -and (Test-Path $detectedPackagePayloadRoot)) {
+    $PackagePayloadRoot = $detectedPackagePayloadRoot
+}
+$usingPackagePayload = -not [string]::IsNullOrWhiteSpace($PackagePayloadRoot)
+if ($usingPackagePayload) {
+    $SkipBuild = $true
+    $SkipOfficialLocalMods = $true
+}
+if ($DryRun) {
+    $SkipBuild = $true
+}
 if (-not $SkipBuild) {
     & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
 }
 
 $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
-$outDir = Get-DtmapiOutputDir -RepoRoot $repo -Configuration $Configuration
+$outDir = if ($usingPackagePayload) { Join-Path $PackagePayloadRoot 'BepInEx\plugins\DTMAPI' } else { Get-DtmapiOutputDir -RepoRoot $repo -Configuration $Configuration }
 $pluginDir = Join-Path $gameDir 'BepInEx\plugins\DTMAPI'
-New-Item -ItemType Directory -Force -Path $pluginDir | Out-Null
+$stateDir = Resolve-DtmApiStateDir -GameDir $gameDir
+$bepInExCore = Join-Path $gameDir 'BepInEx\core\BepInEx.dll'
+$bepInExDetectedBeforeInstall = Test-Path $bepInExCore
+$script:DtmInstallFilesInstalled = New-Object 'System.Collections.Generic.List[object]'
+$script:DtmInstallBackupsCreated = New-Object 'System.Collections.Generic.List[object]'
+$script:DtmInstallLegacyModsMoved = New-Object 'System.Collections.Generic.List[object]'
+$script:DtmInstallBundledMods = New-Object 'System.Collections.Generic.List[object]'
 
 $runtimeFiles = @(
     'DTMAPI.BepInExBootstrap.dll',
@@ -28,12 +49,32 @@ $runtimeFiles = @(
     'DTMAPI.GameBridge.DolocTown.dll',
     'DTMAPI.ModConfigMenu.dll'
 )
-Copy-DirectoryContents -Source $outDir -Destination $pluginDir -Include $runtimeFiles
+if ($DryRun) {
+    $legacyDetections = Get-DtmApiLegacyDetections -GameDir $gameDir
+    $plannedRelease = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'dry-run' -IncludedAssemblies $runtimeFiles -BundledMods (Get-DtmApiPublishedModDefinitions)
+    $plannedState = New-DtmApiInstallState -RepoRoot $repo -GameDir $gameDir -PluginDir $pluginDir -FilesInstalled $runtimeFiles -BepInExDetectedBeforeInstall $bepInExDetectedBeforeInstall -BepInExInstalledByDTMAPI $false -BackupsCreated @() -LegacyModsMoved @() -LegacyDetections $legacyDetections -DryRun $true
+    Write-Host "DRY RUN: would install DTMAPI $($plannedRelease.DTMAPIVersion) to $pluginDir"
+    Write-Host "DRY RUN: would write release manifest to $(Join-Path $stateDir 'release-manifest.json')"
+    Write-Host "DRY RUN: would write install state to $(Join-Path $stateDir 'install-state.json')"
+    Write-Host "DRY RUN: detected legacy item count = $($legacyDetections.Count)"
+    $plannedState | ConvertTo-Json -Depth 12
+    return
+}
 
-$bepInExCore = Join-Path $gameDir 'BepInEx\core\BepInEx.dll'
+New-Item -ItemType Directory -Force -Path $pluginDir | Out-Null
+Copy-DirectoryContents -Source $outDir -Destination $pluginDir -Include $runtimeFiles
+foreach ($file in $runtimeFiles) {
+    $path = Join-Path $pluginDir $file
+    if (Test-Path $path) {
+        $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'runtime-assembly'; Path = [System.IO.Path]::GetFullPath($path) }) | Out-Null
+    }
+}
+
+$bepInExInstalledByDTMAPI = $false
 if (-not (Test-Path $bepInExCore)) {
     if ($InstallBepInEx) {
         & "$PSScriptRoot\install-bepinex.ps1"
+        $bepInExInstalledByDTMAPI = Test-Path $bepInExCore
     }
     else {
         Write-Warning "BepInEx core was not found at $bepInExCore. DTMAPI Bootstrap is installed, but the game still needs BepInEx installed once."
@@ -62,6 +103,14 @@ function Backup-GameModDirectory {
     New-Item -ItemType Directory -Force -Path $BackupRoot | Out-Null
     $dest = Join-Path $BackupRoot $ModId
     Move-Item -LiteralPath $source -Destination $dest
+    $record = [ordered]@{
+        ModId = $ModId
+        Source = [System.IO.Path]::GetFullPath($source)
+        Destination = [System.IO.Path]::GetFullPath($dest)
+        Reason = $Reason
+    }
+    $script:DtmInstallBackupsCreated.Add($record) | Out-Null
+    $script:DtmInstallLegacyModsMoved.Add($record) | Out-Null
     Write-Host "Moved $ModId out of game Mods to $dest ($Reason)"
 }
 
@@ -280,7 +329,9 @@ function Install-OfficialLocalDtmApiMod {
     }
 
     Copy-Item -Force -LiteralPath $sourceDllPath -Destination (Join-Path $contentRoot $Mod.PackageDll)
+    $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'official-local-dll'; Path = [System.IO.Path]::GetFullPath((Join-Path $contentRoot $Mod.PackageDll)) }) | Out-Null
     Write-JsonObject -Path (Join-Path $contentRoot 'manifest.json') -Value $manifest
+    $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'official-local-manifest'; Path = [System.IO.Path]::GetFullPath((Join-Path $contentRoot 'manifest.json')) }) | Out-Null
 
     $i18nSource = Join-Path $repo "testmods\$($Mod.Project)\i18n"
     if (Test-Path $i18nSource) {
@@ -314,6 +365,7 @@ function Install-OfficialLocalDtmApiMod {
     $info = Get-Content -Raw -Encoding UTF8 -LiteralPath $officialInfoPath | ConvertFrom-Json
     $info.version = $manifest.Version
     Write-JsonObject -Path (Join-Path $dest 'info.json') -Value $info
+    $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'official-local-info'; Path = [System.IO.Path]::GetFullPath((Join-Path $dest 'info.json')) }) | Out-Null
     Ensure-OfficialLocalDtmApiEnablement -OfficialFolder $Mod.OfficialFolder -Info $info
 
     $packageInfo = [ordered]@{
@@ -323,6 +375,14 @@ function Install-OfficialLocalDtmApiMod {
         updatedAt = (Get-Date).ToString('o')
     }
     Write-JsonObject -Path $marker -Value $packageInfo
+    $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'official-local-package-marker'; Path = [System.IO.Path]::GetFullPath($marker) }) | Out-Null
+    $script:DtmInstallBundledMods.Add([ordered]@{
+        OfficialFolder = $Mod.OfficialFolder
+        UniqueID = $manifest.UniqueID
+        Version = $manifest.Version
+        PackageDll = $Mod.PackageDll
+        Path = [System.IO.Path]::GetFullPath($dest)
+    }) | Out-Null
     Write-Host "Installed official local DTMAPI mod package to $dest"
 }
 
@@ -484,6 +544,50 @@ if (Test-Path $assetSource) {
     $assetDest = Join-Path $pluginDir 'assets\branding'
     New-Item -ItemType Directory -Force -Path $assetDest | Out-Null
     Copy-Item -LiteralPath $assetSource -Destination (Join-Path $assetDest 'dtmapi-icon.png') -Force
+    $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'runtime-asset'; Path = [System.IO.Path]::GetFullPath((Join-Path $assetDest 'dtmapi-icon.png')) }) | Out-Null
 }
 
+New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+$stateToolsDir = Join-Path $stateDir 'tools'
+New-Item -ItemType Directory -Force -Path $stateToolsDir | Out-Null
+foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'uninstall-dtmapi.ps1', 'check-dtmapi-status.ps1')) {
+    $sourceScript = Join-Path $PSScriptRoot $scriptName
+    if (Test-Path $sourceScript) {
+        $destScript = Join-Path $stateToolsDir $scriptName
+        Copy-Item -LiteralPath $sourceScript -Destination $destScript -Force
+        $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'installer-tool'; Path = [System.IO.Path]::GetFullPath($destScript) }) | Out-Null
+    }
+}
+
+$legacyDetectionsAfterInstall = Get-DtmApiLegacyDetections -GameDir $gameDir
+$includedAssemblies = @($runtimeFiles | ForEach-Object { [ordered]@{ FileName = $_; Path = [System.IO.Path]::GetFullPath((Join-Path $pluginDir $_)) } })
+$bundledMods = $script:DtmInstallBundledMods.ToArray()
+$releaseManifest = New-DtmApiReleaseManifest `
+    -RepoRoot $repo `
+    -PackageKind 'local-install' `
+    -IncludedAssemblies $includedAssemblies `
+    -BundledMods $bundledMods
+$releaseManifestPath = Join-Path $stateDir 'release-manifest.json'
+Write-Utf8NoBomJson -Path $releaseManifestPath -Value $releaseManifest
+$script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'release-manifest'; Path = [System.IO.Path]::GetFullPath($releaseManifestPath) }) | Out-Null
+
+$installStatePath = Join-Path $stateDir 'install-state.json'
+$installedFiles = $script:DtmInstallFilesInstalled.ToArray()
+$backupsCreated = $script:DtmInstallBackupsCreated.ToArray()
+$legacyModsMoved = $script:DtmInstallLegacyModsMoved.ToArray()
+$installState = New-DtmApiInstallState `
+    -RepoRoot $repo `
+    -GameDir $gameDir `
+    -PluginDir $pluginDir `
+    -FilesInstalled $installedFiles `
+    -BepInExDetectedBeforeInstall $bepInExDetectedBeforeInstall `
+    -BepInExInstalledByDTMAPI $bepInExInstalledByDTMAPI `
+    -BackupsCreated $backupsCreated `
+    -LegacyModsMoved $legacyModsMoved `
+    -LegacyDetections $legacyDetectionsAfterInstall `
+    -DryRun $false
+Write-Utf8NoBomJson -Path $installStatePath -Value $installState
+
 Write-Host "Installed DTMAPI to $pluginDir"
+Write-Host "Wrote DTMAPI release manifest to $releaseManifestPath"
+Write-Host "Wrote DTMAPI install state to $installStatePath"

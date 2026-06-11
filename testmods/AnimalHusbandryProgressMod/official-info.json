@@ -1,8 +1,8 @@
 {
   "name": "牧铃隐藏产物进度（DTMAPI）",
   "author": "Yuuka",
-  "version": "0.3.1-dtmapi",
-  "description": "DTMAPI 迁移版牧铃信息 Mod，在动物查看界面显示隐藏特殊产物进度。",
+  "version": "1.0.1-dtmapi",
+  "description": "依赖 DTMAPI Runtime。牧铃动物查看界面显示隐藏产物进度，基于 DTMAPI AnimalViewer API。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "Animal Husbandry Progress (DTMAPI)"
   },
   "localized_description": {
-    "schinese": "DTMAPI 迁移版牧铃信息 Mod，在动物查看界面显示隐藏特殊产物进度。",
-    "tchinese": "DTMAPI 遷移版牧鈴資訊 Mod，在動物查看介面顯示隱藏特殊產物進度。",
-    "english": "DTMAPI migration of Animal Husbandry Progress. Shows hidden special-produce progress in the animal bell viewer."
+    "schinese": "依赖 DTMAPI Runtime。牧铃动物查看界面显示隐藏产物进度，基于 DTMAPI AnimalViewer API。",
+    "tchinese": "依賴 DTMAPI Runtime。牧鈴動物查看介面顯示隱藏產物進度，基於 DTMAPI AnimalViewer API。",
+    "english": "Requires DTMAPI Runtime. Shows hidden special-produce progress in the animal bell viewer through the DTMAPI AnimalViewer API."
   }
 }
