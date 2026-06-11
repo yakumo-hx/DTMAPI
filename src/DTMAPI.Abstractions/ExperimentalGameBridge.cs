@@ -213,6 +213,14 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.0-alpha", Notes = "Semantic crop-harvesting bridge backed by native PlantBasin maturity and harvest responsibility; first version only executes ordinary PlantBasin harvests and keeps tree/grass/special crop families unsupported until their native ownership is reviewed.")]
+    public interface ICropHarvestingApi
+    {
+        CropHarvestResult ScanMatureCrops(IManifest owner, CropHarvestRequest request);
+        CropHarvestResult HarvestMatureCrops(IManifest owner, CropHarvestRequest request);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
     public interface IAdvancedDebugApi
     {
@@ -1049,6 +1057,79 @@ namespace DTMAPI.Abstractions
         public int LastConsumedItemCount { get; set; }
         public string Status { get; set; } = string.Empty;
         public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public enum CropHarvestScope
+    {
+        CurrentFarmAndFarmRooms
+    }
+
+    public enum CropHarvestTargetKind
+    {
+        Unknown,
+        OrdinaryCrop,
+        Vine,
+        Tree,
+        Mushroom,
+        Grass
+    }
+
+    public enum CropHarvestTargetStatus
+    {
+        Pending,
+        Harvested,
+        NotMature,
+        AlreadyHarvested,
+        UnsupportedBasinType,
+        NativeHarvestFailed,
+        SkippedByRequestFilter,
+        Busy
+    }
+
+    public sealed class CropHarvestRequest
+    {
+        public CropHarvestScope Scope { get; set; } = CropHarvestScope.CurrentFarmAndFarmRooms;
+        public bool IncludeOrdinaryCrops { get; set; } = true;
+        public bool IncludeVines { get; set; }
+        public bool IncludeTrees { get; set; }
+        public bool IncludeMushrooms { get; set; }
+        public int MaxHarvests { get; set; } = 24;
+        public bool DryRun { get; set; }
+        public bool SendNativeMessage { get; set; } = true;
+        public bool VerboseLogging { get; set; }
+        public IReadOnlyList<string> TargetIds { get; set; } = Array.Empty<string>();
+    }
+
+    public sealed class CropHarvestResult
+    {
+        public bool Success { get; set; }
+        public bool DryRun { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public CropHarvestScope Scope { get; set; }
+        public int RoomsVisited { get; set; }
+        public int PlantBasinsVisited { get; set; }
+        public int MatureTargetsFound { get; set; }
+        public int HarvestedCount { get; set; }
+        public int SkippedCount { get; set; }
+        public int FailedCount { get; set; }
+        public bool Busy { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public IReadOnlyList<CropHarvestTargetResult> Targets { get; set; } = Array.Empty<CropHarvestTargetResult>();
+    }
+
+    public sealed class CropHarvestTargetResult
+    {
+        public string TargetId { get; set; } = string.Empty;
+        public string RoomId { get; set; } = string.Empty;
+        public string RoomTitle { get; set; } = string.Empty;
+        public string EquipmentName { get; set; } = string.Empty;
+        public string CropId { get; set; } = string.Empty;
+        public string CropTitle { get; set; } = string.Empty;
+        public CropHarvestTargetKind Kind { get; set; }
+        public CropHarvestTargetStatus Status { get; set; }
+        public bool IsMature { get; set; }
+        public string Message { get; set; } = string.Empty;
     }
 
     public sealed class EquipmentSlotsRegisterResult

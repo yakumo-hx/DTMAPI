@@ -1,0 +1,21 @@
+{
+  "mod.name": "自动收获（DTMAPI）",
+  "mod.loaded": "自动收获已加载；默认关闭，使用 DTMAPI CropHarvesting API。",
+  "mod.apiMissing": "CropHarvesting API 暂不可用。",
+  "config.section.main": "自动收获",
+  "config.status": "状态={0}，详情={1}",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "启用后按间隔自动扫描成熟作物。",
+  "config.hotkey.name": "手动收获热键",
+  "config.hotkey.tooltip": "按下后执行一次扫描和收获。",
+  "config.interval.name": "自动扫描间隔",
+  "config.interval.tooltip": "启用自动收获时两次扫描之间的秒数。",
+  "config.maxHarvests.name": "每次最多收获",
+  "config.maxHarvests.tooltip": "限制每次 API 调用最多收获多少个成熟作物。",
+  "config.includeVines.name": "包含藤类",
+  "config.includeVines.tooltip": "包含被 API 识别为藤类的 PlantBasin 作物。",
+  "config.includeMushrooms.name": "包含蘑菇类",
+  "config.includeMushrooms.tooltip": "包含被 API 识别为蘑菇/真菌类的 PlantBasin 作物。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "输出每次扫描/收获摘要。"
+}

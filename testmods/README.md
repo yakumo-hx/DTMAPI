@@ -19,6 +19,7 @@ Test mods are small DTMAPI mods used to prove runtime behavior inside Doloc Town
 - `ZoomMod`: official-local large-view camera zoom mod backed by lease-based `ICameraViewApi`.
 - `ChestLocatorEnhancerMod`: official-local shared chest lookup enhancement backed by `IChestLocatorEnhancerApi`.
 - `StrongPlantingGunMod`: official-local farming-gun upgrade backed by `IStrongPlantingGunApi`.
+- `AutoHarvestMod`: default-off crop harvesting sample backed by `ICropHarvestingApi`; it uses DTMAPI only and does not reference raw Doloc Town assemblies.
 - `HookProbeMod`: logs hook evidence for GameLaunched, SaveLoaded, UpdateTicked, UI, input, and exit smoke tests.
 
 HookProbe should use the local game's third save by default when a save is needed.

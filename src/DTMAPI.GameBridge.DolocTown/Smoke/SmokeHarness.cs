@@ -184,6 +184,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 TryExerciseStrongPlantingGunForSmoke();
                 TryQuitAfterDebugSmoke();
             }
+            if (!autoExerciseCropHarvestingApiAttempted && smokeSettings.AutoExerciseCropHarvestingApi && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseCropHarvestingApiDelaySeconds))
+            {
+                autoExerciseCropHarvestingApiAttempted = true;
+                TryExerciseCropHarvestingApiForSmoke();
+                TryQuitAfterDebugSmoke();
+            }
             if (!autoExerciseCustomEntityApisAttempted && smokeSettings.AutoExerciseCustomEntityApis && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseCustomEntityApisDelaySeconds))
             {
@@ -392,7 +399,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 autoExerciseAttempted = true;
                 TryExerciseExperimentalHooksForSmoke();
             }
-            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCustomEntityApis)
+            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCropHarvestingApi || smokeSettings.AutoExerciseCustomEntityApis)
             {
                 if (smokeSettings.AutoExerciseDebugConsole)
                     runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Save loaded; in-game smoke will exercise Y/Escape/Y/Y, ten short taps, and held-Y no-flicker.");
@@ -416,6 +423,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "pending", "IChestLocatorEnhancerApi + ArchiveDataHandle.GetAvailableInventories", "Waiting after save load to create a transient shared Case in a building room and verify CountItem/CostItem through the native shared-inventory array.");
                 if (smokeSettings.AutoExerciseStrongPlantingGun)
                     runtime.SetHookStatus("Smoke.StrongPlantingGun", "pending", "IStrongPlantingGunApi + ItemFarmingGun", "Waiting after save load to generate an official farming gun, expose three slots, place seed/film/fertilizer, and apply them to a temporary plant basin.");
+                if (smokeSettings.AutoExerciseCropHarvestingApi)
+                    runtime.SetHookStatus("Smoke.CropHarvestingApi", "pending", "ICropHarvestingApi + PlantBasin.Harvest", "Waiting after save load to create a temporary mature PlantBasin crop, scan by opaque target id, and harvest only that target through the GameBridge API.");
                 if (smokeSettings.AutoExerciseCustomEntityApis)
                     runtime.SetHookStatus("Smoke.CustomEntityApis", "pending", "ICustomAnimalApi/ICustomMonsterApi/ICustomAttackApi/ICustomDroneApi", "Waiting after save load to register StableCandidate custom entity registry contracts, verify snapshots/status, confirm duplicate validation, confirm runtime-creation-blocked request results, and clean up the smoke owner.");
                 return;
@@ -4207,6 +4216,8 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public bool AutoExerciseMoreSavesOfficialSaveUi { get; set; }
             [DataMember] public bool AutoExerciseStrongPlantingGun { get; set; }
             [DataMember] public int AutoExerciseStrongPlantingGunDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseCropHarvestingApi { get; set; }
+            [DataMember] public int AutoExerciseCropHarvestingApiDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseCustomEntityApis { get; set; }
             [DataMember] public int AutoExerciseCustomEntityApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }

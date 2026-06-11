@@ -1033,3 +1033,20 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - 2026-06-11 Manual QA Batch 1: service normalization now forces `SlotCount=3`, the migrated config no longer exposes unsupported slot count/range controls, and smoke `GAME-SMOKE/20260611-214654` records `StrongPlantingGun=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, clean process/fatal checks, and report `dtmapi-report-20260611-214731.zip`.
   - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260610-101436` and report `dtmapi-report-20260610-101512.zip`; result has `StrongPlantingGun=Passed`, `SaveLoaded=Passed`, `HookProbe=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed`.
 - Regression cases: STRONGPLANTINGGUN-FEATURE-SPLIT-20260610, STRONGPLANT-030-H
+
+## Hook: Crops.HarvestingApi
+
+- Status: experimental
+- Public surface: `ICropHarvestingApi`, `CropHarvestRequest`, `CropHarvestResult`, `CropHarvestTargetResult`, `CropHarvestScope`, `CropHarvestTargetKind`, and `CropHarvestTargetStatus`.
+- Game build: 23465763 workshop
+- Game method/type: `DolocTown.PlantBasin.CouldHarvest`, `DolocTown.PlantBasin.Harvest(bool putInBackpack, bool sendMessage)`, `DolocTown.Crop.isMature`, current room/farm equipment containers, and farm building-room traversal.
+- Patch type: explicit GameBridge API request through `CropHarvestingFeature` / `CropHarvestingService`; no Harmony patch is installed for ordinary crop harvesting.
+- Why this point: official `PlantBasin.Harvest` owns crop output, broadcast, crop after-harvest state, and basin cleanup. DTMAPI should delegate to this native responsibility instead of hand-spawning harvested items or exposing raw `PlantBasin` / `Crop` objects to ordinary mods.
+- Failure behavior: overlapping batches return `Busy`; non-mature or already-harvested targets are reported without mutation; unsupported tree/grass/special basin families are classified instead of executed; native invocation failures are recorded as diagnostics and `NativeHarvestFailed`.
+- Mods/tests depending on it: `Yuuka.DTMAPI.AutoHarvest` test mod, smoke harness `-AutoExerciseCropHarvestingApi`.
+- Evidence:
+  - Build: 2026-06-12 Release build/test passed with 0 warnings and 0 errors.
+  - Save: local slot 3 / index 2.
+  - Log line: `GAME-SMOKE/20260612-062154` logs `Feature.CropHarvesting = ready`, `Crops.HarvestingApi = scan-verified`, `Crops.HarvestingApi = verified`, and `Smoke.CropHarvestingApi = verified` with a transient `PlantBasinSimple`, `seed_endyam`, native planting setup, `mature=False->True`, `scan={success=True ... mature=1 harvested=0 skipped=171 failed=0 targetFilter=1}`, and `harvest={success=True ... mature=1 harvested=1 skipped=171 failed=0 targetFilter=1}`.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260612-062154`; process/fatal checks say no `DolocTown.exe` and no fatal popup.
+- Regression cases: CROPS-HARVESTING-API-20260612

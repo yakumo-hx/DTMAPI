@@ -65,6 +65,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private ZoomSmokeRun? zoomSmokeRun;
         private bool autoExerciseChestLocatorEnhancerAttempted;
         private bool autoExerciseStrongPlantingGunAttempted;
+        private bool autoExerciseCropHarvestingApiAttempted;
         private bool autoExerciseCustomEntityApisAttempted;
         private bool debugTeleportVerificationCompleted;
         private bool autoFishingHotkeyInjected;
@@ -204,6 +205,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private SaveSlotsFeature? saveSlotsFeature;
         private StrongPlantingGunFeature? strongPlantingGunFeature;
+        private CropHarvestingFeature? cropHarvestingFeature;
         private AnimalViewerFeature? animalViewerFeature;
         private OilCoalDropFeature? oilCoalDropFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
@@ -232,6 +234,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal SaveSlotsService? SaveSlotsService => saveSlotsFeature?.Service;
 
         internal StrongPlantingGunService? StrongPlantingGunService => strongPlantingGunFeature?.Service;
+
+        internal CropHarvestingService? CropHarvestingService => cropHarvestingFeature?.Service;
 
         internal AnimalViewerService? AnimalViewerService => animalViewerFeature?.Service;
 
@@ -264,7 +268,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && cropHarvestingFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -341,6 +345,10 @@ namespace DTMAPI.GameBridge.DolocTown
             strongPlantingGunFeature ??= new StrongPlantingGunFeature(runtime);
             if (!features.Contains(strongPlantingGunFeature))
                 features.Add(strongPlantingGunFeature);
+
+            cropHarvestingFeature ??= new CropHarvestingFeature(runtime);
+            if (!features.Contains(cropHarvestingFeature))
+                features.Add(cropHarvestingFeature);
 
             animalViewerFeature ??= new AnimalViewerFeature(runtime);
             if (!features.Contains(animalViewerFeature))
