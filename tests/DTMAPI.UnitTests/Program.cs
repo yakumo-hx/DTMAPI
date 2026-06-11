@@ -445,6 +445,7 @@ namespace DTMAPI.UnitTests
         private static void ManagerViewModelMapsDiagnosticsSnapshot()
         {
             string latestLogPath = Path.GetTempFileName();
+            string readyReportPath = Path.GetTempFileName();
             string longRootPath = Path.Combine(Path.GetTempPath(), "DTMAPI", new string('x', 128), "Mods", "Example");
             string missingReportPath = Path.Combine(Path.GetTempPath(), "dtmapi-manager-missing-report.zip");
             if (File.Exists(missingReportPath))
@@ -519,6 +520,24 @@ namespace DTMAPI.UnitTests
                             Path.Combine(Path.GetTempPath(), "warning-manifest.json"),
                             Path.Combine(Path.GetTempPath(), "Warning")),
                         new DtmModStatusInfo(
+                            "ReasonOnly.Mod",
+                            "Reason Only Mod",
+                            "1.0.0",
+                            "Code",
+                            "Local",
+                            "Local.ReasonOnly.Mod",
+                            true,
+                            true,
+                            "official-enabled",
+                            "ReasonOnly.dll",
+                            "ModEntry",
+                            true,
+                            "loaded",
+                            "loaded",
+                            "Reason text mentions warning, blocked, and error but structured status is loaded.",
+                            Path.Combine(Path.GetTempPath(), "reason-only-manifest.json"),
+                            Path.Combine(Path.GetTempPath(), "ReasonOnly")),
+                        new DtmModStatusInfo(
                             "Disabled.Mod",
                             "Disabled Mod",
                             "1.0.0",
@@ -565,31 +584,80 @@ namespace DTMAPI.UnitTests
 
                 DtmManagerViewModel model = DtmManagerViewModelFactory.FromSnapshot(snapshot);
 
-                Assert(model.Mods.Count == 4, "Manager model should map mod status rows.");
-                Assert(model.Mods[0].UniqueID == "Blocked.Mod" && model.Mods[1].UniqueID == "Warning.Mod" && model.Mods[2].UniqueID == "Disabled.Mod" && model.Mods[3].UniqueID == "Example.Mod", "Manager mods should sort blocked, warning, disabled, then loaded rows.");
+                Assert(model.Mods.Count == 5, "Manager model should map mod status rows.");
+                Assert(model.Mods[0].UniqueID == "Blocked.Mod" && model.Mods[1].UniqueID == "Warning.Mod" && model.Mods[2].UniqueID == "Disabled.Mod" && model.Mods[3].UniqueID == "Example.Mod" && model.Mods[4].UniqueID == "ReasonOnly.Mod", "Manager mods should sort blocked, warning, disabled, then loaded rows using structured status.");
                 Assert(model.Mods[3].StatusCode == "loaded", "Manager mod row should keep structured status code.");
                 Assert(model.Mods[3].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
+                ManagerModRow reasonOnlyMod = model.Mods.Single(m => m.UniqueID == "ReasonOnly.Mod");
+                Assert(!reasonOnlyMod.IsWarning && !reasonOnlyMod.IsBlocked, "Manager mod row should not infer warning/blocking severity from free-text Reason.");
                 Assert(model.Errors.Count == 2 && model.Errors[0].Severity == "Error" && model.Errors[0].Message == "failed to load asset", "Manager model should map diagnostics errors newest first.");
                 Assert(model.Warnings.Count == 2 && model.Warnings[0].Severity == "Warning" && model.Warnings[0].Message == "optional dependency version too low", "Manager model should map diagnostics warnings newest first.");
                 Assert(model.Hooks.Count == 4 && model.Hooks[0].HookId == "Feature.Broken" && model.Hooks[1].HookId == "Save.MoreSlotsApi", "Manager hooks should sort failed and missing before experimental/ready rows.");
+                Assert(model.Hooks[0].IsFailed && !model.Hooks[0].IsMissing && !model.Hooks[1].IsFailed && model.Hooks[1].IsMissing, "Manager hook rows should distinguish failed and missing states.");
                 Assert(model.Features.Count == 3 && model.Features[0].FeatureId == "BrokenFeature" && model.Features[1].FeatureId == "FishingAutomation" && model.Features[2].FeatureId == "Camera", "Manager features should sort failed, degraded, then ready rows.");
                 Assert(model.Features[1].FailureCount == 2, "Manager feature row should keep cumulative failure count.");
-                Assert(model.Summary.LoadedModCount == 2, "Manager summary should count loaded mods.");
+                Assert(model.Summary.LoadedModCount == 3, "Manager summary should count loaded mods.");
                 Assert(model.Summary.BlockedModCount == 1, "Manager summary should count blocked mods.");
                 Assert(model.Summary.DisabledModCount == 1, "Manager summary should count disabled mods.");
                 Assert(model.Summary.ErrorCount == 2 && model.Summary.WarningCount == 2, "Manager summary should count diagnostics rows.");
-                Assert(model.Summary.FailedHookCount == 2, "Manager summary should count failed/missing hooks.");
+                Assert(model.Summary.FailedHookCount == 1, "Manager summary should count failed hooks separately from missing hooks.");
+                Assert(model.Summary.MissingHookCount == 1, "Manager summary should count missing hooks.");
                 Assert(model.Summary.FailedFeatureCount == 1, "Manager summary should count failed features.");
+                Assert(model.Summary.DegradedFeatureCount == 1, "Manager summary should count degraded features.");
                 Assert(model.Summary.OverallStatus == "failed", "Manager summary should mark blocked/error state as failed.");
                 Assert(model.LatestLogPath == latestLogPath, "Manager model should expose latest log path.");
                 Assert(model.LatestReportPath == missingReportPath, "Manager model should expose latest report path.");
                 Assert(model.ExportReport.HasLatestLogPath && model.ExportReport.LatestLogExists, "Manager export status should detect an existing latest log path.");
                 Assert(model.ExportReport.HasLatestReportPath && !model.ExportReport.LatestReportExists, "Manager export status should detect a missing latest report path.");
                 Assert(model.ExportReport.Status == "missing-report", "Manager export status should mark a missing report path.");
+
+                var warningOnlySnapshot = new DtmDiagnosticsSnapshot(
+                    DateTimeOffset.Now,
+                    Array.Empty<IDtmLoadedModInfo>(),
+                    new IDtmModStatusInfo[]
+                    {
+                        new DtmModStatusInfo(
+                            "WarningOnly.Loaded",
+                            "Warning Only Loaded",
+                            "1.0.0",
+                            "Code",
+                            "Local",
+                            "Local.WarningOnly.Loaded",
+                            true,
+                            true,
+                            "official-enabled",
+                            "Loaded.dll",
+                            "ModEntry",
+                            true,
+                            "loaded",
+                            "loaded",
+                            "Reason mentions warning but does not change severity.",
+                            Path.Combine(Path.GetTempPath(), "warning-only-loaded-manifest.json"),
+                            Path.Combine(Path.GetTempPath(), "WarningOnlyLoaded"))
+                    },
+                    Array.Empty<IDtmErrorInfo>(),
+                    Array.Empty<IDtmWarningInfo>(),
+                    new IHookStatusInfo[]
+                    {
+                        new HookStatusInfo("Save.MoreSlotsApi", "missing", "SaveSlotsFeature", "missing")
+                    },
+                    new IDtmFeatureStatusInfo[]
+                    {
+                        new DtmFeatureStatusInfo("FishingAutomation", "ready", "Update", true, 4, string.Empty, "cumulative=4")
+                    },
+                    latestLogPath,
+                    readyReportPath);
+
+                DtmManagerViewModel warningOnlyModel = DtmManagerViewModelFactory.FromSnapshot(warningOnlySnapshot);
+                Assert(warningOnlyModel.Summary.FailedHookCount == 0 && warningOnlyModel.Summary.MissingHookCount == 1, "Missing hooks should be warning severity but not failed hooks.");
+                Assert(warningOnlyModel.Summary.FailedFeatureCount == 0 && warningOnlyModel.Summary.DegradedFeatureCount == 1, "Historical successful feature failures should be degraded but not failed.");
+                Assert(warningOnlyModel.Summary.OverallStatus == "warning", "Manager summary should mark missing hooks or degraded features as warning when there are no failed/error states.");
+                Assert(!warningOnlyModel.Mods[0].IsWarning && !warningOnlyModel.Mods[0].IsBlocked, "Manager mod severity should ignore free-text Reason when structured status is loaded.");
             }
             finally
             {
                 File.Delete(latestLogPath);
+                File.Delete(readyReportPath);
             }
         }
 

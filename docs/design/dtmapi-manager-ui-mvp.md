@@ -39,6 +39,10 @@ Manager report export and Manager model refresh now have internal exception safe
 
 The Manager Status page now has a dedicated title-page smoke route. `run-game-smoke.ps1 -AutoOpenTitleSettingsStatusPage` opens the DTMAPI Settings menu, switches to the Status page, captures a Status screenshot, and records a summary text line with overall/mod/diagnostic/hook/feature/report/log state. The legacy `-AutoOpenTitleSettingsMenu` Config screenshot rotation is unchanged; the Status-only smoke validates the first real Manager consumer without implying the remaining Mods, Errors, Hooks, Logs, or Config pages are complete.
 
+## 2026-06-11 Severity Model Note
+
+The internal Manager summary now separates failed hooks from missing hooks and failed features from degraded features. Missing hooks and degraded features are support warnings, not hard failures, while diagnostics errors, blocked mods, failed hooks, and failed features still make the overall status `failed`. Mod row severity is based on structured `StatusCode` or exact `Status` values, not free-text `Reason`, so localized explanations cannot accidentally reorder a loaded mod as blocked or warning.
+
 ## 2026-06-11 Roadmap And Feedback Loop Note
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.
