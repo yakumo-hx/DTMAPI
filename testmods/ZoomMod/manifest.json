@@ -1,19 +1,20 @@
 {
   "Name": "DTMAPI Zoom",
-  "Author": "DTMAPI",
+  "Author": "Yuuka",
+  "Description": "依赖 DTMAPI Runtime；按 + / - 调整游戏视野，基于 DTMAPI CameraView/GameBridge，不缩放 UI。",
   "Version": "0.4.2-dtmapi",
   "UniqueID": "DTMAPI.ZoomMod",
   "EntryDll": "ZoomMod.dll",
-  "MinimumDTMApiVersion": "0.4.2",
+  "MinimumDTMApiVersion": "0.5.0-alpha",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.4.2",
+      "MinimumVersion": "0.5.0-alpha",
       "IsRequired": false
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.4.2",
+      "MinimumVersion": "0.5.0-alpha",
       "IsRequired": true
     }
   ]

@@ -95,6 +95,8 @@ As of `GAME-SMOKE/20260611-112148`, the title Settings Manager MVP supports the 
 
 The Developer Preview polish slice adds Status Copy Summary over the same internal Manager model. The copied/fallback text includes overall status, mod counts, diagnostics counts, failed/missing hook counts, failed/degraded feature counts, refresh state, report/export state, latest log state, and latest report path state. Copy selected row and row-detail panels remain future work.
 
+For the `0.5.0-alpha` release-preparation slice, Status/Logs also expose install-state presence, installed version, legacy moved/detected counts, and uninstall-helper availability. This lets support quickly separate "runtime not installed", "old SMAPI/DLK content still present", and "runtime installed but mod failed" reports before asking for a full report zip.
+
 ## Boundaries
 
 - Do not ask players to place ordinary mods in `BepInEx/plugins`.

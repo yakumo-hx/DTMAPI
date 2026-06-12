@@ -1,8 +1,8 @@
 {
   "name": "鱼卵信息显示（DTMAPI）",
   "author": "Yuuka",
-  "version": "0.0.0",
-  "description": "DTMAPI 迁移版鱼卵信息显示 Mod，仅为鱼卵标题追加孵化鱼类提示。",
+  "version": "1.1.3-dtmapi",
+  "description": "依赖 DTMAPI Runtime。鱼卵标题/说明显示孵化鱼与时间信息，基于 DTMAPI item tooltip API。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "Fish Breeding Assistant (DTMAPI)"
   },
   "localized_description": {
-    "schinese": "DTMAPI 迁移版鱼卵信息显示 Mod，仅为鱼卵标题追加孵化鱼类提示。",
-    "tchinese": "DTMAPI 遷移版魚卵資訊顯示 Mod，僅為魚卵標題追加孵化魚類提示。",
-    "english": "DTMAPI migration of Fish Breeding Assistant. Adds hatch-fish hints to fish roe titles only."
+    "schinese": "依赖 DTMAPI Runtime。鱼卵标题/说明显示孵化鱼与时间信息，基于 DTMAPI item tooltip API。",
+    "tchinese": "依賴 DTMAPI Runtime。魚卵標題/說明顯示孵化魚與時間資訊，基於 DTMAPI item tooltip API。",
+    "english": "Requires DTMAPI Runtime. Shows hatch fish and timing information on fish roe titles/descriptions through the DTMAPI item tooltip API."
   }
 }

@@ -1,8 +1,8 @@
 {
   "name": "DTMAPI 大视野",
-  "author": "DTMAPI",
+  "author": "Yuuka",
   "version": "0.4.2-dtmapi",
-  "description": "DTMAPI experimental 大视野缩放。使用 + / - 在原版视野和更大农场视野之间切换，GameBridge 会补偿背景和雾层，不缩放 UI。",
+  "description": "依赖 DTMAPI Runtime。按 + / - 调整大视野，基于 DTMAPI CameraView / GameBridge 能力，不缩放 UI。",
   "tags": [
     "Mod",
     "Utility",
@@ -16,8 +16,8 @@
     "english": "DTMAPI Zoom"
   },
   "localized_description": {
-    "schinese": "按 + / - 调整世界相机视野，最小为原版，最大默认 400%。GameBridge 会刷新相机控制器并补偿背景和雾层，UI 缩放和点击坐标保持原样。",
-    "tchinese": "按 + / - 調整世界相機視野，最小為原版，最大預設 400%。GameBridge 會刷新相機控制器並補償背景和霧層，UI 縮放和點擊座標保持原樣。",
-    "english": "Press + / - to adjust the world camera view from vanilla up to 400% by default. GameBridge refreshes the camera controller and compensates background and depth fog while leaving UI scale and click mapping untouched."
+    "schinese": "依赖 DTMAPI Runtime。按 + / - 调整世界相机视野，最小为原版，最大默认 400%。基于 DTMAPI CameraView / GameBridge 能力，UI 缩放和点击坐标保持原样。",
+    "tchinese": "依賴 DTMAPI Runtime。按 + / - 調整世界相機視野，最小為原版，最大預設 400%。基於 DTMAPI CameraView / GameBridge 能力，UI 縮放和點擊座標保持原樣。",
+    "english": "Requires DTMAPI Runtime. Press + / - to adjust the world camera view from vanilla up to 400% by default. Built on DTMAPI CameraView/GameBridge and leaves UI scale and click mapping untouched."
   }
 }

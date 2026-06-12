@@ -1,0 +1,17 @@
+{
+  "Name": "Crop Harvesting QA",
+  "Author": "DTMAPI QA",
+  "Version": "0.1.0-dtmapi",
+  "Description": "Temporary manual QA mod for ICropHarvestingApi real-field checks.",
+  "UniqueID": "DTMAPI.CropHarvestingQaMod",
+  "EntryDll": "CropHarvestingQaMod.dll",
+  "MinimumDTMApiVersion": "0.5.0-alpha",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.0-alpha",
+      "Required": false
+    }
+  ]
+}

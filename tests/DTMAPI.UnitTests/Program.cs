@@ -400,6 +400,15 @@ namespace DTMAPI.UnitTests
             {
                 string dir = NewTempGameDir();
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Paths.Ensure();
+                File.WriteAllText(
+                    Path.Combine(runtime.Paths.DtmApiPath, "install-state.json"),
+                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
+                    new UTF8Encoding(false));
+                File.WriteAllText(
+                    Path.Combine(runtime.Paths.DtmApiPath, "release-manifest.json"),
+                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"PackageKind\": \"unit-test\" }",
+                    new UTF8Encoding(false));
                 MethodInfo recordWarning = runtime.Diagnostics.GetType().GetMethod("RecordWarning", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("DiagnosticsService.RecordWarning should be available for runtime warnings.");
 
@@ -418,7 +427,11 @@ namespace DTMAPI.UnitTests
 
                 string report = runtime.ExportLogs();
                 string summary = ReadZipText(report, "dtmapi-summary.txt");
+                Assert(ReadZipText(report, "install-state.json").Contains("Old.AutoFishing"), "Diagnostic report zip should include install-state.json when present.");
+                Assert(ReadZipText(report, "release-manifest.json").Contains("unit-test"), "Diagnostic report zip should include release-manifest.json when present.");
                 Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
+                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.0-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.0.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
+                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.0-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.0.0"), "Diagnostic report summary should include release manifest version fields.");
                 Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
                 Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
 
@@ -627,7 +640,12 @@ namespace DTMAPI.UnitTests
                 string logsStateLine = ManagerPageRowFormatter.FormatLogsExportState(ManagerLogsPageState.From(null, model));
                 Assert(logsStateLine.Contains("not-exported") && logsStateLine.Contains("missing-report"), "Manager logs formatter should expose not-exported and snapshot report status.");
                 string statusSummary = ManagerPageRowFormatter.FormatStatusSummary(model, string.Empty, null);
-                Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters and report/log state.");
+                Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("install=missing") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters, install state, and report/log state.");
+                DtmManagerViewModel installedModel = DtmManagerViewModelFactory.FromSnapshot(
+                    snapshot,
+                    ManagerInstallStateSummary.Present("0.5.0-alpha", "0.5.0.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
+                string installStateLine = ManagerPageRowFormatter.FormatInstallState(installedModel.InstallState);
+                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.0-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Hooks", 17, 64) == "Hooks: showing first 17 of 64", "Manager formatter should expose showing-first row counts.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Rows", 99, 3) == "Rows: showing first 3 of 3", "Manager formatter should clamp showing-first counts to total.");
 

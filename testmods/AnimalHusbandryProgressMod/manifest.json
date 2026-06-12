@@ -5,17 +5,17 @@
   "Description": "DTMAPI migration of animal bell special-produce progress display policy.",
   "UniqueID": "Yuuka.DTMAPI.AnimalHusbandryProgress",
   "EntryDll": "AnimalHusbandryProgressMod.dll",
-  "MinimumDTMApiVersion": "0.3.1",
+  "MinimumDTMApiVersion": "0.5.0-alpha",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.5.0-alpha",
       "Required": true
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.5.0-alpha",
       "Required": true
     }
   ]

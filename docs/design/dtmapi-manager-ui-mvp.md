@@ -63,6 +63,8 @@ Mods, Errors/Warnings, Hooks, and Features now show `showing first N of total` s
 
 The MVP is now tied to the mid/long product route in `docs/architecture/20260611-product-roadmap-community-loop.md` and the player support workflow in `docs/workflows/player-feedback-community-loop.md`. The Manager UI should be the start of the support loop: summarize status, sort failed rows first, export a fresh report, and give maintainers enough structured evidence to create a review, known issue, compatibility entry, or goal file.
 
+The release-hygiene slice adds internal install-state visibility to the Manager model. Status and Logs can show whether `DTMAPI/install-state.json` is present, the installed DTMAPI version, legacy moved/detected counts, and whether the uninstall helper is available. This remains an internal Manager view-model field; it does not add a public diagnostics or modder API.
+
 ## Non-Goals
 
 - Historical note: the early design branch did not implement UI. Current Phase 1 has implemented read-only title-page UI consumers for Status, Mods, Errors/Warnings, Hooks, Features, and Logs.

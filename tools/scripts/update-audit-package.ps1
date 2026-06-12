@@ -55,6 +55,25 @@ function New-CleanDirectory {
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
 }
 
+function Get-RelativePath {
+    param(
+        [string]$BasePath,
+        [string]$Path
+    )
+
+    $baseFullPath = [System.IO.Path]::GetFullPath($BasePath)
+    if (-not $baseFullPath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $baseFullPath += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $pathFullPath = [System.IO.Path]::GetFullPath($Path)
+    $baseUri = [System.Uri]::new($baseFullPath)
+    $pathUri = [System.Uri]::new($pathFullPath)
+    $relativeUri = $baseUri.MakeRelativeUri($pathUri)
+    $relative = [System.Uri]::UnescapeDataString($relativeUri.ToString())
+    return $relative -replace "/", [System.IO.Path]::DirectorySeparatorChar
+}
+
 function Copy-FilePreservingPath {
     param(
         [string]$SourceRoot,
@@ -91,7 +110,7 @@ function Copy-Tree {
             return
         }
 
-        $relative = [System.IO.Path]::GetRelativePath($Source, $_.FullName)
+        $relative = Get-RelativePath -BasePath $Source -Path $_.FullName
         $target = Join-Path $Destination $relative
         New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
         Copy-Item -LiteralPath $_.FullName -Destination $target -Force
@@ -134,7 +153,7 @@ function Copy-TrackedSourceSnapshot {
         [string]$Destination
     )
 
-    $files = & git -C $Root ls-files
+    $files = & git -C $Root -c core.quotepath=false ls-files
     if ($LASTEXITCODE -ne 0) {
         throw "git ls-files failed for $Root"
     }
@@ -233,11 +252,19 @@ function Copy-AuditTools {
 
 function Get-DefaultEvidence {
     return @(
-        [pscustomobject]@{ Id = "20260611-113018"; Label = "Final Manager UI MVP title smoke" },
-        [pscustomobject]@{ Id = "20260611-031502"; Label = "Final Camera diagnostics report-export smoke" },
-        [pscustomobject]@{ Id = "20260611-031721"; Label = "Final ActionSpeed diagnostics report-export smoke" },
-        [pscustomobject]@{ Id = "20260611-031838"; Label = "Final AutoFishing behavior and report-export smoke" },
-        [pscustomobject]@{ Id = "20260611-113156"; Label = "Final HookProbe UI/runtime smoke" }
+        [pscustomobject]@{ Id = "20260612-000310"; Label = "Release hygiene Manager MVP install-state smoke" },
+        [pscustomobject]@{ Id = "20260612-000435"; Label = "Release hygiene HookProbe runtime smoke" },
+        [pscustomobject]@{ Id = "20260612-000606"; Label = "Release hygiene Zoom smoke" },
+        [pscustomobject]@{ Id = "20260612-000817"; Label = "Release hygiene ActionSpeed smoke" },
+        [pscustomobject]@{ Id = "20260612-000929"; Label = "Release hygiene OneAction smoke" },
+        [pscustomobject]@{ Id = "20260612-001041"; Label = "Release hygiene ChestLocator smoke" },
+        [pscustomobject]@{ Id = "20260612-001151"; Label = "Release hygiene Y-key console smoke" },
+        [pscustomobject]@{ Id = "20260612-001359"; Label = "Release hygiene FishRoe/AnimalViewer rendering smoke" },
+        [pscustomobject]@{ Id = "20260612-001516"; Label = "Release hygiene Animal panel UI smoke" },
+        [pscustomobject]@{ Id = "20260612-002033"; Label = "Release hygiene Steam launch HookProbe smoke" },
+        [pscustomobject]@{ Id = "20260612-015402"; Label = "Release hygiene hardening MoreSaves official save UI smoke" },
+        [pscustomobject]@{ Id = "20260612-015716"; Label = "Release hygiene hardening Manager MVP install/report smoke" },
+        [pscustomobject]@{ Id = "20260612-015832"; Label = "Release hygiene hardening HookProbe runtime smoke" }
     )
 }
 
@@ -276,7 +303,7 @@ function Copy-Evidence {
         if ($Compact) {
             Copy-Tree -Source $source -Destination $destination -IncludeFile {
                 param($file)
-                $relative = [System.IO.Path]::GetRelativePath($source, $file.FullName) -replace "\\", "/"
+                $relative = (Get-RelativePath -BasePath $source -Path $file.FullName) -replace "\\", "/"
                 if ($relative -like "DTMAPI-evidence/*") {
                     return $false
                 }
@@ -464,6 +491,7 @@ function Write-ReportNotes {
         ) + $evidenceLines | Set-Content -LiteralPath (Join-Path $reportDirectory "WEB-REPORT-NOTE.md") -Encoding UTF8
     }
     else {
+        $reportFreshnessLine = "Report zip payloads should match the listed smoke ids or explicit report paths used when generating the full package."
         @(
             "# Report Payload Note",
             "",
@@ -519,7 +547,7 @@ function Assert-NoDisallowedPayloads {
     }
 
     $badFiles = Get-ChildItem -LiteralPath $PackageRoot -Force -Recurse -File | Where-Object {
-        $relative = [System.IO.Path]::GetRelativePath($PackageRoot, $_.FullName) -replace "\\", "/"
+        $relative = (Get-RelativePath -BasePath $PackageRoot -Path $_.FullName) -replace "\\", "/"
         $extension = $_.Extension.ToLowerInvariant()
 
         if ($extension -in @(".dll", ".exe", ".pdb", ".nupkg", ".rar", ".7z")) {
@@ -552,6 +580,63 @@ function Assert-NoDisallowedPayloads {
     }
 }
 
+function Get-EvidenceIdsFromMarkdown {
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return @()
+    }
+
+    $matches = [System.Text.RegularExpressions.Regex]::Matches((Get-Content -LiteralPath $Path -Raw), "GAME-SMOKE/([0-9]{8}-[0-9]{6})")
+    return @($matches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+}
+
+function Assert-EvidenceReferences {
+    param([string]$PackageRoot)
+
+    $files = @(
+        (Join-Path $PackageRoot "AUDIT-PACKAGE.md"),
+        (Join-Path $PackageRoot "VALIDATION-SUMMARY.md"),
+        (Join-Path $PackageRoot "audit/report/WEB-REPORT-NOTE.md"),
+        (Join-Path $PackageRoot "audit/report/REPORT-NOTE.md")
+    ) | Where-Object { Test-Path -LiteralPath $_ }
+
+    $expected = $null
+    foreach ($file in $files) {
+        $ids = @(Get-EvidenceIdsFromMarkdown -Path $file)
+        if ($ids.Count -eq 0) {
+            continue
+        }
+
+        if ($null -eq $expected) {
+            $expected = $ids
+            continue
+        }
+
+        $left = $expected -join "|"
+        $right = $ids -join "|"
+        if ($left -ne $right) {
+            throw "Package evidence list mismatch between markdown files. Expected '$left' but $file lists '$right'."
+        }
+    }
+
+    if ($null -eq $expected -or $expected.Count -eq 0) {
+        throw "Package markdown does not list any GAME-SMOKE evidence ids."
+    }
+
+    foreach ($id in $expected) {
+        $evidenceDir = Join-Path $PackageRoot ("audit/evidence/GAME-SMOKE/" + $id)
+        if (-not (Test-Path -LiteralPath $evidenceDir -PathType Container)) {
+            throw "Listed evidence directory is missing: $evidenceDir"
+        }
+
+        $resultPath = Join-Path $evidenceDir "result.json"
+        if (-not (Test-Path -LiteralPath $resultPath -PathType Leaf)) {
+            throw "Listed evidence is missing result.json: $resultPath"
+        }
+    }
+}
+
 function Invoke-PackageSelfAudit {
     param(
         [string]$PackageRoot,
@@ -564,6 +649,7 @@ function Invoke-PackageSelfAudit {
 
     Assert-NoBadMarkdownText -PackageRoot $PackageRoot
     Assert-NoDisallowedPayloads -PackageRoot $PackageRoot -Compact $Compact
+    Assert-EvidenceReferences -PackageRoot $PackageRoot
 
     foreach ($relative in @("AUDIT-PACKAGE.md", "VALIDATION-SUMMARY.md", "src", "testmods", "tests", "tools/scripts/build.ps1", "audit/docs/api/public-api-matrix.md", "audit/docs/hook-map/README.md", "audit/docs/debug/regressions/smoke-matrix.md")) {
         $path = Join-Path $PackageRoot $relative

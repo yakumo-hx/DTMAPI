@@ -1,19 +1,20 @@
 {
   "Name": "DTMAPI More Saves",
-  "Author": "DTMAPI",
+  "Author": "Yuuka",
+  "Description": "依赖 DTMAPI Runtime；扩展官方存档界面槽位，不改变存档格式，禁用不会删除额外存档。",
   "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.MoreSavesMod",
   "EntryDll": "MoreSavesMod.dll",
-  "MinimumDTMApiVersion": "0.3.1",
+  "MinimumDTMApiVersion": "0.5.0-alpha",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.5.0-alpha",
       "IsRequired": false
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.3.1",
+      "MinimumVersion": "0.5.0-alpha",
       "IsRequired": true
     }
   ]

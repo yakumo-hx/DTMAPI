@@ -1,0 +1,21 @@
+/goal
+目标：为 Experimental ICropHarvestingApi 准备真实场景手测闭环和临时 QA Mod，不扩展自动收获范围。详细需求、问题、验收标准以 docs/goals/2026/20260612-0002-crops-harvesting-real-field-manual-qa.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260612-0002-crops-harvesting-real-field-manual-qa.md
+docs/goals/2026/20260612-0002-crops-harvesting-real-field-manual-qa.goal.txt
+docs/workflows/codex-feedback-to-goal.md
+docs/workflows/codex-api-rebuild.md
+docs/reviews/api/2026/20260612-crops-harvesting-native-responsibility.md
+docs/reviews/manual-qa/2026/20260612-0003-crops-harvesting-real-field-manual-qa.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；普通 DTMAPI mod 不放 BepInEx/plugins；QA Mod 不引用 Assembly-CSharp/Harmony/raw PlantBasin/Crop/TreeCrop；不要复制旧 DLKsmapi/DolocSMAPI AutoHarvest 代码；不要实现乔木盆/草/野外树/采集物收获；不要改 public API；不要把 QA Mod 加入发布 Workshop mod 列表；build 通过不算完成，至少完成 dry-run install 验证，安全时安装到本地 dev official-local 供用户手测。

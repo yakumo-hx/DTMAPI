@@ -2,17 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Json;
+using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.Core.Manager
 {
     internal static class DtmManagerViewModelFactory
     {
-        internal static DtmManagerViewModel FromSnapshot(IDtmDiagnosticsSnapshot snapshot)
+        internal static DtmManagerViewModel FromSnapshot(IDtmDiagnosticsSnapshot snapshot, ManagerInstallStateSummary? installState = null)
         {
             if (snapshot == null)
                 throw new ArgumentNullException(nameof(snapshot));
 
+            installState ??= ManagerInstallStateSummary.Missing(string.Empty, string.Empty, false, string.Empty);
             ManagerReportExportStatus exportReport = new ManagerReportExportStatus(snapshot.LatestLogPath, snapshot.LatestReportPath);
             ManagerModRow[] mods = snapshot.Mods.Select(ManagerModRow.FromMod).OrderBy(m => m.SortRank).ThenBy(m => m.Source, StringComparer.OrdinalIgnoreCase).ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase).ThenBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
             ManagerDiagnosticRow[] errors = snapshot.Errors.Select(e => ManagerDiagnosticRow.FromError(e)).OrderByDescending(e => e.Time).ToArray();
@@ -27,6 +31,7 @@ namespace DTMAPI.Core.Manager
                 hooks,
                 features,
                 exportReport,
+                installState,
                 ManagerSummary.FromRows(mods, errors, warnings, hooks, features, exportReport));
         }
     }
@@ -40,6 +45,7 @@ namespace DTMAPI.Core.Manager
             IReadOnlyList<ManagerHookRow> hooks,
             IReadOnlyList<ManagerFeatureRow> features,
             ManagerReportExportStatus exportReport,
+            ManagerInstallStateSummary installState,
             ManagerSummary summary)
         {
             Mods = mods;
@@ -48,6 +54,7 @@ namespace DTMAPI.Core.Manager
             Hooks = hooks;
             Features = features;
             ExportReport = exportReport;
+            InstallState = installState ?? ManagerInstallStateSummary.Missing(string.Empty, string.Empty, false, string.Empty);
             Summary = summary;
             LatestLogPath = exportReport.LatestLogPath;
             LatestReportPath = exportReport.LatestReportPath;
@@ -61,6 +68,7 @@ namespace DTMAPI.Core.Manager
         internal string LatestLogPath { get; }
         internal string LatestReportPath { get; }
         internal ManagerReportExportStatus ExportReport { get; }
+        internal ManagerInstallStateSummary InstallState { get; }
         internal ManagerSummary Summary { get; }
     }
 
@@ -385,6 +393,116 @@ namespace DTMAPI.Core.Manager
 
             return "no-report";
         }
+    }
+
+    internal sealed class ManagerInstallStateSummary
+    {
+        private ManagerInstallStateSummary(
+            string status,
+            string installedVersion,
+            string binaryVersion,
+            string installedAt,
+            string installStatePath,
+            int legacyMovedCount,
+            int legacyDetectedCount,
+            bool uninstallScriptAvailable,
+            string errorMessage)
+        {
+            Status = status ?? string.Empty;
+            InstalledVersion = installedVersion ?? string.Empty;
+            BinaryVersion = binaryVersion ?? string.Empty;
+            InstalledAt = installedAt ?? string.Empty;
+            InstallStatePath = installStatePath ?? string.Empty;
+            LegacyMovedCount = legacyMovedCount;
+            LegacyDetectedCount = legacyDetectedCount;
+            UninstallScriptAvailable = uninstallScriptAvailable;
+            ErrorMessage = errorMessage ?? string.Empty;
+        }
+
+        internal static ManagerInstallStateSummary Missing(string statePath, string version, bool uninstallScriptAvailable, string errorMessage)
+        {
+            return new ManagerInstallStateSummary("missing", version, string.Empty, string.Empty, statePath, 0, 0, uninstallScriptAvailable, errorMessage);
+        }
+
+        internal static ManagerInstallStateSummary Present(
+            string installedVersion,
+            string binaryVersion,
+            string installedAt,
+            string statePath,
+            int legacyMovedCount,
+            int legacyDetectedCount,
+            bool uninstallScriptAvailable)
+        {
+            return new ManagerInstallStateSummary("present", installedVersion, binaryVersion, installedAt, statePath, legacyMovedCount, legacyDetectedCount, uninstallScriptAvailable, string.Empty);
+        }
+
+        internal static ManagerInstallStateSummary FromRuntimePaths(RuntimePaths paths)
+        {
+            if (paths == null)
+                throw new ArgumentNullException(nameof(paths));
+
+            string statePath = Path.Combine(paths.DtmApiPath, "install-state.json");
+            bool uninstallAvailable = File.Exists(Path.Combine(paths.DtmApiPath, "tools", "uninstall-dtmapi.ps1")) ||
+                File.Exists(Path.Combine(paths.DtmApiPath, "uninstall-dtmapi.ps1"));
+            if (!File.Exists(statePath))
+                return Missing(statePath, string.Empty, uninstallAvailable, string.Empty);
+
+            try
+            {
+                ManagerInstallStateFile state = JsonFile.Read<ManagerInstallStateFile>(statePath);
+                return Present(
+                    state.DTMAPIVersion,
+                    state.BinaryVersion,
+                    state.InstalledAt,
+                    statePath,
+                    state.LegacyModsMoved?.Length ?? 0,
+                    state.LegacyDetections?.Length ?? 0,
+                    uninstallAvailable);
+            }
+            catch (Exception ex)
+            {
+                return new ManagerInstallStateSummary("read-error", string.Empty, string.Empty, string.Empty, statePath, 0, 0, uninstallAvailable, ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        internal string Status { get; }
+        internal string InstalledVersion { get; }
+        internal string BinaryVersion { get; }
+        internal string InstalledAt { get; }
+        internal string InstallStatePath { get; }
+        internal int LegacyMovedCount { get; }
+        internal int LegacyDetectedCount { get; }
+        internal bool UninstallScriptAvailable { get; }
+        internal string ErrorMessage { get; }
+    }
+
+    [DataContract]
+    internal sealed class ManagerInstallStateFile
+    {
+        [DataMember(Name = "InstalledAt")]
+        public string InstalledAt { get; set; } = string.Empty;
+
+        [DataMember(Name = "DTMAPIVersion")]
+        public string DTMAPIVersion { get; set; } = string.Empty;
+
+        [DataMember(Name = "BinaryVersion")]
+        public string BinaryVersion { get; set; } = string.Empty;
+
+        [DataMember(Name = "LegacyModsMoved")]
+        public ManagerInstallStateEntry[] LegacyModsMoved { get; set; } = new ManagerInstallStateEntry[0];
+
+        [DataMember(Name = "LegacyDetections")]
+        public ManagerInstallStateEntry[] LegacyDetections { get; set; } = new ManagerInstallStateEntry[0];
+    }
+
+    [DataContract]
+    internal sealed class ManagerInstallStateEntry
+    {
+        [DataMember(Name = "Kind")]
+        public string Kind { get; set; } = string.Empty;
+
+        [DataMember(Name = "Path")]
+        public string Path { get; set; } = string.Empty;
     }
 
     internal sealed class ManagerLogsPageState

@@ -1,8 +1,8 @@
 {
   "name": "动作加速（DTMAPI）",
   "author": "Yuuka",
-  "version": "0.0.0",
-  "description": "DTMAPI 迁移版动作加速功能 Mod。启用/禁用请使用 Doloc Town 官方 Mod 界面；配置请从标题页左上角 DTMAPI 设置进入。",
+  "version": "1.3.4-dtmapi",
+  "description": "依赖 DTMAPI Runtime。加速工具、装水、吃喝、交互和采集等动作，基于 DTMAPI ActionSpeed API，可在标题页 DTMAPI 设置里配置。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "Action Speed (DTMAPI)"
   },
   "localized_description": {
-    "schinese": "DTMAPI 迁移版动作加速功能 Mod。启用/禁用请使用 Doloc Town 官方 Mod 界面；配置请从标题页左上角 DTMAPI 设置进入。",
-    "tchinese": "DTMAPI 遷移版動作加速功能 Mod。啟用/禁用請使用 Doloc Town 官方 Mod 介面；設定請從標題頁左上角 DTMAPI 設定進入。",
-    "english": "DTMAPI migration of Action Speed. Enable or disable it through Doloc Town's official Mod UI; configure it from the top-left DTMAPI Settings button on the title screen."
+    "schinese": "依赖 DTMAPI Runtime。加速工具、装水、吃喝、交互和采集等动作，基于 DTMAPI ActionSpeed API；启用/禁用走官方 Mod 界面，配置从标题页左上角 DTMAPI 设置进入。",
+    "tchinese": "依賴 DTMAPI Runtime。加速工具、裝水、吃喝、互動和採集等動作，基於 DTMAPI ActionSpeed API；啟用/禁用走官方 Mod 介面，設定從標題頁左上角 DTMAPI 設定進入。",
+    "english": "Requires DTMAPI Runtime. Speeds up tool use, watering fill, eating/drinking, interactions, and gathering through the DTMAPI ActionSpeed API. Configure it from the DTMAPI Settings button on the title screen."
   }
 }
