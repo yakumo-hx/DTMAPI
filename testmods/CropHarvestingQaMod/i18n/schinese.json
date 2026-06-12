@@ -1,7 +1,7 @@
 {
-  "mod.loaded": "作物收获手测夹具已加载。F8 扫描，F9 收获一个，F10 批量收获，也可以用 DTMAPI 配置页按钮。",
+  "mod.loaded": "作物收获手测夹具已加载。请使用 DTMAPI 配置页按钮，或手动绑定可选扫描/收获热键。",
   "mod.apiMissing": "CropHarvesting API 暂不可用。",
-  "mod.configMenuMissing": "DTMAPI 配置菜单 API 暂不可用；热键仍可使用。",
+  "mod.configMenuMissing": "DTMAPI 配置菜单 API 暂不可用；使用键盘控制前请先手动绑定可选热键。",
   "mod.name": "作物收获手测夹具",
   "config.section.main": "手测控制",
   "config.summary.empty": "还没有运行作物 QA 操作。",

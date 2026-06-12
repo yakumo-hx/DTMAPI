@@ -9,13 +9,19 @@ This mod is intentionally separate from `AutoHarvestMod`:
 - `CropHarvestingQaMod` is a hand-test tool for checking real farm scenes before
   the API is merged onward.
 
+It is an explicit QA fixture. It is not installed by the default developer-local
+official-mod path; use `install-to-game.ps1 -InstallQaFixtures` when this fixture
+is needed for a manual crop pass.
+
 ## Controls
 
-- `F8`: dry-run scan only.
-- `F9`: scan, then harvest one pending target by transient `TargetId`.
-- `F10`: scan, then harvest up to `MaxHarvests` pending targets.
-- DTMAPI Settings page: equivalent buttons plus toggles for target families and
-  log verbosity.
+- Default hotkeys are `None` to avoid collisions with AutoFishing, ActionSpeed,
+  HookProbe, and other developer mods.
+- DTMAPI Settings page: scan, harvest-one, harvest-batch, target-family toggles,
+  and log verbosity.
+- Optional manual bindings: set scan/harvest keys in the DTMAPI Settings page
+  if a keyboard-driven pass is desired. The historical hand-test used `F8` for
+  scan, `F9` for harvest-one, and `F10` for harvest-batch.
 
 Each operation writes a compact summary to the DTMAPI log:
 

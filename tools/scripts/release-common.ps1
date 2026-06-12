@@ -201,6 +201,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             DisplayName = 'DTMAPI 作物收获手测夹具'
             PackageName = 'DTMAPI-CropHarvestingQA'
             DeveloperOnly = $true
+            QaFixture = $true
         }
     )) {
         $items.Add($item) | Out-Null
@@ -399,6 +400,7 @@ function New-DtmApiInstallState {
         [object[]] $BackupsCreated = @(),
         [object[]] $LegacyModsMoved = @(),
         [object[]] $LegacyDetections = @(),
+        [object[]] $QaFixturesInstalled = @(),
         [bool] $DryRun = $false
     )
 
@@ -417,6 +419,8 @@ function New-DtmApiInstallState {
         BackupsCreated = @($BackupsCreated)
         LegacyModsMoved = @($LegacyModsMoved)
         LegacyDetections = @($LegacyDetections)
+        QaFixturesInstalledCount = @($QaFixturesInstalled).Count
+        QaFixturesInstalled = @($QaFixturesInstalled)
         InstallScriptVersion = $script:DtmApiInstallScriptVersion
         DryRun = $DryRun
     }

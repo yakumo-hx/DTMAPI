@@ -31,8 +31,8 @@ Prepare the medium/long-term manual validation path for
 `ICropHarvestingApi` without expanding gameplay scope:
 
 - add a temporary developer-only QA mod that consumes only `ICropHarvestingApi`;
-- expose scan / harvest-one / harvest-batch controls through hotkeys and DTMAPI
-  Settings;
+- expose scan / harvest-one / harvest-batch controls through DTMAPI Settings
+  buttons and optional manually bound hotkeys;
 - document real-field manual QA cases for ordinary crops, vine, mushroom bag,
   bush, tree-basin crop, grass/forage, full inventory, duplicate prevention, and
   title reload;
@@ -52,8 +52,8 @@ Prepare the medium/long-term manual validation path for
 
 ## Acceptance Criteria
 
-- `testmods/CropHarvestingQaMod` builds and is listed only in developer-local
-  official mod definitions.
+- `testmods/CropHarvestingQaMod` builds, is marked as an explicit QA fixture,
+  and is not installed by the default developer-local official-mod path.
 - The QA mod logs result counts, target kind counts, target status counts, and
   optional per-target rows.
 - The manual QA checklist records all required user-visible cases and keeps them
@@ -69,19 +69,23 @@ Prepare the medium/long-term manual validation path for
 - `tools/scripts/test.ps1 -Configuration Release`
 - PowerShell AST parse for modified scripts.
 - `tools/scripts/install-to-game.ps1 -DryRun -InstallAllDevOfficialMods`
+  shows zero QA fixtures.
+- `tools/scripts/install-to-game.ps1 -DryRun -InstallAllDevOfficialMods
+  -InstallQaFixtures` shows the CropHarvesting QA fixture.
 - If safe in the local workspace, normal install with
-  `tools/scripts/install-to-game.ps1 -InstallAllDevOfficialMods` so the QA mod
-  is ready for hand testing.
+  `tools/scripts/install-to-game.ps1 -InstallAllDevOfficialMods
+  -InstallQaFixtures` so the QA mod is ready for hand testing.
 
 ## Hand-Test Entry
 
-After normal install, enable `DTMAPI 作物收获手测夹具` in the game's mod list and
-use:
+After explicit QA-fixture install, enable `DTMAPI 作物收获手测夹具` in the game's
+mod list and use:
 
-- `F8` for scan-only;
-- `F9` for harvest-one;
-- `F10` for harvest-batch;
-- title DTMAPI Settings -> `Crop Harvesting QA` for the same controls.
+- title DTMAPI Settings -> `Crop Harvesting QA` buttons for scan-only,
+  harvest-one, and harvest-batch.
+- Optional manual bindings if a keyboard-driven pass is needed. The historical
+  user pass used `F8` for scan-only, `F9` for harvest-one, and `F10` for
+  harvest-batch.
 
 Record results in
 `docs/reviews/manual-qa/2026/20260612-0003-crops-harvesting-real-field-manual-qa.md`.

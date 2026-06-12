@@ -36,12 +36,16 @@ Purpose:
 - keep tree-basin/cocoa and grass/forage families visible in scan summaries
   while preserving their non-executing status.
 
-Fixture controls:
+Fixture controls after QA-isolation cleanup:
 
-- `F8`: scan only;
-- `F9`: scan then harvest one pending target by transient `TargetId`;
-- `F10`: scan then harvest up to the configured maximum;
-- DTMAPI Settings page buttons mirror the same operations.
+- the fixture is installed only through explicit QA-fixture install mode;
+- default hotkeys are `None` to avoid collisions with AutoFishing, ActionSpeed,
+  HookProbe, and other developer mods;
+- DTMAPI Settings page buttons provide scan-only, harvest-one, and harvest-batch
+  operations;
+- optional manual bindings may still be set for an isolated keyboard pass. The
+  partial user-verified pass used historical `F8` scan, `F9` harvest-one, and
+  `F10` harvest-batch bindings.
 
 The fixture consumes only `ICropHarvestingApi`; it does not reference
 `Assembly-CSharp`, Harmony, raw `PlantBasin`, raw `Crop`, or raw `TreeCrop`.

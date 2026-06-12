@@ -1,7 +1,7 @@
 {
-  "mod.loaded": "Crop Harvesting QA loaded. Use F8 scan, F9 harvest one, F10 harvest batch, or the DTMAPI config page buttons.",
+  "mod.loaded": "Crop Harvesting QA loaded. Use the DTMAPI config page buttons, or bind optional scan/harvest hotkeys manually.",
   "mod.apiMissing": "CropHarvesting API is not available.",
-  "mod.configMenuMissing": "DTMAPI config menu API is not available; hotkeys remain available.",
+  "mod.configMenuMissing": "DTMAPI config menu API is not available; bind optional hotkeys manually before using keyboard controls.",
   "mod.name": "Crop Harvesting QA",
   "config.section.main": "Manual QA controls",
   "config.summary.empty": "No crop QA operation has run yet.",

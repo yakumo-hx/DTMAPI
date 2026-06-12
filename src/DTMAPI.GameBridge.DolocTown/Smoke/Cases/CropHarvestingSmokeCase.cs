@@ -223,7 +223,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 Name = "DTMAPI Crop Harvesting Smoke",
                 Author = "DTMAPI",
                 Version = DtmApiRuntime.ApiVersion,
-                UniqueID = "DTMAPI.AutoHarvestMod",
+                UniqueID = "DTMAPI.Smoke.CropHarvesting",
                 Type = "Smoke"
             };
         }

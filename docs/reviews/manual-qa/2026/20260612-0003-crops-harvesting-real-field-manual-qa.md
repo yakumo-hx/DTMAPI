@@ -33,13 +33,16 @@ native-owner review proves its execution owner.
 
 ## Fixture Controls
 
-Install the developer local DTMAPI packages, then enable
-`DTMAPI 作物收获手测夹具`.
+Install the developer local DTMAPI packages with explicit QA fixtures, then
+enable `DTMAPI 作物收获手测夹具`.
 
-- `F8`: scan only.
-- `F9`: scan, then harvest one pending target.
-- `F10`: scan, then harvest up to `Max harvests`.
-- DTMAPI Settings -> `Crop Harvesting QA`: same actions as buttons.
+- Default hotkeys are `None` to avoid collisions with AutoFishing, ActionSpeed,
+  HookProbe, and other developer mods.
+- DTMAPI Settings -> `Crop Harvesting QA`: scan-only, harvest-one, and
+  harvest-batch buttons.
+- Optional manual bindings: bind scan/harvest keys in DTMAPI Settings for an
+  isolated keyboard-driven pass. The partial user-verified pass used historical
+  bindings `F8` scan, `F9` harvest one, and `F10` harvest batch.
 
 The fixture writes `CropHarvesting QA ...` log lines with result counts,
 target-kind counts, target-status counts, and sample target rows.

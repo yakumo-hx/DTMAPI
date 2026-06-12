@@ -20,7 +20,7 @@ Test mods are small DTMAPI mods used to prove runtime behavior inside Doloc Town
 - `ChestLocatorEnhancerMod`: official-local shared chest lookup enhancement backed by `IChestLocatorEnhancerApi`.
 - `StrongPlantingGunMod`: official-local farming-gun upgrade backed by `IStrongPlantingGunApi`.
 - `AutoHarvestMod`: default-off crop harvesting sample backed by `ICropHarvestingApi`; it uses DTMAPI only and does not reference raw Doloc Town assemblies.
-- `CropHarvestingQaMod`: developer-only manual QA fixture for real-field `ICropHarvestingApi` checks; it is not part of the Workshop release set.
+- `CropHarvestingQaMod`: explicit-install developer-only manual QA fixture for real-field `ICropHarvestingApi` checks; it is not part of the Workshop release set and is skipped unless `install-to-game.ps1 -InstallQaFixtures` is used.
 - `HookProbeMod`: logs hook evidence for GameLaunched, SaveLoaded, UpdateTicked, UI, input, and exit smoke tests.
 
 HookProbe should use the local game's third save by default when a save is needed.

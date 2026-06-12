@@ -10,6 +10,7 @@ param(
     [switch] $DryRun,
     [switch] $InstallPublishedModsOnly,
     [switch] $InstallAllDevOfficialMods,
+    [switch] $InstallQaFixtures,
     [string] $PackagePayloadRoot = ''
 )
 
@@ -32,6 +33,9 @@ if ($DryRun) {
 if ($InstallPublishedModsOnly -and $InstallAllDevOfficialMods) {
     throw "Use only one of -InstallPublishedModsOnly or -InstallAllDevOfficialMods."
 }
+if ($InstallPublishedModsOnly -and $InstallQaFixtures) {
+    throw "QA fixtures are developer-only. Do not combine -InstallPublishedModsOnly with -InstallQaFixtures."
+}
 if (-not $SkipBuild) {
     & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
 }
@@ -46,6 +50,7 @@ $script:DtmInstallFilesInstalled = New-Object 'System.Collections.Generic.List[o
 $script:DtmInstallBackupsCreated = New-Object 'System.Collections.Generic.List[object]'
 $script:DtmInstallLegacyModsMoved = New-Object 'System.Collections.Generic.List[object]'
 $script:DtmInstallBundledMods = New-Object 'System.Collections.Generic.List[object]'
+$script:DtmInstallQaFixturesInstalled = New-Object 'System.Collections.Generic.List[object]'
 $script:DtmInstallStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:DtmInstallModInfosBackupPath = ''
 
@@ -56,17 +61,61 @@ $runtimeFiles = @(
     'DTMAPI.GameBridge.DolocTown.dll',
     'DTMAPI.ModConfigMenu.dll'
 )
+
+function Test-DtmApiDefinitionFlag {
+    param(
+        $Mod,
+        [Parameter(Mandatory = $true)] [string] $Key
+    )
+
+    return (Test-DtmApiMapKey -Map $Mod -Key $Key) -and [bool](Get-DtmApiMapValue -Map $Mod -Key $Key -Default $false)
+}
+
+function Select-DtmApiOfficialLocalModDefinitions {
+    if ($InstallPublishedModsOnly) {
+        return @(Get-DtmApiPublishedModDefinitions)
+    }
+
+    $definitions = @(Get-DtmApiDeveloperOfficialModDefinitions)
+    if (-not $InstallQaFixtures) {
+        $definitions = @($definitions | Where-Object { -not (Test-DtmApiDefinitionFlag -Mod $_ -Key 'QaFixture') })
+    }
+
+    return $definitions
+}
+
+function Get-DtmApiOfficialLocalInstallMode {
+    if ($InstallPublishedModsOnly) {
+        return 'published release mods only'
+    }
+
+    if ($InstallQaFixtures) {
+        return 'developer local official mods plus explicit QA fixtures'
+    }
+
+    return 'developer local official mods without QA fixtures'
+}
+
 if ($DryRun) {
     $legacyDetections = Get-DtmApiLegacyDetections -GameDir $gameDir
-    $plannedRelease = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'dry-run' -IncludedAssemblies $runtimeFiles -BundledMods (Get-DtmApiPublishedModDefinitions)
-    $plannedState = New-DtmApiInstallState -RepoRoot $repo -GameDir $gameDir -PluginDir $pluginDir -FilesInstalled $runtimeFiles -BepInExDetectedBeforeInstall $bepInExDetectedBeforeInstall -BepInExInstalledByDTMAPI $false -BackupsCreated @() -LegacyModsMoved @() -LegacyDetections $legacyDetections -DryRun $true
+    $plannedOfficialMods = if ($SkipOfficialLocalMods) { @() } else { @(Select-DtmApiOfficialLocalModDefinitions) }
+    $plannedQaFixtures = @($plannedOfficialMods | Where-Object { Test-DtmApiDefinitionFlag -Mod $_ -Key 'QaFixture' } | ForEach-Object {
+        [ordered]@{
+            OfficialFolder = $_.OfficialFolder
+            UniqueID = $_.UniqueID
+            PackageName = $_.PackageName
+        }
+    })
+    $plannedRelease = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'dry-run' -IncludedAssemblies $runtimeFiles -BundledMods $plannedOfficialMods
+    $plannedState = New-DtmApiInstallState -RepoRoot $repo -GameDir $gameDir -PluginDir $pluginDir -FilesInstalled $runtimeFiles -BepInExDetectedBeforeInstall $bepInExDetectedBeforeInstall -BepInExInstalledByDTMAPI $false -BackupsCreated @() -LegacyModsMoved @() -LegacyDetections $legacyDetections -QaFixturesInstalled $plannedQaFixtures -DryRun $true
     Write-Host "DRY RUN: would install DTMAPI $($plannedRelease.DTMAPIVersion) to $pluginDir"
     Write-Host "DRY RUN: would write release manifest to $(Join-Path $stateDir 'release-manifest.json')"
     Write-Host "DRY RUN: would write install state to $(Join-Path $stateDir 'install-state.json')"
     Write-Host "DRY RUN: detected legacy item count = $($legacyDetections.Count)"
     if (-not $SkipOfficialLocalMods) {
-        $mode = if ($InstallPublishedModsOnly) { 'published release mods only' } else { 'developer local official mods' }
-        Write-Host "DRY RUN: official local mod install mode = $mode"
+        Write-Host "DRY RUN: official local mod install mode = $(Get-DtmApiOfficialLocalInstallMode)"
+        Write-Host "DRY RUN: official local mod count = $($plannedOfficialMods.Count)"
+        Write-Host "DRY RUN: QA fixture install count = $($plannedQaFixtures.Count)"
     }
     $plannedState | ConvertTo-Json -Depth 12
     return
@@ -449,6 +498,15 @@ function Install-OfficialLocalDtmApiMod {
         PackageDll = $Mod.PackageDll
         Path = [System.IO.Path]::GetFullPath($dest)
     }) | Out-Null
+    if (Test-DtmApiDefinitionFlag -Mod $Mod -Key 'QaFixture') {
+        $script:DtmInstallQaFixturesInstalled.Add([ordered]@{
+            OfficialFolder = $Mod.OfficialFolder
+            UniqueID = $manifest.UniqueID
+            Version = $manifest.Version
+            PackageDll = $Mod.PackageDll
+            Path = [System.IO.Path]::GetFullPath($dest)
+        }) | Out-Null
+    }
     Write-Host "Installed official local DTMAPI mod package to $dest"
 }
 
@@ -521,15 +579,8 @@ function Ensure-OfficialLocalDtmApiEnablement {
 }
 
 if (-not $SkipOfficialLocalMods) {
-    $officialLocalMods = if ($InstallPublishedModsOnly) {
-        @(Get-DtmApiPublishedModDefinitions)
-    }
-    else {
-        @(Get-DtmApiDeveloperOfficialModDefinitions)
-    }
-
-    $installMode = if ($InstallPublishedModsOnly) { 'published release mods only' } else { 'developer local official mods' }
-    Write-Host "Installing official local DTMAPI packages using mode: $installMode"
+    $officialLocalMods = @(Select-DtmApiOfficialLocalModDefinitions)
+    Write-Host "Installing official local DTMAPI packages using mode: $(Get-DtmApiOfficialLocalInstallMode)"
 
     foreach ($mod in $officialLocalMods) {
         Install-OfficialLocalDtmApiMod -Mod $mod
@@ -559,6 +610,7 @@ foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'uninstall-dtmapi.
 $legacyDetectionsAfterInstall = Get-DtmApiLegacyDetections -GameDir $gameDir
 $includedAssemblies = @($runtimeFiles | ForEach-Object { [ordered]@{ FileName = $_; Path = [System.IO.Path]::GetFullPath((Join-Path $pluginDir $_)) } })
 $bundledMods = $script:DtmInstallBundledMods.ToArray()
+$qaFixturesInstalled = $script:DtmInstallQaFixturesInstalled.ToArray()
 $releaseManifest = New-DtmApiReleaseManifest `
     -RepoRoot $repo `
     -PackageKind 'local-install' `
@@ -582,6 +634,7 @@ $installState = New-DtmApiInstallState `
     -BackupsCreated $backupsCreated `
     -LegacyModsMoved $legacyModsMoved `
     -LegacyDetections $legacyDetectionsAfterInstall `
+    -QaFixturesInstalled $qaFixturesInstalled `
     -DryRun $false
 Write-Utf8NoBomJson -Path $installStatePath -Value $installState
 

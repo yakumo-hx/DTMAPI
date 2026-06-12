@@ -36,7 +36,7 @@ namespace CropHarvestingQaMod
                 helper.Monitor.Log("CropHarvesting QA ReturnedToTitle boundary OK.");
             };
 
-            helper.Monitor.Log(T("mod.loaded", "Crop Harvesting QA loaded. Use F8 scan, F9 harvest one, F10 harvest batch, or the DTMAPI config page buttons."));
+            helper.Monitor.Log(T("mod.loaded", "Crop Harvesting QA loaded. Use the DTMAPI config page buttons, or bind optional scan/harvest hotkeys manually."));
         }
 
         private void RegisterConfigMenu()
@@ -341,9 +341,9 @@ namespace CropHarvestingQaMod
         [DataContract]
         public sealed class CropHarvestingQaConfig
         {
-            [DataMember] public string ScanKey { get; set; } = "F8";
-            [DataMember] public string HarvestOneKey { get; set; } = "F9";
-            [DataMember] public string HarvestBatchKey { get; set; } = "F10";
+            [DataMember] public string ScanKey { get; set; } = "None";
+            [DataMember] public string HarvestOneKey { get; set; } = "None";
+            [DataMember] public string HarvestBatchKey { get; set; } = "None";
             [DataMember] public int MaxHarvests { get; set; } = 24;
             [DataMember] public int TargetRowsToLog { get; set; } = 24;
             [DataMember] public bool IncludeOrdinaryCrops { get; set; } = true;
