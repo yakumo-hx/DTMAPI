@@ -55,11 +55,13 @@ function Set-DtmApiVersionRequirements {
 }
 
 if (-not $ModsOnly) {
-    $runtimePackage = Join-Path $OutputRoot 'DTMAPI_Runtime'
+    $runtimePackage = Join-Path $OutputRoot 'DTMAPI'
     Clear-Directory -Path $runtimePackage
     foreach ($bat in @('1_install_dtmapi.bat', '2_uninstall_dtmapi.bat', '3_check_dtmapi_status.bat')) {
         Copy-Item -LiteralPath (Join-Path $repo "tools\release\runtime-workshop\$bat") -Destination (Join-Path $runtimePackage $bat) -Force
     }
+    Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-icon.png') -Destination (Join-Path $runtimePackage 'icon.png')
+    Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-preview.png') -Destination (Join-Path $runtimePackage 'preview.png')
 
     $installerTools = Join-Path $runtimePackage 'Content\DTMAPIInstaller\tools'
     New-Item -ItemType Directory -Force -Path $installerTools | Out-Null
@@ -78,7 +80,7 @@ if (-not $ModsOnly) {
     $runtimeDescriptionBase64 = 'RFRNQVBJIFJ1bnRpbWUg5piv5aSa5rSb5Y+v5bCP6ZWH5Yqf6IO95oCnIE1vZCDnmoTov5DooYzliY3nva7jgILlroPln7rkuo4gQmVwSW5FeCDlkK/liqjvvIzmj5DkvpsgRFRNQVBJIENvcmXjgIFHYW1lQnJpZGdl44CB6YWN572u6I+c5Y2V44CB5pel5b+X6K+K5pat44CBTWFuYWdlciDnirbmgIHpobXjgIHmiqXlkYrlr7zlh7rvvIzku6Xlj4rnu5nlip/og73mgKcgTW9kIOS9v+eUqOeahCBBUEnjgIIKCuacrOWMheacrOi6q+S4jeaYr+S4gOS4quWNleeLrOeOqeazlSBNb2TvvJvorqLpmIXlkI7or7fov5DooYwgMV9pbnN0YWxsX2R0bWFwaS5iYXQg5a6J6KOFIFJ1bnRpbWXjgILkuYvlkI7lpKfop4bph47jgIHliqjkvZzliqDpgJ/jgIHkuIDplK7lrozmiJDjgIHmm7TlpJrlrZjmoaPjgIFZIOmUruaOp+WItuWPsOetiSBEVE1BUEkgTW9kIOaJjeiDvei/kOihjOOAggoKMC41LjAtYWxwaGEg5paw5aKeIEV4cGVyaW1lbnRhbCBDcm9wcyAvIEhhcnZlc3RpbmcgQVBJ77yM5L6bIE1vZCDkvZzogIXliLbkvZzkvZzniannm4boh6rliqjmlLbojrfnsbsgTW9k77yb5pqC5pe25pyq5a6e546w5LmU5pyo55uG6Ieq5Yqo5pS26I6344CCCgrkuI7ml6cgRExLc21hcGkgLyBEb2xvY1Rvd25TTUFQSSDnmoTljLrliKvvvJpEVE1BUEkg5piv5LuO6Zu26YeN5bu655qE5paw54mI6L+Q6KGM5pe277yM5LiN5aSN5Yi25pen5a6e546w77yb5a6J6KOF44CB5Y246L2944CB54q25oCB5qOA5p+l44CB5pel5b+X5a+85Ye65ZKMIE1vZCDlkK/lgZzot6/lvoTmm7TmuIXmmbDvvJvmma7pgJrlip/og70gTW9kIOmAmui/hyBDb250ZW50L0RUTUFQSS9tYW5pZmVzdC5qc29uIOWKoOi9ve+8jFJ1bnRpbWUg5Y+q5a6J6KOF5YiwIEJlcEluRXgvcGx1Z2lucy9EVE1BUEnjgIIKCui/meaYryBEZXZlbG9wZXIgUHJldmlld++8jOS9huS8muaMgee7ree7tOaKpOOAguWQjue7reS8mue7p+e7reeos+WumiBBUEnjgIHlrozlloQgTWFuYWdlciBVSeOAgeWFvOWuueaXpyBNb2Qg6L+B56e777yM5bm25LyY5YWI5L+d5oqk5a2Y5qGj5LiO546p5a625pys5ZywIE1vZCDlhoXlrrnjgII='
     $runtimeDescription = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($runtimeDescriptionBase64))
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'info.json') -Value ([ordered]@{
-        name = 'DTMAPI Runtime'
+        name = 'DTMAPI'
         author = 'Yuuka'
         version = $script:DtmApiReleaseVersion
         description = $runtimeDescription
