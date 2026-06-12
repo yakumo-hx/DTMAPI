@@ -86,8 +86,10 @@ review proves its owner.
 - Automated crop smoke baseline remains `GAME-SMOKE/20260612-072544`.
 - Setup/startup regression evidence for the QA fixture:
   `GAME-SMOKE/20260612-085717`.
-- Manual QA evidence is pending user confirmation in
-  `docs/reviews/manual-qa/2026/20260612-0003-crops-harvesting-real-field-manual-qa.md`.
+- Manual QA evidence is partially user-confirmed in
+  `docs/reviews/manual-qa/2026/20260612-0003-crops-harvesting-real-field-manual-qa.md`:
+  the user reported `F9` harvests one target, `F10` harvests many targets, and
+  harvested output goes into the backpack.
 
 ## Rollback
 

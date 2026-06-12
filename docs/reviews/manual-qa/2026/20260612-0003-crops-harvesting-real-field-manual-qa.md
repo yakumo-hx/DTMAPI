@@ -1,11 +1,25 @@
 # Crops Harvesting Real-Field Manual QA Checklist
 
-Status: pending user confirmation
+Status: partial user verified
 Created: 2026-06-12
 Branch: `codex/crops-harvesting-manual-qa-handoff`
 Related API review: `docs/reviews/api/2026/20260612-crops-harvesting-native-responsibility.md`
 Related automated smoke: `docs/debug/evidence/GAME-SMOKE/20260612-072544`
 Manual fixture: `testmods/CropHarvestingQaMod`
+
+## User Confirmation - 2026-06-12
+
+User reported that the manual test result was OK:
+
+- `F9` harvests one crop target.
+- `F10` harvests many crop targets.
+- Harvested output goes into the backpack.
+
+Interpretation: this confirms the intended ordinary crop-container hand-test
+path for one-target and batch harvest. It does not by itself verify the
+remaining family-boundary cases such as vine, mushroom bag, bush, tree-basin
+scan-only behavior, grass/forage unsupported behavior, full inventory, farm
+building rooms, or title reload.
 
 ## Scope
 
@@ -34,9 +48,9 @@ target-kind counts, target-status counts, and sample target rows.
 
 | Case | Setup | Action | Expected | Observed | Status |
 | --- | --- | --- | --- | --- | --- |
-| Ordinary mature crop | Place or find one mature ordinary `PlantBasin` crop on the farm. | Press `F8`, then `F9`. | Scan reports at least one `OrdinaryCrop=...` pending target; harvest calls the API by transient `TargetId`; crop is collected by native behavior; second scan does not report the same target as pending. | pending | pending |
+| Ordinary mature crop | Place or find one mature ordinary `PlantBasin` crop on the farm. | Press `F8`, then `F9`. | Scan reports at least one `OrdinaryCrop=...` pending target; harvest calls the API by transient `TargetId`; crop is collected by native behavior; second scan does not report the same target as pending. | User reported `F9` harvests one target and output goes into the backpack. | user verified |
 | Ordinary immature crop | Place or find an immature ordinary `PlantBasin` crop. | Press `F8`. | Target is not harvested and appears as `NotMature` or another non-pending state. | pending | pending |
-| Multiple mature crops | Prepare at least two mature ordinary crop-container targets. | Set `Max harvests` to 1, press `F10`; then set higher and press `F10` again. | First pass harvests only one pending target; later pass can harvest remaining pending targets; no duplicated drops from already harvested targets. | pending | pending |
+| Multiple mature crops | Prepare at least two mature ordinary crop-container targets. | Set `Max harvests` to 1, press `F10`; then set higher and press `F10` again. | First pass harvests only one pending target; later pass can harvest remaining pending targets; no duplicated drops from already harvested targets. | User reported `F10` harvests many targets and output goes into the backpack. | user verified |
 | Consecutive no-duplicate run | After a successful harvest, immediately press `F9` again. | Press `F9` twice without changing the scene. | Second pass is a successful no-op or reports no pending executable target; no duplicate output. | pending | pending |
 | Farm building room crop | Put or find an eligible crop-container target inside a farm building room if available. | Press `F8`, then `F9` while in or after visiting the room. | Farm-scope traversal finds the room only if the current native root/farm relationship is available; if no farm scope is found, API fails clearly rather than harvesting arbitrary rooms. | pending | pending |
 | Vine crop-container | Find a vine-type crop-container if available. | Press `F8`, then `F9` only if it is pending. | If backed by reviewed `PlantBasin.Harvest(bool,bool)`, it may harvest; otherwise it must remain non-pending/unsupported. | pending | pending |
