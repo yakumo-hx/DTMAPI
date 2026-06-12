@@ -75,11 +75,12 @@ if (-not $ModsOnly) {
 
     $manifest = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'workshop-runtime' -IncludedAssemblies $runtimeFiles -BundledMods @()
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'Content\DTMAPI\release-manifest.json') -Value $manifest
+    $runtimeDescription = [char]0x65B0 + [char]0x589E + ' ' + 'E' + 'x' + 'p' + 'e' + 'r' + 'i' + 'm' + 'e' + 'n' + 't' + 'a' + 'l' + ' ' + 'C' + 'r' + 'o' + 'p' + 's' + ' ' + '/' + ' ' + 'H' + 'a' + 'r' + 'v' + 'e' + 's' + 't' + 'i' + 'n' + 'g' + ' ' + 'A' + 'P' + 'I' + [char]0xFF0C + [char]0x4F9B + ' ' + 'M' + 'o' + 'd' + ' ' + [char]0x4F5C + [char]0x8005 + [char]0x5236 + [char]0x4F5C + [char]0x4F5C + [char]0x7269 + [char]0x76C6 + [char]0x81EA + [char]0x52A8 + [char]0x6536 + [char]0x83B7 + [char]0x7C7B + ' ' + 'M' + 'o' + 'd' + [char]0xFF1B + [char]0x6682 + [char]0x65F6 + [char]0x672A + [char]0x5B9E + [char]0x73B0 + [char]0x4E54 + [char]0x6728 + [char]0x76C6 + [char]0x81EA + [char]0x52A8 + [char]0x6536 + [char]0x83B7 + [char]0x3002
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'info.json') -Value ([ordered]@{
         name = 'DTMAPI Runtime'
         author = 'Yuuka'
         version = $script:DtmApiReleaseVersion
-        description = 'DTMAPI Runtime developer preview. Subscribe, then run 1_install_dtmapi.bat once to install the BepInEx bootstrap/runtime. Use Status/Logs in DTMAPI Settings to export reports.'
+        description = $runtimeDescription
         tags = @('Mod', 'Framework', 'DTMAPI', 'Chinese')
     })
 }
