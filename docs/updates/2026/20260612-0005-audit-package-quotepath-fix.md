@@ -17,9 +17,12 @@ User requested a fresh audit package after the Crops/Harvesting manual QA confir
 Updated the audit package source snapshot step to call `git ls-files` with `core.quotepath=false`.
 This keeps tracked non-ASCII file paths as normal paths instead of Git's quoted C-style escape form, which PowerShell/Windows path APIs cannot treat as a valid filename.
 
+Also replaced direct calls to `[System.IO.Path]::GetRelativePath(...)` with a script-local helper that works under the Windows PowerShell runtime used by the release/audit scripts.
+
 ## Validation
 
 - Initial `update-audit-package.ps1 -WebOnly` failed before this fix with `Illegal characters in path` while packaging tracked source files.
+- The next package attempt exposed the existing Windows PowerShell compatibility issue for `[System.IO.Path]::GetRelativePath(...)`; the helper fix is included in this same audit-package hardening record.
 - Follow-up validation is recorded in the package generation output for this branch.
 
 ## Evidence

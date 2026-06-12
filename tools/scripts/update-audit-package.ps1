@@ -55,6 +55,25 @@ function New-CleanDirectory {
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
 }
 
+function Get-RelativePath {
+    param(
+        [string]$BasePath,
+        [string]$Path
+    )
+
+    $baseFullPath = [System.IO.Path]::GetFullPath($BasePath)
+    if (-not $baseFullPath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $baseFullPath += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $pathFullPath = [System.IO.Path]::GetFullPath($Path)
+    $baseUri = [System.Uri]::new($baseFullPath)
+    $pathUri = [System.Uri]::new($pathFullPath)
+    $relativeUri = $baseUri.MakeRelativeUri($pathUri)
+    $relative = [System.Uri]::UnescapeDataString($relativeUri.ToString())
+    return $relative -replace "/", [System.IO.Path]::DirectorySeparatorChar
+}
+
 function Copy-FilePreservingPath {
     param(
         [string]$SourceRoot,
@@ -91,7 +110,7 @@ function Copy-Tree {
             return
         }
 
-        $relative = [System.IO.Path]::GetRelativePath($Source, $_.FullName)
+        $relative = Get-RelativePath -BasePath $Source -Path $_.FullName
         $target = Join-Path $Destination $relative
         New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
         Copy-Item -LiteralPath $_.FullName -Destination $target -Force
@@ -284,7 +303,7 @@ function Copy-Evidence {
         if ($Compact) {
             Copy-Tree -Source $source -Destination $destination -IncludeFile {
                 param($file)
-                $relative = [System.IO.Path]::GetRelativePath($source, $file.FullName) -replace "\\", "/"
+                $relative = (Get-RelativePath -BasePath $source -Path $file.FullName) -replace "\\", "/"
                 if ($relative -like "DTMAPI-evidence/*") {
                     return $false
                 }
@@ -528,7 +547,7 @@ function Assert-NoDisallowedPayloads {
     }
 
     $badFiles = Get-ChildItem -LiteralPath $PackageRoot -Force -Recurse -File | Where-Object {
-        $relative = [System.IO.Path]::GetRelativePath($PackageRoot, $_.FullName) -replace "\\", "/"
+        $relative = (Get-RelativePath -BasePath $PackageRoot -Path $_.FullName) -replace "\\", "/"
         $extension = $_.Extension.ToLowerInvariant()
 
         if ($extension -in @(".dll", ".exe", ".pdb", ".nupkg", ".rar", ".7z")) {
