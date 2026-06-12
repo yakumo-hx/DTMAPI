@@ -134,7 +134,7 @@ function Copy-TrackedSourceSnapshot {
         [string]$Destination
     )
 
-    $files = & git -C $Root ls-files
+    $files = & git -C $Root -c core.quotepath=false ls-files
     if ($LASTEXITCODE -ne 0) {
         throw "git ls-files failed for $Root"
     }
