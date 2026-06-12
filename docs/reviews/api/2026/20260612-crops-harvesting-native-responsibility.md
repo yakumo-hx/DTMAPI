@@ -24,6 +24,39 @@ Execution gate policy:
 - `Crop.isMature` and `TreeCrop.isMature` are diagnostic/display facts only. They must not by themselves cause DTMAPI to invoke a native harvest.
 - `ScanMatureCrops` with no mature executable targets is a successful no-op, not an API failure.
 
+## 2026-06-12 Manual QA Handoff Addendum
+
+The medium/long-term follow-up adds a developer-only `CropHarvestingQaMod`
+manual QA fixture without expanding the API contract.
+
+Purpose:
+
+- give the user a directly hand-testable setup for real farm scenes;
+- separate release/sample `AutoHarvestMod` behavior from detailed QA logging;
+- keep tree-basin/cocoa and grass/forage families visible in scan summaries
+  while preserving their non-executing status.
+
+Fixture controls:
+
+- `F8`: scan only;
+- `F9`: scan then harvest one pending target by transient `TargetId`;
+- `F10`: scan then harvest up to the configured maximum;
+- DTMAPI Settings page buttons mirror the same operations.
+
+The fixture consumes only `ICropHarvestingApi`; it does not reference
+`Assembly-CSharp`, Harmony, raw `PlantBasin`, raw `Crop`, or raw `TreeCrop`.
+It is listed only in developer-local official mod definitions and must not be
+treated as part of the first Workshop release set.
+
+Manual checklist:
+
+- `docs/reviews/manual-qa/2026/20260612-0003-crops-harvesting-real-field-manual-qa.md`
+
+Blocking rule: if manual QA shows `TreeBasinCrop`, wild grass, wild tree, or
+forage harvesting through this API slice, the API must remain blocked for
+mainline/public use until the native owner is reviewed and the contract is
+split or corrected.
+
 ## Files Read
 
 - `AGENTS.md`

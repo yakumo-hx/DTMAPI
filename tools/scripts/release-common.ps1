@@ -191,6 +191,16 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             DisplayName = 'DTMAPI 强化种植枪'
             PackageName = 'DTMAPI-StrongPlantingGun'
             DeveloperOnly = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'DTMAPI_CropHarvestingQA'
+            Project = 'CropHarvestingQaMod'
+            SourceDll = 'CropHarvestingQaMod.dll'
+            PackageDll = 'DTMAPI.CropHarvestingQA.dll'
+            UniqueID = 'DTMAPI.CropHarvestingQaMod'
+            DisplayName = 'DTMAPI 作物收获手测夹具'
+            PackageName = 'DTMAPI-CropHarvestingQA'
+            DeveloperOnly = $true
         }
     )) {
         $items.Add($item) | Out-Null
