@@ -40,7 +40,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void ResetEquipmentSlotSessionState(string reason, bool discardDirty)
         {
-            if (equipmentSlotEntries.Count == 0 && loadedEquipmentSlotStorageOwners.Count == 0 && dirtyEquipmentSlotStorageOwners.Count == 0)
+            if (equipmentSlotEntries.Count == 0 && loadedEquipmentSlotStorageOwners.Count == 0 && dirtyEquipmentSlotStorageOwners.Count == 0 && migratedLegacyEquipmentSlotStorageOwners.Count == 0)
                 return;
 
             object? manager = GetNativeAgentEquipmentManager();
@@ -59,6 +59,7 @@ namespace DTMAPI.GameBridge.DolocTown
             loadedEquipmentSlotStorageOwners.Clear();
             if (discardDirty)
                 dirtyEquipmentSlotStorageOwners.Clear();
+            migratedLegacyEquipmentSlotStorageOwners.Clear();
             equipmentSlotStates.Clear();
             equipmentSlotsOrphanRecoveryChecked = false;
             equipmentSlotsUiLastSummary = string.Empty;
@@ -444,40 +445,25 @@ namespace DTMAPI.GameBridge.DolocTown
             ownerId ??= string.Empty;
             if (string.IsNullOrWhiteSpace(ownerId) || loadedEquipmentSlotStorageOwners.Contains(ownerId))
                 return;
-            loadedEquipmentSlotStorageOwners.Add(ownerId);
 
-            string path = GetEquipmentSlotStoragePath(ownerId);
-            if (!File.Exists(path))
+            EquipmentSlotSaveScope scope = GetEquipmentSlotSaveScope();
+            if (!scope.HasArchive)
+            {
+                runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "pending", "DTMAPI protected equipment-slot storage", "Waiting for a loaded archive before reading equipment-slot sidecar storage for " + ownerId + ".");
+                return;
+            }
+
+            loadedEquipmentSlotStorageOwners.Add(ownerId);
+            string scopedPath = GetEquipmentSlotStoragePath(ownerId, scope);
+            if (TryLoadEquipmentSlotStorageDocument(ownerId, scopedPath, scope, isLegacyGlobalStorage: false))
                 return;
 
-            try
+            string legacyPath = GetLegacyEquipmentSlotStoragePath(ownerId);
+            if (TryLoadEquipmentSlotStorageDocument(ownerId, legacyPath, scope, isLegacyGlobalStorage: true))
             {
-                EquipmentSlotStorageDocument? document = ReadJson<EquipmentSlotStorageDocument>(path);
-                if (document?.Slots == null)
-                    return;
-
-                var entries = new List<EquipmentSlotRuntimeEntry>();
-                for (int i = 0; i < document.Slots.Count; i++)
-                {
-                    EquipmentSlotStorageEntry slot = document.Slots[i] ?? new EquipmentSlotStorageEntry();
-                    entries.Add(new EquipmentSlotRuntimeEntry
-                    {
-                        OwnerId = ownerId,
-                        Index = slot.Index >= 0 ? slot.Index : i,
-                        SlotId = FirstText(slot.SlotId, "dtmapi.extra." + (i + 1).ToString(CultureInfo.InvariantCulture)),
-                        ItemId = slot.ItemId ?? string.Empty,
-                        DisplayName = slot.DisplayName ?? string.Empty,
-                        SkillId = slot.SkillId ?? string.Empty,
-                        LastMessage = FirstText(slot.LastMessage, "Loaded stored DTMAPI extra-slot item.")
-                    });
-                }
-                equipmentSlotEntries[ownerId] = entries.OrderBy(entry => entry.Index).ToList();
-                runtime.RuntimeMonitor.Log("EquipmentSlots storage loaded owner=" + ownerId + " slots=" + entries.Count + " storedItems=" + entries.Count(entry => !string.IsNullOrWhiteSpace(entry.ItemId)) + ".");
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "EquipmentSlots storage load failed for " + ownerId + ".", ex.ToString());
-                runtime.RuntimeMonitor.Log("EquipmentSlots storage load failed owner=" + ownerId + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+                migratedLegacyEquipmentSlotStorageOwners.Add(ownerId);
+                SaveEquipmentSlotStorage(ownerId);
+                runtime.RuntimeMonitor.Log("EquipmentSlots adopted legacy global storage owner=" + ownerId + " legacyPath=" + legacyPath + " saveScope=" + scope.ScopeKey + "; it will be rewritten as per-save protected storage after the next native SaveGame.");
             }
         }
 
@@ -498,16 +484,33 @@ namespace DTMAPI.GameBridge.DolocTown
             if (string.IsNullOrWhiteSpace(ownerId))
                 return;
 
+            EquipmentSlotSaveScope scope = GetEquipmentSlotSaveScope();
+            if (!scope.HasArchive)
+            {
+                runtime.RuntimeMonitor.Log("EquipmentSlots storage save skipped owner=" + ownerId + " reason=" + (reason ?? string.Empty) + " because no loaded archive is available.", LogLevel.Warn);
+                runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "blocked", "DTMAPI protected equipment-slot storage", "Could not persist equipment-slot sidecar storage for " + ownerId + " without a loaded archive.");
+                return;
+            }
+
             List<EquipmentSlotRuntimeEntry> entries = equipmentSlotEntries.TryGetValue(ownerId, out List<EquipmentSlotRuntimeEntry>? existing)
                 ? existing
                 : new List<EquipmentSlotRuntimeEntry>();
+            int totalSlots = Math.Max(entries.Count, entries.Count == 0 ? 0 : entries.Max(entry => entry.Index) + 1);
             var document = new EquipmentSlotStorageDocument
             {
+                SchemaVersion = EquipmentSlotProtectedStoragePolicy.SchemaVersion,
                 OwnerId = ownerId,
+                StorageScope = scope.ScopeKey,
+                ArchiveIndex = scope.ArchiveIndex,
+                PlayerName = scope.PlayerName,
+                CustomPlayerName = scope.CustomPlayerName,
+                CurrentScene = scope.CurrentScene,
+                SavedTotalGameSeconds = scope.TotalGameSeconds,
                 SavedAt = DateTimeOffset.Now.ToString("O", CultureInfo.InvariantCulture),
                 Slots = entries.Select(entry => new EquipmentSlotStorageEntry
                 {
                     Index = entry.Index,
+                    TailIndexFromEnd = EquipmentSlotProtectedStoragePolicy.GetTailIndexFromEnd(entry.Index, totalSlots),
                     SlotId = entry.SlotId,
                     ItemId = entry.ItemId,
                     DisplayName = entry.DisplayName,
@@ -516,11 +519,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 }).ToList()
             };
 
-            string path = GetEquipmentSlotStoragePath(ownerId);
+            string path = GetEquipmentSlotStoragePath(ownerId, scope);
             try
             {
                 WriteJson(path, document);
-                runtime.RuntimeMonitor.Log("EquipmentSlots storage persisted owner=" + ownerId + " reason=" + (reason ?? string.Empty) + " path=" + path + " storedItems=" + entries.Count(entry => !string.IsNullOrWhiteSpace(entry.ItemId)) + ".");
+                ArchiveMigratedLegacyEquipmentSlotStorage(ownerId);
+                runtime.RuntimeMonitor.Log("EquipmentSlots protected storage persisted owner=" + ownerId + " reason=" + (reason ?? string.Empty) + " scope=" + scope.ScopeKey + " path=" + path + " storedItems=" + entries.Count(entry => !string.IsNullOrWhiteSpace(entry.ItemId)) + ".");
             }
             catch (Exception ex)
             {
@@ -529,16 +533,145 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private string GetEquipmentSlotStoragePath(string ownerId)
+        private bool TryLoadEquipmentSlotStorageDocument(string ownerId, string path, EquipmentSlotSaveScope scope, bool isLegacyGlobalStorage)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return false;
+
+            try
+            {
+                EquipmentSlotStorageDocument? document = ReadJson<EquipmentSlotStorageDocument>(path);
+                if (document?.Slots == null)
+                    return false;
+
+                string documentOwner = FirstText(document.OwnerId, ownerId);
+                if (!documentOwner.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
+                {
+                    runtime.RuntimeMonitor.Log("EquipmentSlots storage skipped path=" + path + " owner=" + ownerId + " documentOwner=" + documentOwner + ".", LogLevel.Warn);
+                    return false;
+                }
+
+                if (!isLegacyGlobalStorage && !EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(
+                    document.ArchiveIndex,
+                    document.PlayerName,
+                    document.CustomPlayerName,
+                    document.SavedTotalGameSeconds,
+                    scope.ArchiveIndex,
+                    scope.PlayerName,
+                    scope.CustomPlayerName,
+                    scope.TotalGameSeconds,
+                    out string compatibilityReason))
+                {
+                    runtime.RuntimeMonitor.Log("EquipmentSlots protected storage skipped owner=" + ownerId + " path=" + path + " reason=" + compatibilityReason + ".", LogLevel.Warn);
+                    runtime.SetHookStatus("Player.EquipmentSlotsSaveTransaction", "blocked", "DTMAPI protected equipment-slot storage identity guard", "Skipped incompatible equipment-slot storage for " + ownerId + ": " + compatibilityReason);
+                    return false;
+                }
+
+                var entries = new List<EquipmentSlotRuntimeEntry>();
+                for (int i = 0; i < document.Slots.Count; i++)
+                {
+                    EquipmentSlotStorageEntry slot = document.Slots[i] ?? new EquipmentSlotStorageEntry();
+                    entries.Add(new EquipmentSlotRuntimeEntry
+                    {
+                        OwnerId = ownerId,
+                        Index = slot.Index >= 0 ? slot.Index : i,
+                        SlotId = FirstText(slot.SlotId, "dtmapi.extra." + (i + 1).ToString(CultureInfo.InvariantCulture)),
+                        ItemId = slot.ItemId ?? string.Empty,
+                        DisplayName = slot.DisplayName ?? string.Empty,
+                        SkillId = slot.SkillId ?? string.Empty,
+                        LastMessage = FirstText(slot.LastMessage, isLegacyGlobalStorage ? "Loaded legacy DTMAPI extra-slot item." : "Loaded stored DTMAPI extra-slot item.")
+                    });
+                }
+
+                equipmentSlotEntries[ownerId] = entries.OrderBy(entry => entry.Index).ToList();
+                runtime.RuntimeMonitor.Log("EquipmentSlots " + (isLegacyGlobalStorage ? "legacy global" : "protected per-save") + " storage loaded owner=" + ownerId + " scope=" + scope.ScopeKey + " path=" + path + " slots=" + entries.Count + " storedItems=" + entries.Count(entry => !string.IsNullOrWhiteSpace(entry.ItemId)) + ".");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "EquipmentSlots storage load failed for " + ownerId + ".", ex.ToString());
+                runtime.RuntimeMonitor.Log("EquipmentSlots storage load failed owner=" + ownerId + " path=" + path + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+                return false;
+            }
+        }
+
+        private string GetEquipmentSlotStoragePath(string ownerId, EquipmentSlotSaveScope scope)
+        {
+            string scopeKey = EquipmentSlotProtectedStoragePolicy.MakeSafePathSegment(scope.ScopeKey);
+            return Path.Combine(GetEquipmentSlotStorageDirectory(scope), "equipment-slots-" + MakeSafeFileName(ownerId ?? "unknown") + ".json");
+        }
+
+        private string GetEquipmentSlotStorageDirectory(EquipmentSlotSaveScope scope)
+        {
+            string scopeKey = EquipmentSlotProtectedStoragePolicy.MakeSafePathSegment(scope.ScopeKey);
+            return Path.Combine(runtime.Paths.ConfigPath, "protected-items", "equipment-slots", scopeKey);
+        }
+
+        private string GetLegacyEquipmentSlotStoragePath(string ownerId)
         {
             return Path.Combine(runtime.Paths.ConfigPath, "equipment-slots-" + MakeSafeFileName(ownerId ?? "unknown") + ".json");
         }
 
+        private void ArchiveMigratedLegacyEquipmentSlotStorage(string ownerId)
+        {
+            if (!migratedLegacyEquipmentSlotStorageOwners.Remove(ownerId ?? string.Empty))
+                return;
+
+            string legacyPath = GetLegacyEquipmentSlotStoragePath(ownerId ?? string.Empty);
+            if (!File.Exists(legacyPath))
+                return;
+
+            try
+            {
+                string archivePath = legacyPath + ".migrated-" + DateTimeOffset.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+                File.Move(legacyPath, archivePath);
+                runtime.RuntimeMonitor.Log("EquipmentSlots legacy global storage archived owner=" + (ownerId ?? string.Empty) + " legacyPath=" + legacyPath + " archivePath=" + archivePath + ".");
+            }
+            catch (Exception ex)
+            {
+                runtime.RuntimeMonitor.Log("EquipmentSlots legacy global storage archive failed owner=" + (ownerId ?? string.Empty) + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+            }
+        }
+
+        private EquipmentSlotSaveScope GetEquipmentSlotSaveScope()
+        {
+            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+            object? archive = dolocApi == null ? null : ReadStaticMember(dolocApi, "archiveHandle");
+            if (archive == null)
+                return EquipmentSlotSaveScope.Missing;
+
+            int archiveIndex = ReadIntMember(archive, "archiveIndex", -1);
+            object? farmData = ReadMember(archive, "farmData");
+            object? agentData = farmData == null ? null : ReadMember(farmData, "agentData");
+            object? baseDataOnLoad = ReadMember(archive, "baseDataOnLoad");
+            string customPlayerName = FirstText(
+                agentData == null ? string.Empty : ReadStringMember(agentData, "customPlayerName"),
+                baseDataOnLoad == null ? string.Empty : ReadStringMember(baseDataOnLoad, "customPlayerName"));
+            string playerName = FirstText(
+                agentData == null ? string.Empty : ReadStringMember(agentData, "playerName"),
+                customPlayerName);
+            string currentScene = FirstText(
+                baseDataOnLoad == null ? string.Empty : ReadStringMember(baseDataOnLoad, "currentScene"),
+                farmData == null ? string.Empty : ReadStringMember(farmData, "currentSceneName"));
+            long totalGameSeconds = baseDataOnLoad == null ? -1 : ReadLongMember(baseDataOnLoad, "totalGameSeconds", -1);
+            return new EquipmentSlotSaveScope(
+                archiveIndex,
+                EquipmentSlotProtectedStoragePolicy.BuildSaveScopeKey(archiveIndex),
+                playerName,
+                customPlayerName,
+                currentScene,
+                totalGameSeconds);
+        }
+
+        private static long ReadLongMember(object instance, string name, long fallback)
+        {
+            object? value = ReadMember(instance, name);
+            return value == null ? fallback : Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
+
         private static string MakeSafeFileName(string value)
         {
-            foreach (char c in Path.GetInvalidFileNameChars())
-                value = value.Replace(c, '_');
-            return string.IsNullOrWhiteSpace(value) ? "unknown" : value;
+            return EquipmentSlotProtectedStoragePolicy.MakeSafePathSegment(value);
         }
 
         private static T? ReadJson<T>(string path)
@@ -634,30 +767,52 @@ namespace DTMAPI.GameBridge.DolocTown
             if (dolocApi == null || ReadStaticMember(dolocApi, "archiveHandle") == null)
                 return;
 
+            EquipmentSlotSaveScope scope = GetEquipmentSlotSaveScope();
+            if (!scope.HasArchive)
+                return;
+
             equipmentSlotsOrphanRecoveryChecked = true;
             if (!Directory.Exists(runtime.Paths.ConfigPath))
                 return;
 
-            foreach (string path in Directory.GetFiles(runtime.Paths.ConfigPath, "equipment-slots-*.json", SearchOption.TopDirectoryOnly))
+            var scannedPaths = new List<string>();
+            string scopedDirectory = GetEquipmentSlotStorageDirectory(scope);
+            if (Directory.Exists(scopedDirectory))
+                scannedPaths.AddRange(Directory.GetFiles(scopedDirectory, "equipment-slots-*.json", SearchOption.TopDirectoryOnly));
+            scannedPaths.AddRange(Directory.GetFiles(runtime.Paths.ConfigPath, "equipment-slots-*.json", SearchOption.TopDirectoryOnly));
+
+            var recoveredOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string path in scannedPaths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
                     EquipmentSlotStorageDocument? document = ReadJson<EquipmentSlotStorageDocument>(path);
                     string ownerId = document?.OwnerId ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(ownerId) || equipmentSlotOptions.ContainsKey(ownerId))
+                    if (string.IsNullOrWhiteSpace(ownerId) || equipmentSlotOptions.ContainsKey(ownerId) || recoveredOwners.Contains(ownerId))
                         continue;
 
                     loadedEquipmentSlotStorageOwners.Remove(ownerId);
-                    EnsureEquipmentSlotStorageLoaded(ownerId);
+                    bool isLegacyGlobalStorage = Path.GetDirectoryName(path)?.Equals(runtime.Paths.ConfigPath, StringComparison.OrdinalIgnoreCase) == true;
+                    loadedEquipmentSlotStorageOwners.Add(ownerId);
+                    if (!TryLoadEquipmentSlotStorageDocument(ownerId, path, scope, isLegacyGlobalStorage))
+                    {
+                        loadedEquipmentSlotStorageOwners.Remove(ownerId);
+                        continue;
+                    }
+
+                    if (isLegacyGlobalStorage)
+                        migratedLegacyEquipmentSlotStorageOwners.Add(ownerId);
+
                     if (RecoverEquipmentSlotEntries(ownerId, "orphan storage without registered mod", saveAfterRecovery: true, out EquipmentSlotsRecoveryResult result))
                     {
+                        recoveredOwners.Add(ownerId);
                         runtime.RuntimeMonitor.Log("EquipmentSlots orphan recovery OK owner=" + ownerId + " recovered=" + result.RecoveredCount + " message=" + result.Message + ".");
-                        runtime.SetHookStatus("Player.EquipmentSlotsApi", "orphan-recovery-ok", "DTMAPI config/equipment-slots storage scan", "Recovered missing-mod extra-slot storage for " + ownerId + ": " + result.Message);
+                        runtime.SetHookStatus("Player.EquipmentSlotsApi", "orphan-recovery-ok", "DTMAPI protected equipment-slot storage scan", "Recovered missing-mod extra-slot storage for " + ownerId + " scope=" + scope.ScopeKey + ": " + result.Message);
                     }
                     else
                     {
                         runtime.RuntimeMonitor.Log("EquipmentSlots orphan recovery failed owner=" + ownerId + " message=" + result.Message + ".", LogLevel.Warn);
-                        runtime.SetHookStatus("Player.EquipmentSlotsApi", "orphan-recovery-failed", "DTMAPI config/equipment-slots storage scan", result.Message);
+                        runtime.SetHookStatus("Player.EquipmentSlotsApi", "orphan-recovery-failed", "DTMAPI protected equipment-slot storage scan", result.Message);
                     }
                 }
                 catch (Exception ex)
@@ -846,7 +1001,7 @@ namespace DTMAPI.GameBridge.DolocTown
             bool success = true;
             int recovered = 0;
             var messages = new List<string>();
-            foreach (EquipmentSlotRuntimeEntry entry in entries)
+            foreach (EquipmentSlotRuntimeEntry entry in EquipmentSlotProtectedStoragePolicy.OrderTailFirst(entries, entry => entry.Index))
             {
                 if (string.IsNullOrWhiteSpace(entry.ItemId))
                     continue;
@@ -1683,6 +1838,29 @@ namespace DTMAPI.GameBridge.DolocTown
             public IReadOnlyList<string> UpdateKeys => Array.Empty<string>();
         }
 
+        private sealed class EquipmentSlotSaveScope
+        {
+            public static readonly EquipmentSlotSaveScope Missing = new EquipmentSlotSaveScope(-1, "slot-unknown", string.Empty, string.Empty, string.Empty, -1);
+
+            public EquipmentSlotSaveScope(int archiveIndex, string scopeKey, string playerName, string customPlayerName, string currentScene, long totalGameSeconds)
+            {
+                ArchiveIndex = archiveIndex;
+                ScopeKey = scopeKey ?? string.Empty;
+                PlayerName = playerName ?? string.Empty;
+                CustomPlayerName = customPlayerName ?? string.Empty;
+                CurrentScene = currentScene ?? string.Empty;
+                TotalGameSeconds = totalGameSeconds;
+            }
+
+            public bool HasArchive => ArchiveIndex >= 0;
+            public int ArchiveIndex { get; }
+            public string ScopeKey { get; }
+            public string PlayerName { get; }
+            public string CustomPlayerName { get; }
+            public string CurrentScene { get; }
+            public long TotalGameSeconds { get; }
+        }
+
         private sealed class IntActionBinder
         {
             private readonly Action<int> action;
@@ -1716,8 +1894,36 @@ namespace DTMAPI.GameBridge.DolocTown
         [DataContract]
         private sealed class EquipmentSlotStorageDocument
         {
+            public EquipmentSlotStorageDocument()
+            {
+                SchemaVersion = 1;
+                ArchiveIndex = -1;
+                SavedTotalGameSeconds = -1;
+            }
+
+            [DataMember(Name = "schemaVersion")]
+            public int SchemaVersion { get; set; }
+
             [DataMember(Name = "ownerId")]
             public string OwnerId { get; set; } = string.Empty;
+
+            [DataMember(Name = "storageScope")]
+            public string StorageScope { get; set; } = string.Empty;
+
+            [DataMember(Name = "archiveIndex")]
+            public int ArchiveIndex { get; set; }
+
+            [DataMember(Name = "playerName")]
+            public string PlayerName { get; set; } = string.Empty;
+
+            [DataMember(Name = "customPlayerName")]
+            public string CustomPlayerName { get; set; } = string.Empty;
+
+            [DataMember(Name = "currentScene")]
+            public string CurrentScene { get; set; } = string.Empty;
+
+            [DataMember(Name = "savedTotalGameSeconds")]
+            public long SavedTotalGameSeconds { get; set; }
 
             [DataMember(Name = "savedAt")]
             public string SavedAt { get; set; } = string.Empty;
@@ -1729,8 +1935,16 @@ namespace DTMAPI.GameBridge.DolocTown
         [DataContract]
         private sealed class EquipmentSlotStorageEntry
         {
+            public EquipmentSlotStorageEntry()
+            {
+                TailIndexFromEnd = -1;
+            }
+
             [DataMember(Name = "index")]
             public int Index { get; set; }
+
+            [DataMember(Name = "tailIndexFromEnd")]
+            public int TailIndexFromEnd { get; set; }
 
             [DataMember(Name = "slotId")]
             public string SlotId { get; set; } = string.Empty;

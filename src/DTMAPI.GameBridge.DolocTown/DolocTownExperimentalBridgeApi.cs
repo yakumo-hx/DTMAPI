@@ -34,6 +34,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly Dictionary<string, List<EquipmentSlotRuntimeEntry>> equipmentSlotEntries = new Dictionary<string, List<EquipmentSlotRuntimeEntry>>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loadedEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> dirtyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> migratedLegacyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<object> activeEquipmentSlotUiObjects = new List<object>();
         private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
         private readonly HashSet<object> secondMotorControllers = new HashSet<object>();

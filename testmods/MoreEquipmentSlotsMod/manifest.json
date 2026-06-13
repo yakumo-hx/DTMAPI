@@ -1,7 +1,8 @@
 {
   "Name": "DTMAPI More Equipment Slots",
-  "Author": "DTMAPI",
+  "Author": "Yuuka",
   "Version": "0.3.1-dtmapi",
+  "Description": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。",
   "UniqueID": "DTMAPI.MoreEquipmentSlotsMod",
   "EntryDll": "MoreEquipmentSlotsMod.dll",
   "MinimumDTMApiVersion": "0.3.1",

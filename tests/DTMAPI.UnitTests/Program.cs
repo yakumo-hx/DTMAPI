@@ -64,6 +64,7 @@ namespace DTMAPI.UnitTests
                 ChestLocatorPoliciesMergeEnabledOwners();
                 StrongPlantingGunNormalizesToThreeSlotContract();
                 SaveSlotsNormalizeToFixedTwelveContract();
+                EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery();
                 FishingAutomationOptionsNormalizeNativeStageDefaults();
                 FishingAutomationBiteActionPrecedence();
                 FishingAutomationMiniGameInputDecisionMatchesNativeBars();
@@ -2044,6 +2045,22 @@ namespace DTMAPI.UnitTests
             Assert(normalizedUndersized.Enabled && normalizedUndersized.SlotCount == 12, "SaveSlots enabled undersized requests should normalize to 12 total official slots.");
             Assert(!normalizedDisabled.Enabled && normalizedDisabled.SlotCount == 6, "SaveSlots disabled requests should normalize to the vanilla six-slot contract.");
             Assert(normalizedOversized.VerboseLogging, "SaveSlots normalize should preserve unrelated logging flags.");
+        }
+
+        private static void EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery()
+        {
+            Assert(EquipmentSlotProtectedStoragePolicy.BuildSaveScopeKey(3) == "slot-3", "Equipment-slot protected storage should key sidecars by archive slot.");
+            Assert(EquipmentSlotProtectedStoragePolicy.MakeSafePathSegment("A:B/C") == "A_B_C", "Equipment-slot protected storage should sanitize path segments.");
+            Assert(EquipmentSlotProtectedStoragePolicy.GetTailIndexFromEnd(0, 4) == 3, "Equipment-slot storage should record head slots as furthest from the tail.");
+            Assert(EquipmentSlotProtectedStoragePolicy.GetTailIndexFromEnd(3, 4) == 0, "Equipment-slot storage should record the final slot as the tail.");
+
+            int[] ordered = EquipmentSlotProtectedStoragePolicy.OrderTailFirst(new[] { 0, 1, 2, 3 }, value => value).ToArray();
+            Assert(ordered.SequenceEqual(new[] { 3, 2, 1, 0 }), "Equipment-slot recovery should process tail slots before head slots.");
+
+            Assert(EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Yuuka", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out _), "Matching save identity should allow protected storage.");
+            Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(2, "Yuuka", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string archiveReason) && archiveReason.Contains("archive-index-mismatch"), "Protected storage should reject mismatched archive slots.");
+            Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Other", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string playerReason) && playerReason.Contains("player-name-mismatch"), "Protected storage should reject clearly mismatched player identities.");
+            Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Yuuka", string.Empty, 1000, 3, "Yuuka", string.Empty, 120, out string clockReason) && clockReason.Contains("total-game-seconds-regressed"), "Protected storage should reject strong save-clock regressions.");
         }
 
         private static void FishingAutomationBiteActionPrecedence()
