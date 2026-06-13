@@ -702,11 +702,11 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Status: verified
 - Public surface: `IItemTooltipApi.ConfigureFishRoeProvider`
 - Game build: 23465763 workshop
-- Game method/type: `DolocTown.Item.get_title`, `DolocTown.Item.get_description`, `DolocTown.Item.GetDetailInfo`, and `DolocTown.ItemFishRoe.fishName` identity reader.
+- Game method/type: `DolocTown.Item.get_title`, `DolocTown.Item.get_description`, `DolocTown.Item.GetDetailInfo`, `DolocTown.ItemFishRoe.fishName` identity reader, and native `DolocAPI.QueryItemProto(fishId).Title` fallback for fish display names.
 - Patch type: Harmony Postfix plus GameBridge reflection.
 - Hook owner: `FishRoeTooltipFeature` / `FishRoeTooltipHookBridge`; API/service owner: `FishRoeTooltipService`.
-- Why this point: FishBreedingAssistant provides lookup data while GameBridge owns item identity and tooltip rendering fragility. The old `DolocTownExperimentalBridgeApi` no longer implements `IItemTooltipApi`.
-- Failure behavior: lookup provider can be registered; if item hooks do not install, no tooltip text is changed and diagnostics stay pending/failed.
+- Why this point: FishBreedingAssistant provides lookup data while GameBridge owns item identity and tooltip rendering fragility. The shareable public FishBreedingAssistant lookup source is a placeholder, so GameBridge must not depend on private generated tables to recover `鱼卵 (鱼名称)`. The old `DolocTownExperimentalBridgeApi` no longer implements `IItemTooltipApi`.
+- Failure behavior: lookup provider can be registered; if a provider lookup misses, GameBridge falls back to native `DolocAPI.QueryItemProto(fishId).Title` and logs one native lookup result/miss per fish id. If item hooks do not install or native lookup also fails, no tooltip text is changed and diagnostics stay pending/failed.
 - Mods/tests depending on it: `Yuuka.DTMAPI.FishBreedingAssistant`
 - Evidence:
   - Build: DTMAPI 0.2.1 local build passed 2026-06-01 with 0 errors; earlier 0.1.10 build/unit passed 2026-05-30; feature split branch Release build/test passed 2026-06-09.
@@ -715,9 +715,10 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - 0.2.1 player-facing change: `Yuuka.DTMAPI.FishBreedingAssistant` now registers title decoration only; the old details toggle is removed from config and default options set `LabelFishRoeDetails=false`.
   - 2026-06-09 feature split smoke: `docs/debug/evidence/GAME-SMOKE/20260609-181533` records `ExperimentalHooks=Passed`, `SaveLoaded=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `Items.FishRoeTooltip = verified`, `Feature.FishRoeTooltip = ready`, `Smoke.FishRoeTooltip = verified`, `Smoke.AnimalViewerRendering = verified`, and `Smoke.ExperimentalHookExercise = verified`; the smoke harness registered a smoke-only fallback provider because the public FishBreedingAssistant lookup source is a placeholder and the local `Yuuka.DTMAPI.FishBreedingAssistant` config was disabled.
   - 2026-06-10 smoke case-file split: `docs/debug/evidence/GAME-SMOKE/20260610-021014` records unchanged `ExperimentalHooks=Passed`, `Items.FishRoeTooltip = verified`, `Feature.FishRoeTooltip = ready`, `Smoke.FishRoeTooltip = verified`, `Smoke.AnimalViewerRendering = verified`, and `Smoke.ExperimentalHookExercise = verified. FishRoeTooltip=True, AnimalViewerRendering=True.` after moving only the FishRoe smoke case body to `Smoke/Cases/FishRoeTooltipSmokeCase.cs`; report/evidence zip `docs/debug/evidence/GAME-SMOKE/20260610-021014.zip`.
+  - 2026-06-13 native title fallback: `docs/debug/evidence/GAME-SMOKE/20260613-201326` records `RunStatus=Passed`, `SaveLoaded=Passed`, `ExperimentalHooks=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, and `ForcedClose=Passed` after removing the smoke-only fallback provider. Logs show `Fish roe native title lookup resolved fish -> 鱼`, `Smoke exercise FishRoeTooltip OK item=fish_roe title=鱼卵 (鱼) detail=`, `Smoke.FishRoeTooltip = verified`, and `Smoke.ExperimentalHookExercise = verified. FishRoeTooltip=True, AnimalViewerRendering=True.` Retained `GAME-SMOKE/20260613-200911` is a too-short `AutoExitAfterSeconds=20` harness timing failure with clean process/fatal checks.
   - Retained rejected precondition smoke: `docs/debug/evidence/GAME-SMOKE/20260609-180405` reached `Items.FishRoeTooltip = verified` and `Feature.FishRoeTooltip = ready`, but failed `Smoke.FishRoeTooltip` because no enabled public provider lookup produced decoration before the smoke-only fallback was added.
   - Screenshot/report: `docs/debug/evidence/HOOK-PROBE/20260530-150808`
-- Regression cases: FISHROE-001, FISHROE-TOOLTIP-FEATURE-SPLIT-20260609, FISHROE-SMOKE-CASE-SPLIT-20260610
+- Regression cases: FISHROE-NATIVE-TITLE-FALLBACK-20260613, FISHROE-001, FISHROE-TOOLTIP-FEATURE-SPLIT-20260609, FISHROE-SMOKE-CASE-SPLIT-20260610
 
 ## Hook: Animals.ViewerRendering
 

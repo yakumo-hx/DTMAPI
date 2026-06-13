@@ -1,8 +1,8 @@
 {
-  "name": "一键完成（DTMAPI）",
+  "name": "DTMAPI一键完成",
   "author": "Yuuka",
-  "version": "1.1.2-dtmapi",
-  "description": "依赖 DTMAPI。\n一次动作完成资源采集与燃料/饲料加满。",
+  "version": "1.0.0",
+  "description": "依赖 DTMAPI。\n一次动作完成资源采集与燃料、饲料加满。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -11,13 +11,13 @@
     "Chinese"
   ],
   "localized_name": {
-    "schinese": "一键完成（DTMAPI）",
-    "tchinese": "一鍵完成（DTMAPI）",
-    "english": "One Action Complete (DTMAPI)"
+    "schinese": "DTMAPI一键完成",
+    "tchinese": "DTMAPI一鍵完成",
+    "english": "DTMAPI One Action Complete"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n一次动作完成资源采集与燃料/饲料加满。",
-    "tchinese": "依賴 DTMAPI。\n一次動作完成資源採集與燃料/飼料加滿。",
-    "english": "Requires DTMAPI.\nCompletes resource hits and fuel/feed filling in one action.\nEnable or disable it through the official Mod UI."
+    "schinese": "依赖 DTMAPI。\n一次动作完成资源采集与燃料、饲料加满。",
+    "tchinese": "依賴 DTMAPI。\n一次動作完成資源採集與燃料、飼料加滿。",
+    "english": "Requires DTMAPI.\nCompletes resource gathering and fills fuel/feed with one action."
   }
 }

@@ -1,8 +1,8 @@
 {
   "name": "Y键控制台",
   "author": "Yuuka",
-  "version": "0.3.1-dtmapi",
-  "description": "依赖 DTMAPI。\n存档内 Y 键调试控制台，提供物品、天气、传送、时间和移速工具。",
+  "version": "1.0.0",
+  "description": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "Y Key Console"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n存档内 Y 键调试控制台，提供物品、天气、传送、时间和移速工具。",
-    "tchinese": "依賴 DTMAPI。\n存檔內按 Y 開啟除錯控制台，提供物品、天氣、傳送、時間和移速工具。",
-    "english": "Requires DTMAPI.\nPress Y in a save to open a debug console with item, weather, teleport, time, and movement-speed tools."
+    "schinese": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。",
+    "tchinese": "依賴 DTMAPI。\n存檔內按 Y 開啟除錯控制台，提供相容 mod 的物品給予、天氣修改、傳送（仍在優化）、時間快進、時間倍率、移速修改等測試功能。",
+    "english": "Requires DTMAPI.\nPress Y in a save to open a debug console with test tools for compatible mod items, weather changes, teleporting (still being improved), time skipping, time speed, and movement speed."
   }
 }

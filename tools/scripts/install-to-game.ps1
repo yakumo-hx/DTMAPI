@@ -481,8 +481,19 @@ function Install-OfficialLocalDtmApiMod {
         Install-OfficialVehicleExampleAssets -GameDir $gameDir -Destination $dest
     }
 
+    $modSourceRoot = Join-Path $repo "testmods\$($Mod.Project)"
     $assetIcon = Join-Path $repo 'assets\branding\dtmapi-icon.png'
+    $modIcon = Join-Path $modSourceRoot 'icon.png'
+    if (Test-Path -LiteralPath $modIcon -PathType Leaf) {
+        $assetIcon = $modIcon
+    }
+
     $assetPreview = Join-Path $repo 'assets\branding\dtmapi-preview.png'
+    $modPreview = Join-Path $modSourceRoot 'preview.png'
+    if (Test-Path -LiteralPath $modPreview -PathType Leaf) {
+        $assetPreview = $modPreview
+    }
+
     if (Test-Path $assetIcon) {
         Copy-Item -Force -LiteralPath $assetIcon -Destination (Join-Path $dest 'icon.png')
     }
@@ -497,7 +508,11 @@ function Install-OfficialLocalDtmApiMod {
     }
 
     $info = Get-Content -Raw -Encoding UTF8 -LiteralPath $officialInfoPath | ConvertFrom-Json
-    $info.version = $manifest.Version
+    if (-not $info.PSObject.Properties['version']) {
+        $info | Add-Member -NotePropertyName version -NotePropertyValue $manifest.Version
+    } elseif ([string]::IsNullOrWhiteSpace([string]$info.version)) {
+        $info.version = $manifest.Version
+    }
     Write-JsonObject -Path (Join-Path $dest 'info.json') -Value $info
     $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'official-local-info'; Path = [System.IO.Path]::GetFullPath((Join-Path $dest 'info.json')) }) | Out-Null
     Ensure-OfficialLocalDtmApiEnablement -OfficialFolder $Mod.OfficialFolder -Info $info
@@ -555,21 +570,6 @@ function Ensure-OfficialLocalDtmApiEnablement {
     }
 
     $id = "Local.$OfficialFolder"
-    if ($data.modInfos.PSObject.Properties[$id]) {
-        return
-    }
-
-    $priority = 0
-    foreach ($property in $data.modInfos.PSObject.Properties) {
-        $value = $property.Value
-        if ($value -and $value.PSObject.Properties['enabled'] -and [bool]$value.enabled -and $value.PSObject.Properties['priority']) {
-            $existingPriority = Get-NumericPriorityOrNull -Value $value.priority
-            if ($null -ne $existingPriority) {
-                $priority = [Math]::Max($priority, $existingPriority + 1)
-            }
-        }
-    }
-
     $title = $null
     if ($Info.PSObject.Properties['title']) {
         $title = $Info.title
@@ -582,6 +582,36 @@ function Ensure-OfficialLocalDtmApiEnablement {
     }
     if (-not $title) {
         $title = $OfficialFolder
+    }
+
+    if ($data.modInfos.PSObject.Properties[$id]) {
+        $existing = $data.modInfos.PSObject.Properties[$id].Value
+        if (-not $existing.PSObject.Properties['title']) {
+            Backup-ModInfosBeforeWrite -EnablementPath $enablementPath
+            $existing | Add-Member -MemberType NoteProperty -Name 'title' -Value $title
+            Write-JsonObjectAtomic -Path $enablementPath -Value $data
+            Write-Host "Updated official local enablement title for $id"
+            return
+        }
+
+        if ([string]$existing.title -ne [string]$title) {
+            Backup-ModInfosBeforeWrite -EnablementPath $enablementPath
+            $existing.title = $title
+            Write-JsonObjectAtomic -Path $enablementPath -Value $data
+            Write-Host "Updated official local enablement title for $id"
+        }
+        return
+    }
+
+    $priority = 0
+    foreach ($property in $data.modInfos.PSObject.Properties) {
+        $value = $property.Value
+        if ($value -and $value.PSObject.Properties['enabled'] -and [bool]$value.enabled -and $value.PSObject.Properties['priority']) {
+            $existingPriority = Get-NumericPriorityOrNull -Value $value.priority
+            if ($null -ne $existingPriority) {
+                $priority = [Math]::Max($priority, $existingPriority + 1)
+            }
+        }
     }
 
     $entry = [ordered]@{

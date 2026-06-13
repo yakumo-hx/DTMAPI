@@ -62,6 +62,26 @@ function Set-DtmApiVersionRequirements {
     }
 }
 
+function Get-DtmApiPublishMetadata {
+    param(
+        [Parameter(Mandatory = $true)] [string] $RepoRoot,
+        [Parameter(Mandatory = $true)] [string] $UniqueId
+    )
+
+    $metadataPath = Join-Path $RepoRoot 'tools\release\dtmapi-mod-publish-zh.json'
+    if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) {
+        throw "Missing DTMAPI publish metadata file: $metadataPath"
+    }
+
+    $metadata = Get-Content -Raw -Encoding UTF8 -LiteralPath $metadataPath | ConvertFrom-Json
+    $entry = @($metadata.mods | Where-Object { $_.uniqueId -eq $UniqueId } | Select-Object -First 1)
+    if ($entry.Count -ne 1) {
+        throw "DTMAPI publish metadata does not contain exactly one entry for UniqueID '$UniqueId'."
+    }
+
+    return $entry[0]
+}
+
 if (-not $ModsOnly) {
     $runtimePackage = Join-Path $OutputRoot 'DTMAPI'
     Clear-Directory -Path $runtimePackage
@@ -88,14 +108,23 @@ if (-not $ModsOnly) {
 
     $manifest = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'workshop-runtime' -IncludedAssemblies $runtimeFiles -BundledMods @()
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'Content\DTMAPI\release-manifest.json') -Value $manifest
-    $runtimeDescriptionBase64 = 'RFRNQVBJIOaYr+Wkmua0m+WPr+Wwj+mVh+WKn+iDveaApyBNb2Qg55qE6L+Q6KGM5YmN572u44CCCuWug+S8muWuieijheW5tuWQr+WKqOaJgOmcgOeahOW6leWxgui/kOihjOe7hOS7tu+8jOaPkOS+m+mFjee9ruiPnOWNleOAgeaXpeW/l+iviuaWreOAgU1hbmFnZXIg54q25oCB6aG144CB5oql5ZGK5a+85Ye65ZKM5Yqf6IO95oCnIE1vZCDov5DooYzmlK/mjIHjgIIKCuacrOWMheacrOi6q+S4jeaYr+S4gOS4quWNleeLrOeOqeazlSBNb2TvvJvorqLpmIXlkI7or7fov5DooYwgMV9pbnN0YWxsX2R0bWFwaS5iYXQg5a6J6KOFIERUTUFQSSDov5DooYzliY3nva7jgIIK5LmL5ZCO5aSn6KeG6YeO44CB5Yqo5L2c5Yqg6YCf44CB5LiA6ZSu5a6M5oiQ44CB5pu05aSa5a2Y5qGj44CBWSDplK7mjqfliLblj7DnrYkgRFRNQVBJIE1vZCDmiY3og73ov5DooYzjgIIKCjAuNS4xLWFscGhhIOaUuei/m+S6huWuieijheWZqOWFvOWuueaAp+WSjOeKtuaAgeajgOafpei+k+WHuu+8muWuieijheiEmuacrOWFvOWuuSBXaW5kb3dzIFBvd2VyU2hlbGwgNS4x77yMM19jaGVja19kdG1hcGlfc3RhdHVzLmJhdCDkvJrnlKjmmI7mmL7nmoQgW09LXeOAgVtNSVNTSU5HXeOAgVtXQVJOXeOAgVtJTkZPXSDmmL7npLrov5DooYzml7bmlofku7bjgIFCZXBJbkV444CB5pel5b+X44CB5oql5ZGK5ZKM5pen54mIIERMSy9TTUFQSSDmo4DmtYvnirbmgIHjgIIKCuS4juaXpyBETEtzbWFwaSAvIERvbG9jVG93blNNQVBJIOeahOWMuuWIq++8mkRUTUFQSSDmmK/ku47pm7bph43lu7rnmoTmlrDniYjov5DooYzml7bvvIzkuI3lpI3liLbml6flrp7njrDjgIIK5a6J6KOF44CB5Y246L2944CB54q25oCB5qOA5p+l44CB5pel5b+X5a+85Ye65ZKMIE1vZCDlkK/lgZzot6/lvoTmm7TmuIXmmbDjgIIK5pmu6YCa5Yqf6IO9IE1vZCDpgJrov4cgQ29udGVudC9EVE1BUEkvbWFuaWZlc3QuanNvbiDliqDovb3vvIzov5DooYzliY3nva7lj6rlronoo4XliLAgQmVwSW5FeC9wbHVnaW5zL0RUTUFQSeOAggoK6L+Z5piv5byA5Y+R6ICF6aKE6KeI54mI77yM5L2G5Lya5oyB57ut57u05oqk44CCCuWQjue7reS8mue7p+e7reWujOWWhCBNYW5hZ2VyIFVJ44CB5YW85a655penIE1vZCDov4Hnp7vvvIzlubbkvJjlhYjkv53miqTlrZjmoaPkuI7njqnlrrbmnKzlnLAgTW9kIOWGheWuueOAgg=='
-    $runtimeDescription = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($runtimeDescriptionBase64))
+    $runtimeMetadata = Get-DtmApiPublishMetadata -RepoRoot $repo -UniqueId 'DTMAPI.Runtime'
+    $runtimeDescription = [string]$runtimeMetadata.steamDescription
+    if ([string]::IsNullOrWhiteSpace($runtimeDescription)) {
+        $runtimeDescription = [string]$runtimeMetadata.gameDescription
+    }
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'info.json') -Value ([ordered]@{
         name = 'DTMAPI'
         author = 'Yuuka'
         version = $script:DtmApiReleaseVersion
         description = $runtimeDescription
+        steamDescription = $runtimeDescription
         tags = @('Mod', 'Framework', 'DTMAPI', 'Chinese')
+        localized_description = [ordered]@{
+            schinese = $runtimeDescription
+            tchinese = $runtimeDescription
+            english = $runtimeDescription
+        }
     })
 }
 
@@ -132,11 +161,28 @@ if (-not $RuntimeOnly) {
         if (Test-Path $infoPath) {
             $info = Get-Content -Raw -Encoding UTF8 -LiteralPath $infoPath | ConvertFrom-Json
             $info.author = 'Yuuka'
-            $info.version = $manifest.Version
+            if (-not $info.PSObject.Properties['version']) {
+                $info | Add-Member -NotePropertyName version -NotePropertyValue $manifest.Version
+            } elseif ([string]::IsNullOrWhiteSpace([string]$info.version)) {
+                $info.version = $manifest.Version
+            }
             Write-Utf8NoBomJson -Path (Join-Path $package 'info.json') -Value $info
         }
-        Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-icon.png') -Destination (Join-Path $package 'icon.png')
-        Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-preview.png') -Destination (Join-Path $package 'preview.png')
+        $modSourceRoot = Join-Path $repo "testmods\$($mod.Project)"
+        $assetIcon = Join-Path $repo 'assets\branding\dtmapi-icon.png'
+        $modIcon = Join-Path $modSourceRoot 'icon.png'
+        if (Test-Path -LiteralPath $modIcon -PathType Leaf) {
+            $assetIcon = $modIcon
+        }
+
+        $assetPreview = Join-Path $repo 'assets\branding\dtmapi-preview.png'
+        $modPreview = Join-Path $modSourceRoot 'preview.png'
+        if (Test-Path -LiteralPath $modPreview -PathType Leaf) {
+            $assetPreview = $modPreview
+        }
+
+        Copy-IfExists -Source $assetIcon -Destination (Join-Path $package 'icon.png')
+        Copy-IfExists -Source $assetPreview -Destination (Join-Path $package 'preview.png')
         Write-Utf8NoBomJson -Path (Join-Path $contentRoot 'dtmapi-package.json') -Value ([ordered]@{
             owner = 'DTMAPI'
             packageKind = 'workshop-mod'

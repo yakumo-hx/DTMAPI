@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 箱子定位器增强",
   "author": "Yuuka",
-  "version": "0.3.1-dtmapi",
+  "version": "1.0.0",
   "description": "依赖 DTMAPI。\n扩展官方箱子定位器共享容器范围。",
   "tags": [
     "Mod",
@@ -18,6 +18,6 @@
   "localized_description": {
     "schinese": "依赖 DTMAPI。\n扩展官方箱子定位器共享容器范围。",
     "tchinese": "依賴 DTMAPI。\n擴展官方箱子定位器共享容器範圍。",
-    "english": "Requires DTMAPI.\nExtends official locator-marked shared containers so chests and storage-shelf boxes across farm building rooms can participate in material lookup and consume paths."
+    "english": "Requires DTMAPI.\nExpands the official chest locator shared-container range."
   }
 }

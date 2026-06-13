@@ -1,7 +1,7 @@
 {
   "name": "DTMAPI 矿井",
   "author": "DTMAPI",
-  "version": "0.5.1-alpha-dtmapi",
+  "version": "1.0.0",
   "description": "DTMAPI 实验性矿井内容包。\n新增矿井设备、设备工作台配方，并声明纯电力/概率产矿方案。",
   "tags": [
     "Mod",
@@ -18,7 +18,7 @@
   },
   "localized_description": {
     "schinese": "DTMAPI 实验性矿井内容包。\n新增矿井设备、设备工作台配方，并声明纯电力/概率产矿方案。",
-    "tchinese": "DTMAPI 實驗性礦井內容包。\n新增礦井設備、設備工作台配方，並宣告純電力/機率產礦方案。",
-    "english": "DTMAPI experimental mine content package.\nAdds a mine equipment item and recipe, reuses the official well sprite without replacing the well, and supports electric production behavior."
+    "tchinese": "DTMAPI 實驗性礦井內容包。\n新增礦井設備、設備工作台配方，並聲明純電力/機率產礦方案。",
+    "english": "DTMAPI experimental mine content pack.\nAdds mine equipment and an equipment workbench recipe, and declares an electric-only/probability-based ore production plan."
   }
 }

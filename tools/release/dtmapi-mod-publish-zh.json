@@ -16,7 +16,7 @@
       "modName": "DTMAPI",
       "author": "Yuuka",
       "version": "0.5.1-alpha",
-      "gameDescription": "玩家自制多洛可小镇功能性 Mod 的运行前置。\n订阅后需双击运行 1_install_dtmapi.bat 安装 。\n提供mod设置菜单、日志诊断、报告导出等功能。",
+      "gameDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n它会安装并启动所需的底层运行组件，提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 运行前置。\n请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\n安装后运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可。",
       "steamName": "DTMAPI",
       "steamDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n它会安装并启动所需的底层运行组件，提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 运行前置。\n请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\n安装后运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可。",
       "uniqueId": "DTMAPI.Runtime",

@@ -12,7 +12,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly DtmApiRuntime runtime;
         private readonly Dictionary<string, FishRoeTooltipOptions> fishRoeOptions = new Dictionary<string, FishRoeTooltipOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<string, FishRoeDisplayInfo?>> fishRoeLookups = new Dictionary<string, Func<string, FishRoeDisplayInfo?>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, FishRoeDisplayInfo> nativeFishRoeLookups = new Dictionary<string, FishRoeDisplayInfo>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> loggedFishRoeApplications = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> loggedNativeLookupFailures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool hooksInstalled;
 
         public FishRoeTooltipService(DtmApiRuntime runtime)
@@ -53,7 +55,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 FishRoeTooltipOptions options = entry.Value ?? new FishRoeTooltipOptions();
                 if (!options.Enabled || !options.LabelFishRoeTitle)
                     continue;
-                if (!TryLookupFishRoe(entry.Key, fishId, out FishRoeDisplayInfo info))
+                if (!TryLookupFishRoe(entry.Key, fishId, out FishRoeDisplayInfo info) &&
+                    !TryLookupNativeFishRoe(fishId, out info))
                     continue;
 
                 string fishTitle = FirstText(info.FishTitle, info.FishId, fishId);
@@ -79,7 +82,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 FishRoeTooltipOptions options = entry.Value ?? new FishRoeTooltipOptions();
                 if (!options.Enabled || !options.LabelFishRoeDetails)
                     continue;
-                if (!TryLookupFishRoe(entry.Key, fishId, out FishRoeDisplayInfo info))
+                if (!TryLookupFishRoe(entry.Key, fishId, out FishRoeDisplayInfo info) &&
+                    !TryLookupNativeFishRoe(fishId, out info))
                     continue;
 
                 string fishTitle = FirstText(info.FishTitle, info.FishId, fishId);
@@ -120,6 +124,60 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Fish roe provider failed for " + ownerId + "/" + fishId + ".", ex.ToString());
                 return false;
             }
+        }
+
+        private bool TryLookupNativeFishRoe(string fishId, out FishRoeDisplayInfo info)
+        {
+            info = null!;
+            if (string.IsNullOrWhiteSpace(fishId))
+                return false;
+            if (nativeFishRoeLookups.TryGetValue(fishId, out FishRoeDisplayInfo cached))
+            {
+                info = cached;
+                return !string.IsNullOrWhiteSpace(cached.FishTitle);
+            }
+
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? queryItemProto = dolocApi?.GetMethod("QueryItemProto", BindingFlags.Public | BindingFlags.Static);
+                if (queryItemProto == null)
+                    return CacheNativeLookupFailure(fishId, "DolocAPI.QueryItemProto was not found.", out info);
+
+                object?[] args = new object?[] { fishId, null };
+                bool found = queryItemProto.Invoke(null, args) is bool ok && ok && args[1] != null;
+                if (!found)
+                    return CacheNativeLookupFailure(fishId, "No native item proto was found for " + fishId + ".", out info);
+
+                string fishTitle = ReadStringMember(args[1]!, "Title", string.Empty);
+                if (string.IsNullOrWhiteSpace(fishTitle))
+                    return CacheNativeLookupFailure(fishId, "Native item proto for " + fishId + " has no Title.", out info);
+
+                info = new FishRoeDisplayInfo
+                {
+                    FishId = fishId,
+                    FishTitle = fishTitle,
+                    RoeTitle = "Fish roe"
+                };
+                nativeFishRoeLookups[fishId] = info;
+                LogOnce(loggedFishRoeApplications, "native:title:" + fishId, "Fish roe native title lookup resolved " + fishId + " -> " + fishTitle + ".");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (loggedNativeLookupFailures.Add(fishId))
+                    runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Fish roe native title lookup failed for " + fishId + ".", ex.ToString());
+                nativeFishRoeLookups[fishId] = new FishRoeDisplayInfo { FishId = fishId };
+                return false;
+            }
+        }
+
+        private bool CacheNativeLookupFailure(string fishId, string reason, out FishRoeDisplayInfo info)
+        {
+            info = new FishRoeDisplayInfo { FishId = fishId };
+            nativeFishRoeLookups[fishId] = info;
+            LogOnce(loggedNativeLookupFailures, "native-miss:" + fishId, "Fish roe native title lookup skipped for " + fishId + ": " + reason);
+            return false;
         }
 
         private static bool TryGetFishRoeId(object item, out string fishId)

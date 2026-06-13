@@ -1,7 +1,7 @@
 {
   "name": "自动收获（DTMAPI）",
   "author": "Yuuka",
-  "version": "0.1.0-dtmapi",
+  "version": "1.0.0",
   "description": "依赖 DTMAPI。\n按配置扫描当前农场和农场房间中的成熟作物，并调用游戏原生收获逻辑；默认关闭。",
   "tags": [
     "Mod",
@@ -17,7 +17,7 @@
   },
   "localized_description": {
     "schinese": "依赖 DTMAPI。\n按配置扫描当前农场和农场房间中的成熟作物，并调用游戏原生收获逻辑；默认关闭。",
-    "tchinese": "依賴 DTMAPI。\n依設定掃描目前農場和農場房間中的成熟作物，並呼叫遊戲原生收穫邏輯；預設關閉。",
-    "english": "Requires DTMAPI.\nScans mature crops and uses the game's native harvest behavior.\nDisabled by default; enable it from DTMAPI Settings or trigger it with a hotkey."
+    "tchinese": "依賴 DTMAPI。\n按配置掃描當前農場和農場房間中的成熟作物，並呼叫遊戲原生收穫邏輯；預設關閉。",
+    "english": "Requires DTMAPI.\nScans mature crops in the current farm and farm rooms according to configuration, then calls the game's native harvest logic. Disabled by default."
   }
 }
