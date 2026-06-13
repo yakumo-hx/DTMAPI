@@ -73,16 +73,43 @@ namespace DTMAPI.GameBridge.DolocTown
                 MethodInfo? select = panel?.GetType().GetMethod("Select", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(int) }, null);
                 refreshView?.Invoke(panel, null);
                 int evidenceIndex = panel == null ? 0 : FindAnimalProgressDataIndex(panel);
-                refreshViewer?.Invoke(panel, new object[] { evidenceIndex });
-                select?.Invoke(panel, new object[] { evidenceIndex });
-                refreshViewer?.Invoke(panel, new object[] { evidenceIndex });
+                List<int> switchTargets = BuildAnimalPanelSwitchTargets(panel, evidenceIndex);
+                foreach (int target in switchTargets)
+                {
+                    refreshViewer?.Invoke(panel, new object[] { target });
+                    select?.Invoke(panel, new object[] { target });
+                    refreshViewer?.Invoke(panel, new object[] { target });
+                }
                 if (panel != null)
-                    runtime.RuntimeMonitor.Log("Smoke automation refreshed animal panel viewer selection panel=" + panel.GetType().FullName + " evidenceIndex=" + evidenceIndex + " refreshView=" + (refreshView != null) + " refreshViewer=" + (refreshViewer != null) + " select=" + (select != null) + ".");
+                {
+                    string targetSummary = string.Join("|", switchTargets);
+                    runtime.RuntimeMonitor.Log("Smoke automation refreshed animal panel viewer selection panel=" + panel.GetType().FullName + " evidenceIndex=" + evidenceIndex + " switchTargets=" + targetSummary + " refreshView=" + (refreshView != null) + " refreshViewer=" + (refreshViewer != null) + " select=" + (select != null) + ".");
+                    runtime.SetHookStatus("Smoke.AnimalViewerRepeatedSwitchFirstFrame", "verified", "AnimalPanel.RefreshViewer + Select repeated smoke loop", "Repeated official animal viewer refresh/select loop targets=" + targetSummary + "; first-frame text guard is published by Smoke.AnimalViewerFirstFrameFlickerGuard.");
+                }
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke animal panel refresh failed.", ex.ToString());
             }
+        }
+
+        private List<int> BuildAnimalPanelSwitchTargets(object? panel, int evidenceIndex)
+        {
+            var targets = new List<int>();
+            object? currentDatas = panel == null ? null : ReadMember(panel, "currentDatas") ?? ReadMember(panel, "<currentDatas>k__BackingField");
+            int dataCount = CountEnumerableForSmoke(currentDatas);
+            int safeEvidenceIndex = dataCount <= 0 ? Math.Max(0, evidenceIndex) : Math.Max(0, Math.Min(evidenceIndex, dataCount - 1));
+            AddAnimalPanelSwitchTarget(targets, safeEvidenceIndex);
+            if (dataCount > 1)
+                AddAnimalPanelSwitchTarget(targets, safeEvidenceIndex == 0 ? 1 : 0);
+            AddAnimalPanelSwitchTarget(targets, safeEvidenceIndex);
+            AddAnimalPanelSwitchTarget(targets, safeEvidenceIndex);
+            return targets;
+        }
+
+        private static void AddAnimalPanelSwitchTarget(List<int> targets, int index)
+        {
+            targets.Add(Math.Max(0, index));
         }
 
         private int FindAnimalProgressDataIndex(object panel)

@@ -13,6 +13,13 @@ namespace DTMAPI.BepInExBootstrap
 {
     internal sealed class ReflectedTitleMenuSettingsUi
     {
+        private const int ConfigListPageSize = 14;
+        private const int ConfigItemPageSize = 12;
+        private const int ManagerModsPageSize = 16;
+        private const int ManagerDiagnosticPageSize = 7;
+        private const int ManagerHookPageSize = 17;
+        private const int ManagerFeaturePageSize = 17;
+
         private readonly DtmApiRuntime runtime;
         private readonly IConfigMenuRuntime configMenu;
         private readonly DtmUiText text = new DtmUiText();
@@ -65,6 +72,13 @@ namespace DTMAPI.BepInExBootstrap
         private string? renderedConfigUniqueId;
         private bool trackingRenderedObjects = true;
         private bool buildingStaticUi;
+        private int configListPageIndex;
+        private int configItemPageIndex;
+        private int managerModsPageIndex;
+        private int managerErrorsPageIndex;
+        private int managerWarningsPageIndex;
+        private int managerHooksPageIndex;
+        private int managerFeaturesPageIndex;
 
         public ReflectedTitleMenuSettingsUi(DtmApiRuntime runtime, IConfigMenuRuntime configMenu)
         {
@@ -238,14 +252,17 @@ namespace DTMAPI.BepInExBootstrap
         {
             buildingStaticUi = true;
             trackingRenderedObjects = false;
-            titleButtonRoot = CreateButton(root!, "DTMAPI.TitleSettings.Button", "DTMAPI", () =>
+            bool hasIcon = iconSprite != null;
+            titleButtonRoot = CreateButton(root!, "DTMAPI.TitleSettings.Button", hasIcon ? string.Empty : "DTMAPI", () =>
             {
                 OpenFromTitleButton();
-            }, Color(0.11f, 0.17f, 0.22f, 0.92f), Color(1f, 1f, 1f, 1f));
-            SetRect(titleButtonRoot, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(48, -38), Vector2(172, 54));
-
-            object icon = CreateImage(titleButtonRoot, "DTMAPI.TitleSettings.Button.Icon", iconSprite, Color(1f, 1f, 1f, 1f));
-            SetRect(icon, Vector2(0, 0.5f), Vector2(0, 0.5f), Vector2(0, 0.5f), Vector2(28, 0), Vector2(34, 34));
+            }, Color(0.10f, 0.12f, 0.14f, 0.92f), Color(1f, 0.92f, 0.78f, 1f));
+            SetRect(titleButtonRoot, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(48, -38), Vector2(hasIcon ? 54 : 84, 54));
+            if (hasIcon)
+            {
+                object icon = CreateImage(titleButtonRoot, "DTMAPI.TitleSettings.Button.Icon", iconSprite, Color(1f, 1f, 1f, 1f));
+                SetRect(icon, Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0, 0), Vector2(38, 38));
+            }
             trackingRenderedObjects = true;
             buildingStaticUi = false;
         }
@@ -361,17 +378,31 @@ namespace DTMAPI.BepInExBootstrap
                 selectedConfigModId = runtime.UI.RequestedConfigUniqueId;
             if (selectedConfigModId == null || !pages.Any(p => p.Manifest.UniqueID.Equals(selectedConfigModId, StringComparison.OrdinalIgnoreCase)))
                 selectedConfigModId = pages[0].Manifest.UniqueID;
+            int selectedIndex = Array.FindIndex(pages, p => p.Manifest.UniqueID.Equals(selectedConfigModId, StringComparison.OrdinalIgnoreCase));
+            if (selectedIndex >= 0 && !IsIndexOnPage(selectedIndex, configListPageIndex, ConfigListPageSize))
+                configListPageIndex = selectedIndex / ConfigListPageSize;
+
+            ClampPage(ref configListPageIndex, pages.Length, ConfigListPageSize);
+            GetPageBounds(pages.Length, configListPageIndex, ConfigListPageSize, out int pageStart, out int pageEnd, out int pageCount);
 
             AddText(panelContentRoot!, "DTMAPI.Config.ListTitle", T("config.listTitle", "Enabled DTMAPI mods"), 16, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 44, -126, 260, 24);
-            for (int i = 0; i < Math.Min(15, pages.Length); i++)
+            if (pageCount > 1)
+                RenderPager("DTMAPI.Config.ListPager", configListPageIndex, pageCount, pages.Length, pageStart, pageEnd, 172, -126, page =>
+                {
+                    configListPageIndex = page;
+                    dirty = true;
+                });
+
+            for (int i = pageStart; i < pageEnd; i++)
             {
                 IConfigMenuPage page = pages[i];
                 bool active = page.Manifest.UniqueID.Equals(selectedConfigModId, StringComparison.OrdinalIgnoreCase);
                 string label = Truncate(page.DisplayName, 24) + (page.IsLocked ? " [" + T("config.lockedBadge", "locked") + "]" : string.Empty);
+                int row = i - pageStart;
                 CreateButton(panelContentRoot!, "DTMAPI.Config.Mod." + page.Manifest.UniqueID, label, () =>
                 {
                     SelectConfigPage(page.Manifest.UniqueID);
-                }, active ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.10f, 0.13f, 0.15f, 1f), Color(1f, 1f, 1f, 1f), 44, -158 - i * 32, 250, 28);
+                }, active ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.10f, 0.13f, 0.15f, 1f), Color(1f, 1f, 1f, 1f), 44, -158 - row * 32, 250, 28);
             }
 
             IConfigMenuPage selectedPage = configMenu.GetPage(selectedConfigModId!) ?? pages[0];
@@ -402,10 +433,21 @@ namespace DTMAPI.BepInExBootstrap
                     conflictLine++;
                 }
 
+                IConfigMenuItem[] items = page.Items.ToArray();
+                ClampPage(ref configItemPageIndex, items.Length, ConfigItemPageSize);
+                GetPageBounds(items.Length, configItemPageIndex, ConfigItemPageSize, out int itemStart, out int itemEnd, out int itemPageCount);
+                if (itemPageCount > 1)
+                    RenderPager("DTMAPI.Config.ItemPager", configItemPageIndex, itemPageCount, items.Length, itemStart, itemEnd, x + 482, -178, pageIndex =>
+                    {
+                        configItemPageIndex = pageIndex;
+                        capturingKeybindItemId = null;
+                        dirty = true;
+                    });
+
                 float itemY = -226;
-                foreach (IConfigMenuItem item in page.Items.Take(13))
+                for (int i = itemStart; i < itemEnd; i++)
                 {
-                    RenderConfigItem(page, item, x, itemY, 650);
+                    RenderConfigItem(page, items[i], x, itemY, 650);
                     itemY -= 34;
                 }
             }
@@ -547,9 +589,15 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
 
-            const int rowLimit = 16;
-            int shown = Math.Min(rowLimit, manager.Mods.Count);
-            AddText(panelContentRoot!, "DTMAPI.Mods.Count", ManagerPageRowFormatter.FormatShowingFirst("Mods", shown, manager.Mods.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -160, 900, 22);
+            ClampPage(ref managerModsPageIndex, manager.Mods.Count, ManagerModsPageSize);
+            GetPageBounds(manager.Mods.Count, managerModsPageIndex, ManagerModsPageSize, out int modStart, out int modEnd, out int modPageCount);
+            AddText(panelContentRoot!, "DTMAPI.Mods.Count", FormatShowingPage("Mods", modStart, modEnd, manager.Mods.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -160, 620, 22);
+            if (modPageCount > 1)
+                RenderPager("DTMAPI.Mods.Pager", managerModsPageIndex, modPageCount, manager.Mods.Count, modStart, modEnd, 732, -160, page =>
+                {
+                    managerModsPageIndex = page;
+                    dirty = true;
+                });
 
             if (manager.Mods.Count == 0)
             {
@@ -558,8 +606,9 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             int i = 0;
-            foreach (ManagerModRow mod in manager.Mods.Take(rowLimit))
+            for (int row = modStart; row < modEnd; row++)
             {
+                ManagerModRow mod = manager.Mods[row];
                 AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(ManagerPageRowFormatter.FormatModRow(mod), 136), 13, GetModRowColor(mod), TextAnchorMiddleLeft, 52, -190 - i * 30, 930, 24);
                 i++;
             }
@@ -629,6 +678,52 @@ namespace DTMAPI.BepInExBootstrap
             return label + ": " + status + (hasPath ? " | " + path : string.Empty);
         }
 
+        private void RenderPager(string id, int pageIndex, int pageCount, int total, int start, int end, float x, float y, Action<int> setPage)
+        {
+            pageCount = Math.Max(1, pageCount);
+            string label = total <= 0
+                ? "0/0"
+                : string.Format(CultureInfo.InvariantCulture, "{0}-{1}/{2}  Page {3}/{4}", start + 1, end, total, pageIndex + 1, pageCount);
+            AddText(panelContentRoot!, id + ".Label", label, 12, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, x, y, 160, 22);
+            CreateButton(panelContentRoot!, id + ".Prev", "<", () =>
+            {
+                setPage(Math.Max(0, pageIndex - 1));
+            }, pageIndex <= 0 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 166, y, 30, 22);
+            CreateButton(panelContentRoot!, id + ".Next", ">", () =>
+            {
+                setPage(Math.Min(pageCount - 1, pageIndex + 1));
+            }, pageIndex >= pageCount - 1 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 202, y, 30, 22);
+        }
+
+        private static bool IsIndexOnPage(int index, int pageIndex, int pageSize)
+        {
+            int start = Math.Max(0, pageIndex) * Math.Max(1, pageSize);
+            return index >= start && index < start + pageSize;
+        }
+
+        private static void ClampPage(ref int pageIndex, int total, int pageSize)
+        {
+            int pageCount = Math.Max(1, (int)Math.Ceiling(Math.Max(0, total) / (double)Math.Max(1, pageSize)));
+            pageIndex = Math.Max(0, Math.Min(pageIndex, pageCount - 1));
+        }
+
+        private static void GetPageBounds(int total, int pageIndex, int pageSize, out int start, out int end, out int pageCount)
+        {
+            total = Math.Max(0, total);
+            pageSize = Math.Max(1, pageSize);
+            pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+            pageIndex = Math.Max(0, Math.Min(pageIndex, pageCount - 1));
+            start = Math.Min(total, pageIndex * pageSize);
+            end = Math.Min(total, start + pageSize);
+        }
+
+        private static string FormatShowingPage(string label, int start, int end, int total)
+        {
+            if (total <= 0)
+                return label + ": 0/0";
+            return string.Format(CultureInfo.InvariantCulture, "{0}: showing {1}-{2} of {3}", label, start + 1, end, total);
+        }
+
         private void RenderErrors(RuntimeSnapshot snapshot)
         {
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
@@ -645,9 +740,20 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
 
+            ClampPage(ref managerErrorsPageIndex, manager.Errors.Count, ManagerDiagnosticPageSize);
+            ClampPage(ref managerWarningsPageIndex, manager.Warnings.Count, ManagerDiagnosticPageSize);
+            GetPageBounds(manager.Errors.Count, managerErrorsPageIndex, ManagerDiagnosticPageSize, out int errorStart, out int errorEnd, out int errorPageCount);
+            GetPageBounds(manager.Warnings.Count, managerWarningsPageIndex, ManagerDiagnosticPageSize, out int warningPageStart, out int warningPageEnd, out int warningPageCount);
+
             int line = 0;
             AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsTitle", T("errors.errorsTitle", "Errors"), 15, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -136, 160, 24);
-            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsCount", ManagerPageRowFormatter.FormatShowingFirst("Errors", Math.Min(7, manager.Errors.Count), manager.Errors.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -136, 360, 22);
+            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsCount", FormatShowingPage("Errors", errorStart, errorEnd, manager.Errors.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -136, 360, 22);
+            if (errorPageCount > 1)
+                RenderPager("DTMAPI.Errors.Pager", managerErrorsPageIndex, errorPageCount, manager.Errors.Count, errorStart, errorEnd, 694, -136, page =>
+                {
+                    managerErrorsPageIndex = page;
+                    dirty = true;
+                });
             if (manager.Errors.Count == 0)
             {
                 AddText(panelContentRoot!, "DTMAPI.Errors.NoErrors", T("errors.noErrors", "No DTMAPI errors recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 720, 22);
@@ -655,8 +761,9 @@ namespace DTMAPI.BepInExBootstrap
             }
             else
             {
-                foreach (ManagerDiagnosticRow error in manager.Errors.Take(7))
+                for (int row = errorStart; row < errorEnd; row++)
                 {
+                    ManagerDiagnosticRow error = manager.Errors[row];
                     AddText(panelContentRoot!, "DTMAPI.Errors.Row." + line, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(error), 132), 13, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -164 - line * 28, 930, 22);
                     line++;
                 }
@@ -664,7 +771,13 @@ namespace DTMAPI.BepInExBootstrap
 
             int warningStart = line + 1;
             AddText(panelContentRoot!, "DTMAPI.Errors.WarningsTitle", T("errors.warningsTitle", "Warnings"), 15, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -164 - warningStart * 28, 160, 24);
-            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsCount", ManagerPageRowFormatter.FormatShowingFirst("Warnings", Math.Min(7, manager.Warnings.Count), manager.Warnings.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -164 - warningStart * 28, 360, 22);
+            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsCount", FormatShowingPage("Warnings", warningPageStart, warningPageEnd, manager.Warnings.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -164 - warningStart * 28, 360, 22);
+            if (warningPageCount > 1)
+                RenderPager("DTMAPI.Warnings.Pager", managerWarningsPageIndex, warningPageCount, manager.Warnings.Count, warningPageStart, warningPageEnd, 694, -164 - warningStart * 28, page =>
+                {
+                    managerWarningsPageIndex = page;
+                    dirty = true;
+                });
             if (manager.Warnings.Count == 0)
             {
                 AddText(panelContentRoot!, "DTMAPI.Errors.NoWarnings", T("errors.noWarnings", "No DTMAPI warnings recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28, 720, 22);
@@ -672,8 +785,9 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             int warningLine = 0;
-            foreach (ManagerDiagnosticRow warning in manager.Warnings.Take(7))
+            for (int row = warningPageStart; row < warningPageEnd; row++)
             {
+                ManagerDiagnosticRow warning = manager.Warnings[row];
                 AddText(panelContentRoot!, "DTMAPI.Warnings.Row." + warningLine, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(warning), 132), 13, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28 - warningLine * 28, 930, 22);
                 warningLine++;
             }
@@ -694,12 +808,19 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
             AddText(panelContentRoot!, "DTMAPI.Hooks.Title", T("hooks.title", "Hooks"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
-            int hookLimit = Math.Min(17, manager.Hooks.Count);
-            AddText(panelContentRoot!, "DTMAPI.Hooks.Count", ManagerPageRowFormatter.FormatShowingFirst("Hooks", hookLimit, manager.Hooks.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 900, 22);
-            for (int i = 0; i < hookLimit; i++)
+            ClampPage(ref managerHooksPageIndex, manager.Hooks.Count, ManagerHookPageSize);
+            GetPageBounds(manager.Hooks.Count, managerHooksPageIndex, ManagerHookPageSize, out int hookStart, out int hookEnd, out int hookPageCount);
+            AddText(panelContentRoot!, "DTMAPI.Hooks.Count", FormatShowingPage("Hooks", hookStart, hookEnd, manager.Hooks.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 620, 22);
+            if (hookPageCount > 1)
+                RenderPager("DTMAPI.Hooks.Pager", managerHooksPageIndex, hookPageCount, manager.Hooks.Count, hookStart, hookEnd, 732, -158, page =>
+                {
+                    managerHooksPageIndex = page;
+                    dirty = true;
+                });
+            for (int i = hookStart; i < hookEnd; i++)
             {
                 ManagerHookRow hook = manager.Hooks[i];
-                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(ManagerPageRowFormatter.FormatHookRow(hook), 132), 13, GetHookRowColor(hook), TextAnchorMiddleLeft, 52, -188 - i * 28, 930, 22);
+                AddText(panelContentRoot!, "DTMAPI.Hooks.Row." + i, Truncate(ManagerPageRowFormatter.FormatHookRow(hook), 132), 13, GetHookRowColor(hook), TextAnchorMiddleLeft, 52, -188 - (i - hookStart) * 28, 930, 22);
             }
         }
 
@@ -719,12 +840,19 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             AddText(panelContentRoot!, "DTMAPI.Features.Title", T("features.title", "Features"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
-            int featureLimit = Math.Min(17, manager.Features.Count);
-            AddText(panelContentRoot!, "DTMAPI.Features.Count", ManagerPageRowFormatter.FormatShowingFirst("Features", featureLimit, manager.Features.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 900, 22);
-            for (int i = 0; i < featureLimit; i++)
+            ClampPage(ref managerFeaturesPageIndex, manager.Features.Count, ManagerFeaturePageSize);
+            GetPageBounds(manager.Features.Count, managerFeaturesPageIndex, ManagerFeaturePageSize, out int featureStart, out int featureEnd, out int featurePageCount);
+            AddText(panelContentRoot!, "DTMAPI.Features.Count", FormatShowingPage("Features", featureStart, featureEnd, manager.Features.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 620, 22);
+            if (featurePageCount > 1)
+                RenderPager("DTMAPI.Features.Pager", managerFeaturesPageIndex, featurePageCount, manager.Features.Count, featureStart, featureEnd, 732, -158, page =>
+                {
+                    managerFeaturesPageIndex = page;
+                    dirty = true;
+                });
+            for (int i = featureStart; i < featureEnd; i++)
             {
                 ManagerFeatureRow feature = manager.Features[i];
-                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -188 - i * 28, 930, 22);
+                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -188 - (i - featureStart) * 28, 930, 22);
             }
         }
 
@@ -814,6 +942,7 @@ namespace DTMAPI.BepInExBootstrap
             runtime.UI.OpenConfigPage(uniqueId);
             statusMessage = string.Empty;
             capturingKeybindItemId = null;
+            configItemPageIndex = 0;
             inputValues.Clear();
             dirty = true;
         }
@@ -1052,16 +1181,16 @@ namespace DTMAPI.BepInExBootstrap
                 DateTimeOffset started = DateTimeOffset.Now;
                 byte[] bytes = File.ReadAllBytes(iconPath);
                 object texture = Activator.CreateInstance(texture2DType, 2, 2);
-            MethodInfo? loadImage = imageConversionType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name == "LoadImage")
-                .OrderBy(m => m.GetParameters().Length)
-                .FirstOrDefault(m => m.GetParameters().Length == 2 || m.GetParameters().Length == 3);
-            if (loadImage == null)
-                return null;
-            object?[] args = loadImage.GetParameters().Length == 2
-                ? new object?[] { texture, bytes }
-                : new object?[] { texture, bytes, false };
-            loadImage.Invoke(null, args);
+                MethodInfo? loadImage = imageConversionType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => m.Name == "LoadImage")
+                    .OrderBy(m => m.GetParameters().Length)
+                    .FirstOrDefault(m => m.GetParameters().Length == 2 || m.GetParameters().Length == 3);
+                if (loadImage == null)
+                    return null;
+                object?[] args = loadImage.GetParameters().Length == 2
+                    ? new object?[] { texture, bytes }
+                    : new object?[] { texture, bytes, false };
+                loadImage.Invoke(null, args);
                 int width = (int)(texture2DType.GetProperty("width")?.GetValue(texture) ?? 32);
                 int height = (int)(texture2DType.GetProperty("height")?.GetValue(texture) ?? 32);
                 object rect = Activator.CreateInstance(rectType, 0f, 0f, (float)width, (float)height);
@@ -1179,6 +1308,7 @@ namespace DTMAPI.BepInExBootstrap
             titleButtonRoot = null;
             panelRoot = null;
             panelContentRoot = null;
+            iconSprite = null;
             initialized = false;
             dirty = true;
             wasTitleVisible = false;

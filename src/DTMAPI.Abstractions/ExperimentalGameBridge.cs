@@ -789,6 +789,11 @@ namespace DTMAPI.Abstractions
     public sealed class SaveSlotsOptions
     {
         public bool Enabled { get; set; } = true;
+        /// <summary>
+        /// Experimental compatibility field. In 0.5.1-alpha enabled requests are
+        /// normalized to 12 total official save slots; disabled requests remain
+        /// the vanilla six slots.
+        /// </summary>
         public int SlotCount { get; set; } = 12;
         public bool VerboseLogging { get; set; }
     }
@@ -1216,49 +1221,41 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    public enum FishingBiteWaitMode
+    {
+        NativeWait,
+        InstantNativeBite
+    }
+
+    public enum FishingResultMode
+    {
+        AutoCompleteVisibleMiniGame,
+        SkipMiniGameNativeResult
+    }
+
+    public enum FishingAnimationMode
+    {
+        Normal,
+        FastCastPull
+    }
+
     /// <summary>
-    /// Experimental AutoFishing policy options. In the 0.5.0-alpha GameBridge these
-    /// options are accepted for compatibility, but some fields are normalized by
-    /// the experimental FishingAutomation service until their wider semantics are
-    /// proven.
+    /// Experimental AutoFishing policy options. These options intentionally model
+    /// the native fishing responsibilities instead of the old migrated-mod toggles.
     /// </summary>
     public sealed class FishingAutomationOptions
     {
-        /// <summary>
-        /// Requested automatic recast behavior. In 0.5.0-alpha this field is
-        /// accepted but normalized to <c>true</c> by the experimental service, so
-        /// callers should not rely on <c>false</c> being honored yet.
-        /// </summary>
-        public bool AutoRecast { get; set; } = true;
+        public FishingBiteWaitMode BiteWaitMode { get; set; } = FishingBiteWaitMode.NativeWait;
+        public FishingResultMode ResultMode { get; set; } = FishingResultMode.AutoCompleteVisibleMiniGame;
+        public FishingAnimationMode AnimationMode { get; set; } = FishingAnimationMode.Normal;
         public bool StopOnManualMove { get; set; } = true;
-        /// <summary>
-        /// Requested selected-rod-only policy. In 0.5.0-alpha this field is
-        /// accepted but normalized to <c>true</c> by the experimental service,
-        /// keeping automation on the conservative selected fishing rod path.
-        /// </summary>
-        public bool RequireSelectedFishingRod { get; set; }
-        public double CastReleaseProgress { get; set; }
         public double RecastDelaySeconds { get; set; } = 0.25;
         /// <summary>
-        /// Experimental InstantBite transition option. In 0.5.0-alpha this is
-        /// not an independent minigame skip; it only affects the wait-phase route
-        /// that DTMAPI advances after a bite is forced.
+        /// Target native cast-charge ratio for the Ready phase. 0 releases
+        /// immediately; 1 holds until full charge.
         /// </summary>
-        public bool SkipMiniGame { get; set; }
-        /// <summary>
-        /// Experimental delayed minigame success forcing. In 0.5.0-alpha this
-        /// waits until a real minigame has been visible briefly, then writes the
-        /// native minigame status to Success; it is not a progress-aware solver.
-        /// </summary>
-        public bool AutoCompleteMiniGame { get; set; }
-        public bool InstantBite { get; set; }
-        /// <summary>
-        /// Attempts to scale cast/pull animator speed when supported animator
-        /// fields are reachable. The request may safely no-op on unsupported
-        /// native paths.
-        /// </summary>
-        public bool FastAnimations { get; set; }
-        public double FastAnimationMultiplier { get; set; } = 3;
+        public double CastChargeRatio { get; set; }
+        public double AnimationMultiplier { get; set; } = 3;
         public bool VerboseLogging { get; set; }
     }
 
@@ -1290,6 +1287,9 @@ namespace DTMAPI.Abstractions
         public bool Enabled { get; set; }
         public string Phase { get; set; } = "Idle";
         public string LastReason { get; set; } = string.Empty;
+        public string NativeOwner { get; set; } = string.Empty;
+        public string LastNativeAction { get; set; } = string.Empty;
+        public string LastResult { get; set; } = string.Empty;
     }
 
     public sealed class FishRoeTooltipOptions

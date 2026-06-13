@@ -6,6 +6,8 @@ codex搭建骨架，codex进行实际游戏测试hook，codex把现有的mod进�
 骨架必须可拓展，功能齐全（界面、自带功能性菜单mod接口）。
 请你给出指导性意见。
 
+长期 API/GameBridge 重建必须先查固定 native-owner 领域资料库：`../reviews/api/native-owner-domains/INDEX.md`。这个索引用来把“新增 NPC / 动物 / 天气 / 地图 / 载具 / 远程武器”等模糊功能目标落实到 Doloc Town 原生责任函数、状态 holder、官方 Workshop 支持边界和可转稳定 API 的 DTO/adapter 概念；它不是稳定性证明，不能替代后续第三存档游戏验证。
+
 
 
 

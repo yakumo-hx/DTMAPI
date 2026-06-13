@@ -1,20 +1,20 @@
 {
   "Name": "Y键控制台",
   "Author": "Yuuka",
-  "Description": "依赖 DTMAPI Runtime；在存档内按 Y 打开调试控制台，提供物品、天气、传送、时间和移速工具。",
+  "Description": "依赖 DTMAPI。存档内按 Y 打开调试控制台，提供物品、天气、传送、时间和移速工具。",
   "Version": "0.3.1-dtmapi",
   "UniqueID": "DTMAPI.DebugConsoleMod",
   "EntryDll": "DebugConsoleMod.dll",
-  "MinimumDTMApiVersion": "0.5.0-alpha",
+  "MinimumDTMApiVersion": "0.5.1-alpha",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.DebugConsoleHost",
-      "MinimumVersion": "0.5.0-alpha",
+      "MinimumVersion": "0.5.1-alpha",
       "Required": true
     },
     {
       "UniqueID": "DTMAPI.GameBridge.DolocTown",
-      "MinimumVersion": "0.5.0-alpha",
+      "MinimumVersion": "0.5.1-alpha",
       "Required": true
     }
   ]

@@ -10,7 +10,6 @@ namespace AutoFishingMod
         private IDtmHelper helper = null!;
         private AutoFishingConfig config = new AutoFishingConfig();
         private string registeredToggleKey = string.Empty;
-        private string registeredInfoKey = string.Empty;
         private bool updateEvidenceLogged;
         private bool enabled;
 
@@ -27,7 +26,7 @@ namespace AutoFishingMod
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             helper.Events.Save.SaveLoaded += (_, e) => helper.Monitor.Log("AutoFishing SaveLoaded boundary OK slot=" + (e.SaveSlot?.ToString() ?? "unknown"));
             helper.Events.GameLoop.ReturnedToTitle += (_, __) => SetAutomation(false, "ReturnedToTitle");
-            helper.Monitor.Log("AutoFishing migrated to DTMAPI shell. Defaults are safe; toggle=" + config.ToggleKey + ", info=" + config.InfoKey + ".");
+            helper.Monitor.Log("AutoFishing native loop policy registered. Toggle=" + NormalizeKey(config.ToggleKey) + ".");
         }
 
         private void RegisterConfigMenu()
@@ -50,19 +49,13 @@ namespace AutoFishingMod
 
             menu.SetDisplayName(helper.ModManifest, () => T("mod.name", helper.ModManifest.Name));
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.main", "Auto fishing"));
-            menu.AddParagraph(helper.ModManifest, () => string.Format(T("config.status.experimental", "Experimental: F6 input is used only to prove the hotkey chain; full fishing automation remains experimental. Current state: {0}."), FormatRuntimeStatus(menu)));
-            menu.AddParagraph(helper.ModManifest, () => T("config.boundary.current", "Current boundary: the selected fishing rod is required, auto recast is always normalized on, auto-complete is delayed success forcing, skip is not an independent minigame skip, and fast animation can no-op unless the animator path is available."));
-            menu.AddKeybindOption(helper.ModManifest, () => T("config.toggleKey.name", "Toggle key"), () => T("config.toggleKey.tooltip", "Toggles auto fishing. DTMAPI configuration is opened from the title settings button."), () => config.ToggleKey, value => config.ToggleKey = value);
-            menu.AddKeybindOption(helper.ModManifest, () => T("config.infoKey.name", "Info key"), () => T("config.infoKey.tooltip", "Opens this config page until the fish-info UI page is promoted."), () => config.InfoKey, value => config.InfoKey = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.stopManual.name", "Stop on manual move"), () => T("config.stopManual.tooltip", "Movement, jump, dash, menus, or cancel should stop automation."), () => config.StopOnManualMove, value => config.StopOnManualMove = value);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.castRelease.name", "Cast release progress"), () => T("config.castRelease.tooltip", "0 skips charging; 1 waits for full charge."), () => config.CastReleaseProgress, value => config.CastReleaseProgress = value, 0, 1, 0.05);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.recastDelay.name", "Recast delay"), () => T("config.recastDelay.tooltip", "Delay before the next cast after pull/result. Auto recast itself is currently forced on by the experimental service."), () => config.RecastDelaySeconds, value => config.RecastDelaySeconds = value, 0.05, 10, 0.05);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.instantBite.name", "Instant bite"), () => T("config.instantBite.tooltip", "Verified for the wait phase, still experimental; changes bite timing."), () => config.InstantBite, value => config.InstantBite = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.autoCompleteMinigame.name", "Delayed minigame success"), () => T("config.autoCompleteMinigame.tooltip", "Experimental: after a real minigame has been visible briefly, force its native status to Success. This is not a progress-aware solver."), () => config.AutoCompleteMiniGame, value => config.AutoCompleteMiniGame = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.skipMinigame.name", "Skip after instant bite"), () => T("config.skipMinigame.tooltip", "Experimental: only affects the Instant Bite transition by routing directly to pull/result. It is not an independent minigame skip."), () => config.SkipMiniGame, value => config.SkipMiniGame = value);
-            menu.AddBoolOption(helper.ModManifest, () => T("config.fastAnimations.name", "Fast animations (may no-op)"), () => T("config.fastAnimations.tooltip", "Attempts to speed cast/pull animators when those animator fields are reachable; otherwise it safely does nothing."), () => config.FastAnimations, value => config.FastAnimations = value);
-            menu.AddChoiceOption(helper.ModManifest, () => T("config.fastMultiplier.name", "Animation multiplier"), () => T("config.fastMultiplier.tooltip", "Multiplier used only when a supported fishing animator path is found."), () => config.FastAnimationMultiplier.ToString("0"), value => config.FastAnimationMultiplier = ParseDouble(value, 3), new[] { "2", "3", "4", "5" });
-            menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency migration diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
+            menu.AddParagraph(helper.ModManifest, () => string.Format(T("config.status.experimental", "{0} toggles the native auto-fishing loop. Current state: {1}."), FormatToggleKey(), FormatRuntimeStatus(menu)));
+            menu.AddParagraph(helper.ModManifest, () => T("config.boundary.current", "Default loop: cast with the configured charge, wait for a native bite, reel, show and auto-complete the real minigame, collect the result, then recast. Optional switches only change bite waiting, minigame skipping, or charge/cast/pull animation speed."));
+            menu.AddKeybindOption(helper.ModManifest, () => T("config.toggleKey.name", "Toggle key"), () => T("config.toggleKey.tooltip", "Press this key in-game to toggle AutoFishing. Set to None to disable the hotkey."), () => config.ToggleKey, value => config.ToggleKey = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.instantBite.name", "Instant bite"), () => T("config.instantBite.tooltip", "Skip the native waiting period after the hook reaches water, then reel into the normal minigame/result path."), () => config.InstantBite, value => config.InstantBite = value);
+            menu.AddBoolOption(helper.ModManifest, () => T("config.skipMinigame.name", "Skip minigame"), () => T("config.skipMinigame.tooltip", "Route bite-ready results through the native no-minigame result path. Native failure/success is preserved."), () => config.SkipMiniGame, value => config.SkipMiniGame = value);
+            menu.AddNumberOption(helper.ModManifest, () => T("config.castCharge.name", "Cast charge"), () => T("config.castCharge.tooltip", "Target cast charge before releasing the rod. 0 means no charge; 1 means full charge. Fast animations also speed this charge phase."), () => config.CastChargeRatio, value => config.CastChargeRatio = value, 0, 1, 0.05);
+            menu.AddInlineBoolNumberOption(helper.ModManifest, () => T("config.fastAnimations.name", "Fast cast/pull animations"), () => T("config.fastAnimations.tooltip", "Speed up only the native charge, cast hook flight, and pull phases."), () => config.FastAnimations, value => config.FastAnimations = value, () => config.AnimationMultiplier, value => config.AnimationMultiplier = value, 1, 4, 0.5);
         }
 
         private string T(string key, string fallback) => helper.Translation.Get(key, fallback);
@@ -78,16 +71,13 @@ namespace AutoFishingMod
 
             api.Configure(helper.ModManifest, new FishingAutomationOptions
             {
-                AutoRecast = config.AutoRecast,
-                StopOnManualMove = config.StopOnManualMove,
-                RequireSelectedFishingRod = config.RequireSelectedFishingRod,
-                CastReleaseProgress = config.CastReleaseProgress,
-                RecastDelaySeconds = config.RecastDelaySeconds,
-                AutoCompleteMiniGame = config.AutoCompleteMiniGame,
-                SkipMiniGame = config.SkipMiniGame,
-                InstantBite = config.InstantBite,
-                FastAnimations = config.FastAnimations,
-                FastAnimationMultiplier = config.FastAnimationMultiplier,
+                BiteWaitMode = config.InstantBite ? FishingBiteWaitMode.InstantNativeBite : FishingBiteWaitMode.NativeWait,
+                ResultMode = config.SkipMiniGame ? FishingResultMode.SkipMiniGameNativeResult : FishingResultMode.AutoCompleteVisibleMiniGame,
+                AnimationMode = config.FastAnimations ? FishingAnimationMode.FastCastPull : FishingAnimationMode.Normal,
+                StopOnManualMove = true,
+                RecastDelaySeconds = 0.25,
+                CastChargeRatio = config.CastChargeRatio,
+                AnimationMultiplier = config.AnimationMultiplier,
                 VerboseLogging = config.VerboseLogging
             });
             BridgeFeatureStatus status = api.GetStatus(helper.ModManifest.UniqueID);
@@ -96,7 +86,7 @@ namespace AutoFishingMod
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            if (enabled && config.StopOnManualMove && IsManualCancelKey(e.Button))
+            if (enabled && IsManualCancelKey(e.Button))
             {
                 SetAutomation(false, "manual-move " + e.Button);
                 return;
@@ -105,11 +95,6 @@ namespace AutoFishingMod
             if (Matches(e.Button, config.ToggleKey))
             {
                 SetAutomation(!enabled, "hotkey " + e.Button);
-            }
-            else if (Matches(e.Button, config.InfoKey))
-            {
-                helper.UI.OpenConfigPage(helper.ModManifest.UniqueID);
-                helper.Monitor.Log("AutoFishing fish-info boundary opened config page key=" + e.Button);
             }
         }
 
@@ -146,6 +131,14 @@ namespace AutoFishingMod
             return status;
         }
 
+        private string FormatToggleKey()
+        {
+            string key = NormalizeKey(config.ToggleKey);
+            return key.Equals("None", StringComparison.OrdinalIgnoreCase)
+                ? T("state.hotkeyDisabled", "hotkey disabled")
+                : key;
+        }
+
         private string FormatStateBucket(bool isEnabled, string phase)
         {
             if (!isEnabled)
@@ -158,12 +151,15 @@ namespace AutoFishingMod
         private void RegisterInputKeys()
         {
             UnregisterKey(registeredToggleKey);
-            UnregisterKey(registeredInfoKey);
             registeredToggleKey = NormalizeKey(config.ToggleKey);
-            registeredInfoKey = NormalizeKey(config.InfoKey);
-            helper.Input.RegisterButton(registeredToggleKey);
-            helper.Input.RegisterButton(registeredInfoKey);
+            RegisterKey(registeredToggleKey);
             foreach (string key in ManualCancelKeys)
+                RegisterKey(key);
+        }
+
+        private void RegisterKey(string key)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && !key.Equals("None", StringComparison.OrdinalIgnoreCase))
                 helper.Input.RegisterButton(key);
         }
 
@@ -181,14 +177,15 @@ namespace AutoFishingMod
 
         private void NormalizeConfig()
         {
-            config.ToggleKey = NormalizeKey(config.ToggleKey);
-            config.InfoKey = NormalizeKey(config.InfoKey);
-            config.AutoRecast = true;
-            config.RequireSelectedFishingRod = true;
-            config.CastReleaseProgress = Clamp(config.CastReleaseProgress, 0, 1);
-            config.RecastDelaySeconds = Clamp(config.RecastDelaySeconds, 0.05, 10);
-            config.FastAnimationMultiplier = Clamp(config.FastAnimationMultiplier, 2, 5);
-            config.FastAnimationMultiplier = Math.Round(config.FastAnimationMultiplier);
+            config.ToggleKey = string.IsNullOrWhiteSpace(config.ToggleKey)
+                ? "F6"
+                : NormalizeKey(config.ToggleKey);
+            if (double.IsNaN(config.AnimationMultiplier) || double.IsInfinity(config.AnimationMultiplier) || config.AnimationMultiplier <= 0)
+                config.AnimationMultiplier = 3;
+            config.AnimationMultiplier = Math.Min(4, Math.Max(1, config.AnimationMultiplier));
+            if (double.IsNaN(config.CastChargeRatio) || double.IsInfinity(config.CastChargeRatio))
+                config.CastChargeRatio = 0;
+            config.CastChargeRatio = Math.Min(1, Math.Max(0, config.CastChargeRatio));
         }
 
         private static bool Matches(string actual, string expected)
@@ -214,28 +211,15 @@ namespace AutoFishingMod
             return string.IsNullOrWhiteSpace(key) ? "None" : key;
         }
 
-        private static double Clamp(double value, double min, double max) => Math.Min(max, Math.Max(min, value));
-
-        private static double ParseDouble(string value, double fallback)
-        {
-            return double.TryParse(value, out double parsed) ? parsed : fallback;
-        }
-
         [DataContract]
         public sealed class AutoFishingConfig
         {
             [DataMember] public string ToggleKey { get; set; } = "F6";
-            [DataMember] public string InfoKey { get; set; } = "F9";
-            [DataMember] public bool AutoRecast { get; set; } = true;
-            [DataMember] public bool StopOnManualMove { get; set; } = true;
-            [DataMember] public bool RequireSelectedFishingRod { get; set; } = true;
-            [DataMember] public double CastReleaseProgress { get; set; }
-            [DataMember] public double RecastDelaySeconds { get; set; } = 0.25;
             [DataMember] public bool SkipMiniGame { get; set; }
-            [DataMember] public bool AutoCompleteMiniGame { get; set; }
             [DataMember] public bool InstantBite { get; set; }
             [DataMember] public bool FastAnimations { get; set; }
-            [DataMember] public double FastAnimationMultiplier { get; set; } = 3;
+            [DataMember] public double AnimationMultiplier { get; set; } = 3;
+            [DataMember] public double CastChargeRatio { get; set; }
             [DataMember] public bool VerboseLogging { get; set; }
         }
     }

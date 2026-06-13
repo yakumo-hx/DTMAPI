@@ -325,10 +325,28 @@ namespace DTMAPI.GameBridge.DolocTown
                     return;
 
                 autoExerciseAutoFishingPhaseAttempted = true;
-                if (autoFishingResult == SmokeAttemptResult.Succeeded && smokeSettings.AutoExitAfterSaveLoaded && !autoExitAttempted)
+                if (smokeSettings.AutoExitAfterSaveLoaded && !autoExitAttempted)
                 {
                     autoExitAttempted = true;
-                    TryQuitApplication("smoke auto-fishing phase evidence captured");
+                    TryQuitApplication(autoFishingResult == SmokeAttemptResult.Succeeded
+                        ? "smoke auto-fishing phase evidence captured"
+                        : "smoke auto-fishing phase failed");
+                }
+            }
+            if (!autoExercisePauseMenuLayoutAttempted && smokeSettings.AutoExercisePauseMenuLayout && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExercisePauseMenuLayoutDelaySeconds))
+            {
+                SmokeAttemptResult pauseMenuLayoutResult = TryExercisePauseMenuLayoutForSmoke();
+                if (pauseMenuLayoutResult == SmokeAttemptResult.Pending)
+                    return;
+
+                autoExercisePauseMenuLayoutAttempted = true;
+                if (smokeSettings.AutoExitAfterSaveLoaded && !autoExitAttempted)
+                {
+                    autoExitAttempted = true;
+                    TryQuitApplication(pauseMenuLayoutResult == SmokeAttemptResult.Succeeded
+                        ? "smoke pause-menu layout evidence captured"
+                        : "smoke pause-menu layout failed");
                 }
             }
             if (managerStatusPageRequested && !titleSettingsStatusSummaryTextRecorded && titleSettingsStatusPageEvidenceAt != default &&
@@ -353,7 +371,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 titleSettingsMenuScreenshotRequested = true;
                 CaptureTitleSettingsMenuEvidenceScreenshot();
             }
-            if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 9)
+            if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 14)
                 UpdateTitleSettingsConfigEvidenceScreenshots();
             if (managerStatusPageRequested && !titleSettingsStatusPageScreenshotRequested && titleSettingsStatusPageEvidenceAt != default &&
                 (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 3)
@@ -480,9 +498,23 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             if (smokeSettings.AutoExerciseAutoFishingPhase)
             {
-                runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateFishingWait.OnPlay", "Waiting after save load to toggle AutoFishing and exercise the instant-bite wait phase.");
-                if (smokeSettings.AutoExerciseAutoFishingMiniGameComplete)
-                    runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "pending", "FishingGameScrollBar.UpdateGame", "SkipMiniGame=false; waiting for visible minigame auto-complete evidence.");
+                string scenario = string.IsNullOrWhiteSpace(smokeSettings.AutoFishingScenario) || smokeSettings.AutoFishingScenario.Equals("DefaultLoop", StringComparison.OrdinalIgnoreCase)
+                    ? (smokeSettings.AutoExerciseAutoFishingMiniGameComplete ? "CombinedInstantComplete" : "DefaultLoop")
+                    : smokeSettings.AutoFishingScenario;
+                runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "native fishing loop", "Waiting after save load to toggle AutoFishing and observe real AutoCast -> Wait -> BiteReady -> Battle/Pull -> PullExit -> next AutoCast scenario=" + scenario + ".");
+                if (scenario.Equals("InstantBite", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase))
+                    runtime.SetHookStatus("Smoke.AutoFishingInstantBite", "pending", "AgentStateFishingWait.OnEnter/OnPlay", "Waiting for InstantBite native hook/reel evidence scenario=" + scenario + ".");
+                if (scenario.Equals("SkipMiniGame", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase))
+                    runtime.SetHookStatus("Smoke.AutoFishingMiniGameSkip", "pending", "AgentStateFishingWait.OnPlay -> AgentStateFishingPull", "Waiting for independent skip evidence scenario=" + scenario + ".");
+                if (scenario.Equals("DefaultLoop", StringComparison.OrdinalIgnoreCase) || scenario.Equals("InstantBite", StringComparison.OrdinalIgnoreCase) || scenario.Equals("FastAnimations", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase))
+                    runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "pending", "FishingGameScrollBar.UpdateGame", "Waiting for visible minigame auto-complete evidence scenario=" + scenario + ".");
+                if (scenario.Equals("FastAnimations", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase) || scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase))
+                    runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeed", "pending", "AgentStateFishingCast/Pull.OnEnter", "Waiting for fast animation evidence scenario=" + scenario + ".");
+                return;
+            }
+            if (smokeSettings.AutoExercisePauseMenuLayout)
+            {
+                runtime.SetHookStatus("Smoke.PauseMenuLayout", "pending", "DolocAPI.EnterUI<MainMenuUiState> + MainMenuPanel.OnStartShow", "Save loaded; waiting before opening the native pause menu and observing layout stability.");
                 return;
             }
             if (smokeSettings.AutoExerciseTitleButtonLifecycle)
@@ -687,6 +719,225 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Smoke.ManagerStatusPage", "verified", "DTMAPI Manager Status page", "Opened the title settings menu and switched to the Status page.");
             }
             return true;
+        }
+
+        private SmokeAttemptResult TryExercisePauseMenuLayoutForSmoke()
+        {
+            try
+            {
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                Type? mainMenuUiState = patcher.ResolveType("DolocTown.MainMenuUiState, Assembly-CSharp");
+                if (dolocApi == null || mainMenuUiState == null)
+                    throw new MissingMemberException("DolocAPI or MainMenuUiState was not visible.");
+
+                DateTimeOffset now = DateTimeOffset.Now;
+                if (pauseMenuLayoutStage == 0)
+                {
+                    if (!TryGetStaticBoolProperty(dolocApi, "IsNormalState"))
+                    {
+                        runtime.SetHookStatus("Smoke.PauseMenuLayout", "pending", "NormalGameState", "Waiting for NormalGameState before opening MainMenuUiState.");
+                        return SmokeAttemptResult.Pending;
+                    }
+
+                    MethodInfo? enterUi = dolocApi.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .FirstOrDefault(m => m.Name == "EnterUI" && m.IsGenericMethodDefinition && m.GetParameters().Length == 0);
+                    if (enterUi == null)
+                        throw new MissingMethodException("DolocAPI.EnterUI<MainMenuUiState>() was not found.");
+
+                    enterUi.MakeGenericMethod(mainMenuUiState).Invoke(null, null);
+                    pauseMenuLayoutStage = 1;
+                    pauseMenuLayoutStageAt = now;
+                    pauseMenuLayoutLastSampleAt = DateTimeOffset.MinValue;
+                    pauseMenuLayoutSamples.Clear();
+                    runtime.RuntimeMonitor.Log("Smoke pause-menu layout opened MainMenuUiState through DolocAPI.EnterUI.");
+                    runtime.SetHookStatus("Smoke.PauseMenuLayout", "pending", "DolocAPI.EnterUI<MainMenuUiState>", "Opened native pause menu; observing layout for delayed two-column regression.");
+                    return SmokeAttemptResult.Pending;
+                }
+
+                object? currentState = GetCurrentUiStateForSmoke(dolocApi);
+                if (currentState == null || !mainMenuUiState.IsInstanceOfType(currentState))
+                {
+                    if ((now - pauseMenuLayoutStageAt).TotalSeconds > 12)
+                        throw new TimeoutException("MainMenuUiState did not become the current UI state. context=" + runtime.UI.InputContext + ", current=" + (currentState?.GetType().FullName ?? "null") + ".");
+
+                    runtime.SetHookStatus("Smoke.PauseMenuLayout", "pending", "MainMenuUiState", "Waiting for MainMenuUiState after EnterUI. context=" + runtime.UI.InputContext + ".");
+                    return SmokeAttemptResult.Pending;
+                }
+
+                double openedSeconds = (now - pauseMenuLayoutStageAt).TotalSeconds;
+                if (openedSeconds >= 1.0 && (pauseMenuLayoutLastSampleAt == DateTimeOffset.MinValue || (now - pauseMenuLayoutLastSampleAt).TotalSeconds >= 0.75))
+                {
+                    pauseMenuLayoutLastSampleAt = now;
+                    string sample = CapturePauseMenuLayoutSampleForSmoke(currentState, out bool sampleOk, out bool twoColumnObserved);
+                    pauseMenuLayoutSamples.Add("t=" + openedSeconds.ToString("0.00", CultureInfo.InvariantCulture) + "s, ok=" + sampleOk + ", " + sample);
+                    runtime.RuntimeMonitor.Log("Smoke pause-menu layout sample " + pauseMenuLayoutSamples[pauseMenuLayoutSamples.Count - 1]);
+                    runtime.SetHookStatus("Smoke.PauseMenuLayout", sampleOk ? "pending" : "needs-review", "MainMenuUiState.MenuUI layout sample", sample);
+
+                    if (pauseMenuLayoutSamples.Count == 1 || twoColumnObserved)
+                        CapturePauseMenuLayoutScreenshotForSmoke(twoColumnObserved ? "two-column" : "initial");
+                }
+
+                int observeSeconds = Math.Max(8, smokeSettings?.AutoExercisePauseMenuLayoutObserveSeconds ?? 12);
+                if (openedSeconds < observeSeconds)
+                    return SmokeAttemptResult.Pending;
+
+                string finalSample = CapturePauseMenuLayoutSampleForSmoke(currentState, out bool finalOk, out bool finalTwoColumnObserved);
+                pauseMenuLayoutSamples.Add("t=" + openedSeconds.ToString("0.00", CultureInfo.InvariantCulture) + "s, ok=" + finalOk + ", " + finalSample);
+                string finalScreenshot = CapturePauseMenuLayoutScreenshotForSmoke("final");
+                string evidenceDir = EnsurePauseMenuLayoutEvidenceDir();
+                string samplePath = Path.Combine(evidenceDir, "pause-menu-layout-samples.txt");
+                File.WriteAllLines(samplePath, pauseMenuLayoutSamples.ToArray());
+
+                bool anyBadSample = pauseMenuLayoutSamples.Any(sample => sample.IndexOf("ok=False", StringComparison.OrdinalIgnoreCase) >= 0);
+                string summary = "samples=" + pauseMenuLayoutSamples.Count +
+                    ", observeSeconds=" + observeSeconds +
+                    ", anyBadSample=" + anyBadSample +
+                    ", finalTwoColumnObserved=" + finalTwoColumnObserved +
+                    ", final={" + finalSample + "}, sampleFile=" + samplePath +
+                    ", screenshot=" + finalScreenshot;
+                if (anyBadSample || !finalOk)
+                {
+                    runtime.SetHookStatus("Smoke.PauseMenuLayout", "failed", "MainMenuUiState.MenuUI layout sample", summary);
+                    return SmokeAttemptResult.Failed;
+                }
+
+                runtime.RuntimeMonitor.Log("Smoke exercise PauseMenuLayout OK " + summary);
+                runtime.SetHookStatus("Smoke.PauseMenuLayout", "verified", "DolocAPI.EnterUI<MainMenuUiState> + MainMenuPanel.OnStartShow", summary);
+                runtime.SetHookStatus("Smoke.PauseMenuLayoutScreenshot", "verified", "UnityEngine.ScreenCapture.CaptureScreenshot", "Pause menu layout screenshot=" + finalScreenshot + ".");
+                return SmokeAttemptResult.Succeeded;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke pause-menu layout failed.", ex.ToString());
+                runtime.SetHookStatus("Smoke.PauseMenuLayout", "failed", "DolocAPI.EnterUI<MainMenuUiState>", ex.GetType().Name + ": " + ex.Message);
+                return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private string CapturePauseMenuLayoutSampleForSmoke(object mainMenuState, out bool sampleOk, out bool twoColumnObserved)
+        {
+            object? panel = ReadMember(mainMenuState, "panel");
+            object? menu = panel == null ? null : ReadMember(panel, "menu");
+            object? layoutGroup = menu == null ? null : ReadMember(menu, "slotLayoutGroup");
+            int totalSlots = 0;
+            int visibleSlots = 0;
+            var slotSamples = new List<string>();
+            if (menu != null)
+            {
+                foreach (object slot in EnumerateObjects(ReadMember(menu, "slots")))
+                {
+                    totalSlots++;
+                    bool visible = ReadOptionalBoolMember(slot, "isVisible", ReadOptionalBoolMember(slot, "visible", true));
+                    if (visible)
+                        visibleSlots++;
+                    if (slotSamples.Count < 8)
+                    {
+                        string title = ReadOptionalStringMember(slot, "title", string.Empty);
+                        slotSamples.Add((string.IsNullOrWhiteSpace(title) ? slot.GetType().Name : title) + ":" + (visible ? "visible" : "hidden"));
+                    }
+                }
+            }
+
+            int totalCapacity = ReadOptionalIntMember(menu, "totalCapacity", -1);
+            int lineCapacity = ReadOptionalIntMember(menu, "lineCapacity", -1);
+            int rowCount = ReadOptionalIntMember(menu, "rowCount", -1);
+            int constraintCount = ReadOptionalIntMember(layoutGroup, "constraintCount", -1);
+            string constraint = layoutGroup == null
+                ? "missing"
+                : Convert.ToString(ReadMember(layoutGroup, "constraint"), CultureInfo.InvariantCulture) ?? "unknown";
+            int expectedConstraint = visibleSlots > 0 ? visibleSlots : totalCapacity;
+            twoColumnObserved = constraintCount == 2 || lineCapacity == 2 || rowCount > 1;
+            sampleOk = expectedConstraint >= 5 && constraintCount == expectedConstraint && !twoColumnObserved;
+            return "currentState=" + mainMenuState.GetType().FullName +
+                ", runtimeContext=" + runtime.UI.InputContext +
+                ", slots=" + totalSlots +
+                ", visibleSlots=" + visibleSlots +
+                ", expectedConstraint=" + expectedConstraint +
+                ", totalCapacity=" + FormatOptionalInt(totalCapacity) +
+                ", lineCapacity=" + FormatOptionalInt(lineCapacity) +
+                ", rowCount=" + FormatOptionalInt(rowCount) +
+                ", layoutConstraint=" + constraint +
+                ", layoutConstraintCount=" + FormatOptionalInt(constraintCount) +
+                ", twoColumnObserved=" + twoColumnObserved +
+                ", slotSamples=" + (slotSamples.Count == 0 ? "none" : string.Join("|", slotSamples.ToArray())) + ".";
+        }
+
+        private string CapturePauseMenuLayoutScreenshotForSmoke(string label)
+        {
+            string evidenceDir = EnsurePauseMenuLayoutEvidenceDir();
+            string safeLabel = string.IsNullOrWhiteSpace(label) ? "sample" : label.Replace(' ', '-');
+            string screenshotPath = Path.Combine(evidenceDir, "pause-menu-layout-" + safeLabel + ".png");
+            bool screenshotRequested = TryCaptureScreenshot(screenshotPath);
+            runtime.SetHookStatus("Smoke.PauseMenuLayoutScreenshot", screenshotRequested ? "verified" : "pending", "UnityEngine.ScreenCapture.CaptureScreenshot", "Pause menu layout " + label + " screenshot=" + (screenshotRequested ? screenshotPath : "unavailable") + ".");
+            return screenshotRequested ? screenshotPath : "unavailable";
+        }
+
+        private string EnsurePauseMenuLayoutEvidenceDir()
+        {
+            if (!string.IsNullOrWhiteSpace(pauseMenuLayoutEvidenceDir))
+                return pauseMenuLayoutEvidenceDir!;
+
+            string timestamp = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
+            pauseMenuLayoutEvidenceDir = Path.Combine(runtime.Paths.EvidencePath, "UI-007", timestamp);
+            Directory.CreateDirectory(pauseMenuLayoutEvidenceDir);
+            return pauseMenuLayoutEvidenceDir;
+        }
+
+        private static object? GetCurrentUiStateForSmoke(Type dolocApi)
+        {
+            object? userInput = ReadStaticMember(dolocApi, "userInput");
+            return userInput == null ? null : ReadMember(userInput, "CurrentState");
+        }
+
+        private static int ReadOptionalIntMember(object? instance, string name, int fallback)
+        {
+            if (instance == null)
+                return fallback;
+            try
+            {
+                object? value = ReadMember(instance, name);
+                return value == null ? fallback : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static bool ReadOptionalBoolMember(object? instance, string name, bool fallback)
+        {
+            if (instance == null)
+                return fallback;
+            try
+            {
+                object? value = ReadMember(instance, name);
+                return value is bool result ? result : fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static string ReadOptionalStringMember(object? instance, string name, string fallback)
+        {
+            if (instance == null)
+                return fallback;
+            try
+            {
+                object? value = ReadMember(instance, name);
+                return value as string ?? value?.ToString() ?? fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private static string FormatOptionalInt(int value)
+        {
+            return value < 0 ? "unknown" : value.ToString(CultureInfo.InvariantCulture);
         }
 
         private SmokeAttemptResult TryExerciseTitleButtonLifecycleForSmoke()
@@ -4185,6 +4436,11 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public bool AutoExerciseAutoFishingPhase { get; set; }
             [DataMember] public int AutoExerciseAutoFishingPhaseDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseAutoFishingMiniGameComplete { get; set; }
+            [DataMember] public string AutoFishingScenario { get; set; } = string.Empty;
+            [DataMember] public double AutoFishingCastChargeRatio { get; set; }
+            [DataMember] public bool AutoExercisePauseMenuLayout { get; set; }
+            [DataMember] public int AutoExercisePauseMenuLayoutDelaySeconds { get; set; } = 12;
+            [DataMember] public int AutoExercisePauseMenuLayoutObserveSeconds { get; set; } = 12;
             [DataMember] public bool AutoExerciseTitleButtonLifecycle { get; set; }
             [DataMember] public bool AutoExerciseInstantSave { get; set; }
             [DataMember] public int AutoExerciseInstantSaveDelaySeconds { get; set; } = 3;

@@ -62,6 +62,25 @@ $runtimeFiles = @(
     'DTMAPI.ModConfigMenu.dll'
 )
 
+function Resolve-DtmApiRuntimeIconSource {
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($outDir)) {
+        $candidates += (Join-Path $outDir 'assets\branding\dtmapi-icon.png')
+    }
+    if ($usingPackagePayload -and -not [string]::IsNullOrWhiteSpace($PackagePayloadRoot)) {
+        $candidates += (Join-Path $PackagePayloadRoot 'BepInEx\plugins\DTMAPI\assets\branding\dtmapi-icon.png')
+    }
+    $candidates += (Join-Path $repo 'assets\branding\dtmapi-icon.png')
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            return [System.IO.Path]::GetFullPath($candidate)
+        }
+    }
+
+    return ''
+}
+
 function Test-DtmApiDefinitionFlag {
     param(
         $Mod,
@@ -426,19 +445,19 @@ function Install-OfficialLocalDtmApiMod {
     $contentRoot = Join-Path $dest 'Content\DTMAPI'
     New-Item -ItemType Directory -Force -Path $contentRoot | Out-Null
 
-    $manifest = Get-Content -Raw -LiteralPath $sourceManifestPath | ConvertFrom-Json
+    $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifestPath | ConvertFrom-Json
     $manifest.EntryDll = "Content/DTMAPI/$($Mod.PackageDll)"
-    $manifest.MinimumDTMApiVersion = '0.5.0-alpha'
+    $manifest.MinimumDTMApiVersion = '0.5.1-alpha'
     if ($manifest.Dependencies) {
         foreach ($dependency in $manifest.Dependencies) {
             if ($dependency.UniqueID -eq 'DTMAPI.ModConfigMenu') {
-                $dependency.MinimumVersion = '0.5.0-alpha'
+                $dependency.MinimumVersion = '0.5.1-alpha'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.GameBridge.DolocTown') {
-                $dependency.MinimumVersion = '0.5.0-alpha'
+                $dependency.MinimumVersion = '0.5.1-alpha'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.DebugConsoleHost') {
-                $dependency.MinimumVersion = '0.5.0-alpha'
+                $dependency.MinimumVersion = '0.5.1-alpha'
             }
         }
     }
@@ -587,12 +606,15 @@ if (-not $SkipOfficialLocalMods) {
     }
 }
 
-$assetSource = Join-Path $repo 'assets\branding\dtmapi-icon.png'
-if (Test-Path $assetSource) {
+$assetSource = Resolve-DtmApiRuntimeIconSource
+if (-not [string]::IsNullOrWhiteSpace($assetSource)) {
     $assetDest = Join-Path $pluginDir 'assets\branding'
     New-Item -ItemType Directory -Force -Path $assetDest | Out-Null
     Copy-Item -LiteralPath $assetSource -Destination (Join-Path $assetDest 'dtmapi-icon.png') -Force
     $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'runtime-asset'; Path = [System.IO.Path]::GetFullPath((Join-Path $assetDest 'dtmapi-icon.png')) }) | Out-Null
+}
+else {
+    Write-Warning "DTMAPI title icon asset was not found in the runtime payload or repository assets. The title button will use its text fallback."
 }
 
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
@@ -602,10 +624,13 @@ foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'uninstall-dtmapi.
     $sourceScript = Join-Path $PSScriptRoot $scriptName
     if (Test-Path $sourceScript) {
         $destScript = Join-Path $stateToolsDir $scriptName
-        Copy-Item -LiteralPath $sourceScript -Destination $destScript -Force
+        Copy-DtmApiTextFileUtf8Bom -Source $sourceScript -Destination $destScript
         $script:DtmInstallFilesInstalled.Add([ordered]@{ Kind = 'installer-tool'; Path = [System.IO.Path]::GetFullPath($destScript) }) | Out-Null
     }
 }
+Test-DtmApiWindowsPowerShellSyntax -Paths @(
+    Get-ChildItem -LiteralPath $stateToolsDir -Filter '*.ps1' -File | ForEach-Object { $_.FullName }
+)
 
 $legacyDetectionsAfterInstall = Get-DtmApiLegacyDetections -GameDir $gameDir
 $includedAssemblies = @($runtimeFiles | ForEach-Object { [ordered]@{ FileName = $_; Path = [System.IO.Path]::GetFullPath((Join-Path $pluginDir $_)) } })

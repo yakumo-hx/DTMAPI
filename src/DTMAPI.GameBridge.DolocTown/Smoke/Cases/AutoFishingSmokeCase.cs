@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Threading;
@@ -17,86 +18,60 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     public sealed partial class DolocTownGameBridge
     {
-        private bool TryExerciseAutoFishingAutoCastForSmoke(Type dolocApi, Type fishingPoolType, out string summary)
+        private static readonly ConditionalWeakTable<DolocTownGameBridge, AutoFishingSmokeFlowProgress> AutoFishingSmokeFlows = new ConditionalWeakTable<DolocTownGameBridge, AutoFishingSmokeFlowProgress>();
+
+        private bool TryExerciseAutoFishingAutoCastForSmoke(Type dolocApi, FishingAutomationService fishingService, AutoFishingSmokeFlowProgress progress, out string summary)
         {
             summary = string.Empty;
-            FishingAutomationService? fishingService = FishingAutomationService;
-            object? inventory = null;
-            object? originalSlotItem = null;
-            int quickSlot = 0;
 
             try
             {
-                if (fishingService == null)
-                {
-                    summary = "FishingAutomation service unavailable.";
-                    return false;
-                }
-
                 fishingService.SuppressFishingAutoCastForSmoke = false;
-
-                fishingService.ResetFishingFeedbackCooldownForSmoke();
-                fishingService.ForceFishingNoWaterForSmoke = true;
-                UpdateRuntimeAutomation();
-
-                object? fishingPool = FindOrCreateFishingPoolForSmoke(fishingPoolType, dolocApi, out string poolSource);
-                if (fishingPool == null)
+                object? selectedItem = ReadStaticMember(dolocApi, "SelectedItem");
+                if (selectedItem == null || !IsTypeOrBase(selectedItem.GetType(), "DolocTown.ItemFishingRod"))
                 {
-                    summary = "No fishing pool was available for auto-cast smoke. " + poolSource;
-                    return false;
-                }
-                fishingService.FishingPoolOverrideForSmoke = fishingPool;
-
-                fishingService.ResetFishingFeedbackCooldownForSmoke();
-                fishingService.ForceFishingNoRodForSmoke = true;
-                UpdateRuntimeAutomation();
-                fishingService.ForceFishingNoWaterForSmoke = false;
-                fishingService.ForceFishingNoRodForSmoke = false;
-
-                object? fishingRod = GenerateFishingRodForSmoke(dolocApi);
-                if (fishingRod == null)
-                {
-                    summary = "Generated fishing rod was not available.";
+                    summary = "real fifth-save fixture missing selected fishing rod. selected=" + (selectedItem == null ? "null" : selectedItem.GetType().FullName) + ".";
                     return false;
                 }
 
-                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, fishingRod, quickSlot, out inventory, out originalSlotItem, out string placeSummary))
-                {
-                    summary = placeSummary;
-                    return false;
-                }
-
-                TryEnterIdleStateForSmoke(dolocApi);
-                int beforeAutoCast = fishingService.FishingAutoCastApplicationCount;
-                fishingService.ResetFishingFeedbackCooldownForSmoke();
-                int afterAutoCast = beforeAutoCast;
-                for (int attempt = 1; attempt <= 24; attempt++)
+                string poolSummary = DescribeActiveFishingPoolsForSmoke();
+                int afterAutoCast = fishingService.FishingAutoCastApplicationCount;
+                for (int attempt = 1; attempt <= 40; attempt++)
                 {
                     UpdateRuntimeAutomation();
                     afterAutoCast = fishingService.FishingAutoCastApplicationCount;
-                    if (afterAutoCast > beforeAutoCast)
+                    CaptureAutoFishingFlowProgress(fishingService, progress);
+                    if (afterAutoCast > progress.InitialAutoCastCount)
                         break;
                     Thread.Sleep(125);
                 }
                 string bridgeSummary = fishingService.LastFishingAutomationApplicationSummary;
                 string attemptSummary = fishingService.LastFishingAutoCastAttemptSummary;
-                bool invoked = afterAutoCast > beforeAutoCast && bridgeSummary.IndexOf("AutoCast", StringComparison.OrdinalIgnoreCase) >= 0;
+                string currentState = ReadCurrentAgentStateForSmoke(dolocApi);
+                bool stateAlreadyAdvanced = IsFishingStateAtOrAfterAutoCast(currentState);
+                bool summaryObservedAutoCast = bridgeSummary.IndexOf("AutoCast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    attemptSummary.IndexOf("AutoCast", StringComparison.OrdinalIgnoreCase) >= 0;
+                bool invoked = afterAutoCast > progress.InitialAutoCastCount ||
+                    (afterAutoCast > 0 && stateAlreadyAdvanced);
                 if (!invoked)
                 {
-                    summary = "pool={" + poolSource + "}, rod=" + ReadStringMember(fishingRod, "name", fishingRod.GetType().Name) +
-                        ", autoCastDelta=" + (afterAutoCast - beforeAutoCast) +
-                        ", place={" + placeSummary + "}" +
+                    summary = "fixture={" + poolSummary + "}, selectedRod=" + ReadStringMember(selectedItem, "name", selectedItem.GetType().Name) +
+                        ", autoCastDelta=" + (afterAutoCast - progress.InitialAutoCastCount) +
+                        ", currentState=" + currentState +
+                        ", alreadyAdvanced=" + stateAlreadyAdvanced +
+                        ", summaryObservedAutoCast=" + summaryObservedAutoCast +
                         ", bridge=" + (string.IsNullOrWhiteSpace(bridgeSummary) ? "none" : bridgeSummary) +
                         ", lastAttempt=" + (string.IsNullOrWhiteSpace(attemptSummary) ? "none" : attemptSummary);
                     return false;
                 }
 
-                summary = "pool={" + poolSource + "}, rod=" + ReadStringMember(fishingRod, "name", fishingRod.GetType().Name) +
-                    ", autoCastDelta=" + (afterAutoCast - beforeAutoCast) +
-                    ", place={" + placeSummary + "}" +
-                    ", toastPolicy=0.2.3-suppressed-no-water-no-rod-cast" +
+                progress.AutoCastObserved = true;
+                summary = "fixture={" + poolSummary + "}, selectedRod=" + ReadStringMember(selectedItem, "name", selectedItem.GetType().Name) +
+                    ", autoCastDelta=" + (afterAutoCast - progress.InitialAutoCastCount) +
+                    ", currentState=" + currentState +
+                    ", alreadyAdvanced=" + stateAlreadyAdvanced +
+                    ", summaryObservedAutoCast=" + summaryObservedAutoCast +
                     ", bridge=" + bridgeSummary;
-                fishingService.SuppressFishingAutoCastForSmoke = true;
                 return true;
             }
             catch (TargetInvocationException ex) when (ex.InnerException != null)
@@ -113,15 +88,16 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             finally
             {
-                TryEnterIdleStateForSmoke(dolocApi);
-                RestoreSmokeQuickSlot(dolocApi, inventory, quickSlot, originalSlotItem);
-                if (fishingService != null)
-                {
-                    fishingService.ForceFishingNoWaterForSmoke = false;
-                    fishingService.ForceFishingNoRodForSmoke = false;
-                    fishingService.FishingPoolOverrideForSmoke = null;
-                }
+                fishingService.SuppressFishingAutoCastForSmoke = false;
             }
+        }
+
+        private static bool IsFishingStateAtOrAfterAutoCast(string currentState)
+        {
+            return currentState.IndexOf("AgentStateFishingCast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                currentState.IndexOf("AgentStateFishingWait", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                currentState.IndexOf("AgentStateFishingBattle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                currentState.IndexOf("AgentStateFishingPull", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private SmokeAttemptResult TryExerciseAutoFishingPhaseForSmoke()
@@ -132,12 +108,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (fishingService == null)
                     throw new InvalidOperationException("FishingAutomation service was not registered.");
 
+                string scenario = GetAutoFishingScenarioForSmoke();
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
-                Type? fishingWaitType = patcher.ResolveType("DolocTown.AgentStateFishingWait, Assembly-CSharp");
-                Type? fishingPoolType = patcher.ResolveType("DolocTown.FishingPool, Assembly-CSharp");
-                if (dolocApi == null || fishingWaitType == null || fishingPoolType == null)
-                    throw new MissingMemberException("DolocAPI, AgentStateFishingWait, or FishingPool was not visible.");
+                if (dolocApi == null)
+                    throw new MissingMemberException("DolocAPI was not visible.");
 
                 if (!TryGetStaticBoolProperty(dolocApi, "IsNormalState"))
                 {
@@ -176,124 +151,343 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!fishingService.TryGetEnabledFishingAutomationOwner(out string ownerId))
                     throw new InvalidOperationException("AutoFishing policy was not enabled after the F6 input dispatch. Is the official AutoFishing package enabled?");
 
-                if (!autoExerciseAutoFishingMovementCancelVerified)
-                {
-                    runtime.RecordInputPressed("W");
-                    runtime.RecordInputReleased("W");
-                    if (fishingService.TryGetEnabledFishingAutomationOwner(out string stillEnabledOwner))
-                        throw new InvalidOperationException("AutoFishing movement cancel did not disable automation. owner=" + stillEnabledOwner);
-
-                    autoExerciseAutoFishingMovementCancelVerified = true;
-                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMovementCancel OK key=W owner=" + ownerId + ".");
-                    runtime.SetHookStatus("Smoke.AutoFishingMovementCancel", "verified", "DTMAPI input W -> AutoFishingMod manual cancel", "Movement key W disabled automation after F6 enable; owner=" + ownerId + ".");
-
-                    runtime.RecordInputPressed("F6");
-                    runtime.RecordInputReleased("F6");
-                    if (!fishingService.TryGetEnabledFishingAutomationOwner(out ownerId))
-                        throw new InvalidOperationException("AutoFishing policy did not re-enable after movement-cancel re-toggle.");
-                    runtime.RuntimeMonitor.Log("Smoke automation re-enabled AutoFishing after movement-cancel proof through F6 input. owner=" + ownerId + ".");
-                    runtime.SetHookStatus("Smoke.AutoFishingHotkey", "verified", "DtmApiRuntime.RecordInputPressed", "F6 enabled automation and re-enabled it after movement-cancel proof.");
-                }
-
-                if (!autoExerciseAutoFishingAutoCastVerified)
-                {
-                    if (!TryExerciseAutoFishingAutoCastForSmoke(dolocApi, fishingPoolType, out string autoCastSummary))
-                        throw new InvalidOperationException("AutoFishing auto-cast path failed. " + autoCastSummary);
-                    autoExerciseAutoFishingAutoCastVerified = true;
-                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingAutoCast OK " + autoCastSummary);
-                    runtime.SetHookStatus("Smoke.AutoFishingAutoCast", "verified", "BodyController.UseFishRod", autoCastSummary);
-                }
-
+                AutoFishingSmokeFlowProgress progress = AutoFishingSmokeFlows.GetValue(this, _ => new AutoFishingSmokeFlowProgress());
+                progress.SetOwner(ownerId);
                 if (!autoExerciseAutoFishingPhaseStarted)
                 {
-                    object? agent = dolocApi.GetProperty("agent", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-                    object? fishingRod = GenerateFishingRodForSmoke(dolocApi);
-                    if (agent == null || fishingRod == null)
-                        throw new MissingMemberException("DolocAPI.agent or a generated fishing rod was not available.");
-
-                    object? fishingPool = FindOrCreateFishingPoolForSmoke(fishingPoolType, dolocApi, out string poolSource);
-                    if (fishingPool == null)
-                        throw new InvalidOperationException("No fishing pool was available for auto-fishing smoke. " + poolSource);
-
-                    object? cache = ReadMember(agent, "FishingCache");
-                    object? stateManager = ReadMember(agent, "StateManager");
-                    if (cache == null || stateManager == null)
-                        throw new MissingMemberException("Agent FishingCache or StateManager was not available.");
-
-                    if (!WriteObjectMember(cache, "FishingRod", fishingRod) || !WriteObjectMember(cache, "FishingPool", fishingPool))
-                        throw new MissingMemberException("Could not seed FishingCache with a rod and pool for smoke.");
-
-                    MethodInfo? overwrite = stateManager.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                        .FirstOrDefault(m =>
-                        {
-                            if (m.Name != "Overwrite" || !m.IsGenericMethodDefinition)
-                                return false;
-                            ParameterInfo[] parameters = m.GetParameters();
-                            return parameters.Length == 1 && parameters[0].ParameterType == typeof(bool);
-                        });
-                    if (overwrite == null)
-                        throw new MissingMethodException("AgentStateManager.Overwrite<T>(bool) was not found.");
-
                     autoFishingApplicationBaseline = fishingService.FishingAutomationApplicationCount;
                     autoFishingMiniGameCompleteBaseline = fishingService.FishingMiniGameCompleteApplicationCount;
                     autoFishingPhaseStartedAt = DateTimeOffset.Now;
                     autoExerciseAutoFishingPhaseStarted = true;
-                    fishingService.ForceFishingFishForSmoke = smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true;
-                    runtime.RuntimeMonitor.Log("Smoke automation entering AgentStateFishingWait for AutoFishing phase evidence. owner=" + ownerId + ", rod=" + fishingRod.GetType().Name + ", poolSource=" + poolSource + ".");
-                    runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateManager.Overwrite<AgentStateFishingWait>", "Entered real AgentStateFishingWait; waiting for OnPlay instant-bite automation.");
-                    overwrite.MakeGenericMethod(fishingWaitType).Invoke(stateManager, new object[] { true });
+                    progress.Reset(scenario, fishingService.FishingAutoCastApplicationCount, autoFishingApplicationBaseline, autoFishingMiniGameCompleteBaseline, fishingService.FishingInstantBiteApplicationCount, fishingService.FishingSkipMiniGameApplicationCount, fishingService.FishingReadyChargeApplicationCount, DateTimeOffset.Now);
+                    progress.SetOwner(ownerId);
+                    runtime.RuntimeMonitor.Log("Smoke automation starting real AutoFishing loop evidence. owner=" + ownerId + ", scenario=" + scenario + ", currentState=" + ReadCurrentAgentStateForSmoke(dolocApi) + ", fixture=" + DescribeActiveFishingPoolsForSmoke() + ".");
+                    runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "native fishing loop", "Using the real fifth-save fixture; waiting for AutoCast -> Wait -> BiteReady -> Battle/Pull -> PullExit -> next AutoCast scenario=" + scenario + ".");
+                }
+                else if (!progress.Scenario.Equals(scenario, StringComparison.OrdinalIgnoreCase))
+                {
+                    progress.Reset(scenario, fishingService.FishingAutoCastApplicationCount, fishingService.FishingAutomationApplicationCount, fishingService.FishingMiniGameCompleteApplicationCount, fishingService.FishingInstantBiteApplicationCount, fishingService.FishingSkipMiniGameApplicationCount, fishingService.FishingReadyChargeApplicationCount, DateTimeOffset.Now);
+                    progress.SetOwner(ownerId);
+                    autoFishingPhaseStartedAt = DateTimeOffset.Now;
+                }
+
+                CaptureAutoFishingFlowProgress(fishingService, progress);
+
+                if (!autoExerciseAutoFishingAutoCastVerified)
+                {
+                    if (!TryExerciseAutoFishingAutoCastForSmoke(dolocApi, fishingService, progress, out string autoCastSummary))
+                    {
+                        if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 12)
+                            throw new InvalidOperationException("AutoFishing real auto-cast path failed on fifth-save fixture. " + autoCastSummary);
+                        LogAutoFishingPending("Waiting for real BodyController.UseFishRod auto-cast. " + autoCastSummary);
+                        return SmokeAttemptResult.Pending;
+                    }
+                    autoExerciseAutoFishingAutoCastVerified = true;
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingAutoCast OK " + autoCastSummary);
+                    runtime.SetHookStatus("Smoke.AutoFishingAutoCast", "verified", "BodyController.UseFishRod", autoCastSummary);
                     return SmokeAttemptResult.Pending;
                 }
 
-                if (fishingService.FishingAutomationApplicationCount > autoFishingApplicationBaseline)
+                CaptureAutoFishingFlowProgress(fishingService, progress);
+
+                if (progress.BiteReadyObserved && !autoExerciseAutoFishingPhaseVerified)
                 {
                     string summary = fishingService.LastFishingAutomationApplicationSummary;
-                    if (!autoExerciseAutoFishingPhaseVerified)
-                    {
-                        autoExerciseAutoFishingPhaseVerified = true;
-                        runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingPhase OK " + summary);
-                        runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "AgentStateFishingWait.OnPlay Postfix", summary);
-                    }
+                    autoExerciseAutoFishingPhaseVerified = true;
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingPhase OK " + BuildAutoFishingFlowSummary(progress, summary));
+                    runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "native fishing loop", BuildAutoFishingFlowSummary(progress, summary));
+                    if (ScenarioRequestsInstantBite(scenario))
+                        runtime.SetHookStatus("Smoke.AutoFishingInstantBite", "verified", "AgentStateFishingWait.OnPlay Postfix", summary);
+                }
 
-                    if (smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true)
-                    {
-                        if (fishingService.FishingMiniGameCompleteApplicationCount > autoFishingMiniGameCompleteBaseline)
-                        {
-                            fishingService.ForceFishingFishForSmoke = false;
-                            string completeSummary = string.IsNullOrWhiteSpace(fishingService.LastFishingMiniGameCompleteSummary)
-                                ? fishingService.LastFishingAutomationApplicationSummary
-                                : fishingService.LastFishingMiniGameCompleteSummary;
-                            runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMiniGameComplete OK " + completeSummary);
-                            runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", completeSummary);
-                            VerifyAutoFishingReportExportForSmoke("AutoFishingMiniGameComplete");
-                            return SmokeAttemptResult.Succeeded;
-                        }
+                if (ScenarioRequestsCompletion(scenario) && fishingService.FishingMiniGameCompleteApplicationCount > autoFishingMiniGameCompleteBaseline && !progress.MiniGameCompleteObserved)
+                {
+                    progress.MiniGameCompleteObserved = true;
+                    string completeSummary = string.IsNullOrWhiteSpace(fishingService.LastFishingMiniGameCompleteSummary)
+                        ? fishingService.LastFishingAutomationApplicationSummary
+                        : fishingService.LastFishingMiniGameCompleteSummary;
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingMiniGameComplete OK " + completeSummary);
+                    runtime.SetHookStatus("Smoke.AutoFishingMiniGameComplete", "verified", "FishingGameScrollBar.UpdateGame Postfix", completeSummary);
+                }
 
-                        if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 30)
-                            throw new TimeoutException("AutoFishing skip=false minigame completion did not apply within 30 seconds after entering AgentStateFishingWait.");
+                if (ScenarioRequestsAnimationSpeed(scenario) && progress.ReadyChargeObserved && progress.AnimationSpeedObserved)
+                {
+                    runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingFastAnimations OK " + fishingService.LastFishingAnimationSpeedSummary);
+                    runtime.SetHookStatus("Smoke.AutoFishingAnimationSpeed", "verified", "AgentStateFishingReady/Cast/Pull", BuildAutoFishingFlowSummary(progress, fishingService.LastFishingAnimationSpeedSummary));
+                }
 
-                        LogAutoFishingPending("Waiting for FishingGameScrollBar.UpdateGame auto-complete skip=false. miniGameApplications=" + fishingService.FishingMiniGameCompleteApplicationCount + ".");
-                        return SmokeAttemptResult.Pending;
-                    }
-
-                    fishingService.ForceFishingFishForSmoke = false;
-                    VerifyAutoFishingReportExportForSmoke("AutoFishingPhase");
+                if (IsAutoFishingFlowComplete(progress, fishingService))
+                {
+                    VerifyRequiredAutoFishingScenarioEvidence(scenario, progress, fishingService);
+                    VerifyAutoFishingReportExportForSmoke(scenario);
                     return SmokeAttemptResult.Succeeded;
                 }
 
-                if ((DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds > 20)
-                    throw new TimeoutException("AutoFishing wait-phase automation did not apply within 20 seconds after entering AgentStateFishingWait.");
+                double elapsed = (DateTimeOffset.Now - autoFishingPhaseStartedAt).TotalSeconds;
+                if (elapsed > 60)
+                    throw new TimeoutException("AutoFishing real fifth-save loop did not complete within 60 seconds. " + BuildAutoFishingFlowSummary(progress, fishingService.LastFishingAutomationApplicationSummary));
 
-                LogAutoFishingPending("Waiting for AgentStateFishingWait.OnPlay instant-bite application. applications=" + fishingService.FishingAutomationApplicationCount + ".");
+                LogAutoFishingPending("Waiting for real fishing loop scenario=" + scenario + ". " + BuildAutoFishingFlowSummary(progress, fishingService.LastFishingAutomationApplicationSummary));
                 return SmokeAttemptResult.Pending;
             }
             catch (Exception ex)
             {
-                if (fishingService != null)
-                    fishingService.ForceFishingFishForSmoke = false;
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke auto-fishing phase exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AutoFishingPhase", "failed", "AgentStateFishingWait.OnPlay", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.AutoFishingPhase", "failed", "native fishing loop", ex.GetType().Name + ": " + ex.Message);
                 return SmokeAttemptResult.Failed;
+            }
+        }
+
+        private string GetAutoFishingScenarioForSmoke()
+        {
+            string scenario = smokeSettings?.AutoFishingScenario ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(scenario))
+                return smokeSettings?.AutoExerciseAutoFishingMiniGameComplete == true ? "CombinedInstantComplete" : "DefaultLoop";
+            return scenario.Trim();
+        }
+
+        private static bool ScenarioRequestsInstantBite(string scenario)
+        {
+            return scenario.Equals("InstantBite", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ScenarioRequestsSkip(string scenario)
+        {
+            return scenario.Equals("SkipMiniGame", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ScenarioRequestsCompletion(string scenario)
+        {
+            return scenario.Equals("DefaultLoop", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("InstantBite", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("FastAnimations", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ScenarioRequestsAnimationSpeed(string scenario)
+        {
+            return scenario.Equals("FastAnimations", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantSkip", StringComparison.OrdinalIgnoreCase) ||
+                scenario.Equals("CombinedInstantComplete", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void CaptureAutoFishingFlowProgress(FishingAutomationService fishingService, AutoFishingSmokeFlowProgress progress)
+        {
+            FishingAutomationState state = string.IsNullOrWhiteSpace(progress.OwnerId)
+                ? new FishingAutomationState()
+                : fishingService.GetState(progress.OwnerId);
+            string phase = state.Phase ?? string.Empty;
+            string lastSummary = fishingService.LastFishingAutomationApplicationSummary ?? string.Empty;
+            string animationSummary = fishingService.LastFishingAnimationSpeedSummary ?? string.Empty;
+
+            if (phase.IndexOf("Wait", StringComparison.OrdinalIgnoreCase) >= 0 || phase.Equals("WaitingForBite", StringComparison.OrdinalIgnoreCase))
+                progress.WaitObserved = true;
+
+            if (lastSummary.IndexOf("behavior=NativeBiteReady", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                lastSummary.IndexOf("behavior=InstantBite", StringComparison.OrdinalIgnoreCase) >= 0)
+                progress.BiteReadyObserved = true;
+
+            if (lastSummary.IndexOf("behavior=InstantBite", StringComparison.OrdinalIgnoreCase) >= 0)
+                progress.InstantBiteObserved = true;
+
+            if (fishingService.FishingInstantBiteApplicationCount > progress.InitialInstantBiteCount)
+                progress.InstantBiteObserved = true;
+
+            bool observedBattleOrPull = phase.IndexOf("Battle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                phase.IndexOf("Pull", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                phase.IndexOf("MiniGame", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                lastSummary.IndexOf("autoHook=AgentStateFishingBattle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                lastSummary.IndexOf("autoHook=AgentStateFishingPull", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (observedBattleOrPull)
+            {
+                progress.BattleOrPullObserved = true;
+                if (progress.BattleOrPullAutoCastCount < 0)
+                    progress.BattleOrPullAutoCastCount = fishingService.FishingAutoCastApplicationCount;
+            }
+
+            if (lastSummary.IndexOf("action=SkipMiniGameNativeResult", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                lastSummary.IndexOf("autoHook=AgentStateFishingPull", StringComparison.OrdinalIgnoreCase) >= 0)
+                progress.SkipObserved = true;
+
+            if (fishingService.FishingSkipMiniGameApplicationCount > progress.InitialSkipMiniGameCount)
+                progress.SkipObserved = true;
+
+            if (phase.Equals("Cooldown", StringComparison.OrdinalIgnoreCase) || phase.IndexOf("Cooldown", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                progress.PullExitObserved = true;
+                if (progress.PullExitAutoCastCount < 0)
+                    progress.PullExitAutoCastCount = fishingService.FishingAutoCastApplicationCount;
+            }
+
+            if (progress.PullExitObserved && progress.PullExitAutoCastCount >= 0 &&
+                fishingService.FishingAutoCastApplicationCount > progress.PullExitAutoCastCount)
+                progress.NextAutoCastObserved = true;
+
+            if (!progress.PullExitObserved && progress.BattleOrPullObserved && progress.BattleOrPullAutoCastCount >= 0 &&
+                fishingService.FishingAutoCastApplicationCount > progress.BattleOrPullAutoCastCount)
+            {
+                progress.PullExitObserved = true;
+                progress.PullExitAutoCastCount = progress.BattleOrPullAutoCastCount;
+                progress.NextAutoCastObserved = true;
+            }
+
+            if (IsFastAnimationOwnerEvidence(animationSummary))
+                progress.AnimationSpeedObserved = true;
+            if (IsFastReadyChargeEvidence(animationSummary))
+                progress.ReadyChargeObserved = true;
+            if (fishingService.FishingReadyChargeApplicationCount > progress.InitialReadyChargeCount)
+                progress.ReadyChargeObserved = true;
+
+            progress.LastPhase = phase;
+            progress.LastSummary = lastSummary;
+            progress.LastReason = state.LastReason ?? string.Empty;
+        }
+
+        private static bool IsAutoFishingFlowComplete(AutoFishingSmokeFlowProgress progress, FishingAutomationService fishingService)
+        {
+            return progress.AutoCastObserved &&
+                progress.WaitObserved &&
+                progress.BiteReadyObserved &&
+                progress.BattleOrPullObserved &&
+                progress.PullExitObserved &&
+                progress.NextAutoCastObserved &&
+                fishingService.FishingAutoCastApplicationCount >= progress.InitialAutoCastCount + 2;
+        }
+
+        private static bool IsFastAnimationOwnerEvidence(string animationSummary)
+        {
+            if (string.IsNullOrWhiteSpace(animationSummary) ||
+                animationSummary.IndexOf("status=pending", StringComparison.OrdinalIgnoreCase) >= 0)
+                return false;
+
+            return animationSummary.IndexOf("behavior=FastCastHookPhysics", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                animationSummary.IndexOf("behavior=FastPullDuration", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsFastReadyChargeEvidence(string animationSummary)
+        {
+            if (string.IsNullOrWhiteSpace(animationSummary) ||
+                animationSummary.IndexOf("status=pending", StringComparison.OrdinalIgnoreCase) >= 0)
+                return false;
+
+            return animationSummary.IndexOf("behavior=FastReadyCharge", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void VerifyRequiredAutoFishingScenarioEvidence(string scenario, AutoFishingSmokeFlowProgress progress, FishingAutomationService fishingService)
+        {
+            string summary = BuildAutoFishingFlowSummary(progress, fishingService.LastFishingAutomationApplicationSummary);
+            if (ScenarioRequestsInstantBite(scenario) && !progress.InstantBiteObserved)
+                throw new InvalidOperationException("Scenario " + scenario + " did not observe InstantBite evidence. " + summary);
+            if (ScenarioRequestsSkip(scenario) && !progress.SkipObserved)
+                throw new InvalidOperationException("Scenario " + scenario + " did not observe SkipMiniGame pull evidence. " + summary);
+            if (ScenarioRequestsCompletion(scenario) && !progress.MiniGameCompleteObserved)
+                throw new InvalidOperationException("Scenario " + scenario + " did not observe visible minigame auto-complete evidence. " + summary);
+            if (ScenarioRequestsAnimationSpeed(scenario) && (!progress.ReadyChargeObserved || !progress.AnimationSpeedObserved))
+                throw new InvalidOperationException("Scenario " + scenario + " did not observe ready-charge plus cast/pull fast animation evidence. " + summary);
+
+            runtime.RuntimeMonitor.Log("Smoke exercise AutoFishingLoop OK " + summary);
+            runtime.SetHookStatus("Smoke.AutoFishingPhase", "verified", "native fishing loop", summary);
+        }
+
+        private string BuildAutoFishingFlowSummary(AutoFishingSmokeFlowProgress progress, string fallbackSummary)
+        {
+            return "scenario=" + progress.Scenario +
+                ", flow=AutoCast:" + progress.AutoCastObserved +
+                "->Wait:" + progress.WaitObserved +
+                "->BiteReady:" + progress.BiteReadyObserved +
+                "->BattleOrPull:" + progress.BattleOrPullObserved +
+                "->PullExit:" + progress.PullExitObserved +
+                "->NextAutoCast:" + progress.NextAutoCastObserved +
+                ", instantBite=" + progress.InstantBiteObserved +
+                ", skip=" + progress.SkipObserved +
+                ", readyCharge=" + progress.ReadyChargeObserved +
+                ", fastAnimation=" + progress.AnimationSpeedObserved +
+                ", autoCast=" + progress.InitialAutoCastCount + "->" + (FishingAutomationService?.FishingAutoCastApplicationCount ?? -1) +
+                ", applications=" + progress.InitialApplicationCount + "->" + (FishingAutomationService?.FishingAutomationApplicationCount ?? -1) +
+                ", readyCharges=" + progress.InitialReadyChargeCount + "->" + (FishingAutomationService?.FishingReadyChargeApplicationCount ?? -1) +
+                ", miniGameComplete=" + progress.InitialMiniGameCompleteCount + "->" + (FishingAutomationService?.FishingMiniGameCompleteApplicationCount ?? -1) +
+                ", phase=" + GameBridgeNativeHelpers.FirstText(progress.LastPhase, "unknown") +
+                ", reason=" + GameBridgeNativeHelpers.FirstText(progress.LastReason, "-") +
+                ", last=" + GameBridgeNativeHelpers.FirstText(progress.LastSummary, fallbackSummary, "none");
+        }
+
+        private string DescribeActiveFishingPoolsForSmoke()
+        {
+            Type? fishingPoolType = patcher?.ResolveType("DolocTown.FishingPool, Assembly-CSharp");
+            if (fishingPoolType == null)
+                return "fishingPoolType=missing";
+
+            object[] activePools = FindUnityObjects(fishingPoolType);
+            List<string> names = new List<string>();
+            foreach (object pool in activePools.Take(6))
+                names.Add(GameBridgeNativeHelpers.FirstText(ReadStringMember(pool, "PoolName", string.Empty), pool.GetType().Name));
+
+            return "activeScenePools=" + activePools.Length + (names.Count == 0 ? string.Empty : ", sample=" + string.Join("|", names));
+        }
+
+        private sealed class AutoFishingSmokeFlowProgress
+        {
+            internal string Scenario { get; private set; } = string.Empty;
+            internal string OwnerId { get; private set; } = string.Empty;
+            internal int InitialAutoCastCount { get; private set; }
+            internal int InitialApplicationCount { get; private set; }
+            internal int InitialMiniGameCompleteCount { get; private set; }
+            internal int InitialInstantBiteCount { get; private set; }
+            internal int InitialSkipMiniGameCount { get; private set; }
+            internal int InitialReadyChargeCount { get; private set; }
+            internal DateTimeOffset StartedAt { get; private set; }
+            internal bool AutoCastObserved { get; set; }
+            internal bool WaitObserved { get; set; }
+            internal bool BiteReadyObserved { get; set; }
+            internal bool InstantBiteObserved { get; set; }
+            internal bool BattleOrPullObserved { get; set; }
+            internal bool PullExitObserved { get; set; }
+            internal bool NextAutoCastObserved { get; set; }
+            internal bool SkipObserved { get; set; }
+            internal bool MiniGameCompleteObserved { get; set; }
+            internal bool ReadyChargeObserved { get; set; }
+            internal bool AnimationSpeedObserved { get; set; }
+            internal int BattleOrPullAutoCastCount { get; set; } = -1;
+            internal int PullExitAutoCastCount { get; set; } = -1;
+            internal string LastPhase { get; set; } = string.Empty;
+            internal string LastReason { get; set; } = string.Empty;
+            internal string LastSummary { get; set; } = string.Empty;
+
+            internal void Reset(string scenario, int initialAutoCastCount, int initialApplicationCount, int initialMiniGameCompleteCount, int initialInstantBiteCount, int initialSkipMiniGameCount, int initialReadyChargeCount, DateTimeOffset startedAt)
+            {
+                Scenario = scenario;
+                OwnerId = string.Empty;
+                InitialAutoCastCount = initialAutoCastCount;
+                InitialApplicationCount = initialApplicationCount;
+                InitialMiniGameCompleteCount = initialMiniGameCompleteCount;
+                InitialInstantBiteCount = initialInstantBiteCount;
+                InitialSkipMiniGameCount = initialSkipMiniGameCount;
+                InitialReadyChargeCount = initialReadyChargeCount;
+                StartedAt = startedAt;
+                AutoCastObserved = false;
+                WaitObserved = false;
+                BiteReadyObserved = false;
+                InstantBiteObserved = false;
+                BattleOrPullObserved = false;
+                PullExitObserved = false;
+                NextAutoCastObserved = false;
+                SkipObserved = false;
+                MiniGameCompleteObserved = false;
+                ReadyChargeObserved = false;
+                AnimationSpeedObserved = false;
+                BattleOrPullAutoCastCount = -1;
+                PullExitAutoCastCount = -1;
+                LastPhase = string.Empty;
+                LastReason = string.Empty;
+                LastSummary = string.Empty;
+            }
+
+            internal void SetOwner(string ownerId)
+            {
+                OwnerId = ownerId ?? string.Empty;
             }
         }
 
@@ -303,7 +497,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             lastAutoFishingReadinessLog = DateTimeOffset.Now;
             runtime.RuntimeMonitor.Log("Smoke auto-fishing waiting: " + message);
-            runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "AgentStateFishingWait.OnPlay", message);
+            runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", "native fishing loop", message);
         }
 
         private void VerifyAutoFishingReportExportForSmoke(string scenario)
@@ -317,273 +511,5 @@ namespace DTMAPI.GameBridge.DolocTown
             autoFishingReportExported = true;
         }
 
-        private object? GenerateFishingRodForSmoke(Type dolocApi)
-        {
-            foreach (string itemId in new[] { "carbon_fishrod", "bamboo_fishrod", "simple_fishrod", "old_fishrod" })
-            {
-                object? item = GenerateItemForSmoke(dolocApi, itemId);
-                if (item != null && IsTypeOrBase(item.GetType(), "DolocTown.ItemFishingRod"))
-                    return item;
-            }
-            return null;
-        }
-
-        private object? FindOrCreateFishingPoolForSmoke(Type fishingPoolType, Type dolocApi, out string source)
-        {
-            List<string> details = new List<string>();
-            object[] activePools = FindUnityObjects(fishingPoolType);
-            details.Add("activeScenePools=" + activePools.Length);
-            foreach (object existing in activePools)
-            {
-                string existingName = ReadStringMember(existing, "PoolName", string.Empty);
-                if (string.IsNullOrWhiteSpace(existingName))
-                    continue;
-
-                if (TryRollFishForSmoke(dolocApi, existingName, out string sceneFishId, out string sceneRollDetails))
-                {
-                    source = "scene:" + existingName + ", fish=" + sceneFishId + ", " + string.Join(", ", details);
-                    return existing;
-                }
-
-                details.Add("scenePoolNoRoll=" + existingName + "(" + sceneRollDetails + ")");
-            }
-
-            object[] allPools = FindUnityObjects(fishingPoolType, includeInactive: true);
-            if (allPools.Length != activePools.Length)
-                details.Add("inactiveOrHiddenScenePools=" + Math.Max(0, allPools.Length - activePools.Length));
-            foreach (object existing in allPools)
-            {
-                string existingName = ReadStringMember(existing, "PoolName", string.Empty);
-                if (string.IsNullOrWhiteSpace(existingName) || !TryRollFishForSmoke(dolocApi, existingName, out string hiddenFishId, out string _))
-                    continue;
-
-                if (activePools.Contains(existing))
-                    continue;
-
-                if (TrySetUnityComponentActiveForSmoke(existing, true, out string activationDetails))
-                {
-                    details.Add("activatedHiddenScenePool=" + existingName + "(" + hiddenFishId + ", " + activationDetails + ")");
-                    source = "activated-scene:" + existingName + ", fish=" + hiddenFishId + ", " + string.Join(", ", details);
-                    return existing;
-                }
-
-                details.Add("hiddenScenePool=" + existingName + "(" + hiddenFishId + ", activation=" + activationDetails + ")");
-                source = "hidden-scene:" + existingName + ", fish=" + hiddenFishId + ", " + string.Join(", ", details);
-                return existing;
-            }
-
-            IReadOnlyList<string> poolNames = FindFishingPoolNamesForSmoke(out string configDetails);
-            details.Add(configDetails);
-            foreach (string candidatePoolName in poolNames)
-            {
-                if (TryRollFishForSmoke(dolocApi, candidatePoolName, out string fishId, out string rollDetails))
-                {
-                    object? pool = CreateTransientFishingPoolForSmoke(fishingPoolType, candidatePoolName, out string createDetails);
-                    details.Add("selected=" + candidatePoolName + ", fish=" + fishId + ", " + createDetails);
-                    if (pool != null)
-                    {
-                        source = "transient:" + candidatePoolName + ", fish=" + fishId + ", " + string.Join(", ", details);
-                        return pool;
-                    }
-                }
-                else
-                {
-                    details.Add("candidateNoRoll=" + candidatePoolName + "(" + rollDetails + ")");
-                }
-            }
-
-            source = string.Join(", ", details);
-            return null;
-        }
-
-        private static bool TrySetUnityComponentActiveForSmoke(object component, bool active, out string details)
-        {
-            details = string.Empty;
-            try
-            {
-                object? gameObject = ReadMember(component, "gameObject");
-                MethodInfo? setActive = gameObject?.GetType().GetMethod("SetActive", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
-                if (gameObject == null || setActive == null)
-                {
-                    details = "missing-gameObject";
-                    return false;
-                }
-
-                int activatedParents = 0;
-                object? transform = ReadMember(gameObject, "transform");
-                for (object? parent = transform == null ? null : ReadMember(transform, "parent"); parent != null; parent = ReadMember(parent, "parent"))
-                {
-                    object? parentGameObject = ReadMember(parent, "gameObject");
-                    MethodInfo? parentSetActive = parentGameObject?.GetType().GetMethod("SetActive", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
-                    if (parentGameObject == null || parentSetActive == null)
-                        break;
-                    parentSetActive.Invoke(parentGameObject, new object[] { active });
-                    activatedParents++;
-                    if (activatedParents >= 16)
-                        break;
-                }
-
-                setActive.Invoke(gameObject, new object[] { active });
-                bool activeSelf = ReadBoolMember(gameObject, "activeSelf", false);
-                bool activeInHierarchy = ReadBoolMember(gameObject, "activeInHierarchy", false);
-                details = "activeSelf=" + activeSelf + ", activeInHierarchy=" + activeInHierarchy + ", activatedParents=" + activatedParents;
-                return activeInHierarchy;
-            }
-            catch (Exception ex)
-            {
-                details = ex.GetType().Name + ": " + ex.Message;
-                return false;
-            }
-        }
-
-        private object? CreateTransientFishingPoolForSmoke(Type fishingPoolType, string poolName, out string details)
-        {
-            Type? gameObjectType = patcher?.ResolveType("UnityEngine.GameObject, UnityEngine.CoreModule") ?? patcher?.ResolveType("UnityEngine.GameObject, UnityEngine");
-            MethodInfo? addComponent = gameObjectType?.GetMethod("AddComponent", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(Type) }, null);
-            if (gameObjectType == null || addComponent == null)
-            {
-                details = "create=missing-gameobject";
-                return null;
-            }
-
-            object? gameObject = Activator.CreateInstance(gameObjectType, new object[] { "DTMAPI.SmokeFishingPool" });
-            object? pool = gameObject == null ? null : addComponent.Invoke(gameObject, new object[] { fishingPoolType });
-            if (pool == null || !WriteObjectMember(pool, "poolName", poolName))
-            {
-                details = "create=failed";
-                return null;
-            }
-
-            details = "create=ok";
-            return pool;
-        }
-
-        private IReadOnlyList<string> FindFishingPoolNamesForSmoke(out string details)
-        {
-            List<string> names = new List<string>();
-            List<string> notes = new List<string>();
-            Type? dolocConfig = patcher?.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
-            if (dolocConfig == null)
-            {
-                details = "config=missing-dolocconfig";
-                return names;
-            }
-
-            object? tables = dolocConfig?.GetProperty("Tables", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-            if (tables == null)
-            {
-                details = "config=missing-tables";
-                return names;
-            }
-
-            object? tbFishingPool = tables == null ? null : ReadMember(tables, "TbFishingPool");
-            if (tbFishingPool == null)
-            {
-                details = "config=missing-tbfishingpool";
-                return names;
-            }
-
-            object? dataList = tbFishingPool == null ? null : ReadMember(tbFishingPool, "DataList");
-            if (dataList is IEnumerable enumerable)
-            {
-                int count = 0;
-                foreach (object info in enumerable)
-                {
-                    count++;
-                    string id = ReadStringMember(info, "Id", string.Empty);
-                    object? fishes = ReadMember(info, "Fishes_Ref") ?? ReadMember(info, "Fishes");
-                    if (!string.IsNullOrWhiteSpace(id) && HasAnyEnumerableItem(fishes))
-                    {
-                        AddUnique(names, id);
-                        if (notes.Count < 5)
-                            notes.Add(id);
-                    }
-                }
-                details = "config=dataList:" + count + ", candidates=" + names.Count + (notes.Count == 0 ? string.Empty : ", sample=" + string.Join("|", notes));
-                return names;
-            }
-
-            object? dataMap = ReadMember(tbFishingPool!, "DataMap");
-            if (dataMap is IDictionary dictionary)
-            {
-                foreach (object key in dictionary.Keys)
-                {
-                    if (key is string id && !string.IsNullOrWhiteSpace(id))
-                        AddUnique(names, id);
-                }
-                details = "config=dataMap:" + dictionary.Count + ", candidates=" + names.Count;
-                return names;
-            }
-
-            if (dataMap is IEnumerable mapEnumerable)
-            {
-                int count = 0;
-                foreach (object entry in mapEnumerable)
-                {
-                    count++;
-                    if (entry == null)
-                        continue;
-                    string id = ReadMember(entry, "Key") as string ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(id))
-                        AddUnique(names, id);
-                }
-                details = "config=dataMapEnumerable:" + count + ", candidates=" + names.Count;
-                return names;
-            }
-
-            details = "config=missing-datalist-and-datamap";
-            return names;
-        }
-
-        private static void AddUnique(List<string> values, string value)
-        {
-            if (values.Any(existing => existing.Equals(value, StringComparison.Ordinal)))
-                return;
-            values.Add(value);
-        }
-
-        private static bool TryRollFishForSmoke(Type dolocApi, string poolName, out string fishId, out string details)
-        {
-            fishId = string.Empty;
-            MethodInfo? rollFish = dolocApi.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(m =>
-                {
-                    if (m.Name != "RollFish")
-                        return false;
-                    ParameterInfo[] parameters = m.GetParameters();
-                    return parameters.Length == 2 &&
-                        parameters[0].ParameterType == typeof(string) &&
-                        parameters[1].ParameterType == typeof(int);
-                });
-            if (rollFish == null)
-            {
-                details = "missing-rollfish";
-                return false;
-            }
-
-            int attempts = 0;
-            foreach (int toolLevel in new[] { 5, 4, 3, 2, 1, 0 })
-            {
-                attempts++;
-                object? fish = rollFish.Invoke(null, new object[] { poolName, toolLevel });
-                if (fish == null)
-                    continue;
-
-                fishId = ReadStringMember(fish, "Id", fish.GetType().Name);
-                details = "toolLevel=" + toolLevel + ", attempts=" + attempts;
-                return true;
-            }
-            details = "attempts=" + attempts + ", no-fish";
-            return false;
-        }
-
-        private static bool HasAnyEnumerableItem(object? value)
-        {
-            if (!(value is IEnumerable enumerable))
-                return false;
-            foreach (object _ in enumerable)
-                return true;
-            return false;
-        }
     }
 }

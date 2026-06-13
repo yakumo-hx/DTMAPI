@@ -19,6 +19,10 @@ The review should answer:
 
 - `docs/reviews`: pre-implementation analysis and root-cause/path review.
 - `docs/reviews/api`: API native-owner, status, and rebuild-readiness reviews.
+- `docs/reviews/api/native-function-map`: generated native symbol/call-graph coverage data plus a static workbench for seeing reverse-map and native-owner report coverage.
+- `docs/reviews/api/local-mods-native-owner`: four-round local mod semantic/API-demand to native-owner review library for current testmods, legacy local own-mod sources, and local third-party sample groups.
+- `docs/reviews/api/smapi-ecosystem-map`: four-round clean-room semantic map from mature SMAPI ecosystem mod capabilities to DTMAPI candidate API layers and research priorities.
+- `docs/reviews/code`: branch-wide or focused code-level audits that are not only user manual-QA transcription and not an API native-owner review.
 - `docs/goals/YYYY/...`: immutable implementation task ledgers for future `/goal` prompts.
 - `docs/goals/YYYY/....goal.txt`: backups of the exact short `/goal` prompts.
 - `docs/debug`: runtime investigation, evidence, regressions, and known bug state.
@@ -36,13 +40,47 @@ docs/reviews/
   manual-qa/
     YYYY/
       YYYYMMDD-NNNN-short-slug.md
+  api/
+    native-owner-domains/
+      INDEX.md
+      NN-domain-report.md
+    native-function-map/
+      README.md
+      index.html
+      data/
+    local-mods-native-owner/
+      INDEX.md
+      rounds/
+    smapi-ecosystem-map/
+      INDEX.md
+      rounds/
+    third-party-mods/
+      INDEX.md
+      ROUND-1-agent-e-mod-semantics.md
+    YYYY/
+      YYYYMMDD-NNNN-short-slug.md
+  code/
+    YYYY/
+      YYYYMMDD-NNNN-short-slug.md
   templates/
     manual-qa-review.md
 ```
 
 Use `docs/reviews/manual-qa/YYYY/...` for durable user manual-test reviews. The year folder may be created only when the first review for that year is needed.
 
+Use `docs/reviews/code/YYYY/...` for durable code-level audits when the request spans multiple modules, documentation ledgers, debug records, or release-readiness checks and does not fit a single manual-QA issue list.
+
 Use `docs/reviews/api/YYYY/...` for API native-owner reviews. These reviews should name the public API symbol or domain, the native responsibility function, the authoritative state holder, the current DTMAPI bridge path, ordinary-mod usability, and the concrete failure mode if the API is exposed too early.
+
+Use `docs/reviews/api/native-owner-domains/INDEX.md` as the fixed long-lived library for future API/domain native-owner discovery. Reports there map broad gameplay/content goals to native responsibility functions, official Workshop support boundaries, blocked/gap status, and stable DTO/adapter concepts. They are pre-implementation discovery records, not API stability proof.
+
+Use `docs/reviews/api/native-function-map/README.md` as the generated visual index for reverse metadata coverage. It helps compare all native functions against system maps and native-owner report tags, but it does not replace method-body review or public API matrix promotion gates.
+
+Use `docs/reviews/api/local-mods-native-owner/INDEX.md` as the fixed local mod demand/native-owner integration index. It records the four-round review of current `testmods`, legacy local own-mod sources, and local third-party sample groups. It is useful before an API rebuild because it shows which existing local mods stress the same native owners, but it is not API stability proof.
+
+Use `docs/reviews/api/smapi-ecosystem-map/INDEX.md` as the clean-room ecosystem API research map. It translates mature SMAPI mod ecosystem semantics into DTMAPI candidate API layers, gaps, and research priorities. It is not SMAPI compatibility, does not copy SMAPI or third-party code, and does not promote any DTMAPI public API status.
+
+Use `docs/reviews/api/third-party-mods/INDEX.md` for read-only local third-party mod sample reviews. These reports extract semantic API demand and compatibility risk from visible files, metadata, and docs only; they are not migration permission and do not allow third-party code to be copied into DTMAPI.
 
 ## When To Create A Durable Review
 
@@ -92,3 +130,5 @@ Each API/native-owner review block should include:
 - ordinary-mod usability;
 - exact blocker conditions;
 - recommended next action: document, downgrade, targeted native-owner deep dive, GameBridge rebuild, or no action.
+
+The fixed native-owner domain reports must also preserve the user's fuzzy semantic target and mark each subtopic as `Found`, `Partial`, `Not found`, or `Blocked` so a future goal can avoid redoing the same reverse lookup.

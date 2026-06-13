@@ -33,6 +33,8 @@ Those local-only folders may exist in a developer workspace, but they must not b
 
 The reverse build folders include `input/Assembly-CSharp.dll` and decompiled game code for local research. Do not publish or package those files.
 
+DTMAPI-authored native-owner summaries derived from these local references belong in `../docs/reviews/api/native-owner-domains/INDEX.md`. That library may name classes, members, maps, and official docs, but it must not copy decompiled method bodies or distribute official binaries.
+
 ## Stardew Valley SMAPI
 
 - `stardew-smapi/installed`: installed SMAPI runtime copied from a local Stardew Valley install.

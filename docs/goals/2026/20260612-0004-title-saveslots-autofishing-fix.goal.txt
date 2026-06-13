@@ -1,0 +1,37 @@
+/goal
+目标：完成 Title UI 图标恢复、官方标题菜单单列守卫、MoreSaves 固定 12 总槽位、AutoFishing 单功能独立与组合验证。详细需求、问题、验收标准以 docs/goals/2026/20260612-0004-title-saveslots-autofishing-fix.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/planning/DolocTownModdingAPI.md
+docs/planning/Debug.md
+references/README.md
+docs/workflows/codex-feedback-to-goal.md
+docs/goals/README.md
+docs/goals/2026/20260612-0004-title-saveslots-autofishing-fix.md
+docs/goals/2026/20260612-0004-title-saveslots-autofishing-fix.goal.txt
+docs/reviews/README.md
+docs/reviews/manual-qa/2026/20260612-0004-title-saveslots-autofishing-regression-review.md
+docs/reviews/manual-qa/2026/20260611-0001-refactor-manual-qa-code-review.md
+docs/updates/INDEX.md
+docs/updates/2026/20260612-0012-bottom-layer-refactor-audit-implementation.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；保留 DTMAPI config menu paging；SaveSlots 和 FishingAutomation 保持 Experimental；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本保持 0.5.1-alpha / 0.5.1.0。若当前代码已经是 0.5.1-alpha，不要再升版本；若当前不是 0.5.0-alpha 或 0.5.1-alpha，先报告 blocker。
+
+任务 A：Title UI 图标按钮与官方标题菜单单列守卫
+任务 B：MoreSaves 固定 12 总槽位并移除玩家槽位数设置
+任务 C：AutoFishing 单功能独立、组合优先级与动画状态证据
+任务 D：单元测试、smoke 场景与第三存档验证
+任务 E：docs/updates/debug/smoke/hook/API 收尾
+
+完成标准：
+只有当 docs/goals/2026/20260612-0004-title-saveslots-autofishing-fix.md 中本轮玩家可见要求都在第三存档真实可用，并完成 git diff --check、Release build/test、标题/MoreSaves/AutoFishing/HookProbe smoke 证据、日志/截图、退出残留检查和文档更新后，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步拆分。

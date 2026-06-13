@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
 
@@ -6,6 +5,7 @@ namespace MoreSavesMod
 {
     public sealed class ModEntry : DtmMod
     {
+        private const int FixedSlotCount = 12;
         private IDtmHelper helper = null!;
         private MoreSavesConfig config = new MoreSavesConfig();
         private ISaveSlotsApi? saveSlotsApi;
@@ -32,7 +32,6 @@ namespace MoreSavesMod
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.slots", "Save slots"));
             menu.AddParagraph(helper.ModManifest, BuildStatusText);
             menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Expands the official save/load UI slot count."), () => config.Enabled, value => config.Enabled = value);
-            menu.AddNumberOption(helper.ModManifest, () => T("config.slotCount.name", "Slot count"), () => T("config.slotCount.tooltip", "Total official save slots to show. The first six remain vanilla-compatible."), () => config.SlotCount, value => config.SlotCount = (int)Math.Round(value), 6, 60, 1);
         }
 
         private void BindSaveSlotsApi(string reason)
@@ -47,7 +46,7 @@ namespace MoreSavesMod
             lastRegisterResult = saveSlotsApi.RegisterSlots(helper.ModManifest, new SaveSlotsOptions
             {
                 Enabled = config.Enabled,
-                SlotCount = config.SlotCount,
+                SlotCount = FixedSlotCount,
                 VerboseLogging = config.VerboseLogging
             });
             helper.Monitor.Log("MoreSaves API register success=" + lastRegisterResult.Success + " reason=" + reason + " requested=" + lastRegisterResult.RequestedSlotCount + " applied=" + lastRegisterResult.AppliedSlotCount + " message=" + lastRegisterResult.Message, lastRegisterResult.Success ? LogLevel.Info : LogLevel.Warn);
@@ -77,7 +76,7 @@ namespace MoreSavesMod
 
         private void NormalizeConfig()
         {
-            config.SlotCount = Math.Max(6, Math.Min(60, config.SlotCount));
+            config.SlotCount = FixedSlotCount;
         }
 
         private string T(string key, string fallback) => helper.Translation.Get(key, fallback);
@@ -86,6 +85,7 @@ namespace MoreSavesMod
         public sealed class MoreSavesConfig
         {
             [DataMember] public bool Enabled { get; set; } = true;
+            // Migration-only: previous builds exposed a slot-count setting; 0.5.1 normalizes it to 12 total official slots.
             [DataMember] public int SlotCount { get; set; } = 12;
             [DataMember] public bool VerboseLogging { get; set; }
         }

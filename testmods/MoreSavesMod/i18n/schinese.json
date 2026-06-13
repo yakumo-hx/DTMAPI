@@ -4,9 +4,7 @@
   "mod.apiMissing": "Save Slots API 暂不可用。",
   "config.section.slots": "存档槽",
   "config.enabled.name": "启用",
-  "config.enabled.tooltip": "扩展官方保存/读取界面的存档槽数量。",
-  "config.slotCount.name": "槽位总数",
-  "config.slotCount.tooltip": "官方存档界面显示的总槽位数。前六个槽位保持原版兼容。",
+  "config.enabled.tooltip": "将官方保存/读取界面固定扩展为 12 个总存档槽。前六个槽位保持原版兼容。",
   "config.status.missing": "Save Slots API 暂不可用。",
   "config.status": "状态={0}，原生={1}，请求={2}，应用={3}。{4}"
 }

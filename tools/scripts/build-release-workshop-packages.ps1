@@ -22,10 +22,18 @@ if (-not $SkipBuild) {
 
 function Clear-Directory {
     param([Parameter(Mandatory = $true)] [string] $Path)
+    $preservedWorkshopInfo = $null
     if (Test-Path $Path) {
+        $workshopInfoPath = Join-Path $Path 'workshop.json'
+        if (Test-Path -LiteralPath $workshopInfoPath -PathType Leaf) {
+            $preservedWorkshopInfo = [System.IO.File]::ReadAllBytes($workshopInfoPath)
+        }
         Remove-Item -LiteralPath $Path -Recurse -Force
     }
     New-Item -ItemType Directory -Force -Path $Path | Out-Null
+    if ($null -ne $preservedWorkshopInfo) {
+        [System.IO.File]::WriteAllBytes((Join-Path $Path 'workshop.json'), $preservedWorkshopInfo)
+    }
 }
 
 function Copy-IfExists {
@@ -66,8 +74,11 @@ if (-not $ModsOnly) {
     $installerTools = Join-Path $runtimePackage 'Content\DTMAPIInstaller\tools'
     New-Item -ItemType Directory -Force -Path $installerTools | Out-Null
     foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'install-to-game.ps1', 'install-bepinex.ps1', 'uninstall-dtmapi.ps1', 'check-dtmapi-status.ps1')) {
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot $scriptName) -Destination (Join-Path $installerTools $scriptName) -Force
+        Copy-DtmApiTextFileUtf8Bom -Source (Join-Path $PSScriptRoot $scriptName) -Destination (Join-Path $installerTools $scriptName)
     }
+    Test-DtmApiWindowsPowerShellSyntax -Paths @(
+        Get-ChildItem -LiteralPath $installerTools -Filter '*.ps1' -File | ForEach-Object { $_.FullName }
+    )
 
     $runtimePayload = Join-Path $runtimePackage 'Content\DTMAPIInstaller\Payload\BepInEx\plugins\DTMAPI'
     $outDir = Get-DtmapiOutputDir -RepoRoot $repo -Configuration $Configuration
@@ -77,7 +88,7 @@ if (-not $ModsOnly) {
 
     $manifest = New-DtmApiReleaseManifest -RepoRoot $repo -PackageKind 'workshop-runtime' -IncludedAssemblies $runtimeFiles -BundledMods @()
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'Content\DTMAPI\release-manifest.json') -Value $manifest
-    $runtimeDescriptionBase64 = 'RFRNQVBJIFJ1bnRpbWUg5piv5aSa5rSb5Y+v5bCP6ZWH5Yqf6IO95oCnIE1vZCDnmoTov5DooYzliY3nva7jgILlroPln7rkuo4gQmVwSW5FeCDlkK/liqjvvIzmj5DkvpsgRFRNQVBJIENvcmXjgIFHYW1lQnJpZGdl44CB6YWN572u6I+c5Y2V44CB5pel5b+X6K+K5pat44CBTWFuYWdlciDnirbmgIHpobXjgIHmiqXlkYrlr7zlh7rvvIzku6Xlj4rnu5nlip/og73mgKcgTW9kIOS9v+eUqOeahCBBUEnjgIIKCuacrOWMheacrOi6q+S4jeaYr+S4gOS4quWNleeLrOeOqeazlSBNb2TvvJvorqLpmIXlkI7or7fov5DooYwgMV9pbnN0YWxsX2R0bWFwaS5iYXQg5a6J6KOFIFJ1bnRpbWXjgILkuYvlkI7lpKfop4bph47jgIHliqjkvZzliqDpgJ/jgIHkuIDplK7lrozmiJDjgIHmm7TlpJrlrZjmoaPjgIFZIOmUruaOp+WItuWPsOetiSBEVE1BUEkgTW9kIOaJjeiDvei/kOihjOOAggoKMC41LjAtYWxwaGEg5paw5aKeIEV4cGVyaW1lbnRhbCBDcm9wcyAvIEhhcnZlc3RpbmcgQVBJ77yM5L6bIE1vZCDkvZzogIXliLbkvZzkvZzniannm4boh6rliqjmlLbojrfnsbsgTW9k77yb5pqC5pe25pyq5a6e546w5LmU5pyo55uG6Ieq5Yqo5pS26I6344CCCgrkuI7ml6cgRExLc21hcGkgLyBEb2xvY1Rvd25TTUFQSSDnmoTljLrliKvvvJpEVE1BUEkg5piv5LuO6Zu26YeN5bu655qE5paw54mI6L+Q6KGM5pe277yM5LiN5aSN5Yi25pen5a6e546w77yb5a6J6KOF44CB5Y246L2944CB54q25oCB5qOA5p+l44CB5pel5b+X5a+85Ye65ZKMIE1vZCDlkK/lgZzot6/lvoTmm7TmuIXmmbDvvJvmma7pgJrlip/og70gTW9kIOmAmui/hyBDb250ZW50L0RUTUFQSS9tYW5pZmVzdC5qc29uIOWKoOi9ve+8jFJ1bnRpbWUg5Y+q5a6J6KOF5YiwIEJlcEluRXgvcGx1Z2lucy9EVE1BUEnjgIIKCui/meaYryBEZXZlbG9wZXIgUHJldmlld++8jOS9huS8muaMgee7ree7tOaKpOOAguWQjue7reS8mue7p+e7reeos+WumiBBUEnjgIHlrozlloQgTWFuYWdlciBVSeOAgeWFvOWuueaXpyBNb2Qg6L+B56e777yM5bm25LyY5YWI5L+d5oqk5a2Y5qGj5LiO546p5a625pys5ZywIE1vZCDlhoXlrrnjgII='
+    $runtimeDescriptionBase64 = 'RFRNQVBJIOaYr+Wkmua0m+WPr+Wwj+mVh+WKn+iDveaApyBNb2Qg55qE6L+Q6KGM5YmN572u44CCCuWug+S8muWuieijheW5tuWQr+WKqOaJgOmcgOeahOW6leWxgui/kOihjOe7hOS7tu+8jOaPkOS+m+mFjee9ruiPnOWNleOAgeaXpeW/l+iviuaWreOAgU1hbmFnZXIg54q25oCB6aG144CB5oql5ZGK5a+85Ye65ZKM5Yqf6IO95oCnIE1vZCDov5DooYzmlK/mjIHjgIIKCuacrOWMheacrOi6q+S4jeaYr+S4gOS4quWNleeLrOeOqeazlSBNb2TvvJvorqLpmIXlkI7or7fov5DooYwgMV9pbnN0YWxsX2R0bWFwaS5iYXQg5a6J6KOFIERUTUFQSSDov5DooYzliY3nva7jgIIK5LmL5ZCO5aSn6KeG6YeO44CB5Yqo5L2c5Yqg6YCf44CB5LiA6ZSu5a6M5oiQ44CB5pu05aSa5a2Y5qGj44CBWSDplK7mjqfliLblj7DnrYkgRFRNQVBJIE1vZCDmiY3og73ov5DooYzjgIIKCjAuNS4xLWFscGhhIOaUuei/m+S6huWuieijheWZqOWFvOWuueaAp+WSjOeKtuaAgeajgOafpei+k+WHuu+8muWuieijheiEmuacrOWFvOWuuSBXaW5kb3dzIFBvd2VyU2hlbGwgNS4x77yMM19jaGVja19kdG1hcGlfc3RhdHVzLmJhdCDkvJrnlKjmmI7mmL7nmoQgW09LXeOAgVtNSVNTSU5HXeOAgVtXQVJOXeOAgVtJTkZPXSDmmL7npLrov5DooYzml7bmlofku7bjgIFCZXBJbkV444CB5pel5b+X44CB5oql5ZGK5ZKM5pen54mIIERMSy9TTUFQSSDmo4DmtYvnirbmgIHjgIIKCuS4juaXpyBETEtzbWFwaSAvIERvbG9jVG93blNNQVBJIOeahOWMuuWIq++8mkRUTUFQSSDmmK/ku47pm7bph43lu7rnmoTmlrDniYjov5DooYzml7bvvIzkuI3lpI3liLbml6flrp7njrDjgIIK5a6J6KOF44CB5Y246L2944CB54q25oCB5qOA5p+l44CB5pel5b+X5a+85Ye65ZKMIE1vZCDlkK/lgZzot6/lvoTmm7TmuIXmmbDjgIIK5pmu6YCa5Yqf6IO9IE1vZCDpgJrov4cgQ29udGVudC9EVE1BUEkvbWFuaWZlc3QuanNvbiDliqDovb3vvIzov5DooYzliY3nva7lj6rlronoo4XliLAgQmVwSW5FeC9wbHVnaW5zL0RUTUFQSeOAggoK6L+Z5piv5byA5Y+R6ICF6aKE6KeI54mI77yM5L2G5Lya5oyB57ut57u05oqk44CCCuWQjue7reS8mue7p+e7reWujOWWhCBNYW5hZ2VyIFVJ44CB5YW85a655penIE1vZCDov4Hnp7vvvIzlubbkvJjlhYjkv53miqTlrZjmoaPkuI7njqnlrrbmnKzlnLAgTW9kIOWGheWuueOAgg=='
     $runtimeDescription = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($runtimeDescriptionBase64))
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'info.json') -Value ([ordered]@{
         name = 'DTMAPI'

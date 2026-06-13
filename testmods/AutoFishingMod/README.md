@@ -1,20 +1,18 @@
-# AutoFishingMod DTMAPI Migration
+# AutoFishingMod
 
-This migration understands the old mod as: use the selected fishing rod, preserve original costs/pools/results, automate cast/wait/hook/minigame/recast, and stop on manual movement/menu input.
+AutoFishing uses the selected fishing rod and lets the native Doloc Town fishing states own costs, pools, bite rolls, minigame, pull, and results.
 
-Current 0.5.0-alpha boundary:
+Current 0.5.1-alpha experimental boundary:
 
 - DTMAPI-native `DtmMod` entry.
-- Unified config menu for the main automation switches and timing options.
-- Registered input keys for toggle and fish-info/config entry.
+- Unified config menu for the toggle hotkey, optional behavior switches, and charge amount.
+- Configurable toggle hotkey, defaulting to F6.
 - The mod registers `IFishingAutomationApi` policy/state with `DTMAPI.GameBridge.DolocTown`.
-- Title-page DTMAPI Settings is the player-facing config entry; the migrated default toggle remains F6.
-- External F6 input, toggle/state, native auto-cast, manual movement cancel, wait-phase `InstantBite`, and skip=false minigame completion have third-save smoke evidence.
-- The UI now describes the current experimental semantics instead of promising unsupported behaviors:
-  - selected-rod-only casting is required; no-rod and wrong-selected-item states are safe no-ops;
-  - `AutoRecast=false` and `RequireSelectedFishingRod=false` remain config-compatible fields, but the experimental GameBridge normalizes them to safe values;
-  - `Delayed minigame success` waits for a real `FishingGameScrollBar`, then forces native status to `Success`; it is not a progress-aware solver;
-  - `Skip after instant bite` only affects the `InstantBite` transition and is not an independent minigame skip;
-  - `Fast animations` may no-op unless the current cast/pull path exposes supported animator fields;
-  - auto reel without instant bite is not promised.
-- The visual fish-info page remains experimental/pending.
+- Title-page DTMAPI Settings is the player-facing config entry; the migrated default toggle remains F6 and can be rebound or set to `None`.
+- Default behavior after F6: cast with the configured charge amount, wait for native bite, reel, show and auto-complete the real minigame, collect the native result, and recast.
+- Optional behavior switches:
+  - `Instant bite` skips the native waiting period after the hook reaches water, then reels into the normal minigame/result path.
+  - `Skip minigame` routes bite-ready results through the native no-minigame result path and preserves native success/failure.
+  - `Cast charge` controls the Ready phase release point from `0` no charge to `1` full charge; default is `0`.
+  - `Fast cast/pull animations` applies only to native Ready charge, cast hook flight, and Pull phases.
+- AutoFishing smoke coverage now targets the fifth save fixture, where the player starts in front of a pond; synthetic pool/cache/wait-state setup is not accepted for final evidence.

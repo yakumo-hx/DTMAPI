@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DTMAPI Native Function Map</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>DTMAPI Native Function Map</h1>
+      <p id="buildLine">Loading reverse metadata...</p>
+    </div>
+    <div class="legend" aria-label="Coverage legend">
+      <span><i class="swatch native-owner"></i>Native-owner</span>
+      <span><i class="swatch system-map"></i>System map</span>
+      <span><i class="swatch unmapped"></i>Unmapped</span>
+      <span><i class="swatch changed"></i>Build diff</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="overview" aria-label="Overview">
+      <div class="metric">
+        <span class="metric-label">Methods</span>
+        <strong id="methodCount">-</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Internal Calls</span>
+        <strong id="edgeCount">-</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Native-owner</span>
+        <strong id="ownerCoverage">-</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">System mapped</span>
+        <strong id="mapCoverage">-</strong>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Unmapped</span>
+        <strong id="unmappedCoverage">-</strong>
+      </div>
+    </section>
+
+    <section class="filters" aria-label="Filters">
+      <label>
+        Search
+        <input id="searchInput" type="search" placeholder="Type, method, token, signature">
+      </label>
+      <label>
+        Domain
+        <select id="domainSelect"></select>
+      </label>
+      <label>
+        System
+        <select id="systemSelect"></select>
+      </label>
+      <label>
+        Coverage
+        <select id="coverageSelect">
+          <option value="">All</option>
+          <option value="native-owner">Native-owner</option>
+          <option value="system-map">System map</option>
+          <option value="unmapped">Unmapped</option>
+        </select>
+      </label>
+      <label>
+        Visibility
+        <select id="visibilitySelect">
+          <option value="">All</option>
+        </select>
+      </label>
+      <label>
+        Max nodes
+        <input id="nodeLimit" type="range" min="40" max="320" step="20" value="160">
+      </label>
+      <output id="nodeLimitValue">160</output>
+    </section>
+
+    <section class="main-grid">
+      <div class="graph-panel">
+        <div class="panel-header">
+          <h2>Function Graph</h2>
+          <div id="graphStatus">Loading...</div>
+        </div>
+        <svg id="graphSvg" role="img" aria-label="Native function graph"></svg>
+      </div>
+
+      <aside class="detail-panel">
+        <div class="panel-header">
+          <h2>Selected Function</h2>
+          <button id="clearSelection" type="button">Clear</button>
+        </div>
+        <div id="details" class="details-empty">No function selected.</div>
+      </aside>
+    </section>
+
+    <section class="analytics">
+      <div class="chart-panel">
+        <div class="panel-header">
+          <h2>Coverage</h2>
+        </div>
+        <div id="coverageBars"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="panel-header">
+          <h2>Domains</h2>
+        </div>
+        <div id="domainBars"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="panel-header">
+          <h2>Systems</h2>
+        </div>
+        <div id="systemBars"></div>
+      </div>
+    </section>
+
+    <section class="table-panel">
+      <div class="panel-header">
+        <h2>Methods</h2>
+        <div id="resultCount">-</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Coverage</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Systems</th>
+              <th>Domains</th>
+              <th>Calls</th>
+            </tr>
+          </thead>
+          <tbody id="methodRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

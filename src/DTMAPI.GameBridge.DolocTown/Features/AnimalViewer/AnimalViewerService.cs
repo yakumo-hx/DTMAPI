@@ -96,17 +96,6 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private void ApplyAnimalProgressSinglePassData(object data, AnimalProgressRenderRow row)
-        {
-            string progressText = row.Current + "/" + row.Threshold;
-            string label = FirstText(row.OutputTitle, "Special produce");
-            float progress = (float)Math.Max(0, Math.Min(1, row.Progress));
-            SetMemberValue(data, "moodInfo", label + " " + progressText);
-            SetMemberValue(data, "moodProgress", progress);
-            latestAnimalProgressOverlaySummary = "single-pass native moodBar row=" + label + " " + progressText + ", progress=" + progress.ToString("0.###", CultureInfo.InvariantCulture);
-            runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "verified", "AnimalFullInfoData ctor -> AnimalViewer.OnShow native ProgressBar", latestAnimalProgressOverlaySummary);
-        }
-
         internal bool RenderAnimalProgressOverlay(object viewer, object data)
         {
             if (viewer == null || data == null)
@@ -193,7 +182,10 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void PrepareAnimalProgressOverlayBeforeShow(object viewer, object data)
         {
-            RenderAnimalProgressOverlay(viewer, data);
+            if (viewer != null)
+                ClearAnimalProgressOverlayForViewer(viewer);
+            latestAnimalProgressOverlaySummary = "prefix cleared stale cloned ProgressBar rows before native AnimalViewer.Show.";
+            runtime.SetHookStatus("Smoke.AnimalViewerFirstFrameFlickerGuard", "experimental", "AnimalViewer.Show prefix clear -> postfix inactive-prefill-activate", latestAnimalProgressOverlaySummary);
         }
 
         internal bool HasAnimalProgressRowsForSmoke(object? data, out string summary)

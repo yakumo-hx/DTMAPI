@@ -1,8 +1,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$script:DtmApiReleaseVersion = '0.5.0-alpha'
-$script:DtmApiBinaryVersion = '0.5.0.0'
+$script:DtmApiReleaseVersion = '0.5.1-alpha'
+$script:DtmApiBinaryVersion = '0.5.1.0'
 $script:DtmApiInstallScriptVersion = '2'
 
 function Write-Utf8NoBomJson {
@@ -20,6 +20,73 @@ function Write-Utf8NoBomJson {
     $json = $Value | ConvertTo-Json -Depth $Depth
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $json, $utf8NoBom)
+}
+
+function Write-Utf8BomTextFile {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [Parameter(Mandatory = $true)] [string] $Text
+    )
+
+    $parent = Split-Path -Parent $Path
+    if ($parent) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+
+    $utf8Bom = New-Object System.Text.UTF8Encoding($true)
+    [System.IO.File]::WriteAllText($Path, $Text, $utf8Bom)
+}
+
+function Copy-DtmApiTextFileUtf8Bom {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Source,
+        [Parameter(Mandatory = $true)] [string] $Destination
+    )
+
+    if (-not (Test-Path -LiteralPath $Source)) {
+        throw "Missing text source file: $Source"
+    }
+
+    $text = [System.IO.File]::ReadAllText($Source, [System.Text.Encoding]::UTF8)
+    Write-Utf8BomTextFile -Path $Destination -Text $text
+}
+
+function Test-DtmApiWindowsPowerShellSyntax {
+    param(
+        [Parameter(Mandatory = $true)] [string[]] $Paths
+    )
+
+    $powershell = Get-Command powershell.exe -ErrorAction SilentlyContinue
+    if (-not $powershell) {
+        Write-Warning "powershell.exe was not found; skipping Windows PowerShell syntax validation."
+        return
+    }
+
+    foreach ($path in $Paths) {
+        $resolved = [System.IO.Path]::GetFullPath($path)
+        if (-not (Test-Path -LiteralPath $resolved)) {
+            throw "PowerShell syntax validation target is missing: $resolved"
+        }
+
+        $encodedPath = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($resolved))
+        $checkScript = @"
+`$path = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$encodedPath'))
+`$tokens = `$null
+`$errors = `$null
+[System.Management.Automation.Language.Parser]::ParseFile(`$path, [ref] `$tokens, [ref] `$errors) | Out-Null
+if (`$errors -and `$errors.Count -gt 0) {
+    foreach (`$err in `$errors) {
+        Write-Error ("{0}:{1} {2}" -f `$err.Extent.StartLineNumber, `$err.Extent.StartColumnNumber, `$err.Message)
+    }
+    exit 1
+}
+"@
+        $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($checkScript))
+        & $powershell.Source -NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCommand
+        if ($LASTEXITCODE -ne 0) {
+            throw "Windows PowerShell syntax validation failed for $resolved"
+        }
+    }
 }
 
 function Get-DtmApiSourceCommit {
@@ -55,7 +122,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'ZoomMod.dll'
             PackageDll = 'DTMAPI.Zoom.dll'
             UniqueID = 'DTMAPI.ZoomMod'
-            DisplayName = 'DTMAPI 大视野'
+            DisplayName = 'DTMAPI Zoom'
             PackageName = 'DTMAPI-Zoom'
         },
         [ordered]@{
@@ -64,7 +131,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'ActionSpeedMod.dll'
             PackageDll = 'Yuuka.DTMAPI.ActionSpeed.dll'
             UniqueID = 'Yuuka.DTMAPI.ActionSpeed'
-            DisplayName = '动作加速（DTMAPI）'
+            DisplayName = 'DTMAPI Action Speed'
             PackageName = 'DTMAPI-ActionSpeed'
         },
         [ordered]@{
@@ -73,7 +140,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'OneActionCompleteMod.dll'
             PackageDll = 'Yuuka.DTMAPI.OneActionComplete.dll'
             UniqueID = 'Yuuka.DTMAPI.OneActionComplete'
-            DisplayName = '一键完成（DTMAPI）'
+            DisplayName = 'DTMAPI One Action Complete'
             PackageName = 'DTMAPI-OneActionComplete'
         },
         [ordered]@{
@@ -82,7 +149,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'ChestLocatorEnhancerMod.dll'
             PackageDll = 'DTMAPI.ChestLocatorEnhancer.dll'
             UniqueID = 'DTMAPI.ChestLocatorEnhancerMod'
-            DisplayName = 'DTMAPI 箱子定位器增强'
+            DisplayName = 'DTMAPI Chest Locator Enhancer'
             PackageName = 'DTMAPI-ChestLocatorEnhancer'
         },
         [ordered]@{
@@ -91,7 +158,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'DebugConsoleMod.dll'
             PackageDll = 'DTMAPI.YKeyConsole.dll'
             UniqueID = 'DTMAPI.DebugConsoleMod'
-            DisplayName = 'Y键控制台'
+            DisplayName = 'DTMAPI Y-Key Console'
             PackageName = 'DTMAPI-YKeyConsole'
         },
         [ordered]@{
@@ -100,7 +167,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'FishBreedingAssistantMod.dll'
             PackageDll = 'Yuuka.DTMAPI.FishBreedingAssistant.dll'
             UniqueID = 'Yuuka.DTMAPI.FishBreedingAssistant'
-            DisplayName = '鱼卵信息显示（DTMAPI）'
+            DisplayName = 'DTMAPI Fish Breeding Assistant'
             PackageName = 'DTMAPI-FishBreedingAssistant'
         },
         [ordered]@{
@@ -109,7 +176,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'MoreSavesMod.dll'
             PackageDll = 'DTMAPI.MoreSaves.dll'
             UniqueID = 'DTMAPI.MoreSavesMod'
-            DisplayName = 'DTMAPI 更多存档'
+            DisplayName = 'DTMAPI More Saves'
             PackageName = 'DTMAPI-MoreSaves'
         },
         [ordered]@{
@@ -118,7 +185,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'AnimalHusbandryProgressMod.dll'
             PackageDll = 'Yuuka.DTMAPI.AnimalHusbandryProgress.dll'
             UniqueID = 'Yuuka.DTMAPI.AnimalHusbandryProgress'
-            DisplayName = '牧铃隐藏产物进度（DTMAPI）'
+            DisplayName = 'DTMAPI Animal Husbandry Progress'
             PackageName = 'DTMAPI-AnimalHusbandryProgress'
         }
     )
@@ -137,7 +204,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'AutoFishingMod.dll'
             PackageDll = 'Yuuka.DTMAPI.AutoFishing.dll'
             UniqueID = 'Yuuka.DTMAPI.AutoFishing'
-            DisplayName = '自动钓鱼（DTMAPI）'
+            DisplayName = 'DTMAPI Auto Fishing'
             PackageName = 'DTMAPI-AutoFishing'
             DeveloperOnly = $true
         },
@@ -147,7 +214,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'SecondMotorMod.dll'
             PackageDll = 'DTMAPI.SecondMotor.dll'
             UniqueID = 'DTMAPI.SecondMotorMod'
-            DisplayName = 'DTMAPI 异色飞行摩托'
+            DisplayName = 'DTMAPI Second Motor'
             PackageName = 'DTMAPI-SecondMotor'
             CopyOfficialVehicleExampleAssets = $true
             DeveloperOnly = $true
@@ -158,7 +225,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'OilMod.dll'
             PackageDll = 'DTMAPI.Oil.dll'
             UniqueID = 'DTMAPI.OilMod'
-            DisplayName = 'DTMAPI 石油'
+            DisplayName = 'DTMAPI Oil'
             PackageName = 'DTMAPI-Oil'
             DeveloperOnly = $true
         },
@@ -168,7 +235,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'MineMod.dll'
             PackageDll = 'DTMAPI.Mine.dll'
             UniqueID = 'DTMAPI.MineMod'
-            DisplayName = 'DTMAPI 矿井'
+            DisplayName = 'DTMAPI Mine'
             PackageName = 'DTMAPI-Mine'
             DeveloperOnly = $true
         },
@@ -178,7 +245,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'MoreEquipmentSlotsMod.dll'
             PackageDll = 'DTMAPI.MoreEquipmentSlots.dll'
             UniqueID = 'DTMAPI.MoreEquipmentSlotsMod'
-            DisplayName = 'DTMAPI 更多装备栏'
+            DisplayName = 'DTMAPI More Equipment Slots'
             PackageName = 'DTMAPI-MoreEquipmentSlots'
             DeveloperOnly = $true
         },
@@ -188,7 +255,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'StrongPlantingGunMod.dll'
             PackageDll = 'DTMAPI.StrongPlantingGun.dll'
             UniqueID = 'DTMAPI.StrongPlantingGunMod'
-            DisplayName = 'DTMAPI 强化种植枪'
+            DisplayName = 'DTMAPI Strong Planting Gun'
             PackageName = 'DTMAPI-StrongPlantingGun'
             DeveloperOnly = $true
         },
@@ -198,7 +265,7 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             SourceDll = 'CropHarvestingQaMod.dll'
             PackageDll = 'DTMAPI.CropHarvestingQA.dll'
             UniqueID = 'DTMAPI.CropHarvestingQaMod'
-            DisplayName = 'DTMAPI 作物收获手测夹具'
+            DisplayName = 'DTMAPI Crop Harvesting QA'
             PackageName = 'DTMAPI-CropHarvestingQA'
             DeveloperOnly = $true
             QaFixture = $true
@@ -385,7 +452,7 @@ function New-DtmApiReleaseManifest {
         MinimumGameVersion = ''
         IncludedAssemblies = @($IncludedAssemblies)
         BundledMods = @($BundledMods)
-        ExperimentalApiNotice = 'DTMAPI 0.5.0-alpha is a Developer Preview. Player-facing mods in this package are intended to be stable for normal use, but most GameBridge gameplay APIs remain Experimental for mod developers.'
+        ExperimentalApiNotice = 'DTMAPI 0.5.1-alpha is a Developer Preview. Player-facing mods in this package are intended to be stable for normal use, but most GameBridge gameplay APIs remain Experimental for mod developers.'
     }
 }
 

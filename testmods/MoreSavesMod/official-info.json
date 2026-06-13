@@ -2,7 +2,7 @@
   "name": "DTMAPI 更多存档",
   "author": "Yuuka",
   "version": "0.3.1-dtmapi",
-  "description": "依赖 DTMAPI Runtime。扩展官方存档界面槽位，不改存档格式，禁用不删除额外存档，基于 DTMAPI SaveSlots API。",
+  "description": "依赖 DTMAPI。\n将官方存档界面固定扩展为 12 个总槽位，不改存档格式，禁用不删除额外存档。",
   "tags": [
     "Mod",
     "Utility",
@@ -16,8 +16,8 @@
     "english": "DTMAPI More Saves"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI Runtime。扩展官方存档界面显示的本地存档槽数量，不改存档格式。前六个槽位保持原版兼容；禁用后不会删除额外存档文件。基于 DTMAPI SaveSlots API。",
-    "tchinese": "依賴 DTMAPI Runtime。擴展官方存檔介面顯示的本地存檔槽數量，不改存檔格式。前六個槽位保持原版相容；停用後不會刪除額外存檔檔案。基於 DTMAPI SaveSlots API。",
-    "english": "Requires DTMAPI Runtime. Expands the number of local save slots shown by the official save UI without changing the save format. The first six slots remain vanilla-compatible, and disabling the mod does not delete extra archive files. Built on the DTMAPI SaveSlots API."
+    "schinese": "依赖 DTMAPI。\n将官方存档界面固定扩展为 12 个总槽位，不改存档格式，禁用不删除额外存档。",
+    "tchinese": "依賴 DTMAPI。\n將官方存檔介面固定擴展為 12 個總槽位，不改存檔格式，停用後不會刪除額外存檔。",
+    "english": "Requires DTMAPI.\nFixes the official save UI to 12 total local save slots without changing the save format.\nDisabling the mod does not delete extra archive files."
   }
 }

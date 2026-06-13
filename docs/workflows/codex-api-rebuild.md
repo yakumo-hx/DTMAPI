@@ -21,6 +21,10 @@ Before creating or executing an API rebuild goal, read:
 - `docs/reviews/README.md`
 - `docs/workflows/codex-feedback-to-goal.md`
 - `docs/api/public-api-matrix.md`
+- `docs/reviews/api/native-owner-domains/INDEX.md`
+- `docs/reviews/api/local-mods-native-owner/INDEX.md`
+- `docs/reviews/api/smapi-ecosystem-map/INDEX.md` when the API is an ecosystem-level surface inspired by mature mod-loader patterns, UI/HUD/content pipelines, or cross-mod integration
+- `docs/reviews/api/native-function-map/README.md` when function-map coverage, call relationships, or all-method context would help scope the native-owner review
 - `docs/hook-map/README.md`
 - `docs/debug/INDEX.md`
 - `docs/debug/regressions/smoke-matrix.md`
@@ -34,6 +38,14 @@ For implementation, also read the task-specific reverse maps, decompiled build, 
 ## Current API Truth
 
 The 0008/0009/0010 audits close the current DTMAPI public API surface. They cover existing APIs, not every possible future API and not every Doloc Town native method.
+
+For future domains that are not already an existing public API row, start from `docs/reviews/api/native-owner-domains/INDEX.md`. That fixed library records native responsibility candidates and blocked/gap status for broad user-facing goals such as world refresh, NPCs, animals, birds, drones, vehicles, maps, equipment, effects, stacks, follower pets, and ranged weapons. It is discovery evidence only; it does not promote API stability.
+
+For future APIs that are motivated by an existing local mod, also read `docs/reviews/api/local-mods-native-owner/INDEX.md`. That library maps current `testmods`, legacy local own-mod sources, and local third-party sample groups to semantic demand, native-owner candidates, shared owner conflicts, and final review confidence. It helps avoid rebuilding an API from one mod's convenience behavior while missing another local mod that shares the same native owner.
+
+For ecosystem-level surfaces inspired by mature mod-loader patterns, also read `docs/reviews/api/smapi-ecosystem-map/INDEX.md`. That library maps SMAPI ecosystem semantics to DTMAPI candidate layers such as Core, UI host, GameBridge read-only query, mutation, Diagnostic, Blocked, and Future-reserved. It is clean-room research only and must not be used as SMAPI compatibility or public API stability proof.
+
+The generated native function map under `docs/reviews/api/native-function-map/` can be used before or during Phase 1 to inspect all methods, system-map tags, native-owner report coverage, and internal call relationships. A colored or connected node is still only a research signal; method-body review and runtime evidence remain required.
 
 Future APIs should start from the native owner, then move outward:
 

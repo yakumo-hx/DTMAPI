@@ -72,7 +72,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 HooksReady ? "verified" : "pending",
                 "Harmony Prefix/Postfix: AnimalFullInfoData(Animal) + AnimalViewer.Show + AnimalPanel.RefreshViewer",
                 HooksReady
-                    ? "Patched animal viewer data construction plus prefilled independent progress rows before native Show settles, with real UI refresh evidence in ANIMAL-001."
+                    ? "Patched animal viewer data construction plus prefix stale-row clear and postfix inactive-prefill-activate independent progress rows, with real UI refresh evidence in ANIMAL-001."
                     : "Waiting for animal viewer data/UI targets to become patchable.");
         }
     }

@@ -2,7 +2,7 @@
   "name": "作物收获手测夹具（DTMAPI）",
   "author": "DTMAPI QA",
   "version": "0.1.0-dtmapi",
-  "description": "开发者手测夹具。依赖 DTMAPI，仅调用 ICropHarvestingApi 测试作物容器扫描/收获；乔木盆、草/采集类只用于 unsupported 边界确认，不发布到 Workshop。",
+  "description": "开发者手测夹具。\n依赖 DTMAPI，仅用于测试作物容器扫描/收获；乔木盆、草/采集类只用于不支持边界确认，不发布到 Workshop。",
   "tags": [
     "Mod",
     "Development",
@@ -14,8 +14,8 @@
     "english": "Crop Harvesting QA (DTMAPI)"
   },
   "localized_description": {
-    "schinese": "开发者手测夹具。通过 DTMAPI CropHarvesting API 扫描普通、藤蔓、菌包、灌木等作物容器；乔木盆、草/采集类仅用于确认 unsupported，不执行收获。",
-    "tchinese": "開發者手測夾具。透過 DTMAPI CropHarvesting API 掃描普通、藤蔓、菌包、灌木等作物容器；喬木盆與草/採集類僅用於確認 unsupported，不執行收穫。",
-    "english": "Developer-only manual QA fixture. Scans ordinary, vine, mushroom-bag, and bush crop containers through ICropHarvestingApi; tree-basin and grass/forage targets are unsupported-boundary checks and are not harvested."
+    "schinese": "开发者手测夹具。\n依赖 DTMAPI，仅用于测试作物容器扫描/收获；乔木盆、草/采集类只用于不支持边界确认，不发布到 Workshop。",
+    "tchinese": "開發者手測夾具。\n依賴 DTMAPI，僅用於測試作物容器掃描/收穫；喬木盆與草/採集類僅用於確認不支援邊界，不發布到 Workshop。",
+    "english": "Developer manual QA fixture.\nRequires DTMAPI and only tests crop-container scan/harvest behavior.\nTree basins, grass, and forage paths are boundary checks only and should not be published to Workshop."
   }
 }

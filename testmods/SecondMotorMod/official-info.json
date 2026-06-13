@@ -2,7 +2,7 @@
   "name": "DTMAPI 异色飞行摩托",
   "author": "DTMAPI",
   "version": "0.3.1-dtmapi",
-  "description": "DTMAPI experimental 异色飞行摩托示例包。新增飞行摩托钥匙（异色），并通过 DTMAPI GameBridge 管理独立摩托实例与官方邮件投递链路。",
+  "description": "DTMAPI 实验性异色飞行摩托示例包。\n新增飞行摩托钥匙（异色），并管理独立摩托实例与官方邮件投递链路。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -17,8 +17,8 @@
     "english": "DTMAPI Alternate Flying Motor"
   },
   "localized_description": {
-    "schinese": "新增飞行摩托钥匙（异色），调用 DTMAPI experimental 载具 API 召唤独立异色飞行摩托，并在无钥匙时尝试通过官方邮件投递。",
-    "tchinese": "新增飛行摩托鑰匙（異色），呼叫 DTMAPI experimental 載具 API 召喚獨立異色飛行摩托，並在無鑰匙時嘗試透過官方郵件投遞。",
-    "english": "Adds an alternate flying motor key, uses the experimental DTMAPI vehicle API to summon an independent alternate motor, and attempts native mail delivery when the key is missing."
+    "schinese": "DTMAPI 实验性异色飞行摩托示例包。\n新增飞行摩托钥匙（异色），并管理独立摩托实例与官方邮件投递链路。",
+    "tchinese": "DTMAPI 實驗性異色飛行摩托示例包。\n新增飛行摩托鑰匙（異色），並管理獨立摩托實例與官方郵件投遞鏈路。",
+    "english": "DTMAPI experimental alternate flying motor example package.\nAdds an alternate flying motor key, summons an independent alternate motor, and attempts native mail delivery when the key is missing."
   }
 }

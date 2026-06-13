@@ -55,7 +55,7 @@ namespace DTMAPI.GameBridge.DolocTown
             };
             ApplyMachineDefinitionState(machineStates[owner.UniqueID], normalized, 0, null);
             runtime.RuntimeMonitor.Log("Machine production definition registered owner=" + owner.UniqueID + " machine=" + normalized.MachineId + " equipment=" + normalized.EquipmentId + " outputs=" + normalized.OutputRules.Count + ".");
-            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native recipe overrides and hybrid fuel/electric runtime remain experimental.");
+            runtime.SetHookStatus("Machine.ProductionApi", machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", "DTMAPI.GameBridge.DolocTown API", "Registered " + normalized.MachineId + " for " + owner.UniqueID + "; DTMAPI runtime loop handles cycle/output state while native recipe overrides and electric-only/fuel-capable runtime definitions remain experimental.");
 
             result.Success = true;
             result.Message = machineStates[owner.UniqueID].LastMessage;
@@ -639,7 +639,7 @@ namespace DTMAPI.GameBridge.DolocTown
         BridgeFeatureStatus IMachineProductionApi.GetStatus(string uniqueId)
         {
             return machineDefinitions.ContainsKey(uniqueId ?? string.Empty)
-                ? new BridgeFeatureStatus(machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", machineRuntimeLoopInstalled ? "Machine definitions are accepted and remain isolated from raw Doloc Town types; DTMAPI observes placed equipment and can deliver weighted outputs, while native fuel/electric UI remains experimental." : "Machine definitions are accepted and remain isolated from raw Doloc Town types; production, fuel, electric, placement-scale, and output-delivery hooks still need third-save evidence.")
+                ? new BridgeFeatureStatus(machineRuntimeLoopInstalled ? "configured-experimental-runtime-loop" : "configured-pending-runtime-hook", machineRuntimeLoopInstalled ? "Machine definitions are accepted and remain isolated from raw Doloc Town types; DTMAPI observes placed equipment and can deliver weighted outputs, while native electric/runtime UI remains experimental." : "Machine definitions are accepted and remain isolated from raw Doloc Town types; production, electric, optional fuel, placement-scale, and output-delivery hooks still need third-save evidence.")
                 : new BridgeFeatureStatus("not-configured", "No machine definitions were registered for this mod.");
         }
 
@@ -661,14 +661,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", recipe=" + state.RecipeId +
                 ", recipeGroup=" + state.RecipeGroupId +
                 ", visualScale=" + state.VisualScale.ToString("0.##", CultureInfo.InvariantCulture) +
-                ", hybrid=" + (state.AllowFuelMode && state.AllowElectricMode) +
+                ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) +
+                ", fuelMode=" + state.AllowFuelMode +
                 ", defaultMode=" + state.DefaultMode +
                 ", cycleMinutes=" + state.CycleMinutes +
                 ", cycleTUs=" + state.CycleTUs +
                 ", nextDueTUs=" + state.NextDueTotalTUs +
-                ", fuel=" + state.RemainingFuel + "/" + state.FuelCapacity +
-                ", fuelOnlyCost=" + state.FuelOnlyFuelCostPerCycle +
-                ", electricFuelCost=" + state.ElectricModeFuelCostPerCycle +
+                ", fuel=" + (state.AllowFuelMode ? state.RemainingFuel + "/" + state.FuelCapacity : "disabled") +
+                ", fuelOnlyCost=" + (state.AllowFuelMode ? state.FuelOnlyFuelCostPerCycle.ToString(CultureInfo.InvariantCulture) : "disabled") +
+                ", electricFuelCost=" + (state.AllowFuelMode ? state.ElectricModeFuelCostPerCycle.ToString(CultureInfo.InvariantCulture) : "disabled") +
                 ", electricPowerPerCycle=" + state.ElectricModePowerCostPerCycle +
                 ", placed=" + state.PlacedMachineCount +
                 ", cycles=" + state.ProductionCycleCount +
@@ -782,7 +783,8 @@ namespace DTMAPI.GameBridge.DolocTown
                                 state.Status = "configured-experimental-runtime-loop";
                                 state.LastMessage = string.IsNullOrWhiteSpace(entry.LastVisualScaleSummary) ? message : message + " visual={" + entry.LastVisualScaleSummary + "}";
                                 machineStates[ownerId] = state;
-                                runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + " fuelCost=" + entry.LastFuelCost + " fuelRemaining=" + entry.RemainingFuel + "/" + definition.FuelCapacity + " electricPowerCost=" + entry.LastElectricPowerCost + " dueAt=" + dueAt + " nextDue=" + entry.NextDueTotalTus + " totalTUs=" + totalTus + ".");
+                                string fuelSummary = definition.AllowFuelMode ? " fuelCost=" + entry.LastFuelCost + " fuelRemaining=" + entry.RemainingFuel + "/" + definition.FuelCapacity : " fuel=disabled";
+                                runtime.RuntimeMonitor.Log("MachineProduction cycle OK owner=" + ownerId + " machine=" + definition.MachineId + " equipment=" + definition.EquipmentId + " output=" + entry.LastOutputItemId + " count=" + entry.LastOutputCount + " mode=" + entry.LastMode + fuelSummary + " electricPowerCost=" + entry.LastElectricPowerCost + " dueAt=" + dueAt + " nextDue=" + entry.NextDueTotalTus + " totalTUs=" + totalTus + ".");
                                 runtime.SetHookStatus("Machine.ProductionApi", "configured-experimental-runtime-loop", "DTMAPI runtime update catch-up -> equipment IContainer/LinearInventory", message + " dueAt=" + dueAt + ", nextDue=" + entry.NextDueTotalTus + ".");
                             }
                             else
@@ -934,14 +936,11 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                object? equipmentProto = builder == null ? null : ReadMember(builder, "equipmentProto");
-                string equipmentId = equipmentProto == null
-                    ? string.Empty
-                    : FirstText(ReadStringMember(equipmentProto, "Id"), ReadStringMember(equipmentProto, "id"), ReadStringMember(equipmentProto, "Name"));
+                string equipmentId = ResolveBuilderEquipmentId(builder);
 
                 object? indicatorRenderer = builder == null ? null : ReadMember(builder, "indicatorRenderer");
                 object? indicator = indicatorRenderer == null ? null : ReadMember(indicatorRenderer, "indicator");
-                object? transform = indicator == null ? null : ReadMember(indicator, "transform");
+                object? transform = ResolveBuilderIndicatorTransform(indicator);
                 if (transform == null || string.IsNullOrWhiteSpace(equipmentId))
                     return;
 
@@ -967,6 +966,52 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Mine builder preview scale failed.", ex.ToString());
             }
+        }
+
+        private static string ResolveBuilderEquipmentId(object? builder)
+        {
+            if (builder == null)
+                return string.Empty;
+
+            object? equipmentProto = ReadMember(builder, "equipmentProto");
+            string id = ReadEquipmentProtoId(equipmentProto);
+            if (!string.IsNullOrWhiteSpace(id))
+                return id;
+
+            object? selectedItem = ReadMember(builder, "SelectedItem") ?? ReadMember(builder, "CurrentItem");
+            id = selectedItem == null ? string.Empty : ReadEquipmentProtoId(ReadMember(selectedItem, "EquipmentProto"));
+            if (!string.IsNullOrWhiteSpace(id))
+                return id;
+
+            object? selectedContent = ReadMember(builder, "SelectedContent") ?? ReadMember(builder, "CurrentContent") ?? ReadMember(builder, "CheckedContent");
+            return FirstText(
+                selectedContent == null ? string.Empty : ReadStringMember(selectedContent, "Name"),
+                selectedContent == null ? string.Empty : ReadEquipmentProtoId(ReadMember(selectedContent, "proto")),
+                selectedContent == null ? string.Empty : ReadEquipmentProtoId(ReadMember(selectedContent, "Proto")));
+        }
+
+        private static string ReadEquipmentProtoId(object? proto)
+        {
+            if (proto == null)
+                return string.Empty;
+            return FirstText(
+                ReadStringMember(proto, "Id"),
+                ReadStringMember(proto, "id"),
+                ReadStringMember(proto, "Name"),
+                ReadStringMember(proto, "name"));
+        }
+
+        private static object? ResolveBuilderIndicatorTransform(object? indicator)
+        {
+            if (indicator == null)
+                return null;
+
+            object? transform = ReadMember(indicator, "transform");
+            if (transform != null)
+                return transform;
+
+            object? gameObject = ReadMember(indicator, "gameObject");
+            return gameObject == null ? null : ReadMember(gameObject, "transform");
         }
 
         internal string ProbeMachineVisualScaleContainmentForSmoke(string scaledEquipmentId)
@@ -1119,7 +1164,7 @@ namespace DTMAPI.GameBridge.DolocTown
             entry.ProductionCycleCount++;
             string costSummary = definition.AllowFuelMode
                 ? "fuelCost=" + fuelCost + ", electricPowerCost=" + entry.LastElectricPowerCost
-                : "electricPowerCost=" + entry.LastElectricPowerCost;
+                : "fuel=disabled, electricPowerCost=" + entry.LastElectricPowerCost;
             message = "Machine " + definition.MachineId + " produced " + selected.ItemId + " x" + count + " via " + entry.LastMode + " mode; " + costSummary + ", " + electricMessage + ", " + placementMessage;
             return true;
         }
@@ -1337,7 +1382,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 NativeTechNodeDescription = definition.NativeTechNodeDescription ?? string.Empty,
                 NativeTechNodeParentId = definition.NativeTechNodeParentId ?? string.Empty,
                 NativeTechNodeAboveTitleContains = definition.NativeTechNodeAboveTitleContains ?? string.Empty,
-                FuelCapacity = ClampInt(definition.FuelCapacity, 1, 999999),
+                FuelCapacity = ClampInt(definition.FuelCapacity, 0, 999999),
                 FuelOnlyFuelCostPerCycle = ClampInt(definition.FuelOnlyFuelCostPerCycle, 0, 999999),
                 ElectricModeFuelCostPerCycle = ClampInt(definition.ElectricModeFuelCostPerCycle, 0, 999999),
                 ElectricModePowerCostPerCycle = ClampInt(definition.ElectricModePowerCostPerCycle, 0, 999999),
@@ -1363,6 +1408,17 @@ namespace DTMAPI.GameBridge.DolocTown
                 normalized.DefaultMode = "fuel";
             if (normalized.DefaultMode.Equals("fuel", StringComparison.OrdinalIgnoreCase) && !normalized.AllowFuelMode)
                 normalized.DefaultMode = "electric";
+            if (!normalized.AllowFuelMode)
+            {
+                normalized.DefaultMode = "electric";
+                normalized.FuelCapacity = 0;
+                normalized.FuelOnlyFuelCostPerCycle = 0;
+                normalized.ElectricModeFuelCostPerCycle = 0;
+            }
+            else if (normalized.FuelCapacity <= 0)
+            {
+                normalized.FuelCapacity = 1;
+            }
             if (definition.OutputRules != null)
             {
                 normalized.OutputRules = definition.OutputRules

@@ -1,0 +1,44 @@
+/goal
+目标：在独立分支完成 2026-06-12 Refactor 分支审查后的底层重构，修复/收敛 Manager+Config 滚动、SaveSlots 18+/24 分页、Mine 纯电力与视觉生命周期、AnimalViewer 首帧闪烁，并完成 Camera 背景 native-owner 审查。详细需求、问题、验收标准以 docs/goals/2026/20260612-0003-bottom-layer-refactor-from-audit.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/planning/DolocTownModdingAPI.md
+docs/planning/Debug.md
+references/README.md
+docs/workflows/codex-feedback-to-goal.md
+docs/workflows/codex-api-rebuild.md
+docs/goals/README.md
+docs/goals/2026/20260612-0003-bottom-layer-refactor-from-audit.md
+docs/goals/2026/20260612-0003-bottom-layer-refactor-from-audit.goal.txt
+docs/reviews/README.md
+docs/reviews/code/2026/20260612-0001-refactor-branch-wide-code-audit.md
+docs/reviews/manual-qa/2026/20260611-0001-refactor-manual-qa-code-review.md
+docs/updates/INDEX.md
+docs/updates/2026/20260612-0010-refactor-branch-wide-code-audit.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+
+分支硬要求：
+先运行 git status --short --branch；确认从 Refactor 开始；在任何代码编辑前创建/切换到 codex/bottom-layer-refactor-audit-20260612。禁止直接在 Refactor 上实现。若无法切分支，停止并报告 blocker，不要继续写代码。
+
+安全约束：
+不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，必须进入游戏第三存档验证。
+
+版本要求：
+本轮目标版本固定从 0.5.0-alpha / 0.5.0.0 到 0.5.1-alpha / 0.5.1.0。若当前代码已经是 0.5.1-alpha，不要再升版本；若当前不是 0.5.0-alpha 或 0.5.1-alpha，先报告 blocker。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+
+任务 A：分支、基线、版本固定
+任务 B：Title Settings 官方风格“模组设置”入口、Manager 全列表、ConfigMenu 滚动/分页
+任务 C：SaveSlots 18+/24 官方存档界面分页/滚动
+任务 D：Mine 纯电力运行时与配置迁移
+任务 E：Mine 放置预览与进出房间视觉缩放生命周期
+任务 F：AnimalViewer 隐藏产物首帧“心情”闪烁闭环
+任务 G：Camera 背景/fog/panorama native-owner 审查，未证明前不得试错式补丁
+任务 H：第三存档游戏验证、日志/截图/退出残留检查、文档收尾
+
+完成标准：
+只有当 docs/goals/2026/20260612-0003-bottom-layer-refactor-from-audit.md 中所有强制玩家可见要求都在第三存档真实可用，并完成 git diff --check、Release build/test、游戏 smoke/手测证据、日志/截图、无 DolocTown.exe 残留、无 Steam waiting-for-exit 回归、docs/updates/debug/smoke/hook/API 更新后，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步拆分。

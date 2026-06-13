@@ -1,5 +1,6 @@
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
+using System.Reflection;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
@@ -33,6 +34,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
+            bool showPatched = patcher.TryPatchPostfix(
+                "DolocTown.GameDataUiState, Assembly-CSharp",
+                "Show",
+                typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.GameDataUiStateShowPostfix), BindingFlags.Public | BindingFlags.Static),
+                0);
+            runtime.SetHookStatus(
+                "Save.MoreSlotsUiPaging",
+                showPatched ? "not-required" : "pending",
+                "Harmony: GameDataUiState.Show",
+                showPatched
+                    ? "Fixed 12-slot official save UI is rendered by GameDataUiState.Show; the inherited DolocGridUI.Select hook is intentionally not installed."
+                    : "Waiting for official save panel show hook target to become patchable.");
         }
 
         public void Update()

@@ -25,9 +25,19 @@ namespace DTMAPI.GameBridge.DolocTown
             return TryPatch(targetTypeName, methodName, prefix: prefix, postfix: null, parameterCount: parameterCount);
         }
 
+        public bool TryPatchClosedGenericPrefix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, int? parameterCount = null)
+        {
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: prefix, postfix: null, parameterCount: parameterCount);
+        }
+
         public bool TryPatchPostfix(string targetTypeName, string methodName, MethodInfo? postfix, int? parameterCount = null)
         {
             return TryPatch(targetTypeName, methodName, prefix: null, postfix: postfix, parameterCount: parameterCount);
+        }
+
+        public bool TryPatchClosedGenericPostfix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? postfix, int? parameterCount = null)
+        {
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: null, postfix: postfix, parameterCount: parameterCount);
         }
 
         public bool TryPatchArrayResultPostfix(string targetTypeName, string methodName, MethodInfo? arrayResultCallback, int? parameterCount = null)
@@ -152,6 +162,67 @@ namespace DTMAPI.GameBridge.DolocTown
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch {targetTypeName}.{methodName}.", ex.ToString());
+                return false;
+            }
+        }
+
+        private bool TryPatchClosedGeneric(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, MethodInfo? postfix, int? parameterCount)
+        {
+            try
+            {
+                string targetLabel = targetGenericTypeName + "<" + string.Join(", ", genericArgumentTypeNames) + ">." + methodName;
+                if (prefix == null && postfix == null)
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: callback missing for " + targetLabel + ".");
+                    return false;
+                }
+
+                if (!EnsureHarmony())
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: Harmony unavailable for " + targetLabel + ".");
+                    return false;
+                }
+
+                Type? targetGenericType = FindType(targetGenericTypeName);
+                Type[] genericArguments = genericArgumentTypeNames
+                    .Select(FindType)
+                    .Where(t => t != null)
+                    .Cast<Type>()
+                    .ToArray();
+                if (targetGenericType == null)
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: target generic type not found " + targetGenericTypeName + ".");
+                    return false;
+                }
+
+                if (!targetGenericType.IsGenericTypeDefinition)
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: target type is not a generic definition " + targetGenericType.FullName + ".");
+                    return false;
+                }
+
+                if (genericArguments.Length != genericArgumentTypeNames.Length)
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: generic arguments not found for " + targetGenericTypeName + "<" + string.Join(", ", genericArgumentTypeNames) + ">.");
+                    return false;
+                }
+
+                Type targetType = targetGenericType.MakeGenericType(genericArguments);
+                MethodInfo? target = FindTarget(targetType, methodName, parameterCount);
+                if (target == null)
+                {
+                    runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: method not found " + targetType.FullName + "." + methodName + ".");
+                    return false;
+                }
+
+                bool patched = ApplyPatch(target, prefix, postfix);
+                runtime.RuntimeMonitor.Log("Harmony closed generic patch result: target=" + target + ", prefix=" + (prefix != null) + ", postfix=" + (postfix != null) + ", patched=" + patched + ".");
+                return patched;
+            }
+            catch (Exception ex)
+            {
+                string args = string.Join(", ", genericArgumentTypeNames);
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch closed generic {targetGenericTypeName}<{args}>.{methodName}.", ex.ToString());
                 return false;
             }
         }

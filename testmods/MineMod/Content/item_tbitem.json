@@ -23,7 +23,7 @@
     },
     "description_basic": {
       "key": "item_dtmapi_mine_desc",
-      "text": "DTMAPI experimental 设备。复用水井素材但不替换水井；运行时 Machine API 将负责燃料、耗电和周期产矿。"
+      "text": "DTMAPI experimental 设备。复用水井素材但不替换水井；运行时 Machine API 将负责纯电力耗电和周期产矿。"
     },
     "function": {
       "$type": "ItemFunctionEquipment"

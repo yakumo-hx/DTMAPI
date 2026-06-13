@@ -50,6 +50,8 @@ Review known issue -> minimal fix -> build/test -> enter Doloc Town third save -
 - `AGENTS.md`: 给后续 Codex/开发者的强制上下文与边界。
 - `docs/planning`: 原始需求与长文拆解。
 - `docs/updates`: 可追溯更新记录；每次非平凡更新记录目标、改动文件、验证、证据、关联 debug/hook/smoke/API 项和回滚说明。
+- `docs/reviews/api/native-owner-domains/INDEX.md`: 长期固定 native-owner 领域资料库；未来新增 API 或 GameBridge rebuild 前先查这里，把模糊需求落实到原生责任函数/状态 holder，再决定稳定 API 边界。
+- `docs/reviews/api/smapi-ecosystem-map/INDEX.md`: clean-room SMAPI 生态语义/API 研究地图；未来设计事件、内容管线、UI/HUD、配置数据、跨 Mod API 等生态底座时先看这里，但它不提升任何 DTMAPI API 稳定级别。
 - `references/doloc-town/official-workshop-docs`: 官方 Workshop/Modding 文档与更新说明。
 - `references/doloc-town/reverse/builds`: Doloc Town 两个本地 build 的反编译研究数据。
 - `references/stardew-smapi`: 星露谷已安装 SMAPI runtime 与 SMAPI 自带组件，仅作参考。

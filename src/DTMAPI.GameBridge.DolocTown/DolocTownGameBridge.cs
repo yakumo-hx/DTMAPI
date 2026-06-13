@@ -45,10 +45,15 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseAutoFishingPhaseAttempted;
         private bool autoExerciseAutoFishingPhaseStarted;
         private bool autoExerciseAutoFishingAutoCastVerified;
-        private bool autoExerciseAutoFishingMovementCancelVerified;
         private bool autoExerciseAutoFishingPhaseVerified;
         private bool autoFishingReportExported;
         private int autoFishingMiniGameCompleteBaseline;
+        private bool autoExercisePauseMenuLayoutAttempted;
+        private int pauseMenuLayoutStage;
+        private DateTimeOffset pauseMenuLayoutStageAt;
+        private DateTimeOffset pauseMenuLayoutLastSampleAt;
+        private readonly List<string> pauseMenuLayoutSamples = new List<string>();
+        private string? pauseMenuLayoutEvidenceDir;
         private bool autoExerciseTitleButtonLifecycleAttempted;
         private bool autoExerciseInstantSaveAttempted;
         private bool autoExerciseDebugConsoleAttempted;
@@ -204,6 +209,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private SaveSlotsFeature? saveSlotsFeature;
+        private NativeUiLayoutDiagnosticsFeature? nativeUiLayoutDiagnosticsFeature;
         private StrongPlantingGunFeature? strongPlantingGunFeature;
         private CropHarvestingFeature? cropHarvestingFeature;
         private AnimalViewerFeature? animalViewerFeature;
@@ -232,6 +238,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal ChestLocatorEnhancerService? ChestLocatorEnhancerService => chestLocatorEnhancerFeature?.Service;
 
         internal SaveSlotsService? SaveSlotsService => saveSlotsFeature?.Service;
+
+        internal NativeUiLayoutDiagnosticsService? NativeUiLayoutDiagnosticsService => nativeUiLayoutDiagnosticsFeature?.Service;
 
         internal StrongPlantingGunService? StrongPlantingGunService => strongPlantingGunFeature?.Service;
 
@@ -268,7 +276,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && strongPlantingGunFeature != null && cropHarvestingFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && nativeUiLayoutDiagnosticsFeature != null && strongPlantingGunFeature != null && cropHarvestingFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -317,6 +325,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void NotifyGameBridgeFeaturesEnvironmentReset(string reason)
         {
+            experimentalApi?.UpdateRuntimeAutomation(forceMachineProductionPoll: true);
             DispatchGameBridgeFeatures("EnvironmentReset", feature => feature.EnvironmentReset(reason));
         }
 
@@ -341,6 +350,10 @@ namespace DTMAPI.GameBridge.DolocTown
             saveSlotsFeature ??= new SaveSlotsFeature(runtime);
             if (!features.Contains(saveSlotsFeature))
                 features.Add(saveSlotsFeature);
+
+            nativeUiLayoutDiagnosticsFeature ??= new NativeUiLayoutDiagnosticsFeature(runtime);
+            if (!features.Contains(nativeUiLayoutDiagnosticsFeature))
+                features.Add(nativeUiLayoutDiagnosticsFeature);
 
             strongPlantingGunFeature ??= new StrongPlantingGunFeature(runtime);
             if (!features.Contains(strongPlantingGunFeature))

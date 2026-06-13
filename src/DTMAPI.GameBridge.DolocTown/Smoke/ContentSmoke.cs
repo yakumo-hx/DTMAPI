@@ -517,15 +517,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 !state.EquipmentId.Equals("dtmapi_mine", StringComparison.OrdinalIgnoreCase) ||
                 !state.RecipeGroupId.Equals("equipment_workbench", StringComparison.OrdinalIgnoreCase) ||
                 state.VisualScale < 1.99 ||
-                !state.AllowFuelMode ||
+                state.AllowFuelMode ||
                 !state.AllowElectricMode ||
                 !state.DefaultMode.Equals("electric", StringComparison.OrdinalIgnoreCase) ||
-                state.FuelCapacity <= 0 ||
-                state.FuelOnlyFuelCostPerCycle <= state.ElectricModeFuelCostPerCycle ||
-                state.ElectricModeFuelCostPerCycle <= 0 ||
+                state.FuelCapacity != 0 ||
+                state.FuelOnlyFuelCostPerCycle != 0 ||
+                state.ElectricModeFuelCostPerCycle != 0 ||
                 state.ElectricModePowerCostPerCycle != 10 ||
                 (ContainsIgnoreCase(outputRules, "DTMAPI.OilMod") && !ContainsIgnoreCase(outputRules, "crude_oil")))
-                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", hybrid=" + (state.AllowFuelMode && state.AllowElectricMode) + ", defaultMode=" + state.DefaultMode + ", fuelCapacity=" + state.FuelCapacity + ", fuelOnlyCost=" + state.FuelOnlyFuelCostPerCycle + ", electricFuelCost=" + state.ElectricModeFuelCostPerCycle + ", powerCost=" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
+                failures.Add("machine-api-state=machine:" + state.MachineId + ", equipment:" + state.EquipmentId + ", group:" + state.RecipeGroupId + ", visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + ", electricOnly=" + (!state.AllowFuelMode && state.AllowElectricMode) + ", defaultMode=" + state.DefaultMode + ", fuelCapacity=" + state.FuelCapacity + ", fuelOnlyCost=" + state.FuelOnlyFuelCostPerCycle + ", electricFuelCost=" + state.ElectricModeFuelCostPerCycle + ", powerCost=" + state.ElectricModePowerCostPerCycle + ", outputs=" + outputRules);
 
             string summary = "item=" + title +
                 ", source=" + (sourceInfo == null ? "none" : sourceInfo.SourceKind + "/" + sourceInfo.SourceId + "/" + sourceInfo.SourceModTitle) +
@@ -545,7 +545,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", defaultUnlock=" + defaultUnlock +
                 ", recipeGroup=equipment_workbench includes=" + groupIncludesRecipe +
                 ", nativeTech={" + nativeTechTreeSummary + "}" +
-                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/hybrid:" + (state.AllowFuelMode && state.AllowElectricMode) + "/defaultMode:" + state.DefaultMode + "/fuelCapacity:" + state.FuelCapacity + "/fuelOnlyCost:" + state.FuelOnlyFuelCostPerCycle + "/electricFuelCost:" + state.ElectricModeFuelCostPerCycle + "/cycleMinutes:" + state.CycleMinutes + "/powerCost:" + state.ElectricModePowerCostPerCycle +
+                ", machineApi=machine:" + state.MachineId + "/item:" + state.ItemId + "/equipment:" + state.EquipmentId + "/recipe:" + state.RecipeId + "/group:" + state.RecipeGroupId + "/visualScale:" + state.VisualScale.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/electricOnly:" + (!state.AllowFuelMode && state.AllowElectricMode) + "/defaultMode:" + state.DefaultMode + "/fuelCapacity:" + state.FuelCapacity + "/fuelOnlyCost:" + state.FuelOnlyFuelCostPerCycle + "/electricFuelCost:" + state.ElectricModeFuelCostPerCycle + "/cycleMinutes:" + state.CycleMinutes + "/powerCost:" + state.ElectricModePowerCostPerCycle +
                 ", outputRules=" + outputRules +
                 ", probes=item{" + itemProbe + "}, recipe{" + recipeProbe + "}";
             if (failures.Count > 0)

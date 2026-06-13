@@ -66,6 +66,98 @@ namespace DTMAPI.GameBridge.DolocTown
             SafeCallback("EnvironmentReset.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesEnvironmentReset("DolocAPI.SetEnvCamera"));
         }
 
+        public static void GameDataUiStateShowPostfix(object __instance)
+        {
+            SafePostfix("SaveSlots.OfficialUi.ShowPaging", () => Bridge?.SaveSlotsService?.ApplyOfficialSavePanelPagingFromUiState(__instance));
+        }
+
+        public static void GameDataPanelSelectPrefix(object __instance, int __0)
+        {
+            SafePostfix("SaveSlots.OfficialUi.SelectPaging", () => Bridge?.SaveSlotsService?.EnsureOfficialSavePanelPageForSelection(__instance, __0));
+        }
+
+        public static void DolocGridUiResetLayoutSizePostfix(object __instance, int __0)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.GridResetLayoutSize", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordGridResetLayoutSize(__instance, __0));
+        }
+
+        public static void DolocGridUiSetCapacityPostfix(object __instance, int __0, int __1)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.GridSetCapacity", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordGridSetCapacity(__instance, __0, __1));
+        }
+
+        public static void GridLayoutGroupConstraintCountSetPrefix(object __instance, ref int __0)
+        {
+            try
+            {
+                NativeUiLayoutDiagnosticsService? service = Bridge?.NativeUiLayoutDiagnosticsService;
+                if (service != null)
+                    __0 = service.NormalizeGridLayoutConstraintCount(__instance, __0);
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("UI.NativeLayoutDiagnostics.GridLayoutGroupConstraintCountSetPrefix", ex);
+            }
+        }
+
+        public static void HomePageRenderTextMenuPostfix(object __instance)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.HomePageRenderTextMenu", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordHomePageRenderTextMenu(__instance));
+        }
+
+        public static void HomePageTextMenuResetLayoutSizePostfix(object __instance, int __0)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.HomePageTextMenuResetLayoutSize", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordHomePageTextMenuResetLayoutSize(__instance, __0));
+        }
+
+        public static void HomePageTextMenuResetLayoutSizePrefix(object __instance, ref int __0)
+        {
+            try
+            {
+                NativeUiLayoutDiagnosticsService? service = Bridge?.NativeUiLayoutDiagnosticsService;
+                if (service != null)
+                    __0 = service.NormalizeHomePageTextMenuResetLayoutSize(__instance, __0);
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("UI.NativeLayoutDiagnostics.HomePageTextMenuResetLayoutSizePrefix", ex);
+            }
+        }
+
+        public static void MenuUiSetCapacityPostfix(object __instance, int __0)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.MenuUiSetCapacity", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordMenuUiSetCapacity(__instance, __0));
+        }
+
+        public static void MenuUiResetLayoutSizePostfix(object __instance, int __0)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.MenuUiResetLayoutSize", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordMenuUiResetLayoutSize(__instance, __0));
+        }
+
+        public static void MenuUiResetLayoutSizePrefix(object __instance, ref int __0)
+        {
+            try
+            {
+                NativeUiLayoutDiagnosticsService? service = Bridge?.NativeUiLayoutDiagnosticsService;
+                if (service != null)
+                    __0 = service.NormalizeMenuUiResetLayoutSize(__instance, __0);
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("UI.NativeLayoutDiagnostics.MenuUiResetLayoutSizePrefix", ex);
+            }
+        }
+
+        public static void MainMenuPanelOnStartShowPostfix(object __instance)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.MainMenuPanelOnStartShow", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordMainMenuPanelOnStartShow(__instance));
+        }
+
+        public static void GameDataPanelSetCapacityPostfix(object __instance, int __0)
+        {
+            SafePostfix("UI.NativeLayoutDiagnostics.GameDataPanelSetCapacity", () => Bridge?.NativeUiLayoutDiagnosticsService?.RecordGameDataPanelSetCapacity(__instance, __0));
+        }
+
         public static void ReloadModsPostfix()
         {
             SafeCallback("Workshop.NotifyModListChanged", () => Runtime?.NotifyWorkshopModListChanged());
@@ -286,6 +378,11 @@ namespace DTMAPI.GameBridge.DolocTown
             SafePostfix("Fishing.Ready.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Ready", __instance));
         }
 
+        public static void FishingReadyPlayPostfix(object __instance)
+        {
+            SafePostfix("Fishing.Ready.OnPlay.Automation", () => Bridge?.FishingAutomationService?.ApplyFishingReadyAutomation(__instance));
+        }
+
         public static void FishingCastEnterPostfix(object __instance)
         {
             SafePostfix("Fishing.Cast.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Cast", __instance));
@@ -294,16 +391,22 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void FishingWaitEnterPostfix(object __instance)
         {
             SafePostfix("Fishing.Wait.OnEnter.NotifyPhase", () => Bridge?.FishingAutomationService?.NotifyFishingPhase("Wait", __instance));
+            SafePostfix("Fishing.Wait.OnEnter.ApplyAutomation", () => Bridge?.FishingAutomationService?.ApplyFishingWaitAutomation(__instance, "AgentStateFishingWait.OnEnter Postfix"));
         }
 
         public static void FishingWaitPlayPostfix(object __instance)
         {
-            SafePostfix("Fishing.Wait.OnPlay.ApplyAutomation", () => Bridge?.FishingAutomationService?.ApplyFishingWaitAutomation(__instance));
+            SafePostfix("Fishing.Wait.OnPlay.ApplyAutomation", () => Bridge?.FishingAutomationService?.ApplyFishingWaitAutomation(__instance, "AgentStateFishingWait.OnPlay Postfix"));
         }
 
         public static void FishingMiniGameStartPostfix(object __instance)
         {
             SafePostfix("Fishing.MiniGame.Start", () => Bridge?.FishingAutomationService?.NotifyFishingMiniGameStart(__instance));
+        }
+
+        public static void FishingMiniGameUpdatePrefix(object __instance)
+        {
+            SafeCallback("Fishing.MiniGame.Update.PrepareInput", () => Bridge?.FishingAutomationService?.PrepareFishingMiniGameAutomationInput(__instance));
         }
 
         public static void FishingMiniGameUpdatePostfix(object __instance)
@@ -314,6 +417,78 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void FishingMiniGameStopPostfix(object __instance)
         {
             SafePostfix("Fishing.MiniGame.Stop", () => Bridge?.FishingAutomationService?.NotifyFishingMiniGameStop(__instance));
+        }
+
+        public static bool FishingInputNormalUseToolPrefix(ref bool __result)
+        {
+            return TryFishingMiniGameInputOverride("NormalUseTool", ref __result);
+        }
+
+        public static bool FishingInputNormalUseToolInProgressPrefix(ref bool __result)
+        {
+            try
+            {
+                if (Bridge?.FishingAutomationService?.TryOverrideFishingReadyChargeInput("NormalUseToolInProgress", out bool value) == true)
+                {
+                    __result = value;
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Fishing.Ready.InputOverride.NormalUseToolInProgress", ex);
+            }
+
+            return TryFishingMiniGameInputOverride("NormalUseToolInProgress", ref __result);
+        }
+
+        public static bool FishingInputNormalUseItemPrefix(ref bool __result)
+        {
+            return TryFishingMiniGameInputOverride("NormalUseItem", ref __result);
+        }
+
+        public static bool FishingInputNormalUseItemInProgressPrefix(ref bool __result)
+        {
+            return TryFishingMiniGameInputOverride("NormalUseItemInProgress", ref __result);
+        }
+
+        public static bool FishingInputNormalFishingPrefix(ref bool __result)
+        {
+            return TryFishingMiniGameInputOverride("NormalFishing", ref __result);
+        }
+
+        public static bool FishingInputNormalFishingInProgressPrefix(ref bool __result)
+        {
+            return TryFishingMiniGameInputOverride("NormalFishingInProgress", ref __result);
+        }
+
+        private static bool TryFishingMiniGameInputOverride(string inputName, ref bool result)
+        {
+            try
+            {
+                if (Bridge?.FishingAutomationService?.TryOverrideFishingMiniGameInput(inputName, out bool value) == true)
+                {
+                    result = value;
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Fishing.MiniGame.InputOverride." + inputName, ex);
+            }
+            return true;
+        }
+
+        public static void FishRodRendererCastHookPostfix(object __instance)
+        {
+            try
+            {
+                Bridge?.FishingAutomationService?.AdjustFishingCastHookPhysics(__instance);
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Fishing.FishRodRenderer.CastHook.Physics", ex);
+            }
         }
 
         public static void FishingPullEnterPostfix(object __instance)
@@ -330,6 +505,30 @@ namespace DTMAPI.GameBridge.DolocTown
             finally
             {
                 SafeCallback("AgentStateFishingPull.OnExit.RestoreExperimentalAnimatorSpeeds", () => Bridge?.FishingAutomationService?.RestoreExperimentalAnimatorSpeeds("AgentStateFishingPull.OnExit"));
+            }
+        }
+
+        public static void FishRodRendererPullPostfix(ref float __result)
+        {
+            try
+            {
+                Bridge?.FishingAutomationService?.AdjustFishingPullDurationResult(ref __result, "FishRodRenderer.Pull");
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Fishing.FishRodRenderer.Pull.Duration", ex);
+            }
+        }
+
+        public static void FishRodRendererPullCancelPostfix(ref float __result)
+        {
+            try
+            {
+                Bridge?.FishingAutomationService?.AdjustFishingPullDurationResult(ref __result, "FishRodRenderer.PullCancel");
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Fishing.FishRodRenderer.PullCancel.Duration", ex);
             }
         }
 

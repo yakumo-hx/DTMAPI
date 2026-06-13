@@ -16,6 +16,7 @@ using DTMAPI.Core.Runtime;
 using DTMAPI.Core.Services;
 using DTMAPI.GameBridge.DolocTown;
 using DTMAPI.ModConfigMenu;
+using AutoFishingMod;
 
 namespace DTMAPI.UnitTests
 {
@@ -51,6 +52,7 @@ namespace DTMAPI.UnitTests
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
+                NativeUiLayoutDiagnosticsNormalizeOfficialMenuResetCounts();
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
                 FishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation();
@@ -61,6 +63,16 @@ namespace DTMAPI.UnitTests
                 OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
                 StrongPlantingGunNormalizesToThreeSlotContract();
+                SaveSlotsNormalizeToFixedTwelveContract();
+                FishingAutomationOptionsNormalizeNativeStageDefaults();
+                FishingAutomationBiteActionPrecedence();
+                FishingAutomationMiniGameInputDecisionMatchesNativeBars();
+                FishingAutomationSkipMiniGamePreservesNativePullResult();
+                FishingAutomationMirrorsNativeReelWhenInputEdgeIsAbsent();
+                FishingAutomationAnimationSpeedOnlyRunsOnReadyCastAndPull();
+                FishingAutomationReadyChargeSpeedTicksNativeCastTimer();
+                FishingAutomationReadyChargeTargetControlsUseToolRelease();
+                AutoFishingModConfigPreservesCustomToggleKey();
                 AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
@@ -168,15 +180,15 @@ namespace DTMAPI.UnitTests
             try
             {
                 string dir = NewTempGameDir();
-                Assert(DtmApiRuntime.ApiVersion == "0.5.0-alpha", "DTMAPI runtime API version should be 0.5.0-alpha for this dev baseline.");
-                Assert(DtmApiRuntime.BinaryVersion == "0.5.0.0", "DTMAPI binary/plugin version should remain numeric for BepInEx and assembly metadata.");
+                Assert(DtmApiRuntime.ApiVersion == "0.5.1-alpha", "DTMAPI runtime API version should be 0.5.1-alpha for this dev baseline.");
+                Assert(DtmApiRuntime.BinaryVersion == "0.5.1.0", "DTMAPI binary/plugin version should remain numeric for BepInEx and assembly metadata.");
                 WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
                 WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
                 WriteManifest(dir, "OptionalNeedsBase2", "{ \"Name\": \"Optional Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalNeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": false } ] }");
-                WriteManifest(dir, "NeedsCurrentAlphaApi", "{ \"Name\": \"Needs Current Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CurrentAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.0-alpha\" }");
+                WriteManifest(dir, "NeedsCurrentAlphaApi", "{ \"Name\": \"Needs Current Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CurrentAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.1-alpha\" }");
                 WriteManifest(dir, "Legacy042Api", "{ \"Name\": \"Legacy 0.4.2 API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Legacy042Api\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.4.2\" }");
                 WriteManifest(dir, "Legacy031Api", "{ \"Name\": \"Legacy 0.3.1 API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Legacy031Api\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.3.1\" }");
-                WriteManifest(dir, "NeedsFutureAlphaApi", "{ \"Name\": \"Needs Future Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.1-alpha\" }");
+                WriteManifest(dir, "NeedsFutureAlphaApi", "{ \"Name\": \"Needs Future Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.2-alpha\" }");
                 WriteManifest(dir, "NeedsFutureApi", "{ \"Name\": \"Needs Future API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"99.0.0\" }");
                 WriteManifest(dir, "CycleA", "{ \"Name\": \"Cycle A\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Required\": true } ] }");
                 WriteManifest(dir, "CycleB", "{ \"Name\": \"Cycle B\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Required\": true } ] }");
@@ -187,10 +199,10 @@ namespace DTMAPI.UnitTests
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Base"), "Base dependency should load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsBase2"), "Required dependency version mismatch should block loading.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.OptionalNeedsBase2"), "Optional dependency version mismatch should warn but not block loading.");
-                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CurrentAlphaApi"), "MinimumDTMApiVersion 0.5.0-alpha should load on the current alpha runtime.");
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CurrentAlphaApi"), "MinimumDTMApiVersion 0.5.1-alpha should load on the current alpha runtime.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Legacy042Api"), "Legacy MinimumDTMApiVersion 0.4.2 should still load on the current alpha runtime.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Legacy031Api"), "Legacy MinimumDTMApiVersion 0.3.1 should still load on the current alpha runtime.");
-                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureAlphaApi"), "Future MinimumDTMApiVersion 0.5.1-alpha should block loading.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureAlphaApi"), "Future MinimumDTMApiVersion 0.5.2-alpha should block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureApi"), "Future MinimumDTMApiVersion should block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleA"), "CycleA should be blocked and must not load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleB"), "CycleB should be blocked and must not load.");
@@ -403,11 +415,11 @@ namespace DTMAPI.UnitTests
                 runtime.Paths.Ensure();
                 File.WriteAllText(
                     Path.Combine(runtime.Paths.DtmApiPath, "install-state.json"),
-                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
+                    "{ \"DTMAPIVersion\": \"0.5.1-alpha\", \"BinaryVersion\": \"0.5.1.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
                     new UTF8Encoding(false));
                 File.WriteAllText(
                     Path.Combine(runtime.Paths.DtmApiPath, "release-manifest.json"),
-                    "{ \"DTMAPIVersion\": \"0.5.0-alpha\", \"BinaryVersion\": \"0.5.0.0\", \"PackageKind\": \"unit-test\" }",
+                    "{ \"DTMAPIVersion\": \"0.5.1-alpha\", \"BinaryVersion\": \"0.5.1.0\", \"PackageKind\": \"unit-test\" }",
                     new UTF8Encoding(false));
                 MethodInfo recordWarning = runtime.Diagnostics.GetType().GetMethod("RecordWarning", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("DiagnosticsService.RecordWarning should be available for runtime warnings.");
@@ -430,8 +442,8 @@ namespace DTMAPI.UnitTests
                 Assert(ReadZipText(report, "install-state.json").Contains("Old.AutoFishing"), "Diagnostic report zip should include install-state.json when present.");
                 Assert(ReadZipText(report, "release-manifest.json").Contains("unit-test"), "Diagnostic report zip should include release-manifest.json when present.");
                 Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
-                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.0-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.0.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
-                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.0-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.0.0"), "Diagnostic report summary should include release manifest version fields.");
+                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.1-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.1.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
+                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.1-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.1.0"), "Diagnostic report summary should include release manifest version fields.");
                 Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
                 Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
 
@@ -643,9 +655,9 @@ namespace DTMAPI.UnitTests
                 Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("install=missing") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters, install state, and report/log state.");
                 DtmManagerViewModel installedModel = DtmManagerViewModelFactory.FromSnapshot(
                     snapshot,
-                    ManagerInstallStateSummary.Present("0.5.0-alpha", "0.5.0.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
+                    ManagerInstallStateSummary.Present("0.5.1-alpha", "0.5.1.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
                 string installStateLine = ManagerPageRowFormatter.FormatInstallState(installedModel.InstallState);
-                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.0-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
+                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.1-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Hooks", 17, 64) == "Hooks: showing first 17 of 64", "Manager formatter should expose showing-first row counts.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Rows", 99, 3) == "Rows: showing first 3 of 3", "Manager formatter should clamp showing-first counts to total.");
 
@@ -1454,6 +1466,64 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void NativeUiLayoutDiagnosticsNormalizeOfficialMenuResetCounts()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                Type serviceType = typeof(DolocTownGameBridge).Assembly.GetType("DTMAPI.GameBridge.DolocTown.NativeUiLayoutDiagnosticsService")
+                    ?? throw new InvalidOperationException("NativeUiLayoutDiagnosticsService should exist.");
+                object service = Activator.CreateInstance(
+                    serviceType,
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
+                    args: new object[] { runtime },
+                    culture: null)
+                    ?? throw new InvalidOperationException("NativeUiLayoutDiagnosticsService should be constructable.");
+                MethodInfo normalizeHomePage = serviceType.GetMethod("NormalizeHomePageTextMenuResetLayoutSize", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("HomePageTextMenu ResetLayoutSize normalizer should exist.");
+                MethodInfo normalizeMenuUi = serviceType.GetMethod("NormalizeMenuUiResetLayoutSize", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("MenuUI ResetLayoutSize normalizer should exist.");
+                MethodInfo normalizeGridLayout = serviceType.GetMethod("NormalizeGridLayoutConstraintCount", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("GridLayoutGroup constraintCount normalizer should exist.");
+
+                var homeMenu = new DolocTown.UI.HomePageTextMenu();
+                int homeCount = (int)(normalizeHomePage.Invoke(service, new object[] { homeMenu, 2 }) ?? -1);
+                Assert(homeCount == 1, "HomePageTextMenu ResetLayoutSize must normalize stale two-column requests to one column.");
+
+                var mainMenu = new DolocTown.UI.MenuUI();
+                for (int i = 0; i < 8; i++)
+                    mainMenu.slots.Add(new DolocTown.UI.MenuButton { isVisible = i != 3 });
+                int mainMenuCount = (int)(normalizeMenuUi.Invoke(service, new object[] { mainMenu, 2 }) ?? -1);
+                Assert(mainMenuCount == 7, "The concrete pause MenuUI should normalize two-column requests back to the visible icon count.");
+
+                var smallMenu = new DolocTown.UI.MenuUI();
+                smallMenu.slots.Add(new DolocTown.UI.MenuButton());
+                smallMenu.slots.Add(new DolocTown.UI.MenuButton());
+                int smallMenuCount = (int)(normalizeMenuUi.Invoke(service, new object[] { smallMenu, 2 }) ?? -1);
+                Assert(smallMenuCount == 2, "Small concrete MenuUI instances should keep their native two-item request.");
+
+                DolocAPI.userInput = new DolocAPI.FakeUserInput { CurrentState = new DolocTown.HomePageUiState { textMenu = homeMenu } };
+                int homeGridCount = (int)(normalizeGridLayout.Invoke(service, new object[] { homeMenu.slotLayoutGroup, 2 }) ?? -1);
+                Assert(homeGridCount == 1, "The active HomePageTextMenu GridLayoutGroup setter must normalize stale two-column writes before they land.");
+
+                var activeMainState = new DolocTown.MainMenuUiState { panel = new DolocTown.UI.MainMenuPanel { menu = mainMenu } };
+                DolocAPI.userInput = new DolocAPI.FakeUserInput { CurrentState = activeMainState };
+                int mainGridCount = (int)(normalizeGridLayout.Invoke(service, new object[] { mainMenu.slotLayoutGroup, 2 }) ?? -1);
+                Assert(mainGridCount == 7, "The active pause MenuUI GridLayoutGroup setter must normalize stale two-column writes before they land.");
+
+                int unrelatedGridCount = (int)(normalizeGridLayout.Invoke(service, new object[] { new DolocTown.UI.FakeGridLayoutGroup { constraintCount = 2 }, 2 }) ?? -1);
+                Assert(unrelatedGridCount == 2, "Unrelated GridLayoutGroup writes should keep the native requested count.");
+            }
+            finally
+            {
+                DolocAPI.userInput = null;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -1657,6 +1727,7 @@ namespace DTMAPI.UnitTests
                 serviceType.GetProperty("ForceFishingNoWaterForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
                 serviceType.GetProperty("ForceFishingNoRodForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
                 serviceType.GetProperty("ForceFishingFishForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
+                serviceType.GetProperty("ForceFishingNativeBiteForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, true);
                 serviceType.GetProperty("FishingPoolOverrideForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(service, poolOverride);
 
                 MethodInfo reset = serviceType.GetMethod("ResetFishingRuntimeState", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -1672,6 +1743,7 @@ namespace DTMAPI.UnitTests
                 Assert((bool)(serviceType.GetProperty("ForceFishingNoWaterForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear no-water smoke override.");
                 Assert((bool)(serviceType.GetProperty("ForceFishingNoRodForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear no-rod smoke override.");
                 Assert((bool)(serviceType.GetProperty("ForceFishingFishForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear force-fish smoke override.");
+                Assert((bool)(serviceType.GetProperty("ForceFishingNativeBiteForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) ?? true) == false, "FishingAutomation reset should clear force-native-bite smoke override.");
                 Assert(serviceType.GetProperty("FishingPoolOverrideForSmoke", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(service) == null, "FishingAutomation reset should clear fishing-pool smoke override.");
             }
             finally
@@ -1949,6 +2021,359 @@ namespace DTMAPI.UnitTests
             Assert(normalizedUndersized.SlotCount == 3, "StrongPlantingGun undersized requests should normalize to the fixed three-slot contract.");
             Assert(!normalizedDisabled.Enabled && normalizedDisabled.SlotCount == 3, "StrongPlantingGun disabled policies should still report the fixed three-slot contract for compatibility.");
             Assert(normalizedOversized.IncludeWater, "StrongPlantingGun normalize should not silently rewrite unrelated option booleans.");
+        }
+
+        private static void SaveSlotsNormalizeToFixedTwelveContract()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.SaveSlotsService")
+                ?? throw new InvalidOperationException("SaveSlotsService type should exist.");
+            MethodInfo normalize = serviceType.GetMethod("NormalizeSaveSlotsOptions", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("SaveSlotsService should keep an internal normalize helper.");
+
+            var oversized = new SaveSlotsOptions { Enabled = true, SlotCount = 24, VerboseLogging = true };
+            var undersized = new SaveSlotsOptions { Enabled = true, SlotCount = 6 };
+            var disabled = new SaveSlotsOptions { Enabled = false, SlotCount = 24 };
+
+            SaveSlotsOptions normalizedOversized = (SaveSlotsOptions)(normalize.Invoke(null, new object?[] { oversized }) ?? throw new InvalidOperationException("Normalize should return options."));
+            SaveSlotsOptions normalizedUndersized = (SaveSlotsOptions)(normalize.Invoke(null, new object?[] { undersized }) ?? throw new InvalidOperationException("Normalize should return options."));
+            SaveSlotsOptions normalizedDisabled = (SaveSlotsOptions)(normalize.Invoke(null, new object?[] { disabled }) ?? throw new InvalidOperationException("Normalize should return options."));
+
+            Assert(normalizedOversized.Enabled && normalizedOversized.SlotCount == 12, "SaveSlots enabled oversized requests should normalize to 12 total official slots.");
+            Assert(normalizedUndersized.Enabled && normalizedUndersized.SlotCount == 12, "SaveSlots enabled undersized requests should normalize to 12 total official slots.");
+            Assert(!normalizedDisabled.Enabled && normalizedDisabled.SlotCount == 6, "SaveSlots disabled requests should normalize to the vanilla six-slot contract.");
+            Assert(normalizedOversized.VerboseLogging, "SaveSlots normalize should preserve unrelated logging flags.");
+        }
+
+        private static void FishingAutomationBiteActionPrecedence()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            MethodInfo resolve = serviceType.GetMethod("ResolveFishingBiteAutomationAction", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep an internal bite-action resolver.");
+
+            string defaultFish = Convert.ToString(resolve.Invoke(null, new object?[] { new FishingAutomationOptions(), true, false })) ?? string.Empty;
+            string defaultNonFish = Convert.ToString(resolve.Invoke(null, new object?[] { new FishingAutomationOptions(), false, false })) ?? string.Empty;
+            string skipFish = Convert.ToString(resolve.Invoke(null, new object?[] { new FishingAutomationOptions { ResultMode = FishingResultMode.SkipMiniGameNativeResult }, true, true })) ?? string.Empty;
+            string skipNonFish = Convert.ToString(resolve.Invoke(null, new object?[] { new FishingAutomationOptions { ResultMode = FishingResultMode.SkipMiniGameNativeResult }, false, false })) ?? string.Empty;
+            string instantComplete = Convert.ToString(resolve.Invoke(null, new object?[] { new FishingAutomationOptions { BiteWaitMode = FishingBiteWaitMode.InstantNativeBite }, true, true })) ?? string.Empty;
+
+            Assert(defaultFish == "NativeReel", "FishingAutomation default should reel bite-ready fish into the native minigame/result path.");
+            Assert(defaultNonFish == "NativeReel", "FishingAutomation default should reel non-fish results through the native result path.");
+            Assert(skipFish == "SkipMiniGameNativeResult", "FishingAutomation SkipMiniGame should use the native no-minigame result route for fish.");
+            Assert(skipNonFish == "SkipMiniGameNativeResult", "FishingAutomation SkipMiniGame should use the native result route for non-fish.");
+            Assert(instantComplete == "NativeReel", "FishingAutomation InstantBite should change wait timing only; result routing stays the normal native reel path.");
+        }
+
+        private static void FishingAutomationMiniGameInputDecisionMatchesNativeBars()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            MethodInfo resolve = serviceType.GetMethod("ResolveFishingMiniGameInputDecision", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep a minigame input decision helper.");
+
+            string stable = Convert.ToString(resolve.Invoke(null, new object?[] { "Stable", 2.0, 1.5, 3.0, false })) ?? string.Empty;
+            string beforeStable = Convert.ToString(resolve.Invoke(null, new object?[] { "Stable", 1.0, 1.5, 3.0, false })) ?? string.Empty;
+            string bonusFirst = Convert.ToString(resolve.Invoke(null, new object?[] { "Bonus", 2.0, 1.5, 3.0, false })) ?? string.Empty;
+            string bonusAfterTap = Convert.ToString(resolve.Invoke(null, new object?[] { "Bonus", 2.1, 1.5, 3.0, true })) ?? string.Empty;
+            string delay = Convert.ToString(resolve.Invoke(null, new object?[] { "Delay", 0.5, 0.0, 1.0, false })) ?? string.Empty;
+
+            Assert(stable == "HoldStable", "FishingAutomation minigame should hold during native green/stable bars.");
+            Assert(beforeStable == "Release", "FishingAutomation minigame should release during red/off-note time before the next stable bar.");
+            Assert(bonusFirst == "TapBonus", "FishingAutomation minigame should short-press a native yellow/bonus bar once.");
+            Assert(bonusAfterTap == "Release", "FishingAutomation minigame should release after the yellow/bonus tap.");
+            Assert(delay == "Release", "FishingAutomation minigame should not press during native delay notes.");
+        }
+
+        private static void FishingAutomationOptionsNormalizeNativeStageDefaults()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            MethodInfo normalize = serviceType.GetMethod("NormalizeFishingAutomationOptions", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep an options normalize helper.");
+
+            FishingAutomationOptions defaults = (FishingAutomationOptions)(normalize.Invoke(null, new object?[] { null }) ?? throw new InvalidOperationException("Normalize should return options."));
+            var invalid = new FishingAutomationOptions
+            {
+                BiteWaitMode = (FishingBiteWaitMode)999,
+                ResultMode = (FishingResultMode)999,
+                AnimationMode = (FishingAnimationMode)999,
+                RecastDelaySeconds = -10,
+                AnimationMultiplier = 100,
+                CastChargeRatio = 2
+            };
+            FishingAutomationOptions normalizedInvalid = (FishingAutomationOptions)(normalize.Invoke(null, new object?[] { invalid }) ?? throw new InvalidOperationException("Normalize should return options."));
+
+            Assert(defaults.BiteWaitMode == FishingBiteWaitMode.NativeWait, "FishingAutomation default wait policy should be native wait.");
+            Assert(defaults.ResultMode == FishingResultMode.AutoCompleteVisibleMiniGame, "FishingAutomation default result policy should auto-complete the visible native minigame.");
+            Assert(defaults.AnimationMode == FishingAnimationMode.Normal, "FishingAutomation default animation policy should be normal speed.");
+            Assert(defaults.StopOnManualMove, "FishingAutomation default should keep manual movement cancellation enabled.");
+            Assert(Math.Abs(defaults.RecastDelaySeconds - 0.25) < 0.0001, "FishingAutomation default recast delay should preserve the native-loop cadence.");
+            Assert(Math.Abs(defaults.AnimationMultiplier - 3) < 0.0001, "FishingAutomation default fast-animation multiplier should remain three.");
+            Assert(Math.Abs(defaults.CastChargeRatio) < 0.0001, "FishingAutomation default cast charge should be no charge.");
+            Assert(normalizedInvalid.BiteWaitMode == FishingBiteWaitMode.NativeWait, "Invalid bite wait mode should normalize to native wait.");
+            Assert(normalizedInvalid.ResultMode == FishingResultMode.AutoCompleteVisibleMiniGame, "Invalid result mode should normalize to visible minigame completion.");
+            Assert(normalizedInvalid.AnimationMode == FishingAnimationMode.Normal, "Invalid animation mode should normalize to normal speed.");
+            Assert(Math.Abs(normalizedInvalid.RecastDelaySeconds - 0.05) < 0.0001, "FishingAutomation recast delay should clamp to the supported minimum.");
+            Assert(Math.Abs(normalizedInvalid.AnimationMultiplier - 4) < 0.0001, "FishingAutomation animation multiplier should clamp to the supported maximum.");
+            Assert(Math.Abs(normalizedInvalid.CastChargeRatio - 1) < 0.0001, "FishingAutomation cast charge should clamp to full charge.");
+        }
+
+        private static void FishingAutomationSkipMiniGamePreservesNativePullResult()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            Type actionType = serviceType.GetNestedType("FishingBiteAutomationAction", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep an internal bite-action enum.");
+            MethodInfo advance = serviceType.GetMethod("TryAdvanceFishingBite", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep a native bite advance helper.");
+
+            DolocAPI.gameManager = new FakeDolocGameManager { gameInitConfig = new FakeDolocGameInitConfig { skipFishingGame = true } };
+            try
+            {
+                var stateManager = new FakeFishingStateManager();
+                var waitState = new FakeFishingWaitState(stateManager, new DolocTown.AgentStateFishingPull { IsFailed = true });
+                object skipAction = Enum.Parse(actionType, "SkipMiniGameNativeResult");
+                string targetState = Convert.ToString(advance.Invoke(null, new[] { waitState, skipAction })) ?? string.Empty;
+
+                Assert(targetState == "AgentStateFishingPull", "FishingAutomation skip should advance to the native Pull result state.");
+                Assert(stateManager.OverwrittenState is DolocTown.AgentStateFishingPull, "FishingAutomation skip should overwrite with the native Pull state returned by NextState.");
+                Assert(((DolocTown.AgentStateFishingPull)stateManager.OverwrittenState!).IsFailed, "FishingAutomation skip must preserve the native Pull failure/success result instead of forcing success.");
+                Assert(stateManager.ForceFlag == true, "FishingAutomation skip should keep the native state-manager overwrite flag path.");
+            }
+            finally
+            {
+                DolocAPI.gameManager = null;
+            }
+        }
+
+        private static void FishingAutomationMirrorsNativeReelWhenInputEdgeIsAbsent()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+            Type actionType = serviceType.GetNestedType("FishingBiteAutomationAction", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep an internal bite-action enum.");
+            MethodInfo advance = serviceType.GetMethod("TryAdvanceFishingBite", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FishingAutomationService should keep a native bite advance helper.");
+
+            DolocAPI.gameManager = new FakeDolocGameManager { gameInitConfig = new FakeDolocGameInitConfig { skipFishingGame = false } };
+            DolocAPI.GlobalParameter = new FakeGlobalParameter { FishingEnergyCost = 7 };
+            DolocAPI.CostEnergyCalls = 0;
+            DolocAPI.LastEnergyCost = 0;
+            try
+            {
+                object nativeReel = Enum.Parse(actionType, "NativeReel");
+                var stateManager = new FakeFishingStateManager();
+                var waitState = new FakeFishingWaitStateWithNativeMirror(stateManager, new FakeFishProto { Id = "unit_fish", IsFish = true }, 3);
+                string battleTarget = Convert.ToString(advance.Invoke(null, new[] { waitState, nativeReel })) ?? string.Empty;
+
+                Assert(battleTarget == "AgentStateFishingBattle", "FishingAutomation should mirror native reel into Battle when NextState stays in Wait because no input edge is present.");
+                Assert(stateManager.OverwrittenState is DolocTown.AgentStateFishingBattle, "FishingAutomation should overwrite with the native Battle state for fish when SkipMiniGame is off.");
+                Assert(DolocAPI.CostEnergyCalls == 1 && DolocAPI.LastEnergyCost == 7, "FishingAutomation mirrored reel should cost native fishing energy exactly once.");
+
+                object skipAction = Enum.Parse(actionType, "SkipMiniGameNativeResult");
+                var skipStateManager = new FakeFishingStateManager();
+                var skipWaitState = new FakeFishingWaitStateWithNativeMirror(skipStateManager, new FakeFishProto { Id = "unit_skip_fish", IsFish = true }, 3);
+                string pullTarget = Convert.ToString(advance.Invoke(null, new[] { skipWaitState, skipAction })) ?? string.Empty;
+
+                Assert(pullTarget == "AgentStateFishingPull", "FishingAutomation SkipMiniGame should mirror native reel into Pull when no input edge is present.");
+                Assert(skipStateManager.OverwrittenState is DolocTown.AgentStateFishingPull pull && !pull.IsFailed, "FishingAutomation SkipMiniGame should use the native successful Pull route for a valid hooked fish.");
+                Assert(DolocAPI.gameManager is FakeDolocGameManager manager && !manager.gameInitConfig.skipFishingGame, "FishingAutomation temporary native skip flag should be restored after mirrored reel routing.");
+            }
+            finally
+            {
+                DolocAPI.gameManager = null;
+                DolocAPI.GlobalParameter = null;
+                DolocAPI.CostEnergyCalls = 0;
+                DolocAPI.LastEnergyCost = 0;
+            }
+        }
+
+        private static void FishingAutomationAnimationSpeedOnlyRunsOnReadyCastAndPull()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                var owner = new ManifestModel
+                {
+                    Name = "AutoFishing Tests",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.AutoFishing",
+                    Type = "RuntimeApi"
+                };
+                ((IFishingAutomationApi)service).Configure(owner, new FishingAutomationOptions
+                {
+                    AnimationMode = FishingAnimationMode.FastCastPull,
+                    AnimationMultiplier = 2
+                });
+                ((IFishingAutomationApi)service).SetEnabled(owner, true, "unit-test");
+                MethodInfo notify = serviceType.GetMethod("NotifyFishingPhase", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService should keep phase notification helper.");
+                PropertyInfo applicationCount = serviceType.GetProperty("FishingAutomationApplicationCount", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService should expose an internal application counter.");
+
+                var readySource = new FakeFishingAnimationSource { animator = new FakeAnimator { speed = 1 } };
+                notify.Invoke(service, new object?[] { "Ready", readySource });
+                Assert((int)(applicationCount.GetValue(service) ?? -1) == 1 && Math.Abs(readySource.animator.speed - 2) < 0.0001, "FishingAutomation FastAnimations should run on Ready charge phase.");
+
+                var castSource = new FakeFishingAnimationSource { animator = new FakeAnimator { speed = 1.25 } };
+                notify.Invoke(service, new object?[] { "Cast", castSource });
+                Assert((int)(applicationCount.GetValue(service) ?? -1) == 2 && Math.Abs(castSource.animator.speed - 2.5) < 0.0001, "FishingAutomation FastAnimations should run on Cast phase.");
+
+                var waitSource = new FakeFishingAnimationSource { animator = new FakeAnimator { speed = 1 } };
+                notify.Invoke(service, new object?[] { "Wait", waitSource });
+                Assert((int)(applicationCount.GetValue(service) ?? -1) == 2 && Math.Abs(waitSource.animator.speed - 1) < 0.0001, "FishingAutomation FastAnimations must not run on Wait phase.");
+
+                var pullSource = new FakeFishingAnimationSource { animator = new FakeAnimator { speed = 1.5 } };
+                notify.Invoke(service, new object?[] { "Pull", pullSource });
+                Assert((int)(applicationCount.GetValue(service) ?? -1) == 3 && Math.Abs(pullSource.animator.speed - 3) < 0.0001, "FishingAutomation FastAnimations should run on Pull phase.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void FishingAutomationReadyChargeSpeedTicksNativeCastTimer()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                var owner = new ManifestModel
+                {
+                    Name = "AutoFishing Tests",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.AutoFishing",
+                    Type = "RuntimeApi"
+                };
+                ((IFishingAutomationApi)service).Configure(owner, new FishingAutomationOptions
+                {
+                    AnimationMode = FishingAnimationMode.FastCastPull,
+                    AnimationMultiplier = 3
+                });
+                ((IFishingAutomationApi)service).SetEnabled(owner, true, "unit-test");
+                MethodInfo applyReadyCharge = serviceType.GetMethod("ApplyFishingReadyChargeSpeed", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService should expose Ready charge speed helper.");
+
+                var readyState = new FakeFishingReadyState();
+                applyReadyCharge.Invoke(service, new object?[] { readyState });
+
+                Assert(readyState._castTimer.TickCount == 1, "FishingAutomation Ready charge speed should tick the native CastTimer.");
+                Assert(readyState._castTimer.LastDelta > 0.039 && readyState._castTimer.LastDelta < 0.041, "FishingAutomation Ready charge speed should add (multiplier-1)*fixedDeltaTime to CastTimer.");
+                Assert(readyState._powerBar.Progress > 0.039 && readyState._powerBar.Progress < 0.041, "FishingAutomation Ready charge speed should refresh the native progress circle.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void FishingAutomationReadyChargeTargetControlsUseToolRelease()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                var owner = new ManifestModel
+                {
+                    Name = "AutoFishing Tests",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.AutoFishing",
+                    Type = "RuntimeApi"
+                };
+                ((IFishingAutomationApi)service).Configure(owner, new FishingAutomationOptions
+                {
+                    CastChargeRatio = 0.5
+                });
+                ((IFishingAutomationApi)service).SetEnabled(owner, true, "unit-test");
+                MethodInfo applyReady = serviceType.GetMethod("ApplyFishingReadyAutomation", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService should expose Ready automation helper.");
+                MethodInfo overrideInput = serviceType.GetMethod("TryOverrideFishingReadyChargeInput", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FishingAutomationService should expose Ready input override helper.");
+
+                var readyState = new FakeFishingReadyState();
+                applyReady.Invoke(service, new object?[] { readyState });
+                object?[] holdArgs = { "NormalUseToolInProgress", false };
+                bool holdHandled = (bool)(overrideInput.Invoke(service, holdArgs) ?? false);
+                bool holdValue = (bool)(holdArgs[1] ?? false);
+                Assert(holdHandled && holdValue, "FishingAutomation should hold the native use-tool input before the configured charge target.");
+
+                readyState._castTimer.Tick(0.6f);
+                object?[] releaseArgs = { "NormalUseToolInProgress", false };
+                bool releaseHandled = (bool)(overrideInput.Invoke(service, releaseArgs) ?? false);
+                bool releaseValue = (bool)(releaseArgs[1] ?? true);
+                Assert(releaseHandled && !releaseValue, "FishingAutomation should release the native use-tool input after reaching the configured charge target.");
+
+                ((IFishingAutomationApi)service).Configure(owner, new FishingAutomationOptions());
+                var noChargeState = new FakeFishingReadyState();
+                applyReady.Invoke(service, new object?[] { noChargeState });
+                object?[] noChargeArgs = { "NormalUseToolInProgress", true };
+                bool noChargeHandled = (bool)(overrideInput.Invoke(service, noChargeArgs) ?? false);
+                bool noChargeValue = (bool)(noChargeArgs[1] ?? true);
+                Assert(noChargeHandled && !noChargeValue, "FishingAutomation default cast charge should release immediately.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void AutoFishingModConfigPreservesCustomToggleKey()
+        {
+            var mod = new ModEntry();
+            Type modType = typeof(ModEntry);
+            FieldInfo configField = modType.GetField("config", BindingFlags.Instance | BindingFlags.NonPublic) ??
+                throw new InvalidOperationException("AutoFishing config field should exist.");
+            MethodInfo normalizeConfig = modType.GetMethod("NormalizeConfig", BindingFlags.Instance | BindingFlags.NonPublic) ??
+                throw new InvalidOperationException("AutoFishing NormalizeConfig should exist.");
+
+            var customConfig = new ModEntry.AutoFishingConfig { ToggleKey = "F7", AnimationMultiplier = 0, CastChargeRatio = 2 };
+            configField.SetValue(mod, customConfig);
+            normalizeConfig.Invoke(mod, null);
+            Assert(customConfig.ToggleKey == "F7", "AutoFishing custom toggle key should not be reset to F6.");
+            Assert(Math.Abs(customConfig.AnimationMultiplier - 3) < 0.0001, "AutoFishing missing animation multiplier should migrate to default three.");
+            Assert(Math.Abs(customConfig.CastChargeRatio - 1) < 0.0001, "AutoFishing cast charge should still clamp to full charge.");
+
+            var missingConfig = new ModEntry.AutoFishingConfig { ToggleKey = "  ", AnimationMultiplier = 3 };
+            configField.SetValue(mod, missingConfig);
+            normalizeConfig.Invoke(mod, null);
+            Assert(missingConfig.ToggleKey == "F6", "AutoFishing missing toggle key should migrate to default F6.");
+
+            var noneConfig = new ModEntry.AutoFishingConfig { ToggleKey = "None", AnimationMultiplier = 3 };
+            configField.SetValue(mod, noneConfig);
+            normalizeConfig.Invoke(mod, null);
+            Assert(noneConfig.ToggleKey == "None", "AutoFishing explicit None toggle key should remain disabled.");
         }
 
         private static void AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents()
@@ -2246,6 +2671,154 @@ namespace DTMAPI.UnitTests
             public double speed { get; set; }
         }
 
+        private sealed class FakeFishingAnimationSource
+        {
+            public FakeAnimator animator { get; set; } = new FakeAnimator();
+        }
+
+        private sealed class FakeFishingReadyState
+        {
+            public FakeCastTimer _castTimer { get; } = new FakeCastTimer();
+            public FakeProgressCircle _powerBar { get; } = new FakeProgressCircle();
+            public FakeFishingReadyBody body { get; } = new FakeFishingReadyBody();
+        }
+
+        private sealed class FakeCastTimer
+        {
+            public double Progress { get; private set; }
+            public int TickCount { get; private set; }
+            public double LastDelta { get; private set; }
+
+            public void Tick(float deltaTime)
+            {
+                TickCount++;
+                LastDelta = deltaTime;
+                Progress += deltaTime;
+            }
+        }
+
+        private sealed class FakeProgressCircle
+        {
+            public float Progress { get; set; }
+            public object? Color { get; set; }
+        }
+
+        private sealed class FakeFishingReadyBody
+        {
+            public FakeFishingReadyRodRenderer fishRodRenderer { get; } = new FakeFishingReadyRodRenderer();
+        }
+
+        private sealed class FakeFishingReadyRodRenderer
+        {
+            public string GetCastForceColor(float value)
+            {
+                return "color:" + value.ToString("0.###");
+            }
+        }
+
+        private sealed class FakeFishingStateManager
+        {
+            public object? OverwrittenState { get; private set; }
+            public bool? ForceFlag { get; private set; }
+
+            public void Overwrite(object state, bool force)
+            {
+                OverwrittenState = state;
+                ForceFlag = force;
+            }
+        }
+
+        private sealed class FakeFishingBody
+        {
+            public FakeFishingBody(FakeFishingStateManager stateManager)
+            {
+                StateManager = stateManager;
+            }
+
+            public FakeFishingStateManager StateManager { get; }
+
+            public object? FishingCache { get; set; }
+        }
+
+        private sealed class FakeFishingWaitState
+        {
+            private readonly object nextState;
+
+            public FakeFishingWaitState(FakeFishingStateManager stateManager, object nextState)
+            {
+                body = new FakeFishingBody(stateManager);
+                this.nextState = nextState;
+            }
+
+            public FakeFishingBody body { get; }
+
+            public object NextState()
+            {
+                return nextState;
+            }
+        }
+
+        private sealed class FakeFishingWaitStateWithNativeMirror
+        {
+            private readonly Dictionary<Type, object> states = new Dictionary<Type, object>();
+
+            public FakeFishingWaitStateWithNativeMirror(FakeFishingStateManager stateManager, object fishProto, double hookDuration)
+            {
+                body = new FakeFishingBody(stateManager)
+                {
+                    FishingCache = new FakeFishingCache { FishProto = fishProto }
+                };
+                _fishOnHookDuration = hookDuration;
+            }
+
+            public FakeFishingBody body { get; }
+
+            public double _fishOnHookDuration { get; }
+
+            public object NextState()
+            {
+                return this;
+            }
+
+            public T GetState<T>() where T : class
+            {
+                Type type = typeof(T);
+                if (!states.TryGetValue(type, out object? state))
+                {
+                    state = Activator.CreateInstance(type) ?? throw new InvalidOperationException("Fake fishing state should be constructable.");
+                    states[type] = state;
+                }
+                return (T)state;
+            }
+        }
+
+        private sealed class FakeFishingCache
+        {
+            public object? FishProto { get; set; }
+        }
+
+        private sealed class FakeFishProto
+        {
+            public string Id { get; set; } = string.Empty;
+
+            public bool IsFish { get; set; }
+        }
+
+        private sealed class FakeDolocGameManager
+        {
+            public FakeDolocGameInitConfig gameInitConfig { get; set; } = new FakeDolocGameInitConfig();
+        }
+
+        private sealed class FakeDolocGameInitConfig
+        {
+            public bool skipFishingGame { get; set; }
+        }
+
+        private sealed class FakeGlobalParameter
+        {
+            public int FishingEnergyCost { get; set; }
+        }
+
         [DataContract]
         private sealed class SampleConfig
         {
@@ -2301,5 +2874,124 @@ namespace DTMAPI.UnitTests
         {
             helper.ModRegistry.RegisterApi<Program.IUnitProbeApi>(new Program.UnitProbeApi(helper.ModManifest.UniqueID));
         }
+    }
+}
+
+public static class DolocAPI
+{
+    public sealed class FakeUserInput
+    {
+        public object? CurrentState { get; set; }
+    }
+
+    public static object? gameManager;
+
+    public static object? userInput;
+
+    public static object? GlobalParameter;
+
+    public static int CostEnergyCalls;
+
+    public static int LastEnergyCost;
+
+    public static bool CostEnergy(int value)
+    {
+        CostEnergyCalls++;
+        LastEnergyCost = value;
+        return true;
+    }
+}
+
+namespace DolocTown.UI
+{
+    public enum FakeGridConstraint
+    {
+        Flexible,
+        FixedColumnCount,
+        FixedRowCount
+    }
+
+    public sealed class FakeGridLayoutGroup
+    {
+        public FakeGridConstraint constraint { get; set; } = FakeGridConstraint.FixedColumnCount;
+
+        public int constraintCount { get; set; }
+    }
+
+    public sealed class TextButton
+    {
+        public bool isVisible { get; set; } = true;
+    }
+
+    public sealed class MenuButton
+    {
+        public bool isVisible { get; set; } = true;
+    }
+
+    public sealed class HomePageTextMenu
+    {
+        public FakeGridLayoutGroup slotLayoutGroup { get; set; } = new FakeGridLayoutGroup { constraintCount = 2 };
+
+        public List<TextButton> slots { get; } = new List<TextButton>();
+
+        public int totalCapacity { get; set; } = 5;
+
+        public int lineCapacity { get; set; } = 1;
+
+        public int rowCount { get; set; } = 5;
+
+        public int RebuildCount { get; private set; }
+
+        public void RebuildLayout()
+        {
+            RebuildCount++;
+        }
+    }
+
+    public sealed class MenuUI
+    {
+        public FakeGridLayoutGroup slotLayoutGroup { get; set; } = new FakeGridLayoutGroup { constraintCount = 2 };
+
+        public List<MenuButton> slots { get; } = new List<MenuButton>();
+
+        public int totalCapacity { get; set; } = 8;
+
+        public int lineCapacity { get; set; } = 8;
+
+        public int rowCount { get; set; } = 1;
+
+        public int RebuildCount { get; private set; }
+
+        public void RebuildLayout()
+        {
+            RebuildCount++;
+        }
+    }
+
+    public sealed class MainMenuPanel
+    {
+        public MenuUI menu { get; set; } = new MenuUI();
+    }
+}
+
+namespace DolocTown
+{
+    public sealed class HomePageUiState
+    {
+        public DolocTown.UI.HomePageTextMenu textMenu { get; set; } = new DolocTown.UI.HomePageTextMenu();
+    }
+
+    public sealed class MainMenuUiState
+    {
+        public DolocTown.UI.MainMenuPanel panel { get; set; } = new DolocTown.UI.MainMenuPanel();
+    }
+
+    public sealed class AgentStateFishingBattle
+    {
+    }
+
+    public sealed class AgentStateFishingPull
+    {
+        public bool IsFailed { get; set; }
     }
 }

@@ -27,7 +27,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private double advancedTimeScaleMultiplier = 1d;
         public void PublishHookStatuses()
         {
-            runtime.SetHookStatus("Fishing.Automation", "pending", "DTMAPI.GameBridge.DolocTown API", "F6 auto-cast and wait-phase InstantBite evidence exists in AUTOFISH-001; waiting for fishing hook install in this run.");
+            runtime.SetHookStatus("Fishing.Automation", "pending", "DTMAPI.GameBridge.DolocTown API", "F6 auto-cast, bite timing, independent skip, visible minigame completion, and animation-speed smoke paths are GameBridge-owned; waiting for fishing hook install in this run.");
             runtime.SetHookStatus("ActionSpeed.ToolAnimation", "pending", "DTMAPI.GameBridge.DolocTown API", "Tool-animation evidence exists in ACTIONSPEED-001; waiting for AgentStateTool hook install in this run. ACTIONSPEED-002 now covers fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest.");
             runtime.SetHookStatus("Debug.InventoryApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses DolocConfig.Tables.TbItem and native DolocAPI item creation/backpack placement paths.");
             runtime.SetHookStatus("Debug.WeatherApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses native WeatherSystem via ArchiveDataHandle.SetWeather and PatchWeather; current-period patching is experimental.");

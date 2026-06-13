@@ -5,6 +5,8 @@
 我的设想是一套可视可编辑的debug文档。
 我想知道官方怎么处理、成熟的程序员如何debug、成熟的vibe coding开发怎么处理这些内容、或者是vibe coding 的游戏开发者怎么处理这个问题。
 
+API/GameBridge 方向的重复调查还需要先查固定 native-owner 领域资料库：`../reviews/api/native-owner-domains/INDEX.md`。它记录未来功能 API 的原生责任函数、状态 holder、官方内容/美化支持边界和 blocked/gap 状态，避免 Codex 每次从 UI 成功或 debug console 成功重新猜 API 稳定性。
+
 
 
 

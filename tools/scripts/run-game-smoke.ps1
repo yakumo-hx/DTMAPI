@@ -16,6 +16,13 @@ param(
     [switch] $AutoExerciseOneActionVegetation,
     [switch] $AutoExerciseAutoFishingPhase,
     [switch] $AutoExerciseAutoFishingMiniGameComplete,
+    [ValidateSet('DefaultLoop','InstantBite','SkipMiniGame','FastAnimations','CombinedInstantSkip','CombinedInstantComplete')]
+    [string] $AutoFishingScenario = 'DefaultLoop',
+    [ValidateRange(0, 1)]
+    [double] $AutoFishingCastChargeRatio = 0,
+    [string] $AutoFishingToggleKey = 'F6',
+    [switch] $AutoExercisePauseMenuLayout,
+    [int] $AutoExercisePauseMenuLayoutDelaySeconds = 12,
     [switch] $AutoExerciseTitleButtonLifecycle,
     [switch] $AutoExerciseInstantSave,
     [int] $AutoExerciseInstantSaveDelaySeconds = 3,
@@ -173,6 +180,19 @@ trap {
     throw
 }
 
+$autoFishingScenarioEffective = if (-not $PSBoundParameters.ContainsKey('AutoFishingScenario') -and $AutoExerciseAutoFishingMiniGameComplete) {
+    'CombinedInstantComplete'
+}
+else {
+    $AutoFishingScenario
+}
+$autoFishingScenarioRequestsInstantBite = @('InstantBite','CombinedInstantSkip','CombinedInstantComplete') -contains $autoFishingScenarioEffective
+$autoFishingScenarioRequestsSkip = @('SkipMiniGame','CombinedInstantSkip') -contains $autoFishingScenarioEffective
+$autoFishingScenarioRequestsComplete = @('DefaultLoop','InstantBite','FastAnimations','CombinedInstantComplete') -contains $autoFishingScenarioEffective
+$autoFishingScenarioRequestsAnimationSpeed = @('FastAnimations','CombinedInstantSkip','CombinedInstantComplete') -contains $autoFishingScenarioEffective
+$autoFishingScenarioRequestsCastCharge = [double]$AutoFishingCastChargeRatio -gt 0
+$autoFishingToggleKeyEffective = if ([string]::IsNullOrWhiteSpace($AutoFishingToggleKey)) { 'None' } else { $AutoFishingToggleKey.Trim() }
+
 $launchViaSteam = [bool]$UseSteam -or -not [bool]$DirectExe
 $existingGameProcess = Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue
 if ($existingGameProcess) {
@@ -194,6 +214,36 @@ if ($existingFatalWindow) {
     Write-FatalWindowCheck -Path (Join-Path $evidence 'fatal-window-check.txt')
     Write-SmokeBlockedResult -EvidencePath $evidence -Reason $blockedReason -RunStatus 'Aborted'
     Write-Error "Fatal instance popup is already visible. Close the dialog before launching smoke. Evidence: $evidence"
+    exit 1
+}
+if ($AutoExerciseAutoFishingPhase -and ((-not $PSBoundParameters.ContainsKey('SaveSlot')) -or $SaveSlot -ne 5)) {
+    $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
+    $blockedReason = 'AutoFishing phase smoke requires the real fifth save fixture. Re-run with explicit -SaveSlot 5.'
+    "Started=$(Get-Date -Format o)`nBlocked=$blockedReason`nSaveSlot=$SaveSlot`nSaveSlotExplicit=$($PSBoundParameters.ContainsKey('SaveSlot'))`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoFishingScenario=$autoFishingScenarioEffective`nAutoFishingCastChargeRatio=$AutoFishingCastChargeRatio`nAutoFishingToggleKey=$autoFishingToggleKeyEffective" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+    Write-SmokeJsonObject -Path (Join-Path $evidence 'result.json') -Value @{
+        SchemaVersion = 2
+        RunStatus = 'Blocked'
+        RunStatusReason = $blockedReason
+        StartupLog = 'Blocked'
+        GameLaunched = 'Blocked'
+        HookProbe = 'Skipped'
+        SaveLoaded = 'Blocked'
+        AutoFishingHotkey = 'Blocked'
+        AutoFishingMovementCancel = 'Skipped'
+        AutoFishingPhase = 'Blocked'
+        AutoFishingScenario = $autoFishingScenarioEffective
+        AutoFishingInstantBite = Get-SmokeStatus -Requested ([bool]$autoFishingScenarioRequestsInstantBite) -Passed $false -Blocked $autoFishingScenarioRequestsInstantBite
+        AutoFishingMiniGameSkip = Get-SmokeStatus -Requested ([bool]$autoFishingScenarioRequestsSkip) -Passed $false -Blocked $autoFishingScenarioRequestsSkip
+        AutoFishingMiniGameComplete = Get-SmokeStatus -Requested ([bool]$autoFishingScenarioRequestsComplete) -Passed $false -Blocked $autoFishingScenarioRequestsComplete
+        AutoFishingAnimationSpeed = Get-SmokeStatus -Requested ([bool]$autoFishingScenarioRequestsAnimationSpeed) -Passed $false -Blocked $autoFishingScenarioRequestsAnimationSpeed
+        AutoFishingCastCharge = Get-SmokeStatus -Requested ([bool]$autoFishingScenarioRequestsCastCharge) -Passed $false -Blocked $autoFishingScenarioRequestsCastCharge
+        AutoFishingReportExport = 'Blocked'
+        NoFatalInstanceWindow = 'Passed'
+        ProcessExited = 'Skipped'
+        ForcedClose = 'Skipped'
+        Completed = Get-Date -Format o
+    }
+    Write-Error "$blockedReason Evidence: $evidence"
     exit 1
 }
 
@@ -303,19 +353,32 @@ if ($usesAutoFishingConfigSmoke) {
     else {
         'No pre-existing AutoFishing config file.' | Set-Content -LiteralPath $autoFishingConfigBackup
     }
-    @{
-        ToggleKey = 'F6'
-        InfoKey = 'F9'
-        AutoRecast = $false
-        StopOnManualMove = $true
-        RequireSelectedFishingRod = $false
-        CastReleaseProgress = 0
-        RecastDelaySeconds = 0.25
-        AutoCompleteMiniGame = $true
-        SkipMiniGame = -not [bool]$AutoExerciseAutoFishingMiniGameComplete
-        InstantBite = $true
-        FastAnimations = $true
-        FastAnimationMultiplier = 3
+    $autoFishingSkip = $false
+    $autoFishingInstantBite = $false
+    $autoFishingFastAnimations = $false
+    switch ($autoFishingScenarioEffective) {
+        'DefaultLoop' { }
+        'InstantBite' { $autoFishingInstantBite = $true }
+        'SkipMiniGame' { $autoFishingSkip = $true }
+        'FastAnimations' { $autoFishingFastAnimations = $true }
+        'CombinedInstantComplete' {
+            $autoFishingInstantBite = $true
+            $autoFishingFastAnimations = $true
+        }
+        'CombinedInstantSkip' {
+            $autoFishingSkip = $true
+            $autoFishingInstantBite = $true
+            $autoFishingFastAnimations = $true
+        }
+        default { }
+    }
+    [ordered]@{
+        AnimationMultiplier = 3
+        CastChargeRatio = [Math]::Min(1.0, [Math]::Max(0.0, [double]$AutoFishingCastChargeRatio))
+        FastAnimations = $autoFishingFastAnimations
+        InstantBite = $autoFishingInstantBite
+        SkipMiniGame = $autoFishingSkip
+        ToggleKey = $autoFishingToggleKeyEffective
         VerboseLogging = $true
     } | ConvertTo-Json | Set-Content -LiteralPath $autoFishingConfigPath
 }
@@ -515,6 +578,72 @@ function Send-DolocTownKey {
     return $true
 }
 
+function Resolve-DolocTownVirtualKey {
+    param(
+        [string] $Key
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Key) -or $Key.Equals('None', [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $null
+    }
+
+    $normalized = $Key.Trim()
+    if ($normalized -match '^F([1-9]|1[0-9]|2[0-4])$') {
+        return 0x70 + [int]$Matches[1] - 1
+    }
+    if ($normalized -match '^[A-Z]$') {
+        return [int][char]$normalized
+    }
+    if ($normalized -match '^Alpha([0-9])$') {
+        return [int][char]$Matches[1]
+    }
+
+    switch ($normalized) {
+        'Escape' { return 0x1B }
+        'Backspace' { return 0x08 }
+        'Delete' { return 0x2E }
+        'Space' { return 0x20 }
+        'Tab' { return 0x09 }
+        'Return' { return 0x0D }
+        'KeypadEnter' { return 0x0D }
+        'LeftShift' { return 0xA0 }
+        'RightShift' { return 0xA1 }
+        'LeftControl' { return 0xA2 }
+        'RightControl' { return 0xA3 }
+        'LeftAlt' { return 0xA4 }
+        'RightAlt' { return 0xA5 }
+        'Insert' { return 0x2D }
+        'Home' { return 0x24 }
+        'End' { return 0x23 }
+        'PageUp' { return 0x21 }
+        'PageDown' { return 0x22 }
+        'Plus' { return 0xBB }
+        'Equals' { return 0xBB }
+        'Minus' { return 0xBD }
+        'KeypadPlus' { return 0x6B }
+        'KeypadMinus' { return 0x6D }
+        'UpArrow' { return 0x26 }
+        'DownArrow' { return 0x28 }
+        'LeftArrow' { return 0x25 }
+        'RightArrow' { return 0x27 }
+        default { return $null }
+    }
+}
+
+function Send-DolocTownNamedKey {
+    param(
+        [string] $Key,
+        [int] $TimeoutSeconds = 20
+    )
+
+    $virtualKey = Resolve-DolocTownVirtualKey -Key $Key
+    if ($null -eq $virtualKey) {
+        return $false
+    }
+
+    return Send-DolocTownKey -VirtualKey $virtualKey -Name $Key -TimeoutSeconds $TimeoutSeconds
+}
+
 function Send-DolocTownMouseClick {
     param(
         [ValidateSet('Left', 'Right')] [string] $Button = 'Left',
@@ -561,7 +690,7 @@ function Send-DolocTownF6 {
         [int] $TimeoutSeconds = 20
     )
 
-    return Send-DolocTownKey -VirtualKey 0x75 -Name 'F6' -TimeoutSeconds $TimeoutSeconds
+    return Send-DolocTownNamedKey -Key 'F6' -TimeoutSeconds $TimeoutSeconds
 }
 
 function Wait-ForStartupLogWithTimeline {
@@ -677,6 +806,39 @@ function Wait-ForLogLineCount {
         }
 
         Start-Sleep -Milliseconds 500
+    }
+
+    return $false
+}
+
+function Wait-ForAutoFishingLogLine {
+    param(
+        [string] $LogPath,
+        [string] $Pattern,
+        [int] $TimeoutSeconds
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-Path $LogPath) {
+            $text = Get-Content -Raw -LiteralPath $LogPath -ErrorAction SilentlyContinue
+            if ($text -match [regex]::Escape($Pattern)) {
+                return $true
+            }
+            if ($text -match 'Hook status: Smoke\.AutoFishing[^=]* = failed\.') {
+                return $false
+            }
+        }
+
+        if (Test-FatalInstanceWindow) {
+            return $false
+        }
+
+        if (-not (Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue)) {
+            return $false
+        }
+
+        Start-Sleep -Seconds 1
     }
 
     return $false
@@ -837,6 +999,12 @@ $smokeSettings = @{
     AutoExerciseAutoFishingPhase = [bool]$AutoExerciseAutoFishingPhase
     AutoExerciseAutoFishingPhaseDelaySeconds = 3
     AutoExerciseAutoFishingMiniGameComplete = [bool]$AutoExerciseAutoFishingMiniGameComplete
+    AutoFishingScenario = $autoFishingScenarioEffective
+    AutoFishingCastChargeRatio = [Math]::Min(1.0, [Math]::Max(0.0, [double]$AutoFishingCastChargeRatio))
+    AutoFishingToggleKey = $autoFishingToggleKeyEffective
+    AutoExercisePauseMenuLayout = [bool]$AutoExercisePauseMenuLayout
+    AutoExercisePauseMenuLayoutDelaySeconds = $AutoExercisePauseMenuLayoutDelaySeconds
+    AutoExercisePauseMenuLayoutObserveSeconds = 12
     AutoExerciseTitleButtonLifecycle = [bool]$AutoExerciseTitleButtonLifecycle
     AutoExerciseInstantSave = [bool]$AutoExerciseInstantSave
     AutoExerciseInstantSaveDelaySeconds = $AutoExerciseInstantSaveDelaySeconds
@@ -892,7 +1060,7 @@ if (Test-Path $freshBepLogPath) {
     Remove-Item -Force -LiteralPath $freshBepLogPath
 }
 
-"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseInstantSaveDelaySeconds=$AutoExerciseInstantSaveDelaySeconds`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseAdvancedDebug=$AutoExerciseAdvancedDebug`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoExerciseZoom=$AutoExerciseZoom`nAutoExerciseChestLocatorEnhancer=$AutoExerciseChestLocatorEnhancer`nAutoExerciseMoreSavesOfficialSaveUi=$AutoExerciseMoreSavesOfficialSaveUi`nAutoExerciseStrongPlantingGun=$AutoExerciseStrongPlantingGun`nAutoExerciseCropHarvestingApi=$AutoExerciseCropHarvestingApi`nAutoExerciseCustomEntityApis=$AutoExerciseCustomEntityApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenTitleSettingsStatusPage=$AutoOpenTitleSettingsStatusPage`nAutoOpenTitleSettingsManagerMvp=$AutoOpenTitleSettingsManagerMvp`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+"Started=$(Get-Date -Format o)`nGameDir=$gameDir`nDtmApiStateDir=$dtmapiDir`nSaveSlot=$SaveSlot`nIncludeHookProbe=$IncludeHookProbe`nLaunchMode=$(if ($launchViaSteam) { 'Steam' } else { 'DirectExe' })`nDisableSecondMotorForSmoke=$DisableSecondMotorForSmoke`nAutoSaveAfterLoad=$AutoSaveAfterLoad`nAutoReloadMods=$AutoReloadMods`nAutoExerciseExperimentalHooks=$AutoExerciseExperimentalHooks`nAutoExerciseActionSpeedTool=$AutoExerciseActionSpeedTool`nAutoExerciseActionSpeedConfigApply=$AutoExerciseActionSpeedConfigApply`nAutoExerciseActionSpeedInteraction=$AutoExerciseActionSpeedInteraction`nAutoExerciseOneActionResourceHit=$AutoExerciseOneActionResourceHit`nAutoExerciseOneActionWrongTool=$AutoExerciseOneActionWrongTool`nAutoExerciseOneActionFuelFeed=$AutoExerciseOneActionFuelFeed`nAutoExerciseOneActionVegetation=$AutoExerciseOneActionVegetation`nAutoExerciseAutoFishingPhase=$AutoExerciseAutoFishingPhase`nAutoExerciseAutoFishingMiniGameComplete=$AutoExerciseAutoFishingMiniGameComplete`nAutoFishingScenario=$autoFishingScenarioEffective`nAutoFishingCastChargeRatio=$AutoFishingCastChargeRatio`nAutoFishingToggleKey=$autoFishingToggleKeyEffective`nAutoExercisePauseMenuLayout=$AutoExercisePauseMenuLayout`nAutoExercisePauseMenuLayoutDelaySeconds=$AutoExercisePauseMenuLayoutDelaySeconds`nAutoExerciseTitleButtonLifecycle=$AutoExerciseTitleButtonLifecycle`nAutoExerciseInstantSave=$AutoExerciseInstantSave`nAutoExerciseInstantSaveDelaySeconds=$AutoExerciseInstantSaveDelaySeconds`nAutoExerciseDebugConsole=$AutoExerciseDebugConsole`nAutoExerciseDebugConsoleMouseGive=$AutoExerciseDebugConsoleMouseGive`nAutoExerciseDebugInventory=$AutoExerciseDebugInventory`nAutoExerciseDebugWeather=$AutoExerciseDebugWeather`nAutoExerciseDebugTeleport=$AutoExerciseDebugTeleport`nAutoExerciseDebugTime=$AutoExerciseDebugTime`nAutoExerciseDebugMovement=$AutoExerciseDebugMovement`nAutoExerciseAdvancedDebug=$AutoExerciseAdvancedDebug`nAutoExerciseVehicle=$AutoExerciseVehicle`nAutoExerciseNewContentApis=$AutoExerciseNewContentApis`nAutoExerciseMineContentApis=$AutoExerciseMineContentApis`nAutoExerciseZoom=$AutoExerciseZoom`nAutoExerciseChestLocatorEnhancer=$AutoExerciseChestLocatorEnhancer`nAutoExerciseMoreSavesOfficialSaveUi=$AutoExerciseMoreSavesOfficialSaveUi`nAutoExerciseStrongPlantingGun=$AutoExerciseStrongPlantingGun`nAutoExerciseCropHarvestingApi=$AutoExerciseCropHarvestingApi`nAutoExerciseCustomEntityApis=$AutoExerciseCustomEntityApis`nAutoPressAutoFishingHotkey=$AutoPressAutoFishingHotkey`nAutoOpenTitleSettingsMenu=$AutoOpenTitleSettingsMenu`nAutoOpenTitleSettingsStatusPage=$AutoOpenTitleSettingsStatusPage`nAutoOpenTitleSettingsManagerMvp=$AutoOpenTitleSettingsManagerMvp`nAutoOpenOfficialModUi=$AutoOpenOfficialModUi`nAutoOpenAnimalPanel=$AutoOpenAnimalPanel`nAutoExitAfterSeconds=$autoExitAfterSeconds" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
 
 $launchCommandStartedAt = Get-Date
 if ($launchViaSteam) {
@@ -924,7 +1092,7 @@ $startupTimeoutSeconds = $TimeoutSeconds
 $launchModeLabel = if ($launchViaSteam) { 'Steam' } else { 'DirectExe' }
 $startupOk = Wait-ForStartupLogWithTimeline -LogPath $logPath -Pattern 'DTMAPI runtime starting.' -TimeoutSeconds $startupTimeoutSeconds -EvidenceDir $evidence -LaunchCommandStartedAt $launchCommandStartedAt -LaunchCommandFinishedAt $launchCommandFinishedAt -LaunchMode $launchModeLabel
 $gameLaunchedOk = $false
-$saveLoadedRequested = (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseExperimentalHooks -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseAdvancedDebug -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis -or [bool]$AutoExerciseZoom -or [bool]$AutoExerciseChestLocatorEnhancer -or [bool]$AutoExerciseMoreSavesOfficialSaveUi -or [bool]$AutoExerciseStrongPlantingGun -or [bool]$AutoExerciseCropHarvestingApi -or [bool]$AutoExerciseCustomEntityApis))
+$saveLoadedRequested = (($SaveSlot -gt 0) -and ([bool]$IncludeHookProbe -or [bool]$AutoOpenAnimalPanel -or [bool]$AutoExerciseExperimentalHooks -or [bool]$AutoExerciseActionSpeedTool -or [bool]$AutoExerciseActionSpeedConfigApply -or [bool]$AutoExerciseActionSpeedInteraction -or [bool]$AutoExerciseOneActionResourceHit -or [bool]$AutoExerciseOneActionWrongTool -or [bool]$AutoExerciseOneActionFuelFeed -or [bool]$AutoExerciseOneActionVegetation -or [bool]$AutoExerciseAutoFishingPhase -or [bool]$AutoExercisePauseMenuLayout -or [bool]$AutoExerciseTitleButtonLifecycle -or [bool]$AutoExerciseInstantSave -or $requiresDebugConsoleKeySmoke -or [bool]$AutoExerciseDebugInventory -or [bool]$AutoExerciseDebugWeather -or [bool]$AutoExerciseDebugTeleport -or [bool]$AutoExerciseDebugTime -or [bool]$AutoExerciseDebugMovement -or [bool]$AutoExerciseAdvancedDebug -or [bool]$AutoExerciseVehicle -or [bool]$AutoExerciseNewContentApis -or [bool]$AutoExerciseMineContentApis -or [bool]$AutoExerciseZoom -or [bool]$AutoExerciseChestLocatorEnhancer -or [bool]$AutoExerciseMoreSavesOfficialSaveUi -or [bool]$AutoExerciseStrongPlantingGun -or [bool]$AutoExerciseCropHarvestingApi -or [bool]$AutoExerciseCustomEntityApis))
 $probeOk = -not [bool]$IncludeHookProbe
 $saveLoadedOk = -not $saveLoadedRequested
 $titleLifecycleOk = -not [bool]$AutoExerciseTitleButtonLifecycle
@@ -958,11 +1126,15 @@ $oneActionFuelFeedOk = -not [bool]$AutoExerciseOneActionFuelFeed
 $oneActionVegetationOk = -not [bool]$AutoExerciseOneActionVegetation
 $autoFishingInputLogOk = -not [bool]$AutoPressAutoFishingHotkey
 $autoFishingHotkeyOk = -not [bool]$AutoExerciseAutoFishingPhase
-$autoFishingMovementCancelOk = -not [bool]$AutoExerciseAutoFishingPhase
+$autoFishingMovementCancelOk = $true
 $autoFishingPhaseOk = -not [bool]$AutoExerciseAutoFishingPhase
-$autoFishingMiniGameSkipOk = -not [bool]$AutoExerciseAutoFishingPhase
-$autoFishingMiniGameCompleteOk = -not [bool]$AutoExerciseAutoFishingMiniGameComplete
+$autoFishingInstantBiteOk = -not ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsInstantBite)
+$autoFishingMiniGameSkipOk = -not ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsSkip)
+$autoFishingMiniGameCompleteOk = -not ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsComplete)
+$autoFishingAnimationSpeedOk = -not ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsAnimationSpeed)
+$autoFishingCastChargeOk = -not ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsCastCharge)
 $autoFishingReportExportOk = -not [bool]$AutoExerciseAutoFishingPhase
+$pauseMenuLayoutOk = -not [bool]$AutoExercisePauseMenuLayout
 $diagnosticsReportExportScenarios = @()
 if ($AutoExerciseZoom) {
     $diagnosticsReportExportScenarios += 'Camera'
@@ -1087,6 +1259,9 @@ if ($startupOk) {
     elseif ($probeOk -and $AutoExerciseAutoFishingPhase -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
+    elseif ($probeOk -and $AutoExercisePauseMenuLayout -and $SaveSlot -gt 0) {
+        $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+    }
     elseif ($probeOk -and $AutoExerciseInstantSave -and $SaveSlot -gt 0) {
         $saveLoadedOk = Wait-ForLogLine -LogPath $logPath -Pattern 'SaveLoaded hook dispatched.' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
@@ -1152,42 +1327,56 @@ if ($startupOk) {
     }
     if ($saveLoadedOk -and $AutoPressAutoFishingHotkey) {
         for ($attempt = 1; $attempt -le 3 -and -not $autoFishingInputLogOk; $attempt++) {
-            $sentF6 = Send-DolocTownF6
-            if ($sentF6) {
-                "SentExternalF6Attempt$attempt=$(Get-Date -Format o)" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
-                $autoFishingInputLogOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Input F6 pressed dispatched to DTMAPI mods.' -TimeoutSeconds 8 -AbortOnFatalInstanceWindow
+            $sentAutoFishingToggle = Send-DolocTownNamedKey -Key $autoFishingToggleKeyEffective
+            if ($sentAutoFishingToggle) {
+                "SentExternalAutoFishingToggleAttempt$attempt=$autoFishingToggleKeyEffective $(Get-Date -Format o)" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                $autoFishingInputLogOk = Wait-ForLogLine -LogPath $logPath -Pattern ('Input ' + $autoFishingToggleKeyEffective + ' pressed dispatched to DTMAPI mods.') -TimeoutSeconds 8 -AbortOnFatalInstanceWindow
             }
             else {
-                "SentExternalF6Attempt${attempt}Failed=$(Get-Date -Format o)" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                "SentExternalAutoFishingToggleAttempt${attempt}Failed=$autoFishingToggleKeyEffective $(Get-Date -Format o)" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
             }
         }
     }
     if ($saveLoadedOk -and $AutoExerciseAutoFishingPhase) {
         if (-not $AutoPressAutoFishingHotkey -or $autoFishingInputLogOk) {
-            $autoFishingHotkeyOk = Wait-ForLogLine -LogPath $logPath -Pattern 'AutoFishing automation enabled reason=hotkey F6' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
-            $autoFishingMovementCancelOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise AutoFishingMovementCancel OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
-            $autoFishingPhaseOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise AutoFishingPhase OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
-            if ($AutoExerciseAutoFishingMiniGameComplete) {
-                $autoFishingMiniGameSkipOk = $true
-                $autoFishingMiniGameCompleteOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingMiniGameComplete = verified' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+            $autoFishingHotkeyOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern ('AutoFishing automation enabled reason=hotkey ' + $autoFishingToggleKeyEffective) -TimeoutSeconds $TimeoutSeconds
+            $autoFishingPhaseOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke exercise AutoFishingLoop OK' -TimeoutSeconds $TimeoutSeconds
+            if ($autoFishingScenarioRequestsInstantBite) {
+                $autoFishingInstantBiteOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingInstantBite = verified' -TimeoutSeconds $TimeoutSeconds
             }
-            else {
-                $autoFishingMiniGameSkipOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingMiniGameSkip = verified' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+            if ($autoFishingScenarioRequestsSkip) {
+                $autoFishingMiniGameSkipOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingMiniGameSkip = verified' -TimeoutSeconds $TimeoutSeconds
             }
-            $autoFishingReportExportOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DiagnosticsSnapshot = verified. scenario=AutoFishing' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
+            if ($autoFishingScenarioRequestsComplete) {
+                $autoFishingMiniGameCompleteOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingMiniGameComplete = verified' -TimeoutSeconds $TimeoutSeconds
+            }
+            if ($autoFishingScenarioRequestsAnimationSpeed) {
+                $autoFishingAnimationSpeedOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke.AutoFishingAnimationSpeed = verified' -TimeoutSeconds $TimeoutSeconds
+            }
+            if ($autoFishingScenarioRequestsCastCharge) {
+                $autoFishingCastChargePattern = 'Smoke.AutoFishingCastCharge = verified. owner=Yuuka.DTMAPI.AutoFishing, behavior=ReadyChargeTarget, source=AgentStateFishingReady.NextState, target=' + ([double]$AutoFishingCastChargeRatio).ToString('0.###', [System.Globalization.CultureInfo]::InvariantCulture)
+                $autoFishingCastChargeOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern $autoFishingCastChargePattern -TimeoutSeconds $TimeoutSeconds
+            }
+            $autoFishingReportExportOk = Wait-ForAutoFishingLogLine -LogPath $logPath -Pattern 'Smoke.DiagnosticsSnapshot = verified. scenario=AutoFishing' -TimeoutSeconds $TimeoutSeconds
             if ($autoFishingReportExportOk) {
                 $diagnosticsReportExportPassedScenarios += 'AutoFishing'
             }
         }
         else {
             $autoFishingHotkeyOk = $false
-            $autoFishingMovementCancelOk = $false
+            $autoFishingMovementCancelOk = $true
             $autoFishingPhaseOk = $false
+            $autoFishingInstantBiteOk = $false
             $autoFishingMiniGameSkipOk = $false
             $autoFishingMiniGameCompleteOk = $false
+            $autoFishingAnimationSpeedOk = $false
+            $autoFishingCastChargeOk = $false
             $autoFishingReportExportOk = $false
             $diagnosticsReportExportOk = $false
         }
+    }
+    if ($saveLoadedOk -and $AutoExercisePauseMenuLayout) {
+        $pauseMenuLayoutOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise PauseMenuLayout OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
     }
     if ($saveLoadedOk -and $AutoExerciseInstantSave) {
         $instantSaveOk = Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke exercise InstantSave OK' -TimeoutSeconds $TimeoutSeconds -AbortOnFatalInstanceWindow
@@ -1415,7 +1604,7 @@ if ($AutoExerciseMineContentApis -and (Test-Path $logPath)) {
 }
 $runAborted = ($fatalWindows.Count -gt 0) -or $forcedClose -or [bool]$leftover
 $diagnosticsReportExportOk = (-not $diagnosticsReportExportRequested) -or ($diagnosticsReportExportPassedScenarios.Count -eq $diagnosticsReportExportScenarios.Count)
-$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $managerStatusPageOk -or -not $managerStatusPageScreenshotOk -or -not $managerStatusPageScreenshotFileOk -or -not $managerStatusSummaryTextOk -or -not $managerStatusSummaryCopyOk -or -not $managerModsPageOk -or -not $managerErrorsPageOk -or -not $managerHooksPageOk -or -not $managerFeaturesPageOk -or -not $managerLogsPageOk -or -not $managerLogsExportButtonOk -or -not $managerLogsExportStateTextOk -or -not $managerLogsPageScreenshotOk -or -not $managerLogsPageScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $autoFishingReportExportOk -or -not $diagnosticsReportExportOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $moreSavesOfficialSaveUiOk -or -not $moreSavesOfficialSaveUiEvidenceOk -or -not $strongPlantingGunOk -or -not $cropHarvestingApiOk -or -not $cropHarvestingApiEvidenceOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
+$runFailed = (-not $startupOk -or -not $gameLaunchedOk -or -not $probeOk -or -not $saveLoadedOk -or -not $titleButtonOk -or -not $titleButtonScreenshotOk -or -not $titleButtonScreenshotFileOk -or -not $titleLifecycleOk -or -not $titleMenuOk -or -not $titleMenuScreenshotOk -or -not $titleMenuScreenshotFileOk -or -not $managerStatusPageOk -or -not $managerStatusPageScreenshotOk -or -not $managerStatusPageScreenshotFileOk -or -not $managerStatusSummaryTextOk -or -not $managerStatusSummaryCopyOk -or -not $managerModsPageOk -or -not $managerErrorsPageOk -or -not $managerHooksPageOk -or -not $managerFeaturesPageOk -or -not $managerLogsPageOk -or -not $managerLogsExportButtonOk -or -not $managerLogsExportStateTextOk -or -not $managerLogsPageScreenshotOk -or -not $managerLogsPageScreenshotFileOk -or -not $officialModUiOk -or -not $officialModUiScreenshotFileOk -or -not $animalViewerUiOk -or -not $experimentalHooksOk -or -not $actionSpeedToolOk -or -not $actionSpeedConfigApplyOk -or -not $actionSpeedInteractionOk -or -not $oneActionResourceHitOk -or -not $oneActionWrongToolOk -or -not $oneActionFuelFeedOk -or -not $oneActionVegetationOk -or -not $autoFishingInputLogOk -or -not $autoFishingHotkeyOk -or -not $autoFishingMovementCancelOk -or -not $autoFishingPhaseOk -or -not $autoFishingInstantBiteOk -or -not $autoFishingMiniGameSkipOk -or -not $autoFishingMiniGameCompleteOk -or -not $autoFishingAnimationSpeedOk -or -not $autoFishingCastChargeOk -or -not $autoFishingReportExportOk -or -not $pauseMenuLayoutOk -or -not $diagnosticsReportExportOk -or -not $instantSaveOk -or -not $debugConsoleOpenY1Ok -or -not $debugConsoleMouseGiveOk -or -not $debugConsoleCloseEscapeOk -or -not $debugConsoleOpenY2Ok -or -not $debugConsoleCloseYOk -or -not $debugConsoleTenYShortTapsOk -or -not $debugConsoleHoldYNoFlickerOk -or -not $debugInventoryOk -or -not $debugWeatherOk -or -not $debugTeleportCsvOk -or -not $debugTeleportOk -or -not $debugTimeOk -or -not $debugMovementOk -or -not $advancedDebugOk -or -not $vehicleSecondMotorOk -or -not $zoomOk -or -not $chestLocatorEnhancerOk -or -not $moreSavesOfficialSaveUiOk -or -not $moreSavesOfficialSaveUiEvidenceOk -or -not $strongPlantingGunOk -or -not $cropHarvestingApiOk -or -not $cropHarvestingApiEvidenceOk -or -not $customEntityApisOk -or -not $newContentApisOk -or -not $newContentMineApisOk -or -not $newContentOilItemMetadataOk -or -not $newContentOilCoalDropOk -or -not $newContentMineOfficialJsonOk -or -not $newContentMineOfficialTechTreeUiOk -or -not $newContentMineOfficialTechTreeUiScreenshotFileOk -or -not $newContentEquipmentSlotsOk -or -not $newContentMineProductionOk -or $runAborted)
 $runStatus = if ($runAborted) { 'Aborted' } elseif ($runFailed) { 'Failed' } else { 'Passed' }
 $result = @{
     SchemaVersion = 2
@@ -1458,11 +1647,16 @@ $result = @{
     OneActionVegetation = Get-SmokeStatus -Requested ([bool]$AutoExerciseOneActionVegetation) -Passed $oneActionVegetationOk
     AutoFishingInputLog = Get-SmokeStatus -Requested ([bool]$AutoPressAutoFishingHotkey) -Passed $autoFishingInputLogOk
     AutoFishingHotkey = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingHotkeyOk
-    AutoFishingMovementCancel = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingMovementCancelOk
+    AutoFishingMovementCancel = 'Skipped'
     AutoFishingPhase = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingPhaseOk
-    AutoFishingMiniGameSkip = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and -not [bool]$AutoExerciseAutoFishingMiniGameComplete) -Passed $autoFishingMiniGameSkipOk
-    AutoFishingMiniGameComplete = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingMiniGameComplete) -Passed $autoFishingMiniGameCompleteOk
+    AutoFishingScenario = $autoFishingScenarioEffective
+    AutoFishingInstantBite = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsInstantBite) -Passed $autoFishingInstantBiteOk
+    AutoFishingMiniGameSkip = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsSkip) -Passed $autoFishingMiniGameSkipOk
+    AutoFishingMiniGameComplete = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsComplete) -Passed $autoFishingMiniGameCompleteOk
+    AutoFishingAnimationSpeed = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsAnimationSpeed) -Passed $autoFishingAnimationSpeedOk
+    AutoFishingCastCharge = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase -and $autoFishingScenarioRequestsCastCharge) -Passed $autoFishingCastChargeOk
     AutoFishingReportExport = Get-SmokeStatus -Requested ([bool]$AutoExerciseAutoFishingPhase) -Passed $autoFishingReportExportOk
+    PauseMenuLayout = Get-SmokeStatus -Requested ([bool]$AutoExercisePauseMenuLayout) -Passed $pauseMenuLayoutOk
     DiagnosticsReportExport = Get-SmokeStatus -Requested $diagnosticsReportExportRequested -Passed $diagnosticsReportExportOk
     InstantSave = Get-SmokeStatus -Requested ([bool]$AutoExerciseInstantSave) -Passed $instantSaveOk
     DebugConsoleOpenY1 = Get-SmokeStatus -Requested $requiresDebugConsoleKeySmoke -Passed $debugConsoleOpenY1Ok
@@ -1511,7 +1705,7 @@ catch {
 }
 
 if ($runFailed) {
-    Write-Error "Game smoke failed or left DolocTown.exe running. Evidence: $evidence"
+    Write-Error "Game smoke failed or left DolocTown.exe running. Evidence: $evidence" -ErrorAction Continue
     exit 1
 }
 
