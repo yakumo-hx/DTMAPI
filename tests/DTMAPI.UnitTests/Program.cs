@@ -69,6 +69,7 @@ namespace DTMAPI.UnitTests
                 FishingAutomationMiniGameInputDecisionMatchesNativeBars();
                 FishingAutomationSkipMiniGamePreservesNativePullResult();
                 FishingAutomationMirrorsNativeReelWhenInputEdgeIsAbsent();
+                FishingAutomationInstantBiteDefersReelUntilWaitPlay();
                 FishingAutomationAnimationSpeedOnlyRunsOnReadyCastAndPull();
                 FishingAutomationReadyChargeSpeedTicksNativeCastTimer();
                 FishingAutomationReadyChargeTargetControlsUseToolRelease();
@@ -2194,6 +2195,66 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void FishingAutomationInstantBiteDefersReelUntilWaitPlay()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.FishingAutomationService")
+                ?? throw new InvalidOperationException("FishingAutomationService type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object service = Activator.CreateInstance(serviceType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should be constructable for unit tests.");
+                var owner = new ManifestModel
+                {
+                    Name = "AutoFishing Tests",
+                    Author = "DTMAPI",
+                    Version = "1.0.0",
+                    UniqueID = "DTMAPI.Tests.AutoFishing",
+                    Type = "RuntimeApi"
+                };
+                ((IFishingAutomationApi)service).Configure(owner, new FishingAutomationOptions
+                {
+                    BiteWaitMode = FishingBiteWaitMode.InstantNativeBite,
+                    ResultMode = FishingResultMode.AutoCompleteVisibleMiniGame
+                });
+                ((IFishingAutomationApi)service).SetEnabled(owner, true, "unit-test");
+
+                MethodInfo applyWait = serviceType.GetMethod("ApplyFishingWaitAutomation", BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(object), typeof(string) }, null)
+                    ?? throw new InvalidOperationException("FishingAutomationService should expose the wait automation helper.");
+
+                DolocAPI.gameManager = new FakeDolocGameManager { gameInitConfig = new FakeDolocGameInitConfig { skipFishingGame = false } };
+                DolocAPI.GlobalParameter = new FakeGlobalParameter { FishingEnergyCost = 7 };
+                DolocAPI.CostEnergyCalls = 0;
+                DolocAPI.LastEnergyCost = 0;
+
+                var stateManager = new FakeFishingStateManager();
+                var waitState = new FakeFishingWaitStateWithInstantBite(stateManager, new FakeFishProto { Id = "unit_instant_fish", IsFish = true });
+
+                bool enterApplied = (bool)(applyWait.Invoke(service, new object[] { waitState, "AgentStateFishingWait.OnEnter Postfix" }) ?? false);
+                Assert(!enterApplied, "FishingAutomation InstantBite should not overwrite fishing state from Wait.OnEnter because native Cast->Wait will set current after OnEnter returns.");
+                Assert(stateManager.OverwrittenState == null, "FishingAutomation InstantBite Wait.OnEnter should only prepare bite state.");
+                Assert(DolocAPI.CostEnergyCalls == 0, "FishingAutomation InstantBite Wait.OnEnter must not consume fishing energy.");
+                Assert(!waitState._waitForFishBite && waitState._hasRolled, "FishingAutomation InstantBite Wait.OnEnter should prepare a bite for the next Wait.OnPlay pass.");
+
+                bool playApplied = (bool)(applyWait.Invoke(service, new object[] { waitState, "AgentStateFishingWait.OnPlay Postfix" }) ?? false);
+                Assert(playApplied, "FishingAutomation InstantBite should reel from Wait.OnPlay after the native state transition is complete.");
+                Assert(stateManager.OverwrittenState is DolocTown.AgentStateFishingBattle, "FishingAutomation InstantBite should advance to the visible native battle/minigame path for fish.");
+                Assert(DolocAPI.CostEnergyCalls == 1 && DolocAPI.LastEnergyCost == 7, "FishingAutomation InstantBite should consume native fishing energy exactly once.");
+            }
+            finally
+            {
+                DolocAPI.gameManager = null;
+                DolocAPI.GlobalParameter = null;
+                DolocAPI.CostEnergyCalls = 0;
+                DolocAPI.LastEnergyCost = 0;
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void FishingAutomationAnimationSpeedOnlyRunsOnReadyCastAndPull()
         {
             Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
@@ -2778,6 +2839,54 @@ namespace DTMAPI.UnitTests
             public object NextState()
             {
                 return this;
+            }
+
+            public T GetState<T>() where T : class
+            {
+                Type type = typeof(T);
+                if (!states.TryGetValue(type, out object? state))
+                {
+                    state = Activator.CreateInstance(type) ?? throw new InvalidOperationException("Fake fishing state should be constructable.");
+                    states[type] = state;
+                }
+                return (T)state;
+            }
+        }
+
+        private sealed class FakeFishingWaitStateWithInstantBite
+        {
+            private readonly Dictionary<Type, object> states = new Dictionary<Type, object>();
+
+            public FakeFishingWaitStateWithInstantBite(FakeFishingStateManager stateManager, object fishProto)
+            {
+                body = new FakeFishingBody(stateManager)
+                {
+                    FishingCache = new FakeFishingCache { FishProto = fishProto }
+                };
+                _hasRolled = false;
+                _hookProbability = 0f;
+                _fishOnHookDuration = 0f;
+            }
+
+            public FakeFishingBody body { get; }
+
+            public bool _waitForFishBite = true;
+
+            public bool _hasRolled;
+
+            public float _hookProbability;
+
+            public float _fishOnHookDuration;
+
+            public object NextState()
+            {
+                return this;
+            }
+
+            public bool RollFish()
+            {
+                var cache = body.FishingCache as FakeFishingCache;
+                return cache?.FishProto != null;
             }
 
             public T GetState<T>() where T : class

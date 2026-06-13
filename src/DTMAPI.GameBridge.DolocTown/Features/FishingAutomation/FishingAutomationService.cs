@@ -376,7 +376,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
 
             hookSource = FirstText(hookSource, "AgentStateFishingWait.Postfix");
-            string operation = hookSource.IndexOf("OnEnter", StringComparison.OrdinalIgnoreCase) >= 0 ? "FishingAutomation.Wait.OnEnter" : "FishingAutomation.Wait.OnPlay";
+            bool isOnEnterHook = hookSource.IndexOf("OnEnter", StringComparison.OrdinalIgnoreCase) >= 0;
+            string operation = isOnEnterHook ? "FishingAutomation.Wait.OnEnter" : "FishingAutomation.Wait.OnPlay";
             try
             {
                 if (operation.Equals("FishingAutomation.Wait.OnPlay", StringComparison.OrdinalIgnoreCase) && !IsCurrentFishingState(waitState))
@@ -414,6 +415,29 @@ namespace DTMAPI.GameBridge.DolocTown
                     state.LastReason = instantBite ? "auto:instant-bite-pending" : "auto:native-wait";
                     state.NativeOwner = "AgentStateFishingWait";
                     state.LastNativeAction = "wait-for-bite";
+                    return false;
+                }
+
+                if (isOnEnterHook)
+                {
+                    string deferredBehavior = forcedByInstantBite ? "InstantBiteReady" : forcedBite ? "NativeBiteReadyForSmoke" : "BiteReady";
+                    state.Phase = "Wait:" + deferredBehavior + ":defer-reel";
+                    state.LastReason = "auto:" + deferredBehavior + ":defer-until-OnPlay";
+                    state.NativeOwner = "AgentStateFishingWait.OnEnter";
+                    state.LastNativeAction = "prepare-bite";
+                    state.LastResult = "deferred";
+                    LastFishingAutomationApplicationSummary = "owner=" + ownerId +
+                        ", behavior=" + deferredBehavior +
+                        ", phase=Wait.OnEnter" +
+                        ", action=defer-reel" +
+                        ", forceFishForSmoke=" + ForceFishingFishForSmoke +
+                        ", forceNativeBiteForSmoke=" + ForceFishingNativeBiteForSmoke +
+                        ", forceFishSatisfied=" + forceFishSatisfied +
+                        ", hookDuration=" + hookDuration.ToString("0.###", CultureInfo.InvariantCulture) +
+                        ", nativeTipInvoked=" + nativeTipInvoked +
+                        ", source=" + hookSource +
+                        ", rollAttempts=" + rollAttempts.ToString(CultureInfo.InvariantCulture);
+                    runtime.SetHookStatus("Smoke.AutoFishingPhase", "pending", hookSource, LastFishingAutomationApplicationSummary);
                     return false;
                 }
 
