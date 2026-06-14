@@ -173,9 +173,9 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!TryGenerateNativeItem(normalizedItemId, 1, out object? item, out string generateReason, out string generateMessage))
                 return EquipmentSlotEquipFailed(result, generateReason, generateMessage);
 
-            if (!TryValidateExtraEquipmentSlotItem(item, out string displayName, out string skillId, out string validationReason, out string validationMessage))
+            if (!TryValidateExtraEquipmentSlotItem(item, out EquipmentSlotItemTraits traits, out string validationReason, out string validationMessage))
                 return EquipmentSlotEquipFailed(result, validationReason, validationMessage);
-            result.DisplayName = displayName;
+            result.DisplayName = traits.DisplayName;
 
             if (!RecoverEquipmentSlotEntry(ownerId, entry, "replace before equip", saveAfterRecovery: false, out string recoveryMessage, out int recovered))
                 return EquipmentSlotEquipFailed(result, "recover-existing-failed", recoveryMessage);
@@ -185,15 +185,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 return EquipmentSlotEquipFailed(result, "consume-failed", "DolocAPI.CostItem failed for " + normalizedItemId + " x1.");
 
             entry.ItemId = normalizedItemId;
-            entry.DisplayName = displayName;
-            entry.SkillId = skillId;
-            entry.LastMessage = "Equipped " + displayName + " as attribute-only extra slot item.";
+            ApplyEquipmentSlotTraits(entry, traits, resetShieldCharge: true);
+            entry.LastMessage = "Equipped " + traits.DisplayName + " as attribute-only extra slot item.";
             entry.Applied = false;
             entry.NativeItem = null;
             entry.NativeFunction = null;
 
             string applyMessage = TryApplyStoredEquipmentSlotFunctions(ownerId, "equip " + entry.SlotId)
-                ? "Applied native AgentEquipmentFunction for " + normalizedItemId + "."
+                ? BuildEquipmentSlotApplyMessage(normalizedItemId, traits)
                 : "Stored item; native AgentEquipmentFunction will apply after equipment manager is available.";
             entry.LastMessage = entry.LastMessage + " " + applyMessage;
             SaveEquipmentSlotStorage(ownerId);
@@ -208,7 +207,7 @@ namespace DTMAPI.GameBridge.DolocTown
             result.AfterBackpackCount = CountNativeBackpackItem(dolocApi, normalizedItemId);
             result.Success = true;
             result.Message = entry.LastMessage + " backpack=" + result.BeforeBackpackCount + "->" + result.AfterBackpackCount + ".";
-            runtime.RuntimeMonitor.Log("EquipmentSlots equip OK owner=" + ownerId + " slot=" + entry.SlotId + " item=" + normalizedItemId + " display=" + displayName + " backpack=" + result.BeforeBackpackCount + "->" + result.AfterBackpackCount + " applied=" + entry.Applied + ".");
+            runtime.RuntimeMonitor.Log("EquipmentSlots equip OK owner=" + ownerId + " slot=" + entry.SlotId + " item=" + normalizedItemId + " display=" + traits.DisplayName + " backpack=" + result.BeforeBackpackCount + "->" + result.AfterBackpackCount + " applied=" + entry.Applied + " shield=" + entry.IsShieldHat + "/" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + ".");
             runtime.SetHookStatus("Player.EquipmentSlotsApi", state.Status, "IEquipmentSlotsApi.EquipExtraSlot -> AgentEquipmentFunction", result.Message);
             return result;
         }
@@ -515,6 +514,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     ItemId = entry.ItemId,
                     DisplayName = entry.DisplayName,
                     SkillId = entry.SkillId,
+                    DefenseBonus = entry.DefenseBonus,
+                    IsShieldHat = entry.IsShieldHat,
+                    ShieldMaxValue = entry.ShieldMaxValue,
+                    ShieldValue = entry.ShieldValue,
+                    ShieldDefend = entry.ShieldDefend,
                     LastMessage = entry.LastMessage
                 }).ToList()
             };
@@ -579,6 +583,11 @@ namespace DTMAPI.GameBridge.DolocTown
                         ItemId = slot.ItemId ?? string.Empty,
                         DisplayName = slot.DisplayName ?? string.Empty,
                         SkillId = slot.SkillId ?? string.Empty,
+                        DefenseBonus = Math.Max(0, slot.DefenseBonus),
+                        IsShieldHat = slot.IsShieldHat,
+                        ShieldMaxValue = Math.Max(0, slot.ShieldMaxValue),
+                        ShieldValue = Math.Max(0, slot.ShieldValue),
+                        ShieldDefend = Math.Max(0, slot.ShieldDefend),
                         LastMessage = FirstText(slot.LastMessage, isLegacyGlobalStorage ? "Loaded legacy DTMAPI extra-slot item." : "Loaded stored DTMAPI extra-slot item.")
                     });
                 }
@@ -720,7 +729,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 {
                     if (string.IsNullOrWhiteSpace(entry.ItemId))
                         continue;
-                    if (entry.Applied && entry.NativeItem != null && NativeEquipmentFunctionsContains(manager, entry.NativeItem))
+                    if (entry.Applied && (entry.NativeItem == null || NativeEquipmentFunctionsContains(manager, entry.NativeItem)))
                     {
                         appliedAny = true;
                         continue;
@@ -756,6 +765,53 @@ namespace DTMAPI.GameBridge.DolocTown
                 equipmentSlotStates[ownerId ?? string.Empty] = BuildEquipmentSlotsState(ownerId ?? string.Empty, options);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("apply " + (reason ?? string.Empty), force: changed);
             return appliedAny;
+        }
+
+        private static void ApplyEquipmentSlotTraits(EquipmentSlotRuntimeEntry entry, EquipmentSlotItemTraits traits, bool resetShieldCharge)
+        {
+            entry.DisplayName = traits.DisplayName;
+            entry.SkillId = traits.SkillId;
+            entry.DefenseBonus = traits.DefenseBonus;
+            entry.IsShieldHat = traits.IsShieldHat;
+            entry.ShieldMaxValue = traits.ShieldMaxValue;
+            entry.ShieldDefend = traits.ShieldDefend;
+            if (traits.IsShieldHat)
+                entry.ShieldValue = resetShieldCharge ? traits.ShieldMaxValue : EquipmentSlotShieldPolicy.NormalizeShieldValue(entry.ShieldValue, traits.ShieldMaxValue);
+            else
+                entry.ShieldValue = 0;
+        }
+
+        private static void ClearEquipmentSlotStoredItem(EquipmentSlotRuntimeEntry entry)
+        {
+            entry.ItemId = string.Empty;
+            entry.DisplayName = string.Empty;
+            entry.SkillId = string.Empty;
+            entry.DefenseBonus = 0;
+            entry.IsShieldHat = false;
+            entry.ShieldMaxValue = 0;
+            entry.ShieldValue = 0;
+            entry.ShieldDefend = 0;
+            entry.Applied = false;
+            entry.NativeItem = null;
+            entry.NativeFunction = null;
+        }
+
+        private static string BuildEquipmentSlotApplyMessage(string itemId, EquipmentSlotItemTraits traits)
+        {
+            return BuildEquipmentSlotApplyMessage(itemId, traits.SkillId, traits.DefenseBonus, traits.IsShieldHat, traits.ShieldMaxValue);
+        }
+
+        private static string BuildEquipmentSlotApplyMessage(string itemId, string skillId, int defenseBonus, bool isShieldHat = false, int shieldMaxValue = 0)
+        {
+            if (isShieldHat)
+                return "Applied managed extra-slot shield for " + itemId + " shield=" + shieldMaxValue.ToString(CultureInfo.InvariantCulture) + "; native vanilla hat slot remains owned by the game.";
+            if (!string.IsNullOrWhiteSpace(skillId) && defenseBonus > 0)
+                return "Applied native AgentEquipmentFunction for " + itemId + " and extra hat defense +" + defenseBonus.ToString(CultureInfo.InvariantCulture) + ".";
+            if (!string.IsNullOrWhiteSpace(skillId))
+                return "Applied native AgentEquipmentFunction for " + itemId + ".";
+            if (defenseBonus > 0)
+                return "Applied extra hat defense +" + defenseBonus.ToString(CultureInfo.InvariantCulture) + " for " + itemId + " while preserving the vanilla visual hat slot.";
+            return "Stored registered hat " + itemId + "; it has no skill or defense effect to apply.";
         }
 
         private void RecoverOrphanEquipmentSlotsIfNeeded()
@@ -844,10 +900,31 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            if (!TryValidateExtraEquipmentSlotItem(item, out string displayName, out string skillId, out string validationReason, out string validationMessage))
+            if (!TryValidateExtraEquipmentSlotItem(item, out EquipmentSlotItemTraits traits, out string validationReason, out string validationMessage))
             {
                 message = validationReason + ": " + validationMessage;
                 return false;
+            }
+
+            ApplyEquipmentSlotTraits(entry, traits, resetShieldCharge: false);
+            if (traits.IsShieldHat)
+            {
+                entry.NativeItem = null;
+                entry.NativeFunction = null;
+                entry.Applied = true;
+                message = "Applied " + traits.DisplayName + " (" + entry.ItemId + ") as managed extra-slot shield shield=" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + "/" + entry.ShieldMaxValue.ToString(CultureInfo.InvariantCulture) + " defend=" + entry.ShieldDefend.ToString(CultureInfo.InvariantCulture) + "; vanilla hat visuals stay native-owned.";
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(traits.SkillId))
+            {
+                entry.NativeItem = null;
+                entry.NativeFunction = null;
+                entry.Applied = true;
+                message = traits.DefenseBonus > 0
+                    ? "Applied " + traits.DisplayName + " (" + entry.ItemId + ") as extra hat defense +" + traits.DefenseBonus.ToString(CultureInfo.InvariantCulture) + " while preserving the vanilla visual hat slot."
+                    : "Accepted " + traits.DisplayName + " (" + entry.ItemId + ") as a registered extra hat; it has no skill or defense effect to apply.";
+                return true;
             }
 
             Type? functionType = ResolveType("DolocTown.AgentEquipmentFunction, Assembly-CSharp");
@@ -858,12 +935,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            object?[] args = { item, manager, skillId, null };
+            object?[] args = { item, manager, traits.SkillId, null };
             object? ok = create.Invoke(null, args);
             object? function = args[3];
             if (!(ok is bool success) || !success || function == null)
             {
-                message = "function-create-failed: Could not create AgentEquipmentFunction for " + entry.ItemId + " skill=" + skillId + ".";
+                message = "function-create-failed: Could not create AgentEquipmentFunction for " + entry.ItemId + " skill=" + traits.SkillId + ".";
                 return false;
             }
 
@@ -878,10 +955,8 @@ namespace DTMAPI.GameBridge.DolocTown
             functions[item] = function;
             entry.NativeItem = item;
             entry.NativeFunction = function;
-            entry.DisplayName = displayName;
-            entry.SkillId = skillId;
             entry.Applied = true;
-            message = "Applied " + displayName + " (" + entry.ItemId + ") as attribute-only AgentEquipmentFunction skill=" + skillId + ".";
+            message = "Applied " + traits.DisplayName + " (" + entry.ItemId + ") as attribute-only AgentEquipmentFunction skill=" + traits.SkillId + (traits.DefenseBonus > 0 ? " plus extra hat defense +" + traits.DefenseBonus.ToString(CultureInfo.InvariantCulture) : string.Empty) + ".";
             return true;
         }
 
@@ -931,10 +1006,18 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static bool TryValidateExtraEquipmentSlotItem(object? item, out string displayName, out string skillId, out string reason, out string message)
+        private static bool TryValidateExtraEquipmentSlotItem(object? item, out string displayName, out string skillId, out int defenseBonus, out string reason, out string message)
         {
-            displayName = string.Empty;
-            skillId = string.Empty;
+            bool success = TryValidateExtraEquipmentSlotItem(item, out EquipmentSlotItemTraits traits, out reason, out message);
+            displayName = traits.DisplayName;
+            skillId = traits.SkillId;
+            defenseBonus = traits.DefenseBonus;
+            return success;
+        }
+
+        private static bool TryValidateExtraEquipmentSlotItem(object? item, out EquipmentSlotItemTraits traits, out string reason, out string message)
+        {
+            traits = EquipmentSlotItemTraits.Empty;
             reason = string.Empty;
             message = string.Empty;
             if (item == null)
@@ -953,7 +1036,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!isPassive && !isHat)
             {
                 reason = "not-attribute-equipment";
-                message = "Only passive attribute equipment or hats with equipment skills can be placed in DTMAPI extra slots; " + ReadStringMember(item, "name") + " is " + itemType.FullName + ".";
+                message = "Only passive attribute equipment or registered hats can be placed in DTMAPI extra slots; " + ReadStringMember(item, "name") + " is " + itemType.FullName + ".";
                 return false;
             }
 
@@ -972,15 +1055,39 @@ namespace DTMAPI.GameBridge.DolocTown
             }
 
             object? hatInfo = isHat && function != null ? ReadMember(function, "HatId_Ref") : null;
-            skillId = isHat && hatInfo != null ? ReadStringMember(hatInfo, "Skill") : ReadStringMember(function!, "Skill");
-            if (string.IsNullOrWhiteSpace(skillId))
+            string skillId = isHat && hatInfo != null ? ReadStringMember(hatInfo, "Skill") : ReadStringMember(function!, "Skill");
+            int defenseBonus = isHat && hatInfo != null ? Math.Max(0, ReadIntMember(hatInfo, "Defense", 0)) : 0;
+            if (!isHat && string.IsNullOrWhiteSpace(skillId))
             {
                 reason = "missing-skill";
-                message = (isHat ? "Hat item " : "Passive item ") + ReadStringMember(item, "name") + " has no equipment skill.";
+                message = "Passive item " + ReadStringMember(item, "name") + " has no equipment skill.";
                 return false;
             }
 
-            displayName = FirstText(proto == null ? string.Empty : ReadStringMember(proto, "Title"), ReadStringMember(item, "name"));
+            object? skillRef = hatInfo == null ? null : ReadMember(hatInfo, "Skill_Ref");
+            object? skillFunction = skillRef == null ? null : ReadMember(skillRef, "Function");
+            string skillFunctionType = skillFunction == null ? string.Empty : skillFunction.GetType().FullName ?? skillFunction.GetType().Name;
+            bool isShieldHat = isHat && EquipmentSlotShieldPolicy.IsShieldSkill(skillId, functionType, skillFunctionType);
+            int shieldMaxValue = isShieldHat ? Math.Max(0, ReadIntMember(function!, "MaxShieldValue", 0)) : 0;
+            int shieldDefend = isShieldHat && skillFunction != null ? Math.Max(0, ReadIntMember(skillFunction, "Defend", 0)) : 0;
+            if (isShieldHat && shieldMaxValue <= 0)
+            {
+                reason = "missing-shield-capacity";
+                message = "Shield hats in DTMAPI extra slots require ItemFunctionHatShield.MaxShieldValue so the protected slot can consume shield charges without clearing the vanilla hat slot; item=" + ReadStringMember(item, "name") + ".";
+                return false;
+            }
+
+            traits = new EquipmentSlotItemTraits
+            {
+                DisplayName = FirstText(proto == null ? string.Empty : ReadStringMember(proto, "Title"), ReadStringMember(item, "name")),
+                SkillId = skillId,
+                DefenseBonus = defenseBonus,
+                IsShieldHat = isShieldHat,
+                ShieldMaxValue = shieldMaxValue,
+                ShieldDefend = shieldDefend,
+                ItemFunctionTypeName = functionType,
+                SkillFunctionTypeName = skillFunctionType
+            };
             return true;
         }
 
@@ -1054,13 +1161,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            entry.ItemId = string.Empty;
-            entry.DisplayName = string.Empty;
-            entry.SkillId = string.Empty;
             entry.LastMessage = "Recovered " + display + " from DTMAPI extra slot reason=" + (reason ?? string.Empty) + ". " + placeMessage;
-            entry.Applied = false;
-            entry.NativeItem = null;
-            entry.NativeFunction = null;
+            ClearEquipmentSlotStoredItem(entry);
+            entry.LastMessage = "Recovered " + display + " from DTMAPI extra slot reason=" + (reason ?? string.Empty) + ". " + placeMessage;
             recoveredCount = 1;
             message = entry.LastMessage;
 
@@ -1119,11 +1222,15 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             EquipmentSlotsState state = ((IEquipmentSlotsApi)this).GetState(ownerId ?? string.Empty);
             IReadOnlyList<EquipmentSlotInfo> slots = GetSlots(ownerId ?? string.Empty);
+            string shieldSummary = equipmentSlotEntries.TryGetValue(ownerId ?? string.Empty, out List<EquipmentSlotRuntimeEntry>? entries)
+                ? string.Join(";", entries.Where(entry => entry.IsShieldHat || entry.ShieldMaxValue > 0).Select(entry => entry.SlotId + ":" + FirstText(entry.ItemId, "empty") + ":" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + "/" + entry.ShieldMaxValue.ToString(CultureInfo.InvariantCulture)))
+                : string.Empty;
             return "status=" + state.Status +
                 ", extra=" + state.ExtraAttributeSlots +
                 ", stored=" + state.StoredItemCount +
                 ", applied=" + state.AppliedItemCount +
                 ", pendingRecovery=" + state.PendingRecoveryCount +
+                ", shield={" + shieldSummary + "}" +
                 ", uiRendered=" + equipmentSlotsUiRendered +
                 ", ui={" + equipmentSlotsUiLastSummary + "}" +
                 ", slots=" + string.Join(";", slots.Select(slot => slot.SlotId + "=" + (slot.IsOccupied ? slot.ItemId + (slot.IsApplied ? "[applied]" : "[stored]") : "empty")));
@@ -1133,6 +1240,10 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             if (manager == null || equipmentSlotStates.Count == 0)
                 return;
+
+            int extraHatDefenseBonus = CalculateExtraHatDefenseBonus();
+            string extraHatDefenseMessage = string.Empty;
+            bool extraHatDefenseApplied = extraHatDefenseBonus > 0 && TryApplyExtraHatDefenseBonus(manager, extraHatDefenseBonus, out extraHatDefenseMessage);
 
             foreach (KeyValuePair<string, EquipmentSlotsState> entry in equipmentSlotStates.ToArray())
             {
@@ -1150,14 +1261,410 @@ namespace DTMAPI.GameBridge.DolocTown
                 state.Status = equipmentSlotsRuntimeHooksInstalled
                     ? (equipmentSlotsUiHooksInstalled || equipmentSlotsUiRendered ? "configured-experimental-player-ui-storage-stats-hook" : "configured-experimental-storage-stats-hook")
                     : state.Status;
-                state.LastRecoveryMessage = "Native equipment params refreshed; extra slots are attribute-only and preserve vanilla visual slots. Stored extra-slot item count=" + state.StoredItemCount + ", applied=" + state.AppliedItemCount + ".";
+                state.LastRecoveryMessage = "Native equipment params refreshed; extra slots are attribute-only and preserve vanilla visual slots. Stored extra-slot item count=" + state.StoredItemCount + ", applied=" + state.AppliedItemCount + ", extraHatDefense=" + extraHatDefenseBonus.ToString(CultureInfo.InvariantCulture) + ".";
                 equipmentSlotStates[entry.Key] = state;
                 if (state.StatsRefreshCount <= 1 || equipmentSlotOptions.TryGetValue(entry.Key, out EquipmentSlotsOptions? options) && options.VerboseLogging)
-                    runtime.RuntimeMonitor.Log("EquipmentSlots stats refresh owner=" + entry.Key + " extraSlots=" + state.ExtraAttributeSlots + " stored=" + state.StoredItemCount + " applied=" + state.AppliedItemCount + " preserveVanillaVisualSlots=" + state.PreserveVanillaVisualSlots + " visualsFromExtraSlots=" + state.ExtraSlotsAffectVisuals + " refreshCount=" + state.StatsRefreshCount + ".");
+                    runtime.RuntimeMonitor.Log("EquipmentSlots stats refresh owner=" + entry.Key + " extraSlots=" + state.ExtraAttributeSlots + " stored=" + state.StoredItemCount + " applied=" + state.AppliedItemCount + " extraHatDefense=" + extraHatDefenseBonus.ToString(CultureInfo.InvariantCulture) + " preserveVanillaVisualSlots=" + state.PreserveVanillaVisualSlots + " visualsFromExtraSlots=" + state.ExtraSlotsAffectVisuals + " refreshCount=" + state.StatsRefreshCount + ".");
             }
 
-            runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsUiHooksInstalled || equipmentSlotsUiRendered ? "configured-experimental-player-ui-storage-stats-hook" : "configured-experimental-storage-stats-hook", "AgentEquipmentManager.ReloadParams postfix", "Native equipment params refresh observed for DTMAPI extra-slot policy; DTMAPI owns extra-slot storage and populated recovery.");
+            runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsUiHooksInstalled || equipmentSlotsUiRendered ? "configured-experimental-player-ui-storage-stats-hook" : "configured-experimental-storage-stats-hook", "AgentEquipmentManager.ReloadParams postfix", "Native equipment params refresh observed for DTMAPI extra-slot policy; DTMAPI owns extra-slot storage, extra hat defense=" + extraHatDefenseBonus.ToString(CultureInfo.InvariantCulture) + (extraHatDefenseApplied ? ", " + extraHatDefenseMessage : string.Empty) + ", and populated recovery.");
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("AgentEquipmentManager.ReloadParams", force: true);
+        }
+
+        private int CalculateExtraHatDefenseBonus()
+        {
+            int total = 0;
+            foreach (KeyValuePair<string, List<EquipmentSlotRuntimeEntry>> pair in equipmentSlotEntries)
+            {
+                if (!equipmentSlotOptions.TryGetValue(pair.Key, out EquipmentSlotsOptions? options) || !options.Enabled || options.ExtraAttributeSlots <= 0)
+                    continue;
+
+                foreach (EquipmentSlotRuntimeEntry entry in pair.Value)
+                {
+                    if (entry.Index < 0 || entry.Index >= options.ExtraAttributeSlots)
+                        continue;
+                    if (string.IsNullOrWhiteSpace(entry.ItemId))
+                        continue;
+                    if (!TryGenerateNativeItem(entry.ItemId, 1, out object? item, out _, out _))
+                        continue;
+                    if (!TryValidateExtraEquipmentSlotItem(item, out EquipmentSlotItemTraits traits, out _, out _))
+                        continue;
+                    ApplyEquipmentSlotTraits(entry, traits, resetShieldCharge: false);
+                    total += traits.DefenseBonus;
+                }
+            }
+
+            return total;
+        }
+
+        private static bool TryApplyExtraHatDefenseBonus(object manager, int defenseBonus, out string message)
+        {
+            message = string.Empty;
+            if (defenseBonus <= 0)
+                return true;
+
+            object? ability = ReadMember(manager, "EquipmentAbility");
+            if (ability == null)
+            {
+                message = "EquipmentAbility was not available.";
+                return false;
+            }
+
+            Type abilityType = ability.GetType();
+            ConstructorInfo? ctor = abilityType.GetConstructor(new[]
+            {
+                typeof(int),
+                typeof(float),
+                typeof(bool),
+                typeof(float),
+                typeof(float),
+                typeof(int),
+                typeof(string[]),
+                typeof(float)
+            });
+            if (ctor == null)
+            {
+                message = "AgentEquipmentAbility constructor was not found.";
+                return false;
+            }
+
+            object? shieldNamesValue = ReadMember(ability, "ShieldSightOfMonsterNames");
+            string[] shieldNames = shieldNamesValue as string[] ?? (shieldNamesValue as IEnumerable<string>)?.ToArray() ?? Array.Empty<string>();
+            object updated = ctor.Invoke(new object[]
+            {
+                ReadIntMember(ability, "defence", 0) + defenseBonus,
+                ReadFloatMember(ability, "moveSpeedAddition", 0f),
+                ReadBoolMember(ability, "immuneAcidRain", false),
+                ReadFloatMember(ability, "dashCdDecrease", 0f),
+                ReadFloatMember(ability, "recoveryAdditionPercent", 0f),
+                ReadIntMember(ability, "fellCoundAdditionOre", 0),
+                shieldNames,
+                ReadFloatMember(ability, "CriticalRateChanged", 0f)
+            });
+
+            if (!SetMemberValue(manager, "EquipmentAbility", updated))
+            {
+                message = "Could not write AgentEquipmentManager.EquipmentAbility.";
+                return false;
+            }
+
+            message = "appliedExtraHatDefense=" + defenseBonus.ToString(CultureInfo.InvariantCulture);
+            return true;
+        }
+
+        internal bool HandleBodyControllerOnAttackedPrefix(object body, float attack, bool criticalRate, object position, ref bool result, ref bool isDead)
+        {
+            if (body == null || ReadBoolMember(body, "IsFaint", false))
+                return true;
+            if (NativeAgentHasShieldItem())
+                return true;
+
+            EquipmentSlotRuntimeEntry? entry = FindActiveExtraSlotShieldEntry();
+            if (entry == null)
+                return true;
+
+            int nativeDamage = CalculateNativeAgentDamage(body, attack, criticalRate);
+            if (!TryBlockExtraSlotShield(entry.OwnerId, entry.SlotId, nativeDamage, out int blockedDamage))
+            {
+                int residualDamage = Math.Max(0, nativeDamage - blockedDamage);
+                ApplyNativeAgentAttackTail(body, residualDamage, position, ref isDead, fullBlocked: false);
+                result = true;
+                return false;
+            }
+
+            ApplyNativeAgentAttackTail(body, 0, position, ref isDead, fullBlocked: true);
+            result = true;
+            return false;
+        }
+
+        internal bool TryBlockExtraSlotShield(string ownerId, string slotId, int damage, out int blockedDamage)
+        {
+            blockedDamage = 0;
+            EquipmentSlotRuntimeEntry? entry = FindEquipmentSlotEntry(ownerId, slotId);
+            if (!IsActiveExtraSlotShieldEntry(entry))
+                return false;
+
+            EquipmentSlotShieldBlockResult block = EquipmentSlotShieldPolicy.Block(damage, entry!.ShieldValue, entry.ShieldDefend);
+            blockedDamage = block.BlockedDamage;
+            entry.ShieldValue = block.RemainingShieldValue;
+
+            if (block.Broken)
+            {
+                string itemId = entry.ItemId;
+                string display = FirstText(entry.DisplayName, itemId);
+                object? manager = GetNativeAgentEquipmentManager();
+                if (manager != null)
+                    RemoveEquipmentSlotFunction(manager, entry);
+
+                ClearEquipmentSlotStoredItem(entry);
+                entry.LastMessage = "Consumed broken managed extra-slot shield " + display + " after incomingDamage=" + damage.ToString(CultureInfo.InvariantCulture) + ", blockedDamage=" + blockedDamage.ToString(CultureInfo.InvariantCulture) + ".";
+                SaveEquipmentSlotStorage(ownerId ?? string.Empty);
+                RenderEquipmentSlotsUiForCurrentAccessoriesBar("extra-slot shield broken " + slotId, force: true);
+                TryUpdateNativeAgentStatusBarHealth();
+                runtime.RuntimeMonitor.Log("EquipmentSlots shield broke owner=" + (ownerId ?? string.Empty) + " slot=" + (slotId ?? string.Empty) + " item=" + itemId + " incomingDamage=" + damage.ToString(CultureInfo.InvariantCulture) + " blockedDamage=" + blockedDamage.ToString(CultureInfo.InvariantCulture) + ".");
+                runtime.SetHookStatus("Player.EquipmentSlotsShield", "verified", "BodyController.OnAttacked managed extra-slot shield", entry.LastMessage);
+                return false;
+            }
+
+            entry.LastMessage = "Managed extra-slot shield blocked incomingDamage=" + damage.ToString(CultureInfo.InvariantCulture) + ", blockedDamage=" + blockedDamage.ToString(CultureInfo.InvariantCulture) + ", shield=" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + "/" + entry.ShieldMaxValue.ToString(CultureInfo.InvariantCulture) + ".";
+            SaveEquipmentSlotStorage(ownerId ?? string.Empty);
+            TryUpdateNativeAgentStatusBarHealth();
+            runtime.SetHookStatus("Player.EquipmentSlotsShield", "verified", "BodyController.OnAttacked managed extra-slot shield", entry.LastMessage);
+            return block.FullyBlocked;
+        }
+
+        private static bool NativeAgentHasShieldItem()
+        {
+            try
+            {
+                object? manager = GetNativeAgentEquipmentManager();
+                MethodInfo? tryGetShield = manager == null ? null : FindMethodInHierarchy(manager.GetType(), "TryGetShieldItem", 1);
+                if (tryGetShield == null)
+                    return false;
+
+                object?[] args = { null };
+                object? result = tryGetShield.Invoke(manager, args);
+                return result is bool ok && ok && args[0] != null;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static int CalculateNativeAgentDamage(object body, float attack, bool criticalRate)
+        {
+            float currentDefend = ReadFloatMember(body, "CurrentDefend", 0f);
+            Type? battleUtils = ResolveType("DolocTown.BattleUtils, Assembly-CSharp") ?? ResolveType("BattleUtils, Assembly-CSharp");
+            MethodInfo? calcDamage = battleUtils?.GetMethod("CalcDamage", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(float), typeof(float), typeof(bool) }, null)
+                ?? battleUtils?.GetMethods(BindingFlags.Public | BindingFlags.Static).FirstOrDefault(method => method.Name == "CalcDamage" && method.GetParameters().Length == 3);
+            return InvokeInt(calcDamage, null, new object?[] { attack, currentDefend, criticalRate }, Math.Max(0, Convert.ToInt32(Math.Round(attack - currentDefend))));
+        }
+
+        private void ApplyNativeAgentAttackTail(object body, int damage, object position, ref bool isDead, bool fullBlocked)
+        {
+            if (fullBlocked)
+            {
+                InvokeNativeRaiseDamageTip(0, position);
+                TryInvokeNoArg(ReadMember(body, "HatRenderer"), "Shine");
+                TryInvokeHitBack(body, position);
+                isDead = false;
+                runtime.SetHookStatus("Player.EquipmentSlotsShield", "verified", "BodyController.OnAttacked prefix", "Managed extra-slot shield fully blocked damage and skipped native health loss.");
+                return;
+            }
+
+            int residualDamage = Math.Max(0, damage);
+            InvokeNativeRaiseDamageTip(residualDamage, position);
+            InvokeNativeBroadcastGameEvent("HURT_BY_MONSTER");
+            if (InvokeNativeCostHealth(residualDamage, "MonsterAttack"))
+            {
+                isDead = true;
+            }
+            else
+            {
+                isDead = false;
+                ResetFishingStateOnNativeHit(body);
+                TryOverwriteAgentStateHit(body);
+            }
+
+            TryInvokeHitBack(body, position);
+            runtime.SetHookStatus("Player.EquipmentSlotsShield", "verified", "BodyController.OnAttacked prefix", "Managed extra-slot shield broke; applied native residual damage=" + residualDamage.ToString(CultureInfo.InvariantCulture) + " isDead=" + isDead + ".");
+        }
+
+        private static void InvokeNativeRaiseDamageTip(int value, object position)
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                MethodInfo? method = dolocApi?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(candidate => candidate.Name == "RaiseDamageTip" && candidate.GetParameters().Length == 6);
+                method?.Invoke(null, new object?[] { value, position, false, 0.7f, 50f, 1.5f });
+            }
+            catch
+            {
+            }
+        }
+
+        private static void InvokeNativeBroadcastGameEvent(string eventName)
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                Type? eventType = ResolveType("DolocTown.GameEventType, Assembly-CSharp") ?? ResolveType("GameEventType, Assembly-CSharp");
+                if (dolocApi == null || eventType == null)
+                    return;
+
+                object value = Enum.Parse(eventType, eventName);
+                MethodInfo? method = dolocApi.GetMethod("Broadcast", BindingFlags.Public | BindingFlags.Static, null, new[] { eventType }, null);
+                method?.Invoke(null, new[] { value });
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool InvokeNativeCostHealth(int damage, string reasonName)
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                Type? hurtReason = ResolveType("DolocTown.HurtReason, Assembly-CSharp") ?? ResolveType("HurtReason, Assembly-CSharp");
+                if (dolocApi == null || hurtReason == null)
+                    return false;
+
+                object reason = Enum.Parse(hurtReason, reasonName);
+                MethodInfo? method = dolocApi.GetMethod("CostHealth", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int), hurtReason }, null);
+                object? result = method?.Invoke(null, new[] { (object)Math.Max(0, damage), reason });
+                return result is bool dead && dead;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void ResetFishingStateOnNativeHit(object body)
+        {
+            try
+            {
+                object? stateManager = ReadMember(body, "StateManager");
+                object? current = stateManager == null ? null : ReadMember(stateManager, "current");
+                if (current == null || !IsTypeOrBase(current.GetType(), "DolocTown.AgentStateFishing"))
+                    return;
+
+                Type? fishingState = ResolveType("DolocTown.AgentStateFishing, Assembly-CSharp");
+                FindMethodInHierarchy(fishingState, "UnsetUiControl", 0)?.Invoke(null, null);
+                object? fishRodRenderer = ReadMember(body, "fishRodRenderer");
+                FindMethodInHierarchy(fishRodRenderer?.GetType(), "SetVisible", 1)?.Invoke(fishRodRenderer, new object?[] { false });
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TryOverwriteAgentStateHit(object body)
+        {
+            try
+            {
+                object? stateManager = ReadMember(body, "StateManager");
+                Type? stateHit = ResolveType("DolocTown.AgentStateHit, Assembly-CSharp");
+                MethodInfo? overwrite = stateManager?.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .FirstOrDefault(method => method.Name == "Overwrite" && method.IsGenericMethodDefinition && method.GetParameters().Length == 1 && method.GetParameters()[0].ParameterType == typeof(bool));
+                if (stateManager == null || stateHit == null || overwrite == null)
+                    return;
+
+                overwrite.MakeGenericMethod(stateHit).Invoke(stateManager, new object?[] { true });
+            }
+            catch
+            {
+            }
+        }
+
+        private static void TryInvokeHitBack(object body, object position)
+        {
+            try
+            {
+                FindMethodInHierarchy(body.GetType(), "HitBack", 1)?.Invoke(body, new[] { position });
+            }
+            catch
+            {
+            }
+        }
+
+        internal string ExerciseEquipmentSlotShieldForSmoke(string ownerId, string itemId, int damage)
+        {
+            ownerId ??= string.Empty;
+            itemId = FirstText(itemId, "box_hat");
+            if (!TryGenerateNativeItem(itemId, 1, out object? item, out string generateReason, out string generateMessage))
+                throw new InvalidOperationException(generateReason + ": " + generateMessage);
+            if (!TryValidateExtraEquipmentSlotItem(item, out EquipmentSlotItemTraits traits, out string validationReason, out string validationMessage))
+                throw new InvalidOperationException(validationReason + ": " + validationMessage);
+            if (!traits.IsShieldHat)
+                throw new InvalidOperationException(itemId + " is not recognized as a shield hat.");
+
+            EquipmentSlotRuntimeEntry? entry = FindActiveExtraSlotShieldEntry(ownerId);
+            if (entry == null || !string.Equals(entry.ItemId, itemId, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("No active managed shield entry for " + itemId + " owner=" + ownerId + ".");
+
+            int before = entry.ShieldValue;
+            bool blocked = TryBlockExtraSlotShield(entry.OwnerId, entry.SlotId, damage, out int blockedDamage);
+            string summary = "item=" + itemId +
+                ", slot=" + entry.SlotId +
+                ", damage=" + damage.ToString(CultureInfo.InvariantCulture) +
+                ", blocked=" + blocked +
+                ", blockedDamage=" + blockedDamage.ToString(CultureInfo.InvariantCulture) +
+                ", shield=" + before.ToString(CultureInfo.InvariantCulture) + "->" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + "/" + entry.ShieldMaxValue.ToString(CultureInfo.InvariantCulture);
+            runtime.SetHookStatus("Smoke.NewContentEquipmentSlotsShield", "verified", "Managed extra-slot shield smoke", summary);
+            return summary;
+        }
+
+        private EquipmentSlotRuntimeEntry? FindActiveExtraSlotShieldEntry(string? ownerId = null)
+        {
+            IEnumerable<KeyValuePair<string, List<EquipmentSlotRuntimeEntry>>> owners = equipmentSlotEntries;
+            if (!string.IsNullOrWhiteSpace(ownerId))
+                owners = owners.Where(pair => pair.Key.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
+
+            foreach (KeyValuePair<string, List<EquipmentSlotRuntimeEntry>> pair in owners.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!equipmentSlotOptions.TryGetValue(pair.Key, out EquipmentSlotsOptions? options) || !options.Enabled)
+                    continue;
+
+                foreach (EquipmentSlotRuntimeEntry entry in EquipmentSlotProtectedStoragePolicy.OrderTailFirst(pair.Value, entry => entry.Index))
+                {
+                    if (IsActiveExtraSlotShieldEntry(entry))
+                        return entry;
+                }
+            }
+
+            return null;
+        }
+
+        private EquipmentSlotRuntimeEntry? FindEquipmentSlotEntry(string? ownerId, string? slotId)
+        {
+            if (string.IsNullOrWhiteSpace(ownerId) || string.IsNullOrWhiteSpace(slotId))
+                return null;
+            string normalizedOwnerId = ownerId!;
+            string normalizedSlotId = slotId!;
+            return equipmentSlotEntries.TryGetValue(normalizedOwnerId, out List<EquipmentSlotRuntimeEntry>? entries)
+                ? entries.FirstOrDefault(entry => entry.SlotId.Equals(normalizedSlotId, StringComparison.OrdinalIgnoreCase))
+                : null;
+        }
+
+        private static bool IsActiveExtraSlotShieldEntry(EquipmentSlotRuntimeEntry? entry)
+        {
+            return entry != null &&
+                !string.IsNullOrWhiteSpace(entry.ItemId) &&
+                entry.ShieldValue > 0 &&
+                (entry.IsShieldHat || entry.ShieldMaxValue > 0 || string.Equals(entry.SkillId, "shield", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static void TryUpdateNativeAgentStatusBarHealth()
+        {
+            try
+            {
+                Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
+                object? uiSystem = ReadStaticMember(dolocApi, "uiSystem");
+                object? statusBar = uiSystem == null ? null : ReadMember(uiSystem, "agentStatusBar");
+                FindMethodInHierarchy(statusBar?.GetType(), "UpdateHealth", 0)?.Invoke(statusBar, null);
+            }
+            catch
+            {
+            }
+        }
+
+        private static float ReadFloatMember(object instance, string name, float fallback)
+        {
+            object? value = ReadMember(instance, name);
+            if (value == null)
+                return fallback;
+            try
+            {
+                return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return fallback;
+            }
         }
 
         internal bool RenderEquipmentSlotsUiForAccessoriesBar(object accessoriesBar, string reason)
@@ -1478,7 +1985,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (bufferCount != 1)
                 return EquipmentSlotEquipFailed(result, "split-one-item", "DTMAPI extra slots accept one equipment item at a time; split " + itemId + " to one item before placing it.");
 
-            if (!TryValidateExtraEquipmentSlotItem(bufferItem, out string displayName, out string skillId, out string validationReason, out string validationMessage))
+            if (!TryValidateExtraEquipmentSlotItem(bufferItem, out EquipmentSlotItemTraits traits, out string validationReason, out string validationMessage))
                 return EquipmentSlotEquipFailed(result, validationReason, validationMessage);
 
             EquipmentSlotsOptions options = GetEquipmentSlotsOptions(ownerId);
@@ -1495,16 +2002,15 @@ namespace DTMAPI.GameBridge.DolocTown
 
             entry.OwnerId = ownerId;
             entry.ItemId = itemId;
-            entry.DisplayName = displayName;
-            entry.SkillId = skillId;
-            entry.LastMessage = "Equipped " + displayName + " from native inventory buffer as attribute-only extra slot item.";
+            ApplyEquipmentSlotTraits(entry, traits, resetShieldCharge: true);
+            entry.LastMessage = "Equipped " + traits.DisplayName + " from native inventory buffer as attribute-only extra slot item.";
             entry.Applied = false;
             entry.NativeItem = null;
             entry.NativeFunction = null;
-            result.DisplayName = displayName;
+            result.DisplayName = traits.DisplayName;
 
             string applyMessage = TryApplyStoredEquipmentSlotFunctions(ownerId, "player UI buffer equip " + entry.SlotId)
-                ? "Applied native AgentEquipmentFunction for " + itemId + "."
+                ? BuildEquipmentSlotApplyMessage(itemId, traits)
                 : "Stored item; native AgentEquipmentFunction will apply after equipment manager is available.";
             entry.LastMessage = entry.LastMessage + " " + applyMessage;
             SaveEquipmentSlotStorage(ownerId);
@@ -1519,7 +2025,7 @@ namespace DTMAPI.GameBridge.DolocTown
             result.AfterBackpackCount = CountNativeBackpackItem(dolocApi, itemId);
             result.Success = true;
             result.Message = entry.LastMessage + " backpack=" + result.BeforeBackpackCount + "->" + result.AfterBackpackCount + ".";
-            runtime.RuntimeMonitor.Log("EquipmentSlots UI buffer equip OK owner=" + ownerId + " slot=" + entry.SlotId + " item=" + itemId + " display=" + displayName + " applied=" + entry.Applied + ".");
+            runtime.RuntimeMonitor.Log("EquipmentSlots UI buffer equip OK owner=" + ownerId + " slot=" + entry.SlotId + " item=" + itemId + " display=" + traits.DisplayName + " applied=" + entry.Applied + " shield=" + entry.IsShieldHat + "/" + entry.ShieldValue.ToString(CultureInfo.InvariantCulture) + ".");
             runtime.SetHookStatus("Player.EquipmentSlotsApi", state.Status, "AccessorySlot.SetClickCallbacks -> native inventory buffer -> AgentEquipmentFunction", result.Message);
             return result;
         }
@@ -1557,7 +2063,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     continue;
                 if (!TryGenerateNativeItem(candidate.Id, 1, out object? item, out _, out _) || item == null)
                     continue;
-                if (!TryValidateExtraEquipmentSlotItem(item, out displayName, out _, out _, out _))
+                if (!TryValidateExtraEquipmentSlotItem(item, out displayName, out _, out _, out _, out _))
                     continue;
                 itemId = candidate.Id;
                 return true;
@@ -1810,10 +2316,29 @@ namespace DTMAPI.GameBridge.DolocTown
             public string ItemId { get; set; } = string.Empty;
             public string DisplayName { get; set; } = string.Empty;
             public string SkillId { get; set; } = string.Empty;
+            public int DefenseBonus { get; set; }
+            public bool IsShieldHat { get; set; }
+            public int ShieldMaxValue { get; set; }
+            public int ShieldValue { get; set; }
+            public int ShieldDefend { get; set; }
             public bool Applied { get; set; }
             public string LastMessage { get; set; } = string.Empty;
             public object? NativeItem { get; set; }
             public object? NativeFunction { get; set; }
+        }
+
+        private sealed class EquipmentSlotItemTraits
+        {
+            public static readonly EquipmentSlotItemTraits Empty = new EquipmentSlotItemTraits();
+
+            public string DisplayName { get; set; } = string.Empty;
+            public string SkillId { get; set; } = string.Empty;
+            public int DefenseBonus { get; set; }
+            public bool IsShieldHat { get; set; }
+            public int ShieldMaxValue { get; set; }
+            public int ShieldDefend { get; set; }
+            public string ItemFunctionTypeName { get; set; } = string.Empty;
+            public string SkillFunctionTypeName { get; set; } = string.Empty;
         }
 
         private sealed class EquipmentSlotUiManifest : IManifest
@@ -1958,8 +2483,24 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember(Name = "skillId")]
             public string SkillId { get; set; } = string.Empty;
 
+            [DataMember(Name = "defenseBonus")]
+            public int DefenseBonus { get; set; }
+
+            [DataMember(Name = "isShieldHat")]
+            public bool IsShieldHat { get; set; }
+
+            [DataMember(Name = "shieldMaxValue")]
+            public int ShieldMaxValue { get; set; }
+
+            [DataMember(Name = "shieldValue")]
+            public int ShieldValue { get; set; }
+
+            [DataMember(Name = "shieldDefend")]
+            public int ShieldDefend { get; set; }
+
             [DataMember(Name = "lastMessage")]
             public string LastMessage { get; set; } = string.Empty;
         }
     }
+
 }

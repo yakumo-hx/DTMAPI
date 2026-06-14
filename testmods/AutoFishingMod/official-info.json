@@ -2,7 +2,7 @@
   "name": "DTMAPI自动钓鱼",
   "author": "Yuuka",
   "version": "1.0.0",
-  "description": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。",
+  "description": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。\n游戏内默认F6开启。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "DTMAPI Auto Fishing"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。",
-    "tchinese": "依賴 DTMAPI。\n自動釣魚功能 Mod，預設自動拋竿、完成小遊戲、收竿循環。\n支援額外配置。",
-    "english": "Requires DTMAPI.\nAn auto-fishing functional mod. By default it automatically casts, completes the minigame, reels in, and loops.\nSupports extra configuration."
+    "schinese": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。\n游戏内默认F6开启。",
+    "tchinese": "依賴 DTMAPI。\n自動釣魚功能 Mod，預設自動拋竿、完成小遊戲、收竿循環。\n支援額外配置。\n遊戲內預設 F6 開啟。",
+    "english": "Requires DTMAPI.\nAn auto-fishing functional mod. By default it automatically casts, completes the minigame, reels in, and loops.\nSupports extra configuration.\nDefault in-game toggle: F6."
   }
 }

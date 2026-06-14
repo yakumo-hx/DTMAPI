@@ -55,6 +55,209 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        private string CaptureEquipmentHatTableForSmoke()
+        {
+            try
+            {
+                EquipmentHatTableDiagnostic diagnostic = BuildEquipmentHatTableDiagnosticForSmoke();
+                string evidenceDir = EnsureNewContentEvidenceDir();
+                string jsonPath = Path.Combine(evidenceDir, "equipment-hat-table.json");
+                string csvPath = Path.Combine(evidenceDir, "equipment-hat-table.csv");
+
+                using (FileStream stream = File.Create(jsonPath))
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(EquipmentHatTableDiagnostic));
+                    serializer.WriteObject(stream, diagnostic);
+                }
+
+                File.WriteAllText(csvPath, BuildEquipmentHatTableCsv(diagnostic));
+
+                string summary = "hats=" + diagnostic.HatCount.ToString(CultureInfo.InvariantCulture) +
+                    ", itemHatRows=" + diagnostic.ItemHatCount.ToString(CultureInfo.InvariantCulture) +
+                    ", hatsWithoutItems=" + diagnostic.HatsWithoutItemRows.ToString(CultureInfo.InvariantCulture) +
+                    ", itemRowsWithoutHatInfo=" + diagnostic.ItemRowsWithoutHatInfo.ToString(CultureInfo.InvariantCulture) +
+                    ", json=" + jsonPath +
+                    ", csv=" + csvPath;
+                string status = diagnostic.HatCount > 0 ? "verified" : "failed";
+                runtime.RuntimeMonitor.Log("Smoke equipment hat table diagnostic " + status + " " + summary + ".");
+                runtime.SetHookStatus(
+                    "Smoke.EquipmentHatTable",
+                    status,
+                    "DolocConfig.Tables.TbHat/TbItem read-only enumeration",
+                    summary);
+                return summary;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Equipment hat table diagnostic failed.", ex.ToString());
+                runtime.SetHookStatus(
+                    "Smoke.EquipmentHatTable",
+                    "failed",
+                    "DolocConfig.Tables.TbHat/TbItem read-only enumeration",
+                    ex.GetType().Name + ": " + ex.Message);
+                return "failed:" + ex.GetType().Name + ":" + ex.Message;
+            }
+        }
+
+        private EquipmentHatTableDiagnostic BuildEquipmentHatTableDiagnosticForSmoke()
+        {
+            patcher ??= new HarmonyReflectionPatcher(runtime);
+            Type? dolocConfig = patcher.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            object? tables = dolocConfig == null ? null : ReadStaticMember(dolocConfig, "Tables");
+            object? tbHat = tables == null ? null : ReadMember(tables, "TbHat");
+            object? tbItem = tables == null ? null : ReadMember(tables, "TbItem");
+            object? hatList = tbHat == null ? null : ReadMember(tbHat, "DataList");
+            object? itemList = tbItem == null ? null : ReadMember(tbItem, "DataList");
+
+            var itemRows = new List<EquipmentHatItemDiagnosticRow>();
+            var itemRowsByHatId = new Dictionary<string, List<EquipmentHatItemDiagnosticRow>>(StringComparer.OrdinalIgnoreCase);
+            foreach (object proto in EnumerateObjects(itemList))
+            {
+                string itemId = ReadAnyStringMember(proto, string.Empty, "Id", "id");
+                object? function = ReadAnyMember(proto, "Function", "function");
+                string functionType = function?.GetType().Name ?? "none";
+                if (functionType.IndexOf("ItemFunctionHat", StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                string hatId = function == null ? string.Empty : ReadAnyStringMember(function, string.Empty, "HatId", "hatId", "hat_id");
+                object? hatIdRef = function == null ? null : ReadAnyMember(function, "HatId_Ref", "hatId_Ref", "HatIdRef");
+                var itemRow = new EquipmentHatItemDiagnosticRow
+                {
+                    ItemId = itemId,
+                    FunctionType = functionType,
+                    HatId = hatId,
+                    HatIdRefResolved = hatIdRef != null
+                };
+                itemRows.Add(itemRow);
+
+                if (string.IsNullOrWhiteSpace(hatId))
+                    continue;
+                if (!itemRowsByHatId.TryGetValue(hatId, out List<EquipmentHatItemDiagnosticRow>? rows))
+                {
+                    rows = new List<EquipmentHatItemDiagnosticRow>();
+                    itemRowsByHatId[hatId] = rows;
+                }
+                rows.Add(itemRow);
+            }
+
+            var hatRows = new List<EquipmentHatDiagnosticRow>();
+            foreach (object hatInfo in EnumerateObjects(hatList))
+            {
+                string hatId = ReadAnyStringMember(hatInfo, string.Empty, "Id", "id");
+                string skill = ReadAnyStringMember(hatInfo, string.Empty, "Skill", "skill");
+                int defense = ReadAnyIntMember(hatInfo, 0, "Defense", "defense");
+                object? skillRef = ReadAnyMember(hatInfo, "Skill_Ref", "skill_ref", "SkillRef");
+                object? skillFunction = skillRef == null ? null : ReadAnyMember(skillRef, "Function", "function");
+                var row = new EquipmentHatDiagnosticRow
+                {
+                    HatInfoId = hatId,
+                    Skill = skill,
+                    Defense = defense,
+                    SkillRefId = skillRef == null ? string.Empty : ReadAnyStringMember(skillRef, string.Empty, "Id", "id"),
+                    SkillRefGearEntry = skillRef == null ? string.Empty : (ReadAnyMember(skillRef, "GearEntry", "gearEntry", "gear_entry")?.ToString() ?? string.Empty),
+                    SkillRefFunctionType = skillFunction?.GetType().Name ?? string.Empty,
+                    ItemRows = itemRowsByHatId.TryGetValue(hatId, out List<EquipmentHatItemDiagnosticRow>? rows)
+                        ? rows.OrderBy(item => item.ItemId, StringComparer.OrdinalIgnoreCase).ToList()
+                        : new List<EquipmentHatItemDiagnosticRow>()
+                };
+                hatRows.Add(row);
+            }
+
+            HashSet<string> knownHatIds = new HashSet<string>(
+                hatRows.Select(row => row.HatInfoId).Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+            List<EquipmentHatItemDiagnosticRow> orphanItemRows = itemRows
+                .Where(row => string.IsNullOrWhiteSpace(row.HatId) || !knownHatIds.Contains(row.HatId))
+                .OrderBy(row => row.ItemId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            hatRows = hatRows
+                .OrderBy(row => row.HatInfoId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return new EquipmentHatTableDiagnostic
+            {
+                CapturedAt = DateTimeOffset.Now.ToString("o", CultureInfo.InvariantCulture),
+                Source = "DolocConfig.Tables.TbHat.DataList + DolocConfig.Tables.TbItem.DataList",
+                HatCount = hatRows.Count,
+                ItemHatCount = itemRows.Count,
+                HatsWithoutItemRows = hatRows.Count(row => row.ItemRows.Count == 0),
+                ItemRowsWithoutHatInfo = orphanItemRows.Count,
+                Hats = hatRows,
+                ItemRowsWithoutHatInfoDetails = orphanItemRows
+            };
+        }
+
+        private static string BuildEquipmentHatTableCsv(EquipmentHatTableDiagnostic diagnostic)
+        {
+            var lines = new List<string>
+            {
+                "HatInfo.Id,Skill,Defense,Skill_Ref.Id,Skill_Ref.GearEntry,Skill_Ref.Function.GetType().Name,TbItem[itemId],TbItem.Function.GetType().Name,ItemFunctionHatBase.HatId,HatId_Ref!=null"
+            };
+
+            foreach (EquipmentHatDiagnosticRow hat in diagnostic.Hats)
+            {
+                if (hat.ItemRows.Count == 0)
+                {
+                    lines.Add(string.Join(",", new[]
+                    {
+                        CsvCell(hat.HatInfoId),
+                        CsvCell(hat.Skill),
+                        hat.Defense.ToString(CultureInfo.InvariantCulture),
+                        CsvCell(hat.SkillRefId),
+                        CsvCell(hat.SkillRefGearEntry),
+                        CsvCell(hat.SkillRefFunctionType),
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty
+                    }));
+                    continue;
+                }
+
+                foreach (EquipmentHatItemDiagnosticRow item in hat.ItemRows)
+                {
+                    lines.Add(string.Join(",", new[]
+                    {
+                        CsvCell(hat.HatInfoId),
+                        CsvCell(hat.Skill),
+                        hat.Defense.ToString(CultureInfo.InvariantCulture),
+                        CsvCell(hat.SkillRefId),
+                        CsvCell(hat.SkillRefGearEntry),
+                        CsvCell(hat.SkillRefFunctionType),
+                        CsvCell(item.ItemId),
+                        CsvCell(item.FunctionType),
+                        CsvCell(item.HatId),
+                        item.HatIdRefResolved ? "true" : "false"
+                    }));
+                }
+            }
+
+            foreach (EquipmentHatItemDiagnosticRow item in diagnostic.ItemRowsWithoutHatInfoDetails)
+            {
+                lines.Add(string.Join(",", new[]
+                {
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    CsvCell(item.ItemId),
+                    CsvCell(item.FunctionType),
+                    CsvCell(item.HatId),
+                    item.HatIdRefResolved ? "true" : "false"
+                }));
+            }
+
+            return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+        }
+
+        private static string CsvCell(string value)
+        {
+            return "\"" + (value ?? string.Empty).Replace("\"", "\"\"") + "\"";
+        }
+
         private SmokeAttemptResult TryExerciseNewContentApisForSmoke(bool mineOnly)
         {
             object? transientMine = null;
@@ -304,6 +507,8 @@ namespace DTMAPI.GameBridge.DolocTown
             if (experimentalApi == null)
                 throw new InvalidOperationException("Experimental GameBridge API was not registered.");
 
+            string hatTableSummary = CaptureEquipmentHatTableForSmoke();
+
             var owner = new ManifestModel
             {
                 Name = "DTMAPI More Equipment Slots",
@@ -347,6 +552,44 @@ namespace DTMAPI.GameBridge.DolocTown
                 throw new InvalidOperationException("Could not recover DTMAPI hat extra slot. " + hatRecover.Message);
             string nativeHatAfterRecover = GetNativeAgentEquipmentItemId("hatItem");
 
+            int defenseBeforeMushroomHat = GetNativeAgentEquipmentDefence();
+            InventoryGiveResult mushroomHatGive = experimentalApi.GiveItem(CreateSmokeManifest(), "mushroom_hat", 1);
+            if (!mushroomHatGive.Success)
+                throw new InvalidOperationException("Could not give mushroom_hat for equipment-slot defense hat smoke. " + mushroomHatGive.Message);
+
+            EquipmentSlotEquipResult mushroomHatEquip = experimentalApi.EquipExtraSlot(owner, string.Empty, "mushroom_hat");
+            if (!mushroomHatEquip.Success)
+                throw new InvalidOperationException("Could not equip DTMAPI extra slot with mushroom_hat. " + mushroomHatEquip.Message);
+            int defenseAfterMushroomHat = GetNativeAgentEquipmentDefence();
+            string nativeHatAfterMushroomEquip = GetNativeAgentEquipmentItemId("hatItem");
+            if (!string.Equals(nativeHatBefore, nativeHatAfterMushroomEquip, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("DTMAPI extra-slot mushroom_hat changed the native hat visual slot. before=" + nativeHatBefore + ", after=" + nativeHatAfterMushroomEquip);
+            if (defenseAfterMushroomHat <= defenseBeforeMushroomHat)
+                throw new InvalidOperationException("DTMAPI extra-slot mushroom_hat did not apply native hat defense. defence=" + defenseBeforeMushroomHat + "->" + defenseAfterMushroomHat);
+
+            EquipmentSlotEquipResult mushroomHatRecover = experimentalApi.UnequipExtraSlot(owner, mushroomHatEquip.SlotId, "new-content smoke mushroom hat recovery");
+            if (!mushroomHatRecover.Success)
+                throw new InvalidOperationException("Could not recover DTMAPI mushroom_hat extra slot. " + mushroomHatRecover.Message);
+            int defenseAfterMushroomRecover = GetNativeAgentEquipmentDefence();
+            if (defenseAfterMushroomRecover >= defenseAfterMushroomHat)
+                throw new InvalidOperationException("DTMAPI extra-slot mushroom_hat defense did not drop after recovery. defence=" + defenseBeforeMushroomHat + "->" + defenseAfterMushroomHat + "->" + defenseAfterMushroomRecover);
+
+            InventoryGiveResult shieldHatGive = experimentalApi.GiveItem(CreateSmokeManifest(), "box_hat", 1);
+            if (!shieldHatGive.Success)
+                throw new InvalidOperationException("Could not give box_hat for equipment-slot shield hat smoke. " + shieldHatGive.Message);
+
+            EquipmentSlotEquipResult shieldHatEquip = experimentalApi.EquipExtraSlot(owner, string.Empty, "box_hat");
+            if (!shieldHatEquip.Success)
+                throw new InvalidOperationException("Could not equip DTMAPI extra slot with box_hat. " + shieldHatEquip.Message);
+            string nativeHatAfterShieldEquip = GetNativeAgentEquipmentItemId("hatItem");
+            if (!string.Equals(nativeHatBefore, nativeHatAfterShieldEquip, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("DTMAPI extra-slot box_hat changed the native hat visual slot. before=" + nativeHatBefore + ", after=" + nativeHatAfterShieldEquip);
+
+            string shieldSmokeSummary = experimentalApi.ExerciseEquipmentSlotShieldForSmoke(owner.UniqueID, "box_hat", damage: 1);
+            EquipmentSlotEquipResult shieldHatRecover = experimentalApi.UnequipExtraSlot(owner, shieldHatEquip.SlotId, "new-content smoke shield hat recovery");
+            if (!shieldHatRecover.Success)
+                throw new InvalidOperationException("Could not recover DTMAPI box_hat extra slot. " + shieldHatRecover.Message);
+
             IReadOnlyList<EquipmentSlotInfo> recoveredSlots = experimentalApi.GetSlots(owner.UniqueID);
             string summary = "passiveGive=" + passiveGive.ItemId + " " + passiveGive.BeforeCount + "->" + passiveGive.AfterCount +
                 ", beforeSlots=" + beforeSlots.Count +
@@ -364,10 +607,23 @@ namespace DTMAPI.GameBridge.DolocTown
                 ", hatUi={" + hatUiSummary + "}" +
                 ", hatRecover=" + hatRecover.RecoveredCount +
                 ", hatRecoverBackpack=" + hatRecover.BeforeBackpackCount + "->" + hatRecover.AfterBackpackCount +
+                ", mushroomHatGive=" + mushroomHatGive.ItemId + " " + mushroomHatGive.BeforeCount + "->" + mushroomHatGive.AfterCount +
+                ", mushroomHatSlot=" + mushroomHatEquip.SlotId +
+                ", mushroomHatBackpack=" + mushroomHatEquip.BeforeBackpackCount + "->" + mushroomHatEquip.AfterBackpackCount +
+                ", mushroomHatDefence=" + defenseBeforeMushroomHat + "->" + defenseAfterMushroomHat + "->" + defenseAfterMushroomRecover +
+                ", mushroomHatRecover=" + mushroomHatRecover.RecoveredCount +
+                ", mushroomHatRecoverBackpack=" + mushroomHatRecover.BeforeBackpackCount + "->" + mushroomHatRecover.AfterBackpackCount +
+                ", shieldHatGive=" + shieldHatGive.ItemId + " " + shieldHatGive.BeforeCount + "->" + shieldHatGive.AfterCount +
+                ", shieldHatSlot=" + shieldHatEquip.SlotId +
+                ", shieldHatBackpack=" + shieldHatEquip.BeforeBackpackCount + "->" + shieldHatEquip.AfterBackpackCount +
+                ", shieldSmoke={" + shieldSmokeSummary + "}" +
+                ", shieldHatRecover=" + shieldHatRecover.RecoveredCount +
+                ", shieldHatRecoverBackpack=" + shieldHatRecover.BeforeBackpackCount + "->" + shieldHatRecover.AfterBackpackCount +
                 ", recoveredStored=" + recoveredSlots.Count(slot => slot.IsOccupied) +
+                ", hatTable={" + hatTableSummary + "}" +
                 ", state={" + experimentalApi.GetEquipmentSlotsStateSummaryForSmoke(owner.UniqueID) + "}";
             runtime.RuntimeMonitor.Log("Smoke exercise NewContentEquipmentSlots OK " + summary);
-            runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "verified", "IEquipmentSlotsApi passive+hat EquipExtraSlot/UnequipExtraSlot", summary);
+            runtime.SetHookStatus("Smoke.NewContentEquipmentSlots", "verified", "IEquipmentSlotsApi passive+hat/defense-hat EquipExtraSlot/UnequipExtraSlot", summary);
             return summary;
         }
 
@@ -387,6 +643,21 @@ namespace DTMAPI.GameBridge.DolocTown
             catch
             {
                 return "unknown";
+            }
+        }
+
+        private int GetNativeAgentEquipmentDefence()
+        {
+            try
+            {
+                patcher ??= new HarmonyReflectionPatcher(runtime);
+                Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+                object? ability = ReadStaticMember(dolocApi, "AgentEquipmentParams");
+                return ability == null ? -1 : ReadIntMember(ability, "defence", -1);
+            }
+            catch
+            {
+                return -1;
             }
         }
 
@@ -1062,6 +1333,40 @@ namespace DTMAPI.GameBridge.DolocTown
                 ? "none"
                 : ReadIntMember(inventory, "filledCount", 0) + "/" + ReadIntMember(inventory, "capacity", 0) + "/line=" + ReadIntMember(equipment, "lineCapacity", 0);
             return name + "/" + (equipment.GetType().FullName ?? equipment.GetType().Name) + "/index=" + index + "/anchor=" + anchorText + "/cover=" + coverText + "/scene=" + sceneText + "/function=" + (function == null ? "unknown" : function.GetType().Name) + "/rendererScale=" + scaleText + "/storage=" + storageText;
+        }
+
+        [DataContract]
+        private sealed class EquipmentHatTableDiagnostic
+        {
+            [DataMember(Order = 0)] public string CapturedAt { get; set; } = string.Empty;
+            [DataMember(Order = 1)] public string Source { get; set; } = string.Empty;
+            [DataMember(Order = 2)] public int HatCount { get; set; }
+            [DataMember(Order = 3)] public int ItemHatCount { get; set; }
+            [DataMember(Order = 4)] public int HatsWithoutItemRows { get; set; }
+            [DataMember(Order = 5)] public int ItemRowsWithoutHatInfo { get; set; }
+            [DataMember(Order = 6)] public List<EquipmentHatDiagnosticRow> Hats { get; set; } = new List<EquipmentHatDiagnosticRow>();
+            [DataMember(Order = 7)] public List<EquipmentHatItemDiagnosticRow> ItemRowsWithoutHatInfoDetails { get; set; } = new List<EquipmentHatItemDiagnosticRow>();
+        }
+
+        [DataContract]
+        private sealed class EquipmentHatDiagnosticRow
+        {
+            [DataMember(Order = 0)] public string HatInfoId { get; set; } = string.Empty;
+            [DataMember(Order = 1)] public string Skill { get; set; } = string.Empty;
+            [DataMember(Order = 2)] public int Defense { get; set; }
+            [DataMember(Order = 3)] public string SkillRefId { get; set; } = string.Empty;
+            [DataMember(Order = 4)] public string SkillRefGearEntry { get; set; } = string.Empty;
+            [DataMember(Order = 5)] public string SkillRefFunctionType { get; set; } = string.Empty;
+            [DataMember(Order = 6)] public List<EquipmentHatItemDiagnosticRow> ItemRows { get; set; } = new List<EquipmentHatItemDiagnosticRow>();
+        }
+
+        [DataContract]
+        private sealed class EquipmentHatItemDiagnosticRow
+        {
+            [DataMember(Order = 0)] public string ItemId { get; set; } = string.Empty;
+            [DataMember(Order = 1)] public string FunctionType { get; set; } = string.Empty;
+            [DataMember(Order = 2)] public string HatId { get; set; } = string.Empty;
+            [DataMember(Order = 3)] public bool HatIdRefResolved { get; set; }
         }
     }
 }

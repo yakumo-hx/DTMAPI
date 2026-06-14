@@ -113,6 +113,24 @@ if (-not $ModsOnly) {
     if ([string]::IsNullOrWhiteSpace($runtimeDescription)) {
         $runtimeDescription = [string]$runtimeMetadata.gameDescription
     }
+    $runtimeLocalizedDescription = [ordered]@{
+        schinese = $runtimeDescription
+        tchinese = $runtimeDescription
+        english = $runtimeDescription
+    }
+    foreach ($localizedPropertyName in @('localizedDescription', 'localized_description')) {
+        if ($runtimeMetadata.PSObject.Properties[$localizedPropertyName]) {
+            $localizedSource = $runtimeMetadata.$localizedPropertyName
+            foreach ($language in @('schinese', 'tchinese', 'english')) {
+                if ($localizedSource.PSObject.Properties[$language]) {
+                    $localizedValue = [string]$localizedSource.$language
+                    if (-not [string]::IsNullOrWhiteSpace($localizedValue)) {
+                        $runtimeLocalizedDescription[$language] = $localizedValue
+                    }
+                }
+            }
+        }
+    }
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'info.json') -Value ([ordered]@{
         name = 'DTMAPI'
         author = 'Yuuka'
@@ -120,11 +138,7 @@ if (-not $ModsOnly) {
         description = $runtimeDescription
         steamDescription = $runtimeDescription
         tags = @('Mod', 'Framework', 'DTMAPI', 'Chinese')
-        localized_description = [ordered]@{
-            schinese = $runtimeDescription
-            tchinese = $runtimeDescription
-            english = $runtimeDescription
-        }
+        localized_description = $runtimeLocalizedDescription
     })
 }
 

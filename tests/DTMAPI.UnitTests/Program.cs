@@ -65,6 +65,7 @@ namespace DTMAPI.UnitTests
                 StrongPlantingGunNormalizesToThreeSlotContract();
                 SaveSlotsNormalizeToFixedTwelveContract();
                 EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery();
+                EquipmentSlotShieldPolicyMirrorsNativeShieldHat();
                 FishingAutomationOptionsNormalizeNativeStageDefaults();
                 FishingAutomationBiteActionPrecedence();
                 FishingAutomationMiniGameInputDecisionMatchesNativeBars();
@@ -2061,6 +2062,20 @@ namespace DTMAPI.UnitTests
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(2, "Yuuka", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string archiveReason) && archiveReason.Contains("archive-index-mismatch"), "Protected storage should reject mismatched archive slots.");
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Other", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string playerReason) && playerReason.Contains("player-name-mismatch"), "Protected storage should reject clearly mismatched player identities.");
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Yuuka", string.Empty, 1000, 3, "Yuuka", string.Empty, 120, out string clockReason) && clockReason.Contains("total-game-seconds-regressed"), "Protected storage should reject strong save-clock regressions.");
+        }
+
+        private static void EquipmentSlotShieldPolicyMirrorsNativeShieldHat()
+        {
+            Assert(EquipmentSlotShieldPolicy.IsShieldSkill("shield", "DolocTown.ItemFunctionHatShield", "DolocTown.AgentEquipmentFuncProtoShield"), "Equipment-slot shield policy should recognize native shield hats by skill/function.");
+
+            EquipmentSlotShieldBlockResult defended = EquipmentSlotShieldPolicy.Block(incomingDamage: 2, shieldValue: 10, shieldDefend: 3);
+            Assert(defended.FullyBlocked && !defended.Broken && defended.BlockedDamage == 0 && defended.RemainingShieldValue == 10, "Shield Defend should fully block small hits without consuming shield value.");
+
+            EquipmentSlotShieldBlockResult blocked = EquipmentSlotShieldPolicy.Block(incomingDamage: 10, shieldValue: 20, shieldDefend: 2);
+            Assert(blocked.FullyBlocked && !blocked.Broken && blocked.BlockedDamage == 8 && blocked.RemainingShieldValue == 12, "Shield should consume damage after native Defend when it fully blocks the hit.");
+
+            EquipmentSlotShieldBlockResult broken = EquipmentSlotShieldPolicy.Block(incomingDamage: 10, shieldValue: 5, shieldDefend: 2);
+            Assert(!broken.FullyBlocked && broken.Broken && broken.BlockedDamage == 5 && broken.RemainingShieldValue == 0, "Broken shields should report only the shield value as blocked damage, matching native residual damage semantics.");
         }
 
         private static void FishingAutomationBiteActionPrecedence()

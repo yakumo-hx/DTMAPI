@@ -163,6 +163,29 @@ namespace DTMAPI.GameBridge.DolocTown
             SafeCallback("Workshop.NotifyModListChanged", () => Runtime?.NotifyWorkshopModListChanged());
         }
 
+        public static void ModDataConstructorPostfix(object __instance, object __0)
+        {
+            SafePostfix("Workshop.LocalUploadPlan.Display", () => Bridge?.TryMarkDtmapiLocalUploadData(__instance, __0));
+        }
+
+        public static bool SteamWorkshopUploaderResolveUploadPlanPrefix(object __instance, object __0, object __1)
+        {
+            try
+            {
+                return Bridge?.TryResolveDtmapiUploadPlanIfNativeBusy(__instance, __0, __1) ?? true;
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("Workshop.LocalUploadPlanBusyFallback.ResolveUploadPlanPrefix", ex);
+                return true;
+            }
+        }
+
+        public static void SteamWorkshopUploaderResolveUploadPlanPostfix(object __instance, object __0, object __1)
+        {
+            SafePostfix("Workshop.LocalUploadPlanKnownIdFallback.TrackResolveUploadPlan", () => Bridge?.TrackDtmapiUploadPlanFallbackAfterNativeQuery(__instance, __0, __1));
+        }
+
         public static void ItemTitlePostfix(object __instance, ref string __result)
         {
             string original = __result;
@@ -600,6 +623,19 @@ namespace DTMAPI.GameBridge.DolocTown
         public static void AccessoriesBarInitPostfix(object __instance)
         {
             SafePostfix("EquipmentSlots.AccessoriesBar.Init", () => Bridge?.ExperimentalApi?.RenderEquipmentSlotsUiForAccessoriesBar(__instance, "AccessoriesBar.__Init"));
+        }
+
+        public static bool BodyControllerOnAttackedPrefix(object __instance, float __0, bool __1, object __2, ref bool __result, ref bool __3)
+        {
+            try
+            {
+                return Bridge?.ExperimentalApi?.HandleBodyControllerOnAttackedPrefix(__instance, __0, __1, __2, ref __result, ref __3) ?? true;
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("EquipmentSlots.BodyController.OnAttacked", ex);
+                return true;
+            }
         }
 
         public static void AccessoriesBarOnStartShowPostfix(object __instance)

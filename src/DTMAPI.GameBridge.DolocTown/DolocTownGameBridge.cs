@@ -139,6 +139,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool saveSavedPatched;
         private bool returnHomePatched;
         private bool workshopReloadPatched;
+        private bool workshopLocalUploadDisplayPatched;
+        private bool workshopUploadPlanBusyFallbackPatched;
+        private bool workshopUploadPlanKnownIdFallbackPatched;
+        private readonly List<PendingWorkshopUploadPlanResolution> pendingWorkshopUploadPlanResolutions = new List<PendingWorkshopUploadPlanResolution>();
         private bool actionSpeedToolEnterPatched => actionSpeedFeature?.HookBridge.ToolEnterPatched == true;
         private bool actionSpeedToolExitPatched => agentStateLifecycleHooks?.ToolExitPatched == true;
         private bool actionSpeedInteractEnterPatched => actionSpeedFeature?.HookBridge.InteractEnterPatched == true;
@@ -180,6 +184,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentBuilderCreateIndicatorPatched;
         private bool equipmentBuilderTurnIndicatorPatched;
         private bool equipmentSlotsReloadParamsPatched;
+        private bool equipmentSlotsShieldAttackPatched;
         private bool equipmentSlotsAccessoriesInitPatched;
         private bool equipmentSlotsAccessoriesStartShowPatched;
         private bool advancedCreativeCostEnergyPatched;
@@ -310,6 +315,7 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
             experimentalApi?.UpdateRuntimeAutomation(forceMachineProductionPoll);
+            ProcessPendingDtmapiUploadPlanFallbacks();
             UpdateGameBridgeFeatures();
         }
 
@@ -675,6 +681,28 @@ namespace DTMAPI.GameBridge.DolocTown
             Summary
         }
 
+        private sealed class PendingWorkshopUploadPlanResolution
+        {
+            public PendingWorkshopUploadPlanResolution(object uploader, object callback, ulong workshopId, string modId, DateTimeOffset startedAtUtc)
+            {
+                Uploader = uploader;
+                Callback = callback;
+                WorkshopId = workshopId;
+                ModId = modId;
+                StartedAtUtc = startedAtUtc;
+            }
+
+            public object Uploader { get; }
+
+            public object Callback { get; }
+
+            public ulong WorkshopId { get; }
+
+            public string ModId { get; }
+
+            public DateTimeOffset StartedAtUtc { get; }
+        }
+
         private void PublishCustomEntityRegistryContractHookStatuses()
         {
             runtime.SetHookStatus(
@@ -765,6 +793,302 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        internal void TryMarkDtmapiLocalUploadData(object? modData, object? modInfo)
+        {
+            try
+            {
+                if (modData == null || modInfo == null)
+                    return;
+
+                object? source = ReadInstanceMember(modInfo, "source");
+                if (!IsOfficialLocalModSource(source))
+                    return;
+
+                ulong workshopId = ConvertToUInt64(ReadInstanceMember(modInfo, "workshopId"));
+                if (workshopId == 0)
+                    return;
+
+                string? rootPath = Convert.ToString(ReadInstanceMember(modInfo, "rootPath"), CultureInfo.InvariantCulture);
+                if (string.IsNullOrWhiteSpace(rootPath) || !IsDtmapiGeneratedLocalModRoot(rootPath))
+                    return;
+
+                SetInstanceMember(modData, "canUpdateWorkshopItem", true);
+                string modId = Convert.ToString(ReadInstanceMember(modInfo, "id"), CultureInfo.InvariantCulture) ?? "<unknown>";
+                runtime.SetHookStatus(
+                    "Workshop.LocalUploadPlan",
+                    "verified",
+                    "Harmony Postfix: ModData..ctor",
+                    "DTMAPI-generated local package " + modId + " displays Update from workshop.json workshopId=" + workshopId.ToString(CultureInfo.InvariantCulture) + "; native Steam ResolveLocalModUploadPlan still owns upload execution.");
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to mark DTMAPI local Workshop upload display; native upload resolver is unchanged.", ex.ToString());
+            }
+        }
+
+        internal bool TryResolveDtmapiUploadPlanIfNativeBusy(object? uploader, object? modInfo, object? onResolved)
+        {
+            try
+            {
+                if (uploader == null || modInfo == null || onResolved == null)
+                    return true;
+
+                if (!TryReadDtmapiKnownLocalWorkshopRequest(modInfo, out ulong workshopId, out string modId, out _))
+                    return true;
+
+                bool isBusy = ConvertToBoolean(ReadInstanceMember(uploader, "IsBusy")) ||
+                    ConvertToBoolean(ReadInstanceMember(uploader, "IsUploading")) ||
+                    ConvertToBoolean(ReadInstanceMember(uploader, "IsResolvingUploadPlan"));
+                if (!isBusy)
+                    return true;
+
+                object? plan = CreateNativeWorkshopUploadPlan("Update", workshopId);
+                if (plan == null)
+                    return true;
+
+                InvokeWorkshopUploadPlanCallback(onResolved, plan);
+
+                runtime.SetHookStatus(
+                    "Workshop.LocalUploadPlanBusyFallback",
+                    "busy-fallback",
+                    "Harmony Prefix: SteamWorkshopUploader.ResolveUploadPlan",
+                    "Native uploader was busy while resolving " + modId + "; returned an Update plan for workshopId=" + workshopId.ToString(CultureInfo.InvariantCulture) +
+                    ". Upload execution still uses native SteamWorkshopUploader.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to complete DTMAPI local Workshop upload-plan busy fallback; native resolver will continue.", ex.ToString());
+                return true;
+            }
+        }
+
+        internal void TrackDtmapiUploadPlanFallbackAfterNativeQuery(object? uploader, object? modInfo, object? onResolved)
+        {
+            try
+            {
+                if (uploader == null || modInfo == null || onResolved == null)
+                    return;
+
+                if (!TryReadDtmapiKnownLocalWorkshopRequest(modInfo, out ulong workshopId, out string modId, out _))
+                    return;
+
+                if (!ConvertToBoolean(ReadInstanceMember(uploader, "IsResolvingUploadPlan")))
+                    return;
+
+                object? currentCallback = ReadInstanceMember(uploader, "resolveUploadPlanCallback");
+                if (currentCallback == null || !ReferenceEquals(currentCallback, onResolved))
+                    return;
+
+                ulong pendingWorkshopId = ConvertToUInt64(ReadInstanceMember(uploader, "pendingWorkshopId"));
+                if (pendingWorkshopId != workshopId)
+                    return;
+
+                for (int i = pendingWorkshopUploadPlanResolutions.Count - 1; i >= 0; i--)
+                {
+                    PendingWorkshopUploadPlanResolution existing = pendingWorkshopUploadPlanResolutions[i];
+                    if (ReferenceEquals(existing.Uploader, uploader) && ReferenceEquals(existing.Callback, onResolved))
+                    {
+                        pendingWorkshopUploadPlanResolutions[i] = new PendingWorkshopUploadPlanResolution(uploader, onResolved, workshopId, modId, DateTimeOffset.UtcNow);
+                        return;
+                    }
+                }
+
+                pendingWorkshopUploadPlanResolutions.Add(new PendingWorkshopUploadPlanResolution(uploader, onResolved, workshopId, modId, DateTimeOffset.UtcNow));
+                runtime.SetHookStatus(
+                    "Workshop.LocalUploadPlanKnownIdFallback",
+                    "watching",
+                    "Harmony Postfix: SteamWorkshopUploader.ResolveUploadPlan",
+                    "Native Steam details query started for DTMAPI-generated local package " + modId + "; fallback will only use workshop.json id=" + workshopId.ToString(CultureInfo.InvariantCulture) + " if the same callback remains unresolved after a short delay.");
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to track DTMAPI local Workshop upload-plan delayed fallback.", ex.ToString());
+            }
+        }
+
+        private void ProcessPendingDtmapiUploadPlanFallbacks()
+        {
+            if (pendingWorkshopUploadPlanResolutions.Count == 0)
+                return;
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            for (int i = pendingWorkshopUploadPlanResolutions.Count - 1; i >= 0; i--)
+            {
+                PendingWorkshopUploadPlanResolution pending = pendingWorkshopUploadPlanResolutions[i];
+                if ((now - pending.StartedAtUtc).TotalSeconds < 4)
+                    continue;
+
+                if (!IsSamePendingWorkshopUploadPlanResolution(pending))
+                {
+                    pendingWorkshopUploadPlanResolutions.RemoveAt(i);
+                    continue;
+                }
+
+                object? plan = CreateNativeWorkshopUploadPlan("Update", pending.WorkshopId);
+                if (plan == null)
+                {
+                    pendingWorkshopUploadPlanResolutions.RemoveAt(i);
+                    runtime.SetHookStatus(
+                        "Workshop.LocalUploadPlanKnownIdFallback",
+                        "pending",
+                        "Harmony Postfix: SteamWorkshopUploader.ResolveUploadPlan",
+                        "Native Steam details query remained unresolved for " + pending.ModId + ", but DTMAPI could not construct a native WorkshopUploadPlan; native resolver remains owner.");
+                    continue;
+                }
+
+                SetInstanceMember(pending.Uploader, "resolveUploadPlanCallback", null);
+                SetInstanceMember(pending.Uploader, "pendingWorkshopId", 0uL);
+                InvokeWorkshopUploadPlanCallback(pending.Callback, plan);
+                pendingWorkshopUploadPlanResolutions.RemoveAt(i);
+
+                runtime.SetHookStatus(
+                    "Workshop.LocalUploadPlanKnownIdFallback",
+                    "delayed-fallback",
+                    "DTMAPI.GameBridge.DolocTown.Update",
+                    "Native Steam details query did not resolve for DTMAPI-generated local package " + pending.ModId + " within 4 seconds; used known workshop.json id=" + pending.WorkshopId.ToString(CultureInfo.InvariantCulture) + " to release the official ModManager queue. Upload execution remains native-owned.");
+            }
+        }
+
+        private bool IsSamePendingWorkshopUploadPlanResolution(PendingWorkshopUploadPlanResolution pending)
+        {
+            try
+            {
+                object? currentCallback = ReadInstanceMember(pending.Uploader, "resolveUploadPlanCallback");
+                if (currentCallback == null || !ReferenceEquals(currentCallback, pending.Callback))
+                    return false;
+
+                if (!ConvertToBoolean(ReadInstanceMember(pending.Uploader, "IsResolvingUploadPlan")))
+                    return false;
+
+                ulong currentWorkshopId = ConvertToUInt64(ReadInstanceMember(pending.Uploader, "pendingWorkshopId"));
+                return currentWorkshopId == pending.WorkshopId;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void InvokeWorkshopUploadPlanCallback(object onResolved, object plan)
+        {
+            if (onResolved is Delegate callback)
+            {
+                callback.DynamicInvoke(plan);
+                return;
+            }
+
+            onResolved.GetType().GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance)?.Invoke(onResolved, new[] { plan });
+        }
+
+        private static bool TryReadDtmapiKnownLocalWorkshopRequest(object modInfo, out ulong workshopId, out string modId, out string rootPath)
+        {
+            workshopId = 0;
+            modId = Convert.ToString(ReadInstanceMember(modInfo, "id"), CultureInfo.InvariantCulture) ?? "<unknown>";
+            rootPath = string.Empty;
+
+            object? source = ReadInstanceMember(modInfo, "source");
+            if (!IsOfficialLocalModSource(source))
+                return false;
+
+            workshopId = ConvertToUInt64(ReadInstanceMember(modInfo, "workshopId"));
+            if (workshopId == 0)
+                return false;
+
+            rootPath = Convert.ToString(ReadInstanceMember(modInfo, "rootPath"), CultureInfo.InvariantCulture) ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(rootPath) && IsDtmapiGeneratedLocalModRoot(rootPath);
+        }
+
+        private object? CreateNativeWorkshopUploadPlan(string modeName, ulong workshopId)
+        {
+            try
+            {
+                Type? planType = patcher?.ResolveType("DolocTown.Config.WorkshopUploadPlan, Assembly-CSharp");
+                Type? modeType = patcher?.ResolveType("DolocTown.Config.WorkshopUploadMode, Assembly-CSharp");
+                if (planType == null || modeType == null)
+                    return null;
+
+                object mode = Enum.Parse(modeType, modeName);
+                return Activator.CreateInstance(planType, mode, workshopId);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsOfficialLocalModSource(object? source)
+        {
+            return string.Equals(Convert.ToString(source, CultureInfo.InvariantCulture), "Local", StringComparison.Ordinal);
+        }
+
+        private static bool IsDtmapiGeneratedLocalModRoot(string rootPath)
+        {
+            try
+            {
+                string runtimeMarkerPath = Path.Combine(rootPath, "Content", "DTMAPI", "release-manifest.json");
+                if (File.Exists(runtimeMarkerPath))
+                    return true;
+
+                string markerPath = Path.Combine(rootPath, "Content", "DTMAPI", "dtmapi-package.json");
+                if (!File.Exists(markerPath))
+                    return false;
+                string markerJson = File.ReadAllText(markerPath);
+                return markerJson.IndexOf("\"owner\"", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    markerJson.IndexOf("DTMAPI", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    markerJson.IndexOf("\"uniqueId\"", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static object? ReadInstanceMember(object instance, string name)
+        {
+            Type type = instance.GetType();
+            PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (property != null)
+                return property.GetValue(instance, null);
+
+            FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            return field?.GetValue(instance);
+        }
+
+        private static void SetInstanceMember(object instance, string name, object? value)
+        {
+            Type type = instance.GetType();
+            PropertyInfo? property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (property != null && property.CanWrite)
+            {
+                property.SetValue(instance, value, null);
+                return;
+            }
+
+            FieldInfo? field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            field?.SetValue(instance, value);
+        }
+
+        private static ulong ConvertToUInt64(object? value)
+        {
+            if (value == null)
+                return 0;
+            if (value is ulong ulongValue)
+                return ulongValue;
+            if (value is long longValue && longValue >= 0)
+                return (ulong)longValue;
+            return Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        private static bool ConvertToBoolean(object? value)
+        {
+            if (value == null)
+                return false;
+            if (value is bool boolValue)
+                return boolValue;
+            return bool.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out bool result) && result;
+        }
+
         private string? FirstActiveUiState(Type dolocApi, params string[] stateTypes)
         {
             foreach (string typeName in stateTypes)
@@ -832,6 +1156,24 @@ namespace DTMAPI.GameBridge.DolocTown
                 {
                     workshopReloadPatched = patcher.TryPatchPostfix("DolocTown.Config.ModManager, Assembly-CSharp", "ReloadMods", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReloadModsPostfix), BindingFlags.Public | BindingFlags.Static));
                     runtime.SetHookStatus("Workshop.ReloadMods", workshopReloadPatched ? "experimental" : "pending", "Harmony Postfix: ModManager.ReloadMods", workshopReloadPatched ? "Patched to refresh DTMAPI diagnostics after official reload." : "Waiting for Assembly-CSharp/ModManager to become patchable.");
+                }
+
+                if (!workshopLocalUploadDisplayPatched)
+                {
+                    workshopLocalUploadDisplayPatched = patcher.TryPatchConstructorPostfix("DolocTown.UI.ModData, Assembly-CSharp", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ModDataConstructorPostfix), BindingFlags.Public | BindingFlags.Static), 2);
+                    runtime.SetHookStatus("Workshop.LocalUploadPlan", workshopLocalUploadDisplayPatched ? "experimental" : "pending", "Harmony Postfix: ModData..ctor", workshopLocalUploadDisplayPatched ? "Display-only patch keeps DTMAPI-generated local packages on Update when workshop.json is present; native Steam ResolveLocalModUploadPlan still owns upload execution." : "Waiting for Assembly-CSharp/ModData to become patchable.");
+                }
+
+                if (!workshopUploadPlanBusyFallbackPatched)
+                {
+                    workshopUploadPlanBusyFallbackPatched = patcher.TryPatchPrefix("DolocTown.Config.SteamWorkshopUploader, Assembly-CSharp", "ResolveUploadPlan", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SteamWorkshopUploaderResolveUploadPlanPrefix), BindingFlags.Public | BindingFlags.Static), 2);
+                    runtime.SetHookStatus("Workshop.LocalUploadPlanBusyFallback", workshopUploadPlanBusyFallbackPatched ? "experimental" : "pending", "Harmony Prefix: SteamWorkshopUploader.ResolveUploadPlan", workshopUploadPlanBusyFallbackPatched ? "Prevents DTMAPI-generated local package upload-plan resolve requests from stalling ModManager when the native uploader is already busy; upload execution remains native-owned." : "Waiting for Assembly-CSharp/SteamWorkshopUploader.ResolveUploadPlan to become patchable.");
+                }
+
+                if (!workshopUploadPlanKnownIdFallbackPatched)
+                {
+                    workshopUploadPlanKnownIdFallbackPatched = patcher.TryPatchPostfix("DolocTown.Config.SteamWorkshopUploader, Assembly-CSharp", "ResolveUploadPlan", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SteamWorkshopUploaderResolveUploadPlanPostfix), BindingFlags.Public | BindingFlags.Static), 2);
+                    runtime.SetHookStatus("Workshop.LocalUploadPlanKnownIdFallback", workshopUploadPlanKnownIdFallbackPatched ? "experimental" : "pending", "Harmony Postfix + Update watchdog: SteamWorkshopUploader.ResolveUploadPlan", workshopUploadPlanKnownIdFallbackPatched ? "Allows native Steam details resolution first, then releases DTMAPI-generated local package upload-plan requests with the known workshop.json id only if the same callback remains unresolved after a short delay." : "Waiting for Assembly-CSharp/SteamWorkshopUploader.ResolveUploadPlan to become patchable.");
                 }
 
                 if (!debugConsoleUseToolPatched)
@@ -976,6 +1318,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     equipmentSlotsReloadParamsPatched = patcher.TryPatchPostfix("DolocTown.GameData.AgentEquipmentManager, Assembly-CSharp", "ReloadParams", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentEquipmentReloadParamsPostfix), BindingFlags.Public | BindingFlags.Static), 0);
                 }
 
+                if (!equipmentSlotsShieldAttackPatched)
+                {
+                    equipmentSlotsShieldAttackPatched = patcher.TryPatchPrefix("DolocTown.BodyController, Assembly-CSharp", "OnAttacked", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.BodyControllerOnAttackedPrefix), BindingFlags.Public | BindingFlags.Static), 4);
+                }
+
                 if (!equipmentSlotsAccessoriesInitPatched)
                 {
                     equipmentSlotsAccessoriesInitPatched = patcher.TryPatchPostfix("DolocTown.UI.AccessoriesBar, Assembly-CSharp", "__Init", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AccessoriesBarInitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
@@ -989,6 +1336,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetEquipmentSlotsRuntimeHooksInstalled(equipmentSlotsReloadParamsPatched);
                 experimentalApi?.SetEquipmentSlotsUiHooksInstalled(equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
                 runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsReloadParamsPatched ? "experimental" : "pending", "Harmony Postfix: AgentEquipmentManager.ReloadParams + AccessoriesBar", equipmentSlotsReloadParamsPatched ? "Patched native equipment stat refresh and AccessoriesBar lifecycle so DTMAPI extra-slot state can participate as attribute-only stats and render an interactive player equipment strip without exposing raw game types." : "Waiting for AgentEquipmentManager.ReloadParams and AccessoriesBar UI hooks to become patchable.");
+                runtime.SetHookStatus("Player.EquipmentSlotsShield", equipmentSlotsShieldAttackPatched ? "experimental" : "pending", "Harmony Prefix: BodyController.OnAttacked", equipmentSlotsShieldAttackPatched ? "Patched native player hit path so DTMAPI managed extra-slot shield hats participate only when vanilla hat shields are absent; vanilla visual hat slot stays native-owned." : "Waiting for BodyController.OnAttacked to become patchable.");
 
                 if (!hookResolutionDiagnosticLogged && !AllHookTargetsReady && (DateTimeOffset.Now - initializedAt).TotalSeconds >= 4)
                 {
@@ -998,6 +1346,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         "DolocTown.HomePageUiState, Assembly-CSharp",
                         "DolocTown.GameData.DataPersistenceManager, Assembly-CSharp",
                         "DolocTown.Config.ModManager, Assembly-CSharp",
+                        "DolocTown.BodyController, Assembly-CSharp",
                         "DolocTown.AgentStateTool, Assembly-CSharp",
                         "DolocTown.AgentStateInteract, Assembly-CSharp",
                         "DolocTown.AgentStateEat, Assembly-CSharp",
@@ -1005,6 +1354,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         "AgentStateBase, Assembly-CSharp",
                         "DolocTown.ToolCollider, Assembly-CSharp",
                         "DolocTown.DungeonResource, Assembly-CSharp",
+                        "DolocTown.GameData.AgentEquipmentManager, Assembly-CSharp",
                         "DolocTown.UI.AccessoriesBar, Assembly-CSharp",
                         "DolocTown.AgentStateFishingReady, Assembly-CSharp",
                         "DolocTown.AgentStateFishingCast, Assembly-CSharp",
