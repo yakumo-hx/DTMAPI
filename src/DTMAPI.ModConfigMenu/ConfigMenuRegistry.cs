@@ -162,10 +162,24 @@ namespace DTMAPI.ModConfigMenu
 
         public IDisposable PreviewPendingValues()
         {
-            string[] previousValues = ItemsInternal.Select(item => item.ReadCurrentValueForPreview()).ToArray();
+            if (!TryReadCurrentValues("preview", out string[] previousValues))
+                return new PendingPreviewScope(this, Array.Empty<string>());
+
+            var scope = new PendingPreviewScope(this, previousValues);
             for (int i = 0; i < ItemsInternal.Count; i++)
-                ItemsInternal[i].ApplyPreviewValue(ItemsInternal[i].PendingValue);
-            return new PendingPreviewScope(this, previousValues);
+            {
+                try
+                {
+                    ItemsInternal[i].ApplyRawValue(ItemsInternal[i].PendingValue);
+                }
+                catch (Exception ex)
+                {
+                    ItemsInternal[i].SetValidationError("Preview failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                    scope.Dispose();
+                    return new PendingPreviewScope(this, Array.Empty<string>());
+                }
+            }
+            return scope;
         }
 
         public void Reset()
@@ -173,9 +187,18 @@ namespace DTMAPI.ModConfigMenu
             ThrowIfLocked();
             if (!IsEditing)
                 BeginEditing();
-            reset();
-            foreach (ConfigMenuItemBase item in ItemsInternal)
-                item.CapturePendingFromGetter();
+            string[] previousValues = ReadCurrentValues("reset");
+            try
+            {
+                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".reset", reset);
+                foreach (ConfigMenuItemBase item in ItemsInternal)
+                    item.CapturePendingFromGetter();
+            }
+            catch (Exception ex)
+            {
+                TryRollbackOrThrow(previousValues, "reset", ex);
+                throw new InvalidOperationException("Reset failed and config values were rolled back: " + ConfigMenuCallbackRunner.Describe(ex), ex);
+            }
         }
 
         public void Save()
@@ -184,9 +207,29 @@ namespace DTMAPI.ModConfigMenu
             if (registry.HasKeybindConflict(this))
                 throw new InvalidOperationException("存在按键冲突，无法保存配置。");
 
-            foreach (ConfigMenuItemBase item in ItemsInternal)
-                item.ApplyPendingValue();
-            save();
+            string[] previousValues = ReadCurrentValues("save");
+            try
+            {
+                foreach (ConfigMenuItemBase item in ItemsInternal)
+                {
+                    try
+                    {
+                        item.ApplyPendingValue();
+                    }
+                    catch (Exception ex)
+                    {
+                        item.SetValidationError("Apply failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                        throw;
+                    }
+                }
+                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".save", save);
+            }
+            catch (Exception ex)
+            {
+                TryRollbackOrThrow(previousValues, "save", ex);
+                throw new InvalidOperationException("Save failed and config values were rolled back: " + ConfigMenuCallbackRunner.Describe(ex), ex);
+            }
+
             foreach (ConfigMenuItemBase item in ItemsInternal)
                 item.CaptureCommittedValue();
             IsEditing = true;
@@ -194,9 +237,23 @@ namespace DTMAPI.ModConfigMenu
 
         public void Cancel()
         {
+            var errors = new List<string>();
             foreach (ConfigMenuItemBase item in ItemsInternal)
-                item.RestoreCommittedValue();
+            {
+                try
+                {
+                    item.RestoreCommittedValue();
+                }
+                catch (Exception ex)
+                {
+                    string error = "Cancel restore failed: " + ConfigMenuCallbackRunner.Describe(ex);
+                    item.SetValidationError(error);
+                    errors.Add(item.Name + ": " + error);
+                }
+            }
             IsEditing = false;
+            if (errors.Count > 0)
+                throw new InvalidOperationException(string.Join("; ", errors));
         }
 
         private void ThrowIfLocked()
@@ -214,6 +271,71 @@ namespace DTMAPI.ModConfigMenu
             catch (Exception ex)
             {
                 return "<error: " + ex.GetType().Name + ">";
+            }
+        }
+
+        private string[] ReadCurrentValues(string operation)
+        {
+            if (TryReadCurrentValues(operation, out string[] values))
+                return values;
+            throw new InvalidOperationException("Failed to read current config values for " + operation + ".");
+        }
+
+        private bool TryReadCurrentValues(string operation, out string[] values)
+        {
+            var result = new string[ItemsInternal.Count];
+            for (int i = 0; i < ItemsInternal.Count; i++)
+            {
+                try
+                {
+                    result[i] = ItemsInternal[i].ReadCurrentValueForPreview();
+                }
+                catch (Exception ex)
+                {
+                    ItemsInternal[i].SetValidationError(operation + " read failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                    values = Array.Empty<string>();
+                    return false;
+                }
+            }
+            values = result;
+            return true;
+        }
+
+        private void RestoreRawValues(string[] values, string operation)
+        {
+            var errors = new List<string>();
+            int count = Math.Min(ItemsInternal.Count, values.Length);
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    ItemsInternal[i].ApplyRawValue(values[i]);
+                }
+                catch (Exception ex)
+                {
+                    string error = operation + " failed: " + ConfigMenuCallbackRunner.Describe(ex);
+                    ItemsInternal[i].SetValidationError(error);
+                    errors.Add(ItemsInternal[i].Name + ": " + error);
+                }
+            }
+
+            if (errors.Count > 0)
+                throw new InvalidOperationException(string.Join("; ", errors));
+        }
+
+        private void TryRollbackOrThrow(string[] values, string operation, Exception original)
+        {
+            try
+            {
+                RestoreRawValues(values, operation + " rollback");
+            }
+            catch (Exception rollback)
+            {
+                throw new InvalidOperationException(
+                    operation + " failed and rollback also failed: " +
+                    ConfigMenuCallbackRunner.Describe(original) + "; rollback: " +
+                    ConfigMenuCallbackRunner.Describe(rollback),
+                    new AggregateException(original, rollback));
             }
         }
 
@@ -236,7 +358,16 @@ namespace DTMAPI.ModConfigMenu
                 disposed = true;
                 int count = Math.Min(page.ItemsInternal.Count, previousValues.Length);
                 for (int i = 0; i < count; i++)
-                    page.ItemsInternal[i].ApplyPreviewValue(previousValues[i]);
+                {
+                    try
+                    {
+                        page.ItemsInternal[i].ApplyRawValue(previousValues[i]);
+                    }
+                    catch (Exception ex)
+                    {
+                        page.ItemsInternal[i].SetValidationError("Preview restore failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                    }
+                }
             }
         }
     }
@@ -308,8 +439,8 @@ namespace DTMAPI.ModConfigMenu
 
         internal void RestoreCommittedValue()
         {
-            pendingValue = committedValue;
             ApplyValue(committedValue);
+            pendingValue = committedValue;
             ValidationError = string.Empty;
         }
 
@@ -320,7 +451,9 @@ namespace DTMAPI.ModConfigMenu
 
         internal string ReadCurrentValueForPreview() => ReadValue();
 
-        internal void ApplyPreviewValue(string value) => ApplyValue(value);
+        internal void ApplyRawValue(string value) => ApplyValue(value);
+
+        internal void SetValidationError(string error) => ValidationError = error ?? string.Empty;
 
         protected abstract string ReadValue();
         protected abstract void ApplyValue(string value);
@@ -738,6 +871,27 @@ namespace DTMAPI.ModConfigMenu
             return true;
         }
 
-        public override void Invoke() => onPressed();
+        public override void Invoke() => ConfigMenuCallbackRunner.Run("button", onPressed);
+    }
+
+    internal static class ConfigMenuCallbackRunner
+    {
+        public static void Run(string operation, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(operation + " callback failed: " + Describe(ex), ex);
+            }
+        }
+
+        public static string Describe(Exception ex)
+        {
+            string message = ex.Message ?? string.Empty;
+            return string.IsNullOrWhiteSpace(message) ? ex.GetType().Name : ex.GetType().Name + ": " + message;
+        }
     }
 }

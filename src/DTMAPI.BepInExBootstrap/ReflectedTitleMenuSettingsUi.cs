@@ -932,15 +932,25 @@ namespace DTMAPI.BepInExBootstrap
 
         private void SelectConfigPage(string uniqueId)
         {
+            string? cancelError = null;
             if (!string.Equals(selectedConfigModId, uniqueId, StringComparison.OrdinalIgnoreCase) && selectedConfigModId != null)
             {
                 IConfigMenuPage? oldPage = configMenu.GetPage(selectedConfigModId);
                 if (oldPage != null && oldPage.HasPendingChanges)
-                    configMenu.Cancel(oldPage.Manifest.UniqueID);
+                {
+                    try
+                    {
+                        configMenu.Cancel(oldPage.Manifest.UniqueID);
+                    }
+                    catch (Exception ex)
+                    {
+                        cancelError = oldPage.Manifest.UniqueID + ": " + ex.Message;
+                    }
+                }
             }
             selectedConfigModId = uniqueId;
             runtime.UI.OpenConfigPage(uniqueId);
-            statusMessage = string.Empty;
+            statusMessage = cancelError ?? string.Empty;
             capturingKeybindItemId = null;
             configItemPageIndex = 0;
             inputValues.Clear();
@@ -961,7 +971,16 @@ namespace DTMAPI.BepInExBootstrap
             {
                 IConfigMenuPage? page = configMenu.GetPage(selectedConfigModId);
                 if (page != null && page.HasPendingChanges)
-                    configMenu.Cancel(page.Manifest.UniqueID);
+                {
+                    try
+                    {
+                        configMenu.Cancel(page.Manifest.UniqueID);
+                    }
+                    catch (Exception ex)
+                    {
+                        statusMessage = page.Manifest.UniqueID + ": " + ex.Message;
+                    }
+                }
             }
             capturingKeybindItemId = null;
             inputValues.Clear();

@@ -45,6 +45,7 @@ namespace DTMAPI.UnitTests
                 BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites();
                 OffThreadTimerFallbackUpdateDoesNotDispatchOrdinaryModUpdates();
                 ConfigMenuEditsSaveCancelAndDetectConflicts();
+                ConfigMenuCallbackFailuresRollbackAndStayInspectable();
                 ConfigMenuPendingPreviewDrivesConditionalVisibility();
                 DisabledDiscoveredModLocksConfigPage();
                 OfficialLocalModPackagesRespectOfficialEnablement();
@@ -1144,6 +1145,85 @@ namespace DTMAPI.UnitTests
                 conflictBlocked = true;
             }
             Assert(conflictBlocked, "Save should block keybind conflicts.");
+        }
+
+        private static void ConfigMenuCallbackFailuresRollbackAndStayInspectable()
+        {
+            var menu = new ConfigMenuRegistry();
+            IConfigMenuRuntime menuRuntime = menu;
+            IManifest manifest = new ManifestModel
+            {
+                Name = "Menu Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.MenuFailure"
+            };
+
+            bool first = false;
+            bool second = false;
+            bool failSecondSetter = true;
+            bool failSave = false;
+            int saveCalls = 0;
+            menu.Register(manifest, () => { }, () =>
+            {
+                saveCalls++;
+                if (failSave)
+                    throw new InvalidOperationException("save-boom");
+            });
+            menu.AddBoolOption(manifest, () => "First", () => "", () => first, value => first = value);
+            menu.AddBoolOption(manifest, () => "Second", () => "", () => second, value =>
+            {
+                if (failSecondSetter && value)
+                    throw new InvalidOperationException("setter-boom");
+                second = value;
+            });
+
+            IConfigMenuPage page = menuRuntime.GetPage(manifest.UniqueID) ?? throw new InvalidOperationException("Page should exist.");
+            menuRuntime.BeginEditing(manifest.UniqueID);
+            Assert(page.Items[0].TrySetPendingValue("true", out _), "First option should accept true.");
+            Assert(page.Items[1].TrySetPendingValue("true", out _), "Second option should accept true.");
+            AssertThrows(() => menuRuntime.Save(manifest.UniqueID), "Setter failure should reject save.");
+            Assert(!first && !second && saveCalls == 0, "Setter failure should roll back prior applied values and skip save callback.");
+            Assert(page.Items[1].ValidationError.Contains("setter-boom"), "Failing setter should remain visible on the config item.");
+            Assert(page.HasPendingChanges, "Failed save should keep pending edits inspectable.");
+
+            failSecondSetter = false;
+            failSave = true;
+            AssertThrows(() => menuRuntime.Save(manifest.UniqueID), "Save callback failure should reject save.");
+            Assert(!first && !second && saveCalls == 1, "Save callback failure should roll back applied pending values.");
+            Assert(page.HasPendingChanges, "Failed save callback should keep pending edits inspectable.");
+
+            failSave = false;
+            menuRuntime.Save(manifest.UniqueID);
+            Assert(first && second && saveCalls == 2 && !page.HasPendingChanges, "Successful retry should apply and commit retained pending values.");
+
+            var previewMenu = new ConfigMenuRegistry();
+            IConfigMenuRuntime previewRuntime = previewMenu;
+            IManifest previewManifest = new ManifestModel
+            {
+                Name = "Preview Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.PreviewFailure"
+            };
+            bool previewEnabled = false;
+            previewMenu.Register(previewManifest, () => { }, () => { });
+            previewMenu.AddBoolOption(previewManifest, () => "Preview", () => "", () => previewEnabled, value =>
+            {
+                if (value)
+                    throw new InvalidOperationException("preview-boom");
+                previewEnabled = value;
+            });
+
+            IConfigMenuPage previewPage = previewRuntime.GetPage(previewManifest.UniqueID) ?? throw new InvalidOperationException("Preview page should exist.");
+            previewRuntime.BeginEditing(previewManifest.UniqueID);
+            Assert(previewPage.Items[0].TrySetPendingValue("true", out _), "Preview option should accept pending true.");
+            using (previewRuntime.PreviewPendingValues(previewPage) ?? throw new InvalidOperationException("Preview scope should be returned even after callback failure."))
+            {
+                Assert(!previewEnabled, "Failed preview setter should be rolled back immediately.");
+            }
+            Assert(!previewEnabled, "Preview dispose should leave the original value intact.");
+            Assert(previewPage.Items[0].ValidationError.Contains("preview-boom"), "Preview failure should be visible on the config item.");
         }
 
         private static void ConfigMenuPendingPreviewDrivesConditionalVisibility()
