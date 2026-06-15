@@ -1224,6 +1224,102 @@ namespace DTMAPI.UnitTests
             }
             Assert(!previewEnabled, "Preview dispose should leave the original value intact.");
             Assert(previewPage.Items[0].ValidationError.Contains("preview-boom"), "Preview failure should be visible on the config item.");
+
+            var resetMenu = new ConfigMenuRegistry();
+            IConfigMenuRuntime resetRuntime = resetMenu;
+            IManifest resetManifest = new ManifestModel
+            {
+                Name = "Reset Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.ResetFailure"
+            };
+            bool resetValue = true;
+            bool failReset = true;
+            resetMenu.Register(resetManifest, () =>
+            {
+                if (failReset)
+                    throw new InvalidOperationException("reset-boom");
+                resetValue = false;
+            }, () => { });
+            resetMenu.AddBoolOption(resetManifest, () => "Reset", () => "", () => resetValue, value => resetValue = value);
+            IConfigMenuPage resetPage = resetRuntime.GetPage(resetManifest.UniqueID) ?? throw new InvalidOperationException("Reset page should exist.");
+            resetRuntime.BeginEditing(resetManifest.UniqueID);
+            AssertThrows(() => resetRuntime.Reset(resetManifest.UniqueID), "Reset callback failure should be reported.");
+            Assert(resetValue && resetPage.IsEditing && !resetPage.HasPendingChanges, "Reset callback failure should keep the committed value and editing state.");
+
+            var resetGetterMenu = new ConfigMenuRegistry();
+            IConfigMenuRuntime resetGetterRuntime = resetGetterMenu;
+            IManifest resetGetterManifest = new ManifestModel
+            {
+                Name = "Reset Getter Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.ResetGetterFailure"
+            };
+            bool resetFirst = true;
+            bool resetSecond = true;
+            bool failResetGetter = false;
+            resetGetterMenu.Register(resetGetterManifest, () =>
+            {
+                resetFirst = false;
+                resetSecond = false;
+                failResetGetter = true;
+            }, () => { });
+            resetGetterMenu.AddBoolOption(resetGetterManifest, () => "First", () => "", () => resetFirst, value => resetFirst = value);
+            resetGetterMenu.AddBoolOption(resetGetterManifest, () => "Second", () => "", () =>
+            {
+                if (failResetGetter)
+                    throw new InvalidOperationException("reset-getter-boom");
+                return resetSecond;
+            }, value => resetSecond = value);
+            IConfigMenuPage resetGetterPage = resetGetterRuntime.GetPage(resetGetterManifest.UniqueID) ?? throw new InvalidOperationException("Reset getter page should exist.");
+            resetGetterRuntime.BeginEditing(resetGetterManifest.UniqueID);
+            AssertThrows(() => resetGetterRuntime.Reset(resetGetterManifest.UniqueID), "Reset getter failure should be reported.");
+            failResetGetter = false;
+            Assert(resetFirst && resetSecond, "Reset getter failure should roll back true config values.");
+            Assert(resetGetterPage.IsEditing && !resetGetterPage.HasPendingChanges, "Reset getter failure should not leave partially refreshed pending values.");
+
+            var cancelMenu = new ConfigMenuRegistry();
+            IConfigMenuRuntime cancelRuntime = cancelMenu;
+            IManifest cancelManifest = new ManifestModel
+            {
+                Name = "Cancel Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.CancelFailure"
+            };
+            bool cancelValue = false;
+            bool failCancelRestore = false;
+            cancelMenu.Register(cancelManifest, () => { }, () => { });
+            cancelMenu.AddBoolOption(cancelManifest, () => "Cancel", () => "", () => cancelValue, value =>
+            {
+                if (failCancelRestore && !value)
+                    throw new InvalidOperationException("cancel-boom");
+                cancelValue = value;
+            });
+            IConfigMenuPage cancelPage = cancelRuntime.GetPage(cancelManifest.UniqueID) ?? throw new InvalidOperationException("Cancel page should exist.");
+            cancelRuntime.BeginEditing(cancelManifest.UniqueID);
+            Assert(cancelPage.Items[0].TrySetPendingValue("true", out _), "Cancel option should accept pending true.");
+            cancelValue = true;
+            failCancelRestore = true;
+            AssertThrows(() => cancelRuntime.Cancel(cancelManifest.UniqueID), "Cancel restore failure should be reported.");
+            Assert(cancelValue && cancelPage.IsEditing && cancelPage.HasPendingChanges, "Cancel restore failure should keep the page editing so the failed pending state remains visible.");
+            Assert(cancelPage.Items[0].ValidationError.Contains("cancel-boom"), "Cancel restore failure should stay visible on the item.");
+
+            var buttonMenu = new ConfigMenuRegistry();
+            IConfigMenuRuntime buttonRuntime = buttonMenu;
+            IManifest buttonManifest = new ManifestModel
+            {
+                Name = "Button Failure Test",
+                Author = "DTMAPI",
+                Version = "1.0.0",
+                UniqueID = "DTMAPI.Tests.ButtonFailure"
+            };
+            buttonMenu.Register(buttonManifest, () => { }, () => { });
+            buttonMenu.AddButton(buttonManifest, () => "Danger", () => "", () => throw new InvalidOperationException("button-boom"));
+            IConfigMenuPage buttonPage = buttonRuntime.GetPage(buttonManifest.UniqueID) ?? throw new InvalidOperationException("Button page should exist.");
+            AssertThrows(buttonPage.Items.Single(item => item.Kind == "Button").Invoke, "Button callback failure should be wrapped for the UI action guard.");
         }
 
         private static void ConfigMenuPendingPreviewDrivesConditionalVisibility()

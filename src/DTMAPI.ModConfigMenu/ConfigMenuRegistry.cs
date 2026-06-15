@@ -188,15 +188,27 @@ namespace DTMAPI.ModConfigMenu
             if (!IsEditing)
                 BeginEditing();
             string[] previousValues = ReadCurrentValues("reset");
+            string[] previousPendingValues = CapturePendingValues();
             try
             {
                 ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".reset", reset);
                 foreach (ConfigMenuItemBase item in ItemsInternal)
-                    item.CapturePendingFromGetter();
+                {
+                    try
+                    {
+                        item.CapturePendingFromGetter();
+                    }
+                    catch (Exception ex)
+                    {
+                        item.SetValidationError("Reset read failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                        throw;
+                    }
+                }
             }
             catch (Exception ex)
             {
                 TryRollbackOrThrow(previousValues, "reset", ex);
+                RestorePendingValues(previousPendingValues);
                 throw new InvalidOperationException("Reset failed and config values were rolled back: " + ConfigMenuCallbackRunner.Describe(ex), ex);
             }
         }
@@ -251,9 +263,9 @@ namespace DTMAPI.ModConfigMenu
                     errors.Add(item.Name + ": " + error);
                 }
             }
-            IsEditing = false;
             if (errors.Count > 0)
                 throw new InvalidOperationException(string.Join("; ", errors));
+            IsEditing = false;
         }
 
         private void ThrowIfLocked()
@@ -321,6 +333,18 @@ namespace DTMAPI.ModConfigMenu
 
             if (errors.Count > 0)
                 throw new InvalidOperationException(string.Join("; ", errors));
+        }
+
+        private string[] CapturePendingValues()
+        {
+            return ItemsInternal.Select(item => item.PendingValue).ToArray();
+        }
+
+        private void RestorePendingValues(string[] values)
+        {
+            int count = Math.Min(ItemsInternal.Count, values.Length);
+            for (int i = 0; i < count; i++)
+                ItemsInternal[i].RestorePendingValue(values[i]);
         }
 
         private void TryRollbackOrThrow(string[] values, string operation, Exception original)
@@ -454,6 +478,11 @@ namespace DTMAPI.ModConfigMenu
         internal void ApplyRawValue(string value) => ApplyValue(value);
 
         internal void SetValidationError(string error) => ValidationError = error ?? string.Empty;
+
+        internal void RestorePendingValue(string value)
+        {
+            pendingValue = value ?? string.Empty;
+        }
 
         protected abstract string ReadValue();
         protected abstract void ApplyValue(string value);

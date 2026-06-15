@@ -948,9 +948,15 @@ namespace DTMAPI.BepInExBootstrap
                     }
                 }
             }
+            if (cancelError != null)
+            {
+                statusMessage = cancelError;
+                dirty = true;
+                return;
+            }
             selectedConfigModId = uniqueId;
             runtime.UI.OpenConfigPage(uniqueId);
-            statusMessage = cancelError ?? string.Empty;
+            statusMessage = string.Empty;
             capturingKeybindItemId = null;
             configItemPageIndex = 0;
             inputValues.Clear();
@@ -979,6 +985,8 @@ namespace DTMAPI.BepInExBootstrap
                     catch (Exception ex)
                     {
                         statusMessage = page.Manifest.UniqueID + ": " + ex.Message;
+                        dirty = true;
+                        return;
                     }
                 }
             }
