@@ -48,6 +48,7 @@ Review known issue -> minimal fix -> build/test -> enter Doloc Town third save -
 ## 近期结构
 
 - `AGENTS.md`: 给后续 Codex/开发者的强制上下文与边界。
+- `docs/onboarding/current-state.md`: 给新 Codex 的当前状态入口，标出活跃事实、历史证据、实验 API 和分支纪律。
 - `docs/planning`: 原始需求与长文拆解。
 - `docs/updates`: 可追溯更新记录；每次非平凡更新记录目标、改动文件、验证、证据、关联 debug/hook/smoke/API 项和回滚说明。
 - `docs/reviews/api/native-owner-domains/INDEX.md`: 长期固定 native-owner 领域资料库；未来新增 API 或 GameBridge rebuild 前先查这里，把模糊需求落实到原生责任函数/状态 holder，再决定稳定 API 边界。

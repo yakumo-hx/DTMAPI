@@ -29,7 +29,7 @@ The internal Manager view model now publishes a support-oriented summary over th
 
 ## 2026-06-11 Status Page Wiring Note
 
-The title-page DTMAPI Settings `Status` tab is now the first real UI consumer of the internal Manager view model. It displays `ManagerSummary` overall status, loaded/blocked/disabled mod counts, diagnostics counts, failed hook/feature counts, report export status, and latest log/report path state. A manual Refresh button calls the internal Manager model refresh path without exporting a report. This is intentionally a narrow first page: Config remains the default title-button page, the fallback ImGui overlay still uses the older runtime snapshot route, and the remaining Manager pages are future UI slices.
+The title-page DTMAPI Settings `Status` tab is now the first real UI consumer of the internal Manager view model. It displays `ManagerSummary` overall status, loaded/blocked/disabled mod counts, diagnostics counts, failed hook/feature counts, report export status, and latest log/report path state. A manual Refresh button calls the internal Manager model refresh path without exporting a report. This is intentionally a narrow first page: Config remains the default title-button page, the old fallback IMGUI overlay path was retired on 2026-06-15, and the remaining Manager pages are future UI slices.
 
 ## 2026-06-11 Export And Refresh Safety Note
 

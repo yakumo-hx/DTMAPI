@@ -1473,7 +1473,7 @@ while ((Get-Date) -lt $deadline) {
     Start-Sleep -Seconds 2
 }
 
-& "$PSScriptRoot\collect-logs.ps1" -CaseId 'GAME-SMOKE' -OutputDirectory $evidence | Tee-Object -FilePath (Join-Path $evidence 'collect-logs-output.txt')
+& "$PSScriptRoot\collect-logs.ps1" -CaseId 'GAME-SMOKE' -OutputDirectory $evidence -IncludeRuntimeEvidence | Tee-Object -FilePath (Join-Path $evidence 'collect-logs-output.txt')
 Write-ProcessCheck -Path (Join-Path $evidence 'process-check.txt')
 Write-FatalWindowCheck -Path (Join-Path $evidence 'fatal-window-check.txt')
 $fatalWindows = @(Get-FatalInstanceWindows)

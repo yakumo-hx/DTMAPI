@@ -6,7 +6,7 @@
 - Last updated: 2026-05-30
 - Severity: high
 - Area: input / UI overlay / config menu
-- Current owner: none for the current title-entry goal; `ReflectedImGuiOverlay` remains a diagnostic fallback only.
+- Current owner: none. The old IMGUI fallback path was retired on 2026-06-15; current UI entry points are the title settings UI and the in-save Y debug console.
 
 ## Symptom
 
@@ -33,6 +33,12 @@ Evidence:
 - `UI-005` added to `docs/debug/regressions/smoke-matrix.md`.
 
 This does not solve the historical IMGUI rendering bug. It prevents the unresolved overlay from presenting as a silent player control.
+
+## 2026-06-15 Cleanup Note
+
+Round 1 of the second-level cleanup branch removed `src/DTMAPI.BepInExBootstrap/ReflectedImGuiOverlay.cs` because `BootstrapPlugin` no longer constructed it and the active UI routes are `ReflectedTitleMenuSettingsUi` plus `ReflectedDebugConsoleUi`.
+
+The historical F8/F10 IMGUI overlay bug remains recorded below for context, but future UI work should not add diagnostics to the deleted IMGUI class. If in-save config UI is needed again, start from the current Canvas/title-settings hosts or create a fresh UI goal with native UI ownership review.
 
 ## Known Facts
 
@@ -80,17 +86,16 @@ Evidence folder: `docs/debug/evidence/ISSUE-003/20260530-hotkey-openconfig-no-ov
 
 ## Deferred Debug Target
 
-Only resume this if F8/F10 diagnostic overlay support is explicitly needed again. Focus on the overlay rendering path, not input:
+Only resume this if an in-save config/diagnostic overlay is explicitly needed again. Focus on the current Canvas/title-settings/debug-console UI hosts, not the deleted IMGUI class:
 
 1. Add evidence logs in `UiRuntimeService.Open` and `Close` to confirm `IsOpen`, `CurrentPage`, and requested config ID after F10.
-2. Add once-per-open logs in `BootstrapPlugin.OnGUI` to confirm Unity calls `OnGUI` while `runtime.UI.IsOpen` is true.
-3. Add `ReflectedImGuiOverlay.Render` diagnostics for `CanDrawOverlay`, GUI type resolution, and first successful `GUI.Box`/`GUI.Label`.
-4. If `OnGUI` is not called, investigate whether BepInEx plugin `OnGUI` works in this Unity/player path or whether overlay must render through a runtime-created `MonoBehaviour`/Canvas instead.
-5. If `OnGUI` is called but nothing is visible, inspect GUI skin/color/depth/scaling and whether another camera/UI layer covers IMGUI.
+2. Confirm which active host should own the request: title settings, in-save debug console, or a new Canvas-based in-save config host.
+3. Add once-per-open diagnostics around the chosen host's create/show/update path and input-modal state.
+4. If a new in-save host is required, create a dedicated review/goal instead of reviving the old IMGUI fallback.
 
 ## Historical Acceptance Criteria
 
-Do not mark this overlay-specific issue solved until all are true:
+Do not mark a future in-save overlay replacement solved until all are true:
 
 - Pressing F10 in a loaded save visibly opens the ActionSpeed config page.
 - Pressing F8 visibly toggles the DTMAPI diagnostics overlay.

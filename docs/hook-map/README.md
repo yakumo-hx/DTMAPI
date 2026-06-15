@@ -550,12 +550,12 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Patch type: config registry plus reflected Unity UI rendering.
 - Why this point: migrated mods need native-feeling compact controls without hard-coding mod-specific UI in each mod.
 - Failure behavior: unsupported controls stay inside the config menu page and do not affect game runtime hooks; save/cancel/reset still use the normal config transaction model.
-- Mods/tests depending on it: `Yuuka.DTMAPI.ActionSpeed`, `Yuuka.DTMAPI.AutoFishing`, `Yuuka.DTMAPI.AnimalHusbandryProgress`, `DTMAPI.SecondMotorMod`.
+- Mods/tests depending on it: `Yuuka.DTMAPI.ActionSpeed`, `Yuuka.DTMAPI.AutoFishing`, `Yuuka.DTMAPI.AnimalHusbandryProgress`. Historical archived sample: `DTMAPI.SecondMotorMod`.
 - Evidence:
   - Build: DTMAPI 0.2.3 local build passed 2026-06-03 with 0 errors.
   - Save: title homepage.
-  - Log line: `GAME-SMOKE/20260603-052444/DTMAPI-latest.log` records `Smoke.TitleSettingsConfigPageScreenshot.action-speed = verified`, `auto-fishing = verified`, `animal-husbandry-progress = verified`, and `second-motor = verified`.
-  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-action-speed.png` shows ActionSpeed inline bool+number rows plus same-row `自动装水`/`强化自动装水`; `title-settings-config-auto-fishing.png` shows same-row `自动完成小游戏`/`跳过小游戏`; `title-settings-config-animal-husbandry-progress.png` shows swatches without the right-side `Orange` label or non-Custom hex input; `title-settings-config-second-motor.png` shows the `异色飞行摩托` status page.
+  - Log line: `GAME-SMOKE/20260603-052444/DTMAPI-latest.log` records `Smoke.TitleSettingsConfigPageScreenshot.action-speed = verified`, `auto-fishing = verified`, `animal-husbandry-progress = verified`, and historical `second-motor = verified`; the 2026-06-15 cleanup removes archived SecondMotor from the current title config screenshot rotation.
+  - Screenshot/report: `docs/debug/evidence/GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-action-speed.png` shows ActionSpeed inline bool+number rows plus same-row `自动装水`/`强化自动装水`; `title-settings-config-auto-fishing.png` shows same-row `自动完成小游戏`/`跳过小游戏`; `title-settings-config-animal-husbandry-progress.png` shows swatches without the right-side `Orange` label or non-Custom hex input; `title-settings-config-second-motor.png` is historical archived sample evidence only.
 - Regression cases: CONFIG-008, CONFIG-009
 
 ## Hook: UI.DebugConsoleHost
@@ -857,7 +857,7 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
 - Status: experimental
 - Public surface: `IConfigMenuPendingPreview` plus existing conditional `IConfigMenuItem.IsVisible/CanEdit` renderers.
 - Game build: 23465763 workshop
-- Game method/type: DTMAPI title settings retained Unity UI and fallback ImGui overlay.
+- Game method/type: DTMAPI title settings retained Unity UI. The old fallback IMGUI overlay path was retired on 2026-06-15.
 - Patch type: runtime/config registry preview scope; no game Harmony patch.
 - Why this point: conditional rows such as AnimalHusbandryProgress `填充颜色` must respond to unsaved/pending selection of the `+`/Custom color swatch before the player presses Save.
 - Failure behavior: if preview fails, committed preset visibility is shown and custom input does not appear until after saving; smoke status remains failed/pending.

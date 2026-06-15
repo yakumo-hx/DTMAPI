@@ -1,6 +1,7 @@
 param(
     [string] $CaseId = 'MANUAL',
-    [string] $OutputDirectory
+    [string] $OutputDirectory,
+    [switch] $IncludeRuntimeEvidence
 )
 
 . "$PSScriptRoot\common.ps1"
@@ -116,7 +117,27 @@ foreach ($item in $paths) {
 
 $gameEvidenceRoot = Join-Path $dtmapiDir 'evidence'
 if (Test-Path $gameEvidenceRoot) {
-    Copy-Item -Recurse -Force -LiteralPath $gameEvidenceRoot -Destination (Join-Path $evidence 'DTMAPI-evidence')
+    if ($IncludeRuntimeEvidence) {
+        Copy-Item -Recurse -Force -LiteralPath $gameEvidenceRoot -Destination (Join-Path $evidence 'DTMAPI-evidence')
+    }
+    else {
+        $summary = New-Object System.Collections.Generic.List[string]
+        $summary.Add("RuntimeEvidenceRoot=$gameEvidenceRoot")
+        $summary.Add('Skipped=True')
+        $summary.Add('Reason=collect-logs.ps1 no longer copies the full runtime evidence tree by default. Use -IncludeRuntimeEvidence when a full screenshot/runtime evidence payload is required.')
+        $summary.Add('')
+        $summary.Add('Recent runtime evidence folders:')
+        $recentRuntimeEvidence = Get-ChildItem -LiteralPath $gameEvidenceRoot -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 20
+        foreach ($item in $recentRuntimeEvidence) {
+            $summary.Add(("{0}`t{1:o}`t{2}" -f $item.Name, $item.LastWriteTime, $item.FullName))
+        }
+
+        if ($recentRuntimeEvidence.Count -eq 0) {
+            $summary.Add('(none)')
+        }
+
+        $summary | Set-Content -LiteralPath (Join-Path $evidence 'DTMAPI-evidence-skipped.txt')
+    }
 }
 
 Copy-SteamLaunchEvidence -GameDir $gameDir -Destination $evidence

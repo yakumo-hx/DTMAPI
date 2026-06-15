@@ -371,7 +371,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 titleSettingsMenuScreenshotRequested = true;
                 CaptureTitleSettingsMenuEvidenceScreenshot();
             }
-            if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 14)
+            if (smokeSettings.AutoOpenTitleSettingsMenu && titleSettingsMenuScreenshotRequested && titleSettingsConfigScreenshotStage < 10)
                 UpdateTitleSettingsConfigEvidenceScreenshots();
             if (managerStatusPageRequested && !titleSettingsStatusPageScreenshotRequested && titleSettingsStatusPageEvidenceAt != default &&
                 (DateTimeOffset.Now - titleSettingsStatusPageEvidenceAt).TotalSeconds >= 3)
@@ -1668,8 +1668,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
                     return;
                 CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.AnimalHusbandryProgress", "animal-husbandry-progress");
-                if (TryStageAnimalCustomColorForTitleSmoke())
-                    runtime.UI.OpenConfigPage("DTMAPI.SecondMotorMod");
+                TryStageAnimalCustomColorForTitleSmoke();
                 titleSettingsConfigScreenshotStage = 6;
                 titleSettingsConfigScreenshotAt = now;
                 return;
@@ -1690,6 +1689,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
                     return;
                 CaptureTitleSettingsConfigPageEvidenceScreenshot("Yuuka.DTMAPI.AnimalHusbandryProgress", "animal-husbandry-progress-custom");
+                runtime.UI.OpenConfigPage("DTMAPI.MineMod");
                 titleSettingsConfigScreenshotStage = 8;
                 titleSettingsConfigScreenshotAt = now;
                 return;
@@ -1699,7 +1699,8 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
                     return;
-                runtime.UI.OpenConfigPage("DTMAPI.SecondMotorMod");
+                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.MineMod", "mine");
+                runtime.UI.OpenConfigPage("DTMAPI.MoreEquipmentSlotsMod");
                 titleSettingsConfigScreenshotStage = 9;
                 titleSettingsConfigScreenshotAt = now;
                 return;
@@ -1709,48 +1710,8 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
                     return;
-                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.SecondMotorMod", "second-motor");
-                titleSettingsConfigScreenshotStage = 10;
-                titleSettingsConfigScreenshotAt = now;
-                return;
-            }
-
-            if (titleSettingsConfigScreenshotStage == 10)
-            {
-                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
-                    return;
-                runtime.UI.OpenConfigPage("DTMAPI.MineMod");
-                titleSettingsConfigScreenshotStage = 11;
-                titleSettingsConfigScreenshotAt = now;
-                return;
-            }
-
-            if (titleSettingsConfigScreenshotStage == 11)
-            {
-                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
-                    return;
-                CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.MineMod", "mine");
-                titleSettingsConfigScreenshotStage = 12;
-                titleSettingsConfigScreenshotAt = now;
-                return;
-            }
-
-            if (titleSettingsConfigScreenshotStage == 12)
-            {
-                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
-                    return;
-                runtime.UI.OpenConfigPage("DTMAPI.MoreEquipmentSlotsMod");
-                titleSettingsConfigScreenshotStage = 13;
-                titleSettingsConfigScreenshotAt = now;
-                return;
-            }
-
-            if (titleSettingsConfigScreenshotStage == 13)
-            {
-                if ((now - titleSettingsConfigScreenshotAt).TotalSeconds < 0.75)
-                    return;
                 CaptureTitleSettingsConfigPageEvidenceScreenshot("DTMAPI.MoreEquipmentSlotsMod", "more-equipment-slots");
-                titleSettingsConfigScreenshotStage = 14;
+                titleSettingsConfigScreenshotStage = 10;
                 titleSettingsConfigScreenshotAt = now;
             }
         }
