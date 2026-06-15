@@ -246,6 +246,29 @@ if ($AutoExerciseAutoFishingPhase -and ((-not $PSBoundParameters.ContainsKey('Sa
     Write-Error "$blockedReason Evidence: $evidence"
     exit 1
 }
+if ($AutoExerciseVehicle -and ((-not $PSBoundParameters.ContainsKey('SaveSlot')) -or (($SaveSlot -ne 8) -and ($SaveSlot -ne 9)))) {
+    $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
+    $blockedReason = 'Vehicle custom motor smoke requires the real eighth or ninth save fixture. Re-run with explicit -SaveSlot 8 or -SaveSlot 9.'
+    "Started=$(Get-Date -Format o)`nBlocked=$blockedReason`nSaveSlot=$SaveSlot`nSaveSlotExplicit=$($PSBoundParameters.ContainsKey('SaveSlot'))`nAutoExerciseVehicle=$AutoExerciseVehicle" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+    Write-SmokeJsonObject -Path (Join-Path $evidence 'result.json') -Value @{
+        SchemaVersion = 2
+        RunStatus = 'Blocked'
+        RunStatusReason = $blockedReason
+        StartupLog = 'Blocked'
+        GameLaunched = 'Blocked'
+        HookProbe = 'Skipped'
+        SaveLoaded = 'Blocked'
+        VehicleSecondMotor = 'Blocked'
+        NoFatalInstanceWindow = 'Passed'
+        ProcessExited = 'Skipped'
+        ForcedClose = 'Skipped'
+        Completed = Get-Date -Format o
+    }
+    Write-ProcessCheck -Path (Join-Path $evidence 'process-check.txt')
+    Write-FatalWindowCheck -Path (Join-Path $evidence 'fatal-window-check.txt')
+    Write-Error "$blockedReason Evidence: $evidence"
+    exit 1
+}
 
 $managerStatusRequested = [bool]$AutoOpenTitleSettingsStatusPage -or [bool]$AutoOpenTitleSettingsManagerMvp
 $managerMvpRequested = [bool]$AutoOpenTitleSettingsManagerMvp

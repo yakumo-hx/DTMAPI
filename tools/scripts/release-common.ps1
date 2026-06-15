@@ -1,8 +1,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$script:DtmApiReleaseVersion = '0.5.1-alpha'
-$script:DtmApiBinaryVersion = '0.5.1.0'
+$script:DtmApiReleaseVersion = '0.5.2-alpha'
+$script:DtmApiBinaryVersion = '0.5.2.0'
 $script:DtmApiInstallScriptVersion = '2'
 
 function Write-Utf8NoBomJson {
@@ -452,7 +452,7 @@ function New-DtmApiReleaseManifest {
         MinimumGameVersion = ''
         IncludedAssemblies = @($IncludedAssemblies)
         BundledMods = @($BundledMods)
-        ExperimentalApiNotice = 'DTMAPI 0.5.1-alpha is a Developer Preview. Player-facing mods in this package are intended to be stable for normal use, but most GameBridge gameplay APIs remain Experimental for mod developers.'
+        ExperimentalApiNotice = 'DTMAPI 0.5.2-alpha is a Developer Preview. Player-facing mods in this package are intended to be stable for normal use, but most GameBridge gameplay APIs remain Experimental for mod developers.'
     }
 }
 

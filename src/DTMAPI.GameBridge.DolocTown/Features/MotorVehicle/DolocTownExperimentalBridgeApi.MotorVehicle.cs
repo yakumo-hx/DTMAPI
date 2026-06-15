@@ -1,14 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
     internal sealed partial class DolocTownExperimentalBridgeApi
     {
+        private const string SecondMotorGameObjectNamePrefix = "DTMAPI.SecondMotor.";
+
         internal void SetMotorVehicleHooksInstalled(bool installed)
         {
             motorVehicleHooksInstalled = installed;
@@ -44,19 +49,55 @@ namespace DTMAPI.GameBridge.DolocTown
             return result.ToArray();
         }
 
+        public MotorVehicleRegisterResult RegisterCustomMotor(IManifest owner, CustomMotorDefinition definition)
+        {
+            string ownerId = owner?.UniqueID ?? "unknown";
+            definition ??= new CustomMotorDefinition();
+            string firstDefinitionKey = definition.KeyItemIds == null ? string.Empty : definition.KeyItemIds.FirstOrDefault() ?? string.Empty;
+            var options = new SecondMotorOptions
+            {
+                VehicleId = FirstText(definition.VehicleId, ownerId + ".custom_motor"),
+                DisplayName = FirstText(definition.DisplayName, "Custom Motor"),
+                KeyItemId = FirstText(definition.PrimaryKeyItemId, firstDefinitionKey, "dtmapi_custom_motor_key"),
+                KeyItemIds = definition.KeyItemIds ?? Array.Empty<string>(),
+                SpeedMultiplier = NormalizeCustomMotorSpeed(definition.SpeedMultiplier, 1),
+                MovementMode = FirstText(definition.MovementMode, "native-flying-motor"),
+                CollisionProfile = FirstText(definition.CollisionProfile, "native-motor"),
+                AppearanceMode = FirstText(definition.AppearanceMode, "native-clone"),
+                AppearanceAssetRelativePath = definition.AppearanceAssetRelativePath ?? string.Empty,
+                LightMaskAssetRelativePath = definition.LightMaskAssetRelativePath ?? string.Empty,
+                UseOriginalMotorVisuals = FirstText(definition.AppearanceMode, "native-clone").Equals("native-clone", StringComparison.OrdinalIgnoreCase),
+                TextureSourceNote = definition.TextureSourceNote ?? string.Empty,
+                VerboseLogging = definition.VerboseLogging
+            };
+
+            return RegisterCustomMotorCore(owner, options, "IMotorVehicleApi.RegisterCustomMotor");
+        }
+
         public MotorVehicleRegisterResult RegisterSecondMotor(IManifest owner, SecondMotorOptions options)
+        {
+            return RegisterCustomMotorCore(owner, options, "IMotorVehicleApi.RegisterSecondMotor");
+        }
+
+        private MotorVehicleRegisterResult RegisterCustomMotorCore(IManifest? owner, SecondMotorOptions options, string source)
         {
             string ownerId = owner?.UniqueID ?? "unknown";
             options ??= new SecondMotorOptions();
             options.VehicleId = FirstText(options.VehicleId, ownerId + ".second_motor");
             options.KeyItemId = FirstText(options.KeyItemId, "dtmapi_second_motor_key");
             options.DisplayName = FirstText(options.DisplayName, "Second Motor");
-            options.SpeedMultiplier = Math.Max(0.1, Math.Min(8, options.SpeedMultiplier <= 0 ? 2 : options.SpeedMultiplier));
+            options.SpeedMultiplier = NormalizeCustomMotorSpeed(options.SpeedMultiplier, 2);
+            options.MovementMode = FirstText(options.MovementMode, "native-flying-motor");
+            options.CollisionProfile = FirstText(options.CollisionProfile, "native-motor");
+            options.AppearanceMode = FirstText(options.AppearanceMode, options.UseOriginalMotorVisuals ? "native-clone" : "instance-scoped-tint");
+            options.KeyItemIds = NormalizeMotorKeyIds(options.KeyItemId, options.KeyItemIds);
+            options.KeyItemId = options.KeyItemIds.Count > 0 ? options.KeyItemIds[0] : options.KeyItemId;
 
             var result = new MotorVehicleRegisterResult
             {
                 VehicleId = options.VehicleId,
-                KeyItemId = options.KeyItemId
+                KeyItemId = options.KeyItemId,
+                KeyItemIds = options.KeyItemIds
             };
 
             if (owner == null)
@@ -65,9 +106,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 return MotorVehicleRegisterFailed(result, "invalid-options", "VehicleId and KeyItemId are required.");
             if (!IsOwnerOfficiallyEnabled(owner.UniqueID, out string enablementMessage))
                 return MotorVehicleRegisterFailed(result, "source-disabled", enablementMessage);
-            if (secondMotorsByKeyItemId.TryGetValue(options.KeyItemId, out SecondMotorRuntime existingByKey) &&
-                !existingByKey.Options.VehicleId.Equals(options.VehicleId, StringComparison.OrdinalIgnoreCase))
-                return MotorVehicleRegisterFailed(result, "duplicate-key", "Key item " + options.KeyItemId + " is already registered by " + existingByKey.OwnerUniqueId + ".");
+            foreach (string keyItemId in options.KeyItemIds)
+            {
+                if (secondMotorsByKeyItemId.TryGetValue(keyItemId, out SecondMotorRuntime existingByKey) &&
+                    !existingByKey.Options.VehicleId.Equals(options.VehicleId, StringComparison.OrdinalIgnoreCase))
+                    return MotorVehicleRegisterFailed(result, "duplicate-key", "Key item " + keyItemId + " is already registered by " + existingByKey.OwnerUniqueId + ".");
+            }
 
             if (!secondMotors.TryGetValue(options.VehicleId, out SecondMotorRuntime vehicle))
             {
@@ -76,19 +120,56 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             else
             {
+                RemoveSecondMotorKeyMappings(vehicle);
                 vehicle.OwnerUniqueId = ownerId;
                 vehicle.Options = options;
             }
-            secondMotorsByKeyItemId[options.KeyItemId] = vehicle;
+            foreach (string keyItemId in options.KeyItemIds)
+                secondMotorsByKeyItemId[keyItemId] = vehicle;
 
-            vehicle.LastMessage = "Registered DTMAPI second motor key=" + options.KeyItemId + " speedMultiplier=" + options.SpeedMultiplier.ToString("0.###") + ".";
+            vehicle.LastMessage = "Registered DTMAPI custom motor keys=" + string.Join(",", options.KeyItemIds) + " speedMultiplier=" + options.SpeedMultiplier.ToString("0.###") + ".";
             result.Success = true;
             result.State = BuildSecondMotorState(vehicle, "registered");
             result.Message = vehicle.LastMessage;
-            runtime.RuntimeMonitor.Log("Motor vehicle registration owner=" + ownerId + " vehicle=" + options.VehicleId + " key=" + options.KeyItemId + " speedMultiplier=" + options.SpeedMultiplier.ToString("0.###") + " visuals=" + (options.UseOriginalMotorVisuals ? "original-runtime-clone" : "custom") + " note=" + options.TextureSourceNote);
-            runtime.SetHookStatus("Vehicle.SecondMotorRegistration", "experimental", "IMotorVehicleApi.RegisterSecondMotor", result.Message);
+            runtime.RuntimeMonitor.Log("Motor vehicle registration owner=" + ownerId + " vehicle=" + options.VehicleId + " keys=" + string.Join(",", options.KeyItemIds) + " speedMultiplier=" + options.SpeedMultiplier.ToString("0.###") + " movement=" + options.MovementMode + " collision=" + options.CollisionProfile + " appearance=" + options.AppearanceMode + " note=" + options.TextureSourceNote);
+            runtime.SetHookStatus("Vehicle.CustomMotorRegistration", "experimental", source, result.Message);
             RaiseVehicleEvent("registered", vehicle.Options.VehicleId, result.State, result.Message);
             return result;
+        }
+
+        private static IReadOnlyList<string> NormalizeMotorKeyIds(string primaryKeyItemId, IReadOnlyList<string>? keyItemIds)
+        {
+            var result = new List<string>();
+            void Add(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    return;
+                string trimmed = value.Trim();
+                if (result.Any(existing => existing.Equals(trimmed, StringComparison.OrdinalIgnoreCase)))
+                    return;
+                result.Add(trimmed);
+            }
+
+            Add(primaryKeyItemId);
+            if (keyItemIds != null)
+            {
+                foreach (string keyItemId in keyItemIds)
+                    Add(keyItemId);
+            }
+
+            return result.Count == 0 ? new[] { "dtmapi_second_motor_key" } : result.ToArray();
+        }
+
+        private static double NormalizeCustomMotorSpeed(double speedMultiplier, double fallback)
+        {
+            double value = speedMultiplier <= 0 ? fallback : speedMultiplier;
+            return Math.Max(0.1, Math.Min(8, value));
+        }
+
+        private void RemoveSecondMotorKeyMappings(SecondMotorRuntime vehicle)
+        {
+            foreach (string key in secondMotorsByKeyItemId.Where(pair => ReferenceEquals(pair.Value, vehicle)).Select(pair => pair.Key).ToArray())
+                secondMotorsByKeyItemId.Remove(key);
         }
 
         public MotorVehicleSummonResult UnlockOriginalMotor(IManifest owner, double yOffset)
@@ -292,11 +373,11 @@ namespace DTMAPI.GameBridge.DolocTown
         BridgeFeatureStatus IMotorVehicleApi.GetStatus(string uniqueId)
         {
             if (string.IsNullOrWhiteSpace(uniqueId))
-                return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "experimental" : "pending-hook", "Motor API exposes original motor state plus DTMAPI-managed second motor registration, summon, ride, dismount, and instance-scoped clone appearance. Second motor riding uses private AgentControllerState.motorController routing and remains experimental.");
+                return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "experimental" : "pending-hook", "Motor API exposes original motor state plus DTMAPI-managed custom motor registration, multi-key summon, ride, dismount, and instance-scoped clone appearance. Custom motor riding uses private AgentControllerState.motorController routing and remains experimental.");
             bool registered = secondMotors.Values.Any(v => v.OwnerUniqueId.Equals(uniqueId, StringComparison.OrdinalIgnoreCase));
             if (!registered)
-                return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "available" : "pending-hook", "No second motor is registered for this owner.");
-            return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "configured-experimental" : "configured-pending-hook", motorVehicleHooksInstalled ? "Second motor is registered; key/use, riding, and scoped clone-appearance hooks are installed but require third-save smoke evidence." : "Second motor is registered; waiting for motor hook targets.");
+                return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "available" : "pending-hook", "No DTMAPI custom motor is registered for this owner.");
+            return new BridgeFeatureStatus(motorVehicleHooksInstalled ? "configured-experimental" : "configured-pending-hook", motorVehicleHooksInstalled ? "Custom motor is registered; key/use, riding, and scoped clone-appearance hooks are installed but require save-slot-specific smoke evidence." : "Custom motor is registered; waiting for motor hook targets.");
         }
 
         internal MotorVehicleSummonResult UseRegisteredSecondMotorKeyForSmoke(string itemId)
@@ -357,8 +438,10 @@ namespace DTMAPI.GameBridge.DolocTown
             CountSecondMotorScopedTintRenderers(originalMotor, out int originalTotal, out int originalTinted, out int originalSkippedDriver);
             CountSecondMotorScopedTintRenderers(vehicle.Controller, out int secondTotal, out int secondTinted, out int secondSkippedDriver);
 
-            bool customExpected = !vehicle.Options.UseOriginalMotorVisuals;
-            bool isolated = !customExpected || (originalTinted == 0 && secondTinted > 0);
+            bool scopedSprite = vehicle.Options.AppearanceMode.Equals("scoped-sprite", StringComparison.OrdinalIgnoreCase) &&
+                vehicle.AppearanceSummary.IndexOf("appearance=scoped-sprite", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool customExpected = !vehicle.Options.UseOriginalMotorVisuals && !scopedSprite;
+            bool isolated = scopedSprite || !customExpected || (originalTinted == 0 && secondTinted > 0);
             string summary = "appearanceIsolated=" + isolated +
                 ", originalScopedTint=" + originalTinted + "/" + originalTotal +
                 ", originalSkippedDriver=" + originalSkippedDriver +
@@ -671,7 +754,7 @@ namespace DTMAPI.GameBridge.DolocTown
             result.Success = false;
             result.FailureReason = reason ?? string.Empty;
             result.Message = message ?? string.Empty;
-            runtime.SetHookStatus("Vehicle.SecondMotorRegistration", "failed", "IMotorVehicleApi.RegisterSecondMotor", result.Message);
+            runtime.SetHookStatus("Vehicle.CustomMotorRegistration", "failed", "IMotorVehicleApi.RegisterCustomMotor", result.Message);
             return result;
         }
 
@@ -691,6 +774,24 @@ namespace DTMAPI.GameBridge.DolocTown
             result.After = BuildSecondMotorState(vehicle, "after-failed-summon-cleanup");
             string fullMessage = FirstText(message, "Second motor summon failed.") + " cleanup={" + cleanup + "}";
             return MotorVehicleSummonFailed(result, reason, fullMessage);
+        }
+
+        private static string MotorVehicleExceptionReason(Exception ex)
+        {
+            if (ex is TargetInvocationException target && target.InnerException != null)
+                return target.InnerException.GetType().Name;
+            return ex.GetType().Name;
+        }
+
+        private static string MotorVehicleExceptionMessage(Exception ex)
+        {
+            if (ex is TargetInvocationException target && target.InnerException != null)
+            {
+                return target.GetType().Name + ": " + target.Message +
+                    " inner=" + target.InnerException.GetType().Name + ": " + target.InnerException.Message;
+            }
+
+            return ex.GetType().Name + ": " + ex.Message;
         }
 
         private MotorVehicleRideResult MotorVehicleRideFailed(MotorVehicleRideResult result, string reason, string message)
@@ -714,8 +815,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     cleaned++;
                 summaries.Add(vehicle.Options.VehicleId + "{" + summary + "}");
             }
+            int orphans = DestroySecondMotorOrphanGameObjects(reason, keepGameObject: null);
 
-            string message = "Second motor lifecycle cleanup reason=" + (reason ?? string.Empty) + " vehicles=" + secondMotors.Count + " cleanedVehicles=" + cleaned + " details=" + string.Join(";", summaries);
+            string message = "Second motor lifecycle cleanup reason=" + (reason ?? string.Empty) + " vehicles=" + secondMotors.Count + " cleanedVehicles=" + cleaned + " orphanGameObjects=" + orphans + " details=" + string.Join(";", summaries);
             runtime.RuntimeMonitor.Log(message);
             runtime.SetHookStatus("Vehicle.SecondMotorCleanup", "experimental", "SaveLoaded/ReturnedToTitle/failure cleanup", message);
             return message;
@@ -758,6 +860,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     DestroyUnityObject(vehicle.GameObject);
                     cleaned++;
                 }
+
+                DestroyAppearanceObjects(vehicle);
             }
             catch (Exception ex)
             {
@@ -851,7 +955,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 result.After = BuildSecondMotorState(vehicle, "after-summon");
                 result.Success = true;
                 result.Message = vehicle.LastMessage + " room=" + result.After.RoomId + " speedMultiplier=" + vehicle.Options.SpeedMultiplier.ToString("0.###") + ".";
-                runtime.RuntimeMonitor.Log("Second motor summon OK vehicle=" + vehicle.Options.VehicleId + " key=" + vehicle.Options.KeyItemId + " " + result.Message);
+                runtime.RuntimeMonitor.Log("Second motor summon OK vehicle=" + vehicle.Options.VehicleId + " keys=" + string.Join(",", vehicle.Options.KeyItemIds) + " " + result.Message);
                 runtime.SetHookStatus("Vehicle.SecondMotorSummon", "experimental", "DTMAPI cloned MotorController + MotorController.AutoFlyTo", result.Message);
                 RaiseVehicleEvent("summon", vehicle.Options.VehicleId, result.After, result.Message);
                 return result;
@@ -859,9 +963,11 @@ namespace DTMAPI.GameBridge.DolocTown
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Second motor summon failed.", ex.ToString());
-                vehicle.LastFailureReason = ex.GetType().Name;
-                vehicle.LastMessage = ex.Message;
-                return MotorVehicleSummonFailedWithCleanup(result, vehicle, ex.GetType().Name, ex.Message, "summon exception");
+                string failureReason = MotorVehicleExceptionReason(ex);
+                string failureMessage = MotorVehicleExceptionMessage(ex);
+                vehicle.LastFailureReason = failureReason;
+                vehicle.LastMessage = failureMessage;
+                return MotorVehicleSummonFailedWithCleanup(result, vehicle, failureReason, failureMessage, "summon exception");
             }
         }
 
@@ -872,6 +978,8 @@ namespace DTMAPI.GameBridge.DolocTown
             if (vehicle.Controller != null)
                 return true;
 
+            DestroySecondMotorOrphanGameObjects("ensure-before-clone", keepGameObject: null);
+
             Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
             object? originalMotor = ReadStaticMember(dolocApi, "Motor");
             if (originalMotor == null)
@@ -881,52 +989,209 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            object? clone = CloneUnityObject(originalMotor);
-            if (clone == null)
+            object? clone = null;
+            string stage = "clone";
+            try
             {
-                reason = "clone-failed";
-                message = "UnityEngine.Object.Instantiate failed for the original MotorController.";
+                clone = CloneUnityObject(originalMotor);
+                if (clone == null)
+                {
+                    reason = "clone-failed";
+                    message = "UnityEngine.Object.Instantiate failed for the original MotorController.";
+                    return false;
+                }
+
+                stage = "resolve-controller";
+                object? controller = originalMotor.GetType().IsInstanceOfType(clone) ? clone : GetComponent(clone, originalMotor.GetType());
+                if (controller == null)
+                {
+                    reason = "missing-cloned-controller";
+                    message = "The cloned object does not contain a MotorController component.";
+                    DestroyUnityObject(clone);
+                    return false;
+                }
+
+                stage = "name-and-track";
+                object? gameObject = ReadMember(controller, "gameObject") ?? clone;
+                SetMemberValue(gameObject, "name", SecondMotorGameObjectNamePrefix + vehicle.Options.VehicleId);
+                vehicle.Controller = controller;
+                vehicle.GameObject = gameObject;
+                secondMotorControllers.Add(controller);
+
+                stage = "native-init";
+                if (CloneMotorNeedsNativeInit(controller, gameObject, originalMotor, out string initReason))
+                {
+                    SetMemberValue(controller, "isInitialized", false);
+                    MethodInfo? init = FindMethodInHierarchy(controller.GetType(), "Init", 0);
+                    init?.Invoke(controller, null);
+                    runtime.RuntimeMonitor.Log("Second motor clone native Init invoked vehicle=" + vehicle.Options.VehicleId + " reason=" + initReason + ".");
+                }
+                else if (vehicle.Options.VerboseLogging)
+                {
+                    runtime.RuntimeMonitor.Log("Second motor clone native Init skipped vehicle=" + vehicle.Options.VehicleId + " reason=clone-owned-fields" + (string.IsNullOrWhiteSpace(initReason) ? string.Empty : " details=" + initReason) + ".");
+                }
+
+                stage = "reset";
+                MethodInfo? reset = FindMethodInHierarchy(controller.GetType(), "Reset", 0);
+                reset?.Invoke(controller, null);
+                MethodInfo? setVisible = FindMethodInHierarchy(controller.GetType(), "SetVisible", 1);
+                setVisible?.Invoke(controller, new object[] { false });
+
+                stage = "resolve-interactable";
+                object? interactable = ReadMember(controller, "motorInteractable");
+                if (interactable == null || !IsUnityObjectUnderGameObject(interactable, gameObject))
+                {
+                    Type? interactableType = ResolveType("DolocTown.MotorInteractable, Assembly-CSharp");
+                    if (interactableType != null)
+                        interactable = GetComponentInChildren(gameObject, interactableType, includeInactive: true);
+                }
+
+                vehicle.Interactable = interactable;
+                if (interactable != null)
+                    secondMotorInteractables.Add(interactable);
+
+                stage = "appearance";
+                string appearanceSummary = ApplySecondMotorScopedAppearance(vehicle);
+                vehicle.LastMessage = "Cloned original MotorController for DTMAPI second motor; " + appearanceSummary + ".";
+                runtime.RuntimeMonitor.Log(vehicle.LastMessage + " vehicle=" + vehicle.Options.VehicleId + " textureNote=" + vehicle.Options.TextureSourceNote);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                reason = MotorVehicleExceptionReason(ex);
+                message = "ensure-stage=" + stage + " " + MotorVehicleExceptionMessage(ex);
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Second motor clone ensure failed at " + stage + ".", ex.ToString());
+                bool cloneTracked = vehicle.GameObject != null || vehicle.Controller != null;
+                CleanupSecondMotorRuntime(vehicle, "ensure failed stage=" + stage, destroyGameObject: true);
+                if (clone != null && !cloneTracked)
+                    DestroyUnityObject(clone);
                 return false;
             }
+        }
 
-            object? controller = originalMotor.GetType().IsInstanceOfType(clone) ? clone : GetComponent(clone, originalMotor.GetType());
-            if (controller == null)
+        private bool CloneMotorNeedsNativeInit(object controller, object gameObject, object originalMotor, out string reason)
+        {
+            var repaired = new List<string>();
+            foreach (string memberName in new[] { "rb", "driverRenderer", "motorRenderer", "motorLight", "scannerGate", "scannerInteractable", "motorInteractable" })
             {
-                reason = "missing-cloned-controller";
-                message = "The cloned object does not contain a MotorController component.";
-                DestroyUnityObject(clone);
+                object? member = ReadMember(controller, memberName);
+                if (member != null && IsUnityObjectUnderGameObject(member, gameObject))
+                    continue;
+
+                Type? memberType = member?.GetType() ?? ResolveSecondMotorCloneMemberType(memberName);
+                object? cloneOwnedMember = memberType == null ? null : GetComponentInChildren(gameObject, memberType, includeInactive: true);
+                if (cloneOwnedMember != null &&
+                    IsUnityObjectUnderGameObject(cloneOwnedMember, gameObject) &&
+                    SetMemberValue(controller, memberName, cloneOwnedMember))
+                {
+                    repaired.Add(memberName + "-rebound");
+                    continue;
+                }
+
+                reason = member == null ? memberName + "-missing" : memberName + "-not-clone-owned";
+                return true;
+            }
+
+            object? progressCircle = ReadMember(controller, "enduranceProgressCircle");
+            object? originalProgressCircle = ReadMember(originalMotor, "enduranceProgressCircle");
+            if (progressCircle == null)
+            {
+                reason = "enduranceProgressCircle-missing";
+                return true;
+            }
+
+            if (originalProgressCircle != null && ReferenceEquals(progressCircle, originalProgressCircle))
+            {
+                reason = "enduranceProgressCircle-shared-with-original";
+                return true;
+            }
+
+            reason = string.Join(",", repaired);
+            return false;
+        }
+
+        private static Type? ResolveSecondMotorCloneMemberType(string memberName)
+        {
+            switch (memberName)
+            {
+                case "rb":
+                    return ResolveType("UnityEngine.Rigidbody2D, UnityEngine.Physics2DModule") ?? ResolveType("UnityEngine.Rigidbody2D, UnityEngine");
+                case "driverRenderer":
+                    return ResolveType("DolocTown.MotorDriverRenderer, Assembly-CSharp");
+                case "motorRenderer":
+                    return ResolveType("DolocTown.MotorRenderer, Assembly-CSharp");
+                case "motorLight":
+                    return ResolveType("DolocTown.MotorLight, Assembly-CSharp");
+                case "scannerGate":
+                    return ResolveType("DolocTown.ScannerGate, Assembly-CSharp");
+                case "scannerInteractable":
+                    return ResolveType("DolocTown.ScannerInteractableOfMotor, Assembly-CSharp");
+                case "motorInteractable":
+                    return ResolveType("DolocTown.MotorInteractable, Assembly-CSharp");
+                default:
+                    return null;
+            }
+        }
+
+        private static bool IsUnityObjectUnderGameObject(object? instance, object? gameObject)
+        {
+            if (instance == null || gameObject == null)
                 return false;
-            }
 
-            object? gameObject = ReadMember(controller, "gameObject") ?? clone;
-            SetMemberValue(gameObject, "name", "DTMAPI.SecondMotor." + vehicle.Options.VehicleId);
-            SetMemberValue(controller, "isInitialized", false);
-            MethodInfo? init = FindMethodInHierarchy(controller.GetType(), "Init", 0);
-            init?.Invoke(controller, null);
-            MethodInfo? reset = FindMethodInHierarchy(controller.GetType(), "Reset", 0);
-            reset?.Invoke(controller, null);
-            MethodInfo? setVisible = FindMethodInHierarchy(controller.GetType(), "SetVisible", 1);
-            setVisible?.Invoke(controller, new object[] { false });
-
-            object? interactable = ReadMember(controller, "motorInteractable");
-            if (interactable == null)
+            object? current = ReadMember(instance, "transform");
+            object? rootTransform = ReadMember(gameObject, "transform");
+            int guard = 0;
+            while (current != null && rootTransform != null && guard++ < 64)
             {
-                Type? interactableType = ResolveType("DolocTown.MotorInteractable, Assembly-CSharp");
-                if (interactableType != null)
-                    interactable = GetComponentInChildren(gameObject, interactableType, includeInactive: true);
+                if (ReferenceEquals(current, rootTransform))
+                    return true;
+                current = ReadMember(current, "parent");
             }
 
-            vehicle.Controller = controller;
-            vehicle.GameObject = gameObject;
-            vehicle.Interactable = interactable;
-            secondMotorControllers.Add(controller);
-            if (interactable != null)
-                secondMotorInteractables.Add(interactable);
+            return false;
+        }
 
-            string appearanceSummary = ApplySecondMotorScopedAppearance(vehicle);
-            vehicle.LastMessage = "Cloned original MotorController for DTMAPI second motor; " + appearanceSummary + ".";
-            runtime.RuntimeMonitor.Log(vehicle.LastMessage + " vehicle=" + vehicle.Options.VehicleId + " textureNote=" + vehicle.Options.TextureSourceNote);
-            return true;
+        private int DestroySecondMotorOrphanGameObjects(string reason, object? keepGameObject)
+        {
+            int destroyed = 0;
+            try
+            {
+                Type? gameObjectType = ResolveType("UnityEngine.GameObject, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.GameObject, UnityEngine");
+                Type? resourcesType = ResolveType("UnityEngine.Resources, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Resources, UnityEngine");
+                MethodInfo? findAll = resourcesType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(method => method.Name == "FindObjectsOfTypeAll" && method.GetParameters().Length == 1 && method.GetParameters()[0].ParameterType == typeof(Type));
+                if (gameObjectType == null || findAll == null)
+                    return 0;
+
+                object? result = findAll.Invoke(null, new object[] { gameObjectType });
+                var known = new HashSet<object>();
+                foreach (SecondMotorRuntime vehicle in secondMotors.Values)
+                {
+                    if (vehicle.GameObject != null)
+                        known.Add(vehicle.GameObject);
+                }
+
+                foreach (object candidate in EnumerateObjects(result))
+                {
+                    if (ReferenceEquals(candidate, keepGameObject) || known.Contains(candidate))
+                        continue;
+
+                    string name = ReadStringMember(candidate, "name");
+                    if (!name.StartsWith(SecondMotorGameObjectNamePrefix, StringComparison.Ordinal))
+                        continue;
+
+                    DestroyUnityObject(candidate);
+                    destroyed++;
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Second motor orphan sweep failed.", ex.ToString());
+            }
+
+            if (destroyed > 0)
+                runtime.RuntimeMonitor.Log("Second motor orphan sweep destroyed=" + destroyed + " reason=" + (reason ?? string.Empty) + ".");
+            return destroyed;
         }
 
         private string ApplySecondMotorScopedAppearance(SecondMotorRuntime vehicle)
@@ -941,6 +1206,30 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 vehicle.AppearanceSummary = "appearance=original-runtime-clone";
                 return vehicle.AppearanceSummary;
+            }
+
+            if (vehicle.Options.AppearanceMode.Equals("scoped-sprite", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(vehicle.Options.AppearanceAssetRelativePath))
+            {
+                try
+                {
+                    if (TryApplySecondMotorScopedSpriteAppearance(vehicle, out string spriteSummary))
+                    {
+                        vehicle.AppearanceSummary = spriteSummary;
+                        runtime.SetHookStatus("Vehicle.SecondMotorAppearance", "experimental", "DTMAPI cloned MotorController scoped SpriteRenderer.sprite", vehicle.AppearanceSummary);
+                        return vehicle.AppearanceSummary;
+                    }
+
+                    vehicle.AppearanceSummary = spriteSummary;
+                    runtime.SetHookStatus("Vehicle.SecondMotorAppearance", "failed", "DTMAPI cloned MotorController scoped SpriteRenderer.sprite", vehicle.AppearanceSummary);
+                }
+                catch (Exception ex)
+                {
+                    runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Second motor scoped sprite appearance failed.", ex.ToString());
+                    DestroyAppearanceObjects(vehicle);
+                    vehicle.AppearanceSummary = "appearance=scoped-sprite-failed reason=" + MotorVehicleExceptionMessage(ex) + "; fallback=instance-scoped-tint";
+                    runtime.SetHookStatus("Vehicle.SecondMotorAppearance", "failed", "DTMAPI cloned MotorController scoped SpriteRenderer.sprite", vehicle.AppearanceSummary);
+                }
             }
 
             object? color = CreateUnityColor(new DtmColor(SecondMotorScopedTintR, SecondMotorScopedTintG, SecondMotorScopedTintB, 1));
@@ -970,6 +1259,252 @@ namespace DTMAPI.GameBridge.DolocTown
             vehicle.AppearanceSummary = "appearance=instance-scoped-tint hex=" + SecondMotorScopedTintHex + " renderers=" + changed + "/" + total + " skippedDriver=" + skippedDriver;
             runtime.SetHookStatus("Vehicle.SecondMotorAppearance", changed > 0 ? "experimental" : "failed", "DTMAPI cloned MotorController SpriteRenderer.color", vehicle.AppearanceSummary);
             return vehicle.AppearanceSummary;
+        }
+
+        private bool TryApplySecondMotorScopedSpriteAppearance(SecondMotorRuntime vehicle, out string summary)
+        {
+            summary = string.Empty;
+            if (vehicle.GameObject == null || vehicle.Controller == null)
+            {
+                summary = "appearance=scoped-sprite-failed reason=missing-controller";
+                return false;
+            }
+
+            string path = ResolveOwnerRelativePath(vehicle.OwnerUniqueId, vehicle.Options.AppearanceAssetRelativePath);
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                summary = "appearance=scoped-sprite-failed reason=missing-file path=" + vehicle.Options.AppearanceAssetRelativePath;
+                return false;
+            }
+
+            object? texture = LoadTexture2DFromPng(path);
+            if (texture == null)
+            {
+                summary = "appearance=scoped-sprite-failed reason=load-texture path=" + path;
+                return false;
+            }
+
+            DestroyAppearanceObjects(vehicle);
+            vehicle.AppearanceTexture = texture;
+
+            ScopedMotorSpriteMetadata? metadata = ReadScopedMotorSpriteMetadata(path);
+            object? driverRenderer = ReadMember(vehicle.Controller, "driverRenderer");
+            int total = 0;
+            int skippedDriver = 0;
+            int changed = 0;
+            foreach (object renderer in GetSpriteRenderers(vehicle.GameObject, includeInactive: true))
+            {
+                total++;
+                if (IsComponentUnder(renderer, driverRenderer))
+                {
+                    skippedDriver++;
+                    continue;
+                }
+
+                object? existingSprite = ReadMember(renderer, "sprite");
+                object? sprite = CreateScopedMotorSprite(texture, existingSprite, metadata, vehicle.Options.VehicleId, changed);
+                if (sprite == null)
+                    continue;
+
+                if (SetMemberValue(renderer, "sprite", sprite))
+                {
+                    object? white = CreateUnityColor(new DtmColor(1, 1, 1, 1));
+                    if (white != null)
+                        SetMemberValue(renderer, "color", white);
+                    vehicle.AppearanceSprites.Add(sprite);
+                    changed++;
+                }
+            }
+
+            if (changed <= 0)
+            {
+                DestroyAppearanceObjects(vehicle);
+                summary = "appearance=scoped-sprite-failed reason=no-renderers total=" + total + " skippedDriver=" + skippedDriver + " path=" + path;
+                return false;
+            }
+
+            summary = "appearance=scoped-sprite path=" + vehicle.Options.AppearanceAssetRelativePath + " renderers=" + changed + "/" + total + " skippedDriver=" + skippedDriver;
+            return true;
+        }
+
+        private ScopedMotorSpriteMetadata? ReadScopedMotorSpriteMetadata(string texturePath)
+        {
+            string metadataPath = Path.ChangeExtension(texturePath, ".json");
+            if (string.IsNullOrWhiteSpace(metadataPath) || !File.Exists(metadataPath))
+                return null;
+
+            try
+            {
+                using (FileStream stream = File.OpenRead(metadataPath))
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(ScopedMotorSpriteMetadata));
+                    object? value = serializer.ReadObject(stream);
+                    return value is ScopedMotorSpriteMetadata metadata ? metadata : null;
+                }
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to load scoped motor sprite metadata.", ex.ToString());
+                return null;
+            }
+        }
+
+        private object? LoadTexture2DFromPng(string path)
+        {
+            try
+            {
+                Type? texture2DType = ResolveType("UnityEngine.Texture2D, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Texture2D, UnityEngine");
+                Type? imageConversionType = ResolveType("UnityEngine.ImageConversion, UnityEngine.ImageConversionModule") ?? ResolveType("UnityEngine.ImageConversion, UnityEngine");
+                if (texture2DType == null || imageConversionType == null)
+                    return null;
+
+                byte[] bytes = File.ReadAllBytes(path);
+                object? texture = Activator.CreateInstance(texture2DType, 2, 2);
+                MethodInfo? loadImage = imageConversionType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => m.Name == "LoadImage")
+                    .OrderBy(m => m.GetParameters().Length)
+                    .FirstOrDefault(m => m.GetParameters().Length == 2 || m.GetParameters().Length == 3);
+                if (texture == null || loadImage == null)
+                    return null;
+
+                object?[] args = loadImage.GetParameters().Length == 2
+                    ? new object?[] { texture, bytes }
+                    : new object?[] { texture, bytes, false };
+                object? loaded = loadImage.Invoke(null, args);
+                return loaded is bool ok && !ok ? null : texture;
+            }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Failed to load scoped motor appearance texture.", ex.ToString());
+                return null;
+            }
+        }
+
+        private static object? CreateScopedMotorSprite(object texture, object? existingSprite, ScopedMotorSpriteMetadata? metadata, string vehicleId, int index)
+        {
+            Type? spriteType = ResolveType("UnityEngine.Sprite, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Sprite, UnityEngine");
+            Type? rectType = ResolveType("UnityEngine.Rect, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Rect, UnityEngine");
+            if (spriteType == null || rectType == null)
+                return null;
+
+            int textureWidth = ReadIntMember(texture, "width", 0);
+            int textureHeight = ReadIntMember(texture, "height", 0);
+            if (textureWidth <= 0 || textureHeight <= 0)
+                return null;
+
+            object? rect = Activator.CreateInstance(rectType, 0f, 0f, (float)textureWidth, (float)textureHeight);
+            if (rect == null)
+                return null;
+
+            object? existingRect = existingSprite == null ? null : ReadMember(existingSprite, "rect");
+            double existingWidth = existingRect == null ? textureWidth : ReadDoubleMember(existingRect, "width", textureWidth);
+            double existingHeight = existingRect == null ? textureHeight : ReadDoubleMember(existingRect, "height", textureHeight);
+            existingWidth = Math.Max(1, existingWidth);
+            existingHeight = Math.Max(1, existingHeight);
+            object? pivot = existingSprite == null ? null : ReadMember(existingSprite, "pivot");
+            double pivotX = pivot == null ? 0.5 : ReadVectorComponent(pivot, "x") / existingWidth;
+            double pivotY = pivot == null ? 0.5 : ReadVectorComponent(pivot, "y") / existingHeight;
+            if (metadata?.Pivot != null)
+            {
+                pivotX = metadata.Pivot.X / Math.Max(1, textureWidth);
+                pivotY = metadata.Pivot.Y / Math.Max(1, textureHeight);
+            }
+
+            object? normalizedPivot = CreateUnityVector2(
+                Math.Max(0, Math.Min(1, pivotX)),
+                Math.Max(0, Math.Min(1, pivotY)));
+            if (normalizedPivot == null)
+                return null;
+
+            double pixelsPerUnit = existingSprite == null ? 8 : ReadDoubleMember(existingSprite, "pixelsPerUnit", 8);
+            if (metadata != null && metadata.PixelsPerUnit > 0)
+                pixelsPerUnit = metadata.PixelsPerUnit;
+            MethodInfo? create = spriteType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => m.Name == "Create")
+                .OrderByDescending(m => m.GetParameters().Length)
+                .FirstOrDefault(m =>
+                {
+                    ParameterInfo[] parameters = m.GetParameters();
+                    return parameters.Length >= 3 &&
+                        parameters[0].ParameterType.IsInstanceOfType(texture) &&
+                        parameters[1].ParameterType == rect.GetType() &&
+                        parameters[2].ParameterType == normalizedPivot.GetType();
+                });
+            if (create == null)
+                return null;
+
+            ParameterInfo[] createParameters = create.GetParameters();
+            object?[] args = new object?[createParameters.Length];
+            args[0] = texture;
+            args[1] = rect;
+            args[2] = normalizedPivot;
+            if (createParameters.Length >= 4)
+                args[3] = (float)Math.Max(0.01, pixelsPerUnit);
+            for (int i = 4; i < args.Length; i++)
+                args[i] = createParameters[i].HasDefaultValue ? createParameters[i].DefaultValue : GetDefaultValue(createParameters[i].ParameterType);
+
+            object? sprite = create.Invoke(null, args);
+            if (sprite != null)
+                SetMemberValue(sprite, "name", "DTMAPI.CustomMotor." + vehicleId + "." + index.ToString("000"));
+            return sprite;
+        }
+
+        private static object? GetDefaultValue(Type type)
+        {
+            if (type == typeof(bool))
+                return false;
+            if (type == typeof(float))
+                return 0f;
+            if (type == typeof(int))
+                return 0;
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
+        }
+
+        private string ResolveOwnerRelativePath(string ownerId, string relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath))
+                return string.Empty;
+            if (Path.IsPathRooted(relativePath))
+                return Path.GetFullPath(relativePath);
+
+            DTMAPI.Core.Manifesting.DiscoveredMod? discovered = runtime.DiscoveredMods
+                .FirstOrDefault(mod => mod.Manifest.UniqueID.Equals(ownerId, StringComparison.OrdinalIgnoreCase));
+            if (discovered == null || string.IsNullOrWhiteSpace(discovered.RootPath))
+                return string.Empty;
+
+            return Path.GetFullPath(Path.Combine(discovered.RootPath, relativePath.Replace('/', Path.DirectorySeparatorChar)));
+        }
+
+        private static void DestroyAppearanceObjects(SecondMotorRuntime vehicle)
+        {
+            foreach (object sprite in vehicle.AppearanceSprites.ToArray())
+                DestroyUnityObject(sprite);
+            vehicle.AppearanceSprites.Clear();
+            if (vehicle.AppearanceTexture != null)
+            {
+                DestroyUnityObject(vehicle.AppearanceTexture);
+                vehicle.AppearanceTexture = null;
+            }
+        }
+
+        [DataContract]
+        private sealed class ScopedMotorSpriteMetadata
+        {
+            [DataMember(Name = "pivot")]
+            public ScopedMotorSpritePivot? Pivot { get; set; }
+
+            [DataMember(Name = "pixels_per_unit")]
+            public double PixelsPerUnit { get; set; }
+        }
+
+        [DataContract]
+        private sealed class ScopedMotorSpritePivot
+        {
+            [DataMember(Name = "x")]
+            public double X { get; set; }
+
+            [DataMember(Name = "y")]
+            public double Y { get; set; }
         }
 
         private bool TryResolveSecondMotorFromInteractable(object interactable, out SecondMotorRuntime vehicle)
@@ -1166,6 +1701,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 EffectiveMaxSpeed = maxSpeed,
                 SpeedMultiplier = 1,
                 KeyItemId = "motor_key",
+                KeyItemIds = new[] { "motor_key" },
+                MovementMode = "native-flying-motor",
+                CollisionProfile = "native-motor",
+                AppearanceMode = "native",
+                AppearanceSummary = "appearance=native-owner",
                 LastFailureReason = failureReason,
                 LastMessage = FirstText(message, "Original motor state source=" + source + ".")
             };
@@ -1199,6 +1739,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 EffectiveMaxSpeed = maxSpeed * vehicle.Options.SpeedMultiplier,
                 SpeedMultiplier = vehicle.Options.SpeedMultiplier,
                 KeyItemId = vehicle.Options.KeyItemId,
+                KeyItemIds = vehicle.Options.KeyItemIds,
+                MovementMode = vehicle.Options.MovementMode,
+                CollisionProfile = vehicle.Options.CollisionProfile,
+                AppearanceMode = vehicle.Options.AppearanceMode,
+                AppearanceSummary = vehicle.AppearanceSummary,
                 LastFailureReason = FirstText(vehicle.LastFailureReason, failureReason),
                 LastMessage = FirstText(vehicle.LastMessage, message, "Second motor state source=" + source + ".")
             };
@@ -1397,6 +1942,8 @@ namespace DTMAPI.GameBridge.DolocTown
             public object? GameObject { get; set; }
             public object? Controller { get; set; }
             public object? Interactable { get; set; }
+            public object? AppearanceTexture { get; set; }
+            public List<object> AppearanceSprites { get; } = new List<object>();
             public object? Room { get; set; }
             public object? LastPosition { get; set; }
             public object? PendingTransitionRoom { get; set; }

@@ -65,6 +65,7 @@ namespace DTMAPI.UnitTests
                 StrongPlantingGunNormalizesToThreeSlotContract();
                 SaveSlotsNormalizeToFixedTwelveContract();
                 EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery();
+                MotorVehicleCustomApiNormalizesKeysAndNativeSpeedDefaults();
                 FishingAutomationOptionsNormalizeNativeStageDefaults();
                 FishingAutomationBiteActionPrecedence();
                 FishingAutomationMiniGameInputDecisionMatchesNativeBars();
@@ -182,15 +183,15 @@ namespace DTMAPI.UnitTests
             try
             {
                 string dir = NewTempGameDir();
-                Assert(DtmApiRuntime.ApiVersion == "0.5.1-alpha", "DTMAPI runtime API version should be 0.5.1-alpha for this dev baseline.");
-                Assert(DtmApiRuntime.BinaryVersion == "0.5.1.0", "DTMAPI binary/plugin version should remain numeric for BepInEx and assembly metadata.");
+                Assert(DtmApiRuntime.ApiVersion == "0.5.2-alpha", "DTMAPI runtime API version should be 0.5.2-alpha for this dev baseline.");
+                Assert(DtmApiRuntime.BinaryVersion == "0.5.2.0", "DTMAPI binary/plugin version should remain numeric for BepInEx and assembly metadata.");
                 WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
                 WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
                 WriteManifest(dir, "OptionalNeedsBase2", "{ \"Name\": \"Optional Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalNeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": false } ] }");
-                WriteManifest(dir, "NeedsCurrentAlphaApi", "{ \"Name\": \"Needs Current Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CurrentAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.1-alpha\" }");
+                WriteManifest(dir, "NeedsCurrentAlphaApi", "{ \"Name\": \"Needs Current Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CurrentAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.2-alpha\" }");
                 WriteManifest(dir, "Legacy042Api", "{ \"Name\": \"Legacy 0.4.2 API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Legacy042Api\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.4.2\" }");
                 WriteManifest(dir, "Legacy031Api", "{ \"Name\": \"Legacy 0.3.1 API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Legacy031Api\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.3.1\" }");
-                WriteManifest(dir, "NeedsFutureAlphaApi", "{ \"Name\": \"Needs Future Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.2-alpha\" }");
+                WriteManifest(dir, "NeedsFutureAlphaApi", "{ \"Name\": \"Needs Future Alpha API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureAlphaApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"0.5.3-alpha\" }");
                 WriteManifest(dir, "NeedsFutureApi", "{ \"Name\": \"Needs Future API\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.FutureApi\", \"Type\": \"ContentPack\", \"MinimumDTMApiVersion\": \"99.0.0\" }");
                 WriteManifest(dir, "CycleA", "{ \"Name\": \"Cycle A\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Required\": true } ] }");
                 WriteManifest(dir, "CycleB", "{ \"Name\": \"Cycle B\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.CycleB\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.CycleA\", \"Required\": true } ] }");
@@ -201,10 +202,10 @@ namespace DTMAPI.UnitTests
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Base"), "Base dependency should load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NeedsBase2"), "Required dependency version mismatch should block loading.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.OptionalNeedsBase2"), "Optional dependency version mismatch should warn but not block loading.");
-                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CurrentAlphaApi"), "MinimumDTMApiVersion 0.5.1-alpha should load on the current alpha runtime.");
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CurrentAlphaApi"), "MinimumDTMApiVersion 0.5.2-alpha should load on the current alpha runtime.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Legacy042Api"), "Legacy MinimumDTMApiVersion 0.4.2 should still load on the current alpha runtime.");
                 Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.Legacy031Api"), "Legacy MinimumDTMApiVersion 0.3.1 should still load on the current alpha runtime.");
-                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureAlphaApi"), "Future MinimumDTMApiVersion 0.5.2-alpha should block loading.");
+                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureAlphaApi"), "Future MinimumDTMApiVersion 0.5.3-alpha should block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.FutureApi"), "Future MinimumDTMApiVersion should block loading.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleA"), "CycleA should be blocked and must not load.");
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.CycleB"), "CycleB should be blocked and must not load.");
@@ -417,11 +418,11 @@ namespace DTMAPI.UnitTests
                 runtime.Paths.Ensure();
                 File.WriteAllText(
                     Path.Combine(runtime.Paths.DtmApiPath, "install-state.json"),
-                    "{ \"DTMAPIVersion\": \"0.5.1-alpha\", \"BinaryVersion\": \"0.5.1.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
+                    "{ \"DTMAPIVersion\": \"0.5.2-alpha\", \"BinaryVersion\": \"0.5.2.0\", \"LegacyModsMoved\": [ { \"ModId\": \"Old.AutoFishing\" } ], \"LegacyDetections\": [ { \"Kind\": \"legacy-smapi-runtime\" }, { \"Kind\": \"legacy-workshop-cache\" } ] }",
                     new UTF8Encoding(false));
                 File.WriteAllText(
                     Path.Combine(runtime.Paths.DtmApiPath, "release-manifest.json"),
-                    "{ \"DTMAPIVersion\": \"0.5.1-alpha\", \"BinaryVersion\": \"0.5.1.0\", \"PackageKind\": \"unit-test\" }",
+                    "{ \"DTMAPIVersion\": \"0.5.2-alpha\", \"BinaryVersion\": \"0.5.2.0\", \"PackageKind\": \"unit-test\" }",
                     new UTF8Encoding(false));
                 MethodInfo recordWarning = runtime.Diagnostics.GetType().GetMethod("RecordWarning", BindingFlags.NonPublic | BindingFlags.Instance)
                     ?? throw new InvalidOperationException("DiagnosticsService.RecordWarning should be available for runtime warnings.");
@@ -444,8 +445,8 @@ namespace DTMAPI.UnitTests
                 Assert(ReadZipText(report, "install-state.json").Contains("Old.AutoFishing"), "Diagnostic report zip should include install-state.json when present.");
                 Assert(ReadZipText(report, "release-manifest.json").Contains("unit-test"), "Diagnostic report zip should include release-manifest.json when present.");
                 Assert(summary.Contains("Errors: 1000") && summary.Contains("Warnings: 1000"), "Diagnostic report summary should report the retained window counts.");
-                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.1-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.1.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
-                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.1-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.1.0"), "Diagnostic report summary should include release manifest version fields.");
+                Assert(summary.Contains("InstallState: present") && summary.Contains("InstallStateDTMAPIVersion: 0.5.2-alpha") && summary.Contains("InstallStateBinaryVersion: 0.5.2.0") && summary.Contains("InstallStateLegacyMovedCount: 1") && summary.Contains("InstallStateLegacyDetectedCount: 2"), "Diagnostic report summary should include install-state version and legacy counts.");
+                Assert(summary.Contains("ReleaseManifest: present") && summary.Contains("ReleaseManifestDTMAPIVersion: 0.5.2-alpha") && summary.Contains("ReleaseManifestBinaryVersion: 0.5.2.0"), "Diagnostic report summary should include release manifest version fields.");
                 Assert(summary.Contains("DiagnosticsTrimmed: errors=5, warnings=5, maxPerKind=1000."), "Diagnostic report summary should describe internal trimming when entries are capped.");
                 Assert(!summary.Contains("error-0") && summary.Contains("error-1004") && !summary.Contains("warning-0") && summary.Contains("warning-1004"), "Diagnostic report summary should include retained entries, not trimmed oldest entries.");
 
@@ -657,9 +658,9 @@ namespace DTMAPI.UnitTests
                 Assert(statusSummary.Contains("overall=failed") && statusSummary.Contains("mods=loaded:3,blocked:1,disabled:1") && statusSummary.Contains("diagnostics=errors:2,warnings:2") && statusSummary.Contains("hooks=failed:1,missing:1") && statusSummary.Contains("features=failed:1,degraded:1") && statusSummary.Contains("install=missing") && statusSummary.Contains("report=missing-report") && statusSummary.Contains("log=present|") && statusSummary.Contains("reportPath=missing|"), "Manager status summary should include support-loop counters, install state, and report/log state.");
                 DtmManagerViewModel installedModel = DtmManagerViewModelFactory.FromSnapshot(
                     snapshot,
-                    ManagerInstallStateSummary.Present("0.5.1-alpha", "0.5.1.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
+                    ManagerInstallStateSummary.Present("0.5.2-alpha", "0.5.2.0", "2026-06-11T00:00:00Z", Path.Combine(Path.GetTempPath(), "install-state.json"), 2, 5, true));
                 string installStateLine = ManagerPageRowFormatter.FormatInstallState(installedModel.InstallState);
-                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.1-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
+                Assert(installStateLine.Contains("present") && installStateLine.Contains("version:0.5.2-alpha") && installStateLine.Contains("legacyMoved:2") && installStateLine.Contains("legacyDetected:5") && installStateLine.Contains("uninstall:available"), "Manager install-state formatter should expose install version, legacy counters, and uninstall script availability.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Hooks", 17, 64) == "Hooks: showing first 17 of 64", "Manager formatter should expose showing-first row counts.");
                 Assert(ManagerPageRowFormatter.FormatShowingFirst("Rows", 99, 3) == "Rows: showing first 3 of 3", "Manager formatter should clamp showing-first counts to total.");
 
@@ -2061,6 +2062,33 @@ namespace DTMAPI.UnitTests
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(2, "Yuuka", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string archiveReason) && archiveReason.Contains("archive-index-mismatch"), "Protected storage should reject mismatched archive slots.");
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Other", string.Empty, 100, 3, "Yuuka", string.Empty, 120, out string playerReason) && playerReason.Contains("player-name-mismatch"), "Protected storage should reject clearly mismatched player identities.");
             Assert(!EquipmentSlotProtectedStoragePolicy.IsStorageCompatible(3, "Yuuka", string.Empty, 1000, 3, "Yuuka", string.Empty, 120, out string clockReason) && clockReason.Contains("total-game-seconds-regressed"), "Protected storage should reject strong save-clock regressions.");
+        }
+
+        private static void MotorVehicleCustomApiNormalizesKeysAndNativeSpeedDefaults()
+        {
+            Type serviceType = typeof(DolocTownExperimentalBridgeApi);
+            MethodInfo normalizeKeys = serviceType.GetMethod("NormalizeMotorKeyIds", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Motor vehicle bridge should keep a key-id normalization helper.");
+            MethodInfo normalizeSpeed = serviceType.GetMethod("NormalizeCustomMotorSpeed", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Motor vehicle bridge should keep a speed normalization helper.");
+
+            IReadOnlyList<string> keyIds = (IReadOnlyList<string>)(normalizeKeys.Invoke(null, new object?[] { "dtmapi_second_motor_key", new[] { "dtmapi_second_motor_key", "dtmapi_second_motor_alt_key", " dtmapi_spaced_motor_key " } }) ?? throw new InvalidOperationException("Normalize should return key ids."));
+            IReadOnlyList<string> fallbackKeyIds = (IReadOnlyList<string>)(normalizeKeys.Invoke(null, new object?[] { string.Empty, Array.Empty<string>() }) ?? throw new InvalidOperationException("Normalize should return fallback key ids."));
+
+            Assert(keyIds.SequenceEqual(new[] { "dtmapi_second_motor_key", "dtmapi_second_motor_alt_key", "dtmapi_spaced_motor_key" }), "Custom motor keys should preserve primary-first order, trim whitespace, and remove duplicates.");
+            Assert(fallbackKeyIds.SequenceEqual(new[] { "dtmapi_second_motor_key" }), "Custom motor key normalization should retain the historical fallback key when no key is provided.");
+
+            double newApiDefaultSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.0, 1.0 }));
+            double legacyDefaultSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.0, 2.0 }));
+            double clampedLowSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.01, 1.0 }));
+            double clampedHighSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 99.0, 1.0 }));
+
+            Assert(newApiDefaultSpeed == 1.0, "RegisterCustomMotor should default to 1x native speed for official-behavior clones.");
+            Assert(legacyDefaultSpeed == 2.0, "RegisterSecondMotor compatibility should retain its historical 2x default.");
+            Assert(Math.Abs(clampedLowSpeed - 0.1) < 0.0001 && clampedHighSpeed == 8.0, "Custom motor speed normalization should clamp to the documented 0.1x-8x range.");
+
+            var definition = new CustomMotorDefinition();
+            Assert(definition.SpeedMultiplier == 1.0 && definition.MovementMode == "native-flying-motor" && definition.CollisionProfile == "native-motor" && definition.AppearanceMode == "native-clone", "CustomMotorDefinition defaults should model a native flying motor clone.");
         }
 
         private static void FishingAutomationBiteActionPrecedence()

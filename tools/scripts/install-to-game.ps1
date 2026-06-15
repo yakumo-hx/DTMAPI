@@ -388,25 +388,47 @@ function Install-OfficialVehicleExampleAssets {
         [Parameter(Mandatory = $true)] [string] $Destination
     )
 
-    $destRoot = Join-Path $Destination 'Content\DTMAPI\official-vehicle-example'
-    if (Test-Path $destRoot) {
-        Remove-Item -LiteralPath $destRoot -Recurse -Force
+    $staleRoots = @(
+        (Join-Path $Destination 'Content\DTMAPI\official-vehicle-example'),
+        (Join-Path $Destination 'Content\DTMAPI\vehicle-appearance')
+    )
+    foreach ($staleRoot in $staleRoots) {
+        if (Test-Path $staleRoot) {
+            Remove-Item -LiteralPath $staleRoot -Recurse -Force
+        }
     }
 
-    $noteRoot = Join-Path $Destination 'Content\DTMAPI\vehicle-appearance'
-    New-Item -ItemType Directory -Force -Path $noteRoot | Out-Null
-    $notePath = Join-Path $noteRoot 'official-vehicle-assets.txt'
+    $privateRoot = Join-Path $Destination 'Content\DTMAPI\assets\second-motor'
+    New-Item -ItemType Directory -Force -Path $privateRoot | Out-Null
+    $notePath = Join-Path $privateRoot 'official-vehicle-assets.txt'
     $sourceRoot = Find-OfficialVehicleExampleAssetRoot -GameDir $GameDir
     $sourceLine = if ($sourceRoot) { "Official Workshop example asset root found locally: $sourceRoot" } else { "Official Workshop example asset root was not found locally." }
+    $copied = @()
+    if ($sourceRoot) {
+        $assetCopies = @(
+            @{ Source = 'sprite_vehicle_motor.png'; Destination = 'dtmapi_second_motor.png' },
+            @{ Source = 'sprite_vehicle_motor.json'; Destination = 'dtmapi_second_motor.json' },
+            @{ Source = 'sprite_vehicle_motor_light_mask.png'; Destination = 'dtmapi_second_motor_light_mask.png' },
+            @{ Source = 'sprite_vehicle_motor_light_mask.json'; Destination = 'dtmapi_second_motor_light_mask.json' }
+        )
+        foreach ($assetCopy in $assetCopies) {
+            $sourcePath = Join-Path $sourceRoot $assetCopy.Source
+            if (Test-Path -LiteralPath $sourcePath -PathType Leaf) {
+                Copy-Item -Force -LiteralPath $sourcePath -Destination (Join-Path $privateRoot $assetCopy.Destination)
+                $copied += "$($assetCopy.Source)->$($assetCopy.Destination)"
+            }
+        }
+    }
     @(
-        "Official vehicle example replacement assets are intentionally not installed into this DTMAPI local package.",
+        "Official vehicle example replacement assets are intentionally not installed as global replacement keys.",
         "The official example uses global sprite_vehicle_motor asset keys, which also changes the original Doloc Town motor.",
-        "DTMAPI.SecondMotor now uses an instance-scoped GameBridge tint for the cloned motor until a scoped sprite adapter is implemented.",
+        "DTMAPI.SecondMotor copies locally available official example textures into DTMAPI-named private assets and applies them only to the DTMAPI clone through GameBridge scoped-sprite mode.",
+        "CopiedFiles=$([string]::Join(',', $copied))",
         $sourceLine,
         "UpdatedAt=$(Get-Date -Format o)"
     ) | Set-Content -LiteralPath $notePath
 
-    Write-Host "Skipped global official vehicle example sprite assets for SecondMotor; removed stale assets from $destRoot"
+    Write-Host "Installed private official vehicle example sprite assets for SecondMotor; removed stale global vehicle assets from $([string]::Join(', ', $staleRoots))"
 }
 
 function Install-OfficialLocalDtmApiMod {
@@ -447,17 +469,17 @@ function Install-OfficialLocalDtmApiMod {
 
     $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifestPath | ConvertFrom-Json
     $manifest.EntryDll = "Content/DTMAPI/$($Mod.PackageDll)"
-    $manifest.MinimumDTMApiVersion = '0.5.1-alpha'
+    $manifest.MinimumDTMApiVersion = '0.5.2-alpha'
     if ($manifest.Dependencies) {
         foreach ($dependency in $manifest.Dependencies) {
             if ($dependency.UniqueID -eq 'DTMAPI.ModConfigMenu') {
-                $dependency.MinimumVersion = '0.5.1-alpha'
+                $dependency.MinimumVersion = '0.5.2-alpha'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.GameBridge.DolocTown') {
-                $dependency.MinimumVersion = '0.5.1-alpha'
+                $dependency.MinimumVersion = '0.5.2-alpha'
             }
             if ($dependency.UniqueID -eq 'DTMAPI.DebugConsoleHost') {
-                $dependency.MinimumVersion = '0.5.1-alpha'
+                $dependency.MinimumVersion = '0.5.2-alpha'
             }
         }
     }

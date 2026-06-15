@@ -34,82 +34,43 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!registered.OwnerUniqueId.Equals("DTMAPI.SecondMotorMod", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Second motor owner was " + registered.OwnerUniqueId + " instead of DTMAPI.SecondMotorMod.");
 
-                if (Math.Abs(registered.SpeedMultiplier - 2) > 0.05)
-                    throw new InvalidOperationException("Second motor speed multiplier was " + FormatSmokeDouble(registered.SpeedMultiplier) + " instead of 2x.");
+                int saveSlot = smokeSettings?.AutoLoadSaveSlot ?? 0;
+                if (saveSlot != 8 && saveSlot != 9)
+                    throw new InvalidOperationException("Vehicle smoke requires the eighth or ninth save fixture. currentSaveSlot=" + saveSlot + ".");
 
-                if (vehicleEdgeTransitionRequestedAt != default)
-                {
-                    if ((DateTimeOffset.Now - vehicleEdgeTransitionRequestedAt).TotalSeconds < 4)
-                        return SmokeAttemptResult.Pending;
-
-                    return CompleteVehicleEdgeTransitionForSmoke(smokeManifest, vehicleId, keyItemId, registered);
-                }
-
-                if (vehicleOutdoorTeleportRequestedAt != default &&
-                    (DateTimeOffset.Now - vehicleOutdoorTeleportRequestedAt).TotalSeconds < 4)
-                {
-                    return SmokeAttemptResult.Pending;
-                }
-
-                string outdoorRecovery = vehicleOutdoorTeleportRequestedAt == default ? "not-needed" : "verified";
+                if (Math.Abs(registered.SpeedMultiplier - 1) > 0.05)
+                    throw new InvalidOperationException("Second motor speed multiplier was " + FormatSmokeDouble(registered.SpeedMultiplier) + " instead of native-like 1x.");
+                if (!registered.KeyItemIds.Any(key => key.Equals(keyItemId, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Second motor registered keys did not include " + keyItemId + ".");
                 if (!registered.IsAvailableInCurrentRoom)
-                {
-                    if (vehicleOutdoorTeleportRequestedAt == default)
-                    {
-                        TeleportDestination? farm = SelectVehicleOutdoorSmokeDestination(experimentalApi);
-                        if (farm == null)
-                            throw new InvalidOperationException("Current room disallows motor summon and no farm/outdoor teleport destination was available. reason=" + registered.LastFailureReason + " message=" + registered.LastMessage);
-
-                        TeleportResult transport = experimentalApi.Teleport(smokeManifest, farm.Id);
-                        if (!transport.Success)
-                            throw new InvalidOperationException("Current room disallows motor summon and outdoor recovery teleport failed: " + transport.FailureReason + ": " + transport.Message);
-
-                        vehicleOutdoorTeleportRequestedAt = DateTimeOffset.Now;
-                        runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "ITeleportDebugApi -> DolocAPI.DoTransport", "Current room disallows motor summon (" + registered.LastFailureReason + "); requested outdoor recovery teleport destination=" + farm.Id + " markPoint=" + farm.MarkPointId + ".");
-                        return SmokeAttemptResult.Pending;
-                    }
-
-                    if ((DateTimeOffset.Now - vehicleOutdoorTeleportRequestedAt).TotalSeconds < 4)
-                        return SmokeAttemptResult.Pending;
-
-                    registered = experimentalApi.GetVehicleState(vehicleId);
-                    outdoorRecovery = "requested";
-                    if (!registered.IsAvailableInCurrentRoom)
-                        throw new InvalidOperationException("Outdoor recovery teleport did not reach a motor-enabled room. reason=" + registered.LastFailureReason + " message=" + registered.LastMessage);
-
-                    outdoorRecovery = "verified";
-                }
-
-                InventoryGiveResult giveKey = experimentalApi.GiveItem(smokeManifest, keyItemId, 1);
-                if (!giveKey.Success)
-                    throw new InvalidOperationException("Failed to give second motor key: " + giveKey.FailureReason + ": " + giveKey.Message);
+                    throw new InvalidOperationException("Vehicle smoke fixture is not in a motor-enabled room. reason=" + registered.LastFailureReason + " message=" + registered.LastMessage + ". Do not use teleport recovery for this smoke.");
 
                 MotorVehicleState originalBeforeKey = experimentalApi.GetOriginalMotorState();
-                if (!originalBeforeKey.IsUnlocked)
-                {
-                    MotorVehicleSummonResult unlock = experimentalApi.UnlockOriginalMotor(smokeManifest, 0);
-                    if (!unlock.Success)
-                        throw new InvalidOperationException("Original motor unlock before key smoke failed: " + unlock.FailureReason + ": " + unlock.Message);
-                }
+                if (saveSlot == 8 && !originalBeforeKey.IsUnlocked)
+                    throw new InvalidOperationException("Eighth save fixture should have the native motor unlocked for comparison, but original IsUnlocked=false.");
+                if (saveSlot == 9 && originalBeforeKey.IsUnlocked)
+                    throw new InvalidOperationException("Ninth save fixture should keep the native motor locked, but original IsUnlocked=true.");
 
-                MotorVehicleSummonResult originalKeySummon = experimentalApi.UseOriginalMotorKeyForSmoke("motor_key");
-                if (!originalKeySummon.Success)
-                    throw new InvalidOperationException("Original motor key summon failed: " + originalKeySummon.FailureReason + ": " + originalKeySummon.Message);
+                InventoryGiveResult giveKey = experimentalApi.GiveItem(smokeManifest, keyItemId, 2);
+                if (!giveKey.Success)
+                    throw new InvalidOperationException("Failed to give second motor key: " + giveKey.FailureReason + ": " + giveKey.Message);
 
                 MotorVehicleSummonResult keySummon = experimentalApi.UseRegisteredSecondMotorKeyForSmoke(keyItemId);
                 if (!keySummon.Success)
                     throw new InvalidOperationException("Second motor key summon failed: " + keySummon.FailureReason + ": " + keySummon.Message);
 
+                MotorVehicleSummonResult secondKeySummon = experimentalApi.UseRegisteredSecondMotorKeyForSmoke(keyItemId);
+                if (!secondKeySummon.Success)
+                    throw new InvalidOperationException("Second motor repeated key summon failed: " + secondKeySummon.FailureReason + ": " + secondKeySummon.Message);
+
                 MotorVehicleState originalAfterKeySummon = experimentalApi.GetOriginalMotorState();
                 MotorVehicleState secondAfterKeySummon = experimentalApi.GetVehicleState(vehicleId);
-                bool dualVisibleAfterKeySummon = originalAfterKeySummon.IsVisible && secondAfterKeySummon.IsVisible;
-                runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor dual-visible probe originalVisible=" + originalAfterKeySummon.IsVisible +
-                    " originalRoom=" + originalAfterKeySummon.RoomId +
-                    " secondVisible=" + secondAfterKeySummon.IsVisible +
-                    " secondRoom=" + secondAfterKeySummon.RoomId +
-                    " dualVisible=" + dualVisibleAfterKeySummon + ".");
-                if (!dualVisibleAfterKeySummon)
-                    throw new InvalidOperationException("Original and DTMAPI second motor were not simultaneously visible after original-key then second-key summon. originalRoom=" + originalAfterKeySummon.RoomId + " secondRoom=" + secondAfterKeySummon.RoomId + ".");
+                bool nativeUnlockUnchanged = originalBeforeKey.IsUnlocked == originalAfterKeySummon.IsUnlocked;
+                bool lockedNativeUnaffected = saveSlot != 9 || (!originalAfterKeySummon.IsUnlocked && !originalAfterKeySummon.IsVisible);
+                if (!nativeUnlockUnchanged || !lockedNativeUnaffected)
+                    throw new InvalidOperationException("Second motor key changed native motor state. beforeUnlocked=" + originalBeforeKey.IsUnlocked + " afterUnlocked=" + originalAfterKeySummon.IsUnlocked + " afterVisible=" + originalAfterKeySummon.IsVisible + ".");
+                if (!secondAfterKeySummon.IsVisible)
+                    throw new InvalidOperationException("Second motor was not visible after custom key summon.");
 
                 string appearanceProbe = experimentalApi.ProbeSecondMotorAppearanceForSmoke(vehicleId);
                 if (!appearanceProbe.Contains("appearanceIsolated=True"))
@@ -124,41 +85,41 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", keyItem=" + keyItemId +
                     ", keyBefore=" + giveKey.BeforeCount +
                     ", keyAfter=" + giveKey.AfterCount +
-                    ", originalKeySummonRoom=" + originalKeySummon.After.RoomId +
+                    ", saveSlot=" + saveSlot +
+                    ", nativeUnlockedBefore=" + originalBeforeKey.IsUnlocked +
+                    ", nativeUnlockedAfterKey=" + originalAfterKeySummon.IsUnlocked +
+                    ", repeatedKeySummonVisible=" + secondKeySummon.After.IsVisible +
                     ", keySummonRoom=" + keySummon.After.RoomId +
-                    ", originalVisibleAfterKey=" + originalAfterKeySummon.IsVisible +
                     ", secondVisibleAfterKey=" + secondAfterKeySummon.IsVisible +
-                    ", dualVisibleAfterKey=" + dualVisibleAfterKeySummon +
                     ", appearanceProbe=" + appearanceProbe.Replace(", ", "|") +
                     ", ride=" + ride.After.IsRiding +
                     ", speedMultiplier=" + FormatSmokeDouble(registered.SpeedMultiplier) +
                     ", baseMaxSpeed=" + FormatSmokeDouble(registered.BaseMaxSpeed) +
                     ", effectiveMaxSpeed=" + FormatSmokeDouble(registered.EffectiveMaxSpeed) +
                     ", enduranceSummon=" + FormatSmokeDouble(keySummon.After.EnduranceProgress) +
-                    ", enduranceRide=" + FormatSmokeDouble(ride.After.EnduranceProgress) +
-                    ", outdoorRecovery=" + outdoorRecovery;
-                if (StartVehicleEdgeTransitionForSmoke(smokeManifest, vehicleId, originalAfterKeySummon, ride.After))
-                    return SmokeAttemptResult.Pending;
+                    ", enduranceRide=" + FormatSmokeDouble(ride.After.EnduranceProgress);
 
                 MotorVehicleRideResult dismount = experimentalApi.DismountVehicle(smokeManifest, "smoke-restore");
                 if (!dismount.Success || dismount.After.IsRiding)
                     throw new InvalidOperationException("Second motor dismount failed: " + dismount.FailureReason + ": " + dismount.Message);
 
-                MotorVehicleSummonResult original = experimentalApi.SummonOriginalMotor(smokeManifest);
-                if (!original.Success)
-                    throw new InvalidOperationException("Original motor summon after second-motor dismount failed: " + original.FailureReason + ": " + original.Message);
+                MotorVehicleState originalAfterDismount = experimentalApi.GetOriginalMotorState();
+                if (saveSlot == 9 && originalAfterDismount.IsUnlocked)
+                    throw new InvalidOperationException("Dismount after custom motor ride unlocked the native motor on ninth-save fixture.");
 
-                string disabledProbe = TryProbeVehicleDisabledLocationForSmoke(vehicleId, keyItemId);
                 string summary = "vehicle=" + vehicleId +
                     ", owner=" + registered.OwnerUniqueId +
                     ", keyItem=" + keyItemId +
                     ", keyBefore=" + giveKey.BeforeCount +
                     ", keyAfter=" + giveKey.AfterCount +
-                    ", originalKeySummonRoom=" + originalKeySummon.After.RoomId +
+                    ", saveSlot=" + saveSlot +
+                    ", nativeUnlockedBefore=" + originalBeforeKey.IsUnlocked +
+                    ", nativeUnlockedAfterKey=" + originalAfterKeySummon.IsUnlocked +
+                    ", nativeVisibleAfterKey=" + originalAfterKeySummon.IsVisible +
+                    ", nativeUnlockedAfterDismount=" + originalAfterDismount.IsUnlocked +
+                    ", repeatedKeySummonVisible=" + secondKeySummon.After.IsVisible +
                     ", keySummonRoom=" + keySummon.After.RoomId +
-                    ", originalVisibleAfterKey=" + originalAfterKeySummon.IsVisible +
                     ", secondVisibleAfterKey=" + secondAfterKeySummon.IsVisible +
-                    ", dualVisibleAfterKey=" + dualVisibleAfterKeySummon +
                     ", appearanceProbe=" + appearanceProbe.Replace(", ", "|") +
                     ", ride=" + ride.After.IsRiding +
                     ", dismount=" + (!dismount.After.IsRiding) +
@@ -168,12 +129,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", enduranceSummon=" + FormatSmokeDouble(keySummon.After.EnduranceProgress) +
                     ", enduranceRide=" + FormatSmokeDouble(ride.After.EnduranceProgress) +
                     ", enduranceDismount=" + FormatSmokeDouble(dismount.After.EnduranceProgress) +
-                    ", enduranceTuning=unchanged" +
-                    ", originalRoom=" + original.After.RoomId +
-                    ", outdoorRecovery=" + outdoorRecovery +
-                    ", disabledProbe=" + disabledProbe;
+                    ", enduranceTuning=unchanged";
                 runtime.RuntimeMonitor.Log("Smoke exercise VehicleSecondMotor OK " + summary);
-                runtime.SetHookStatus("Smoke.VehicleSecondMotor", "verified", "IMotorVehicleApi + ItemMotorKey.OnUse prefix", summary);
+                runtime.SetHookStatus("Smoke.VehicleSecondMotor", "verified", "IMotorVehicleApi.RegisterCustomMotor + ItemMotorKey.OnUse prefix", summary);
                 return SmokeAttemptResult.Succeeded;
             }
             catch (Exception ex)

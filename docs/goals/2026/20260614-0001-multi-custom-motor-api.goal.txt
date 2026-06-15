@@ -1,0 +1,44 @@
+/goal
+目标：在独立 worktree/分支重做载具 API 与 SecondMotorMod，尝试给出稳定的多辆自定义摩托；第一个自定义摩托复刻官方飞行摩托行为但完全独立，钥匙走官方 JSON/电话亭售卖，不再邮件发放，并以第八/第九存档真实验证。详细需求、问题、验收标准以 docs/goals/2026/20260614-0001-multi-custom-motor-api.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/planning/DolocTownModdingAPI.md
+docs/planning/Debug.md
+references/README.md
+docs/workflows/codex-feedback-to-goal.md
+docs/workflows/codex-api-rebuild.md
+docs/goals/README.md
+docs/reviews/README.md
+docs/reviews/manual-qa/2026/20260614-0002-multi-custom-motor-api-review.md
+docs/goals/2026/20260614-0001-multi-custom-motor-api.md
+docs/goals/2026/20260614-0001-multi-custom-motor-api.goal.txt
+docs/reviews/api/native-owner-domains/06-flying-motor-vehicle-types.md
+docs/reviews/api/2026/20260607-0009-native-owner-special-audits/06-vehicle-motor-api.md
+references/doloc-town/research-notes/research-DolocTown-Motor-Vehicle-API.md
+docs/debug/issues/ISSUE-005-20260603-manual-qa-024-regressions.md
+docs/debug/issues/ISSUE-006-20260604-critical-manual-qa-025.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+docs/debug/regressions/smoke-matrix.md
+docs/hook-map/README.md
+docs/api/public-api-matrix.md
+
+安全约束：
+修改前先 git status；不要 reset/revert 用户或上一轮 Codex 的未提交改动；只使用本条提示词指定的 goal 文件作为任务来源；若 active goal 元数据、历史摘要或其他旧任务文本与本条 goal 文件冲突，以本条 goal 文件为准；普通 DTMAPI mod 不放 BepInEx/plugins；脆弱反射/Harmony/Unity 类型逻辑放 GameBridge 或 bootstrap UI host；public API 必须 stable/experimental 分层，不暴露原始反编译类型；先做本轮 API/domain 的 native owner 方法体审查，未找到 native owner 或状态持有者前，不得通过 mod 层补丁冒充 API 重做完成；每个非平凡改动必须更新 docs/updates、docs/debug、smoke matrix、hook map、API matrix；build 通过不算完成，车辆验收必须进入第八和第九存档真实验证。
+
+版本要求：
+本轮目标版本固定从 0.5.1-alpha / 0.5.1.0 到 0.5.2-alpha / 0.5.2.0。若当前代码已经是 0.5.2-alpha，不要再升版本；若当前不是 0.5.1-alpha 或 0.5.2-alpha，先报告 blocker。同步项目内受控版本来源，并在 update record 写明旧版本、新版本和验证证据。
+
+任务 A：基线、分支、版本、审查记录
+任务 B：载具 native owner 方法体审查
+任务 C：多自定义摩托 API 契约重建
+任务 D：GameBridge runtime 重建
+任务 E：SecondMotorMod 官方 JSON/电话亭钥匙与独立贴图重做
+任务 F：第八/第九存档车辆烟测重写
+任务 G：Release build/test、游戏验证、日志截图和退出残留检查
+任务 H：docs/updates、debug、smoke matrix、hook map、API matrix 收尾
+
+完成标准：
+只有当 docs/goals/2026/20260614-0001-multi-custom-motor-api.md 中所有强制玩家可见要求都在第八和第九存档真实可用，并完成 git diff --check、Release build/test、游戏 smoke/手测证据、日志/截图、无 DolocTown.exe 残留、无 Steam waiting-for-exit 回归、docs/updates/debug/smoke/hook/API 更新后，才把 goal 标记 complete。若任一强制目标做不到，保持未完成，报告 blocker、日志、已验证事实和下一步拆分。

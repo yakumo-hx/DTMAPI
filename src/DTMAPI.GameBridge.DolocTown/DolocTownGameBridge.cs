@@ -109,7 +109,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset autoFishingPhaseStartedAt;
         private int autoFishingApplicationBaseline;
         private DateTimeOffset debugTeleportRequestedAt;
-        private DateTimeOffset vehicleOutdoorTeleportRequestedAt;
         private DateTimeOffset vehicleEdgeTransitionRequestedAt;
         private TeleportSnapshot? debugTeleportBeforeSnapshot;
         private TeleportDestination? debugTeleportDestination;
