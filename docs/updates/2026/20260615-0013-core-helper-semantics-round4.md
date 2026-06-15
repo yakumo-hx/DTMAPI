@@ -25,8 +25,8 @@ The target issues were `IInputHelper.Suppress`, enabled-vs-all content helper bo
 
 ## Summary
 
-- Made `IInputHelper.Suppress` affect DTMAPI helper state and runtime input event dispatch for the current frame.
-- Suppressed input now clears helper `pressed/down` state, blocks same-frame DTMAPI pressed/released events, and still clears on `runtime.Update()`.
+- Made `IInputHelper.Suppress` affect DTMAPI helper state and future `RecordInputPressed/Released` dispatch in the current frame.
+- Suppressed input now clears helper `pressed/down` state, blocks later same-frame DTMAPI pressed/released events, and still clears on `runtime.Update()`.
 - Changed default content item queries to return enabled official content only.
 - Added all-content query methods for diagnostics: `GetAllIndexedItems`, `GetAnyIndexedItem`, `GetAllIndexedContentItems`, and `GetAnyIndexedContentItem`.
 - Added manifest scanner warnings when duplicate `UniqueID` packages are discovered and one source is chosen over another.
@@ -43,7 +43,7 @@ The target issues were `IInputHelper.Suppress`, enabled-vs-all content helper bo
 
 - Static/build evidence only.
 - New unit coverage verifies:
-  - Suppressed input does not dispatch DTMAPI input events or leave down-state.
+  - Pre-suppressed input does not dispatch DTMAPI input events or leave down-state.
   - Suppression is one-frame and normal input resumes after update.
   - Disabled official-local content is hidden from default content queries but available through all-content diagnostics queries.
   - Duplicate `UniqueID` selection is exposed as a scanner warning.
@@ -63,4 +63,4 @@ If rolled back, content helpers may again expose disabled official content throu
 ## Follow-Up
 
 - Game smoke is still required before claiming input behavior against native Doloc Town input paths; this change only covers DTMAPI helper/event semantics.
-- Public docs should clarify that `Suppress` affects DTMAPI input helper dispatch, not Unity/Doloc Town native input consumption.
+- Public docs should clarify that `Suppress` affects future DTMAPI input helper dispatch in the same frame, not already-dispatching event handlers or Unity/Doloc Town native input consumption.

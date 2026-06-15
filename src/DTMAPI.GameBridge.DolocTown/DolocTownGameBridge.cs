@@ -1097,7 +1097,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!loadRequestedPatched)
                 {
                     MethodInfo? loadGamePrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.LoadGamePrefix), BindingFlags.Public | BindingFlags.Static);
-                    var loadGameSignature = new HarmonyTargetSignature(returnType: typeof(void), parameterTypes: new[] { typeof(int) });
+                    var loadGameSignature = new HarmonyTargetSignature(returnType: typeof(bool), parameterTypes: new[] { typeof(int) });
                     loadRequestedPatched =
                         patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "LoadGame", loadGamePrefix, loadGameSignature) ||
                         patcher.TryPatchPrefix("DolocTown.GameData.DataPersistenceManager, Assembly-CSharp", "LoadGame", loadGamePrefix, loadGameSignature);
@@ -1107,7 +1107,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!saveSavingPatched)
                 {
                     MethodInfo? saveGamePrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SaveGamePrefix), BindingFlags.Public | BindingFlags.Static);
-                    var saveGameSignature = new HarmonyTargetSignature(returnType: typeof(void), parameterTypes: new[] { typeof(int) });
+                    var saveGameSignature = new HarmonyTargetSignature(returnType: typeof(bool), parameterTypes: new[] { typeof(int) });
                     saveSavingPatched =
                         patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "SaveGame", saveGamePrefix, saveGameSignature) ||
                         patcher.TryPatchPrefix("DolocTown.GameData.DataPersistenceManager, Assembly-CSharp", "SaveGame", saveGamePrefix, saveGameSignature);
@@ -1117,7 +1117,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!saveSavedPatched)
                 {
                     MethodInfo? saveGamePostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SaveGamePostfix), BindingFlags.Public | BindingFlags.Static);
-                    var saveGameSignature = new HarmonyTargetSignature(returnType: typeof(void), parameterTypes: new[] { typeof(int) });
+                    var saveGameSignature = new HarmonyTargetSignature(returnType: typeof(bool), parameterTypes: new[] { typeof(int) });
                     saveSavedPatched =
                         patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SaveGame", saveGamePostfix, saveGameSignature) ||
                         patcher.TryPatchPostfix("DolocTown.GameData.DataPersistenceManager, Assembly-CSharp", "SaveGame", saveGamePostfix, saveGameSignature);

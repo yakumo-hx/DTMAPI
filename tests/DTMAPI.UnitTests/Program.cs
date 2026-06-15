@@ -1455,6 +1455,9 @@ namespace DTMAPI.UnitTests
                 Assert(disabledAnyItem != null && !disabledAnyItem.Enabled, "All-content item lookup should expose disabled content for diagnostics.");
                 Assert(disabledRuntime.GetAllIndexedContentItems().Any(i => i.ItemId == "dtmapi_test_item" && !i.Enabled), "All-content list should include disabled official content.");
                 Assert(!disabledRuntime.GetIndexedContentItems().Any(i => i.ItemId == "dtmapi_test_item"), "Default content list should include enabled content only.");
+                IContentQueryHelper disabledContent = GetContent(disabledRuntime);
+                Assert(!disabledContent.FindAssets("json").Any(a => a.RelativePath.EndsWith("item_tbitem.json", StringComparison.OrdinalIgnoreCase)), "Default content asset lookup should not expose disabled official package files.");
+                Assert(!disabledContent.TryReadTextAsset(Path.Combine("Content", "DTMAPI", "item_tbitem.json"), out _), "Default text asset lookup should not read disabled official package files.");
                 Assert(disabledRuntime.Diagnostics.GetWarnings().Any(w => w.Owner == "DTMAPI.ModScanner" && w.Details.Contains("Duplicate UniqueID Yuuka.DTMAPI.Test", StringComparison.OrdinalIgnoreCase) && w.Details.Contains("OfficialLocal", StringComparison.OrdinalIgnoreCase) && w.Details.Contains("Local", StringComparison.OrdinalIgnoreCase)), "Duplicate UniqueID selection should be exposed as a scanner warning.");
                 IDtmModStatusInfo disabledStatus = disabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
                 Assert(!disabledStatus.Loaded && disabledStatus.Status == "disabled" && disabledStatus.StatusCode == "disabled" && !disabledStatus.OfficialEnabled && disabledStatus.OfficialEnablementManaged && disabledStatus.EnablementReason.Contains("官方"), "Diagnostics snapshot should expose official disabled mod status and enablement reason.");
@@ -1467,6 +1470,9 @@ namespace DTMAPI.UnitTests
                 Assert(enabledSnapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test"), "Official-enabled content package should load/index.");
                 IContentItemInfo? enabledItem = enabledRuntime.GetIndexedContentItem("dtmapi_test_item");
                 Assert(enabledItem != null && enabledItem.Enabled && enabledItem.SourceKind == "DTMAPI" && enabledItem.SourceId == "Local.Yuuka_DTMAPI_Test", "Default content item lookup should expose enabled DTMAPI official-local content.");
+                IContentQueryHelper enabledContent = GetContent(enabledRuntime);
+                Assert(enabledContent.FindAssets("json").Any(a => a.RelativePath.EndsWith("item_tbitem.json", StringComparison.OrdinalIgnoreCase)), "Default content asset lookup should expose enabled official package files.");
+                Assert(enabledContent.TryReadTextAsset(Path.Combine("Content", "DTMAPI", "item_tbitem.json"), out string enabledText) && enabledText.Contains("dtmapi_test_item", StringComparison.OrdinalIgnoreCase), "Default text asset lookup should read enabled official package files.");
                 IDtmModStatusInfo enabledStatus = enabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
                 Assert(enabledStatus.Loaded && enabledStatus.Status == "loaded" && enabledStatus.StatusCode == "loaded" && enabledStatus.Source == "OfficialLocal", "Diagnostics snapshot should expose official loaded mod status.");
 
@@ -2951,6 +2957,12 @@ namespace DTMAPI.UnitTests
         {
             PropertyInfo? inputProperty = typeof(DtmApiRuntime).GetProperty("Input", BindingFlags.Instance | BindingFlags.NonPublic);
             return (IInputHelper)(inputProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime input helper should exist."));
+        }
+
+        private static IContentQueryHelper GetContent(DtmApiRuntime runtime)
+        {
+            PropertyInfo? contentProperty = typeof(DtmApiRuntime).GetProperty("Content", BindingFlags.Instance | BindingFlags.NonPublic);
+            return (IContentQueryHelper)(contentProperty?.GetValue(runtime) ?? throw new InvalidOperationException("Runtime content helper should exist."));
         }
 
         private static IEventsHelper CreateEventsProxy(DtmApiRuntime runtime, string owner)

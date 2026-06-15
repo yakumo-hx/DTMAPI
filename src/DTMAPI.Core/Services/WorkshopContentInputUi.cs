@@ -53,6 +53,8 @@ namespace DTMAPI.Core.Services
             assets.Clear();
             foreach (DiscoveredMod mod in discovered)
             {
+                if (!mod.OfficialEnabled)
+                    continue;
                 if (!Directory.Exists(mod.RootPath))
                     continue;
                 foreach (string path in Directory.GetFiles(mod.RootPath, "*.*", SearchOption.AllDirectories))
