@@ -209,17 +209,6 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             DeveloperOnly = $true
         },
         [ordered]@{
-            OfficialFolder = 'DTMAPI_SecondMotor'
-            Project = 'SecondMotorMod'
-            SourceDll = 'SecondMotorMod.dll'
-            PackageDll = 'DTMAPI.SecondMotor.dll'
-            UniqueID = 'DTMAPI.SecondMotorMod'
-            DisplayName = 'DTMAPI Second Motor'
-            PackageName = 'DTMAPI-SecondMotor'
-            CopyOfficialVehicleExampleAssets = $true
-            DeveloperOnly = $true
-        },
-        [ordered]@{
             OfficialFolder = 'DTMAPI_Oil'
             Project = 'OilMod'
             SourceDll = 'OilMod.dll'

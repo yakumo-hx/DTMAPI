@@ -11,7 +11,7 @@ Test mods are small DTMAPI mods used to prove runtime behavior inside Doloc Town
 - `FishBreedingAssistantMod`: DTMAPI-native fish roe tooltip lookup/provider migration. The public source tree includes a placeholder generated lookup file without private fish data.
 - `AnimalHusbandryProgressMod`: DTMAPI-native animal viewer progress policy migration.
 - `DebugConsoleMod`: official-local Y-key debug console mod backed by experimental in-save debug APIs.
-- `SecondMotorMod`: experimental official-local second flying motor example.
+- `SecondMotorMod`: archived on 2026-06-15 after manual QA found severe light, in-room, and cross-map texture pollution. Historical code lives under `archive/second-motor-20260615/testmods/SecondMotorMod`; it is no longer built, installed, or published as an active local project.
 - `OilMod`: official-local content mod for crude oil item metadata and coal mining drops.
 - `MineMod`: official-local content mod for the experimental Mine machine and Machine API behavior.
 - `MoreEquipmentSlotsMod`: experimental extra equipment slots mod backed by DTMAPI-managed storage and native save transactions.

@@ -90,6 +90,10 @@ Manager UI smoke evidence may prove that support rows, summary text, and report 
 | Custom Entities | Native runtime creation verbs: animal/monster `RequestSpawn`, attack `SpawnProjectile`/`ExecuteAttack`, drone `RequestSummon`/`Equip`/`SetMode`, native handles, active runtime snapshots, save restoration | Experimental | Blocked. Current behavior intentionally returns `runtime-creation-blocked` / `RuntimeCreationBlocked`; no native animal, monster, projectile, attack, or drone is created. Ordinary mods must not depend on these runtime verbs until family-specific native adapters are verified in game. |
 | Custom Entities | Native animal/monster/attack/drone adapters | Proposed | Future work must start from native owners such as animal proto/room/food/produce/save, monster AI/spawn/drop, bullet factory/collision/damage, and drone controller/weapon/equipment/persistence. |
 
+## 2026-06-15 API Notes
+
+- `IMotorVehicleApi` remains Experimental. The 2026-06-14/15 SecondMotor slot 8/9 smoke history is now research history only: user manual QA on 2026-06-15 found abnormal light textures, abnormal farm-room textures, and severe cross-map texture pollution, so the active `SecondMotorMod` project and local packages were archived. Do not cite archived SecondMotor smoke evidence as current completion proof or stable multi-vehicle evidence. Future vehicle work must start from a smaller native-owner slice and fresh manual QA.
+
 ## 2026-06-13/14 API Notes
 
 - `20260614-0005` does not change `IEquipmentSlotsApi`. It adds a Diagnostic smoke dump of runtime `TbHat`/`TbItem` hat metadata for API review, verifying `hats=33`, `itemHatRows=33`, no orphan mappings, `box_hat` as `ItemFunctionHatShield` / `AgentEquipmentFuncProtoShield`, and `mushroom_hat` as `Defense=1` without `Skill` in `GAME-SMOKE/20260614-091839`. This is evidence for future design decisions only and does not promote EquipmentSlots beyond Experimental.

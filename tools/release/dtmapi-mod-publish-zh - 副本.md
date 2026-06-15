@@ -119,19 +119,6 @@
       "officialInfoPath": "testmods/OilMod/official-info.json"
     },
     {
-      "modName": "DTMAPI 异色飞行摩托",
-      "author": "DTMAPI",
-      "version": "0.3.1-dtmapi",
-      "gameDescription": "DTMAPI 实验性异色飞行摩托示例包。\n新增飞行摩托钥匙（异色），并管理独立摩托实例与官方邮件投递链路。",
-      "steamName": "DTMAPI 异色飞行摩托",
-      "steamDescription": "新增飞行摩托钥匙（异色）。\n可召唤独立异色飞行摩托，并在无钥匙时尝试通过官方邮件投递。",
-      "uniqueId": "DTMAPI.SecondMotorMod",
-      "folder": "SecondMotorMod",
-      "scope": "developerOfficial",
-      "manifestName": "DTMAPI Alternate Flying Motor",
-      "officialInfoPath": "testmods/SecondMotorMod/official-info.json"
-    },
-    {
       "modName": "DTMAPI 强力种植枪",
       "author": "DTMAPI",
       "version": "0.3.1-dtmapi",

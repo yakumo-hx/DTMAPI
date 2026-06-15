@@ -356,81 +356,6 @@ function Get-NumericPriorityOrNull {
     }
 }
 
-function Find-OfficialVehicleExampleAssetRoot {
-    param(
-        [Parameter(Mandatory = $true)] [string] $GameDir
-    )
-
-    $candidates = @()
-    if ($env:DTMAPI_OFFICIAL_VEHICLE_ASSET_ROOT) {
-        $candidates += $env:DTMAPI_OFFICIAL_VEHICLE_ASSET_ROOT
-    }
-
-    $gameSteamApps = [System.IO.Path]::GetFullPath((Join-Path $GameDir '..\..'))
-    $candidates += (Join-Path $gameSteamApps 'workshop\content\2285550\3705665433\Content')
-
-    foreach ($candidate in $candidates | Select-Object -Unique) {
-        if (-not (Test-Path $candidate)) {
-            continue
-        }
-        $match = Get-ChildItem -Path $candidate -Recurse -File -Filter 'sprite_vehicle_motor.png' -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($match) {
-            return $match.Directory.FullName
-        }
-    }
-
-    return $null
-}
-
-function Install-OfficialVehicleExampleAssets {
-    param(
-        [Parameter(Mandatory = $true)] [string] $GameDir,
-        [Parameter(Mandatory = $true)] [string] $Destination
-    )
-
-    $staleRoots = @(
-        (Join-Path $Destination 'Content\DTMAPI\official-vehicle-example'),
-        (Join-Path $Destination 'Content\DTMAPI\vehicle-appearance')
-    )
-    foreach ($staleRoot in $staleRoots) {
-        if (Test-Path $staleRoot) {
-            Remove-Item -LiteralPath $staleRoot -Recurse -Force
-        }
-    }
-
-    $privateRoot = Join-Path $Destination 'Content\DTMAPI\assets\second-motor'
-    New-Item -ItemType Directory -Force -Path $privateRoot | Out-Null
-    $notePath = Join-Path $privateRoot 'official-vehicle-assets.txt'
-    $sourceRoot = Find-OfficialVehicleExampleAssetRoot -GameDir $GameDir
-    $sourceLine = if ($sourceRoot) { "Official Workshop example asset root found locally: $sourceRoot" } else { "Official Workshop example asset root was not found locally." }
-    $copied = @()
-    if ($sourceRoot) {
-        $assetCopies = @(
-            @{ Source = 'sprite_vehicle_motor.png'; Destination = 'dtmapi_second_motor.png' },
-            @{ Source = 'sprite_vehicle_motor.json'; Destination = 'dtmapi_second_motor.json' },
-            @{ Source = 'sprite_vehicle_motor_light_mask.png'; Destination = 'dtmapi_second_motor_light_mask.png' },
-            @{ Source = 'sprite_vehicle_motor_light_mask.json'; Destination = 'dtmapi_second_motor_light_mask.json' }
-        )
-        foreach ($assetCopy in $assetCopies) {
-            $sourcePath = Join-Path $sourceRoot $assetCopy.Source
-            if (Test-Path -LiteralPath $sourcePath -PathType Leaf) {
-                Copy-Item -Force -LiteralPath $sourcePath -Destination (Join-Path $privateRoot $assetCopy.Destination)
-                $copied += "$($assetCopy.Source)->$($assetCopy.Destination)"
-            }
-        }
-    }
-    @(
-        "Official vehicle example replacement assets are intentionally not installed as global replacement keys.",
-        "The official example uses global sprite_vehicle_motor asset keys, which also changes the original Doloc Town motor.",
-        "DTMAPI.SecondMotor copies locally available official example textures into DTMAPI-named private assets and applies them only to the DTMAPI clone through GameBridge scoped-sprite mode.",
-        "CopiedFiles=$([string]::Join(',', $copied))",
-        $sourceLine,
-        "UpdatedAt=$(Get-Date -Format o)"
-    ) | Set-Content -LiteralPath $notePath
-
-    Write-Host "Installed private official vehicle example sprite assets for SecondMotor; removed stale global vehicle assets from $([string]::Join(', ', $staleRoots))"
-}
-
 function Install-OfficialLocalDtmApiMod {
     param(
         $Mod
@@ -497,10 +422,6 @@ function Install-OfficialLocalDtmApiMod {
     $contentSource = Join-Path $repo "testmods\$($Mod.Project)\Content"
     if (Test-Path $contentSource) {
         Copy-DirectoryContents -Source (Split-Path -Parent $contentSource) -Destination $dest -Include @('Content')
-    }
-
-    if ((Test-DtmApiMapKey -Map $Mod -Key 'CopyOfficialVehicleExampleAssets') -and $Mod.CopyOfficialVehicleExampleAssets) {
-        Install-OfficialVehicleExampleAssets -GameDir $gameDir -Destination $dest
     }
 
     $modSourceRoot = Join-Path $repo "testmods\$($Mod.Project)"

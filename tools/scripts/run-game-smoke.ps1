@@ -127,59 +127,6 @@ function Write-SmokeBlockedResult {
     }
 }
 
-function Set-SmokeOfficialLocalModEnabled {
-    param(
-        [Parameter(Mandatory = $true)] [string] $OfficialFolder,
-        [Parameter(Mandatory = $true)] [bool] $Enabled,
-        [Parameter(Mandatory = $true)] [string] $BackupPath,
-        [Parameter(Mandatory = $true)] [ref] $HadOriginal
-    )
-
-    $persistentRoot = Get-DolocTownPersistentRootForSmoke
-    $enablementPath = Join-Path $persistentRoot 'SAVE\mod_infos.json'
-    if (-not (Test-Path $enablementPath)) {
-        $HadOriginal.Value = $false
-        return $enablementPath
-    }
-
-    Copy-Item -Force -LiteralPath $enablementPath -Destination $BackupPath
-    $HadOriginal.Value = $true
-    $data = Get-Content -Raw -Encoding UTF8 -LiteralPath $enablementPath | ConvertFrom-Json
-    if ($null -eq $data.modInfos) {
-        return $enablementPath
-    }
-
-    $id = "Local.$OfficialFolder"
-    $property = $data.modInfos.PSObject.Properties[$id]
-    if ($property) {
-        if ($property.Value.PSObject.Properties['enabled']) {
-            $property.Value.enabled = $Enabled
-        }
-        else {
-            $property.Value | Add-Member -MemberType NoteProperty -Name 'enabled' -Value $Enabled -Force
-        }
-        Write-SmokeJsonObject -Path $enablementPath -Value $data
-    }
-
-    return $enablementPath
-}
-
-function Restore-SmokeSecondMotorEnablement {
-    if ($script:secondMotorEnablementTouched -and $script:secondMotorEnablementHadOriginal -and $script:secondMotorEnablementPath) {
-        Copy-Item -Force -LiteralPath $script:secondMotorEnablementBackup -Destination $script:secondMotorEnablementPath -ErrorAction SilentlyContinue
-    }
-}
-
-$script:secondMotorEnablementBackup = $null
-$script:secondMotorEnablementPath = $null
-$script:secondMotorEnablementHadOriginal = $false
-$script:secondMotorEnablementTouched = $false
-
-trap {
-    Restore-SmokeSecondMotorEnablement
-    throw
-}
-
 $autoFishingScenarioEffective = if (-not $PSBoundParameters.ContainsKey('AutoFishingScenario') -and $AutoExerciseAutoFishingMiniGameComplete) {
     'CombinedInstantComplete'
 }
@@ -246,9 +193,9 @@ if ($AutoExerciseAutoFishingPhase -and ((-not $PSBoundParameters.ContainsKey('Sa
     Write-Error "$blockedReason Evidence: $evidence"
     exit 1
 }
-if ($AutoExerciseVehicle -and ((-not $PSBoundParameters.ContainsKey('SaveSlot')) -or (($SaveSlot -ne 8) -and ($SaveSlot -ne 9)))) {
+if ($AutoExerciseVehicle) {
     $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
-    $blockedReason = 'Vehicle custom motor smoke requires the real eighth or ninth save fixture. Re-run with explicit -SaveSlot 8 or -SaveSlot 9.'
+    $blockedReason = 'Vehicle custom motor smoke is archived after 2026-06-15 manual QA found severe texture pollution in the SecondMotor sample. IMotorVehicleApi remains Experimental, but no active SecondMotor package is installed or validated.'
     "Started=$(Get-Date -Format o)`nBlocked=$blockedReason`nSaveSlot=$SaveSlot`nSaveSlotExplicit=$($PSBoundParameters.ContainsKey('SaveSlot'))`nAutoExerciseVehicle=$AutoExerciseVehicle" | Set-Content -LiteralPath (Join-Path $evidence 'summary.txt')
     Write-SmokeJsonObject -Path (Join-Path $evidence 'result.json') -Value @{
         SchemaVersion = 2
@@ -286,17 +233,8 @@ $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
 $dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
 New-Item -ItemType Directory -Force -Path $dtmapiDir | Out-Null
 $evidence = New-EvidenceDir -RepoRoot $repo -CaseId 'GAME-SMOKE'
-$script:secondMotorEnablementBackup = Join-Path $evidence 'mod_infos.before-second-motor-smoke.json'
-$script:secondMotorEnablementPath = $null
-$script:secondMotorEnablementHadOriginal = $false
-$script:secondMotorEnablementTouched = $false
 if ($DisableSecondMotorForSmoke) {
-    $script:secondMotorEnablementPath = Set-SmokeOfficialLocalModEnabled -OfficialFolder 'DTMAPI_SecondMotor' -Enabled:$false -BackupPath $script:secondMotorEnablementBackup -HadOriginal ([ref]$script:secondMotorEnablementHadOriginal)
-    $script:secondMotorEnablementTouched = $true
-}
-elseif ($AutoExerciseVehicle) {
-    $script:secondMotorEnablementPath = Set-SmokeOfficialLocalModEnabled -OfficialFolder 'DTMAPI_SecondMotor' -Enabled:$true -BackupPath $script:secondMotorEnablementBackup -HadOriginal ([ref]$script:secondMotorEnablementHadOriginal)
-    $script:secondMotorEnablementTouched = $true
+    Write-Host "SecondMotor smoke package is archived; -DisableSecondMotorForSmoke is now a no-op compatibility flag."
 }
 $oneActionConfigPath = Join-Path $dtmapiDir 'config\Yuuka.DTMAPI.OneActionComplete.json'
 $oneActionConfigBackup = Join-Path $evidence 'Yuuka.DTMAPI.OneActionComplete.before.json'
@@ -1580,7 +1518,6 @@ if ($usesActionSpeedConfigSmoke) {
         Remove-Item -Force -LiteralPath $actionSpeedConfigPath -ErrorAction SilentlyContinue
     }
 }
-Restore-SmokeSecondMotorEnablement
 $titleButtonScreenshotFileOk = -not $titleSettingsRequested
 $titleMenuScreenshotFileOk = -not $titleSettingsRequested
 $officialModUiScreenshotFileOk = -not [bool]$AutoOpenOfficialModUi
