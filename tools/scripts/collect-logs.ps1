@@ -115,6 +115,18 @@ foreach ($item in $paths) {
     }
 }
 
+$dtmapiLogDir = Join-Path $dtmapiDir 'logs'
+if (Test-Path $dtmapiLogDir) {
+    $historyLogs = @(Get-ChildItem -LiteralPath $dtmapiLogDir -Filter 'latest-*.log' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 10)
+    if ($historyLogs.Count -gt 0) {
+        $historyDir = Join-Path $evidence 'DTMAPI-log-history'
+        New-Item -ItemType Directory -Force -Path $historyDir | Out-Null
+        foreach ($log in $historyLogs) {
+            Copy-Item -Force -LiteralPath $log.FullName -Destination (Join-Path $historyDir $log.Name)
+        }
+    }
+}
+
 $gameEvidenceRoot = Join-Path $dtmapiDir 'evidence'
 if (Test-Path $gameEvidenceRoot) {
     if ($IncludeRuntimeEvidence) {

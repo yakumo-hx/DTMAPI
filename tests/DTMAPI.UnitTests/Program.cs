@@ -27,6 +27,7 @@ namespace DTMAPI.UnitTests
             try
             {
                 RuntimeStartsWithEmptyMods();
+                RuntimeRotatesLatestLogAndRetainsHistory();
                 RuntimeApiCanRegisterBeforeStart();
                 BrokenManifestDoesNotCrashDiscovery();
                 ManifestDependencyIsRequiredAliasSupportsOptionalDependencies();
@@ -128,6 +129,54 @@ namespace DTMAPI.UnitTests
             RuntimeSnapshot snapshot = runtime.CreateSnapshot();
             Assert(snapshot.Registry.Count >= 1, "Runtime manifest should be registered.");
             Assert(File.Exists(runtime.Diagnostics.GetLatestLogPath()), "Latest DTMAPI log should exist.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
+        private static void RuntimeRotatesLatestLogAndRetainsHistory()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                string logsDir = Path.Combine(dir, "DTMAPI", "logs");
+                Directory.CreateDirectory(logsDir);
+
+                DateTime baseTime = new DateTime(2026, 6, 16, 0, 0, 0, DateTimeKind.Utc);
+                string latestPath = Path.Combine(logsDir, "latest.log");
+                File.WriteAllText(latestPath, "previous-run-line");
+                File.SetLastWriteTimeUtc(latestPath, baseTime.AddMinutes(1));
+
+                string oldestHistory = string.Empty;
+                for (int i = 0; i < 10; i++)
+                {
+                    DateTime stamp = baseTime.AddSeconds(i);
+                    string historyPath = Path.Combine(logsDir, "latest-" + stamp.ToString("yyyyMMdd-HHmmssfff") + ".log");
+                    if (i == 0)
+                        oldestHistory = historyPath;
+                    File.WriteAllText(historyPath, "history-" + i);
+                    File.SetLastWriteTimeUtc(historyPath, stamp);
+                }
+
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+
+                string latestText = File.ReadAllText(runtime.Diagnostics.GetLatestLogPath());
+                Assert(latestText.Contains("DTMAPI runtime starting."), "Fresh latest log should receive current startup lines.");
+                Assert(!latestText.Contains("previous-run-line"), "Fresh latest log should not append previous run content.");
+
+                string[] histories = Directory.GetFiles(logsDir, "latest-*.log");
+                Assert(histories.Length == 10, "Latest log rotation should keep exactly 10 history files.");
+                Assert(!File.Exists(oldestHistory), "Latest log rotation should delete the oldest history file when retaining 10.");
+                string rotatedHistory = histories.FirstOrDefault(path => File.ReadAllText(path).Contains("previous-run-line")) ?? string.Empty;
+                Assert(rotatedHistory.Length > 0, "Previous latest log should be rotated into retained history.");
+
+                string report = runtime.ExportLogs();
+                string[] reportEntries = ReadZipEntryNames(report);
+                Assert(reportEntries.Contains("DTMAPI-history/" + Path.GetFileName(rotatedHistory)), "Diagnostic report should include retained latest-log history.");
             }
             finally
             {
@@ -2894,6 +2943,13 @@ namespace DTMAPI.UnitTests
                 using (var reader = new StreamReader(stream))
                     return reader.ReadToEnd();
             }
+        }
+
+        private static string[] ReadZipEntryNames(string zipPath)
+        {
+            using (FileStream file = File.OpenRead(zipPath))
+            using (var archive = new ZipArchive(file, ZipArchiveMode.Read))
+                return archive.Entries.Select(entry => entry.FullName).ToArray();
         }
 
         private static void Assert(bool condition, string message)

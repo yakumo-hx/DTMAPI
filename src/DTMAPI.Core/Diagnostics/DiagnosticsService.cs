@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Logging;
 using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.Core.Diagnostics
@@ -127,6 +128,8 @@ namespace DTMAPI.Core.Diagnostics
             using (var archive = new ZipArchive(file, ZipArchiveMode.Create))
             {
                 AddFileIfExists(archive, LatestLogPath, "DTMAPI-latest.log");
+                foreach (string historyLog in LatestLogRotator.GetHistoryFiles(paths.LogsPath))
+                    AddFileIfExists(archive, historyLog, "DTMAPI-history/" + Path.GetFileName(historyLog));
                 AddFileIfExists(archive, Path.Combine(paths.GamePath, "BepInEx", "LogOutput.log"), "BepInEx-LogOutput.log");
                 AddFileIfExists(archive, FindPlayerLogPath(), "Unity-Player.log");
                 AddFileIfExists(archive, Path.Combine(paths.DtmApiPath, "install-state.json"), "install-state.json");

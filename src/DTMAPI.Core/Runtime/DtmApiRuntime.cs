@@ -85,8 +85,11 @@ namespace DTMAPI.Core.Runtime
             Stopwatch startup = Stopwatch.StartNew();
             Paths.Ensure();
             string latestLog = Path.Combine(Paths.LogsPath, "latest.log");
+            string? logRotationWarning = LatestLogRotator.TryRotateLatest(latestLog);
             Diagnostics.LatestLogPath = latestLog;
             RuntimeMonitor = new FileMonitor(host, "DTMAPI", latestLog);
+            if (!string.IsNullOrWhiteSpace(logRotationWarning))
+                RuntimeMonitor.Log("DTMAPI latest log rotation warning: " + logRotationWarning, LogLevel.Warn);
             RuntimeMonitor.Log("DTMAPI runtime starting.");
             RuntimeMonitor.Log("Startup segment Core.PathsAndLog elapsedMs=" + startup.ElapsedMilliseconds + ".");
             RuntimeMonitor.Log("Host = " + host.HostName);
