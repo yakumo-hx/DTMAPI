@@ -25,9 +25,19 @@ namespace DTMAPI.GameBridge.DolocTown
             return TryPatch(targetTypeName, methodName, prefix: prefix, postfix: null, parameterCount: parameterCount);
         }
 
+        public bool TryPatchPrefix(string targetTypeName, string methodName, MethodInfo? prefix, HarmonyTargetSignature signature)
+        {
+            return TryPatch(targetTypeName, methodName, prefix: prefix, postfix: null, signature: signature);
+        }
+
         public bool TryPatchClosedGenericPrefix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, int? parameterCount = null)
         {
-            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: prefix, postfix: null, parameterCount: parameterCount);
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: prefix, postfix: null, signature: HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        public bool TryPatchClosedGenericPrefix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, HarmonyTargetSignature signature)
+        {
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: prefix, postfix: null, signature: signature);
         }
 
         public bool TryPatchPostfix(string targetTypeName, string methodName, MethodInfo? postfix, int? parameterCount = null)
@@ -35,12 +45,27 @@ namespace DTMAPI.GameBridge.DolocTown
             return TryPatch(targetTypeName, methodName, prefix: null, postfix: postfix, parameterCount: parameterCount);
         }
 
+        public bool TryPatchPostfix(string targetTypeName, string methodName, MethodInfo? postfix, HarmonyTargetSignature signature)
+        {
+            return TryPatch(targetTypeName, methodName, prefix: null, postfix: postfix, signature: signature);
+        }
+
         public bool TryPatchClosedGenericPostfix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? postfix, int? parameterCount = null)
         {
-            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: null, postfix: postfix, parameterCount: parameterCount);
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: null, postfix: postfix, signature: HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        public bool TryPatchClosedGenericPostfix(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? postfix, HarmonyTargetSignature signature)
+        {
+            return TryPatchClosedGeneric(targetGenericTypeName, genericArgumentTypeNames, methodName, prefix: null, postfix: postfix, signature: signature);
         }
 
         public bool TryPatchArrayResultPostfix(string targetTypeName, string methodName, MethodInfo? arrayResultCallback, int? parameterCount = null)
+        {
+            return TryPatchArrayResultPostfix(targetTypeName, methodName, arrayResultCallback, HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        public bool TryPatchArrayResultPostfix(string targetTypeName, string methodName, MethodInfo? arrayResultCallback, HarmonyTargetSignature signature)
         {
             try
             {
@@ -48,7 +73,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
 
                 Type? targetType = FindType(targetTypeName);
-                MethodInfo? target = FindTarget(targetType, methodName, parameterCount);
+                MethodInfo? target = FindTarget(targetType, methodName, signature);
                 if (target == null)
                     return false;
 
@@ -64,13 +89,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public bool TryPatchConstructorPostfix(string targetTypeName, MethodInfo? postfix, int? parameterCount = null)
         {
+            return TryPatchConstructorPostfix(targetTypeName, postfix, HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        public bool TryPatchConstructorPostfix(string targetTypeName, MethodInfo? postfix, HarmonyTargetSignature signature)
+        {
             try
             {
                 if (postfix == null || !EnsureHarmony())
                     return false;
 
                 Type? targetType = FindType(targetTypeName);
-                ConstructorInfo? target = FindConstructor(targetType, parameterCount);
+                ConstructorInfo? target = FindConstructor(targetType, signature);
                 if (target == null)
                     return false;
 
@@ -91,6 +121,11 @@ namespace DTMAPI.GameBridge.DolocTown
         public MethodInfo? ResolveMethod(string targetTypeName, string methodName, int? parameterCount = null)
         {
             return FindTarget(FindType(targetTypeName), methodName, parameterCount);
+        }
+
+        public MethodInfo? ResolveMethod(string targetTypeName, string methodName, HarmonyTargetSignature signature)
+        {
+            return FindTarget(FindType(targetTypeName), methodName, signature);
         }
 
         public string BuildTypeResolutionReport(params string[] expectedTypeNames)
@@ -147,13 +182,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool TryPatch(string targetTypeName, string methodName, MethodInfo? prefix, MethodInfo? postfix, int? parameterCount)
         {
+            return TryPatch(targetTypeName, methodName, prefix, postfix, HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        private bool TryPatch(string targetTypeName, string methodName, MethodInfo? prefix, MethodInfo? postfix, HarmonyTargetSignature signature)
+        {
             try
             {
                 if ((prefix == null && postfix == null) || !EnsureHarmony())
                     return false;
 
                 Type? targetType = FindType(targetTypeName);
-                MethodInfo? target = FindTarget(targetType, methodName, parameterCount);
+                MethodInfo? target = FindTarget(targetType, methodName, signature);
                 if (target == null)
                     return false;
 
@@ -166,7 +206,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private bool TryPatchClosedGeneric(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, MethodInfo? postfix, int? parameterCount)
+        private bool TryPatchClosedGeneric(string targetGenericTypeName, string[] genericArgumentTypeNames, string methodName, MethodInfo? prefix, MethodInfo? postfix, HarmonyTargetSignature signature)
         {
             try
             {
@@ -208,7 +248,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
 
                 Type targetType = targetGenericType.MakeGenericType(genericArguments);
-                MethodInfo? target = FindTarget(targetType, methodName, parameterCount);
+                MethodInfo? target = FindTarget(targetType, methodName, signature);
                 if (target == null)
                 {
                     runtime.RuntimeMonitor.Log("Harmony closed generic patch skipped: method not found " + targetType.FullName + "." + methodName + ".");
@@ -315,13 +355,18 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static MethodInfo? FindTarget(Type? type, string name, int? parameterCount)
         {
+            return FindTarget(type, name, HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        private static MethodInfo? FindTarget(Type? type, string name, HarmonyTargetSignature signature)
+        {
             if (type == null)
                 return null;
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
             {
                 if (method.Name != name)
                     continue;
-                if (parameterCount.HasValue && method.GetParameters().Length != parameterCount.Value)
+                if (!signature.Matches(method))
                     continue;
                 return method;
             }
@@ -356,11 +401,16 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static ConstructorInfo? FindConstructor(Type? type, int? parameterCount)
         {
+            return FindConstructor(type, HarmonyTargetSignature.FromParameterCount(parameterCount));
+        }
+
+        private static ConstructorInfo? FindConstructor(Type? type, HarmonyTargetSignature signature)
+        {
             if (type == null)
                 return null;
             foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                if (parameterCount.HasValue && constructor.GetParameters().Length != parameterCount.Value)
+                if (!signature.Matches(constructor))
                     continue;
                 return constructor;
             }
@@ -403,6 +453,122 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 return Array.Empty<Type>();
             }
+        }
+    }
+
+    internal readonly struct HarmonyTargetSignature
+    {
+        private readonly int? parameterCount;
+        private readonly Type? declaringType;
+        private readonly Type? returnType;
+        private readonly Type[]? parameterTypes;
+        private readonly string? declaringTypeName;
+        private readonly string? returnTypeName;
+        private readonly string[]? parameterTypeNames;
+
+        public HarmonyTargetSignature(
+            int? parameterCount = null,
+            Type? declaringType = null,
+            Type? returnType = null,
+            Type[]? parameterTypes = null,
+            string? declaringTypeName = null,
+            string? returnTypeName = null,
+            string[]? parameterTypeNames = null)
+        {
+            this.parameterCount = parameterCount;
+            this.declaringType = declaringType;
+            this.returnType = returnType;
+            this.parameterTypes = parameterTypes == null ? null : parameterTypes.ToArray();
+            this.declaringTypeName = declaringTypeName;
+            this.returnTypeName = returnTypeName;
+            this.parameterTypeNames = parameterTypeNames == null ? null : parameterTypeNames.ToArray();
+        }
+
+        public static HarmonyTargetSignature FromParameterCount(int? parameterCount)
+        {
+            return new HarmonyTargetSignature(parameterCount: parameterCount);
+        }
+
+        public static HarmonyTargetSignature Exact(Type declaringType, Type returnType, params Type[] parameterTypes)
+        {
+            return new HarmonyTargetSignature(declaringType: declaringType, returnType: returnType, parameterTypes: parameterTypes ?? Type.EmptyTypes);
+        }
+
+        public static HarmonyTargetSignature Exact(string declaringTypeName, string returnTypeName, params string[] parameterTypeNames)
+        {
+            return new HarmonyTargetSignature(declaringTypeName: declaringTypeName, returnTypeName: returnTypeName, parameterTypeNames: parameterTypeNames ?? Array.Empty<string>());
+        }
+
+        public bool Matches(MethodInfo method)
+        {
+            if (method == null)
+                return false;
+            if (declaringType != null && method.DeclaringType != declaringType)
+                return false;
+            if (!MatchesTypeName(method.DeclaringType, declaringTypeName))
+                return false;
+            if (returnType != null && method.ReturnType != returnType)
+                return false;
+            if (!MatchesTypeName(method.ReturnType, returnTypeName))
+                return false;
+
+            ParameterInfo[] parameters = method.GetParameters();
+            return MatchesParameters(parameters);
+        }
+
+        public bool Matches(ConstructorInfo constructor)
+        {
+            if (constructor == null)
+                return false;
+            if (declaringType != null && constructor.DeclaringType != declaringType)
+                return false;
+            if (!MatchesTypeName(constructor.DeclaringType, declaringTypeName))
+                return false;
+
+            ParameterInfo[] parameters = constructor.GetParameters();
+            return MatchesParameters(parameters);
+        }
+
+        private bool MatchesParameters(ParameterInfo[] parameters)
+        {
+            if (parameterTypes != null)
+            {
+                if (parameters.Length != parameterTypes.Length)
+                    return false;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (parameters[i].ParameterType != parameterTypes[i])
+                        return false;
+                }
+                return true;
+            }
+
+            if (parameterTypeNames != null)
+            {
+                if (parameters.Length != parameterTypeNames.Length)
+                    return false;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (!MatchesTypeName(parameters[i].ParameterType, parameterTypeNames[i]))
+                        return false;
+                }
+                return true;
+            }
+
+            return !parameterCount.HasValue || parameters.Length == parameterCount.Value;
+        }
+
+        private static bool MatchesTypeName(Type? actual, string? expected)
+        {
+            string trimmed = expected?.Trim() ?? string.Empty;
+            if (trimmed.Length == 0)
+                return true;
+            if (actual == null)
+                return false;
+
+            return string.Equals(actual.FullName, trimmed, StringComparison.Ordinal) ||
+                string.Equals(actual.AssemblyQualifiedName, trimmed, StringComparison.Ordinal) ||
+                string.Equals(actual.Name, trimmed, StringComparison.Ordinal);
         }
     }
 }

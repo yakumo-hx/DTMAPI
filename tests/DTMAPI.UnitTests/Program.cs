@@ -52,6 +52,7 @@ namespace DTMAPI.UnitTests
                 RuntimeUiBoundariesBlockGameplayHotkeysAndModUpdates();
                 Suppress_OneFrame_ClearsAfterUpdate();
                 HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics();
+                HarmonyTargetSignatureSelectsExactOverload();
                 NativeUiLayoutDiagnosticsNormalizeOfficialMenuResetCounts();
                 ToolColliderPostfixRoutesKeepOilDropIsolatedFromActionCompletionFailure();
                 FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned();
@@ -2078,6 +2079,50 @@ namespace DTMAPI.UnitTests
             Assert(!broken.FullyBlocked && broken.Broken && broken.BlockedDamage == 5 && broken.RemainingShieldValue == 0, "Broken shields should report only the shield value as blocked damage, matching native residual damage semantics.");
         }
 
+        private static void HarmonyTargetSignatureSelectsExactOverload()
+        {
+            string dir = NewTempGameDir();
+            var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+            var patcher = new HarmonyReflectionPatcher(runtime);
+            string targetTypeName = typeof(HarmonySignatureProbe).AssemblyQualifiedName ?? throw new InvalidOperationException("Probe type should have an assembly-qualified name.");
+
+            MethodInfo? loose = patcher.ResolveMethod(targetTypeName, nameof(HarmonySignatureProbe.Overload), 1);
+            Assert(loose != null && loose.GetParameters().Length == 1, "Loose Harmony target lookup should keep the old parameter-count behavior.");
+
+            MethodInfo? intOverload = patcher.ResolveMethod(
+                targetTypeName,
+                nameof(HarmonySignatureProbe.Overload),
+                HarmonyTargetSignature.Exact(typeof(HarmonySignatureProbe), typeof(int), typeof(int)));
+            Assert(intOverload != null && intOverload.ReturnType == typeof(int) && intOverload.GetParameters()[0].ParameterType == typeof(int), "Exact Harmony signature should select the int overload.");
+
+            MethodInfo? stringOverload = patcher.ResolveMethod(
+                targetTypeName,
+                nameof(HarmonySignatureProbe.Overload),
+                HarmonyTargetSignature.Exact(typeof(HarmonySignatureProbe), typeof(string), typeof(string)));
+            Assert(stringOverload != null && stringOverload.ReturnType == typeof(string) && stringOverload.GetParameters()[0].ParameterType == typeof(string), "Exact Harmony signature should select the string overload.");
+
+            MethodInfo? typeNameOverload = patcher.ResolveMethod(
+                targetTypeName,
+                nameof(HarmonySignatureProbe.Overload),
+                HarmonyTargetSignature.Exact(
+                    typeof(HarmonySignatureProbe).FullName ?? string.Empty,
+                    typeof(string).FullName ?? string.Empty,
+                    typeof(string).FullName ?? string.Empty));
+            Assert(typeNameOverload == stringOverload, "Harmony signature matching should support runtime type-name signatures for game types.");
+
+            MethodInfo? wrongReturn = patcher.ResolveMethod(
+                targetTypeName,
+                nameof(HarmonySignatureProbe.Overload),
+                new HarmonyTargetSignature(returnType: typeof(bool), parameterTypes: new[] { typeof(int) }));
+            Assert(wrongReturn == null, "Harmony signature matching should reject the right parameter list with the wrong return type.");
+
+            MethodInfo? wrongDeclaringType = patcher.ResolveMethod(
+                targetTypeName,
+                nameof(HarmonySignatureProbe.Overload),
+                HarmonyTargetSignature.Exact(typeof(string), typeof(int), typeof(int)));
+            Assert(wrongDeclaringType == null, "Harmony signature matching should reject the right shape on the wrong declaring type.");
+        }
+
         private static void FishingAutomationBiteActionPrecedence()
         {
             Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
@@ -2958,6 +3003,15 @@ namespace DTMAPI.UnitTests
         private sealed class FakeGlobalParameter
         {
             public int FishingEnergyCost { get; set; }
+        }
+
+        private sealed class HarmonySignatureProbe
+        {
+            public int Overload(int value) => value;
+
+            public string Overload(string value) => value;
+
+            public int Overload(int value, string suffix) => value;
         }
 
         [DataContract]
