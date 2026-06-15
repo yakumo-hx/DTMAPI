@@ -38,6 +38,7 @@ namespace DTMAPI.Core.Services
         private readonly List<ContentAssetInfo> assets = new List<ContentAssetInfo>();
         private readonly List<ContentItemInfo> indexedItems = new List<ContentItemInfo>();
         private readonly Dictionary<string, ContentItemInfo> indexedByItemId = new Dictionary<string, ContentItemInfo>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ContentItemInfo> allIndexedByItemId = new Dictionary<string, ContentItemInfo>(StringComparer.OrdinalIgnoreCase);
 
         public ContentQueryService(RuntimePaths paths)
         {
@@ -89,7 +90,9 @@ namespace DTMAPI.Core.Services
             return false;
         }
 
-        public IReadOnlyList<IContentItemInfo> GetIndexedItems() => indexedItems.Cast<IContentItemInfo>().ToArray();
+        public IReadOnlyList<IContentItemInfo> GetIndexedItems() => indexedItems.Where(i => i.Enabled).Cast<IContentItemInfo>().ToArray();
+
+        public IReadOnlyList<IContentItemInfo> GetAllIndexedItems() => indexedItems.Cast<IContentItemInfo>().ToArray();
 
         public IContentItemInfo? GetIndexedItem(string itemId)
         {
@@ -98,10 +101,18 @@ namespace DTMAPI.Core.Services
                 : null;
         }
 
+        public IContentItemInfo? GetAnyIndexedItem(string itemId)
+        {
+            return !string.IsNullOrWhiteSpace(itemId) && allIndexedByItemId.TryGetValue(itemId, out ContentItemInfo item)
+                ? item
+                : null;
+        }
+
         private void RebuildOfficialContentItemIndex()
         {
             indexedItems.Clear();
             indexedByItemId.Clear();
+            allIndexedByItemId.Clear();
 
             OfficialModEnablementIndex enablement = OfficialModEnablementIndex.Load();
             var seenRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -122,6 +133,17 @@ namespace DTMAPI.Core.Services
                 .GroupBy(i => i.ItemId, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.OrderByDescending(i => i.Enabled)
                     .ThenBy(i => i.LoadOrder < 0 ? int.MaxValue : i.LoadOrder)
+                    .ThenBy(i => i.SourceKind, StringComparer.OrdinalIgnoreCase)
+                    .First()))
+            {
+                allIndexedByItemId[item.ItemId] = item;
+            }
+
+            foreach (ContentItemInfo item in indexedItems
+                .Where(i => i.Enabled)
+                .GroupBy(i => i.ItemId, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g
+                    .OrderBy(i => i.LoadOrder < 0 ? int.MaxValue : i.LoadOrder)
                     .ThenBy(i => i.SourceKind, StringComparer.OrdinalIgnoreCase)
                     .First()))
             {
@@ -380,27 +402,34 @@ namespace DTMAPI.Core.Services
 
         public void RegisterButton(string button)
         {
-            if (!string.IsNullOrWhiteSpace(button) && !button.Equals("None", StringComparison.OrdinalIgnoreCase))
-                registered.Add(button.Trim());
+            string normalized = NormalizeButton(button);
+            if (normalized.Length > 0)
+                registered.Add(normalized);
         }
 
         public void UnregisterButton(string button)
         {
-            if (!string.IsNullOrWhiteSpace(button))
-                registered.Remove(button.Trim());
+            string normalized = NormalizeButton(button);
+            if (normalized.Length > 0)
+                registered.Remove(normalized);
         }
 
         public IReadOnlyList<string> GetRegisteredButtons() => registered.OrderBy(v => v, StringComparer.OrdinalIgnoreCase).ToArray();
 
         public void SetPressed(string button)
         {
-            down.Add(button);
-            pressed.Add(button);
+            string normalized = NormalizeButton(button);
+            if (normalized.Length == 0)
+                return;
+            down.Add(normalized);
+            pressed.Add(normalized);
         }
 
         public void SetReleased(string button)
         {
-            down.Remove(button);
+            string normalized = NormalizeButton(button);
+            if (normalized.Length > 0)
+                down.Remove(normalized);
         }
 
         public void ClearFrame()
@@ -408,10 +437,27 @@ namespace DTMAPI.Core.Services
             pressed.Clear();
             suppressed.Clear();
         }
-        public bool IsDown(string button) => down.Contains(button);
-        public bool WasPressed(string button) => pressed.Contains(button);
-        public void Suppress(string button) => suppressed.Add(button);
+        public bool IsDown(string button) => down.Contains(NormalizeButton(button));
+        public bool WasPressed(string button) => pressed.Contains(NormalizeButton(button));
+        public void Suppress(string button)
+        {
+            string normalized = NormalizeButton(button);
+            if (normalized.Length == 0)
+                return;
+            suppressed.Add(normalized);
+            down.Remove(normalized);
+            pressed.Remove(normalized);
+        }
+
+        internal bool IsSuppressed(string button) => suppressed.Contains(NormalizeButton(button));
+
         public IReadOnlyList<string> GetSuppressedButtons() => suppressed.OrderBy(v => v, StringComparer.OrdinalIgnoreCase).ToArray();
+
+        private static string NormalizeButton(string button)
+        {
+            button = (button ?? string.Empty).Trim();
+            return button.Equals("None", StringComparison.OrdinalIgnoreCase) ? string.Empty : button;
+        }
     }
 
     public enum DtmOverlayPage

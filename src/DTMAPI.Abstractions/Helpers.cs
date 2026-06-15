@@ -190,7 +190,9 @@ namespace DTMAPI.Abstractions
         IReadOnlyList<string> GetKnownContentTypes();
         bool TryReadTextAsset(string relativePath, out string text);
         IReadOnlyList<IContentItemInfo> GetIndexedItems();
+        IReadOnlyList<IContentItemInfo> GetAllIndexedItems();
         IContentItemInfo? GetIndexedItem(string itemId);
+        IContentItemInfo? GetAnyIndexedItem(string itemId);
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]

@@ -150,6 +150,11 @@ namespace DTMAPI.Core.Runtime
                     "Input " + button + " blocked by UI boundary. context=" + UI.InputContext + " menuOpen=" + UI.IsOpen + " gameplayHotkeys=" + UI.GameplayHotkeysAllowed + ".");
                 return;
             }
+            if (Input.IsSuppressed(button))
+            {
+                RuntimeMonitor.Log("Input " + button + " suppressed by DTMAPI helper state. context=" + UI.InputContext + " menuOpen=" + UI.IsOpen + ".");
+                return;
+            }
             Input.SetPressed(button);
             RuntimeMonitor.Log("Input " + button + " pressed dispatched to DTMAPI mods. context=" + UI.InputContext + " menuOpen=" + UI.IsOpen + ".");
             Events.DispatchButtonPressed(button);
@@ -157,6 +162,12 @@ namespace DTMAPI.Core.Runtime
 
         public void RecordInputReleased(string button)
         {
+            if (Input.IsSuppressed(button))
+            {
+                Input.SetReleased(button);
+                RuntimeMonitor.Log("Input " + button + " release suppressed by DTMAPI helper state. context=" + UI.InputContext + " menuOpen=" + UI.IsOpen + ".");
+                return;
+            }
             Input.SetReleased(button);
             if (UI.BlocksGameplayHotkeys)
                 return;
@@ -290,7 +301,11 @@ namespace DTMAPI.Core.Runtime
 
         public IReadOnlyList<IContentItemInfo> GetIndexedContentItems() => Content.GetIndexedItems();
 
+        public IReadOnlyList<IContentItemInfo> GetAllIndexedContentItems() => Content.GetAllIndexedItems();
+
         public IContentItemInfo? GetIndexedContentItem(string itemId) => Content.GetIndexedItem(itemId);
+
+        public IContentItemInfo? GetAnyIndexedContentItem(string itemId) => Content.GetAnyIndexedItem(itemId);
 
         private void DiscoverMods()
         {
@@ -308,6 +323,11 @@ namespace DTMAPI.Core.Runtime
             {
                 Diagnostics.RecordError("DTMAPI.ModScanner", "Manifest discovery failed.", error);
                 RuntimeMonitor.Log("Manifest discovery failed: " + error, LogLevel.Warn);
+            }
+            foreach (string warning in scanner.Warnings)
+            {
+                Diagnostics.RecordWarning("DTMAPI.ModScanner", "Manifest discovery warning.", warning);
+                RuntimeMonitor.Log("Manifest discovery warning: " + warning, LogLevel.Warn);
             }
             Workshop.SetMods(discoveredMods);
             Stopwatch content = Stopwatch.StartNew();

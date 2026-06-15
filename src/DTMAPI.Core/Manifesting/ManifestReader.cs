@@ -30,6 +30,7 @@ namespace DTMAPI.Core.Manifesting
         private readonly RuntimePaths paths;
         private readonly ManifestReader reader = new ManifestReader();
         private readonly List<string> errors = new List<string>();
+        private readonly List<string> warnings = new List<string>();
 
         public ModScanner(RuntimePaths paths)
         {
@@ -37,6 +38,7 @@ namespace DTMAPI.Core.Manifesting
         }
 
         public IReadOnlyList<string> Errors => errors;
+        public IReadOnlyList<string> Warnings => warnings;
         public string OfficialLocalModsRoot { get; private set; } = string.Empty;
         public bool OfficialLocalModsRootExists { get; private set; }
         public int OfficialLocalDirectoryCount { get; private set; }
@@ -53,6 +55,7 @@ namespace DTMAPI.Core.Manifesting
             Stopwatch total = Stopwatch.StartNew();
             var mods = new List<DiscoveredMod>();
             errors.Clear();
+            warnings.Clear();
             OfficialModEnablementIndex official = OfficialModEnablementIndex.Load();
             OfficialLocalModsRoot = official.LocalModsRoot;
             OfficialEnablementFilePath = official.EnablementFilePath;
@@ -157,21 +160,37 @@ namespace DTMAPI.Core.Manifesting
             return File.Exists(contentManifest) ? contentManifest : string.Empty;
         }
 
-        private static IReadOnlyList<DiscoveredMod> PreferSourceManagedDuplicates(IEnumerable<DiscoveredMod> mods)
+        private IReadOnlyList<DiscoveredMod> PreferSourceManagedDuplicates(IEnumerable<DiscoveredMod> mods)
         {
             var byId = new Dictionary<string, DiscoveredMod>(StringComparer.OrdinalIgnoreCase);
             var unnamed = new List<DiscoveredMod>();
-            foreach (DiscoveredMod mod in mods)
+            foreach (IGrouping<string, DiscoveredMod> group in mods.GroupBy(m => m.Manifest.UniqueID ?? string.Empty, StringComparer.OrdinalIgnoreCase))
             {
-                string id = mod.Manifest.UniqueID;
+                string id = group.Key;
                 if (string.IsNullOrWhiteSpace(id))
                 {
-                    unnamed.Add(mod);
+                    unnamed.AddRange(group);
                     continue;
                 }
 
-                if (!byId.TryGetValue(id, out DiscoveredMod existing) || SourcePriority(mod.Source) < SourcePriority(existing.Source))
-                    byId[id] = mod;
+                DiscoveredMod[] ordered = group
+                    .OrderBy(m => SourcePriority(m.Source))
+                    .ThenBy(m => m.RootPath, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                DiscoveredMod selected = ordered[0];
+                byId[id] = selected;
+
+                if (ordered.Length <= 1)
+                    continue;
+
+                string ignored = string.Join("; ", ordered
+                    .Skip(1)
+                    .Select(m => m.Source + " root=" + m.RootPath)
+                    .ToArray());
+                warnings.Add(
+                    "Duplicate UniqueID " + id +
+                    " discovered; using " + selected.Source + " root=" + selected.RootPath +
+                    "; ignored " + ignored + ".");
             }
 
             unnamed.AddRange(byId.Values.OrderBy(m => m.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase));

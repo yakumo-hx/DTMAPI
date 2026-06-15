@@ -1428,6 +1428,9 @@ namespace DTMAPI.UnitTests
                 Path.Combine(contentRoot, "manifest.json"),
                 "{ \"Name\": \"Official Test\", \"Author\": \"Yuuka\", \"Version\": \"1.0.0\", \"UniqueID\": \"Yuuka.DTMAPI.Test\", \"Type\": \"ContentPack\" }",
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+            File.WriteAllText(
+                Path.Combine(contentRoot, "item_tbitem.json"),
+                "[{ \"id\": \"dtmapi_test_item\", \"sub_type\": \"material\", \"title\": { \"text\": \"测试物品\", \"english\": \"Test Item\" }, \"ui_sprite_asset\": { \"url\": \"icon_item_dtmapi_test_item\" } }]");
 
             string localDuplicate = Path.Combine(gameDir, "Mods", "Yuuka.DTMAPI.Test");
             Directory.CreateDirectory(localDuplicate);
@@ -1447,6 +1450,12 @@ namespace DTMAPI.UnitTests
                 Assert(disabled.Source == "OfficialLocal", "Official local package should take precedence over duplicate game Mods entries.");
                 Assert(!disabled.OfficialEnabled, "Official disabled state should prevent loading.");
                 Assert(!disabledSnapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test"), "Official-disabled package must not load.");
+                Assert(disabledRuntime.GetIndexedContentItem("dtmapi_test_item") == null, "Default content item lookup should not return disabled official content.");
+                IContentItemInfo? disabledAnyItem = disabledRuntime.GetAnyIndexedContentItem("dtmapi_test_item");
+                Assert(disabledAnyItem != null && !disabledAnyItem.Enabled, "All-content item lookup should expose disabled content for diagnostics.");
+                Assert(disabledRuntime.GetAllIndexedContentItems().Any(i => i.ItemId == "dtmapi_test_item" && !i.Enabled), "All-content list should include disabled official content.");
+                Assert(!disabledRuntime.GetIndexedContentItems().Any(i => i.ItemId == "dtmapi_test_item"), "Default content list should include enabled content only.");
+                Assert(disabledRuntime.Diagnostics.GetWarnings().Any(w => w.Owner == "DTMAPI.ModScanner" && w.Details.Contains("Duplicate UniqueID Yuuka.DTMAPI.Test", StringComparison.OrdinalIgnoreCase) && w.Details.Contains("OfficialLocal", StringComparison.OrdinalIgnoreCase) && w.Details.Contains("Local", StringComparison.OrdinalIgnoreCase)), "Duplicate UniqueID selection should be exposed as a scanner warning.");
                 IDtmModStatusInfo disabledStatus = disabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
                 Assert(!disabledStatus.Loaded && disabledStatus.Status == "disabled" && disabledStatus.StatusCode == "disabled" && !disabledStatus.OfficialEnabled && disabledStatus.OfficialEnablementManaged && disabledStatus.EnablementReason.Contains("官方"), "Diagnostics snapshot should expose official disabled mod status and enablement reason.");
 
@@ -1456,6 +1465,8 @@ namespace DTMAPI.UnitTests
                 RuntimeSnapshot enabledSnapshot = enabledRuntime.CreateSnapshot();
                 Assert(enabledSnapshot.DiscoveredMods.Single(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test").OfficialEnabled, "Official enabled state should be honored.");
                 Assert(enabledSnapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "Yuuka.DTMAPI.Test"), "Official-enabled content package should load/index.");
+                IContentItemInfo? enabledItem = enabledRuntime.GetIndexedContentItem("dtmapi_test_item");
+                Assert(enabledItem != null && enabledItem.Enabled && enabledItem.SourceKind == "DTMAPI" && enabledItem.SourceId == "Local.Yuuka_DTMAPI_Test", "Default content item lookup should expose enabled DTMAPI official-local content.");
                 IDtmModStatusInfo enabledStatus = enabledRuntime.CreateDiagnosticsSnapshot().Mods.Single(m => m.UniqueID == "Yuuka.DTMAPI.Test");
                 Assert(enabledStatus.Loaded && enabledStatus.Status == "loaded" && enabledStatus.StatusCode == "loaded" && enabledStatus.Source == "OfficialLocal", "Diagnostics snapshot should expose official loaded mod status.");
 
@@ -1587,23 +1598,38 @@ namespace DTMAPI.UnitTests
                 string dir = NewTempGameDir();
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 IInputHelper input = GetInput(runtime);
+                IEventsHelper events = CreateEventsProxy(runtime, "DTMAPI.Tests.Suppress");
+                int pressed = 0;
+                int released = 0;
+                events.Input.ButtonPressed += (_, _) => pressed++;
+                events.Input.ButtonReleased += (_, _) => released++;
 
                 runtime.Start();
                 runtime.UI.SetUiContext("Gameplay", canDrawOverlay: true, gameplayHotkeysAllowed: true, reason: "unit test");
                 input.RegisterButton("F10");
+                input.Suppress(" F10 ");
                 runtime.RecordInputPressed("F10");
-                input.Suppress("F10");
-
-                Assert(input.WasPressed("F10"), "Pressed input should be visible during the frame it is recorded.");
-                Assert(input.IsDown("F10"), "Pressed input should remain down until release.");
+                runtime.RecordInputReleased("F10");
+                Assert(pressed == 0 && released == 0, "Suppressed input should not dispatch DTMAPI input events during the current frame.");
+                Assert(!input.WasPressed("F10"), "Suppressed input should not be reported as pressed.");
+                Assert(!input.IsDown("F10"), "Suppressed input should not leave a down-state.");
                 Assert(input.GetSuppressedButtons().Contains("F10", StringComparer.OrdinalIgnoreCase), "Suppressed input should be visible during the current frame.");
 
                 runtime.Update();
                 Assert(!input.WasPressed("F10"), "Runtime update should clear one-frame pressed input state.");
                 Assert(!input.GetSuppressedButtons().Contains("F10", StringComparer.OrdinalIgnoreCase), "Runtime update should clear one-frame suppressed input state.");
-                Assert(input.IsDown("F10"), "Clearing frame state should not release the input down-state.");
+                Assert(!input.IsDown("F10"), "Suppressed input should remain released after the frame clears.");
 
+                runtime.RecordInputPressed("F10");
+                Assert(pressed == 1 && input.WasPressed("F10") && input.IsDown("F10"), "Input should dispatch normally after one-frame suppression clears.");
+                input.Suppress("F10");
+                Assert(!input.WasPressed("F10") && !input.IsDown("F10"), "Suppressing after a press should clear helper pressed/down state even though the already-dispatched event cannot be undone.");
                 runtime.RecordInputReleased("F10");
+                Assert(released == 0, "Release in the same suppressed frame should not dispatch.");
+                runtime.Update();
+                runtime.RecordInputPressed("F10");
+                runtime.RecordInputReleased("F10");
+                Assert(pressed == 2 && released == 1, "Input release should dispatch normally after suppression clears.");
                 Assert(!input.IsDown("F10"), "Released input should clear the down-state.");
             }
             finally
