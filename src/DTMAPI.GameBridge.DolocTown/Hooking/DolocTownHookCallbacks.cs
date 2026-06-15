@@ -34,7 +34,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
-            SafeCallback("SaveLoaded.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("SaveLoaded"));
             SafeCallback("SaveLoaded.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesSaveLoaded(isNewGame));
             SafeCallback("SaveLoaded.NotifyRuntime", () => Runtime?.NotifySaveLoaded(isNewGame));
@@ -55,7 +54,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ReturnHomePostfix()
         {
-            SafeCallback("ReturnedToTitle.CleanupSecondMotor", () => Bridge?.CleanupSecondMotorForLifecycleBoundary("ReturnedToTitle"));
             SafeCallback("ReturnedToTitle.NotifyEquipmentSlots", () => Bridge?.ExperimentalApi?.NotifyEquipmentSlotsReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyRuntime", () => Runtime?.NotifyReturnedToTitle());
@@ -553,51 +551,6 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 RecordHookCallbackFailure("Fishing.FishRodRenderer.PullCancel.Duration", ex);
             }
-        }
-
-        public static bool ItemMotorKeyOnUsePrefix(object __instance)
-        {
-            return SafePrefix("Vehicle.ItemMotorKey.OnUse", () => Bridge?.ExperimentalApi?.HandleMotorKeyUse(__instance) ?? true);
-        }
-
-        public static bool MotorInteractableOnInteractPrefix(object __instance)
-        {
-            return SafePrefix("Vehicle.MotorInteractable.OnInteract", () => Bridge?.ExperimentalApi?.HandleMotorInteract(__instance) ?? true);
-        }
-
-        public static void AgentControllerStateGetOnMotorPostfix(object __instance)
-        {
-            SafePostfix("Vehicle.AgentControllerState.GetOnMotor", () => Bridge?.ExperimentalApi?.NotifyMotorGetOn(__instance));
-        }
-
-        public static void AgentControllerStateGetOffMotorPostfix(object __instance)
-        {
-            SafePostfix("Vehicle.AgentControllerState.GetOffMotor", () => Bridge?.ExperimentalApi?.NotifyMotorGetOff(__instance));
-        }
-
-        public static void MotorControllerOnFixedUpdatePrefix(object __instance)
-        {
-            SafePostfix("Vehicle.MotorController.OnFixedUpdate.Prefix", () => Bridge?.ExperimentalApi?.ApplySecondMotorTuningForFixedUpdate(__instance));
-        }
-
-        public static void MotorControllerOnFixedUpdatePostfix(object __instance)
-        {
-            SafePostfix("Vehicle.MotorController.OnFixedUpdate.Postfix", () => Bridge?.ExperimentalApi?.RestoreSecondMotorTuningAfterFixedUpdate(__instance));
-        }
-
-        public static void UnlockMotorPostfix()
-        {
-            SafePostfix("Vehicle.UnlockMotor.Postfix", () => Bridge?.ExperimentalApi?.NotifyOriginalMotorUnlocked());
-        }
-
-        public static void SetMotorPositionPostfix(object __0, object __1)
-        {
-            SafePostfix("Vehicle.SetMotorPosition.Postfix", () => Bridge?.ExperimentalApi?.NotifyOriginalMotorPositionChanged(__0, __1));
-        }
-
-        public static void DolocApiEnterRoomPostfix(object __0, object __1, bool __result)
-        {
-            SafePostfix("Vehicle.DolocAPI.EnterRoom.Postfix", () => Bridge?.ExperimentalApi?.NotifyEnterRoomForActiveSecondMotor(__0, __1, __result));
         }
 
         public static void EquipmentRendererOnReusePostfix(object __instance)

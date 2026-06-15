@@ -66,7 +66,6 @@ namespace DTMAPI.UnitTests
                 SaveSlotsNormalizeToFixedTwelveContract();
                 EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery();
                 EquipmentSlotShieldPolicyMirrorsNativeShieldHat();
-                MotorVehicleCustomApiNormalizesKeysAndNativeSpeedDefaults();
                 FishingAutomationOptionsNormalizeNativeStageDefaults();
                 FishingAutomationBiteActionPrecedence();
                 FishingAutomationMiniGameInputDecisionMatchesNativeBars();
@@ -2077,33 +2076,6 @@ namespace DTMAPI.UnitTests
 
             EquipmentSlotShieldBlockResult broken = EquipmentSlotShieldPolicy.Block(incomingDamage: 10, shieldValue: 5, shieldDefend: 2);
             Assert(!broken.FullyBlocked && broken.Broken && broken.BlockedDamage == 5 && broken.RemainingShieldValue == 0, "Broken shields should report only the shield value as blocked damage, matching native residual damage semantics.");
-        }
-
-        private static void MotorVehicleCustomApiNormalizesKeysAndNativeSpeedDefaults()
-        {
-            Type serviceType = typeof(DolocTownExperimentalBridgeApi);
-            MethodInfo normalizeKeys = serviceType.GetMethod("NormalizeMotorKeyIds", BindingFlags.Static | BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException("Motor vehicle bridge should keep a key-id normalization helper.");
-            MethodInfo normalizeSpeed = serviceType.GetMethod("NormalizeCustomMotorSpeed", BindingFlags.Static | BindingFlags.NonPublic)
-                ?? throw new InvalidOperationException("Motor vehicle bridge should keep a speed normalization helper.");
-
-            IReadOnlyList<string> keyIds = (IReadOnlyList<string>)(normalizeKeys.Invoke(null, new object?[] { "dtmapi_second_motor_key", new[] { "dtmapi_second_motor_key", "dtmapi_second_motor_alt_key", " dtmapi_spaced_motor_key " } }) ?? throw new InvalidOperationException("Normalize should return key ids."));
-            IReadOnlyList<string> fallbackKeyIds = (IReadOnlyList<string>)(normalizeKeys.Invoke(null, new object?[] { string.Empty, Array.Empty<string>() }) ?? throw new InvalidOperationException("Normalize should return fallback key ids."));
-
-            Assert(keyIds.SequenceEqual(new[] { "dtmapi_second_motor_key", "dtmapi_second_motor_alt_key", "dtmapi_spaced_motor_key" }), "Custom motor keys should preserve primary-first order, trim whitespace, and remove duplicates.");
-            Assert(fallbackKeyIds.SequenceEqual(new[] { "dtmapi_second_motor_key" }), "Custom motor key normalization should retain the historical fallback key when no key is provided.");
-
-            double newApiDefaultSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.0, 1.0 }));
-            double legacyDefaultSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.0, 2.0 }));
-            double clampedLowSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 0.01, 1.0 }));
-            double clampedHighSpeed = Convert.ToDouble(normalizeSpeed.Invoke(null, new object?[] { 99.0, 1.0 }));
-
-            Assert(newApiDefaultSpeed == 1.0, "RegisterCustomMotor should default to 1x native speed for official-behavior clones.");
-            Assert(legacyDefaultSpeed == 2.0, "RegisterSecondMotor compatibility should retain its historical 2x default.");
-            Assert(Math.Abs(clampedLowSpeed - 0.1) < 0.0001 && clampedHighSpeed == 8.0, "Custom motor speed normalization should clamp to the documented 0.1x-8x range.");
-
-            var definition = new CustomMotorDefinition();
-            Assert(definition.SpeedMultiplier == 1.0 && definition.MovementMode == "native-flying-motor" && definition.CollisionProfile == "native-motor" && definition.AppearanceMode == "native-clone", "CustomMotorDefinition defaults should model a native flying motor clone.");
         }
 
         private static void FishingAutomationBiteActionPrecedence()

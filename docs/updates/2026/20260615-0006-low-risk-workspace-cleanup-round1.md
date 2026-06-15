@@ -60,7 +60,7 @@ No game smoke has been run yet for this static cleanup round. Runtime hook behav
 
 - Review source: `docs/reviews/code/2026/20260615-0001-codex-handoff-space-maintainability-audit.md`
 - Prior archive update: `docs/updates/2026/20260615-0004-second-motor-archive.md`
-- API matrix note: `docs/api/public-api-matrix.md` marks `IMotorVehicleApi` as Experimental and archived SecondMotor evidence as research history only.
+- Later supersession: Round 2 update `docs/updates/2026/20260615-0007-motorvehicle-api-retirement-round2.md` retired the remaining MotorVehicle API/runtime/smoke surfaces; that later record owns the API-matrix status change.
 - Smoke matrix archived vehicle row: `docs/debug/regressions/smoke-matrix.md`
 
 ## Rollback

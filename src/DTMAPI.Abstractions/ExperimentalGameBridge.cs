@@ -112,24 +112,6 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus();
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.2")]
-    public interface IMotorVehicleApi
-    {
-        event EventHandler<MotorVehicleEventArgs>? VehicleChanged;
-
-        MotorVehicleState GetOriginalMotorState();
-        MotorVehicleState GetVehicleState(string vehicleId);
-        IReadOnlyList<MotorVehicleState> GetVehicles();
-        MotorVehicleRegisterResult RegisterCustomMotor(IManifest owner, CustomMotorDefinition definition);
-        MotorVehicleRegisterResult RegisterSecondMotor(IManifest owner, SecondMotorOptions options);
-        MotorVehicleSummonResult UnlockOriginalMotor(IManifest owner, double yOffset);
-        MotorVehicleSummonResult SummonOriginalMotor(IManifest owner);
-        MotorVehicleSummonResult SummonVehicle(IManifest owner, string vehicleId);
-        MotorVehicleRideResult RideVehicle(IManifest owner, string vehicleId);
-        MotorVehicleRideResult DismountVehicle(IManifest owner, string reason);
-        BridgeFeatureStatus GetStatus(string uniqueId);
-    }
-
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
     public interface IMachineProductionApi
     {
@@ -595,111 +577,6 @@ namespace DTMAPI.Abstractions
         public MovementDebugState Before { get; set; } = new MovementDebugState();
         public MovementDebugState After { get; set; } = new MovementDebugState();
         public string FailureReason { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public sealed class CustomMotorDefinition
-    {
-        public string VehicleId { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public string PrimaryKeyItemId { get; set; } = string.Empty;
-        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
-        public double SpeedMultiplier { get; set; } = 1;
-        public string MovementMode { get; set; } = "native-flying-motor";
-        public string CollisionProfile { get; set; } = "native-motor";
-        public string AppearanceMode { get; set; } = "native-clone";
-        public string AppearanceAssetRelativePath { get; set; } = string.Empty;
-        public string LightMaskAssetRelativePath { get; set; } = string.Empty;
-        public string TextureSourceNote { get; set; } = string.Empty;
-        public bool VerboseLogging { get; set; }
-    }
-
-    public sealed class SecondMotorOptions
-    {
-        public string VehicleId { get; set; } = "dtmapi.second_motor";
-        public string DisplayName { get; set; } = "Second Motor";
-        public string KeyItemId { get; set; } = "dtmapi_second_motor_key";
-        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
-        public double SpeedMultiplier { get; set; } = 2;
-        public string MovementMode { get; set; } = "native-flying-motor";
-        public string CollisionProfile { get; set; } = "native-motor";
-        public string AppearanceMode { get; set; } = "native-clone";
-        public string AppearanceAssetRelativePath { get; set; } = string.Empty;
-        public string LightMaskAssetRelativePath { get; set; } = string.Empty;
-        public bool UseOriginalMotorVisuals { get; set; } = true;
-        public string TextureSourceNote { get; set; } = string.Empty;
-        public bool VerboseLogging { get; set; }
-    }
-
-    public sealed class MotorVehicleState
-    {
-        public string VehicleId { get; set; } = string.Empty;
-        public string OwnerUniqueId { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public bool IsOriginalMotor { get; set; }
-        public bool IsRegistered { get; set; }
-        public bool IsUnlocked { get; set; }
-        public bool IsVisible { get; set; }
-        public bool IsRiding { get; set; }
-        public bool IsAvailableInCurrentRoom { get; set; }
-        public string RoomId { get; set; } = string.Empty;
-        public string RoomTitle { get; set; } = string.Empty;
-        public double X { get; set; }
-        public double Y { get; set; }
-        public double Z { get; set; }
-        public double EnduranceProgress { get; set; }
-        public double BaseMaxSpeed { get; set; }
-        public double EffectiveMaxSpeed { get; set; }
-        public double SpeedMultiplier { get; set; } = 1;
-        public string KeyItemId { get; set; } = string.Empty;
-        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
-        public string MovementMode { get; set; } = string.Empty;
-        public string CollisionProfile { get; set; } = string.Empty;
-        public string AppearanceMode { get; set; } = string.Empty;
-        public string AppearanceSummary { get; set; } = string.Empty;
-        public string LastFailureReason { get; set; } = string.Empty;
-        public string LastMessage { get; set; } = string.Empty;
-    }
-
-    public sealed class MotorVehicleRegisterResult
-    {
-        public bool Success { get; set; }
-        public string VehicleId { get; set; } = string.Empty;
-        public string KeyItemId { get; set; } = string.Empty;
-        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
-        public MotorVehicleState State { get; set; } = new MotorVehicleState();
-        public string FailureReason { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public sealed class MotorVehicleSummonResult
-    {
-        public bool Success { get; set; }
-        public string VehicleId { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public MotorVehicleState Before { get; set; } = new MotorVehicleState();
-        public MotorVehicleState After { get; set; } = new MotorVehicleState();
-        public string FailureReason { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public sealed class MotorVehicleRideResult
-    {
-        public bool Success { get; set; }
-        public string VehicleId { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public string Action { get; set; } = string.Empty;
-        public MotorVehicleState Before { get; set; } = new MotorVehicleState();
-        public MotorVehicleState After { get; set; } = new MotorVehicleState();
-        public string FailureReason { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public sealed class MotorVehicleEventArgs : EventArgs
-    {
-        public string EventType { get; set; } = string.Empty;
-        public string VehicleId { get; set; } = string.Empty;
-        public MotorVehicleState State { get; set; } = new MotorVehicleState();
         public string Message { get; set; } = string.Empty;
     }
 

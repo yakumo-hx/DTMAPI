@@ -12,7 +12,7 @@ User manual QA on 2026-06-15 reported the rebuilt second motor as effectively un
 - abnormal farm-room textures;
 - severe cross-map texture pollution.
 
-The retained native-owner research still says Doloc Town's native motor path is singleton-oriented. The current DTMAPI `IMotorVehicleApi` code may remain in `DTMAPI.GameBridge.DolocTown` as Experimental research, but this sample mod is no longer built, installed, published, or used as smoke acceptance.
+The retained native-owner research still says Doloc Town's native motor path is singleton-oriented. Cleanup Round 2 retired the remaining DTMAPI `IMotorVehicleApi` / MotorVehicle GameBridge code from the active runtime; this sample mod is no longer built, installed, published, or used as smoke acceptance.
 
 ## Contents
 

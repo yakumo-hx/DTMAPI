@@ -34,7 +34,6 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus("Debug.TeleportApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses a whitelist of native mark points and DolocAPI.DoTransport; arbitrary coordinates are not exposed.");
             runtime.SetHookStatus("Debug.TimeApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses ArchiveDataHandle.PassTimeNoControl plus DolocAPI.OnWakeUp to jump to the next weather period; no raw save edit.");
             runtime.SetHookStatus("Debug.MovementApi", "experimental", "DTMAPI.GameBridge.DolocTown API", "Uses native MotionAbility.SetMoveScaler on the player body; reset restores scale 0.");
-            runtime.SetHookStatus("Vehicle.MotorApi", "pending", "DTMAPI.GameBridge.DolocTown API", "Waiting for MotorController, ItemMotorKey, MotorInteractable, AgentControllerState, UnlockMotor, SetMotorPosition, and EnterRoom hooks.");
             runtime.SetHookStatus("Machine.ProductionApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.4 experimental machine contract accepts JSON-backed machine definitions; production/fuel/electric runtime hooks still require third-save implementation evidence.");
             runtime.SetHookStatus("Player.EquipmentSlotsApi", "contract", "DTMAPI.GameBridge.DolocTown API", "0.2.9 experimental equipment-slot contract records extra attribute slots and safe recovery policy; GameBridge owns DTMAPI slot storage, native stat-function application, interactive player equipment strip rendering, and recovery without exposing raw game types.");
         }

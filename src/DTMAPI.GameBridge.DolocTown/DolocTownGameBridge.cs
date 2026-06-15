@@ -63,7 +63,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseDebugTimeAttempted;
         private bool autoExerciseDebugMovementAttempted;
         private bool autoExerciseAdvancedDebugAttempted;
-        private bool autoExerciseVehicleAttempted;
         private bool autoExerciseNewContentApisAttempted;
         private bool autoExerciseMineContentApisAttempted;
         private bool autoExerciseZoomAttempted;
@@ -109,15 +108,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset autoFishingPhaseStartedAt;
         private int autoFishingApplicationBaseline;
         private DateTimeOffset debugTeleportRequestedAt;
-        private DateTimeOffset vehicleEdgeTransitionRequestedAt;
         private TeleportSnapshot? debugTeleportBeforeSnapshot;
         private TeleportDestination? debugTeleportDestination;
         private TeleportResult? debugTeleportRequestResult;
-        private TeleportDestination? vehicleEdgeTransitionDestination;
-        private TeleportResult? vehicleEdgeTransitionRequestResult;
-        private MotorVehicleState? vehicleEdgeTransitionOriginalBefore;
-        private MotorVehicleState? vehicleEdgeTransitionSecondBefore;
-        private string vehicleEdgeTransitionBaseSummary = string.Empty;
         private bool mineOfficialTechTreeUiOpenRequested;
         private bool mineOfficialTechTreeUiEvidenceCaptured;
         private DateTimeOffset mineOfficialTechTreeUiClosedAt;
@@ -170,15 +163,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool animalViewerShowPrefixPatched => animalViewerFeature?.HookBridge.ViewerShowPrefixPatched == true;
         private bool animalViewerShowPatched => animalViewerFeature?.HookBridge.ViewerShowPatched == true;
         private bool animalPanelRefreshViewerPatched => animalViewerFeature?.HookBridge.PanelRefreshViewerPatched == true;
-        private bool motorKeyUsePatched;
-        private bool motorInteractPatched;
-        private bool motorGetOnPatched;
-        private bool motorGetOffPatched;
-        private bool motorFixedUpdatePrefixPatched;
-        private bool motorFixedUpdatePostfixPatched;
-        private bool motorUnlockPatched;
-        private bool motorSetPositionPatched;
-        private bool motorEnterRoomPatched;
         private bool equipmentRendererReusePatched;
         private bool equipmentBuilderCreateIndicatorPatched;
         private bool equipmentBuilderTurnIndicatorPatched;
@@ -257,11 +241,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal ActionCompletionService? ActionCompletionService => actionCompletionFeature?.Service;
 
-        public void CleanupSecondMotorForLifecycleBoundary(string reason)
-        {
-            experimentalApi?.CleanupSecondMotorResidueForBoundary(reason);
-        }
-
         public void Initialize()
         {
             initializedAt = DateTimeOffset.Now;
@@ -300,7 +279,6 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterRuntimeApi<IInstantSaveDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<ITimeDebugApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMovementDebugApi>(manifest, experimentalApi);
-            runtime.RegisterRuntimeApi<IMotorVehicleApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IMachineProductionApi>(manifest, experimentalApi);
             runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(manifest, experimentalApi);
             RegisterGameBridgeFeatureApis(manifest);
@@ -1245,55 +1223,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 experimentalApi?.SetAdvancedCreativeHooksInstalled(advancedCreativeCostHooksReady, advancedCreativeRecipeTimePatched);
                 runtime.SetHookStatus("Debug.CreativeModeHooks", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: DolocAPI cost/afford APIs + Synthesizer.GetRecipeTime", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "Patched no-cost/no-energy checks and synthesizer recipe time for the Y-console creative toggle; GameInitConfig material/shop/spirit flags are applied only while creative mode is enabled." : "Waiting for all advanced creative cost/time targets to become patchable.");
 
-                if (!motorKeyUsePatched)
-                {
-                    motorKeyUsePatched = patcher.TryPatchPrefix("DolocTown.ItemMotorKey, Assembly-CSharp", "OnUse", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ItemMotorKeyOnUsePrefix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!motorInteractPatched)
-                {
-                    motorInteractPatched = patcher.TryPatchPrefix("DolocTown.MotorInteractable, Assembly-CSharp", "OnInteract", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorInteractableOnInteractPrefix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!motorGetOnPatched)
-                {
-                    motorGetOnPatched = patcher.TryPatchPostfix("DolocTown.AgentControllerState, Assembly-CSharp", "GetOnMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateGetOnMotorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!motorGetOffPatched)
-                {
-                    motorGetOffPatched = patcher.TryPatchPostfix("DolocTown.AgentControllerState, Assembly-CSharp", "GetOffMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateGetOffMotorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!motorFixedUpdatePrefixPatched)
-                {
-                    motorFixedUpdatePrefixPatched = patcher.TryPatchPrefix("DolocTown.MotorController, Assembly-CSharp", "OnFixedUpdate", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorControllerOnFixedUpdatePrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!motorFixedUpdatePostfixPatched)
-                {
-                    motorFixedUpdatePostfixPatched = patcher.TryPatchPostfix("DolocTown.MotorController, Assembly-CSharp", "OnFixedUpdate", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MotorControllerOnFixedUpdatePostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!motorUnlockPatched)
-                {
-                    motorUnlockPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "UnlockMotor", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.UnlockMotorPostfix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!motorSetPositionPatched)
-                {
-                    motorSetPositionPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetMotorPosition", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SetMotorPositionPostfix), BindingFlags.Public | BindingFlags.Static), 2);
-                }
-
-                if (!motorEnterRoomPatched)
-                {
-                    motorEnterRoomPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "EnterRoom", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiEnterRoomPostfix), BindingFlags.Public | BindingFlags.Static), 3);
-                }
-
-                bool motorHooksReady = motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched;
-                experimentalApi?.SetMotorVehicleHooksInstalled(motorHooksReady);
-                runtime.SetHookStatus("Vehicle.MotorApi", motorHooksReady ? "experimental" : "pending", "Harmony: ItemMotorKey/MotorInteractable/AgentControllerState/MotorController/DolocAPI", motorHooksReady ? "Patched native motor key, riding, tuning, unlock, position, and room-entry touchpoints. Second-motor routing remains experimental and must be smoke-verified." : "Waiting for native motor hook targets to become patchable.");
-
                 if (!equipmentRendererReusePatched)
                 {
                     equipmentRendererReusePatched = patcher.TryPatchPostfix("DolocTown.EquipmentRenderer, Assembly-CSharp", "OnReuse", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentRendererOnReusePostfix), BindingFlags.Public | BindingFlags.Static), 0);
@@ -1366,9 +1295,6 @@ namespace DTMAPI.GameBridge.DolocTown
                         "DolocTown.UI.AnimalViewer, Assembly-CSharp",
                         "DolocTown.UI.AnimalPanel, Assembly-CSharp",
                         "DolocTown.Animal, Assembly-CSharp",
-                        "DolocTown.ItemMotorKey, Assembly-CSharp",
-                        "DolocTown.MotorInteractable, Assembly-CSharp",
-                        "DolocTown.MotorController, Assembly-CSharp",
                         "DolocTown.ItemFarmingGun, Assembly-CSharp",
                         "DolocTown.FarmingGunUiState, Assembly-CSharp",
                         "HarmonyLib.Harmony, 0Harmony"));

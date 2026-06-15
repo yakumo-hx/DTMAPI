@@ -477,8 +477,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             if (smokeSettings.AutoExerciseInstantSave && !autoExerciseInstantSaveAttempted)
                 return;
-            if (smokeSettings.AutoExerciseVehicle && !autoExerciseVehicleAttempted)
-                return;
             if (smokeSettings.AutoExerciseNewContentApis && !autoExerciseNewContentApisAttempted)
                 return;
             if (smokeSettings.AutoExerciseMineContentApis && !autoExerciseMineContentApisAttempted)
@@ -592,7 +590,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsDebugSmokeRequested()
         {
-            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseNewContentApis || smokeSettings.AutoExerciseMineContentApis || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCustomEntityApis);
+            return smokeSettings != null && (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseNewContentApis || smokeSettings.AutoExerciseMineContentApis || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCustomEntityApis);
         }
 
         private static ManifestModel CreateDebugConsoleSmokeManifest()

@@ -130,16 +130,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 TryExerciseAdvancedDebugForSmoke();
                 TryQuitAfterDebugSmoke();
             }
-            if (!autoExerciseVehicleAttempted && smokeSettings.AutoExerciseVehicle && saveLoadedAt != default &&
-                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseVehicleDelaySeconds))
-            {
-                SmokeAttemptResult vehicleResult = TryExerciseVehicleForSmoke();
-                if (vehicleResult == SmokeAttemptResult.Pending)
-                    return;
-
-                autoExerciseVehicleAttempted = true;
-                TryQuitAfterDebugSmoke();
-            }
             if (!autoExerciseNewContentApisAttempted && smokeSettings.AutoExerciseNewContentApis && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseNewContentApisDelaySeconds))
             {
@@ -417,7 +407,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 autoExerciseAttempted = true;
                 TryExerciseExperimentalHooksForSmoke();
             }
-            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseVehicle || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCropHarvestingApi || smokeSettings.AutoExerciseCustomEntityApis)
+            if (smokeSettings.AutoExerciseDebugConsole || smokeSettings.AutoExerciseDebugInventory || smokeSettings.AutoExerciseDebugWeather || smokeSettings.AutoExerciseDebugTeleport || smokeSettings.AutoExerciseDebugTime || smokeSettings.AutoExerciseDebugMovement || smokeSettings.AutoExerciseAdvancedDebug || smokeSettings.AutoExerciseZoom || smokeSettings.AutoExerciseChestLocatorEnhancer || smokeSettings.AutoExerciseStrongPlantingGun || smokeSettings.AutoExerciseCropHarvestingApi || smokeSettings.AutoExerciseCustomEntityApis)
             {
                 if (smokeSettings.AutoExerciseDebugConsole)
                     runtime.SetHookStatus("Smoke.DebugConsoleHotkey", "pending", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Save loaded; in-game smoke will exercise Y/Escape/Y/Y, ten short taps, and held-Y no-flicker.");
@@ -433,8 +423,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Smoke.DebugMovement", "pending", "IMovementDebugApi", "Waiting after save load to cycle 1x/2x/3x/4x and restore 1x.");
                 if (smokeSettings.AutoExerciseAdvancedDebug)
                     runtime.SetHookStatus("Smoke.AdvancedDebug", "pending", "IAdvancedDebugApi whitelist", "Waiting after save load to exercise time advance, time scale, value grants, creative toggle, and current-room spawn probes.");
-                if (smokeSettings.AutoExerciseVehicle)
-                    runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi.RegisterCustomMotor + ItemMotorKey.OnUse", "Waiting after save load to verify the eighth/ninth-save SecondMotor fixture: official mod item key, custom key summon, native motor non-mutation, ride, dismount, and scoped appearance.");
                 if (smokeSettings.AutoExerciseZoom)
                     runtime.SetHookStatus("Smoke.CameraPlayable", "pending", "ICameraViewApi", "Waiting after save load to acquire competing CameraView leases, verify 4x/2x dynamic movement telemetry, verify arbitration fallback, and restore vanilla view.");
                 if (smokeSettings.AutoExerciseChestLocatorEnhancer)
@@ -4210,6 +4198,25 @@ namespace DTMAPI.GameBridge.DolocTown
             return string.Empty;
         }
 
+        private static bool ContainsIgnoreCase(string value, string search)
+        {
+            return !string.IsNullOrWhiteSpace(value) && !string.IsNullOrWhiteSpace(search) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ContainsAny(IEnumerable<string> values, params string[] searches)
+        {
+            foreach (string value in values)
+            {
+                foreach (string search in searches)
+                {
+                    if (ContainsIgnoreCase(value, search))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         private static MethodInfo? FindMethod(Type? type, string name, int parameterCount)
         {
             if (type == null)
@@ -4225,7 +4232,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && (cameraFeature?.CameraViewSetEnvCameraPatched == true) && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oilCoalDropRoutePatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && motorKeyUsePatched && motorInteractPatched && motorGetOnPatched && motorGetOffPatched && motorFixedUpdatePrefixPatched && motorFixedUpdatePostfixPatched && motorUnlockPatched && motorSetPositionPatched && motorEnterRoomPatched && equipmentSlotsReloadParamsPatched && equipmentSlotsShieldAttackPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && (strongPlantingGunFeature?.HookBridge.ToolPatched == true) && (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) && (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && (cameraFeature?.CameraViewSetEnvCameraPatched == true) && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oilCoalDropRoutePatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && equipmentSlotsReloadParamsPatched && equipmentSlotsShieldAttackPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && (strongPlantingGunFeature?.HookBridge.ToolPatched == true) && (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) && (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -4420,8 +4427,6 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseDebugMovementDelaySeconds { get; set; } = 7;
             [DataMember] public bool AutoExerciseAdvancedDebug { get; set; }
             [DataMember] public int AutoExerciseAdvancedDebugDelaySeconds { get; set; } = 8;
-            [DataMember] public bool AutoExerciseVehicle { get; set; }
-            [DataMember] public int AutoExerciseVehicleDelaySeconds { get; set; } = 8;
             [DataMember] public bool AutoExerciseNewContentApis { get; set; }
             [DataMember] public int AutoExerciseNewContentApisDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseMineContentApis { get; set; }

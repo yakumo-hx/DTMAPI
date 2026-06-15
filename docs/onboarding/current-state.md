@@ -41,7 +41,7 @@ The project has many smoke-verified paths, but most gameplay-facing GameBridge A
 Important current boundaries:
 
 - `ICameraZoomApi` 0.4.2 is failed/obsolete compatibility. Use `ICameraViewApi` for playable zoom work, and do not claim background/panorama/fog sync is solved from orthographic-size evidence.
-- `IMotorVehicleApi` is Experimental research only after the active `SecondMotorMod` sample was archived on 2026-06-15. Archived SecondMotor smoke evidence is not current completion proof.
+- `IMotorVehicleApi` and MotorVehicle DTOs are retired/removed after the active `SecondMotorMod` sample was archived on 2026-06-15. Archived SecondMotor smoke evidence is research history only, not current completion proof.
 - Custom entity runtime creation remains blocked unless a family-specific native adapter is reviewed and verified.
 - Manager/title UI is internal product UI. It does not promote diagnostics or GameBridge surfaces to public stable API.
 
@@ -49,7 +49,7 @@ Important current boundaries:
 
 `testmods/SecondMotorMod` is archived under `archive/second-motor-20260615`. Active build, release, and smoke scripts must not reinstall or validate `DTMAPI_SecondMotor` as a current player-facing package.
 
-Vehicle research may continue later, but it must start from a smaller native-owner slice and fresh manual QA. Do not restore old SecondMotor code or local packages as a release candidate.
+Vehicle research may continue later, but it must start from a smaller native-owner slice, fresh public contract, and fresh manual QA. Do not restore old SecondMotor code, MotorVehicle API code, or local packages as a release candidate.
 
 ## Evidence Space Policy
 
@@ -62,7 +62,7 @@ Default evidence collection should keep compact logs, result files, process/fata
 Near-term cleanup should stay round-based:
 
 1. Low-risk workspace cleanup: stale solution references, dead UI routes, evidence collection policy, and onboarding docs.
-2. SecondMotor/MotorVehicle audit: distinguish archived sample code from any retained vehicle research API before deleting public or GameBridge surfaces.
+2. SecondMotor/MotorVehicle cleanup: keep the archived sample and historical reviews as research, but do not reintroduce the retired public API, GameBridge hooks, or smoke path.
 3. Maintainability refactor: split runtime loader/service/diagnostics responsibilities, split GameBridge hook installers and smoke/status ownership, and reduce monolithic config UI behavior.
 4. Semantic fixes: make content helper enabled-state boundaries explicit, correct or rename misleading input suppression, and warn clearly on duplicate `UniqueID` resolution.
 

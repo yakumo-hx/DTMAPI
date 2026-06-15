@@ -14,17 +14,11 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMotorVehicleApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi : IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
     {
         private const int VanillaArchiveSlotCount = 6;
-        private const string SecondMotorScopedTintHex = "#8CE6FF";
-        private const double SecondMotorScopedTintR = 0.55;
-        private const double SecondMotorScopedTintG = 0.90;
-        private const double SecondMotorScopedTintB = 1.00;
 
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
-        private readonly Dictionary<string, SecondMotorRuntime> secondMotors = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, SecondMotorRuntime> secondMotorsByKeyItemId = new Dictionary<string, SecondMotorRuntime>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, List<MachineDefinition>> machineDefinitions = new Dictionary<string, List<MachineDefinition>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, MachineProductionState> machineStates = new Dictionary<string, MachineProductionState>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, MachineRuntimeEntry> machineRuntimeEntries = new Dictionary<string, MachineRuntimeEntry>(StringComparer.OrdinalIgnoreCase);
@@ -37,15 +31,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly HashSet<string> migratedLegacyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<object> activeEquipmentSlotUiObjects = new List<object>();
         private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
-        private readonly HashSet<object> secondMotorControllers = new HashSet<object>();
-        private readonly HashSet<object> secondMotorInteractables = new HashSet<object>();
         private ActionSpeedService? actionSpeedService;
-        private bool motorVehicleHooksInstalled;
-        private object? originalAgentMotorController;
-        private OriginalMotorSnapshot? originalMotorSnapshotBeforeSecondRide;
-        private SecondMotorRuntime? activeSecondMotor;
-        private GlobalMotorTuningSnapshot? activeSecondMotorTuningSnapshot;
-        private bool restoringOriginalMotorSnapshot;
         private DateTimeOffset lastMachineProductionPollAt = DateTimeOffset.MinValue;
         private int lastMachineProductionTotalTus = -1;
         private bool machineRuntimeLoopInstalled;
@@ -60,8 +46,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool equipmentSlotsOrphanRecoveryChecked;
         private DateTimeOffset lastEquipmentSlotsUiRefreshAt = DateTimeOffset.MinValue;
         private string equipmentSlotsUiLastSummary = string.Empty;
-
-        public event EventHandler<MotorVehicleEventArgs>? VehicleChanged;
 
         public DolocTownExperimentalBridgeApi(DTMAPI.Core.Runtime.DtmApiRuntime runtime)
         {
@@ -124,7 +108,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
         {
             RecoverOrphanEquipmentSlotsIfNeeded();
-            UpdateActiveSecondMotorRoomSnapshot();
             UpdateMachineProduction(forceMachineProductionPoll);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
         }

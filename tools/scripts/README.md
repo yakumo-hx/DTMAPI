@@ -24,6 +24,7 @@ Scripts must not hard-code the user's Steam path. Use local settings or environm
 Set `DTMAPI_RUNTIME_DIR` or `DTMAPI_STATE_DIR` to redirect DTMAPI runtime state (`logs`,
 `reports`, `evidence`, `config`, `smoke-settings.json`) away from the game directory.
 
-`SecondMotorMod` was archived on 2026-06-15. `run-game-smoke.ps1 -AutoExerciseVehicle`
-now returns a blocked archived result, and `-DisableSecondMotorForSmoke` remains only as
-a no-op compatibility flag for old commands.
+`SecondMotorMod` was archived on 2026-06-15, and the remaining MotorVehicle API/GameBridge
+code was retired in cleanup Round 2. `run-game-smoke.ps1 -AutoExerciseVehicle` now returns
+a blocked archived result, and `-DisableSecondMotorForSmoke` remains only as a no-op
+compatibility flag for old commands.
