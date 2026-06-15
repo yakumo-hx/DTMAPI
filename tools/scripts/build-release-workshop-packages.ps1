@@ -85,7 +85,7 @@ function Get-DtmApiPublishMetadata {
 if (-not $ModsOnly) {
     $runtimePackage = Join-Path $OutputRoot 'DTMAPI'
     Clear-Directory -Path $runtimePackage
-    foreach ($bat in @('1_install_dtmapi.bat', '2_uninstall_dtmapi.bat', '3_check_dtmapi_status.bat')) {
+    foreach ($bat in @('1_install_dtmapi.bat', '2_uninstall_dtmapi.bat', '3_check_dtmapi_status.bat', '4_collect_dtmapi_logs.bat')) {
         Copy-Item -LiteralPath (Join-Path $repo "tools\release\runtime-workshop\$bat") -Destination (Join-Path $runtimePackage $bat) -Force
     }
     Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-icon.png') -Destination (Join-Path $runtimePackage 'icon.png')
@@ -93,7 +93,7 @@ if (-not $ModsOnly) {
 
     $installerTools = Join-Path $runtimePackage 'Content\DTMAPIInstaller\tools'
     New-Item -ItemType Directory -Force -Path $installerTools | Out-Null
-    foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'install-to-game.ps1', 'install-bepinex.ps1', 'uninstall-dtmapi.ps1', 'check-dtmapi-status.ps1')) {
+    foreach ($scriptName in @('common.ps1', 'release-common.ps1', 'install-to-game.ps1', 'install-bepinex.ps1', 'uninstall-dtmapi.ps1', 'check-dtmapi-status.ps1', 'collect-logs.ps1', 'analyze-startup-evidence.ps1')) {
         Copy-DtmApiTextFileUtf8Bom -Source (Join-Path $PSScriptRoot $scriptName) -Destination (Join-Path $installerTools $scriptName)
     }
     Test-DtmApiWindowsPowerShellSyntax -Paths @(

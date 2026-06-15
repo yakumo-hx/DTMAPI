@@ -170,4 +170,5 @@ Write-DtmStatusLine -Tag 'INFO' -Message 'Next steps' -Color Cyan
 Write-DtmStatusDetail -Text 'If any required item is [MISSING], run 1_install_dtmapi.bat again.'
 Write-DtmStatusDetail -Text 'If old DLK/SMAPI items are listed, unsubscribe/disable them in Steam or the in-game mod list, then restart Steam and Doloc Town.'
 Write-DtmStatusDetail -Text 'Use DTMAPI Settings > Logs > Export Report when asking for help.'
+Write-DtmStatusDetail -Text 'If the game crashes before you can export a report, run 4_collect_dtmapi_logs.bat and send the Desktop\DTMAPI-logs folder.'
 Write-DtmStatusDetail -Text 'Run uninstall-dtmapi.ps1 -DryRun before uninstalling; add -RemoveOfficialLocalPackages only when you want DTMAPI-owned local packages backed up and removed.'
