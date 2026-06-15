@@ -434,7 +434,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (smokeSettings.AutoExerciseAdvancedDebug)
                     runtime.SetHookStatus("Smoke.AdvancedDebug", "pending", "IAdvancedDebugApi whitelist", "Waiting after save load to exercise time advance, time scale, value grants, creative toggle, and current-room spawn probes.");
                 if (smokeSettings.AutoExerciseVehicle)
-                    runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi + ItemMotorKey.OnUse", "Waiting after save load to verify SecondMotor registration, official mod item key, key summon, ride, dismount, and original motor summon.");
+                    runtime.SetHookStatus("Smoke.VehicleSecondMotor", "pending", "IMotorVehicleApi.RegisterCustomMotor + ItemMotorKey.OnUse", "Waiting after save load to verify the eighth/ninth-save SecondMotor fixture: official mod item key, custom key summon, native motor non-mutation, ride, dismount, and scoped appearance.");
                 if (smokeSettings.AutoExerciseZoom)
                     runtime.SetHookStatus("Smoke.CameraPlayable", "pending", "ICameraViewApi", "Waiting after save load to acquire competing CameraView leases, verify 4x/2x dynamic movement telemetry, verify arbitration fallback, and restore vanilla view.");
                 if (smokeSettings.AutoExerciseChestLocatorEnhancer)

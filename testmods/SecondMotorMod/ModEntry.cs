@@ -8,43 +8,40 @@ namespace SecondMotorMod
     {
         private const string VehicleId = "dtmapi.second_motor";
         private const string KeyItemId = "dtmapi_second_motor_key";
-        private const string RequiredSourceId = "Local.DTMAPI_SecondMotor";
+        private const string LocalSourceId = "Local.DTMAPI_SecondMotor";
+        private const string AppearanceAssetRelativePath = "Content/DTMAPI/assets/second-motor/dtmapi_second_motor.png";
 
         private IDtmHelper helper = null!;
         private IMotorVehicleApi? vehicleApi;
-        private IMailDeliveryApi? mailApi;
-        private MailItemDeliveryResult? lastMailResult;
+        private MotorVehicleRegisterResult? lastRegisterResult;
 
         public override void Entry(IDtmHelper helper)
         {
             this.helper = helper;
-            if (!CanRunOfficialFeatures("Entry", updateMailResult: false))
+            if (!CanRunOfficialFeatures("Entry"))
             {
-                helper.Monitor.Log(T("mod.disabled", "SecondMotor official content source is disabled or missing; ordinary vehicle/mail behavior is skipped."));
+                helper.Monitor.Log(T("mod.disabled", "SecondMotor official content source is disabled or missing; ordinary vehicle behavior is skipped."));
                 return;
             }
 
             RegisterConfigMenu();
             BindVehicleApi("Entry");
-            BindMailApi("Entry");
             helper.Events.Save.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
-            helper.Monitor.Log(T("mod.loaded", "Alternate flying motor example loaded; after a save loads, DTMAPI will try to deliver the key through native mail if needed."));
+            helper.Monitor.Log(T("mod.loaded", "Alternate flying motor loaded; buy its key from the official phone booth or spawn the key for smoke testing."));
         }
 
         private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
         {
-            if (!CanRunOfficialFeatures("SaveLoaded", updateMailResult: true))
+            if (!CanRunOfficialFeatures("SaveLoaded"))
                 return;
 
             BindVehicleApi("SaveLoaded");
-            BindMailApi("SaveLoaded");
-            TryDeliverKeyMail("SaveLoaded");
         }
 
         private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs e)
         {
-            helper.Monitor.Log(T("mod.returnedTitle", "Second Motor returned to title boundary observed."));
+            helper.Monitor.Log(T("mod.returnedTitle", "Alternate flying motor returned to title boundary observed."));
         }
 
         private void RegisterConfigMenu()
@@ -63,14 +60,15 @@ namespace SecondMotorMod
             menu.AddParagraph(helper.ModManifest, BuildVehicleFlagStatusText);
             menu.AddParagraph(helper.ModManifest, BuildVehicleLocationStatusText);
             menu.AddParagraph(helper.ModManifest, BuildVehicleKeyStatusText);
-            menu.AddSectionTitle(helper.ModManifest, () => T("config.section.mail", "Key delivery"));
-            menu.AddParagraph(helper.ModManifest, BuildMailStatusText);
+            menu.AddParagraph(helper.ModManifest, BuildVehicleAppearanceStatusText);
+            menu.AddSectionTitle(helper.ModManifest, () => T("config.section.acquisition", "Key acquisition"));
+            menu.AddParagraph(helper.ModManifest, () => T("config.acquisitionStatus", "The key is added to the official phone booth store by mod_tbmodstoreextension.json. DTMAPI does not mail this key."));
             helper.Monitor.Log(T("config.registered", "SecondMotor config/status page registered."));
         }
 
         private void BindVehicleApi(string reason)
         {
-            if (!CanRunOfficialFeatures("BindVehicleApi " + reason, updateMailResult: false))
+            if (!CanRunOfficialFeatures("BindVehicleApi " + reason))
                 return;
 
             vehicleApi = helper.ModRegistry.GetApi<IMotorVehicleApi>("DTMAPI.GameBridge.DolocTown");
@@ -82,61 +80,21 @@ namespace SecondMotorMod
 
             vehicleApi.VehicleChanged -= OnVehicleChanged;
             vehicleApi.VehicleChanged += OnVehicleChanged;
-            MotorVehicleRegisterResult result = vehicleApi.RegisterSecondMotor(helper.ModManifest, new SecondMotorOptions
+            lastRegisterResult = vehicleApi.RegisterCustomMotor(helper.ModManifest, new CustomMotorDefinition
             {
                 VehicleId = VehicleId,
                 DisplayName = T("vehicle.name", "Alternate Flying Motor"),
-                KeyItemId = KeyItemId,
-                SpeedMultiplier = 2,
-                UseOriginalMotorVisuals = false,
-                TextureSourceNote = "GameBridge applies an instance-scoped tint to the cloned motor; global sprite_vehicle_motor replacements are not installed.",
+                PrimaryKeyItemId = KeyItemId,
+                KeyItemIds = new[] { KeyItemId },
+                SpeedMultiplier = 1,
+                MovementMode = "native-flying-motor",
+                CollisionProfile = "native-motor",
+                AppearanceMode = "scoped-sprite",
+                AppearanceAssetRelativePath = AppearanceAssetRelativePath,
+                TextureSourceNote = "Official Workshop vehicle example texture is copied into private DTMAPI-named assets and applied only to the DTMAPI clone.",
                 VerboseLogging = true
             });
-            helper.Monitor.Log((result.Success ? T("mod.registered", "Second Motor registered.") : T("mod.registerFailed", "Second Motor registration failed.")) + " reason=" + reason + " message=" + result.Message, result.Success ? LogLevel.Info : LogLevel.Warn);
-        }
-
-        private void BindMailApi(string reason)
-        {
-            if (!CanRunOfficialFeatures("BindMailApi " + reason, updateMailResult: true))
-                return;
-
-            mailApi = helper.ModRegistry.GetApi<IMailDeliveryApi>("DTMAPI.GameBridge.DolocTown");
-            if (mailApi == null)
-            {
-                helper.Monitor.Log(T("mail.apiMissing", "Mail delivery API is not available yet.") + " reason=" + reason, LogLevel.Warn);
-                return;
-            }
-            helper.Monitor.Log(T("mail.apiReady", "Mail delivery API is available.") + " reason=" + reason);
-        }
-
-        private void TryDeliverKeyMail(string reason)
-        {
-            if (!CanRunOfficialFeatures("TryDeliverKeyMail " + reason, updateMailResult: true))
-                return;
-
-            if (mailApi == null)
-            {
-                helper.Monitor.Log(T("mail.apiMissing", "Mail delivery API is not available yet.") + " reason=" + reason, LogLevel.Warn);
-                return;
-            }
-
-            lastMailResult = mailApi.SendItemMail(helper.ModManifest, new MailItemDeliveryRequest
-            {
-                ItemId = KeyItemId,
-                Count = 1,
-                EmailName = "dtmapi_second_motor_key_delivery",
-                Sender = T("mail.sender", "DTMAPI"),
-                Content = T("mail.content", "Your alternate flying motor key is attached."),
-                TemplateName = "send_item_template",
-                SkipIfAlreadyOwned = true,
-                PreventDuplicatePendingMail = true,
-                RequireEnabledContentSource = true,
-                RequiredSourceId = RequiredSourceId
-            });
-            string logPrefix = lastMailResult.Success
-                ? T("mail.result", "Alternate flying motor key delivery checked.")
-                : T("mail.failed", "Alternate flying motor key delivery failed.");
-            helper.Monitor.Log(logPrefix + " reason=" + reason + " message=" + lastMailResult.Message, lastMailResult.Success ? LogLevel.Info : LogLevel.Warn);
+            helper.Monitor.Log((lastRegisterResult.Success ? T("mod.registered", "Alternate flying motor registered.") : T("mod.registerFailed", "Alternate flying motor registration failed.")) + " reason=" + reason + " message=" + lastRegisterResult.Message, lastRegisterResult.Success ? LogLevel.Info : LogLevel.Warn);
         }
 
         private void OnVehicleChanged(object? sender, MotorVehicleEventArgs e)
@@ -178,56 +136,61 @@ namespace SecondMotorMod
 
         private string BuildVehicleKeyStatusText()
         {
-            return string.Format(T("config.vehicleKeyStatus", "Key={0}."), KeyItemId);
+            return string.Format(T("config.vehicleKeyStatus", "Key={0}; sold at the official phone booth."), KeyItemId);
         }
 
-        private string BuildMailStatusText()
+        private string BuildVehicleAppearanceStatusText()
         {
-            if (lastMailResult == null)
-                return T("config.mailPending", "Key mail will be checked after a save loads.");
+            if (vehicleApi == null)
+                return T("config.vehicleMissing", "Vehicle bridge is not available.");
 
-            return string.Format(
-                T("config.mailStatus", "Mail: success={0}, sent={1}, skipped={2}, backpack={3}, pending={4}."),
-                lastMailResult.Success,
-                lastMailResult.Sent,
-                lastMailResult.Skipped,
-                lastMailResult.BackpackCount,
-                lastMailResult.PendingMailCount);
+            MotorVehicleState state = vehicleApi.GetVehicleState(VehicleId);
+            string registerStatus = lastRegisterResult == null ? "pending" : (lastRegisterResult.Success ? "registered" : "failed:" + lastRegisterResult.FailureReason);
+            return string.Format(T("config.vehicleAppearanceStatus", "Appearance={0}; {1}; registration={2}."), state.AppearanceMode, state.AppearanceSummary, registerStatus);
         }
 
-        private bool CanRunOfficialFeatures(string reason, bool updateMailResult)
+        private bool CanRunOfficialFeatures(string reason)
         {
             IWorkshopModInfo? self = helper.Workshop.GetDtmApiMods()
                 .FirstOrDefault(mod => mod.UniqueID.Equals(helper.ModManifest.UniqueID, StringComparison.OrdinalIgnoreCase));
             if (self != null && !self.IsEnabledByOfficialPath)
-                return OfficialFeatureBlocked("source-disabled", "SecondMotor is disabled by Doloc Town official Mod UI or Steam Workshop enablement. reason=" + reason, updateMailResult);
+                return OfficialFeatureBlocked("source-disabled", "SecondMotor is disabled by Doloc Town official Mod UI or Steam Workshop enablement. reason=" + reason);
 
             IContentItemInfo? keyItem = helper.Content.GetIndexedItem(KeyItemId);
             if (keyItem == null)
-                return OfficialFeatureBlocked("missing-key-content", "SecondMotor key item is not indexed from official content. reason=" + reason, updateMailResult);
+                return OfficialFeatureBlocked("missing-key-content", "SecondMotor key item is not indexed from official content. reason=" + reason);
             if (!keyItem.Enabled)
-                return OfficialFeatureBlocked("key-source-disabled", "SecondMotor key item source is disabled. source=" + keyItem.SourceId + " reason=" + reason, updateMailResult);
-            if (!keyItem.SourceId.Equals(RequiredSourceId, StringComparison.OrdinalIgnoreCase))
-                return OfficialFeatureBlocked("unexpected-key-source", "SecondMotor key item source is " + keyItem.SourceId + ", expected " + RequiredSourceId + ". reason=" + reason, updateMailResult);
+                return OfficialFeatureBlocked("key-source-disabled", "SecondMotor key item source is disabled. source=" + keyItem.SourceId + " reason=" + reason);
+            if (!IsExpectedKeySource(keyItem.SourceId))
+                return OfficialFeatureBlocked("unexpected-key-source", "SecondMotor key item source is " + keyItem.SourceId + ", expected the local DTMAPI_SecondMotor package or a Workshop source. reason=" + reason);
 
             return true;
         }
 
-        private bool OfficialFeatureBlocked(string failureReason, string message, bool updateMailResult)
+        private static bool IsExpectedKeySource(string sourceId)
+        {
+            if (string.IsNullOrWhiteSpace(sourceId))
+                return false;
+            if (sourceId.Equals(LocalSourceId, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (sourceId.StartsWith("Workshop.", StringComparison.OrdinalIgnoreCase) ||
+                sourceId.StartsWith("SteamWorkshop.", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return sourceId.IndexOf("DTMAPI_SecondMotor", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool OfficialFeatureBlocked(string failureReason, string message)
         {
             helper.Monitor.LogOnce("secondmotor-official-block-" + failureReason, message, LogLevel.Warn);
-            if (updateMailResult)
+            lastRegisterResult = new MotorVehicleRegisterResult
             {
-                lastMailResult = new MailItemDeliveryResult
-                {
-                    Success = false,
-                    Skipped = true,
-                    ItemId = KeyItemId,
-                    SourceId = RequiredSourceId,
-                    FailureReason = failureReason,
-                    Message = message
-                };
-            }
+                Success = false,
+                VehicleId = VehicleId,
+                KeyItemId = KeyItemId,
+                KeyItemIds = new[] { KeyItemId },
+                FailureReason = failureReason,
+                Message = message
+            };
             return false;
         }
 

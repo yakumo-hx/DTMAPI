@@ -120,6 +120,7 @@ namespace DTMAPI.Abstractions
         MotorVehicleState GetOriginalMotorState();
         MotorVehicleState GetVehicleState(string vehicleId);
         IReadOnlyList<MotorVehicleState> GetVehicles();
+        MotorVehicleRegisterResult RegisterCustomMotor(IManifest owner, CustomMotorDefinition definition);
         MotorVehicleRegisterResult RegisterSecondMotor(IManifest owner, SecondMotorOptions options);
         MotorVehicleSummonResult UnlockOriginalMotor(IManifest owner, double yOffset);
         MotorVehicleSummonResult SummonOriginalMotor(IManifest owner);
@@ -597,12 +598,34 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    public sealed class CustomMotorDefinition
+    {
+        public string VehicleId { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string PrimaryKeyItemId { get; set; } = string.Empty;
+        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
+        public double SpeedMultiplier { get; set; } = 1;
+        public string MovementMode { get; set; } = "native-flying-motor";
+        public string CollisionProfile { get; set; } = "native-motor";
+        public string AppearanceMode { get; set; } = "native-clone";
+        public string AppearanceAssetRelativePath { get; set; } = string.Empty;
+        public string LightMaskAssetRelativePath { get; set; } = string.Empty;
+        public string TextureSourceNote { get; set; } = string.Empty;
+        public bool VerboseLogging { get; set; }
+    }
+
     public sealed class SecondMotorOptions
     {
         public string VehicleId { get; set; } = "dtmapi.second_motor";
         public string DisplayName { get; set; } = "Second Motor";
         public string KeyItemId { get; set; } = "dtmapi_second_motor_key";
+        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
         public double SpeedMultiplier { get; set; } = 2;
+        public string MovementMode { get; set; } = "native-flying-motor";
+        public string CollisionProfile { get; set; } = "native-motor";
+        public string AppearanceMode { get; set; } = "native-clone";
+        public string AppearanceAssetRelativePath { get; set; } = string.Empty;
+        public string LightMaskAssetRelativePath { get; set; } = string.Empty;
         public bool UseOriginalMotorVisuals { get; set; } = true;
         public string TextureSourceNote { get; set; } = string.Empty;
         public bool VerboseLogging { get; set; }
@@ -629,6 +652,11 @@ namespace DTMAPI.Abstractions
         public double EffectiveMaxSpeed { get; set; }
         public double SpeedMultiplier { get; set; } = 1;
         public string KeyItemId { get; set; } = string.Empty;
+        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
+        public string MovementMode { get; set; } = string.Empty;
+        public string CollisionProfile { get; set; } = string.Empty;
+        public string AppearanceMode { get; set; } = string.Empty;
+        public string AppearanceSummary { get; set; } = string.Empty;
         public string LastFailureReason { get; set; } = string.Empty;
         public string LastMessage { get; set; } = string.Empty;
     }
@@ -638,6 +666,7 @@ namespace DTMAPI.Abstractions
         public bool Success { get; set; }
         public string VehicleId { get; set; } = string.Empty;
         public string KeyItemId { get; set; } = string.Empty;
+        public IReadOnlyList<string> KeyItemIds { get; set; } = Array.Empty<string>();
         public MotorVehicleState State { get; set; } = new MotorVehicleState();
         public string FailureReason { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;

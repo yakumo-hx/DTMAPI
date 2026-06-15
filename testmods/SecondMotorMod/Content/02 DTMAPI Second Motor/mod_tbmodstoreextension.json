@@ -1,0 +1,42 @@
+[
+  {
+    "id": "phone_booth_shop",
+    "extra_items": [
+      {
+        "item_name": "dtmapi_second_motor_key",
+        "storage": 99,
+        "default_unlock": true,
+        "season_spawn_data": [
+          {
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            },
+            "spawn_weight": 0
+          },
+          {
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            },
+            "spawn_weight": 0
+          },
+          {
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            },
+            "spawn_weight": 0
+          },
+          {
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            },
+            "spawn_weight": 0
+          }
+        ]
+      }
+    ]
+  }
+]

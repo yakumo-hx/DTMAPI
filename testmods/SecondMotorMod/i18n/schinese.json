@@ -1,6 +1,7 @@
 {
   "mod.name": "异色飞行摩托",
-  "mod.loaded": "异色飞行摩托示例已加载；进入存档后如缺少钥匙，会尝试通过官方邮件投递飞行摩托钥匙（异色）。",
+  "mod.loaded": "异色飞行摩托已加载；钥匙由官方电话亭商店出售，也可由烟测脚本直接给予。",
+  "mod.disabled": "异色飞行摩托官方内容来源被禁用或缺失；普通载具行为已跳过。",
   "mod.apiMissing": "载具/摩托 API 尚不可用。",
   "mod.registered": "异色飞行摩托已注册。",
   "mod.registerFailed": "异色飞行摩托注册失败。",
@@ -9,19 +10,13 @@
   "config.apiMissing": "DTMAPI 配置菜单 API 尚不可用。",
   "config.registered": "SecondMotor 配置/状态页已注册。",
   "config.section.vehicle": "载具状态",
-  "config.section.mail": "钥匙投递",
+  "config.section.acquisition": "钥匙获取",
   "config.vehicleMissing": "载具桥接 API 尚不可用。",
   "config.vehicleBridgeStatus": "桥接：{0}。",
   "config.vehicleFlagStatus": "已注册={0}，可见={1}，骑乘中={2}。",
   "config.vehicleLocationStatus": "房间={0}，速度倍率={1}。",
-  "config.vehicleKeyStatus": "钥匙={0}。",
-  "config.none": "无",
-  "config.mailPending": "进入存档后会检查钥匙邮件。",
-  "config.mailStatus": "邮件：成功={0}，已发送={1}，已跳过={2}，背包={3}，未领取={4}。",
-  "mail.apiMissing": "邮件投递 API 尚不可用。",
-  "mail.apiReady": "邮件投递 API 可用。",
-  "mail.sender": "DTMAPI",
-  "mail.content": "异色飞行摩托钥匙已随信附上。",
-  "mail.result": "异色飞行摩托钥匙投递已检查。",
-  "mail.failed": "异色飞行摩托钥匙投递失败。"
+  "config.vehicleKeyStatus": "钥匙={0}；由官方电话亭出售。",
+  "config.vehicleAppearanceStatus": "外观={0}；{1}；注册={2}。",
+  "config.acquisitionStatus": "钥匙通过 mod_tbmodstoreextension.json 加入官方电话亭商店。DTMAPI 不再通过邮件投递这个钥匙。",
+  "config.none": "无"
 }
