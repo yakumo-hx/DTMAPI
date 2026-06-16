@@ -216,6 +216,16 @@ namespace DTMAPI.GameBridge.DolocTown
             return true;
         }
 
+        internal void RecordPaperBoxInteract(object instance)
+        {
+            runtime.RuntimeMonitor.Log("AudioReplacement paper-box OnInteract owner=DungeonResourceModelPaperBox event=PLAY_RESOURCE_PAPER_BOX instance=" + (instance?.GetType().FullName ?? "null") + ".");
+            runtime.SetHookStatus(
+                "Audio.PaperBoxNativeOwner",
+                "verified",
+                "Harmony Postfix: DungeonResourceModelPaperBox.OnInteract",
+                "Native paper-box interaction owner ran and posts PLAY_RESOURCE_PAPER_BOX through the Wwise sound-event bridge.");
+        }
+
         private void EnsureLoadStarted(AudioReplacementEntry entry)
         {
             if (entry.LoadStarted || entry.IsReady)
@@ -234,30 +244,45 @@ namespace DTMAPI.GameBridge.DolocTown
                 entry.LastLoadAttemptAtUtc = DateTimeOffset.UtcNow;
                 entry.LoadStarted = true;
                 entry.LoadStatus = "loading";
+                if (TryStartUnityAudioClipRequest(entry, out string requestMessage))
+                {
+                    entry.LastMessage = requestMessage;
+                    UpdateOwnerState(entry.OwnerId, requestMessage);
+                    runtime.RuntimeMonitor.Log("AudioReplacement local WAV request started owner=" + entry.OwnerId +
+                        " replacement=" + entry.Options.ReplacementId +
+                        " event=" + entry.Options.NativeSoundEvent +
+                        " path=" + entry.Options.AudioPath +
+                        " message=" + requestMessage);
+                    return;
+                }
+
+                runtime.RuntimeMonitor.Log("AudioReplacement local WAV request unavailable owner=" + entry.OwnerId +
+                    " replacement=" + entry.Options.ReplacementId +
+                    " event=" + entry.Options.NativeSoundEvent +
+                    " reason=" + requestMessage +
+                    " path=" + entry.Options.AudioPath);
+
                 if (!TryCreatePcmWavClip(entry.Options.AudioPath, entry.Options.ReplacementId, out object? clip, out object? callbackOwner, out string message))
                 {
+                    if (TryCreatePlatformWavPlayer(entry.Options.AudioPath, out object? platformPlayer, out string platformMessage))
+                    {
+                        MarkReady(entry, clip: null, callbackOwner: null, platformPlayer, "platform", message + "; " + platformMessage);
+                        return;
+                    }
+
                     if (IsTransientUnityClipLoadFailure(message))
                     {
-                        MarkLoadRetry(entry, message);
+                        MarkLoadRetry(entry, message + "; platform fallback unavailable: " + platformMessage);
                         return;
                     }
 
                     entry.LoadStatus = "failed";
-                    entry.LoadFailureReason = message;
-                    UpdateOwnerState(entry.OwnerId, message);
+                    entry.LoadFailureReason = message + "; platform fallback unavailable: " + platformMessage;
+                    UpdateOwnerState(entry.OwnerId, entry.LoadFailureReason);
                     return;
                 }
 
-                entry.AudioClip = clip;
-                entry.AudioCallbackOwner = callbackOwner;
-                entry.LoadStatus = ReadyStatus;
-                entry.LoadFailureReason = string.Empty;
-                entry.LastMessage = "Local PCM WAV ready for " + entry.Options.NativeSoundEvent + ": " + entry.Options.AudioPath;
-                UpdateOwnerState(entry.OwnerId, entry.LastMessage);
-                runtime.RuntimeMonitor.Log("AudioReplacement local PCM WAV ready owner=" + entry.OwnerId +
-                    " replacement=" + entry.Options.ReplacementId +
-                    " event=" + entry.Options.NativeSoundEvent +
-                    " path=" + entry.Options.AudioPath);
+                MarkReady(entry, clip, callbackOwner, platformPlayer: null, "unity-pcm", message);
             }
             catch (Exception ex)
             {
@@ -266,6 +291,170 @@ namespace DTMAPI.GameBridge.DolocTown
                 UpdateOwnerState(entry.OwnerId, "AudioReplacement load start failed: " + entry.LoadFailureReason);
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge.AudioReplacement", "Failed to start local WAV load.", ex.ToString());
             }
+        }
+
+        private void MarkReady(AudioReplacementEntry entry, object? clip, object? callbackOwner, object? platformPlayer, string backend, string detail)
+        {
+            entry.AudioClip = clip;
+            entry.AudioCallbackOwner = callbackOwner;
+            entry.PlatformAudioPlayer = platformPlayer;
+            entry.LoadStatus = ReadyStatus;
+            entry.LoadFailureReason = string.Empty;
+            entry.LastMessage = "Local WAV ready for " + entry.Options.NativeSoundEvent + " via " + backend + ": " + entry.Options.AudioPath + ". " + detail;
+            entry.AsyncOperation = null;
+            UpdateOwnerState(entry.OwnerId, entry.LastMessage);
+            runtime.RuntimeMonitor.Log("AudioReplacement local WAV ready owner=" + entry.OwnerId +
+                " replacement=" + entry.Options.ReplacementId +
+                " event=" + entry.Options.NativeSoundEvent +
+                " backend=" + backend +
+                " path=" + entry.Options.AudioPath +
+                " detail=" + detail);
+        }
+
+        private bool TryStartUnityAudioClipRequest(AudioReplacementEntry entry, out string message)
+        {
+            message = string.Empty;
+
+            Type? audioTypeType = FindType("UnityEngine.AudioType");
+            Type? unityWebRequestMultimediaType = FindType("UnityEngine.Networking.UnityWebRequestMultimedia");
+            Type? unityWebRequestType = FindType("UnityEngine.Networking.UnityWebRequest");
+            Type[] requestFactoryTypes = new[] { unityWebRequestMultimediaType, unityWebRequestType }.Where(t => t != null).Cast<Type>().ToArray();
+            if (audioTypeType == null || requestFactoryTypes.Length == 0)
+            {
+                message = "UnityWebRequest audio types unavailable. audioType=" + (audioTypeType != null) +
+                    " factories=" + string.Join(",", requestFactoryTypes.Select(t => t.FullName));
+                return false;
+            }
+
+            object audioTypeWav;
+            try
+            {
+                audioTypeWav = Enum.Parse(audioTypeType, "WAV", ignoreCase: false);
+            }
+            catch (Exception ex)
+            {
+                message = "UnityEngine.AudioType.WAV unavailable: " + ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
+
+            MethodInfo? getAudioClip = null;
+            Type? factoryType = null;
+            foreach (Type candidateType in requestFactoryTypes)
+            {
+                getAudioClip = candidateType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m =>
+                    {
+                        if (!string.Equals(m.Name, "GetAudioClip", StringComparison.Ordinal))
+                            return false;
+
+                        ParameterInfo[] p = m.GetParameters();
+                        return p.Length == 2 &&
+                            (p[0].ParameterType == typeof(string) || p[0].ParameterType == typeof(Uri)) &&
+                            p[1].ParameterType == audioTypeType;
+                    });
+                if (getAudioClip != null)
+                {
+                    factoryType = candidateType;
+                    break;
+                }
+            }
+
+            if (getAudioClip == null)
+            {
+                message = "UnityWebRequest GetAudioClip(string/Uri, AudioType) unavailable. factories=" +
+                    string.Join(" | ", requestFactoryTypes.Select(t => t.FullName + ":" + DescribeMethods(t.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m => m.Name == "GetAudioClip"))));
+                return false;
+            }
+
+            string uri = new Uri(entry.Options.AudioPath).AbsoluteUri;
+            object? firstArgument = getAudioClip.GetParameters()[0].ParameterType == typeof(Uri) ? new Uri(uri) : uri;
+            object? request = getAudioClip.Invoke(null, new[] { firstArgument, audioTypeWav });
+            if (request == null)
+            {
+                message = "UnityWebRequest GetAudioClip returned null. factory=" + factoryType?.FullName +
+                    " method=" + DescribeMethod(getAudioClip);
+                return false;
+            }
+
+            MethodInfo? send = request.GetType().GetMethod("SendWebRequest", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null) ??
+                request.GetType().GetMethod("Send", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+            if (send == null)
+            {
+                DestroyUnityObject(request, 0f);
+                message = "UnityWebRequest send method unavailable. requestType=" + request.GetType().FullName;
+                return false;
+            }
+
+            object? asyncOperation = send.Invoke(request, null);
+            if (asyncOperation == null)
+                asyncOperation = request;
+
+            entry.Request = request;
+            entry.AsyncOperation = asyncOperation;
+            entry.LoadFailureReason = string.Empty;
+            entry.LoadStatus = "loading";
+            message = "UnityWebRequest WAV loading via " + factoryType?.FullName + "." + DescribeMethod(getAudioClip) + " uri=" + uri;
+            return true;
+        }
+
+        private static bool TryCreatePlatformWavPlayer(string path, out object? player, out string message)
+        {
+            player = null;
+            message = string.Empty;
+
+            Type? soundPlayerType = FindPlatformSoundPlayerType();
+            if (soundPlayerType == null)
+            {
+                message = "System.Media.SoundPlayer type unavailable.";
+                return false;
+            }
+
+            ConstructorInfo? constructor = soundPlayerType.GetConstructor(new[] { typeof(string) });
+            if (constructor == null)
+            {
+                message = "System.Media.SoundPlayer(string) constructor unavailable. type=" + soundPlayerType.FullName;
+                return false;
+            }
+
+            try
+            {
+                object created = constructor.Invoke(new object[] { path });
+                MethodInfo? load = soundPlayerType.GetMethod("Load", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                load?.Invoke(created, null);
+                player = created;
+                message = "System.Media.SoundPlayer WAV loaded. type=" + soundPlayerType.AssemblyQualifiedName;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                message = "System.Media.SoundPlayer load failed: " + ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
+        }
+
+        private static Type? FindPlatformSoundPlayerType()
+        {
+            Type? type = Type.GetType("System.Media.SoundPlayer, System", throwOnError: false) ??
+                Type.GetType("System.Media.SoundPlayer, System.Windows.Extensions", throwOnError: false) ??
+                FindType("System.Media.SoundPlayer");
+            if (type != null)
+                return type;
+
+            foreach (string assemblyName in new[] { "System", "System.Windows.Extensions" })
+            {
+                try
+                {
+                    Assembly loaded = Assembly.Load(assemblyName);
+                    type = loaded.GetType("System.Media.SoundPlayer", throwOnError: false);
+                    if (type != null)
+                        return type;
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
 
         private void MarkLoadRetry(AudioReplacementEntry entry, string message)
@@ -725,8 +914,16 @@ namespace DTMAPI.GameBridge.DolocTown
                 bool failed = !string.IsNullOrWhiteSpace(error) || (result.Length > 0 && !string.Equals(result, "Success", StringComparison.OrdinalIgnoreCase));
                 if (failed)
                 {
+                    string failure = "UnityWebRequest failed result=" + result + " error=" + error;
+                    if (TryCreatePlatformWavPlayer(entry.Options.AudioPath, out object? platformPlayer, out string platformMessage))
+                    {
+                        MarkReady(entry, clip: null, callbackOwner: null, platformPlayer, "platform", failure + "; " + platformMessage);
+                        DisposeRequest(entry);
+                        return;
+                    }
+
                     entry.LoadStatus = "failed";
-                    entry.LoadFailureReason = "UnityWebRequest failed result=" + result + " error=" + error;
+                    entry.LoadFailureReason = failure + "; platform fallback unavailable: " + platformMessage;
                     DisposeRequest(entry);
                     UpdateOwnerState(entry.OwnerId, entry.LoadFailureReason);
                     return;
@@ -737,23 +934,39 @@ namespace DTMAPI.GameBridge.DolocTown
                 object? clip = getContent?.Invoke(null, new[] { entry.Request });
                 if (clip == null)
                 {
+                    if (TryCreatePlatformWavPlayer(entry.Options.AudioPath, out object? platformPlayer, out string platformMessage))
+                    {
+                        MarkReady(entry, clip: null, callbackOwner: null, platformPlayer, "platform", "DownloadHandlerAudioClip.GetContent returned null; " + platformMessage);
+                        DisposeRequest(entry);
+                        return;
+                    }
+
                     entry.LoadStatus = "failed";
-                    entry.LoadFailureReason = "DownloadHandlerAudioClip.GetContent returned null.";
+                    entry.LoadFailureReason = "DownloadHandlerAudioClip.GetContent returned null; platform fallback unavailable: " + platformMessage;
                     DisposeRequest(entry);
                     UpdateOwnerState(entry.OwnerId, entry.LoadFailureReason);
                     return;
                 }
 
-                entry.AudioClip = clip;
-                entry.LoadStatus = ReadyStatus;
-                entry.LoadFailureReason = string.Empty;
-                entry.LastMessage = "Local WAV ready for " + entry.Options.NativeSoundEvent + ": " + entry.Options.AudioPath;
-                entry.AsyncOperation = null;
-                UpdateOwnerState(entry.OwnerId, entry.LastMessage);
-                runtime.RuntimeMonitor.Log("AudioReplacement local WAV ready owner=" + entry.OwnerId +
-                    " replacement=" + entry.Options.ReplacementId +
-                    " event=" + entry.Options.NativeSoundEvent +
-                    " path=" + entry.Options.AudioPath);
+                if (!IsPlayableClip(clip, out string clipReason))
+                {
+                    DestroyUnityObject(clip, 0f);
+                    if (TryCreatePlatformWavPlayer(entry.Options.AudioPath, out object? platformPlayer, out string platformMessage))
+                    {
+                        MarkReady(entry, clip: null, callbackOwner: null, platformPlayer, "platform", clipReason + "; " + platformMessage);
+                        DisposeRequest(entry);
+                        return;
+                    }
+
+                    entry.LoadStatus = "failed";
+                    entry.LoadFailureReason = clipReason + "; platform fallback unavailable: " + platformMessage;
+                    DisposeRequest(entry);
+                    UpdateOwnerState(entry.OwnerId, entry.LoadFailureReason);
+                    return;
+                }
+
+                MarkReady(entry, clip, callbackOwner: null, platformPlayer: null, "unity-web-request", "UnityWebRequest local WAV decoded.");
+                DisposeRequest(entry);
             }
             catch (Exception ex)
             {
@@ -770,6 +983,9 @@ namespace DTMAPI.GameBridge.DolocTown
             object? go = null;
             try
             {
+                if (entry.PlatformAudioPlayer != null)
+                    return TryPlayPlatformAudio(entry, out message);
+
                 if (entry.AudioClip == null)
                 {
                     message = "replacement clip missing; native sound allowed.";
@@ -848,6 +1064,41 @@ namespace DTMAPI.GameBridge.DolocTown
                 DestroyUnityObject(go, 0f);
                 message = "AudioReplacement playback failed: " + ex.GetType().Name + ": " + ex.Message + "; native sound allowed.";
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge.AudioReplacement", "Failed to play local replacement audio.", ex.ToString());
+                return false;
+            }
+        }
+
+        private bool TryPlayPlatformAudio(AudioReplacementEntry entry, out string message)
+        {
+            try
+            {
+                object? player = entry.PlatformAudioPlayer;
+                if (player == null)
+                {
+                    message = "platform replacement player missing; native sound allowed.";
+                    return false;
+                }
+
+                MethodInfo? play = player.GetType().GetMethod("Play", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                if (play == null)
+                {
+                    message = "System.Media.SoundPlayer.Play unavailable; native sound allowed.";
+                    return false;
+                }
+
+                play.Invoke(player, null);
+                entry.LastPlayedAtUtc = DateTimeOffset.UtcNow;
+                message = "AudioReplacement played event=" + entry.Options.NativeSoundEvent +
+                    " replacement=" + entry.Options.ReplacementId +
+                    " backend=platform" +
+                    " suppressNative=" + entry.Options.SuppressNativeWhenReady +
+                    " path=" + entry.Options.AudioPath;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                message = "System.Media.SoundPlayer playback failed: " + ex.GetType().Name + ": " + ex.Message + "; native sound allowed.";
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.AudioReplacement", "Failed to play platform replacement audio.", ex.ToString());
                 return false;
             }
         }
@@ -1055,6 +1306,33 @@ namespace DTMAPI.GameBridge.DolocTown
             DestroyUnityObject(entry.AudioClip, 0f);
             entry.AudioClip = null;
             entry.AudioCallbackOwner = null;
+            DisposePlatformPlayer(entry.PlatformAudioPlayer);
+            entry.PlatformAudioPlayer = null;
+        }
+
+        private static void DisposePlatformPlayer(object? player)
+        {
+            if (player == null)
+                return;
+
+            try
+            {
+                player.GetType().GetMethod("Stop", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null)?.Invoke(player, null);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (player is IDisposable disposable)
+                    disposable.Dispose();
+                else
+                    player.GetType().GetMethod("Dispose", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null)?.Invoke(player, null);
+            }
+            catch
+            {
+            }
         }
 
         private static void DestroyUnityObject(object? target, float delaySeconds)
@@ -1173,6 +1451,7 @@ namespace DTMAPI.GameBridge.DolocTown
             internal object? AsyncOperation { get; set; }
             internal object? AudioClip { get; set; }
             internal object? AudioCallbackOwner { get; set; }
+            internal object? PlatformAudioPlayer { get; set; }
             internal string LoadStatus { get; set; }
             internal string LoadFailureReason { get; set; } = string.Empty;
             internal string LastMessage { get; set; } = string.Empty;
@@ -1181,7 +1460,7 @@ namespace DTMAPI.GameBridge.DolocTown
             internal bool LastSuppressed { get; set; }
             internal DateTimeOffset LastLoadAttemptAtUtc { get; set; } = DateTimeOffset.MinValue;
             internal DateTimeOffset LastPlayedAtUtc { get; set; } = DateTimeOffset.MinValue;
-            internal bool IsReady => string.Equals(LoadStatus, ReadyStatus, StringComparison.OrdinalIgnoreCase) && AudioClip != null;
+            internal bool IsReady => string.Equals(LoadStatus, ReadyStatus, StringComparison.OrdinalIgnoreCase) && (AudioClip != null || PlatformAudioPlayer != null);
         }
 
         private sealed class PcmAudioReader

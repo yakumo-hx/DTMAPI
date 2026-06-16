@@ -15,6 +15,7 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
         internal bool InternalPostSoundEventPatched { get; private set; }
+        internal bool PaperBoxInteractPatched { get; private set; }
 
         public void PublishHookStatuses()
         {
@@ -55,14 +56,23 @@ namespace DTMAPI.GameBridge.DolocTown
                         exactNestedCallbackSignature);
             }
 
+            if (!PaperBoxInteractPatched)
+            {
+                PaperBoxInteractPatched = patcher.TryPatchPostfix(
+                    "DolocTown.DungeonResourceModelPaperBox, Assembly-CSharp",
+                    "OnInteract",
+                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DungeonResourceModelPaperBoxOnInteractPostfix), BindingFlags.Public | BindingFlags.Static),
+                    0);
+            }
+
             service.SetHookInstalled(InternalPostSoundEventPatched);
             runtime.SetHookStatus(
                 "Audio.SoundEventReplacement",
                 InternalPostSoundEventPatched ? "experimental" : "pending",
-                "Harmony Prefix: WwiseSoundManager.InternalPostSoundEvent",
+                "Harmony Prefix: WwiseSoundManager.InternalPostSoundEvent; diagnostic Postfix: DungeonResourceModelPaperBox.OnInteract",
                 InternalPostSoundEventPatched
-                    ? "Patched the native Wwise event bridge. Replacement playback suppresses native audio only after local audio is ready and a replacement clip starts successfully."
-                    : "Waiting for WwiseSoundManager.InternalPostSoundEvent to become patchable.");
+                    ? "Patched the native Wwise event bridge. Replacement playback suppresses native audio only after local audio is ready and a replacement backend starts successfully. Paper-box native owner diagnostic patched=" + PaperBoxInteractPatched + "."
+                    : "Waiting for WwiseSoundManager.InternalPostSoundEvent to become patchable. Paper-box native owner diagnostic patched=" + PaperBoxInteractPatched + ".");
         }
     }
 }

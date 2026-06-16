@@ -174,6 +174,11 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        public static void DungeonResourceModelPaperBoxOnInteractPostfix(object __instance)
+        {
+            SafePostfix("AudioReplacement.DungeonResourceModelPaperBox.OnInteract", () => Bridge?.AudioReplacementService?.RecordPaperBoxInteract(__instance));
+        }
+
         public static void ModDataConstructorPostfix(object __instance, object __0)
         {
             SafePostfix("Workshop.LocalUploadPlan.Display", () => Bridge?.TryMarkDtmapiLocalUploadData(__instance, __0));

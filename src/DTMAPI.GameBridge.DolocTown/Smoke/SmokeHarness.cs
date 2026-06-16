@@ -551,46 +551,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void TryExerciseAudioReplacementForSmoke()
         {
-            const string eventName = "PLAY_RESOURCE_PAPER_BOX";
-            try
-            {
-                Type? dolocApiType = patcher?.ResolveType("DolocAPI, Assembly-CSharp");
-                object? soundManager = dolocApiType?.GetProperty("Sound", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-                if (soundManager == null)
-                    throw new InvalidOperationException("DolocAPI.Sound is unavailable.");
-
-                MethodInfo? postSoundEvent = soundManager.GetType()
-                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(method => method.Name == "PostSoundEvent")
-                    .Select(method => new { Method = method, Parameters = method.GetParameters() })
-                    .Where(candidate => candidate.Parameters.Length >= 1 &&
-                        candidate.Parameters[0].ParameterType == typeof(string) &&
-                        (candidate.Parameters.Length == 1 || candidate.Parameters[1].ParameterType.Name.IndexOf("EventCallback", StringComparison.OrdinalIgnoreCase) >= 0))
-                    .OrderBy(candidate => candidate.Parameters.Length)
-                    .Select(candidate => candidate.Method)
-                    .FirstOrDefault();
-                if (postSoundEvent == null)
-                    throw new MissingMethodException(soundManager.GetType().FullName, "PostSoundEvent(string, ...)");
-
-                ParameterInfo[] parameters = postSoundEvent.GetParameters();
-                object?[] args = new object?[parameters.Length];
-                args[0] = eventName;
-                if (parameters.Length >= 2)
-                    args[1] = null;
-                if (parameters.Length >= 3)
-                    args[2] = true;
-
-                object? result = postSoundEvent.Invoke(soundManager, args);
-                runtime.RuntimeMonitor.Log("Smoke exercise AudioReplacement native sound request event=" + eventName + " result=" + (result?.ToString() ?? "null") + ".");
-                runtime.SetHookStatus("Smoke.AudioReplacement", "pending", "DolocAPI.Sound.PostSoundEvent", "Native sound event requested for " + eventName + "; waiting for replacement playback evidence.");
-            }
-            catch (Exception ex)
-            {
-                Exception root = ex is TargetInvocationException invocation && invocation.InnerException != null ? invocation.InnerException : ex;
-                string message = "Smoke exercise AudioReplacement failed to request native sound event: " + root.Message;
-                runtime.RuntimeMonitor.Log(message, LogLevel.Error);
-                runtime.SetHookStatus("Smoke.AudioReplacement", "failed", "DolocAPI.Sound.PostSoundEvent", message);
-            }
+            runtime.RuntimeMonitor.Log("Smoke exercise AudioReplacement waiting for external E input to trigger DungeonResourceModelPaperBox.OnInteract; synthetic DolocAPI.Sound.PostSoundEvent is disabled for this smoke.");
+            runtime.SetHookStatus("Smoke.AudioReplacement", "pending", "external E -> DungeonResourceModelPaperBox.OnInteract -> PLAY_RESOURCE_PAPER_BOX", "Waiting for external E input, paper-box native owner evidence, and replacement playback evidence.");
         }
 
         private bool TryVerifyDiagnosticsSnapshotForSmoke(string scenario, params string[] expectedFeatureIds)

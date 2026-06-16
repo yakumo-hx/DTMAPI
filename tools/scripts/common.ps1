@@ -183,6 +183,49 @@ function Wait-ForLogLine {
     return $false
 }
 
+function Wait-ForLogLineAfterOffset {
+    param(
+        [string] $LogPath,
+        [string] $Pattern,
+        [long] $Offset = 0,
+        [int] $TimeoutSeconds = 120,
+        [switch] $AbortOnFatalInstanceWindow
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-Path $LogPath) {
+            $stream = $null
+            $reader = $null
+            try {
+                $stream = [System.IO.File]::Open($LogPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+                $start = [Math]::Min([Math]::Max(0, $Offset), $stream.Length)
+                [void]$stream.Seek($start, [System.IO.SeekOrigin]::Begin)
+                $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8, $true)
+                $text = $reader.ReadToEnd()
+                if ($text -match [regex]::Escape($Pattern)) {
+                    return $true
+                }
+            }
+            catch {
+            }
+            finally {
+                if ($reader) {
+                    $reader.Dispose()
+                }
+                elseif ($stream) {
+                    $stream.Dispose()
+                }
+            }
+        }
+        if ($AbortOnFatalInstanceWindow -and (Test-FatalInstanceWindow)) {
+            return $false
+        }
+        Start-Sleep -Seconds 1
+    }
+    return $false
+}
+
 function New-EvidenceDir {
     param(
         [string] $RepoRoot,

@@ -1315,11 +1315,19 @@ if ($startupOk) {
         if ($audioReadyOk) {
             Start-Sleep -Seconds 2
             $audioReplacementPattern = 'AudioReplacement event owner=Yuuka.DTMAPI.ManboCardboardAudio replacement=manbo-paper-box event=PLAY_RESOURCE_PAPER_BOX played=True suppressed=True'
+            $audioPaperBoxPattern = 'AudioReplacement paper-box OnInteract owner=DungeonResourceModelPaperBox event=PLAY_RESOURCE_PAPER_BOX'
             for ($audioAttempt = 1; $audioAttempt -le 6 -and -not $audioReplacementOk; $audioAttempt++) {
+                $audioLogOffset = 0
+                if (Test-Path $logPath) {
+                    $audioLogOffset = (Get-Item -LiteralPath $logPath).Length
+                }
                 $sentAudioReplacementInteract = Send-DolocTownNamedKey -Key 'E'
-                "SentExternalAudioReplacementInteractAttempt${audioAttempt}=$(Get-Date -Format o);key=E;ok=$sentAudioReplacementInteract" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                "SentExternalAudioReplacementInteractAttempt${audioAttempt}=$(Get-Date -Format o);key=E;ok=$sentAudioReplacementInteract;logOffset=$audioLogOffset" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
                 if ($sentAudioReplacementInteract) {
-                    $audioReplacementOk = Wait-ForLogLine -LogPath $logPath -Pattern $audioReplacementPattern -TimeoutSeconds 5 -AbortOnFatalInstanceWindow
+                    $audioPaperBoxInteractOk = Wait-ForLogLineAfterOffset -LogPath $logPath -Pattern $audioPaperBoxPattern -Offset $audioLogOffset -TimeoutSeconds 5 -AbortOnFatalInstanceWindow
+                    $audioReplacementEventOk = Wait-ForLogLineAfterOffset -LogPath $logPath -Pattern $audioReplacementPattern -Offset $audioLogOffset -TimeoutSeconds 5 -AbortOnFatalInstanceWindow
+                    "AudioReplacementInteractAttempt${audioAttempt}Evidence=$(Get-Date -Format o);paperBoxOnInteract=$audioPaperBoxInteractOk;replacementEvent=$audioReplacementEventOk" | Add-Content -LiteralPath (Join-Path $evidence 'summary.txt')
+                    $audioReplacementOk = $audioPaperBoxInteractOk -and $audioReplacementEventOk
                 }
                 if (-not $audioReplacementOk) {
                     Start-Sleep -Milliseconds 700
