@@ -54,13 +54,8 @@ Manual QA review:
 - `tools/scripts/test.ps1 -Configuration Release` passed with 0 warnings/0 errors and `DTMAPI.UnitTests: OK`.
 - Steam third-save DebugConsole/Movement smoke `GAME-SMOKE/20260616-124555` passed with `RunStatus=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, `DebugConsoleOpenY1=Passed`, `DebugConsoleCloseEscape=Passed`, `DebugConsoleOpenY2=Passed`, `DebugConsoleCloseY=Passed`, `DebugConsoleTenYShortTaps=Passed`, `DebugConsoleHoldYNoFlicker=Passed`, `DebugConsoleMouseGive=Passed`, `DebugMovement=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`. Logs show right-click give uses `source=pointer-down`.
 - Steam third-save AnimalViewer smoke `GAME-SMOKE/20260616-120817` passed with `RunStatus=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, `AnimalViewerUi=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
-- Refreshed the DTMAPI Runtime local upload package with `tools/scripts/build-release-workshop-packages.ps1 -Configuration Release -SkipBuild -RuntimeOnly -OutputRoot C:\Users\Administrator\AppData\LocalLow\RedSawGames\DolocTown\MODS`, preserving `workshop_id=3743016467`.
-- Source Release output and local upload package runtime DLL SHA256 hashes match:
-  - `DTMAPI.BepInExBootstrap.dll`: `2D98A58366C0D0F94178DDE2F4C8497E87C0892CBE8AB7E1F152BCE46D7E9DFF`
-  - `DTMAPI.Abstractions.dll`: `496ED40EE945B5AFC7318053DCD0F7E28080680BEF520C537236CFB4C784DFEE`
-  - `DTMAPI.Core.dll`: `AEEC4F4B867E7746296CC1053C23A185A18C963FB48779E9ED9245E55BF06966`
-  - `DTMAPI.GameBridge.DolocTown.dll`: `2EF1A8664726A444A63014159B75F650B95792B48F36E240C11C45671ED7F8CF`
-  - `DTMAPI.ModConfigMenu.dll`: `CD5962A6E6EEB77CCD6EACCEC8D5C184EBBD083D843DFCC1375B05D39F6E0027`
+- Refreshed the DTMAPI Runtime local upload package with `tools/scripts/build-release-workshop-packages.ps1 -Configuration Release -RuntimeOnly -OutputRoot C:\Users\Administrator\AppData\LocalLow\RedSawGames\DolocTown\MODS`, preserving `workshop_id=3743016467`.
+- Source Release output and local upload package runtime DLL SHA256 hashes were compared after the final package refresh and matched for `DTMAPI.BepInExBootstrap.dll`, `DTMAPI.Abstractions.dll`, `DTMAPI.Core.dll`, `DTMAPI.GameBridge.DolocTown.dll`, and `DTMAPI.ModConfigMenu.dll`. Exact hashes are intentionally kept in the final handoff/terminal evidence rather than hard-coded here because Release assembly metadata includes the git revision and changes when this record is committed.
 
 ## Evidence
 
