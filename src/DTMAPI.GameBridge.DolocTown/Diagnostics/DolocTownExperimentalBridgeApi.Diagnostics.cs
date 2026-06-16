@@ -13,6 +13,11 @@ namespace DTMAPI.GameBridge.DolocTown
     internal sealed partial class DolocTownExperimentalBridgeApi
     {
         private double movementSpeedMultiplier = 1;
+        private string movementSpeedOwnerId = string.Empty;
+        private object? movementSpeedMotionAbility;
+        private DateTimeOffset lastMovementSpeedReapplyAt = DateTimeOffset.MinValue;
+        private DateTimeOffset lastMovementSpeedLeaseStatusAt = DateTimeOffset.MinValue;
+        private int movementSpeedReapplyCount;
         private bool creativeModeEnabled;
         private string creativeModeLastMessage = "Creative mode is off.";
         private bool creativeNoCostHooksInstalled;
@@ -739,21 +744,41 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 object? motionAbility = ResolveMotionAbility();
                 if (motionAbility == null)
+                {
+                    if (Math.Abs(multiplier - 1d) < 0.001)
+                    {
+                        ClearMovementDebugLeaseState();
+                        result.After = GetMovementDebugState("after");
+                        result.AppliedMultiplier = 1;
+                        result.Success = true;
+                        result.Message = "Movement debug lease cleared; native MotionAbility was not available for a 1x reset.";
+                        runtime.SetHookStatus("Debug.MovementLease", "disabled", "IMovementDebugApi -> MotionAbility.SetMoveScaler lease", result.Message);
+                        return result;
+                    }
+
                     return MovementSpeedFailed(result, "missing-motion-ability", "Player MotionAbility was not found.");
+                }
 
-                MethodInfo? setScale = motionAbility.GetType().GetMethod("SetMoveScaler", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float) }, null)
-                    ?? motionAbility.GetType().GetMethod("SetMoveSpeedScale", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float) }, null);
-                if (setScale == null)
-                    return MovementSpeedFailed(result, "missing-set-scale", "MotionAbility.SetMoveScaler(float) was not found.");
-
-                setScale.Invoke(motionAbility, new object[] { (float)(multiplier - 1d) });
+                if (!TryApplyMovementScale(motionAbility, multiplier, out string failureReason, out string failureMessage))
+                    return MovementSpeedFailed(result, failureReason, failureMessage);
                 movementSpeedMultiplier = multiplier;
+                movementSpeedOwnerId = Math.Abs(multiplier - 1d) < 0.001 ? string.Empty : ownerId;
+                movementSpeedMotionAbility = Math.Abs(multiplier - 1d) < 0.001 ? null : motionAbility;
+                lastMovementSpeedReapplyAt = DateTimeOffset.UtcNow;
+                movementSpeedReapplyCount = 0;
                 result.After = GetMovementDebugState("after");
                 result.AppliedMultiplier = movementSpeedMultiplier;
                 result.Success = true;
                 result.Message = "Movement speed owner=" + ownerId + " multiplier=" + multiplier.ToString("0.###") + " beforeSpeed=" + FormatRatio(result.Before.MoveSpeed) + " afterSpeed=" + FormatRatio(result.After.MoveSpeed) + ".";
                 runtime.RuntimeMonitor.Log("Movement debug speed OK " + result.Message);
                 runtime.SetHookStatus("Smoke.DebugMovementSpeed", "verified", "MotionAbility.SetMoveScaler", result.Message);
+                runtime.SetHookStatus(
+                    "Debug.MovementLease",
+                    string.IsNullOrWhiteSpace(movementSpeedOwnerId) ? "disabled" : "active",
+                    "IMovementDebugApi -> MotionAbility.SetMoveScaler lease",
+                    string.IsNullOrWhiteSpace(movementSpeedOwnerId)
+                        ? "Movement debug lease is inactive after reset."
+                        : "Movement debug lease active owner=" + movementSpeedOwnerId + " multiplier=" + multiplier.ToString("0.###", CultureInfo.InvariantCulture) + ".");
                 return result;
             }
             catch (Exception ex)
@@ -771,9 +796,73 @@ namespace DTMAPI.GameBridge.DolocTown
             return result;
         }
 
+        internal void UpdateMovementDebugLease(string reason)
+        {
+            if (Math.Abs(movementSpeedMultiplier - 1d) < 0.001 || string.IsNullOrWhiteSpace(movementSpeedOwnerId))
+                return;
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            object? motionAbility = ResolveMotionAbility();
+            if (motionAbility == null)
+                return;
+
+            bool motionChanged = movementSpeedMotionAbility != null && !ReferenceEquals(movementSpeedMotionAbility, motionAbility);
+            if (!motionChanged && (now - lastMovementSpeedReapplyAt).TotalSeconds < 1)
+                return;
+
+            if (!TryApplyMovementScale(motionAbility, movementSpeedMultiplier, out string failureReason, out string failureMessage))
+            {
+                if ((now - lastMovementSpeedLeaseStatusAt).TotalSeconds >= 30)
+                {
+                    lastMovementSpeedLeaseStatusAt = now;
+                    runtime.SetHookStatus("Debug.MovementLease", "failed", "IMovementDebugApi -> MotionAbility.SetMoveScaler lease", failureReason + ": " + failureMessage);
+                }
+                return;
+            }
+
+            movementSpeedMotionAbility = motionAbility;
+            lastMovementSpeedReapplyAt = now;
+            movementSpeedReapplyCount++;
+            if (motionChanged || movementSpeedReapplyCount <= 3 || (now - lastMovementSpeedLeaseStatusAt).TotalSeconds >= 30)
+            {
+                lastMovementSpeedLeaseStatusAt = now;
+                MovementDebugState state = GetMovementDebugState("lease-reapply");
+                string summary = "owner=" + movementSpeedOwnerId +
+                    ", multiplier=" + movementSpeedMultiplier.ToString("0.###", CultureInfo.InvariantCulture) +
+                    ", reason=" + (reason ?? string.Empty) +
+                    ", motionChanged=" + motionChanged +
+                    ", reapplyCount=" + movementSpeedReapplyCount.ToString(CultureInfo.InvariantCulture) +
+                    ", moveSpeed=" + FormatRatio(state.MoveSpeed) + ".";
+                runtime.RuntimeMonitor.Log("Movement debug lease reapplied " + summary);
+                runtime.SetHookStatus("Debug.MovementLease", "active", "IMovementDebugApi -> MotionAbility.SetMoveScaler lease", summary);
+            }
+        }
+
+        internal void ResetMovementDebugLease(string reason)
+        {
+            if (Math.Abs(movementSpeedMultiplier - 1d) < 0.001 && string.IsNullOrWhiteSpace(movementSpeedOwnerId))
+                return;
+
+            object? motionAbility = ResolveMotionAbility();
+            if (motionAbility != null)
+                TryApplyMovementScale(motionAbility, 1, out _, out _);
+
+            ClearMovementDebugLeaseState();
+            runtime.SetHookStatus("Debug.MovementLease", "disabled", "ReturnedToTitle/Reset movement boundary", "Movement debug lease reset for " + (reason ?? string.Empty) + ".");
+        }
+
+        private void ClearMovementDebugLeaseState()
+        {
+            movementSpeedMultiplier = 1;
+            movementSpeedOwnerId = string.Empty;
+            movementSpeedMotionAbility = null;
+            movementSpeedReapplyCount = 0;
+            lastMovementSpeedReapplyAt = DateTimeOffset.UtcNow;
+        }
+
         BridgeFeatureStatus IMovementDebugApi.GetStatus()
         {
-            return new BridgeFeatureStatus("experimental", "Sets player movement through MotionAbility.SetMoveScaler and resets by applying multiplier 1x.");
+            return new BridgeFeatureStatus("experimental", "Sets player movement through MotionAbility.SetMoveScaler and maintains a lightweight debug-only lease until reset or title return.");
         }
 
         public IReadOnlyList<TechPointDebugOption> GetTechPointOptions()
@@ -2472,6 +2561,34 @@ namespace DTMAPI.GameBridge.DolocTown
 
             object? abilitySystem = ReadStaticMember(dolocApi, "AbilitySystem");
             return abilitySystem == null ? null : ReadMember(abilitySystem, "motionAbility");
+        }
+
+        private static bool TryApplyMovementScale(object motionAbility, double multiplier, out string failureReason, out string message)
+        {
+            failureReason = string.Empty;
+            message = string.Empty;
+            if (motionAbility == null)
+            {
+                failureReason = "missing-motion-ability";
+                message = "Player MotionAbility was not found.";
+                return false;
+            }
+
+            MethodInfo? setMoveScaler = motionAbility.GetType().GetMethod(
+                "SetMoveScaler",
+                BindingFlags.Public | BindingFlags.Instance,
+                null,
+                new[] { typeof(float) },
+                null);
+            if (setMoveScaler == null)
+            {
+                failureReason = "missing-set-move-scaler";
+                message = "MotionAbility.SetMoveScaler(float) was not found.";
+                return false;
+            }
+
+            setMoveScaler.Invoke(motionAbility, new object[] { (float)(multiplier - 1d) });
+            return true;
         }
 
         private static double ClampDebugSpeedMultiplier(double value)

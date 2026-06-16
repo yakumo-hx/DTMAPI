@@ -28,9 +28,11 @@ namespace DTMAPI.BepInExBootstrap
         private bool bridgeUpdateErrorLogged;
         private bool titleUiUpdateErrorLogged;
         private bool debugUiUpdateErrorLogged;
+        private int updateFailureCount;
         private int fallbackTickQueued;
         private SynchronizationContext? unityContext;
         private Timer? fallbackPump;
+        private DateTimeOffset lastUpdateFailurePublishedAt = DateTimeOffset.MinValue;
         private DateTimeOffset lastFallbackTick = DateTimeOffset.MinValue;
         private DateTimeOffset lastUnityUpdateTick = DateTimeOffset.MinValue;
         private string diagnosticsHotkey = "None";
@@ -287,8 +289,33 @@ namespace DTMAPI.BepInExBootstrap
             }
             catch (Exception ex)
             {
-                runtime.Diagnostics.RecordError("DTMAPI.BepInExBootstrap", "Update failed.", ex.ToString());
+                RecordBootstrapUpdateError(ex);
             }
+        }
+
+        private void RecordBootstrapUpdateError(Exception ex)
+        {
+            if (runtime == null)
+                return;
+
+            updateFailureCount++;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string summary = ex.GetType().Name + ": " + ex.Message;
+            if (updateFailureCount <= 3)
+            {
+                lastUpdateFailurePublishedAt = now;
+                runtime.Diagnostics.RecordError("DTMAPI.BepInExBootstrap", "Update failed.", ex.ToString());
+                runtime.RuntimeMonitor.Log("Bootstrap Update failed count=" + updateFailureCount + " " + summary, LogLevel.Warn);
+                return;
+            }
+
+            if ((now - lastUpdateFailurePublishedAt).TotalSeconds < 30)
+                return;
+
+            lastUpdateFailurePublishedAt = now;
+            string details = "count=" + updateFailureCount + ", lastError=" + summary;
+            runtime.Diagnostics.RecordWarning("DTMAPI.BepInExBootstrap", "Repeated Update failures throttled.", details);
+            runtime.RuntimeMonitor.Log("Throttled bootstrap Update failures " + details, LogLevel.Warn);
         }
 
         private void RecordUpdateComponentError(string owner, string message, Exception ex, ref bool alreadyLogged)

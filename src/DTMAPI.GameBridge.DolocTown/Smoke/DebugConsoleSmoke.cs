@@ -465,6 +465,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             if (smokeSettings.AutoExerciseDebugConsole && !autoExerciseDebugConsoleAttempted)
                 return;
+            if (smokeSettings.AutoExerciseDebugConsoleMouseGive)
+                return;
             if (smokeSettings.AutoExerciseDebugInventory && !autoExerciseDebugInventoryAttempted)
                 return;
             if (smokeSettings.AutoExerciseDebugWeather && !autoExerciseDebugWeatherAttempted)

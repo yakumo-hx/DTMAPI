@@ -63,6 +63,9 @@ namespace DTMAPI.UnitTests
                 FishingAutomationRuntimeStateResetClearsTransientState();
                 GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount();
                 GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess();
+                GameBridgeFeatureExceptionSummaryUnwrapsTargetInvocation();
+                DebugConsoleUsesOnlyCellPointerDownRightClickGivePath();
+                MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset();
                 OilCoalDropFeatureLifecycleClearsPendingHits();
                 ChestLocatorPoliciesMergeEnabledOwners();
                 StrongPlantingGunNormalizesToThreeSlotContract();
@@ -80,6 +83,7 @@ namespace DTMAPI.UnitTests
                 FishingAutomationReadyChargeTargetControlsUseToolRelease();
                 AutoFishingModConfigPreservesCustomToggleKey();
                 AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents();
+                AnimalViewerFeatureResetsCloneLifecycleOnBoundaries();
                 CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots();
                 Console.WriteLine("DTMAPI.UnitTests: OK");
                 return 0;
@@ -2142,6 +2146,70 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void GameBridgeFeatureExceptionSummaryUnwrapsTargetInvocation()
+        {
+            MethodInfo formatSummary = typeof(DolocTownGameBridge).GetMethod("FormatGameBridgeExceptionSummary", BindingFlags.NonPublic | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Feature exception summary helper should exist.");
+            MethodInfo formatDetails = typeof(DolocTownGameBridge).GetMethod("FormatGameBridgeExceptionDetails", BindingFlags.NonPublic | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Feature exception details helper should exist.");
+
+            var root = new InvalidOperationException("animal clone missing");
+            var wrapped = new TargetInvocationException("outer reflection call", new TargetInvocationException("inner reflection call", root));
+            string summary = (string)(formatSummary.Invoke(null, new object[] { wrapped }) ?? string.Empty);
+            string details = (string)(formatDetails.Invoke(null, new object[] { wrapped }) ?? string.Empty);
+
+            Assert(summary.StartsWith("InvalidOperationException: animal clone missing", StringComparison.Ordinal), "Feature exception summaries should start with the unwrapped root cause.");
+            Assert(summary.Contains("outer TargetInvocationException", StringComparison.Ordinal), "Feature exception summaries should keep the outer reflection wrapper as context.");
+            Assert(details.Contains("RootCause: System.InvalidOperationException: animal clone missing", StringComparison.Ordinal), "Feature exception details should put the root cause before wrapper stack traces.");
+            Assert(details.Contains("OuterException: System.Reflection.TargetInvocationException", StringComparison.Ordinal), "Feature exception details should still include the reflection wrapper.");
+        }
+
+        private static void DebugConsoleUsesOnlyCellPointerDownRightClickGivePath()
+        {
+            Assembly bootstrapAssembly = Assembly.Load("DTMAPI.BepInExBootstrap");
+            Type consoleType = bootstrapAssembly.GetType("DTMAPI.BepInExBootstrap.ReflectedDebugConsoleUi")
+                ?? throw new InvalidOperationException("ReflectedDebugConsoleUi type should exist.");
+
+            Assert(consoleType.GetMethod("TryGivePointerHitItem", BindingFlags.Instance | BindingFlags.NonPublic) == null, "Debug console should not keep the global Mouse1 hit-test give path.");
+            Assert(consoleType.GetNestedType("ItemCellHitTarget", BindingFlags.NonPublic) == null, "Debug console should not keep screen-rectangle item hit targets after consolidating right-click give.");
+            Assert(consoleType.GetMethod("TryGiveRightClickItem", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should keep the item-cell PointerDown right-click give path.");
+            Assert(consoleType.GetMethod("IsAnyTextInputFocused", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should guard Y-close while a search input field has focus.");
+            Assert(consoleType.GetField("inputFields", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should track reflected input fields for focus-aware Y handling.");
+        }
+
+        private static void MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                var bridge = new DolocTownGameBridge(runtime);
+                DolocTownExperimentalBridgeApi api = bridge.ExperimentalApi ?? throw new InvalidOperationException("Experimental bridge API should be registered.");
+
+                SetPrivateField(api, "movementSpeedMultiplier", 3d);
+                SetPrivateField(api, "movementSpeedOwnerId", "DTMAPI.UnitTests");
+                bridge.NotifyGameBridgeFeaturesSaveLoaded(isNewGame: false);
+                MovementDebugState saveState = ((IMovementDebugApi)api).GetState();
+                Assert(saveState.IsDefault && Math.Abs(saveState.Multiplier - 1d) < 0.001, "Movement debug lease should not cross save-load boundaries.");
+                IHookStatusInfo saveStatus = runtime.Diagnostics.GetHookStatuses().Single(h => h.HookId == "Debug.MovementLease");
+                Assert(saveStatus.Status == "disabled" && saveStatus.Details.Contains("SaveLoaded", StringComparison.Ordinal), "SaveLoaded should publish a disabled movement lease status.");
+
+                SetPrivateField(api, "movementSpeedMultiplier", 4d);
+                SetPrivateField(api, "movementSpeedOwnerId", "DTMAPI.UnitTests");
+                MovementSpeedResult reset = ((IMovementDebugApi)api).ResetSpeed(new ManifestModel { UniqueID = "DTMAPI.UnitTests" }, "unit-missing-motion");
+                MovementDebugState resetState = ((IMovementDebugApi)api).GetState();
+                Assert(reset.Success, "ResetSpeed should clear the DTMAPI lease even when native MotionAbility is unavailable.");
+                Assert(resetState.IsDefault && Math.Abs(resetState.Multiplier - 1d) < 0.001, "ResetSpeed should not leave a future movement reapply lease behind.");
+                IHookStatusInfo resetStatus = runtime.Diagnostics.GetHookStatuses().Single(h => h.HookId == "Debug.MovementLease");
+                Assert(resetStatus.Status == "disabled" && resetStatus.Details.Contains("MotionAbility was not available", StringComparison.Ordinal), "Missing-motion reset should publish a disabled movement lease status.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void OilCoalDropFeatureLifecycleClearsPendingHits()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -2785,6 +2853,45 @@ namespace DTMAPI.UnitTests
             Assert(!(bool)(looksLikeLocalization.Invoke(null, new object[] { "DolocTown.UI.ProgressBar" }) ?? true), "AnimalViewer localization guard must not disable the ProgressBar component itself.");
         }
 
+        private static void AnimalViewerFeatureResetsCloneLifecycleOnBoundaries()
+        {
+            Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
+            Type featureType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.AnimalViewerFeature")
+                ?? throw new InvalidOperationException("AnimalViewerFeature type should exist.");
+
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                string dir = NewTempGameDir();
+                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                object feature = Activator.CreateInstance(featureType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object[] { runtime }, null)
+                    ?? throw new InvalidOperationException("AnimalViewerFeature should be constructable for unit tests.");
+
+                MethodInfo saveLoaded = featureType.GetMethod("SaveLoaded", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("AnimalViewerFeature.SaveLoaded should exist.");
+                MethodInfo returnedToTitle = featureType.GetMethod("ReturnedToTitle", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("AnimalViewerFeature.ReturnedToTitle should exist.");
+                MethodInfo environmentReset = featureType.GetMethod("EnvironmentReset", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("AnimalViewerFeature.EnvironmentReset should exist.");
+
+                saveLoaded.Invoke(feature, new object[] { false });
+                IHookStatusInfo saveStatus = runtime.Diagnostics.GetHookStatuses().Single(h => h.HookId == "Animals.ViewerRenderingLifecycle");
+                Assert(saveStatus.Status == "reset" && saveStatus.Details.Contains("SaveLoaded", StringComparison.Ordinal), "AnimalViewer save-load boundary should reset cloned progress-bar runtime state.");
+
+                returnedToTitle.Invoke(feature, Array.Empty<object>());
+                IHookStatusInfo titleStatus = runtime.Diagnostics.GetHookStatuses().Single(h => h.HookId == "Animals.ViewerRenderingLifecycle");
+                Assert(titleStatus.Status == "reset" && titleStatus.Details.Contains("ReturnedToTitle", StringComparison.Ordinal), "AnimalViewer title boundary should reset cloned progress-bar runtime state.");
+
+                environmentReset.Invoke(feature, new object[] { "unit-test" });
+                IHookStatusInfo resetStatus = runtime.Diagnostics.GetHookStatuses().Single(h => h.HookId == "Animals.ViewerRenderingLifecycle");
+                Assert(resetStatus.Status == "reset" && resetStatus.Details.Contains("EnvironmentReset unit-test", StringComparison.Ordinal), "AnimalViewer environment reset should clear cloned progress-bar runtime state.");
+            }
+            finally
+            {
+                RestorePersistentRoot(previousRoot);
+            }
+        }
+
         private static void CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -2969,6 +3076,13 @@ namespace DTMAPI.UnitTests
                 return;
             }
             throw new InvalidOperationException(message);
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object? value)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Expected private field '" + fieldName + "' on " + target.GetType().FullName + ".");
+            field.SetValue(target, value);
         }
 
         private static bool IsBlocked(CustomEntityRequestResult result)

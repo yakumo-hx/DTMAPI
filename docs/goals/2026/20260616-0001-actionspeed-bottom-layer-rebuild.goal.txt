@@ -1,0 +1,20 @@
+/goal
+目标：重做 ActionSpeed 底层原生责任层，解决水井汲水与种植加速间歇失效问题。详细需求、问题、验收标准以 docs/goals/2026/20260616-0001-actionspeed-bottom-layer-rebuild.md 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/planning/DolocTownModdingAPI.md
+docs/planning/Debug.md
+references/README.md
+docs/workflows/codex-api-rebuild.md
+docs/goals/2026/20260616-0001-actionspeed-bottom-layer-rebuild.md
+docs/reviews/api/2026/20260607-0005-native-responsibility-api-audit.md
+docs/reviews/api/2026/20260607-0006-native-responsibility-method-audit-index.md
+docs/reviews/manual-qa/2026/20260616-0001-player-log-diagnostics-console-speed-animal-review.md
+docs/api/public-api-matrix.md
+docs/hook-map/README.md
+docs/debug/regressions/smoke-matrix.md
+
+要求：
+先做原生责任函数/状态持有者审查，再改 GameBridge，不做单点 animator 补丁；IActionSpeedApi 保持 Experimental；普通 mod 不暴露原始反编译类型；完成 Release build/test、第三存档水井/种植/工具/采集 smoke、退出残留检查和 docs/updates/debug/smoke/hook/API 更新后才能完成。

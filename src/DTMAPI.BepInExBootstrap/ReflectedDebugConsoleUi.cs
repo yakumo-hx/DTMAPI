@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
@@ -17,7 +18,7 @@ namespace DTMAPI.BepInExBootstrap
         private const string SourceFilterMods = "__mods";
         private readonly DtmApiRuntime runtime;
         private readonly List<object> eventBinders = new List<object>();
-        private readonly List<ItemCellHitTarget> itemCellHitTargets = new List<ItemCellHitTarget>();
+        private readonly List<object> inputFields = new List<object>();
         private DtmUiText text = new DtmUiText();
         private IInventoryDebugApi? inventoryApi;
         private IWeatherDebugApi? weatherApi;
@@ -79,6 +80,7 @@ namespace DTMAPI.BepInExBootstrap
         private bool screenshotHoverPrepared;
         private bool screenshotHoverStatusActive;
         private DateTimeOffset lastRightClickGiveAt;
+        private InventoryDebugItem? hoveredItem;
         private string screenshotHoverItem = string.Empty;
         private string screenshotHoverSourceKind = string.Empty;
         private string screenshotHoverSourceId = string.Empty;
@@ -180,6 +182,7 @@ namespace DTMAPI.BepInExBootstrap
             IsOpen = false;
             dirty = true;
             DolocTownHookCallbacks.DebugConsoleModalOpen = false;
+            hoveredItem = null;
             HideItemTooltip();
             if (runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase))
                 runtime.UI.Close();
@@ -210,6 +213,7 @@ namespace DTMAPI.BepInExBootstrap
             screenshotHoverPrepared = false;
             screenshotHoverStatusActive = false;
             screenshotSearchText = string.Empty;
+            hoveredItem = null;
             dirty = true;
             runtime.RuntimeMonitor.Log("Debug console item search/filter state reset for " + reason + ".");
             runtime.SetHookStatus("UI.DebugConsoleSearchLifecycle", "experimental", "SaveLoaded/ReturnedToTitle runtime boundary", "Search and item filters cleared for " + reason + ".");
@@ -236,11 +240,23 @@ namespace DTMAPI.BepInExBootstrap
                 if (ReflectedUnityInput.GetKeyDown("Y"))
                 {
                     ConsumedInputThisFrame = true;
+                    if (IsAnyTextInputFocused())
+                    {
+                        runtime.RuntimeMonitor.LogOnce(
+                            "debug-console-y-input-focus",
+                            "Debug console ignored Y close while a text input is focused.",
+                            LogLevel.Info);
+                        return;
+                    }
                     Close(ownerManifest!, "Y");
                     return;
                 }
-                if (ReflectedUnityInput.GetKeyDown("Mouse1") && TryGivePointerHitItem())
+                if (hoveredItem != null && ReflectedUnityInput.GetKeyDown("Mouse1"))
+                {
                     ConsumedInputThisFrame = true;
+                    TryGiveRightClickItem(hoveredItem, "hovered-cell");
+                    return;
+                }
             }
 
             if (!EnsureInitialized())
@@ -339,9 +355,10 @@ namespace DTMAPI.BepInExBootstrap
         {
             Destroy(hoverTooltipRoot);
             hoverTooltipRoot = null;
+            hoveredItem = null;
             Destroy(panelRoot);
             eventBinders.Clear();
-            itemCellHitTargets.Clear();
+            inputFields.Clear();
             panelRoot = CreateUiObject("DTMAPI.DebugConsole.Panel", root);
             object image = AddComponent(panelRoot, imageType!);
             SetProperty(image, "color", Color(0.035f, 0.04f, 0.046f, 0.96f));
@@ -670,16 +687,18 @@ namespace DTMAPI.BepInExBootstrap
             });
             AddPointerEventListener(go, "PointerEnter", _ =>
             {
+                hoveredItem = item;
                 SetStatusMessage(FormatItemHover(item), rebuild: false);
                 ShowItemTooltip(item, tooltipX, y);
             });
             AddPointerEventListener(go, "PointerExit", _ =>
             {
+                if (ReferenceEquals(hoveredItem, item))
+                    hoveredItem = null;
                 SetStatusMessage(string.Empty, rebuild: false);
                 HideItemTooltip();
             });
             SetRect(go, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(w, h));
-            itemCellHitTargets.Add(new ItemCellHitTarget(item, x, y, w, h));
             if (screenshotHoverStatusActive && item.Id.Equals(screenshotHoverItem, StringComparison.OrdinalIgnoreCase))
                 ShowItemTooltip(item, tooltipX, y);
         }
@@ -970,35 +989,6 @@ namespace DTMAPI.BepInExBootstrap
             runtime.RuntimeMonitor.Log("Debug console right-click give source=" + source + " item=" + item.Id + ".");
             GiveItem(item, 10, rightClick: true);
             return true;
-        }
-
-        private bool TryGivePointerHitItem()
-        {
-            if (ownerManifest == null || itemCellHitTargets.Count == 0)
-                return false;
-            if (!ReflectedUnityInput.TryGetMousePosition(out double mouseX, out double mouseY))
-                return false;
-            if (!TryGetScreenSize(out double screenWidth, out double screenHeight))
-                return false;
-
-            double panelLeft = Math.Max(0, (screenWidth - 1500d) / 2d);
-            double panelTop = Math.Max(0, (screenHeight - 900d) / 2d);
-            double mouseTopY = screenHeight - mouseY;
-            foreach (ItemCellHitTarget target in itemCellHitTargets)
-            {
-                double left = panelLeft + target.X;
-                double top = panelTop + Math.Abs(target.Y);
-                double right = left + target.Width;
-                double bottom = top + target.Height;
-                if (mouseX >= left && mouseX <= right && mouseTopY >= top && mouseTopY <= bottom)
-                {
-                    runtime.RuntimeMonitor.Log("Debug console right-click give hit-test item=" + target.Item.Id + " mouse=" + mouseX.ToString("0", CultureInfo.InvariantCulture) + "," + mouseTopY.ToString("0", CultureInfo.InvariantCulture) + " rect=" + left.ToString("0", CultureInfo.InvariantCulture) + "," + top.ToString("0", CultureInfo.InvariantCulture) + "," + right.ToString("0", CultureInfo.InvariantCulture) + "," + bottom.ToString("0", CultureInfo.InvariantCulture) + ".");
-                    return TryGiveRightClickItem(target.Item, "mouse1-hit-test");
-                }
-            }
-
-            runtime.SetHookStatus("UI.DebugConsoleRightClickTarget", "experimental", "Unity Input.mousePosition -> current item cell hit-test", "Right-click ignored because no current item cell was under the pointer. mouse=" + mouseX.ToString("0", CultureInfo.InvariantCulture) + "," + mouseTopY.ToString("0", CultureInfo.InvariantCulture) + ".");
-            return false;
         }
 
         private void GiveItem(InventoryDebugItem item, int count, bool rightClick = false)
@@ -1382,10 +1372,60 @@ namespace DTMAPI.BepInExBootstrap
                 SetProperty(input, "targetGraphic", image);
                 SetProperty(input, "textComponent", textObject);
                 SetProperty(input, "text", value ?? string.Empty);
+                inputFields.Add(input);
                 AddStringListener(GetProperty(input, "onEndEdit"), onEdited);
             }
             SetRect(go, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(w, h));
             return go;
+        }
+
+        private bool IsAnyTextInputFocused()
+        {
+            foreach (object input in inputFields.ToArray())
+            {
+                if (input == null || IsDestroyed(input))
+                    continue;
+                if (ReadBoolProperty(input, "isFocused"))
+                    return true;
+            }
+
+            object? currentSelected = GetCurrentSelectedGameObject();
+            if (currentSelected == null || IsDestroyed(currentSelected))
+                return false;
+            foreach (object input in inputFields.ToArray())
+            {
+                object? inputGameObject = GetProperty(input, "gameObject");
+                if (ReferenceEquals(inputGameObject, currentSelected))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private object? GetCurrentSelectedGameObject()
+        {
+            try
+            {
+                object? current = eventSystemType?.GetProperty("current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null, null);
+                return current == null ? null : GetProperty(current, "currentSelectedGameObject");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool ReadBoolProperty(object target, string name)
+        {
+            try
+            {
+                object? value = target.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(target, null);
+                return value is bool b && b;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private object AddText(object parent, string name, string value, int fontSize, object color, int alignment, float x, float y, float w, float h, bool stretch = false)
@@ -1521,7 +1561,7 @@ namespace DTMAPI.BepInExBootstrap
                 object? callback = GetProperty(entry, "callback");
                 var binder = new PointerActionBinder(action);
                 eventBinders.Add(binder);
-                Delegate del = Delegate.CreateDelegate(unityActionBaseEventDataType, binder, nameof(PointerActionBinder.Invoke));
+                Delegate del = CreatePointerActionDelegate(binder);
                 callback?.GetType().GetMethod("AddListener", new[] { unityActionBaseEventDataType })?.Invoke(callback, new object[] { del });
                 object? triggers = GetProperty(trigger, "triggers");
                 triggers?.GetType().GetMethod("Add")?.Invoke(triggers, new[] { entry });
@@ -1531,6 +1571,18 @@ namespace DTMAPI.BepInExBootstrap
             {
                 return false;
             }
+        }
+
+        private Delegate CreatePointerActionDelegate(PointerActionBinder binder)
+        {
+            if (baseEventDataType == null || unityActionBaseEventDataType == null)
+                throw new InvalidOperationException("Unity BaseEventData action type is not available.");
+
+            ParameterExpression eventData = Expression.Parameter(baseEventDataType, "eventData");
+            MethodInfo invoke = typeof(PointerActionBinder).GetMethod(nameof(PointerActionBinder.Invoke), BindingFlags.Instance | BindingFlags.Public)
+                ?? throw new MissingMethodException(nameof(PointerActionBinder), nameof(PointerActionBinder.Invoke));
+            MethodCallExpression call = Expression.Call(Expression.Constant(binder), invoke, Expression.Convert(eventData, typeof(object)));
+            return Expression.Lambda(unityActionBaseEventDataType, call, eventData).Compile();
         }
 
         private static bool IsRightClick(object? eventData)
@@ -1627,12 +1679,30 @@ namespace DTMAPI.BepInExBootstrap
             return null;
         }
 
-        private static object? GetProperty(object target, string name) => target.GetType().GetProperty(name)?.GetValue(target, null);
+        private static object? GetProperty(object target, string name)
+        {
+            Type type = target.GetType();
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            PropertyInfo? property = type.GetProperty(name, flags);
+            if (property != null)
+                return property.GetValue(target, null);
+            FieldInfo? field = type.GetField(name, flags);
+            return field?.GetValue(target);
+        }
 
         private static void SetProperty(object target, string name, object? value)
         {
-            PropertyInfo? property = target.GetType().GetProperty(name);
-            property?.SetValue(target, value, null);
+            Type type = target.GetType();
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            PropertyInfo? property = type.GetProperty(name, flags);
+            if (property != null)
+            {
+                property.SetValue(target, value, null);
+                return;
+            }
+
+            FieldInfo? field = type.GetField(name, flags);
+            field?.SetValue(target, value);
         }
 
         private static void SetEnumProperty(object target, string name, int value)
@@ -1692,24 +1762,6 @@ namespace DTMAPI.BepInExBootstrap
         private static string FormatLifecycleValue(string value)
         {
             return string.IsNullOrEmpty(value) ? "<empty>" : value;
-        }
-
-        private sealed class ItemCellHitTarget
-        {
-            public ItemCellHitTarget(InventoryDebugItem item, float x, float y, float width, float height)
-            {
-                Item = item;
-                X = x;
-                Y = y;
-                Width = width;
-                Height = height;
-            }
-
-            public InventoryDebugItem Item { get; }
-            public float X { get; }
-            public float Y { get; }
-            public float Width { get; }
-            public float Height { get; }
         }
 
         private const int TextAnchorMiddleLeft = 3;

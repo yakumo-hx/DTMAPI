@@ -42,14 +42,17 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void SaveLoaded(bool isNewGame)
         {
+            Service.ResetAnimalViewerRuntimeState("SaveLoaded isNewGame=" + isNewGame);
         }
 
         public void ReturnedToTitle()
         {
+            Service.ResetAnimalViewerRuntimeState("ReturnedToTitle");
         }
 
         public void EnvironmentReset(string reason)
         {
+            Service.ResetAnimalViewerRuntimeState("EnvironmentReset " + (reason ?? string.Empty));
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Reflection;
 using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -56,7 +57,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     status,
                     "failed",
                     operation,
-                    operation + " failed: " + ex.GetType().Name + ": " + ex.Message + ". " + details,
+                    operation + " failed: " + FormatGameBridgeExceptionSummary(ex) + ". " + details,
                     publication.ShouldPublishHookStatus);
             }
         }
@@ -122,7 +123,7 @@ namespace DTMAPI.GameBridge.DolocTown
             status.LastSucceeded = false;
             status.FailureCount++;
             status.ConsecutiveFailureCount++;
-            status.LastError = ex.GetType().Name + ": " + ex.Message;
+            status.LastError = FormatGameBridgeExceptionSummary(ex);
             return status;
         }
 
@@ -131,16 +132,17 @@ namespace DTMAPI.GameBridge.DolocTown
             GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
             publication = RecordGameBridgeFeatureFailurePublication(id, operation, ex);
             string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
+            string errorSummary = FormatGameBridgeExceptionSummary(ex);
 
             if (publication.RecordDiagnosticsError)
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, ex.ToString());
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, FormatGameBridgeExceptionDetails(ex));
 
             if (publication.LogMode == GameBridgeFeatureFailureLogMode.Full)
-                runtime.RuntimeMonitor.Log(message + " " + ex.GetType().Name + ": " + ex.Message, LogLevel.Error);
+                runtime.RuntimeMonitor.Log(message + " " + errorSummary, LogLevel.Error);
             else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Short)
-                runtime.RuntimeMonitor.Log("Repeated GameBridge feature failure feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " error=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+                runtime.RuntimeMonitor.Log("Repeated GameBridge feature failure feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " error=" + errorSummary, LogLevel.Warn);
             else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Summary)
-                runtime.RuntimeMonitor.Log("Throttled GameBridge feature failures feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " lastError=" + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+                runtime.RuntimeMonitor.Log("Throttled GameBridge feature failures feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " lastError=" + errorSummary, LogLevel.Warn);
 
             return status;
         }
@@ -157,7 +159,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
             state.Count++;
             state.ConsecutiveSuccessCount = 0;
-            state.LastError = ex.GetType().Name + ": " + ex.Message;
+            state.LastError = FormatGameBridgeExceptionSummary(ex);
             state.LastSeenAtUtc = now;
 
             if (state.Count == 1)
@@ -195,6 +197,34 @@ namespace DTMAPI.GameBridge.DolocTown
         private static string GetGameBridgeFeatureFailureKey(string id, string operation)
         {
             return (string.IsNullOrWhiteSpace(id) ? "<unknown>" : id.Trim()) + "::" + (string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation.Trim());
+        }
+
+        private static string FormatGameBridgeExceptionSummary(Exception ex)
+        {
+            Exception root = UnwrapGameBridgeException(ex);
+            string rootSummary = root.GetType().Name + ": " + root.Message;
+            return ReferenceEquals(root, ex)
+                ? rootSummary
+                : rootSummary + " (outer " + ex.GetType().Name + ": " + ex.Message + ")";
+        }
+
+        private static string FormatGameBridgeExceptionDetails(Exception ex)
+        {
+            Exception root = UnwrapGameBridgeException(ex);
+            if (ReferenceEquals(root, ex))
+                return ex.ToString();
+
+            return "RootCause: " + root.GetType().FullName + ": " + root.Message + Environment.NewLine +
+                root + Environment.NewLine +
+                "OuterException: " + ex.GetType().FullName + ": " + ex.Message + Environment.NewLine +
+                ex;
+        }
+
+        private static Exception UnwrapGameBridgeException(Exception ex)
+        {
+            while (ex is TargetInvocationException target && target.InnerException != null)
+                ex = target.InnerException;
+            return ex;
         }
 
         private GameBridgeFeatureStatus GetGameBridgeFeatureStatus(string id)

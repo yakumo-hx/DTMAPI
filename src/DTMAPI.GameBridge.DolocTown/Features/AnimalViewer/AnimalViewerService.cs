@@ -28,6 +28,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private string? latestAnimalViewerEvidenceDir;
         private string latestAnimalProgressOverlaySummary = string.Empty;
         private DateTimeOffset lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
+        private DateTimeOffset lastAnimalProgressOverlayLifecycleLogAt = DateTimeOffset.MinValue;
+        private string lastAnimalProgressOverlayLifecycleLogKey = string.Empty;
+        private object? activeAnimalProgressOverlayParent;
+        private int animalProgressOverlayGeneration;
 
         public AnimalViewerService(DtmApiRuntime runtime)
         {
@@ -121,6 +125,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
 
                 ClearAnimalProgressOverlay(parent);
+                activeAnimalProgressOverlayParent = parent;
+                animalProgressOverlayGeneration++;
                 activeAnimalProgressOverlayRows.Clear();
                 int rendered = 0;
                 int localizationComponentsDisabled = 0;
@@ -133,11 +139,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (clone == null)
                         continue;
                     SetMemberValue(clone, "name", "DTMAPI.AnimalProduceProgress." + rendered);
-                    SetActive(clone, false);
+                    SafeSetActive(clone, false);
                     object? rowTransform = ReadMember(clone, "transform");
                     if (rowTransform == null)
                     {
-                        DestroyUnityObject(clone);
+                        SafeDestroyUnityObject(clone);
                         continue;
                     }
 
@@ -150,8 +156,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
 
                 RefreshAnimalProgressOverlayTexts(force: true);
-                foreach (object clone in activeAnimalProgressOverlayObjects)
-                    SetActive(clone, true);
+                foreach (object clone in activeAnimalProgressOverlayObjects.ToArray())
+                    SafeSetActive(clone, true);
                 RefreshAnimalProgressOverlayTexts(force: true);
                 string firstFrameGuardSummary = ValidateAnimalProgressOverlayTextsForFirstFrameGuard();
                 AnimalProgressRenderRow primary = rows
@@ -176,8 +182,18 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Animal progress single-pass UI evidence failed.", ex.ToString());
                 runtime.SetHookStatus("Smoke.AnimalViewerProgressUi", "failed", "AnimalFullInfoData ctor -> AnimalViewer.OnShow native ProgressBar", ex.GetType().Name + ": " + ex.Message);
+                ClearAnimalProgressOverlaySession("render-failed");
                 return false;
             }
+        }
+
+        internal void ResetAnimalViewerRuntimeState(string reason)
+        {
+            ClearAnimalProgressOverlaySession(reason);
+            animalProgressRowsByData.Clear();
+            lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
+            latestAnimalProgressOverlaySummary = "animal viewer runtime state reset for " + (reason ?? string.Empty) + ".";
+            runtime.SetHookStatus("Animals.ViewerRenderingLifecycle", "reset", "AnimalViewer clone session boundary", latestAnimalProgressOverlaySummary);
         }
 
         internal void PrepareAnimalProgressOverlayBeforeShow(object viewer, object data)
@@ -507,20 +523,14 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             foreach (object instance in activeAnimalProgressOverlayObjects.ToArray())
             {
-                SetActive(instance, false);
-                DestroyUnityObject(instance);
+                SafeSetActive(instance, false);
+                SafeDestroyUnityObject(instance);
             }
             activeAnimalProgressOverlayObjects.Clear();
             activeAnimalProgressOverlayRows.Clear();
+            activeAnimalProgressOverlayParent = null;
 
-            MethodInfo? find = parentTransform.GetType().GetMethod("Find", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
-            for (int i = 0; i < 10; i++)
-            {
-                object? child = find?.Invoke(parentTransform, new object[] { "DTMAPI.AnimalProduceProgress." + i });
-                object? gameObject = child == null ? null : ReadMember(child, "gameObject");
-                if (gameObject != null)
-                    DestroyUnityObject(gameObject);
-            }
+            DestroyAnimalProgressOverlayChildren(parentTransform);
         }
 
         private void ClearAnimalProgressOverlayForViewer(object viewer)
@@ -532,10 +542,81 @@ namespace DTMAPI.GameBridge.DolocTown
             if (parent != null)
                 ClearAnimalProgressOverlay(parent);
             else
+                ClearAnimalProgressOverlaySession("viewer-parent-missing");
+        }
+
+        private void ClearAnimalProgressOverlaySession(string reason)
+        {
+            int objects = activeAnimalProgressOverlayObjects.Count;
+            object? parent = activeAnimalProgressOverlayParent;
+            foreach (object instance in activeAnimalProgressOverlayObjects.ToArray())
             {
-                activeAnimalProgressOverlayObjects.Clear();
-                activeAnimalProgressOverlayRows.Clear();
+                SafeSetActive(instance, false);
+                SafeDestroyUnityObject(instance);
             }
+
+            if (parent != null)
+                DestroyAnimalProgressOverlayChildren(parent);
+
+            activeAnimalProgressOverlayObjects.Clear();
+            activeAnimalProgressOverlayRows.Clear();
+            activeAnimalProgressOverlayParent = null;
+            lastAnimalProgressOverlayRefreshAt = DateTimeOffset.MinValue;
+            animalProgressOverlayGeneration++;
+            if (objects > 0)
+                RecordAnimalProgressOverlayLifecycle("session-cleared", "reason=" + (reason ?? string.Empty) + ", objects=" + objects.ToString(CultureInfo.InvariantCulture) + ", generation=" + animalProgressOverlayGeneration.ToString(CultureInfo.InvariantCulture), failed: false);
+        }
+
+        private void DestroyAnimalProgressOverlayChildren(object parentTransform)
+        {
+            try
+            {
+                MethodInfo? find = parentTransform.GetType().GetMethod("Find", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
+                for (int i = 0; i < 10; i++)
+                {
+                    object? child = find?.Invoke(parentTransform, new object[] { "DTMAPI.AnimalProduceProgress." + i });
+                    object? gameObject = child == null ? null : ReadMember(child, "gameObject");
+                    if (gameObject != null)
+                        SafeDestroyUnityObject(gameObject);
+                }
+            }
+            catch (Exception ex)
+            {
+                RecordAnimalProgressOverlayLifecycle("clear-parent-failed", ex.GetType().Name + ": " + ex.Message, failed: true);
+            }
+        }
+
+        private bool ValidateAnimalProgressOverlaySession(string reason)
+        {
+            if (activeAnimalProgressOverlayObjects.Count != activeAnimalProgressOverlayRows.Count)
+            {
+                string summary = "reason=" + (reason ?? string.Empty) +
+                    ", objects=" + activeAnimalProgressOverlayObjects.Count.ToString(CultureInfo.InvariantCulture) +
+                    ", rows=" + activeAnimalProgressOverlayRows.Count.ToString(CultureInfo.InvariantCulture) +
+                    ", generation=" + animalProgressOverlayGeneration.ToString(CultureInfo.InvariantCulture);
+                ClearAnimalProgressOverlaySession(reason + ":row-count-mismatch");
+                RecordAnimalProgressOverlayLifecycle("session-row-count-mismatch", summary, failed: false);
+                return false;
+            }
+
+            if (activeAnimalProgressOverlayParent != null && !IsUnityObjectAlive(activeAnimalProgressOverlayParent))
+            {
+                ClearAnimalProgressOverlaySession(reason + ":parent-destroyed");
+                RecordAnimalProgressOverlayLifecycle("session-parent-destroyed", "reason=" + (reason ?? string.Empty), failed: false);
+                return false;
+            }
+
+            foreach (object instance in activeAnimalProgressOverlayObjects.ToArray())
+            {
+                if (IsUnityObjectAlive(instance))
+                    continue;
+
+                ClearAnimalProgressOverlaySession(reason + ":clone-destroyed");
+                RecordAnimalProgressOverlayLifecycle("session-clone-destroyed", "reason=" + (reason ?? string.Empty), failed: false);
+                return false;
+            }
+
+            return true;
         }
 
         private static bool IsAnimalViewerDataVisible(object data)
@@ -551,27 +632,37 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             if (!force && (DateTimeOffset.Now - lastAnimalProgressOverlayRefreshAt).TotalSeconds < 0.08)
                 return;
+            if (!ValidateAnimalProgressOverlaySession("refresh"))
+                return;
 
             lastAnimalProgressOverlayRefreshAt = DateTimeOffset.Now;
             Type? progressBarType = ResolveType("DolocTown.UI.ProgressBar, Assembly-CSharp");
             int count = Math.Min(activeAnimalProgressOverlayObjects.Count, activeAnimalProgressOverlayRows.Count);
-            for (int i = 0; i < count; i++)
+            try
             {
-                object clone = activeAnimalProgressOverlayObjects[i];
-                AnimalProgressRenderRow row = activeAnimalProgressOverlayRows[i];
-                string progressText = row.Current + "/" + row.Threshold;
-                object? progressBar = progressBarType == null ? null : GetComponent(clone, progressBarType);
-                if (progressBar != null)
+                for (int i = 0; i < count; i++)
                 {
-                    MethodInfo? setTitle = progressBar.GetType().GetMethod("SetTitle", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
-                    MethodInfo? setProgress = progressBar.GetType().GetMethod("SetProgress", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float), typeof(string) }, null);
-                    setTitle?.Invoke(progressBar, new object[] { row.OutputTitle });
-                    setProgress?.Invoke(progressBar, new object[] { (float)Math.Max(0, Math.Min(1, row.Progress)), progressText });
-                    SetUnityText(ReadMember(progressBar, "txtTitle"), row.OutputTitle);
-                    SetUnityText(ReadMember(progressBar, "txtProgress"), progressText);
-                }
+                    object clone = activeAnimalProgressOverlayObjects[i];
+                    AnimalProgressRenderRow row = activeAnimalProgressOverlayRows[i];
+                    string progressText = row.Current + "/" + row.Threshold;
+                    object? progressBar = progressBarType == null ? null : GetComponent(clone, progressBarType);
+                    if (progressBar != null)
+                    {
+                        MethodInfo? setTitle = progressBar.GetType().GetMethod("SetTitle", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(string) }, null);
+                        MethodInfo? setProgress = progressBar.GetType().GetMethod("SetProgress", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float), typeof(string) }, null);
+                        setTitle?.Invoke(progressBar, new object[] { row.OutputTitle });
+                        setProgress?.Invoke(progressBar, new object[] { (float)Math.Max(0, Math.Min(1, row.Progress)), progressText });
+                        SetUnityText(ReadMember(progressBar, "txtTitle"), row.OutputTitle);
+                        SetUnityText(ReadMember(progressBar, "txtProgress"), progressText);
+                    }
 
-                SetAnimalProgressTextsFromChildren(clone, row.OutputTitle, progressText);
+                    SetAnimalProgressTextsFromChildren(clone, row.OutputTitle, progressText);
+                }
+            }
+            catch (Exception ex)
+            {
+                ClearAnimalProgressOverlaySession("refresh-failed");
+                RecordAnimalProgressOverlayLifecycle("refresh-failed", ex.GetType().Name + ": " + ex.Message, failed: true);
             }
         }
 
@@ -730,6 +821,78 @@ namespace DTMAPI.GameBridge.DolocTown
             SetMemberValue(textComponent, "fontSize", 18);
             SetMemberValue(textComponent, "resizeTextMinSize", 18);
             SetMemberValue(textComponent, "resizeTextMaxSize", 18);
+        }
+
+        private static bool IsUnityObjectAlive(object? instance)
+        {
+            if (instance == null)
+                return false;
+
+            try
+            {
+                Type? objectType = ResolveType("UnityEngine.Object, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Object, UnityEngine");
+                if (objectType != null && objectType.IsInstanceOfType(instance))
+                {
+                    MethodInfo? equality = objectType.GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, null, new[] { objectType, objectType }, null);
+                    if (equality != null)
+                    {
+                        object? equalsNull = equality.Invoke(null, new object?[] { instance, null });
+                        if (equalsNull is bool isNull && isNull)
+                            return false;
+                    }
+                }
+
+                MethodInfo? getInstanceId = instance.GetType().GetMethod("GetInstanceID", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+                getInstanceId?.Invoke(instance, null);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void SafeSetActive(object? gameObject, bool active)
+        {
+            if (!IsUnityObjectAlive(gameObject))
+                return;
+            try
+            {
+                SetActive(gameObject!, active);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void SafeDestroyUnityObject(object? gameObject)
+        {
+            if (!IsUnityObjectAlive(gameObject))
+                return;
+            try
+            {
+                DestroyUnityObject(gameObject!);
+            }
+            catch
+            {
+            }
+        }
+
+        private void RecordAnimalProgressOverlayLifecycle(string key, string summary, bool failed)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (lastAnimalProgressOverlayLifecycleLogKey.Equals(key, StringComparison.OrdinalIgnoreCase) &&
+                (now - lastAnimalProgressOverlayLifecycleLogAt).TotalSeconds < 30)
+                return;
+
+            lastAnimalProgressOverlayLifecycleLogKey = key;
+            lastAnimalProgressOverlayLifecycleLogAt = now;
+            runtime.RuntimeMonitor.Log("Animal viewer progress overlay lifecycle " + key + " " + (summary ?? string.Empty) + ".");
+            runtime.SetHookStatus(
+                "Animals.ViewerRenderingLifecycle",
+                failed ? "failed" : "experimental",
+                "AnimalViewer cloned ProgressBar lifecycle",
+                key + ": " + (summary ?? string.Empty));
         }
 
         private static void PositionAnimalProgressRow(object sourceTransform, object rowTransform, int rowIndex)

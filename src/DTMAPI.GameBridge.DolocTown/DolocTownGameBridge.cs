@@ -298,11 +298,13 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void NotifyGameBridgeFeaturesSaveLoaded(bool isNewGame)
         {
+            experimentalApi?.ResetMovementDebugLease("SaveLoaded");
             DispatchGameBridgeFeatures("SaveLoaded", feature => feature.SaveLoaded(isNewGame));
         }
 
         internal void NotifyGameBridgeFeaturesReturnedToTitle()
         {
+            experimentalApi?.ResetMovementDebugLease("ReturnedToTitle");
             DispatchGameBridgeFeatures("ReturnedToTitle", feature => feature.ReturnedToTitle());
         }
 

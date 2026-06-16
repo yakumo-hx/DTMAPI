@@ -110,6 +110,7 @@ namespace DTMAPI.GameBridge.DolocTown
             RecoverOrphanEquipmentSlotsIfNeeded();
             UpdateMachineProduction(forceMachineProductionPoll);
             RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
+            UpdateMovementDebugLease(forceMachineProductionPoll ? "runtime-forced" : "runtime");
         }
 
 
