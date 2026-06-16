@@ -1,5 +1,5 @@
 {
-  "mod.name": "Animal Husbandry Progress (DTMAPI)",
+  "mod.name": "DTMAPI Animal Bell Hidden Produce Progress",
   "config.section.main": "Animal viewer",
   "config.enabled.name": "Enabled",
   "config.enabled.tooltip": "Show special-produce progress in the animal bell viewer.",

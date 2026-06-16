@@ -1,5 +1,5 @@
 {
-  "mod.name": "牧铃隐藏产物进度（DTMAPI）",
+  "mod.name": "DTMAPI牧铃隐藏产物进度",
   "config.section.main": "动物查看界面",
   "config.enabled.name": "启用",
   "config.enabled.tooltip": "在牧铃动物查看界面显示隐藏特殊产物进度。",

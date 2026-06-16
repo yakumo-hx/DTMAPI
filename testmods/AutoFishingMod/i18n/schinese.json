@@ -1,6 +1,6 @@
 {
-  "mod.name": "自动钓鱼",
-  "config.section.main": "自动钓鱼",
+  "mod.name": "DTMAPI自动钓鱼",
+  "config.section.main": "DTMAPI自动钓鱼",
   "config.status.experimental": "{0} 切换原生自动钓鱼循环。当前状态：{1}。",
   "config.boundary.current": "默认循环：按配置蓄力抛竿、等待原生咬钩、自动收竿、按原生绿/红/黄条完成真实小游戏、收获结果，然后再次抛竿。可选开关只改变等待咬钩、跳过小游戏或蓄力/抛竿/收竿动画速度。",
   "state.enabled": "已开启",

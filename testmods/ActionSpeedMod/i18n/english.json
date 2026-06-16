@@ -1,6 +1,6 @@
 {
-  "mod.name": "Action Speed (core behavior verified)",
-  "config.section.main": "Action speed (core behavior verified)",
+  "mod.name": "DTMAPI Action Speed",
+  "config.section.main": "DTMAPI Action Speed",
   "config.status.unsupported": "Verified in third-save smoke: tool animation, fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest. This remains an experimental DTMAPI migration feature.",
   "config.status.toolVerified": "Verified: tool animation, fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest.",
   "config.enabled.name": "Enabled",

@@ -167,7 +167,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'FishBreedingAssistantMod.dll'
             PackageDll = 'Yuuka.DTMAPI.FishBreedingAssistant.dll'
             UniqueID = 'Yuuka.DTMAPI.FishBreedingAssistant'
-            DisplayName = 'DTMAPI Fish Breeding Assistant'
+            DisplayName = 'DTMAPI Fish Roe Info Display'
             PackageName = 'DTMAPI-FishBreedingAssistant'
         },
         [ordered]@{
@@ -185,7 +185,7 @@ function Get-DtmApiPublishedModDefinitions {
             SourceDll = 'AnimalHusbandryProgressMod.dll'
             PackageDll = 'Yuuka.DTMAPI.AnimalHusbandryProgress.dll'
             UniqueID = 'Yuuka.DTMAPI.AnimalHusbandryProgress'
-            DisplayName = 'DTMAPI Animal Husbandry Progress'
+            DisplayName = 'DTMAPI Animal Bell Hidden Produce Progress'
             PackageName = 'DTMAPI-AnimalHusbandryProgress'
         }
     )

@@ -1,5 +1,5 @@
 {
-  "Name": "Auto Fishing",
+  "Name": "DTMAPI Auto Fishing",
   "Author": "Yuuka",
   "Version": "1.4.3-dtmapi",
   "Description": "DTMAPI AutoFishing migration with selected-rod-only safe automation and experimental wait/minigame semantics.",

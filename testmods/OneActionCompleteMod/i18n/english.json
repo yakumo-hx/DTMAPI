@@ -1,6 +1,6 @@
 {
-  "mod.name": "One Action Complete (resource/fill verified)",
-  "config.section.main": "One action complete (resource/fill verified)",
+  "mod.name": "DTMAPI One Action Complete",
+  "config.section.main": "DTMAPI One Action Complete",
   "config.status.experimental": "Resource/tool-hit completion, the tree/ore/garbage/weeds wrong-tool matrix, and fuel/feeder native consume/fill are verified. Vegetation/dandelion is recorded as a native tool-constraint exception path, not a DungeonResource one-action path.",
   "config.enabled.name": "Enabled",
   "config.enabled.tooltip": "Master switch for all one-action behavior.",
