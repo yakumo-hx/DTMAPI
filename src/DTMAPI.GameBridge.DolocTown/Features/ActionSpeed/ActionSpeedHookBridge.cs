@@ -28,11 +28,15 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal bool UseItemContinuesPatched { get; private set; }
 
+        internal bool InteractContinuesPatched { get; private set; }
+
+        internal bool AnimalRendererInteractPatched { get; private set; }
+
         internal bool BaseExitPatched => lifecycleHooks.BaseExitPatched;
 
         internal bool ToolHooksReady => ToolEnterPatched && ToolExitPatched;
 
-        internal bool InteractionHooksReady => InteractEnterPatched && InteractExitPatched && EatEnterPatched && UseItemContinuesPatched && BaseExitPatched;
+        internal bool InteractionHooksReady => InteractEnterPatched && InteractExitPatched && EatEnterPatched && UseItemContinuesPatched && InteractContinuesPatched && AnimalRendererInteractPatched && BaseExitPatched;
 
         public void PublishHookStatuses()
         {
@@ -58,7 +62,19 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (!UseItemContinuesPatched)
             {
-                UseItemContinuesPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItemContinues", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemContinuesPrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                var useItemContinuesSignature = HarmonyTargetSignature.Exact("DolocTown.AgentControllerState", "System.Void", "System.Single");
+                UseItemContinuesPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItemContinues", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemContinuesPrefix), BindingFlags.Public | BindingFlags.Static), useItemContinuesSignature);
+            }
+
+            if (!InteractContinuesPatched)
+            {
+                var interactContinuesSignature = HarmonyTargetSignature.Exact("DolocTown.AgentControllerState", "System.Boolean", "System.Single");
+                InteractContinuesPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "InteractContinues", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateInteractContinuesPrefix), BindingFlags.Public | BindingFlags.Static), interactContinuesSignature);
+            }
+
+            if (!AnimalRendererInteractPatched)
+            {
+                AnimalRendererInteractPatched = patcher.TryPatchPrefix("DolocTown.AnimalRenderer, Assembly-CSharp", "OnInteract", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalRendererOnInteractPrefix), BindingFlags.Public | BindingFlags.Static), 0);
             }
 
             service.SetActionSpeedToolHooksInstalled(ToolHooksReady);
@@ -69,7 +85,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private void PublishStatuses()
         {
             runtime.SetHookStatus("ActionSpeed.ToolAnimation", ToolHooksReady ? "verified" : "pending", "Harmony Postfix: AgentStateTool.OnEnter/OnExit", ToolHooksReady ? "Patched tool animation speed and restore points; verified by ACTIONSPEED-001. Selected interaction slices are tracked separately in ACTIONSPEED-002." : "Waiting for AgentStateTool.OnEnter/OnExit to become patchable.");
-            runtime.SetHookStatus("ActionSpeed.InteractionAnimation", InteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues", InteractionHooksReady ? "Patched shared interaction/eat animation speed points plus right-click continuous timer scaling. ACTIONSPEED-002 verifies fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, IWaterContainer and in-water bottle fill, no-key auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues hooks to become patchable.");
+            runtime.SetHookStatus("ActionSpeed.InteractionAnimation", InteractionHooksReady ? "experimental" : "pending", "Harmony Postfix/Prefix: AgentStateInteract/AgentStateEat/AgentControllerState.UseItemContinues/InteractContinues/AnimalRenderer.OnInteract", InteractionHooksReady ? "Patched shared interaction/eat animation speed points, native use-item/interact continuous timer scaling, and AnimalRenderer.OnInteract owner marking. Historical ACTIONSPEED-002 slices remain relevant; 2026-06-16 native-stage paths need fresh third-save smoke/manual QA." : "Waiting for AgentStateInteract/AgentStateEat/UseItemContinues/InteractContinues/AnimalRenderer.OnInteract hooks to become patchable.");
         }
     }
 }

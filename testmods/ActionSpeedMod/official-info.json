@@ -2,7 +2,7 @@
   "name": "DTMAPI动作加速",
   "author": "Yuuka",
   "version": "1.0.0",
-  "description": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。",
+  "description": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。\n\nupdate 0616\n提高稳定性",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "DTMAPI Action Speed"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。",
-    "tchinese": "依賴 DTMAPI。\n加速工具、裝水、吃喝、互動和採集等動作。提供自動裝水、右鍵持續喝水功能。",
-    "english": "Requires DTMAPI.\nSpeeds up tool use, water filling, eating/drinking, interactions, and gathering. Provides automatic water filling and right-click continuous drinking."
+    "schinese": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。\n\nupdate 0616\n提高稳定性",
+    "tchinese": "依賴 DTMAPI。\n加速工具、裝水、吃喝、互動和採集等動作。提供自動裝水、右鍵持續喝水功能。\n\nupdate 0616\n提高穩定性",
+    "english": "Requires DTMAPI.\nSpeeds up tool use, water filling, eating/drinking, interactions, and gathering. Provides automatic water filling and right-click continuous drinking.\n\nupdate 0616\nImproved stability."
   }
 }

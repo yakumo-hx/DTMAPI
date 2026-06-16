@@ -293,6 +293,25 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
+        public static void AgentControllerStateInteractContinuesPrefix(ref float __0)
+        {
+            float original = __0;
+            try
+            {
+                Bridge?.ActionSpeedService?.AdjustActionSpeedInteractContinuesDelta(ref __0);
+            }
+            catch (Exception ex)
+            {
+                __0 = original;
+                RecordHookCallbackFailure("AgentControllerState.InteractContinues.AdjustActionSpeedDelta", ex);
+            }
+        }
+
+        public static void AnimalRendererOnInteractPrefix(object __instance)
+        {
+            SafePostfix("AnimalRenderer.OnInteract.MarkActionSpeedNativeOwner", () => Bridge?.ActionSpeedService?.MarkNativeAnimalInteract(__instance));
+        }
+
         public static bool AgentControllerStateUseToolPrefix()
         {
             return SafePrefix("AgentControllerState.UseTool.InputIsolation", () => AllowNativeGameplayInput("UseTool"));

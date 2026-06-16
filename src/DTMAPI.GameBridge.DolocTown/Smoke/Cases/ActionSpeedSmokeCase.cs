@@ -145,9 +145,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     return SmokeAttemptResult.Pending;
                 }
 
-                if (!actionSpeedInteractEnterPatched || !actionSpeedInteractExitPatched || !actionSpeedEatEnterPatched || !actionSpeedUseItemContinuesPatched)
+                if (!actionSpeedInteractEnterPatched || !actionSpeedInteractExitPatched || !actionSpeedEatEnterPatched || !actionSpeedUseItemContinuesPatched || !actionSpeedInteractContinuesPatched)
                 {
-                    LogActionSpeedPending("Waiting for AgentStateInteract/AgentStateEat/UseItemContinues patches before action-speed interaction smoke.", "Smoke.ActionSpeedInteraction");
+                    LogActionSpeedPending("Waiting for AgentStateInteract/AgentStateEat/UseItemContinues/InteractContinues patches before action-speed interaction smoke.", "Smoke.ActionSpeedInteraction");
                     return SmokeAttemptResult.Pending;
                 }
 
@@ -235,8 +235,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 string summary = "owner=" + ownerId + "; " + string.Join("; ", samples.ToArray()) + "; pending=none";
                 runtime.RuntimeMonitor.Log("Smoke exercise ActionSpeedInteraction OK " + summary);
-                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "verified", "Native item/equipment paths -> AgentStateInteract/AgentStateEat/UseItemContinues", summary);
-                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", "experimental", "Harmony Postfix/Prefix: AgentStateInteract.OnEnter, AgentStateEat.OnEnter, AgentControllerState.UseItemContinues", "Verified fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, bottle fill from IWaterContainer and in-water branch, no-key ItemBottle.UseAsItem auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest in third-save smoke.");
+                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "verified", "Native item/equipment paths -> AgentStateInteract/AgentStateEat/UseItemContinues/InteractContinues", summary);
+                runtime.SetHookStatus("ActionSpeed.InteractionAnimation", "experimental", "Harmony Postfix/Prefix: AgentStateInteract.OnEnter, AgentStateEat.OnEnter, AgentControllerState.UseItemContinues/InteractContinues", "Verified fuel/feed add, eat/drink animation, bottled-water right-click continuous drink, bottle fill from IWaterContainer and in-water branch, no-key ItemBottle.UseAsItem auto-fill, planting, plant-basin crop harvest, resin collection, and wild vegetation harvest in third-save smoke.");
                 if (!TryVerifyDiagnosticsSnapshotForSmoke("ActionSpeed", "ActionSpeed"))
                     return SmokeAttemptResult.Failed;
                 return SmokeAttemptResult.Succeeded;
@@ -244,7 +244,7 @@ namespace DTMAPI.GameBridge.DolocTown
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke action-speed interaction exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "failed", "AgentStateInteract/AgentStateEat/UseItemContinues", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "failed", "AgentStateInteract/AgentStateEat/UseItemContinues/InteractContinues", ex.GetType().Name + ": " + ex.Message);
                 return SmokeAttemptResult.Failed;
             }
         }
@@ -625,7 +625,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 string interactSummary = string.Empty;
                 for (int attempt = 1; attempt <= 5; attempt++)
                 {
-                    if (!TryInvokeUseItemContinuesForSmoke(dolocApi, 0.2f, out invokeSummary))
+                    if (!TryInvokeInteractContinuesForSmoke(dolocApi, 0.2f, out invokeSummary))
                     {
                         summary = invokeSummary;
                         return false;

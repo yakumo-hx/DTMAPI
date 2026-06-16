@@ -141,6 +141,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool actionSpeedInteractExitPatched => agentStateLifecycleHooks?.InteractExitPatched == true;
         private bool actionSpeedEatEnterPatched => actionSpeedFeature?.HookBridge.EatEnterPatched == true;
         private bool actionSpeedUseItemContinuesPatched => actionSpeedFeature?.HookBridge.UseItemContinuesPatched == true;
+        private bool actionSpeedInteractContinuesPatched => actionSpeedFeature?.HookBridge.InteractContinuesPatched == true;
+        private bool actionSpeedAnimalRendererInteractPatched => actionSpeedFeature?.HookBridge.AnimalRendererInteractPatched == true;
         private bool actionSpeedBaseExitPatched => agentStateLifecycleHooks?.BaseExitPatched == true;
         private bool debugConsoleUseToolPatched;
         private bool debugConsoleUseItemPatched;

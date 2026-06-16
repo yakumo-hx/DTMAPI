@@ -461,7 +461,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             if (smokeSettings.AutoExerciseActionSpeedInteraction)
             {
-                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "pending", "AgentStateInteract/AgentStateEat/UseItemContinues", "Waiting after save load to exercise real ActionSpeed interaction, eat, and continuous-use paths.");
+                runtime.SetHookStatus("Smoke.ActionSpeedInteraction", "pending", "AgentStateInteract/AgentStateEat/UseItemContinues/InteractContinues", "Waiting after save load to exercise real ActionSpeed interaction, eat, and continuous-use paths.");
                 return;
             }
             if (smokeSettings.AutoExerciseOneActionResourceHit)
@@ -3046,23 +3046,34 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool TryInvokeUseItemContinuesForSmoke(Type dolocApi, float dt, out string summary)
         {
+            return TryInvokeAgentControllerContinuesForSmoke(dolocApi, "UseItemContinues", dt, out summary);
+        }
+
+        private bool TryInvokeInteractContinuesForSmoke(Type dolocApi, float dt, out string summary)
+        {
+            return TryInvokeAgentControllerContinuesForSmoke(dolocApi, "InteractContinues", dt, out summary);
+        }
+
+        private bool TryInvokeAgentControllerContinuesForSmoke(Type dolocApi, string methodName, float dt, out string summary)
+        {
             summary = string.Empty;
             object? gameStateManager = ReadStaticMember(dolocApi, "gameStateManager");
             object? normalGameState = gameStateManager == null ? null : ReadMember(gameStateManager, "normalGameState");
             object? agentController = normalGameState == null ? null : ReadMember(normalGameState, "AgentController");
-            MethodInfo? useItemContinues = agentController == null ? null : FindMethod(agentController.GetType(), "UseItemContinues", 1);
-            if (agentController == null || useItemContinues == null)
+            MethodInfo? continuesMethod = agentController == null ? null : FindMethod(agentController.GetType(), methodName, 1);
+            if (agentController == null || continuesMethod == null)
             {
-                summary = "AgentController.UseItemContinues(float) unavailable.";
+                summary = "AgentController." + methodName + "(float) unavailable.";
                 return false;
             }
 
             int beforeApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
             int beforeContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
-            useItemContinues.Invoke(agentController, new object[] { dt });
+            continuesMethod.Invoke(agentController, new object[] { dt });
             int afterApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
             int afterContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
-            summary = "dt=" + dt.ToString("0.###") +
+            summary = "method=" + methodName +
+                ", dt=" + dt.ToString("0.###") +
                 ", currentState=" + ReadCurrentAgentStateForSmoke(dolocApi) +
                 ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
                 ", continuousDelta=" + (afterContinuous - beforeContinuous) +
@@ -4232,7 +4243,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && (cameraFeature?.CameraViewSetEnvCameraPatched == true) && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oilCoalDropRoutePatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && equipmentSlotsReloadParamsPatched && equipmentSlotsShieldAttackPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && (strongPlantingGunFeature?.HookBridge.ToolPatched == true) && (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) && (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
+        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && (cameraFeature?.CameraViewSetEnvCameraPatched == true) && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedInteractContinuesPatched && actionSpeedAnimalRendererInteractPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oilCoalDropRoutePatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && equipmentSlotsReloadParamsPatched && equipmentSlotsShieldAttackPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && (strongPlantingGunFeature?.HookBridge.ToolPatched == true) && (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) && (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {

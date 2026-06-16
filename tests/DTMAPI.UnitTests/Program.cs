@@ -71,6 +71,9 @@ namespace DTMAPI.UnitTests
                 ChestLocatorPoliciesMergeEnabledOwners();
                 StrongPlantingGunNormalizesToThreeSlotContract();
                 SaveSlotsNormalizeToFixedTwelveContract();
+                ActionSpeedOptionsNormalizeNativeStageDefaults();
+                ActionSpeedProviderPrecedenceIsDeterministic();
+                ActionSpeedNativeClassificationCoversAttempts();
                 EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery();
                 EquipmentSlotShieldPolicyMirrorsNativeShieldHat();
                 FishingAutomationOptionsNormalizeNativeStageDefaults();
@@ -2384,6 +2387,115 @@ namespace DTMAPI.UnitTests
             Assert(normalizedOversized.VerboseLogging, "SaveSlots normalize should preserve unrelated logging flags.");
         }
 
+        private static void ActionSpeedOptionsNormalizeNativeStageDefaults()
+        {
+            ActionSpeedOptions defaults = ActionSpeedService.NormalizeActionSpeedOptionsForTest(null);
+            var invalid = new ActionSpeedOptions
+            {
+                Enabled = true,
+                ToolSpeedEnabled = true,
+                ToolMultiplier = double.NaN,
+                BottleFillSpeedEnabled = true,
+                BottleFillMultiplier = 100,
+                EatDrinkSpeedEnabled = true,
+                EatDrinkMultiplier = -5,
+                MachineAddSpeedEnabled = true,
+                MachineAddMultiplier = double.PositiveInfinity,
+                HarvestSpeedEnabled = true,
+                HarvestMultiplier = 2.5,
+                PlantSpeedEnabled = true,
+                PlantMultiplier = 0,
+                AutoFillBottle = false,
+                AutoFillStrong = true,
+                AutoFillCooldownSeconds = -1,
+                AutoFillStrongCooldownSeconds = 99,
+                ContinuousDrinkWithRightClick = true,
+                VerboseLogging = true
+            };
+
+            ActionSpeedOptions normalizedInvalid = ActionSpeedService.NormalizeActionSpeedOptionsForTest(invalid);
+
+            Assert(Math.Abs(defaults.ToolMultiplier - 3) < 0.0001, "ActionSpeed defaults should keep the existing tool multiplier.");
+            Assert(Math.Abs(defaults.BottleFillMultiplier - 3) < 0.0001, "ActionSpeed defaults should keep the existing bottle-fill multiplier.");
+            Assert(Math.Abs(defaults.AutoFillCooldownSeconds - 0.25) < 0.0001, "ActionSpeed defaults should keep the existing auto-fill cooldown.");
+            Assert(Math.Abs(defaults.AutoFillStrongCooldownSeconds - 0.1) < 0.0001, "ActionSpeed defaults should keep the existing strong auto-fill cooldown.");
+            Assert(Math.Abs(normalizedInvalid.ToolMultiplier - 1) < 0.0001, "ActionSpeed invalid tool multiplier should normalize to one.");
+            Assert(Math.Abs(normalizedInvalid.BottleFillMultiplier - 4) < 0.0001, "ActionSpeed bottle-fill multiplier should clamp to four.");
+            Assert(Math.Abs(normalizedInvalid.EatDrinkMultiplier - 1) < 0.0001, "ActionSpeed eat/drink multiplier should clamp to one.");
+            Assert(Math.Abs(normalizedInvalid.MachineAddMultiplier - 1) < 0.0001, "ActionSpeed infinite machine multiplier should normalize to one.");
+            Assert(Math.Abs(normalizedInvalid.HarvestMultiplier - 2.5) < 0.0001, "ActionSpeed valid harvest multiplier should be preserved.");
+            Assert(Math.Abs(normalizedInvalid.PlantMultiplier - 1) < 0.0001, "ActionSpeed plant multiplier should clamp to one.");
+            Assert(Math.Abs(normalizedInvalid.AutoFillCooldownSeconds - 0.05) < 0.0001, "ActionSpeed auto-fill cooldown should clamp to supported minimum.");
+            Assert(Math.Abs(normalizedInvalid.AutoFillStrongCooldownSeconds - 5) < 0.0001, "ActionSpeed strong auto-fill cooldown should clamp to supported maximum.");
+            Assert(!normalizedInvalid.AutoFillStrong, "ActionSpeed strong auto-fill should be disabled when auto-fill itself is disabled.");
+            Assert(normalizedInvalid.VerboseLogging, "ActionSpeed normalize should preserve unrelated logging flags.");
+        }
+
+        private static void ActionSpeedProviderPrecedenceIsDeterministic()
+        {
+            var policies = new Dictionary<string, ActionSpeedOptions>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Yuuka.DTMAPI.Slower"] = new ActionSpeedOptions { Enabled = true, PlantSpeedEnabled = true, PlantMultiplier = 2 },
+                ["Yuuka.DTMAPI.DisabledFast"] = new ActionSpeedOptions { Enabled = false, PlantSpeedEnabled = true, PlantMultiplier = 4 },
+                ["Yuuka.DTMAPI.FastB"] = new ActionSpeedOptions { Enabled = true, PlantSpeedEnabled = true, PlantMultiplier = 4 },
+                ["Yuuka.DTMAPI.FastA"] = new ActionSpeedOptions { Enabled = true, PlantSpeedEnabled = true, PlantMultiplier = 4 },
+                ["Yuuka.DTMAPI.Unit"] = new ActionSpeedOptions { Enabled = true, PlantSpeedEnabled = true, PlantMultiplier = 1 }
+            };
+
+            bool selected = ActionSpeedService.TrySelectPolicyForTest(
+                policies,
+                candidate => candidate.PlantSpeedEnabled,
+                candidate => candidate.PlantMultiplier,
+                out string ownerId,
+                out double multiplier);
+
+            Assert(selected, "ActionSpeed provider precedence should select an enabled provider.");
+            Assert(ownerId == "Yuuka.DTMAPI.FastA", "ActionSpeed provider precedence should choose the highest multiplier and stable owner-id tie-break.");
+            Assert(Math.Abs(multiplier - 4) < 0.0001, "ActionSpeed provider precedence should expose the selected multiplier.");
+        }
+
+        private static void ActionSpeedNativeClassificationCoversAttempts()
+        {
+            var fertilizedBasin = new DolocTown.PlantBasin { IsPlanted = true, IsFertilizerd = true };
+            bool fertilizerAttempt = ActionSpeedService.IsPlantInteractionForTest(new DolocTown.ItemFertilizer(), fertilizedBasin, null, out string fertilizerOwner);
+            Assert(fertilizerAttempt && fertilizerOwner.Contains("PlantBasin.Fertilizer") && fertilizerOwner.Contains("already-fertilized"), "ActionSpeed should classify repeated fertilizer attempts because native still plays AgentStateInteract before the failure message.");
+
+            var protectedBasin = new DolocTown.PlantBasin { IsPlanted = true, IsProtected = true };
+            protectedBasin.supply.IsProtectedFull = true;
+            bool filmAttempt = ActionSpeedService.IsPlantInteractionForTest(new DolocTown.ItemFilm(), protectedBasin, null, out string filmOwner);
+            Assert(filmAttempt && filmOwner.Contains("PlantBasin.Protect") && filmOwner.Contains("already-full"), "ActionSpeed should classify repeated crop-film attempts because native still plays AgentStateInteract before the failure message.");
+
+            bool plantedSeedAttempt = ActionSpeedService.IsPlantInteractionForTest(new DolocTown.ItemSeed(), new DolocTown.PlantBasin { IsPlanted = true }, null, out _);
+            Assert(!plantedSeedAttempt, "ActionSpeed should not classify ordinary seed attempts on already-planted PlantBasin because native returns before _Interact.");
+
+            bool flowerPotSeedAttempt = ActionSpeedService.IsPlantInteractionForTest(new DolocTown.ItemSeed(), new DolocTown.FlowerPot { IsPlanted = true }, null, out string potOwner);
+            Assert(flowerPotSeedAttempt && potOwner.Contains("FlowerPot.Plant"), "ActionSpeed should classify FlowerPot seed attempts because native still enters _Interact before the no-op callback.");
+
+            var treeFertilizer = new DolocTown.ItemFertilizer();
+            treeFertilizer.func.IsTree = true;
+            var fertilizedTree = new DolocTown.PlantBasinTree { Crop = new DolocTown.TreeCrop { IsFertilizered = true } };
+            bool treeFertilizerAttempt = ActionSpeedService.IsPlantInteractionForTest(treeFertilizer, fertilizedTree, null, out string treeOwner);
+            Assert(treeFertilizerAttempt && treeOwner.Contains("PlantBasinTree.Fertilizer") && treeOwner.Contains("already-fertilized"), "ActionSpeed should classify repeated tree fertilizer attempts through PlantBasinTree.");
+
+            bool machineSwitch = ActionSpeedService.IsMachineInteractionForTest(new DolocTown.Sprinkler(), null, out string switchOwner);
+            Assert(machineSwitch && switchOwner.Contains("AffectorElectric.OnInteract"), "ActionSpeed machine interaction should include electric sprinkler switch actions.");
+            bool growLightSwitch = ActionSpeedService.IsMachineInteractionForTest(new DolocTown.FarmLight(), null, out string growLightOwner);
+            Assert(growLightSwitch && growLightOwner.Contains("AffectorElectric.OnInteract"), "ActionSpeed machine interaction should include agricultural grow-light switch actions.");
+            Assert(!ActionSpeedService.IsMachineInteractionForTest(new DolocTown.Sound(), null, out _), "ActionSpeed should not broaden machine switch acceleration to every AffectorElectric subclass.");
+            Assert(ActionSpeedService.IsAnimalFondleInteractionForTest(new DolocTown.AnimalRenderer()), "ActionSpeed should classify native animal fondle interaction separately from harvest.");
+            Assert(ActionSpeedService.IsAnimalFondleInteractionForTest(new DolocTown.RoomConnector(), new DolocTown.AnimalRenderer()), "ActionSpeed should prefer the native AnimalRenderer.OnInteract owner marker when scanner state is overlapped by a room connector.");
+            Assert(!ActionSpeedService.ShouldClearPendingNativeAnimalInteractForTest("AgentStateBase.OnExit"), "ActionSpeed should not clear the native animal owner marker while BodyController._Interact is replacing the previous state.");
+            Assert(!ActionSpeedService.ShouldClearPendingNativeAnimalInteractForTest("AgentStateTool.OnExit"), "ActionSpeed should not clear the native animal owner marker if an action transition exits a tool state before AgentStateInteract.OnEnter.");
+            Assert(ActionSpeedService.ShouldClearPendingNativeAnimalInteractForTest("AgentStateInteract.OnExit"), "ActionSpeed should clear the native animal owner marker after the native interact state exits.");
+
+            var resinCollector = new DolocTown.ResinCollector { currentValue = 1 };
+            bool resinSelected = ActionSpeedService.IsHarvestInteractionForTest(resinCollector, null, out string resinSelectedOwner);
+            Assert(resinSelected && resinSelectedOwner.Contains("ResinCollector.OnInteract"), "ActionSpeed should classify ready resin collectors from selected equipment.");
+            bool resinCurrent = ActionSpeedService.IsHarvestInteractionForTest(null, resinCollector, out string resinCurrentOwner);
+            Assert(resinCurrent && resinCurrentOwner.Contains("ResinCollector.OnInteract"), "ActionSpeed should classify ready resin collectors from current interactable.");
+            Assert(!ActionSpeedService.IsHarvestInteractionForTest(new DolocTown.ResinCollector { currentValue = 0 }, null, out _), "ActionSpeed should not classify empty resin collectors through generic IGatherableEquipment fallback.");
+        }
+
         private static void EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery()
         {
             Assert(EquipmentSlotProtectedStoragePolicy.BuildSaveScopeKey(3) == "slot-3", "Equipment-slot protected storage should key sidecars by archive slot.");
@@ -3592,5 +3704,87 @@ namespace DolocTown
     public sealed class AgentStateFishingPull
     {
         public bool IsFailed { get; set; }
+    }
+
+    public sealed class ItemSeed
+    {
+    }
+
+    public sealed class ItemFertilizer
+    {
+        public ItemFunctionFertilizer func { get; set; } = new ItemFunctionFertilizer();
+    }
+
+    public sealed class ItemFilm
+    {
+    }
+
+    public sealed class ItemFunctionFertilizer
+    {
+        public bool IsTree { get; set; }
+    }
+
+    public interface IGatherableEquipment
+    {
+    }
+
+    public sealed class ResinCollector : IGatherableEquipment
+    {
+        public int currentValue { get; set; }
+
+        public bool IsGatherable { get; set; }
+    }
+
+    public sealed class PlantBasin
+    {
+        public bool IsPlanted { get; set; }
+
+        public bool CouldHarvest { get; set; }
+
+        public bool IsFertilizerd { get; set; }
+
+        public bool IsProtected { get; set; }
+
+        public PlantBasinSupply supply { get; } = new PlantBasinSupply();
+    }
+
+    public sealed class PlantBasinSupply
+    {
+        public bool IsProtectedFull { get; set; }
+    }
+
+    public sealed class FlowerPot
+    {
+        public bool IsPlanted { get; set; }
+    }
+
+    public sealed class PlantBasinTree
+    {
+        public TreeCrop? Crop { get; set; }
+    }
+
+    public sealed class TreeCrop
+    {
+        public bool IsFertilizered { get; set; }
+    }
+
+    public sealed class Sprinkler
+    {
+    }
+
+    public sealed class FarmLight
+    {
+    }
+
+    public sealed class Sound
+    {
+    }
+
+    public sealed class AnimalRenderer
+    {
+    }
+
+    public sealed class RoomConnector
+    {
     }
 }

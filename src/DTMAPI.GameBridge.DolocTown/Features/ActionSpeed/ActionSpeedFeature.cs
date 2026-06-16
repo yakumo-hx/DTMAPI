@@ -52,6 +52,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void EnvironmentReset(string reason)
         {
+            Service.RestoreActionSpeed("EnvironmentReset:" + reason);
         }
     }
 }
