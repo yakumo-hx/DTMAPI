@@ -48,4 +48,3 @@ Remove this update record, remove the linked code review record, and remove this
 - Create a small cleanup goal for the stale solution reference, legacy ImGui overlay, and current-state handoff doc.
 - Create a separate evidence retention/artifact-root goal before moving or deleting any local raw evidence.
 - Create implementation goals for content helper enabled-state separation and `IInputHelper.Suppress` semantics.
-
