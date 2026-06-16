@@ -378,14 +378,30 @@ namespace DTMAPI.GameBridge.DolocTown
                     .OrderBy(m => m.GetParameters().Length)
                     .FirstOrDefault();
             MethodInfo? setData = audioClipType.GetMethod("SetData", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(float[]), typeof(int) }, null);
-            if (createWithCallback != null)
-                return TryCreatePcmWavClipWithCallback(createWithCallback, samples, sampleRate, channels, replacementId, out clip, out callbackOwner, out message);
-
             if (create == null || setData == null)
             {
-                message = "Unity AudioClip.Create or SetData unavailable. createOverloads=" + DescribeMethods(createCandidates);
+                if (createWithCallback != null)
+                    return TryCreatePcmWavClipWithCallback(createWithCallback, samples, sampleRate, channels, replacementId, out clip, out callbackOwner, out message);
+
+                message = "Unity AudioClip.Create/SetData and PCM callback overloads unavailable. createOverloads=" + DescribeMethods(createCandidates);
                 return false;
             }
+
+            return TryCreatePcmWavClipWithSetData(create, setData, samples, sampleRate, channels, replacementId, out clip, out message);
+        }
+
+        private static bool TryCreatePcmWavClipWithSetData(
+            MethodInfo create,
+            MethodInfo setData,
+            float[] samples,
+            int sampleRate,
+            int channels,
+            string replacementId,
+            out object? clip,
+            out string message)
+        {
+            clip = null;
+            message = string.Empty;
 
             int frameCount = samples.Length / channels;
             ParameterInfo[] createParameters = create.GetParameters();
