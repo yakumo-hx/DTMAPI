@@ -42,6 +42,23 @@ Default preference: Postfix or read-only reflection first, Prefix only when need
   - Screenshot/report: smoke evidence under `docs/debug/evidence/GAME-SMOKE/20260611-031502`, `20260611-031721`, and `20260611-031838`; report zips `dtmapi-report-20260611-031644.zip`, `dtmapi-report-20260611-031801.zip`, and `dtmapi-report-20260611-031919.zip`.
 - Regression cases: DIAGNOSTICS-REPORT-EXPORT-FIELD-20260611
 
+## Hook: Audio.SoundEventReplacement
+
+- Status: experimental
+- Public surface: `IAudioReplacementApi`
+- Game build: 23465763 workshop
+- Game method/type: exact `DolocTown.WwiseSoundManager.InternalPostSoundEvent(string, UnityEngine.GameObject, EventCallback, bool) -> bool`
+- Patch type: Harmony Prefix
+- Why this point: wild paper boxes keep native gameplay ownership in `DungeonResourceModelPaperBox.OnInteract`, which posts `SoundEvents.PLAY_RESOURCE_PAPER_BOX`; the shared Wwise internal event owner is the narrowest reviewed point that can replace the sound without copying paper-box drop/removal/save logic.
+- Failure behavior: native audio is allowed if the target event has no registered replacement, the event is not in the reviewed allowlist, the local WAV is missing/pending/failed, cooldown blocks playback, the native event has unsupported emitter/callback semantics, local playback cannot be verified, playback throws, or the feature/hook is unavailable. Native audio is suppressed only after DTMAPI local 2D playback starts successfully. Duplicate suppressing replacements for the same reviewed event are rejected until a broader arbitration policy exists.
+- Mods/tests depending on it: developer test mod `Yuuka.DTMAPI.ManboCardboardAudio`; `run-game-smoke.ps1 -SaveSlot 10 -AutoExerciseAudioReplacement`.
+- Evidence:
+  - Build: Release build/test and `git diff --check` passed after adding the exact Wwise signature, reviewed-event allowlist, duplicate suppressing registration rejection, local PCM WAV parsing, callback-clip fallback diagnostics, and fail-open playback validation.
+  - Save: local slot 10 / index 9 fixture required for the paper-box smoke.
+  - Log line: blocked; expected `AudioReplacement event owner=Yuuka.DTMAPI.ManboCardboardAudio replacement=manbo-paper-box event=PLAY_RESOURCE_PAPER_BOX played=True suppressed=True`, but latest smoke logs `played=False suppressed=False message=AudioSource did not enter playing state; native sound allowed.`
+  - Screenshot/report: `GAME-SMOKE/20260617-052549` and `GAME-SMOKE/20260617-053452`; both exit cleanly, but `AudioReplacement=Failed`.
+- Regression cases: AUDIO-REPLACEMENT-CARDBOARD-20260617
+
 ## Diagnostic: HookCallbackSafeFallbacks
 
 - Status: verified

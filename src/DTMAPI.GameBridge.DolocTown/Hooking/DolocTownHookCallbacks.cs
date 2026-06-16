@@ -161,11 +161,11 @@ namespace DTMAPI.GameBridge.DolocTown
             SafeCallback("Workshop.NotifyModListChanged", () => Runtime?.NotifyWorkshopModListChanged());
         }
 
-        public static bool WwiseInternalPostSoundEventPrefix(string __0, ref bool __result)
+        public static bool WwiseInternalPostSoundEventPrefix(string __0, object? __1, object? __2, bool __3, ref bool __result)
         {
             try
             {
-                return Bridge?.AudioReplacementService?.HandleNativeSoundEvent(__0, ref __result) ?? true;
+                return Bridge?.AudioReplacementService?.HandleNativeSoundEvent(__0, __1, __2, __3, ref __result) ?? true;
             }
             catch (Exception ex)
             {

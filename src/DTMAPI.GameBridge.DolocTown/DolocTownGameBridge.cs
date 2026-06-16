@@ -71,6 +71,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool autoExerciseStrongPlantingGunAttempted;
         private bool autoExerciseCropHarvestingApiAttempted;
         private bool autoExerciseCustomEntityApisAttempted;
+        private bool autoExerciseAudioReplacementAttempted;
         private bool debugTeleportVerificationCompleted;
         private bool autoFishingHotkeyInjected;
         private bool autoOpenTitleSettingsAttempted;

@@ -188,6 +188,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 TryExerciseCustomEntityApisForSmoke();
                 TryQuitAfterDebugSmoke();
             }
+            if (!autoExerciseAudioReplacementAttempted && smokeSettings.AutoExerciseAudioReplacement && saveLoadedAt != default &&
+                (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= 3)
+            {
+                autoExerciseAudioReplacementAttempted = true;
+                TryExerciseAudioReplacementForSmoke();
+            }
             if (!autoExerciseDebugTeleportAttempted && smokeSettings.AutoExerciseDebugTeleport && saveLoadedAt != default &&
                 (DateTimeOffset.Now - saveLoadedAt).TotalSeconds >= Math.Max(1, smokeSettings.AutoExerciseDebugTeleportDelaySeconds))
             {
@@ -528,6 +534,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus("Smoke.NewContentMineProduction", "pending", "IMachineProductionApi + transient dtmapi_mine equipment", "Save loaded; waiting briefly before creating a temporary Mine, checking visual containment, and forcing one runtime production cycle.");
                 return;
             }
+            if (smokeSettings.AutoExerciseAudioReplacement)
+            {
+                runtime.SetHookStatus("Smoke.AudioReplacement", "pending", "WwiseSoundManager.InternalPostSoundEvent + external E input", "Save loaded; waiting for external paper-box input and a native sound-event fallback to verify replacement playback.");
+                return;
+            }
             if (smokeSettings.AutoSaveAfterLoad && pendingAutoLoadGameIndex.HasValue && !autoSaveAttempted)
             {
                 pendingAutoSaveIndex = pendingAutoLoadGameIndex.Value;
@@ -536,6 +547,50 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             autoExitAttempted = true;
             TryQuitApplication("smoke save-loaded evidence captured");
+        }
+
+        private void TryExerciseAudioReplacementForSmoke()
+        {
+            const string eventName = "PLAY_RESOURCE_PAPER_BOX";
+            try
+            {
+                Type? dolocApiType = patcher?.ResolveType("DolocAPI, Assembly-CSharp");
+                object? soundManager = dolocApiType?.GetProperty("Sound", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                if (soundManager == null)
+                    throw new InvalidOperationException("DolocAPI.Sound is unavailable.");
+
+                MethodInfo? postSoundEvent = soundManager.GetType()
+                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(method => method.Name == "PostSoundEvent")
+                    .Select(method => new { Method = method, Parameters = method.GetParameters() })
+                    .Where(candidate => candidate.Parameters.Length >= 1 &&
+                        candidate.Parameters[0].ParameterType == typeof(string) &&
+                        (candidate.Parameters.Length == 1 || candidate.Parameters[1].ParameterType.Name.IndexOf("EventCallback", StringComparison.OrdinalIgnoreCase) >= 0))
+                    .OrderBy(candidate => candidate.Parameters.Length)
+                    .Select(candidate => candidate.Method)
+                    .FirstOrDefault();
+                if (postSoundEvent == null)
+                    throw new MissingMethodException(soundManager.GetType().FullName, "PostSoundEvent(string, ...)");
+
+                ParameterInfo[] parameters = postSoundEvent.GetParameters();
+                object?[] args = new object?[parameters.Length];
+                args[0] = eventName;
+                if (parameters.Length >= 2)
+                    args[1] = null;
+                if (parameters.Length >= 3)
+                    args[2] = true;
+
+                object? result = postSoundEvent.Invoke(soundManager, args);
+                runtime.RuntimeMonitor.Log("Smoke exercise AudioReplacement native sound request event=" + eventName + " result=" + (result?.ToString() ?? "null") + ".");
+                runtime.SetHookStatus("Smoke.AudioReplacement", "pending", "DolocAPI.Sound.PostSoundEvent", "Native sound event requested for " + eventName + "; waiting for replacement playback evidence.");
+            }
+            catch (Exception ex)
+            {
+                Exception root = ex is TargetInvocationException invocation && invocation.InnerException != null ? invocation.InnerException : ex;
+                string message = "Smoke exercise AudioReplacement failed to request native sound event: " + root.Message;
+                runtime.RuntimeMonitor.Log(message, LogLevel.Error);
+                runtime.SetHookStatus("Smoke.AudioReplacement", "failed", "DolocAPI.Sound.PostSoundEvent", message);
+            }
         }
 
         private bool TryVerifyDiagnosticsSnapshotForSmoke(string scenario, params string[] expectedFeatureIds)
@@ -4243,7 +4298,49 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
 
-        private bool AllHookTargetsReady => IsSaveLoadedHookReady && loadRequestedPatched && saveSavingPatched && saveSavedPatched && returnHomePatched && (cameraFeature?.CameraViewSetEnvCameraPatched == true) && workshopReloadPatched && actionSpeedToolEnterPatched && actionSpeedToolExitPatched && actionSpeedInteractEnterPatched && actionSpeedInteractExitPatched && actionSpeedEatEnterPatched && actionSpeedUseItemContinuesPatched && actionSpeedInteractContinuesPatched && actionSpeedAnimalRendererInteractPatched && actionSpeedBaseExitPatched && debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched && oilCoalDropRoutePatched && fishingReadyEnterPatched && fishingCastEnterPatched && fishingWaitEnterPatched && fishingWaitPlayPatched && fishingMiniGameStartPatched && fishingMiniGameUpdatePatched && fishingMiniGameStopPatched && fishingPullEnterPatched && fishingPullExitPatched && fishRoeTitlePatched && fishRoeDescriptionPatched && fishRoeDetailPatched && animalFullInfoDataPatched && animalViewerShowPatched && animalPanelRefreshViewerPatched && equipmentSlotsReloadParamsPatched && equipmentSlotsShieldAttackPatched && (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) && (strongPlantingGunFeature?.HookBridge.ToolPatched == true) && (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) && (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
+        private bool AllHookTargetsReady =>
+            IsSaveLoadedHookReady &&
+            loadRequestedPatched &&
+            saveSavingPatched &&
+            saveSavedPatched &&
+            returnHomePatched &&
+            (cameraFeature?.CameraViewSetEnvCameraPatched == true) &&
+            (audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true) &&
+            workshopReloadPatched &&
+            actionSpeedToolEnterPatched &&
+            actionSpeedToolExitPatched &&
+            actionSpeedInteractEnterPatched &&
+            actionSpeedInteractExitPatched &&
+            actionSpeedEatEnterPatched &&
+            actionSpeedUseItemContinuesPatched &&
+            actionSpeedInteractContinuesPatched &&
+            actionSpeedAnimalRendererInteractPatched &&
+            actionSpeedBaseExitPatched &&
+            debugConsoleUseToolPatched &&
+            debugConsoleUseItemPatched &&
+            debugConsoleEnterUiCheckPatched &&
+            oilCoalDropRoutePatched &&
+            fishingReadyEnterPatched &&
+            fishingCastEnterPatched &&
+            fishingWaitEnterPatched &&
+            fishingWaitPlayPatched &&
+            fishingMiniGameStartPatched &&
+            fishingMiniGameUpdatePatched &&
+            fishingMiniGameStopPatched &&
+            fishingPullEnterPatched &&
+            fishingPullExitPatched &&
+            fishRoeTitlePatched &&
+            fishRoeDescriptionPatched &&
+            fishRoeDetailPatched &&
+            animalFullInfoDataPatched &&
+            animalViewerShowPatched &&
+            animalPanelRefreshViewerPatched &&
+            equipmentSlotsReloadParamsPatched &&
+            equipmentSlotsShieldAttackPatched &&
+            (equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched) &&
+            (strongPlantingGunFeature?.HookBridge.ToolPatched == true) &&
+            (strongPlantingGunFeature?.HookBridge.UiPlacePatched == true) &&
+            (strongPlantingGunFeature?.HookBridge.UiSwapOnePatched == true);
 
         private bool TryAutoLoadSaveViaOfficialUi(HarmonyReflectionPatcher patcher, int humanSlot, int gameIndex, out bool waitForOfficialUi)
         {
@@ -4453,6 +4550,7 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember] public int AutoExerciseCropHarvestingApiDelaySeconds { get; set; } = 3;
             [DataMember] public bool AutoExerciseCustomEntityApis { get; set; }
             [DataMember] public int AutoExerciseCustomEntityApisDelaySeconds { get; set; } = 3;
+            [DataMember] public bool AutoExerciseAudioReplacement { get; set; }
             [DataMember] public bool AutoFishingExternalHotkeyRequired { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsMenu { get; set; }
             [DataMember] public bool AutoOpenTitleSettingsStatusPage { get; set; }

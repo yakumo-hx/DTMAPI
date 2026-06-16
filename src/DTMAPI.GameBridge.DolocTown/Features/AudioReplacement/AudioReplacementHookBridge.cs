@@ -29,11 +29,30 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             if (!InternalPostSoundEventPatched)
             {
+                var exactEventCallbackSignature = HarmonyTargetSignature.Exact(
+                    "DolocTown.WwiseSoundManager",
+                    "System.Boolean",
+                    "System.String",
+                    "UnityEngine.GameObject",
+                    "EventCallback",
+                    "System.Boolean");
+                var exactNestedCallbackSignature = HarmonyTargetSignature.Exact(
+                    "DolocTown.WwiseSoundManager",
+                    "System.Boolean",
+                    "System.String",
+                    "UnityEngine.GameObject",
+                    "AkCallbackManager+EventCallback",
+                    "System.Boolean");
                 InternalPostSoundEventPatched = patcher.TryPatchPrefix(
                     "DolocTown.WwiseSoundManager, Assembly-CSharp",
                     "InternalPostSoundEvent",
                     typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.WwiseInternalPostSoundEventPrefix), BindingFlags.Public | BindingFlags.Static),
-                    4);
+                    exactEventCallbackSignature) ||
+                    patcher.TryPatchPrefix(
+                        "DolocTown.WwiseSoundManager, Assembly-CSharp",
+                        "InternalPostSoundEvent",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.WwiseInternalPostSoundEventPrefix), BindingFlags.Public | BindingFlags.Static),
+                        exactNestedCallbackSignature);
             }
 
             service.SetHookInstalled(InternalPostSoundEventPatched);
