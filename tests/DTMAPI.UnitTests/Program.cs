@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -2176,6 +2177,14 @@ namespace DTMAPI.UnitTests
             Assert(consoleType.GetMethod("TryGiveRightClickItem", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should keep the item-cell PointerDown right-click give path.");
             Assert(consoleType.GetMethod("IsAnyTextInputFocused", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should guard Y-close while a search input field has focus.");
             Assert(consoleType.GetField("inputFields", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should track reflected input fields for focus-aware Y handling.");
+
+            MethodInfo isAnyTextInputFocused = consoleType.GetMethod("IsAnyTextInputFocused", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("IsAnyTextInputFocused should exist.");
+            object ui = RuntimeHelpers.GetUninitializedObject(consoleType);
+            SetPrivateField(ui, "inputFields", new List<object> { new FakeDebugConsoleInputField(true) });
+            Assert((bool)(isAnyTextInputFocused.Invoke(ui, Array.Empty<object>()) ?? false), "Focused search input should block the Y close hotkey.");
+            SetPrivateField(ui, "inputFields", new List<object> { new FakeDebugConsoleInputField(false) });
+            Assert(!(bool)(isAnyTextInputFocused.Invoke(ui, Array.Empty<object>()) ?? true), "Unfocused search input should not block the Y close hotkey.");
         }
 
         private static void MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset()
@@ -3166,6 +3175,16 @@ namespace DTMAPI.UnitTests
             public void Log(string message) { }
             public void LogWarning(string message) { }
             public void LogError(string message, Exception? exception = null) { }
+        }
+
+        private sealed class FakeDebugConsoleInputField
+        {
+            public FakeDebugConsoleInputField(bool focused)
+            {
+                isFocused = focused;
+            }
+
+            public bool isFocused { get; }
         }
 
         private sealed class FakeDiagnosticsApi : IDtmDiagnosticsApi
