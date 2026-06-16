@@ -2,7 +2,7 @@
   "name": "Y键控制台",
   "author": "Yuuka",
   "version": "1.0.0",
-  "description": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。",
+  "description": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。\n\nupdate 0617\n增加按键保护，搜索栏Y键不会退出；未打开控制台按Y加入保护，阻止同帧关闭。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "Y Key Console"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。",
-    "tchinese": "依賴 DTMAPI。\n存檔內按 Y 開啟除錯控制台，提供相容 mod 的物品給予、天氣修改、傳送（仍在優化）、時間快進、時間倍率、移速修改等測試功能。\n\nupdate 0616\n修復偶發的右鍵10倍物品給予錯誤情況。",
-    "english": "Requires DTMAPI.\nPress Y in a save to open a debug console with test tools for compatible mod items, weather changes, teleporting (still being improved), time skipping, time speed, and movement speed.\n\nupdate 0616\nFixed occasional wrong right-click x10 item give behavior."
+    "schinese": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。\n\nupdate 0617\n增加按键保护，搜索栏Y键不会退出；未打开控制台按Y加入保护，阻止同帧关闭。",
+    "tchinese": "依賴 DTMAPI。\n存檔內按 Y 開啟除錯控制台，提供相容 mod 的物品給予、天氣修改、傳送（仍在優化）、時間快進、時間倍率、移速修改等測試功能。\n\nupdate 0616\n修復偶發的右鍵10倍物品給予錯誤情況。\n\nupdate 0617\n增加按鍵保護，搜尋欄 Y 鍵不會退出；未開啟控制台時按 Y 加入保護，阻止同幀關閉。",
+    "english": "Requires DTMAPI.\nPress Y in a save to open a debug console with test tools for compatible mod items, weather changes, teleporting (still being improved), time skipping, time speed, and movement speed.\n\nupdate 0616\nFixed occasional wrong right-click x10 item give behavior.\n\nupdate 0617\nAdded key protection: Y in the search box no longer exits, and opening the console with Y is protected from same-frame close."
   }
 }

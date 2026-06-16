@@ -79,6 +79,7 @@ namespace DTMAPI.BepInExBootstrap
         private bool screenshotRecorded;
         private bool screenshotHoverPrepared;
         private bool screenshotHoverStatusActive;
+        private bool suppressYCloseUntilReleased;
         private DateTimeOffset lastRightClickGiveAt;
         private string screenshotHoverItem = string.Empty;
         private string screenshotHoverSourceKind = string.Empty;
@@ -163,6 +164,7 @@ namespace DTMAPI.BepInExBootstrap
             screenshotHoverSourceTitle = string.Empty;
             screenshotHoverWorkshopId = string.Empty;
             screenshotSearchText = string.Empty;
+            suppressYCloseUntilReleased = IsYHotkeyReason(reason);
             runtime.UI.OpenCustomMenu(MenuId);
             DolocTownHookCallbacks.DebugConsoleModalOpen = true;
             runtime.RuntimeMonitor.Log("Debug console opened owner=" + (owner?.UniqueID ?? ownerManifest?.UniqueID ?? "unknown") + " reason=" + (reason ?? string.Empty) + ".");
@@ -180,6 +182,7 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             IsOpen = false;
             dirty = true;
+            suppressYCloseUntilReleased = false;
             DolocTownHookCallbacks.DebugConsoleModalOpen = false;
             HideItemTooltip();
             if (runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase))
@@ -237,6 +240,16 @@ namespace DTMAPI.BepInExBootstrap
                 if (ReflectedUnityInput.GetKeyDown("Y"))
                 {
                     ConsumedInputThisFrame = true;
+                    if (suppressYCloseUntilReleased)
+                    {
+                        if (!ReflectedUnityInput.GetKey("Y"))
+                            suppressYCloseUntilReleased = false;
+                        runtime.RuntimeMonitor.LogOnce(
+                            "debug-console-y-open-edge-suppressed",
+                            "Debug console ignored opener Y close until the opening key press is released.",
+                            LogLevel.Info);
+                        return;
+                    }
                     if (IsAnyTextInputFocused())
                     {
                         runtime.RuntimeMonitor.LogOnce(
@@ -248,6 +261,8 @@ namespace DTMAPI.BepInExBootstrap
                     Close(ownerManifest!, "Y");
                     return;
                 }
+                if (suppressYCloseUntilReleased && !ReflectedUnityInput.GetKey("Y"))
+                    suppressYCloseUntilReleased = false;
             }
 
             if (!EnsureInitialized())
@@ -270,6 +285,11 @@ namespace DTMAPI.BepInExBootstrap
                 Rebuild();
             if (screenshotPending)
                 CaptureUiEvidenceScreenshot();
+        }
+
+        private static bool IsYHotkeyReason(string? reason)
+        {
+            return reason != null && reason.IndexOf("Y", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private bool EnsureInitialized()

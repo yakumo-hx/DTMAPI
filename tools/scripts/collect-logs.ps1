@@ -139,7 +139,7 @@ if (Test-Path $gameEvidenceRoot) {
         $summary.Add('Reason=collect-logs.ps1 no longer copies the full runtime evidence tree by default. Use -IncludeRuntimeEvidence when a full screenshot/runtime evidence payload is required.')
         $summary.Add('')
         $summary.Add('Recent runtime evidence folders:')
-        $recentRuntimeEvidence = Get-ChildItem -LiteralPath $gameEvidenceRoot -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 20
+        $recentRuntimeEvidence = @(Get-ChildItem -LiteralPath $gameEvidenceRoot -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 20)
         foreach ($item in $recentRuntimeEvidence) {
             $summary.Add(("{0}`t{1:o}`t{2}" -f $item.Name, $item.LastWriteTime, $item.FullName))
         }

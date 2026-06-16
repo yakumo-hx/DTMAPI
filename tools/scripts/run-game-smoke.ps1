@@ -1359,6 +1359,9 @@ if ($startupOk) {
             Start-Sleep -Seconds 1
             $debugConsoleOpenY1Ok = Invoke-DebugConsoleSmokeKey -Label 'Y1' -VirtualKey 0x59 -Pattern 'Debug console opened owner=DTMAPI.DebugConsoleMod reason=hotkey Y.' -MinimumCount 1 -Attempts 4 -WaitSeconds 5
             if ($debugConsoleOpenY1Ok) {
+                $debugConsoleOpenY1Ok = Wait-ForLogLine -LogPath $logPath -Pattern 'Debug console Canvas visible as Y-key console.' -TimeoutSeconds 5 -AbortOnFatalInstanceWindow
+            }
+            if ($debugConsoleOpenY1Ok) {
                 if ($AutoExerciseDebugConsoleMouseGive) {
                     $debugConsoleMouseGiveOk = Invoke-DebugConsoleMouseGiveSmoke
                 }
