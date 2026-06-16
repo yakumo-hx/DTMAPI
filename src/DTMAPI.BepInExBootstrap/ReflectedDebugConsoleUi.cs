@@ -80,7 +80,6 @@ namespace DTMAPI.BepInExBootstrap
         private bool screenshotHoverPrepared;
         private bool screenshotHoverStatusActive;
         private DateTimeOffset lastRightClickGiveAt;
-        private InventoryDebugItem? hoveredItem;
         private string screenshotHoverItem = string.Empty;
         private string screenshotHoverSourceKind = string.Empty;
         private string screenshotHoverSourceId = string.Empty;
@@ -182,7 +181,6 @@ namespace DTMAPI.BepInExBootstrap
             IsOpen = false;
             dirty = true;
             DolocTownHookCallbacks.DebugConsoleModalOpen = false;
-            hoveredItem = null;
             HideItemTooltip();
             if (runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase))
                 runtime.UI.Close();
@@ -213,7 +211,6 @@ namespace DTMAPI.BepInExBootstrap
             screenshotHoverPrepared = false;
             screenshotHoverStatusActive = false;
             screenshotSearchText = string.Empty;
-            hoveredItem = null;
             dirty = true;
             runtime.RuntimeMonitor.Log("Debug console item search/filter state reset for " + reason + ".");
             runtime.SetHookStatus("UI.DebugConsoleSearchLifecycle", "experimental", "SaveLoaded/ReturnedToTitle runtime boundary", "Search and item filters cleared for " + reason + ".");
@@ -249,12 +246,6 @@ namespace DTMAPI.BepInExBootstrap
                         return;
                     }
                     Close(ownerManifest!, "Y");
-                    return;
-                }
-                if (hoveredItem != null && ReflectedUnityInput.GetKeyDown("Mouse1"))
-                {
-                    ConsumedInputThisFrame = true;
-                    TryGiveRightClickItem(hoveredItem, "hovered-cell");
                     return;
                 }
             }
@@ -355,7 +346,6 @@ namespace DTMAPI.BepInExBootstrap
         {
             Destroy(hoverTooltipRoot);
             hoverTooltipRoot = null;
-            hoveredItem = null;
             Destroy(panelRoot);
             eventBinders.Clear();
             inputFields.Clear();
@@ -687,14 +677,11 @@ namespace DTMAPI.BepInExBootstrap
             });
             AddPointerEventListener(go, "PointerEnter", _ =>
             {
-                hoveredItem = item;
                 SetStatusMessage(FormatItemHover(item), rebuild: false);
                 ShowItemTooltip(item, tooltipX, y);
             });
             AddPointerEventListener(go, "PointerExit", _ =>
             {
-                if (ReferenceEquals(hoveredItem, item))
-                    hoveredItem = null;
                 SetStatusMessage(string.Empty, rebuild: false);
                 HideItemTooltip();
             });

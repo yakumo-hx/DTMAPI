@@ -2172,6 +2172,7 @@ namespace DTMAPI.UnitTests
 
             Assert(consoleType.GetMethod("TryGivePointerHitItem", BindingFlags.Instance | BindingFlags.NonPublic) == null, "Debug console should not keep the global Mouse1 hit-test give path.");
             Assert(consoleType.GetNestedType("ItemCellHitTarget", BindingFlags.NonPublic) == null, "Debug console should not keep screen-rectangle item hit targets after consolidating right-click give.");
+            Assert(consoleType.GetField("hoveredItem", BindingFlags.Instance | BindingFlags.NonPublic) == null, "Debug console should not keep a hover-based Mouse1 fallback give path.");
             Assert(consoleType.GetMethod("TryGiveRightClickItem", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should keep the item-cell PointerDown right-click give path.");
             Assert(consoleType.GetMethod("IsAnyTextInputFocused", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should guard Y-close while a search input field has focus.");
             Assert(consoleType.GetField("inputFields", BindingFlags.Instance | BindingFlags.NonPublic) != null, "Debug console should track reflected input fields for focus-aware Y handling.");
