@@ -258,6 +258,16 @@ function Get-DtmApiDeveloperOfficialModDefinitions {
             PackageName = 'DTMAPI-CropHarvestingQA'
             DeveloperOnly = $true
             QaFixture = $true
+        },
+        [ordered]@{
+            OfficialFolder = 'Yuuka_DTMAPI_ManboCardboardAudio'
+            Project = 'ManboCardboardAudioMod'
+            SourceDll = 'ManboCardboardAudioMod.dll'
+            PackageDll = 'Yuuka.DTMAPI.ManboCardboardAudio.dll'
+            UniqueID = 'Yuuka.DTMAPI.ManboCardboardAudio'
+            DisplayName = 'DTMAPI Manbo Cardboard Audio'
+            PackageName = 'DTMAPI-ManboCardboardAudio'
+            DeveloperOnly = $true
         }
     )) {
         $items.Add($item) | Out-Null

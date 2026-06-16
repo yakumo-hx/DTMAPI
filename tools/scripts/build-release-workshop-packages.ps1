@@ -171,6 +171,11 @@ if (-not $RuntimeOnly) {
             Copy-DirectoryContents -Source (Split-Path -Parent $sourceContent) -Destination $package -Include @('Content')
         }
 
+        $sourceAssets = Join-Path $source 'assets'
+        if (Test-Path $sourceAssets) {
+            Copy-DirectoryContents -Source (Split-Path -Parent $sourceAssets) -Destination $contentRoot -Include @('assets')
+        }
+
         $infoPath = Join-Path $repo "testmods\$($mod.Project)\official-info.json"
         if (Test-Path $infoPath) {
             $info = Get-Content -Raw -Encoding UTF8 -LiteralPath $infoPath | ConvertFrom-Json

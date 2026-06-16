@@ -424,6 +424,11 @@ function Install-OfficialLocalDtmApiMod {
         Copy-DirectoryContents -Source (Split-Path -Parent $contentSource) -Destination $dest -Include @('Content')
     }
 
+    $assetsSource = Join-Path $source 'assets'
+    if (Test-Path $assetsSource) {
+        Copy-DirectoryContents -Source (Split-Path -Parent $assetsSource) -Destination $contentRoot -Include @('assets')
+    }
+
     $modSourceRoot = Join-Path $repo "testmods\$($Mod.Project)"
     $assetIcon = Join-Path $repo 'assets\branding\dtmapi-icon.png'
     $modIcon = Join-Path $modSourceRoot 'icon.png'

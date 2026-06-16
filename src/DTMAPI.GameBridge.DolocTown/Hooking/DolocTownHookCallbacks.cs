@@ -161,6 +161,19 @@ namespace DTMAPI.GameBridge.DolocTown
             SafeCallback("Workshop.NotifyModListChanged", () => Runtime?.NotifyWorkshopModListChanged());
         }
 
+        public static bool WwiseInternalPostSoundEventPrefix(string __0, ref bool __result)
+        {
+            try
+            {
+                return Bridge?.AudioReplacementService?.HandleNativeSoundEvent(__0, ref __result) ?? true;
+            }
+            catch (Exception ex)
+            {
+                RecordHookCallbackFailure("AudioReplacement.WwiseSoundManager.InternalPostSoundEvent", ex);
+                return true;
+            }
+        }
+
         public static void ModDataConstructorPostfix(object __instance, object __0)
         {
             SafePostfix("Workshop.LocalUploadPlan.Display", () => Bridge?.TryMarkDtmapiLocalUploadData(__instance, __0));

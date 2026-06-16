@@ -33,6 +33,7 @@ $projects = @(
     'testmods\AutoHarvestMod\AutoHarvestMod.csproj',
     'testmods\CropHarvestingQaMod\CropHarvestingQaMod.csproj',
     'testmods\HookProbeMod\HookProbeMod.csproj',
+    'testmods\ManboCardboardAudioMod\ManboCardboardAudioMod.csproj',
     'tests\DTMAPI.UnitTests\DTMAPI.UnitTests.csproj'
 )
 

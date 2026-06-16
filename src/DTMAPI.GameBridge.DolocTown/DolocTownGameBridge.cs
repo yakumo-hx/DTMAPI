@@ -203,6 +203,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private StrongPlantingGunFeature? strongPlantingGunFeature;
         private CropHarvestingFeature? cropHarvestingFeature;
         private AnimalViewerFeature? animalViewerFeature;
+        private AudioReplacementFeature? audioReplacementFeature;
         private OilCoalDropFeature? oilCoalDropFeature;
         private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
         private ToolColliderHitHookBridge? toolColliderHitHooks;
@@ -243,6 +244,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal ActionCompletionService? ActionCompletionService => actionCompletionFeature?.Service;
 
+        internal AudioReplacementService? AudioReplacementService => audioReplacementFeature?.Service;
+
         public void Initialize()
         {
             initializedAt = DateTimeOffset.Now;
@@ -261,7 +264,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RegisterExperimentalApis()
         {
-            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && nativeUiLayoutDiagnosticsFeature != null && strongPlantingGunFeature != null && cropHarvestingFeature != null && animalViewerFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
+            if (experimentalApi != null && cameraFeature != null && fishingAutomationFeature != null && fishRoeTooltipFeature != null && chestLocatorEnhancerFeature != null && saveSlotsFeature != null && nativeUiLayoutDiagnosticsFeature != null && strongPlantingGunFeature != null && cropHarvestingFeature != null && animalViewerFeature != null && audioReplacementFeature != null && oilCoalDropFeature != null && actionSpeedFeature != null && actionCompletionFeature != null)
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
@@ -353,6 +356,10 @@ namespace DTMAPI.GameBridge.DolocTown
             animalViewerFeature ??= new AnimalViewerFeature(runtime);
             if (!features.Contains(animalViewerFeature))
                 features.Add(animalViewerFeature);
+
+            audioReplacementFeature ??= new AudioReplacementFeature(runtime);
+            if (!features.Contains(audioReplacementFeature))
+                features.Add(audioReplacementFeature);
 
             agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
             toolColliderHitHooks ??= new ToolColliderHitHookBridge();

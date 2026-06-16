@@ -204,6 +204,14 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.2-alpha", Notes = "Native sound-event replacement bridge backed by WwiseSoundManager hooks. Event names are strings to avoid exposing Doloc Town/Wwise runtime types; replacements must fail open when local audio is unavailable.")]
+    public interface IAudioReplacementApi
+    {
+        AudioReplacementRegisterResult RegisterReplacement(IManifest owner, AudioReplacementOptions options);
+        AudioReplacementState GetState(string uniqueId);
+        BridgeFeatureStatus GetStatus(string uniqueId);
+    }
+
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
     public interface IAdvancedDebugApi
     {
@@ -967,6 +975,58 @@ namespace DTMAPI.Abstractions
         public int LastWaterActions { get; set; }
         public int LastConsumedItemCount { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+    }
+
+    public sealed class AudioReplacementOptions
+    {
+        public bool Enabled { get; set; } = true;
+        public string ReplacementId { get; set; } = string.Empty;
+        public string NativeSoundEvent { get; set; } = string.Empty;
+        public string AudioPath { get; set; } = string.Empty;
+        public bool SuppressNativeWhenReady { get; set; } = true;
+        public double Volume { get; set; } = 1.0;
+        public int CooldownMilliseconds { get; set; }
+        public bool VerboseLogging { get; set; }
+    }
+
+    public sealed class AudioReplacementRegisterResult
+    {
+        public bool Success { get; set; }
+        public string OwnerId { get; set; } = string.Empty;
+        public string ReplacementId { get; set; } = string.Empty;
+        public string NativeSoundEvent { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+        public bool HookInstalled { get; set; }
+        public bool PreloadReady { get; set; }
+        public string FailureReason { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public sealed class AudioReplacementState
+    {
+        public string OwnerId { get; set; } = string.Empty;
+        public bool IsConfigured { get; set; }
+        public bool Enabled { get; set; }
+        public bool HookInstalled { get; set; }
+        public int ReplacementCount { get; set; }
+        public IReadOnlyList<AudioReplacementEntryInfo> Replacements { get; set; } = Array.Empty<AudioReplacementEntryInfo>();
+        public string LastNativeSoundEvent { get; set; } = string.Empty;
+        public string LastReplacementId { get; set; } = string.Empty;
+        public bool LastReplacementPlayed { get; set; }
+        public bool LastNativeSuppressed { get; set; }
+        public string LastMessage { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public sealed class AudioReplacementEntryInfo
+    {
+        public string ReplacementId { get; set; } = string.Empty;
+        public string NativeSoundEvent { get; set; } = string.Empty;
+        public string AudioPath { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+        public bool PreloadReady { get; set; }
+        public string LoadStatus { get; set; } = string.Empty;
         public string LastMessage { get; set; } = string.Empty;
     }
 
