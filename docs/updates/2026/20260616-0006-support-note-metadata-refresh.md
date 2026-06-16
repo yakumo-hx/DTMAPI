@@ -14,7 +14,7 @@ User requested three Workshop/local description updates:
 
 - Y key console: append `update 0616` note for the occasional right-click x10 item-give fix.
 - Animal bell hidden produce progress: append `update 0616` note for the long-play UI disappearance fix.
-- DTMAPI runtime: add a support note saying that if double-clicking `1_install_dtmapi.bat` opens a black screen/window with no response, try switching networks and running it again.
+- DTMAPI runtime: add a support note saying that if double-clicking `1_install_dtmapi.bat` opens a black window with no response, try switching networks and running it again.
 
 ## Changed Files
 
@@ -28,6 +28,7 @@ User requested three Workshop/local description updates:
 - Added Simplified Chinese, Traditional Chinese, and English `update 0616` notes to the Y key console local/Workshop description.
 - Added Simplified Chinese, Traditional Chinese, and English `update 0616` notes to the Animal bell hidden produce progress local/Workshop description.
 - Added the DTMAPI runtime installer black-window/network-switch troubleshooting note to Simplified Chinese, Traditional Chinese, and English runtime descriptions.
+- Follow-up wording corrected the Chinese installer note to `黑色窗口` / `黑色視窗` to avoid implying a fullscreen black screen.
 - Kept the aggregate publish metadata aligned with the currently renamed DTMAPI manifest names for the affected published mods.
 - Refreshed `dist/workshop-packages`, installed dev official-local packages, and synchronized the DTMAPI runtime local upload package while preserving `workshop.json`.
 
