@@ -92,6 +92,10 @@ Manager UI smoke evidence may prove that support rows, summary text, and report 
 | Custom Entities | Native runtime creation verbs: animal/monster `RequestSpawn`, attack `SpawnProjectile`/`ExecuteAttack`, drone `RequestSummon`/`Equip`/`SetMode`, native handles, active runtime snapshots, save restoration | Experimental | Blocked. Current behavior intentionally returns `runtime-creation-blocked` / `RuntimeCreationBlocked`; no native animal, monster, projectile, attack, or drone is created. Ordinary mods must not depend on these runtime verbs until family-specific native adapters are verified in game. |
 | Custom Entities | Native animal/monster/attack/drone adapters | Proposed | Future work must start from native owners such as animal proto/room/food/produce/save, monster AI/spawn/drop, bullet factory/collision/damage, and drone controller/weapon/equipment/persistence. |
 
+## 2026-06-17 API Notes
+
+- `IAudioReplacementApi` remains Experimental. Docs-only follow-up review `docs/reviews/api/2026/20260617-0002-audio-replacement-event-map-backend-research.md` records the long-term direction: future audio work should key replacements by Wwise `eventName` / `SoundEvents` plus a policy table, not by one native gameplay function per sound. Recommended backend order is Wwise custom-bank redirect first, Unity `AudioSource` plus DTMAPI-owned decode second, and `System.Media.SoundPlayer` as debug/probe fallback only. This does not expand the current paper-box allowlist and does not prove BGM, loop, STOP, callback, RTPC/state, bus/mixer, or arbitrary event replacement.
+
 ## 2026-06-16 API Notes
 
 - `20260616-0004` does not promote any API. It improves diagnostic/runtime behavior only: GameBridge feature failures now store unwrapped root exceptions first, bootstrap `Update` failure publication is throttled after the first three full errors, and the existing Diagnostics log-export/history behavior from `20260616-0001` remains unchanged. Release build/test plus third-save smokes `GAME-SMOKE/20260616-124555` and `GAME-SMOKE/20260616-120817` verified the follow-up.
