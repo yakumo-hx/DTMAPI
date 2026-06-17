@@ -2,8 +2,8 @@
   "name": "DTMAPI 曼波音频替换开纸箱子",
   "author": "Yuuka",
   "version": "1.0.0",
-  "description": "依赖 DTMAPI，将野外纸箱子的开启音效替换为曼波音频。",
-  "steamDescription": "依赖 DTMAPI，将野外纸箱子的开启音效替换为曼波音频。",
+  "description": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
+  "steamDescription": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
   "tags": [
     "Mod",
     "Audio",
@@ -17,9 +17,9 @@
     "english": "DTMAPI Manbo Cardboard Audio"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI，将野外纸箱子的开启音效替换为曼波音频。",
-    "tchinese": "依賴 DTMAPI，將野外紙箱子的開啟音效替換為曼波音訊。",
-    "english": "Requires DTMAPI. Replaces the wild cardboard box opening sound with the Manbo audio clip."
+    "schinese": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
+    "tchinese": "實驗性音訊替換mod實例。將野外刷新的紙箱開啟音效改為曼波。比較抽象，介意勿下。",
+    "english": "Experimental audio replacement mod example. Replaces the opening sound of wild-spawned cardboard boxes with Manbo. It is fairly abstract; skip it if that bothers you."
   }
 }
 

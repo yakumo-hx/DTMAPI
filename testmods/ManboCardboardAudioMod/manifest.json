@@ -2,7 +2,7 @@
   "Name": "DTMAPI 曼波音频替换开纸箱子",
   "Author": "Yuuka",
   "Version": "0.1.0-dtmapi",
-  "Description": "依赖 DTMAPI，将野外纸箱子的开启音效替换为曼波音频。",
+  "Description": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
   "UniqueID": "Yuuka.DTMAPI.ManboCardboardAudio",
   "EntryDll": "ManboCardboardAudioMod.dll",
   "MinimumDTMApiVersion": "0.5.2-alpha",
