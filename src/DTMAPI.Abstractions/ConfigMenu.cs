@@ -35,6 +35,34 @@ namespace DTMAPI.Abstractions
         void SetPageLock(string uniqueId, bool locked, string reason);
         IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null);
         IDisposable? PreviewPendingValues(IConfigMenuPage page);
+        int RemoveOwner(string uniqueId);
+        void ConfigureDiagnostics(
+            Action<string, string, string, string>? recordOwnerRegistration,
+            Action<string, string, int, string>? recordOwnerCleanup,
+            Action<string, string, string, string, bool, string>? recordPreviewAudit);
+    }
+
+    internal interface IOwnerBoundApiFactory
+    {
+        object CreateOwnerBoundApi(Type apiType, IManifest consumer, Action ensureOwnerActive);
+    }
+
+    internal interface IOwnerBoundApiFacade
+    {
+        void Deactivate();
+    }
+
+    /// <summary>Internal protocol for a process-lifetime API host which retains consumer-owned roots.</summary>
+    internal interface IOwnerBoundApiHost
+    {
+        int CountOwnerResources(string ownerId);
+        int RemoveOwner(string ownerId, string reason);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.3", Notes = "Optional config-menu capability for keybind rows with an explicit Reset value.")]
+    public interface IDtmConfigMenuKeybindDefaultsApi
+    {
+        void AddKeybindOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, Func<string> getDefaultValue);
     }
 
     public interface IConfigMenuPage
@@ -52,6 +80,13 @@ namespace DTMAPI.Abstractions
     internal interface IConfigMenuPendingPreview
     {
         IDisposable PreviewPendingValues();
+    }
+
+    internal interface IResettableKeybindConfigMenuItem
+    {
+        bool HasDefaultValue { get; }
+        string DefaultValue { get; }
+        bool TryResetPendingValue(out string error);
     }
 
     public interface IConfigMenuItem

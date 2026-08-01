@@ -1,6 +1,6 @@
-# Install DTMAPI 0.5.0-alpha Developer Preview
+# Install The DTMAPI 0.5.5 Local Candidate
 
-DTMAPI `0.5.0-alpha` is a Developer Preview runtime for new DTMAPI mods. It is intended to be easy for players to install and support, but the underlying GameBridge APIs remain Experimental unless the public API matrix says otherwise.
+The current source candidate reports release/API `0.5.5`, file version `0.5.5.0`, and retained assembly compatibility `0.5.3.0`. It has not been published as 0.5.5 and this guide does not authorize a Workshop upload. Public APIs keep their per-surface stability and disposition; the public Abstractions assembly is not uniformly Stable.
 
 ## Recommended Player Path
 
@@ -12,7 +12,7 @@ DTMAPI `0.5.0-alpha` is a Developer Preview runtime for new DTMAPI mods. It is i
 6. Subscribe to the new DTMAPI feature mods.
 7. Start the game and open title-page `DTMAPI Settings` to check Status, Mods, Errors, Hooks, Features, and Logs.
 
-The Runtime item installs only the DTMAPI runtime, tools, and state files. The first player release mods are separate Workshop items: Zoom, ActionSpeed, OneActionComplete, ChestLocatorEnhancer, YKeyConsole, FishBreedingAssistant, MoreSaves, and AnimalHusbandryProgress.
+The Runtime item installs only the DTMAPI runtime, the single dormant-shipped Compatibility component, tools, and state files. Product Mods remain separate Workshop/local packages selected from the authoritative Catalog; this guide does not duplicate the fast-changing product set.
 
 ## What The Installer Writes
 
@@ -48,13 +48,15 @@ Runtime Workshop payload installs skip official-local mods by default. When runn
 tools/scripts/install-to-game.ps1 -InstallPublishedModsOnly
 ```
 
-installs only the first eight selected release mods as local official packages.
+installs the Catalog's exact current `PublishedProduct` set as local official packages. Managed Advanced products still deploy through their SDK receipts; the installer must not infer or hand-author their identity.
 
 ```powershell
 tools/scripts/install-to-game.ps1 -InstallAllDevOfficialMods
 ```
 
-or no install-mode switch keeps the developer default: all current dev official-local DTMAPI packages, including non-release extras such as AutoFishing, StrongPlantingGun, Mine/Oil, Equipment, and Vehicle.
+or no install-mode switch keeps the developer default: the Catalog's current developer official-local set without QA fixtures. This can include blocked prototypes and demand samples; it is not a release/publish claim. Retired vehicle research is not an active package.
+
+Every developer local-install mode is fail-closed for an existing official-local destination. Even if that directory contains legacy `dtmapi-package.json` metadata, the installer leaves the directory and its enablement entry unchanged and emits a warning instead of overwriting or adopting it. A new package is prepared on the same persistent volume but outside the native `MODS` scan root, then published with a collision-failing directory move, so a destination that appears during installation is also preserved and an interrupted staging directory cannot be enumerated as an official-local package.
 
 ## Legacy Detection
 
@@ -76,8 +78,12 @@ Run `3_check_dtmapi_status.bat` from the Runtime item folder. It reports:
 - DTMAPI runtime present/missing.
 - BepInEx present/missing.
 - install-state and release manifest present/missing.
+- the exact installed Player Doctor files, version, and recorded hashes for Runtime 0.5.5.
+- read-only detection of ordinary DTMAPI CodeMods misplaced under `BepInEx/plugins`, external BepInEx ownership, and minimum-version blocks; the Doctor does not load, move, delete, enable, disable, or adopt scanned DLLs.
 - latest DTMAPI log/report status.
-- DTMAPI-owned official-local package count.
+- legacy/non-destructive DTMAPI package metadata marker count; these rows are not installer ownership receipts.
 - legacy SMAPI/DLK/local mod detections.
 
 If old items are listed, the safest next step is still to unsubscribe or disable old DLK/SMAPI mods, restart Steam and Doloc Town, and then export a DTMAPI report from the Logs page if support is needed.
+
+When the game cannot load DTMAPI, `3_check_dtmapi_status.bat` remains the offline diagnosis path. `4_collect_dtmapi_logs.bat` also runs the same bounded read-only Player Doctor and includes `player-doctor.json`, `player-doctor.txt`, and `player-doctor-summary.txt` in the support evidence. A Doctor finding is collected successfully; a missing, crashed, or timed-out helper becomes a warning and does not prevent the remaining logs from being collected.

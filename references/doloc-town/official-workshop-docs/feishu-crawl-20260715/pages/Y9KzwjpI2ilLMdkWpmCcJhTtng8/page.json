@@ -1,0 +1,141 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/Y9KzwjpI2ilLMdkWpmCcJhTtng8",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/Y9KzwjpI2ilLMdkWpmCcJhTtng8",
+  "token": "Y9KzwjpI2ilLMdkWpmCcJhTtng8",
+  "title": "05 ID对照表",
+  "document_title": "05 ID对照表",
+  "source_modified_label": "5月15日修改",
+  "status_code": 200,
+  "elapsed_seconds": 9.781,
+  "block_count": 14,
+  "blocks_by_type": {
+    "text": 14
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1220,
+  "links": [
+    {
+      "text": "01 ID对照表（主角本体&帽子&工具）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/WkvJwLK5pie03HkM0wzcPp6dnBg",
+      "kind": "official-wiki",
+      "target_token": "WkvJwLK5pie03HkM0wzcPp6dnBg"
+    },
+    {
+      "text": "02 ID对照表（NPC）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/LlZgw36I2iOtX0kOkSGcfWTyn8c",
+      "kind": "official-wiki",
+      "target_token": "LlZgw36I2iOtX0kOkSGcfWTyn8c"
+    },
+    {
+      "text": "03 ID对照表（小动物）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/UdOwwqfOLiFcFMkW5rrchKVUnpd",
+      "kind": "official-wiki",
+      "target_token": "UdOwwqfOLiFcFMkW5rrchKVUnpd"
+    },
+    {
+      "text": "04 ID对照表（道具）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/QaKDwjPdvi2GtEk7GKPcQEoenyf",
+      "kind": "official-wiki",
+      "target_token": "QaKDwjPdvi2GtEk7GKPcQEoenyf"
+    },
+    {
+      "text": "05 ID对照表（设备）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/DSGAwje93icwXVkY8WvcpxCWnXg",
+      "kind": "official-wiki",
+      "target_token": "DSGAwje93icwXVkY8WvcpxCWnXg"
+    },
+    {
+      "text": "06 ID对照表（资源&植被）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud",
+      "kind": "official-wiki",
+      "target_token": "UTmLwGzpAijYjvkhvE9czGyenud"
+    },
+    {
+      "text": "07 ID对照表（建筑）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+      "kind": "official-wiki",
+      "target_token": "OGwfwegFXiaZNKkjr3GclYglndf"
+    },
+    {
+      "text": "08 ID对照表（配方）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+      "kind": "official-wiki",
+      "target_token": "Vm9YwaBVMiZtvbkf5kIcASronye"
+    },
+    {
+      "text": "09 ID对照表（商店）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/B9UqwiqJziQi3ckQVlLcCt4Zn9c",
+      "kind": "official-wiki",
+      "target_token": "B9UqwiqJziQi3ckQVlLcCt4Zn9c"
+    },
+    {
+      "text": "10 ID对照表（鱼）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/U3NBw40BAifRlPkyf8gc1tufnrd",
+      "kind": "official-wiki",
+      "target_token": "U3NBw40BAifRlPkyf8gc1tufnrd"
+    },
+    {
+      "text": "11 ID对照表（料理）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+      "kind": "official-wiki",
+      "target_token": "MZXHwVGgsieTCdkyhpycIEDnnqb"
+    },
+    {
+      "text": "12 ID对照表（掉落库）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd",
+      "kind": "official-wiki",
+      "target_token": "TOb9w60BJihlQgkwv87cEtzFnVd"
+    },
+    {
+      "text": "13 ID对照表（平台）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Qcxww5EmSiasxfkup2rcGQpXndc",
+      "kind": "official-wiki",
+      "target_token": "Qcxww5EmSiasxfkup2rcGQpXndc"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/B9UqwiqJziQi3ckQVlLcCt4Zn9c",
+    "https://ka7deoo0opr.feishu.cn/wiki/DSGAwje93icwXVkY8WvcpxCWnXg",
+    "https://ka7deoo0opr.feishu.cn/wiki/LlZgw36I2iOtX0kOkSGcfWTyn8c",
+    "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+    "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+    "https://ka7deoo0opr.feishu.cn/wiki/QaKDwjPdvi2GtEk7GKPcQEoenyf",
+    "https://ka7deoo0opr.feishu.cn/wiki/Qcxww5EmSiasxfkup2rcGQpXndc",
+    "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd",
+    "https://ka7deoo0opr.feishu.cn/wiki/U3NBw40BAifRlPkyf8gc1tufnrd",
+    "https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud",
+    "https://ka7deoo0opr.feishu.cn/wiki/UdOwwqfOLiFcFMkW5rrchKVUnpd",
+    "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+    "https://ka7deoo0opr.feishu.cn/wiki/WkvJwLK5pie03HkM0wzcPp6dnBg"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/images/original/image-01-ce24e25c0763d89d.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/images/original/image-02-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/source.html",
+    "rendered_html": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/rendered.html",
+    "text": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/content.txt",
+    "markdown": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/content.md",
+    "metadata": "pages/Y9KzwjpI2ilLMdkWpmCcJhTtng8/page.json"
+  }
+}

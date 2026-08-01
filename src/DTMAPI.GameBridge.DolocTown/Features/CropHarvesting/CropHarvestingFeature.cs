@@ -15,11 +15,22 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public string Id => "CropHarvesting";
 
+        public GameBridgeFeatureContract Contract { get; } = new GameBridgeFeatureContract(
+            "CropHarvesting",
+            requiresSave: true,
+            allowsTitleScreen: false,
+            requiresNativeScene: true,
+            requiresUi: false,
+            environmentResetSensitive: true,
+            hasSaveLifetimeState: true,
+            hasTitleLifetimeState: false,
+            canAutoPauseAfterFailure: false);
+
         internal CropHarvestingService Service { get; }
 
         public void RegisterApis(IManifest manifest)
         {
-            runtime.RegisterRuntimeApi<ICropHarvestingApi>(manifest, Service);
+            runtime.RegisterRuntimeApi<ICropHarvestingApi>(manifest, Service, OwnerBoundGameBridgeApis.ForCropHarvesting(Service));
         }
 
         public void PublishHookStatuses()

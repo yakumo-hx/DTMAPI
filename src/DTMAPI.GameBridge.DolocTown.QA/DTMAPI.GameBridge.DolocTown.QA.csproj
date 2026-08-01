@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.GameBridge.DolocTown.QA</AssemblyName>
+    <RootNamespace>DTMAPI.GameBridge.DolocTown.QA</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\products\first-party\ActionSpeed\qa\batch6\Batch6ActionSpeedReflectionObserver.cs" Link="Products\ActionSpeed\Batch6\Batch6ActionSpeedReflectionObserver.cs" />
+    <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPilotSettings.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingPilotSettings.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingManagerLifecycleSettings.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingManagerLifecycleSettings.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingFailClosedPolicy.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingFailClosedPolicy.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingReflectionObserver.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingReflectionObserver.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPackageProvenance.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingPackageProvenance.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\fifth-save\AutoFishingNativeVitalsCommandAdapter.cs" Link="Products\AutoFishing\Shared\AutoFishingNativeVitalsCommandAdapter.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingNativeEvidence.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingNativeEvidence.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPilotEvidence.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingPilotEvidence.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingManagerLifecycleEvidence.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingManagerLifecycleEvidence.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingCompatibilityDriver.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingCompatibilityDriver.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingProductRecoveryDriver.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingProductRecoveryDriver.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPilotCoordinator.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingPilotCoordinator.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingManagerLifecycleCoordinator.cs" Link="Products\AutoFishing\Batch6\Batch6AutoFishingManagerLifecycleCoordinator.cs" />
+  </ItemGroup>
+</Project>

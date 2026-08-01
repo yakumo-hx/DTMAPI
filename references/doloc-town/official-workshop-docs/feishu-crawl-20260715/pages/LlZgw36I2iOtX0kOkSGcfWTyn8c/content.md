@@ -1,0 +1,469 @@
+# 02 ID对照表（NPC）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/LlZgw36I2iOtX0kOkSGcfWTyn8c>
+
+Source modified label: 4月17日修改
+
+## 1.NPC ID对照表
+
+#### 克劳德（Claud）
+
+#### Embedded sheet `opVRui`
+
+[TSV](sheets/01-01-opvrui.tsv) · [rendered screenshot](sheets/01-01-opvrui.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	claud	anim_npc_claud_idle_[0~5]
+帧动画（对话）	6	talk	claud	anim_npc_claud_talk_[0~5]
+帧动画（移动）	8	walk	claud	anim_npc_claud_walk_[0~7]
+图标（日历）	1		claud	icon_calendar_claud
+图标（图鉴）	1		claud	icon_document_claud
+详情图（图鉴）	1		claud	preview_document_claud
+```
+
+#### 凯尔（Kel）
+
+#### Embedded sheet `cK6RM5`
+
+[TSV](sheets/02-01-ck6rm5.tsv) · [rendered screenshot](sheets/02-01-ck6rm5.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kel	anim_npc_kel_idle_[0~5]
+帧动画（对话）	6	talk	kel	anim_npc_kel_talk_[0~5]
+帧动画（移动）	8	walk	kel	anim_npc_kel_walk_[0~7]
+图标（日历）	1		kel	icon_calendar_kel
+图标（图鉴）	1		kel	icon_document_kel
+详情图（图鉴）	1		kel	preview_document_kel
+```
+
+#### 凯涅尼木（Kenenimuu）
+
+#### Embedded sheet `Ohk5vi`
+
+[TSV](sheets/03-01-ohk5vi.tsv) · [rendered screenshot](sheets/03-01-ohk5vi.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kenenimuu	anim_npc_kenenimuu_idle_[0~5]
+帧动画（对话）	6	talk	kenenimuu	anim_npc_kenenimuu_talk_[0~5]
+帧动画（移动）	8	walk	kenenimuu	anim_npc_kenenimuu_walk_[0~7]
+图标（日历）	1		kenenimuu	icon_calendar_kenenimuu
+图标（图鉴）	1		kenenimuu	icon_document_kenenimuu
+图标（势力）	1		kenenimuu	icon_faction_kenenimuu
+详情图（图鉴）	1		kenenimuu	preview_document_kenenimuu
+```
+
+注：凯涅尼木有额外贴图：图标（势力），内容同图标（图鉴）。
+
+#### 加百利（Gabyrl）
+
+#### Embedded sheet `gmR8O5`
+
+[TSV](sheets/04-01-gmr8o5.tsv) · [rendered screenshot](sheets/04-01-gmr8o5.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	gabyrl	anim_npc_gabyrl_idle_[0~5]
+帧动画（对话）	6	talk	gabyrl	anim_npc_gabyrl_talk_[0~5]
+帧动画（移动）	8	walk	gabyrl	anim_npc_gabyrl_walk_[0~7]
+图标（日历）	1		gabyrl	icon_calendar_gabyrl
+图标（图鉴）	1		gabyrl	icon_document_gabyrl
+图标（势力）	1		gabyrl	icon_faction_gabyrl
+详情图（图鉴）	1		gabyrl	preview_document_gabyrl
+```
+
+注：加百利有额外贴图：图标（势力），内容同图标（图鉴）。
+
+#### 卡莎（Kasia）
+
+#### Embedded sheet `URi43S`
+
+[TSV](sheets/05-01-uri43s.tsv) · [rendered screenshot](sheets/05-01-uri43s.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kasia	anim_npc_kasia_idle_[0~5]
+帧动画（对话）	6	talk	kasia	anim_npc_kasia_talk_[0~5]
+帧动画（移动）	8	walk	kasia	anim_npc_kasia_walk_[0~7]
+图标（日历）	1		kasia	icon_calendar_kasia
+图标（图鉴）	1		kasia	icon_document_kasia
+详情图（图鉴）	1		kasia	preview_document_kasia
+```
+
+#### 墨翟（Mody）
+
+#### Embedded sheet `kZFqpq`
+
+[TSV](sheets/06-01-kzfqpq.tsv) · [rendered screenshot](sheets/06-01-kzfqpq.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	mody	anim_npc_mody_idle_[0~5]
+帧动画（对话）	6	talk	mody	anim_npc_mody_talk_[0~5]
+帧动画（移动）	8	walk	mody	anim_npc_mody_walk_[0~7]
+图标（日历）	1		mody	icon_calendar_mody
+图标（图鉴）	1		mody	icon_document_mody
+详情图（图鉴）	1		mody	preview_document_mody
+```
+
+#### 夏洛克（Shylock）
+
+#### Embedded sheet `eCbnSc`
+
+[TSV](sheets/07-01-ecbnsc.tsv) · [rendered screenshot](sheets/07-01-ecbnsc.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	shylock	anim_npc_shylock_idle_[0~5]
+帧动画（对话）	6	talk	shylock	anim_npc_shylock_talk_[0~5]
+帧动画（移动）	8	walk	shylock	anim_npc_shylock_walk_[0~7]
+图标（日历）	1		shylock	icon_calendar_shylock
+图标（图鉴）	1		shylock	icon_document_shylock
+图标（势力）	1		shylock	icon_faction_shylock
+详情图（图鉴）	1		shylock	preview_document_shylock
+```
+
+注：夏洛克有额外贴图：图标（势力），内容同图标（图鉴）。
+
+#### 奇普（Quipu）
+
+#### Embedded sheet `MeygeF`
+
+[TSV](sheets/08-01-meygef.tsv) · [rendered screenshot](sheets/08-01-meygef.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	quipu	anim_npc_quipu_idle_[0~5]
+帧动画（对话）	6	talk	quipu	anim_npc_quipu_talk_[0~5]
+帧动画（移动）	8	walk	quipu	anim_npc_quipu_walk_[0~7]
+图标（日历）	1		quipu	icon_calendar_quipu
+图标（图鉴）	1		quipu	icon_document_quipu
+图标（势力）	1		quipu	icon_faction_quipu
+详情图（图鉴）	1		quipu	preview_document_quipu
+```
+
+注：奇普有额外贴图：图标（势力），内容同图标（图鉴）。
+
+#### 奥兰多（Orlando）
+
+#### Embedded sheet `VlA0In`
+
+[TSV](sheets/09-01-vla0in.tsv) · [rendered screenshot](sheets/09-01-vla0in.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	orlando	anim_npc_orlando_idle_[0~5]
+帧动画（对话）	6	talk	orlando	anim_npc_orlando_talk_[0~5]
+帧动画（移动）	8	walk	orlando	anim_npc_orlando_walk_[0~7]
+图标（日历）	1		orlando	icon_calendar_orlando
+图标（图鉴）	1		orlando	icon_document_orlando
+详情图（图鉴）	1		orlando	preview_document_orlando
+```
+
+#### 女巫（Witch）
+
+#### Embedded sheet `T0fqK9`
+
+[TSV](sheets/10-01-t0fqk9.tsv) · [rendered screenshot](sheets/10-01-t0fqk9.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	witch	anim_npc_witch_idle_[0~5]
+帧动画（对话）	6	talk	witch	anim_npc_witch_talk_[0~5]
+帧动画（移动）	8	walk	witch	anim_npc_witch_walk_[0~7]
+图标（日历）	1		witch	icon_calendar_witch
+图标（图鉴）	1		witch	icon_document_witch
+详情图（图鉴）	1		witch	preview_document_witch
+```
+
+#### 帕伊雅（Paiea）
+
+#### Embedded sheet `qHlCtm`
+
+[TSV](sheets/11-01-qhlctm.tsv) · [rendered screenshot](sheets/11-01-qhlctm.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	paiea	anim_npc_paiea_idle_[0~5]
+帧动画（对话）	6	talk	paiea	anim_npc_paiea_talk_[0~5]
+帧动画（移动）	6	walk	paiea	anim_npc_paiea_walk_[0~5]
+图标（日历）	1		paiea	icon_calendar_paiea
+图标（图鉴）	1		paiea	icon_document_paiea
+图标（势力）	1		paiea	icon_faction_paiea
+详情图（图鉴）	1		paiea	preview_document_paiea
+```
+
+注1：帕伊雅移动动画只有6帧。
+
+注2：帕伊雅有额外贴图：图标（势力），内容同图标（图鉴）。
+
+#### 库马桑（Kuma）
+
+#### Embedded sheet `Eh9k0x`
+
+[TSV](sheets/12-01-eh9k0x.tsv) · [rendered screenshot](sheets/12-01-eh9k0x.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kuma	anim_npc_kuma_idle_[0~5]
+帧动画（移动）	6	walk	kuma	anim_npc_kuma_walk_[0~5]
+图标（日历）	1		kuma	icon_calendar_kuma
+图标（图鉴）	1		kuma	icon_document_kuma
+详情图（图鉴）	1		kuma	preview_document_kuma
+```
+
+注：库马桑没有对话动画。
+
+#### 朗克（Lank）
+
+#### Embedded sheet `4BnWjo`
+
+[TSV](sheets/13-01-4bnwjo.tsv) · [rendered screenshot](sheets/13-01-4bnwjo.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	lank	anim_npc_lank_idle_[0~5]
+帧动画（对话）	6	talk	lank	anim_npc_lank_talk_[0~5]
+帧动画（移动）	8	walk	lank	anim_npc_lank_walk_[0~7]
+图标（日历）	1		lank	icon_calendar_lank
+图标（图鉴）	1		lank	icon_document_lank
+详情图（图鉴）	1		lank	preview_document_lank
+```
+
+#### 杰拉德（Gerald）
+
+#### Embedded sheet `nHa0Si`
+
+[TSV](sheets/14-01-nha0si.tsv) · [rendered screenshot](sheets/14-01-nha0si.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	gerald	anim_npc_gerald_idle_[0~5]
+帧动画（对话）	6	talk	gerald	anim_npc_gerald_talk_[0~5]
+帧动画（移动）	8	walk	gerald	anim_npc_gerald_walk_[0~7]
+图标（日历）	1		gerald	icon_calendar_gerald
+图标（图鉴）	1		gerald	icon_document_gerald
+详情图（图鉴）	1		gerald	preview_document_gerald
+```
+
+#### 柯奥德（Cod）
+
+#### Embedded sheet `BwQsB0`
+
+[TSV](sheets/15-01-bwqsb0.tsv) · [rendered screenshot](sheets/15-01-bwqsb0.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	cod	anim_npc_cod_idle_[0~5]
+帧动画（对话）	6	talk	cod	anim_npc_cod_talk_[0~5]
+帧动画（移动）	8	walk	cod	anim_npc_cod_walk_[0~7]
+图标（日历）	1		cod	icon_calendar_cod
+图标（图鉴）	1		cod	icon_document_cod
+详情图（图鉴）	1		cod	preview_document_cod
+```
+
+#### 梅林（Merlin）
+
+#### Embedded sheet `PhOuoX`
+
+[TSV](sheets/16-01-phouox.tsv) · [rendered screenshot](sheets/16-01-phouox.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	merlin	anim_npc_merlin_idle_[0~5]
+帧动画（对话）	6	talk	merlin	anim_npc_merlin_talk_[0~5]
+帧动画（移动）	8	walk	merlin	anim_npc_merlin_walk_[0~7]
+图标（日历）	1		merlin	icon_calendar_merlin
+图标（图鉴）	1		merlin	icon_document_merlin
+详情图（图鉴）	1		merlin	preview_document_merlin
+```
+
+#### 泽尼瑟（Zenis）
+
+#### Embedded sheet `AZqzJK`
+
+[TSV](sheets/17-01-azqzjk.tsv) · [rendered screenshot](sheets/17-01-azqzjk.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	zenis	anim_npc_zenis_idle_[0~5]
+帧动画（对话）	6	talk	zenis	anim_npc_zenis_talk_[0~5]
+帧动画（移动）	8	walk	zenis	anim_npc_zenis_walk_[0~7]
+图标（日历）	1		zenis	icon_calendar_zenis
+图标（图鉴）	1		zenis	icon_document_zenis
+详情图（图鉴）	1		zenis	preview_document_zenis
+```
+
+#### 洛维那（Loveyer）
+
+#### Embedded sheet `5gZxux`
+
+[TSV](sheets/18-01-5gzxux.tsv) · [rendered screenshot](sheets/18-01-5gzxux.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	loveyer	anim_npc_loveyer_idle_[0~5]
+帧动画（对话）	6	talk	loveyer	anim_npc_loveyer_talk_[0~5]
+帧动画（移动）	6	walk	loveyer	anim_npc_loveyer_walk_[0~5]
+图标（日历）	1		loveyer	icon_calendar_loveyer
+图标（图鉴）	1		loveyer	icon_document_loveyer
+详情图（图鉴）	1		loveyer	preview_document_loveyer
+```
+
+注：洛维那移动动画只有6帧。
+
+#### 派克（Pike）
+
+#### Embedded sheet `tA5x8E`
+
+[TSV](sheets/19-01-ta5x8e.tsv) · [rendered screenshot](sheets/19-01-ta5x8e.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	pike	anim_npc_pike_idle_[0~5]
+帧动画（对话）	6	talk	pike	anim_npc_pike_talk_[0~5]
+帧动画（移动）	6	walk	pike	anim_npc_pike_walk_[0~5]
+图标（日历）	1		pike	icon_calendar_pike
+图标（图鉴）	1		pike	icon_document_pike
+详情图（图鉴）	1		pike	preview_document_pike
+```
+
+注：派克移动动画只有6帧。
+
+#### 澳柯玛（Alchemy）
+
+#### Embedded sheet `OLS4ni`
+
+[TSV](sheets/20-01-ols4ni.tsv) · [rendered screenshot](sheets/20-01-ols4ni.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	alchemy	anim_npc_alchemy_idle_[0~5]
+帧动画（对话）	6	talk	alchemy	anim_npc_alchemy_talk_[0~5]
+帧动画（移动）	8	walk	alchemy	anim_npc_alchemy_walk_[0~7]
+帧动画（交互）	6	interact	alchemy	anim_npc_alchemy_interact_[0~5]
+图标（日历）	1		alchemy	icon_calendar_alchemy
+图标（图鉴）	1		alchemy	icon_document_alchemy
+详情图（图鉴）	1		alchemy	preview_document_alchemy
+```
+
+注：澳柯玛有额外的交互动画。
+
+#### 灯男（Lightman）
+
+#### Embedded sheet `bXe5K4`
+
+[TSV](sheets/21-01-bxe5k4.tsv) · [rendered screenshot](sheets/21-01-bxe5k4.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	lightman	anim_npc_lightman_idle_[0~5]
+帧动画（对话）	6	talk	lightman	anim_npc_lightman_talk_[0~5]
+帧动画（移动）	8	walk	lightman	anim_npc_lightman_walk_[0~7]
+帧动画（钓鱼）	4	fishing	lightman	anim_npc_lightman_fishing_[0~3]
+图标（日历）	1		lightman	icon_calendar_lightman
+图标（图鉴）	1		lightman	icon_document_lightman
+详情图（图鉴）	1		lightman	preview_document_lightman
+```
+
+注：灯男有额外的钓鱼动画。
+
+#### 米拉（Mira）
+
+#### Embedded sheet `hmrxGY`
+
+[TSV](sheets/22-01-hmrxgy.tsv) · [rendered screenshot](sheets/22-01-hmrxgy.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	mira	anim_npc_mira_idle_[0~5]
+帧动画（对话）	6	talk	mira	anim_npc_mira_talk_[0~5]
+帧动画（移动）	8	walk	mira	anim_npc_mira_walk_[0~7]
+图标（日历）	1		mira	icon_calendar_mira
+图标（图鉴）	1		mira	icon_document_mira
+详情图（图鉴）	1		mira	preview_document_mira
+```
+
+#### 莉卡（Licca）
+
+#### Embedded sheet `UQzw4H`
+
+[TSV](sheets/23-01-uqzw4h.tsv) · [rendered screenshot](sheets/23-01-uqzw4h.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	licca	anim_npc_licca_idle_[0~5]
+帧动画（对话）	6	talk	licca	anim_npc_licca_talk_[0~5]
+帧动画（移动）	8	walk	licca	anim_npc_licca_walk_[0~7]
+图标（日历）	1		licca	icon_calendar_licca
+图标（图鉴）	1		licca	icon_document_licca
+详情图（图鉴）	1		licca	preview_document_licca
+```
+
+#### 萨科（Sacco）
+
+#### Embedded sheet `qrm7Me`
+
+[TSV](sheets/24-01-qrm7me.tsv) · [rendered screenshot](sheets/24-01-qrm7me.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	sacco	anim_npc_sacco_idle_[0~5]
+帧动画（对话）	6	talk	sacco	anim_npc_sacco_talk_[0~5]
+帧动画（移动）	8	walk	sacco	anim_npc_sacco_walk_[0~7]
+图标（日历）	1		sacco	icon_calendar_sacco
+图标（图鉴）	1		sacco	icon_document_sacco
+详情图（图鉴）	1		sacco	preview_document_sacco
+```
+
+#### 达达（Dada）
+
+#### Embedded sheet `PJnRnH`
+
+[TSV](sheets/25-01-pjnrnh.tsv) · [rendered screenshot](sheets/25-01-pjnrnh.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	dada	anim_npc_dada_idle_[0~5]
+帧动画（对话）	6	talk	dada	anim_npc_dada_talk_[0~5]
+帧动画（移动）	8	walk	dada	anim_npc_dada_walk_[0~7]
+图标（日历）	1		dada	icon_calendar_dada
+图标（图鉴）	1		dada	icon_document_dada
+详情图（图鉴）	1		dada	preview_document_dada
+```
+
+#### 霍特（Hult）
+
+#### Embedded sheet `mK0b60`
+
+[TSV](sheets/26-01-mk0b60.tsv) · [rendered screenshot](sheets/26-01-mk0b60.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	8	idle	hult	anim_npc_hult_idle_[0~7]
+帧动画（对话）	6	talk	hult	anim_npc_hult_talk_[0~5]
+帧动画（移动）	8	walk	hult	anim_npc_hult_walk_[0~7]
+图标（日历）	1		hult	icon_calendar_hult
+图标（图鉴）	1		hult	icon_document_hult
+详情图（图鉴）	1		hult	preview_document_hult
+```
+
+注：霍特待机动画有8帧。
+
+#### 飞廉（Villain）
+
+#### Embedded sheet `luFjyF`
+
+[TSV](sheets/27-01-lufjyf.tsv) · [rendered screenshot](sheets/27-01-lufjyf.png)
+
+```tsv
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	8	idle	villain	anim_npc_villain_idle_[0~7]
+帧动画（对话）	6	talk	villain	anim_npc_villain_talk_[0~5]
+帧动画（移动）	8	walk	villain	anim_npc_villain_walk_[0~7]
+图标（日历）	1		villain	icon_calendar_villain
+图标（图鉴）	1		villain	icon_document_villain
+详情图（图鉴）	1		villain	preview_document_villain
+```

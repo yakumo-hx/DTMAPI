@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 2,
+  "overallPass": true,
+  "runtimeValidation": "NotRunDotNet8HostOnly",
+  "baseline": {
+    "fileName": "DTMAPI.Abstractions.dll",
+    "sha256": "39A51683034FF0B7495BEB3DD1C50F76F591D4E24C63872B6502EA360EF8880B",
+    "assemblyVersion": "0.5.2.0",
+    "fileVersion": "0.5.2.0",
+    "publicApiCount": 5105
+  },
+  "candidate": {
+    "fileName": "DTMAPI.Abstractions.dll",
+    "sha256": "45F10BF4049F0E7F85B70E328D7D52AADB5B463FFE10D44BDF2E52B54EC8579F",
+    "assemblyVersion": "0.5.3.0",
+    "fileVersion": "0.5.5.0",
+    "publicApiCount": 5251
+  },
+  "consumer": {
+    "fileName": "Yuuka.DTMAPI.AutoFishing.dll",
+    "sha256": "E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+    "referencedAbstractionsVersion": "0.5.1.0",
+    "metadataStopOnManualMoveSetterReferences": 1,
+    "resolvedStopOnManualMoveSetterReferences": 1,
+    "typeCount": 8
+  },
+  "removedPublicApiCount": 0,
+  "removedPublicApi": [],
+  "retainedLampTypeNames": [
+    "DTMAPI.Abstractions.ILampControlApi",
+    "DTMAPI.Abstractions.LampManualToggleOptions",
+    "DTMAPI.Abstractions.LampManualToggleRegisterResult",
+    "DTMAPI.Abstractions.LampManualToggleState"
+  ],
+  "retainedPublicProductCount": 11,
+  "retainedPublicProductLampMemberReferenceCount": 0,
+  "retainedPublicProducts": [
+    {
+      "productId": "action-speed",
+      "fileName": "Yuuka.DTMAPI.ActionSpeed.dll",
+      "sha256": "3169DB47BA7686B124F2BC907FED89605DF5B1BD17703C33566A147DD8D7B13A",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "animal-husbandry-progress",
+      "fileName": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+      "sha256": "E5DAA3B385AD30E9671FD9BC0407534A66390F28B327358183C65D9F68DA7530",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "auto-fishing",
+      "fileName": "Yuuka.DTMAPI.AutoFishing.dll",
+      "sha256": "E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "chest-locator-enhancer",
+      "fileName": "DTMAPI.ChestLocatorEnhancer.dll",
+      "sha256": "125704135FFF47778993B268F89A90E911B7757D14938B731AB91CCC7BCDE2CE",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "fish-roe-info",
+      "fileName": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+      "sha256": "128EE6AD1893A8C98C0A6BC879E398371350B555E7BA47CE5D54AEE248031BEA",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "manbo-cardboard-audio",
+      "fileName": "Yuuka.DTMAPI.ManboCardboardAudio.dll",
+      "sha256": "AB85C0BAB39702E7FE2689BB4D528B6EF3726F0BB272F6F172CFFE8A57A17EC4",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "more-equipment-slots",
+      "fileName": "DTMAPI.MoreEquipmentSlots.dll",
+      "sha256": "092807CC5C5DB359B40D5325EDD6EBC6860238E51F7F65014F5B39FBC0CF71ED",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "more-saves",
+      "fileName": "DTMAPI.MoreSaves.dll",
+      "sha256": "F9CB4CE42BBECF7541C963B600440C65007E0C9F088C4414046658539862226E",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "one-action-complete",
+      "fileName": "Yuuka.DTMAPI.OneActionComplete.dll",
+      "sha256": "612B173653EB22E3EB46C7882D97BB1117D308A70EF00773C8031E79DF5626E6",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "y-console",
+      "fileName": "DTMAPI.YKeyConsole.dll",
+      "sha256": "E5A34963C0B66D6168104AF27DB849D707EE644F07917D8274868F8B8299B41E",
+      "lampMemberReferences": []
+    },
+    {
+      "productId": "zoom",
+      "fileName": "DTMAPI.Zoom.dll",
+      "sha256": "DFA74BDD3561A9E9647FEC01AB9B48F095826D2A752AE920566BE2C5063971B3",
+      "lampMemberReferences": []
+    }
+  ],
+  "stopOnManualMove": {
+    "getter": true,
+    "setter": true,
+    "defaultValue": true,
+    "roundTrip": true,
+    "obsoleteIsError": false
+  },
+  "lampCompatibility": {
+    "typeCount": 4,
+    "obsoleteTypeCount": 4,
+    "obsoleteIsError": false,
+    "disabledStatusAttributes": true,
+    "historicalDefaults": true
+  }
+}

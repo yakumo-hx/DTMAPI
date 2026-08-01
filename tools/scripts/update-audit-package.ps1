@@ -408,7 +408,7 @@ function Write-PackageMarkdown {
         "",
         "## Included Audit Contents",
         "",
-        "- Buildable source snapshot: src/, testmods/, tests/, tools/, assets/, root solution/project metadata, and public reference docs tracked in git.",
+        "- Buildable source snapshot: src/, products/, author-sdk/, tests/, tools/, assets/, archive/legacy-product-assets/, root solution/project metadata, and public reference docs tracked in git.",
         "- Focused audit docs under audit/docs/: API matrix, hook map, smoke matrix, CameraZoom manual QA records, and update records.",
         "- Reverse snippet maps under audit/reverse-snippets/.",
         "- Latest smoke scripts under audit/tools/scripts/.",
@@ -651,7 +651,7 @@ function Invoke-PackageSelfAudit {
     Assert-NoDisallowedPayloads -PackageRoot $PackageRoot -Compact $Compact
     Assert-EvidenceReferences -PackageRoot $PackageRoot
 
-    foreach ($relative in @("AUDIT-PACKAGE.md", "VALIDATION-SUMMARY.md", "src", "testmods", "tests", "tools/scripts/build.ps1", "audit/docs/api/public-api-matrix.md", "audit/docs/hook-map/README.md", "audit/docs/debug/regressions/smoke-matrix.md")) {
+    foreach ($relative in @("AUDIT-PACKAGE.md", "VALIDATION-SUMMARY.md", "src", "products", "author-sdk", "tests", "tools/scripts/build.ps1", "audit/docs/api/public-api-matrix.md", "audit/docs/hook-map/README.md", "audit/docs/debug/regressions/smoke-matrix.md")) {
         $path = Join-Path $PackageRoot $relative
         if (-not (Test-Path -LiteralPath $path)) {
             throw "Required package path missing: $path"

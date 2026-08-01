@@ -1,0 +1,8 @@
+[
+  {
+    "id": "manual_workbench", //配方组ID，同设备ID
+    "extra_recipes": [
+      "platform0"//配方ID（多个配方则用","隔开）
+    ]
+  }
+]

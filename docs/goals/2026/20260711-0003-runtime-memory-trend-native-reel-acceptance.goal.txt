@@ -1,0 +1,4 @@
+/goal
+目标：在 0.5.3-alpha 内将线程分配能力与通用运行时内存趋势测量解耦，并通过 AgentStateFishingWait.NextState 原生接受确认阻止已接受收竿边沿重复发送。详细需求与验收以 docs/goals/2026/20260711-0003-runtime-memory-trend-native-reel-acceptance.md 为准。
+
+开始前必须阅读 AGENTS.md、PROJECT.md、该 goal 与同名 review、docs/debug/INDEX.md、smoke matrix、Hook Map、public API matrix 和当前 ISSUE-010。保持 Fishing Primitives internal，不新增公开 API，不升版本，不强制 GC，不运行 100/500 或 soak。先做通用 RuntimeMemoryTrendProbe 与 allocation 子探针，再做 NextState 接受确认和故障注入，最后仅跑第五存档 InactiveNoConsumer 与 EnabledNoRod 两条 10 分钟基线。按范围提交，只有自动检查、完整时长趋势、标题/进程清理和文档证据全部通过才完成。

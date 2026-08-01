@@ -1,0 +1,30 @@
+[
+  {
+    "id": "phone_booth_exchange_shop", //兑换商店ID
+    "extra_items": [
+      {
+        "ranged_item": {
+          "item_name": "hat0", //商品ID
+          "min_count": 1, //最小输出数量
+          "max_count": 1 //最大输出数量
+        },
+        "storage": 0, //商品全局存量，即整局游戏最多能卖多少个（0则无存量上限）
+        "gold_cost": 100, //消耗金币数量（-1则根据道具售价自动填写）
+        "item_costs": [
+          {
+            "item_name": "weeds", //消耗道具ID
+            "item_count": 10 //消耗道具数量
+          },
+          {
+            "item_name": "monster_drop_chomper", //消耗道具ID
+            "item_count": 1 //消耗道具数量
+          }
+        ],
+        "pre_condition_item_name": "", //前置商品ID
+        "pre_condition_item_count": 0, //前置商品数量
+        "tech_point": 1, //增加科技点点数
+        "default_unlock": true //是否默认解锁
+      }
+    ]
+  }
+]

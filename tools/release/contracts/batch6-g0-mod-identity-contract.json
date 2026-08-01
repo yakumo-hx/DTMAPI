@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "contractId": "batch6-g0-managed-mod-identity",
+  "canonicalIdentityAuthority": "PROJECT.md#mod-身份与原生代码归属规范",
+  "architectureProjection": "docs/architecture/batch6-managed-mod-identity-contract.md",
+  "phaseState": {
+    "phase0": "passed",
+    "g0Authority": "passed",
+    "g1Baseline": "passed",
+    "g1OwnershipGate": "blocked",
+    "g2Design": "passed",
+    "g2Runtime": "blocked",
+    "g2MinimalFixture": "not-implemented",
+    "autoFishingPilot": "blocked",
+    "otherProductMigration": "blocked",
+    "contentHostRuntime": "blocked",
+    "release055": "independently-blocked"
+  },
+  "canonicalTerms": {
+    "managedIdentities": [
+      "Strict CodeMod",
+      "Advanced CodeMod",
+      "ContentPack"
+    ],
+    "externalIdentity": "External BepInEx Plugin",
+    "physicalOwnership": [
+      "Platform",
+      "SharedNative",
+      "ProductNative",
+      "ContentOwner"
+    ],
+    "internalProviderTypesExcludedFromAuthorIdentity": [
+      "Runtime",
+      "RuntimeApi"
+    ]
+  },
+  "currentWire": {
+    "manifestTypes": [
+      "CodeMod",
+      "ContentPack"
+    ],
+    "authorProjectKinds": [
+      "CodeMod",
+      "ContentPack"
+    ],
+    "advancedManifestDiscriminator": null,
+    "advancedRuntimeImplemented": false,
+    "contentHostImplemented": false,
+    "strictSdkDiagnostic": "SDK160",
+    "missingManifestTypeMeaning": "legacy-compatible-declared-strict-unverified-provenance",
+    "explicitCodeModMeaning": "declared-strict-not-necessarily-sdk-verified",
+    "reservedG2ManifestDiscriminator": {
+      "name": "CodeModKind",
+      "values": [
+        "Strict",
+        "Advanced"
+      ],
+      "omittedValue": "Strict",
+      "liveBeforeG2": false
+    },
+    "reservedG2AuthorProjectDiscriminator": {
+      "name": "codeModKind",
+      "values": [
+        "Strict",
+        "Advanced"
+      ],
+      "liveBeforeG2": false
+    }
+  },
+  "runtime055Amendment": {
+    "historicalSnapshotPreserved": true,
+    "omittedCodeModKindMeaning": "LegacyNativeCompatibility",
+    "explicitStrictMeaning": "Strict",
+    "explicitAdvancedMeaning": "Advanced",
+    "schema2StrictAuthorProjectsDeclareDiscriminator": true,
+    "legacyNativeLoadBoundary": "cold-start-only"
+  },
+  "runtimePackageTopology": {
+    "root": "BepInEx/plugins/DTMAPI",
+    "bepInPluginEntry": "DTMAPI.BepInExBootstrap.dll",
+    "coLocatedRuntimeDependencies": [
+      "DTMAPI.Abstractions.dll",
+      "DTMAPI.Core.dll",
+      "DTMAPI.GameBridge.DolocTown.dll",
+      "DTMAPI.ModConfigMenu.dll"
+    ],
+    "currentAcceptanceDllCount": 5,
+    "optionalFrameworkComponents": [
+      {
+        "id": "gamebridge-compatibility-host",
+        "distribution": "dormant-shipped",
+        "loadPolicy": "first-frozen-abi-call",
+        "relativePath": "DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll",
+        "assemblyName": "DTMAPI.GameBridge.DolocTown.Compatibility",
+        "sourceProject": "src/DTMAPI.GameBridge.DolocTown.Compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.csproj",
+        "targetFramework": "netstandard2.0",
+        "isFrameworkComponent": true,
+        "isMod": false,
+        "isBepInExPlugin": false,
+        "includedInDownloadPackage": true,
+        "defaultLoadState": "dormant"
+      }
+    ],
+    "permanentAssemblyCountPromise": false,
+    "managedModPlacement": "DTMAPI-managed game Mods, official local MODS, or native-verified Workshop source",
+    "externalPluginRule": "A third-party BepInPlugin entry under BepInEx/plugins is External; co-located DTMAPI Runtime dependencies are not."
+  },
+  "legacyOmittedTypeManifestPaths": [
+    "products/first-party/ManboCardboardAudio/manifest.json"
+  ],
+  "g2AtomicSurfaces": [
+    "manifest-schema-and-classifier",
+    "core-loader-preload-admission",
+    "author-sdk-project-and-reference-policy",
+    "game-and-reference-build-receipt",
+    "doctor-machine-and-player-projection",
+    "manager-and-ui-projection",
+    "package-deploy-journal-and-recovery",
+    "harmony-owner-and-restart-policy",
+    "synthetic-fixture-static-tests",
+    "synthetic-fixture-game-evidence",
+    "logs-report-and-rollback"
+  ],
+  "preLoadFailClosedReasons": [
+    "unknown-manifest-type",
+    "unknown-code-mod-kind",
+    "code-mod-kind-on-content-pack",
+    "content-pack-with-code-fields",
+    "advanced-reference-receipt-missing",
+    "advanced-reference-hash-mismatch",
+    "advanced-game-build-unverifiable",
+    "advanced-game-build-incompatible",
+    "wrong-target-framework",
+    "bundled-native-runtime-dependency"
+  ],
+  "forbiddenBeforeG2": [
+    "relax-sdk160",
+    "accept-code-mod-kind-in-live-schema",
+    "accept-advanced-as-manifest-type",
+    "infer-advanced-from-source-or-assembly-references",
+    "hand-package-advanced",
+    "migrate-autofishing",
+    "migrate-any-real-product"
+  ],
+  "interpretationSamples": [
+    {
+      "name": "explicit-code-mod",
+      "type": "CodeMod",
+      "entryDll": "Example.dll",
+      "codeModKind": null,
+      "expectedPhase0Interpretation": "declared-strict"
+    },
+    {
+      "name": "omitted-type-legacy",
+      "type": null,
+      "entryDll": "Example.dll",
+      "codeModKind": null,
+      "expectedPhase0Interpretation": "legacy-declared-strict"
+    },
+    {
+      "name": "content-pack",
+      "type": "ContentPack",
+      "entryDll": "",
+      "codeModKind": null,
+      "expectedPhase0Interpretation": "content-pack"
+    },
+    {
+      "name": "content-pack-with-dll",
+      "type": "ContentPack",
+      "entryDll": "Bad.dll",
+      "codeModKind": null,
+      "expectedPhase0Interpretation": "invalid"
+    },
+    {
+      "name": "unknown-type",
+      "type": "AdvancedCodeMod",
+      "entryDll": "Bad.dll",
+      "codeModKind": null,
+      "expectedPhase0Interpretation": "invalid"
+    },
+    {
+      "name": "reserved-kind-before-g2",
+      "type": "CodeMod",
+      "entryDll": "Bad.dll",
+      "codeModKind": "Advanced",
+      "expectedPhase0Interpretation": "invalid-before-g2"
+    }
+  ],
+  "requiredDocumentationTokens": {
+    "PROJECT.md": [
+      "one BepInEx plugin entry",
+      "SDK160",
+      "ProductNative",
+      "Phase 0 correction is verified"
+    ],
+    "AGENTS.md": [
+      "one BepInEx plugin entry",
+      "batch6-managed-mod-identity-contract.md",
+      "SDK160",
+      "Phase 0 correction is verified"
+    ],
+    "src/README.md": [
+      "one BepInEx plugin entry",
+      "four co-located Runtime dependencies"
+    ],
+    "src/DTMAPI.BepInExBootstrap/README.md": [
+      "only DTMAPI assembly containing the BepInEx plugin entry",
+      "four DTMAPI Runtime dependencies"
+    ],
+    "docs/onboarding/current-state.md": [
+      "one DTMAPI BepInEx plugin entry",
+      "four co-located Runtime dependencies"
+    ],
+    "author-sdk/README.md": [
+      "Strict CodeMod",
+      "batch6-managed-mod-identity-contract.md",
+      "SDK160"
+    ],
+    "docs/design/dtmapi-manager-ui-mvp.md": [
+      "Managed identity projection",
+      "batch6-managed-mod-identity-contract.md"
+    ],
+    "docs/architecture/batch6-managed-mod-identity-contract.md": [
+      "Phase 0 correction verified",
+      "This correction changes only pre-G2",
+      "it does not implement",
+      "G1 reproducible baseline: PASS",
+      "G2 Advanced Runtime and minimal fixture: BLOCKED"
+    ]
+  }
+}

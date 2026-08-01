@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.local/contracts/batch6-g2-ownership-receipt.schema.json",
+  "title": "DTMAPI Batch 6 G2 source ownership receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractId",
+    "architectureAuthority",
+    "reviewAuthority",
+    "targetKind",
+    "baselineCommit",
+    "implementationCommit",
+    "worktreeHeadCommit",
+    "sourceDiffSha256",
+    "changedFileCount",
+    "addedPhysicalLines",
+    "deletedPhysicalLines",
+    "mandatoryRuntimeProductNativeAddedPhysicalLines",
+    "stableAbstractionsAddedPhysicalLines",
+    "stableAbstractionsDeletedPhysicalLines",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "batch6-g2-advanced-synthetic-vertical-slice" },
+    "architectureAuthority": { "const": "docs/architecture/batch6-managed-mod-identity-contract.md" },
+    "reviewAuthority": { "const": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md" },
+    "targetKind": { "enum": ["worktree-candidate", "committed-implementation"] },
+    "baselineCommit": { "$ref": "#/$defs/gitCommit" },
+    "implementationCommit": {
+      "oneOf": [
+        { "$ref": "#/$defs/gitCommit" },
+        { "type": "null" }
+      ]
+    },
+    "worktreeHeadCommit": {
+      "oneOf": [
+        { "$ref": "#/$defs/gitCommit" },
+        { "type": "null" }
+      ]
+    },
+    "sourceDiffSha256": { "$ref": "#/$defs/sha256" },
+    "changedFileCount": { "type": "integer", "minimum": 0 },
+    "addedPhysicalLines": { "type": "integer", "minimum": 0 },
+    "deletedPhysicalLines": { "type": "integer", "minimum": 0 },
+    "mandatoryRuntimeProductNativeAddedPhysicalLines": { "type": "integer", "minimum": 0 },
+    "stableAbstractionsAddedPhysicalLines": { "type": "integer", "minimum": 0 },
+    "stableAbstractionsDeletedPhysicalLines": { "type": "integer", "minimum": 0 },
+    "files": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "targetKind": { "const": "committed-implementation" } },
+        "required": ["targetKind"]
+      },
+      "then": {
+        "properties": {
+          "implementationCommit": { "$ref": "#/$defs/gitCommit" },
+          "worktreeHeadCommit": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "targetKind": { "const": "worktree-candidate" } },
+        "required": ["targetKind"]
+      },
+      "then": {
+        "properties": {
+          "implementationCommit": { "type": "null" },
+          "worktreeHeadCommit": { "$ref": "#/$defs/gitCommit" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9A-F]{64}$"
+    },
+    "gitBlob": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+        { "type": "null" }
+      ]
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "ownership",
+        "addedPhysicalLines",
+        "deletedPhysicalLines",
+        "baselineBlob",
+        "targetBlob",
+        "diffSha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\\\].*\\.(cs|csproj)$"
+        },
+        "ownership": {
+          "enum": ["Platform", "SharedNative", "ProductNative", "SyntheticProductNative", "StableAbstractions"]
+        },
+        "addedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "deletedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "baselineBlob": { "$ref": "#/$defs/gitBlob" },
+        "targetBlob": { "$ref": "#/$defs/gitBlob" },
+        "diffSha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

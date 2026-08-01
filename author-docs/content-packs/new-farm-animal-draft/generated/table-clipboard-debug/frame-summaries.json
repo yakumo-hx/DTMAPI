@@ -1,0 +1,70 @@
+[
+  {
+    "bodyHtmlSample": "",
+    "bodyTextSample": "",
+    "className": "",
+    "id": "",
+    "index": 0,
+    "name": "",
+    "rect": {
+      "h": 2101,
+      "w": 820,
+      "x": 476,
+      "y": -36
+    },
+    "sameOrigin": false,
+    "src": "",
+    "title": ""
+  },
+  {
+    "bodyHtmlSample": "",
+    "bodyTextSample": "",
+    "className": "docx-paste-iframe",
+    "id": "",
+    "index": 1,
+    "name": "",
+    "rect": {
+      "h": 0,
+      "w": 0,
+      "x": 0,
+      "y": 0
+    },
+    "sameOrigin": false,
+    "src": "",
+    "title": ""
+  },
+  {
+    "bodyHtmlSample": "",
+    "bodyTextSample": "",
+    "className": "",
+    "id": "",
+    "index": 2,
+    "name": "",
+    "rect": {
+      "h": 154,
+      "w": 304,
+      "x": -9999,
+      "y": -9999
+    },
+    "sameOrigin": false,
+    "src": "",
+    "title": ""
+  },
+  {
+    "bodyHtmlSample": "",
+    "bodyTextSample": "",
+    "className": "",
+    "id": "",
+    "index": 3,
+    "name": "",
+    "rect": {
+      "h": 154,
+      "w": 304,
+      "x": -9999,
+      "y": -9999
+    },
+    "sameOrigin": false,
+    "src": "",
+    "title": ""
+  }
+]

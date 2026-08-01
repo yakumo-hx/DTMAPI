@@ -1,0 +1,13 @@
+[
+  {
+    "id": "toadstool_drop", //掉落库ID，详见对照表
+    "spawn_datas": [
+      {
+        "spawn_weight": 100,  //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "toadstool" //生成道具ID
+      }
+    ]
+  }
+]

@@ -1,0 +1,69 @@
+# 11 ID对照表（料理）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb>
+
+Source modified label: 4月14日修改
+
+## 1.食材组ID对照表
+
+#### Embedded sheet `oZI3KQ`
+
+[TSV](sheets/01-01-ozi3kq.tsv) · [rendered screenshot](sheets/01-01-ozi3kq.png)
+
+```tsv
+食材组名称	食材组ID	举例
+道具组
+末日作物类	endcrop_class	末芋、多肉
+除水果外所有蔬菜	vegetable_class	末芋、土豆
+水果类	fruit_class	蓝莓、蜡果
+鱼类	fish_class	草鱼、鲑鱼
+蘑菇类	mushroom_class	绯红子囊菌、香菇
+肉类	meat_fish_class	生肉、草鱼、
+任意肉、鱼、蔬菜	meat_vegetable_class	生肉、草鱼、末芋
+烹饪饭类	cooked_rice_class	咖喱饭、炒饭
+单个道具
+面粉	flour_class	面粉
+大米	rice_class	大米
+肉	meat_class	肉
+番茄	tomato_class	番茄
+茶叶	tea_leaf_class	茶叶
+鸡蛋	egg_class	鸡蛋
+```
+
+## 2.BUFF ID 对照表
+
+#### Embedded sheet `ty47V7`
+
+[TSV](sheets/02-01-ty47v7.tsv) · [rendered screenshot](sheets/02-01-ty47v7.png)
+
+```tsv
+BUFF名称	BUFF ID 	BUFF效果
+回复血量	health_increase_fixed	回复血量
+回复体力	energy_increase_fixed	回复体力
+回复精力	spirit_increase_fixed	回复精力
+减少血量	health_decrease_fixed	减少血量
+减少体力	energy_decrease_fixed	减少体力
+减少精力	spirit_decrease_fixed	减少精力
+移动速度↑	move_speed_up_lv1	短时间内提升移动速度
+移动速度↑↑	move_speed_up_lv2	长时间内提升移动速度
+跳跃强度↑	jump_power_up_lv1	短时间内提升跳跃强度
+跳跃强度↑↑	jump_power_up_lv2	长时间内提升跳跃强度
+体力回复↑	energy_reco_up_lv1	少量提升体力回复量
+体力回复↑↑	energy_reco_up_lv2	大量提升体力回复量
+体力回复↓	energy_reco_down_lv1	少量降低体力回复量
+体力回复↓↓	energy_reco_down_lv2	大量降低体力回复量
+生命回复↑	health_reco_up_lv1	少量提升生命回复量
+生命回复↑↑	health_reco_up_lv2	大量提升生命回复量
+生命回复↓	health_reco_down_lv1	少量降低生命回复量
+杂草采集量↑	weeds_coll_up_lv1	短时间内提升杂草采集量
+杂草采集量↑↑	weeds_coll_up_lv2	长时间内提升杂草采集量
+木材采集量↑	woods_coll_up_lv1	短时间内提升木材采集量
+木材采集量↑↑	woods_coll_up_lv2	长时间内提升木材采集量
+矿石采集量↑	stone_coll_up_lv1	短时间内提升矿石采集量
+矿石采集量↑↑	stone_coll_up_lv2	长时间内提升矿石采集量
+垃圾采集量↑	garbage_coll_up_lv1	短时间内提升垃圾采集量
+垃圾采集量↑↑	garbage_coll_up_lv2	长时间内提升垃圾采集量
+防御力↑	defend_up_lv1	短时间内提升防御力
+防御力↑↑	defend_up_lv2	长时间内提升防御力
+热乎乎	immune_acid_rain_lv1	短时间内免疫酸雨
+```

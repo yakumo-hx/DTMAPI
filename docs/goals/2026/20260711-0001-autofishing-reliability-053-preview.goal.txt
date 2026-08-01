@@ -1,0 +1,2 @@
+/goal
+实现 docs/goals/2026/20260711-0001-autofishing-reliability-053-preview.md：修复 visible-reel 边沿重试、Hook readiness 和事务式 primitive acquire，建立 typed animation/Hook-physics cache 与 10000 次零分配微测；统一 Runtime/API 到 0.5.3-alpha，冻结并警告 legacy IFishingAutomationApi，AutoFishing 保持 1.4.3-dtmapi DeveloperOnly。完成自动检查后只跑第五存档三条独立单鱼与两轮 60 秒预热+600 秒基线；不跑 100/500、不做其他 soak、不正式发布，ISSUE-010 保持开放。

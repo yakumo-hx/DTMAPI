@@ -1,0 +1,7 @@
+/goal
+目标：统一修复 DTMAPI 的 .NET 8 工具链解析，让公共 build/test/status/install/smoke 构建入口优先使用仓库本地、同时具备 SDK 与 Microsoft.NETCore.App 8.x 的宿主，禁止把 PATH .NET 9 或 DOTNET_ROLL_FORWARD=Major 当成正常验证路径；游戏内程序集继续保持 netstandard2.0。详细需求与验收以 docs/goals/2026/20260710-0007-dotnet8-toolchain-resolution.md 为准。
+
+开始前必须阅读：AGENTS.md、PROJECT.md、docs/goals/2026/20260710-0007-dotnet8-toolchain-resolution.md、其 sibling .goal.txt、docs/planning/DolocTownModdingAPI.md、docs/planning/Debug.md、references/README.md、docs/debug/INDEX.md。
+
+约束：只修改公共工具链解析、项目工具链规则和追踪记录；不把游戏程序集改成 net8/net9/net10；不依赖 major roll-forward；不安装或启动游戏；不 reset/revert 当前未提交改动。
+

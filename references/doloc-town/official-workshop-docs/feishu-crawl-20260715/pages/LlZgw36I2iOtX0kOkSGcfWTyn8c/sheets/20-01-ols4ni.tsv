@@ -1,0 +1,8 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	alchemy	anim_npc_alchemy_idle_[0~5]
+帧动画（对话）	6	talk	alchemy	anim_npc_alchemy_talk_[0~5]
+帧动画（移动）	8	walk	alchemy	anim_npc_alchemy_walk_[0~7]
+帧动画（交互）	6	interact	alchemy	anim_npc_alchemy_interact_[0~5]
+图标（日历）	1		alchemy	icon_calendar_alchemy
+图标（图鉴）	1		alchemy	icon_document_alchemy
+详情图（图鉴）	1		alchemy	preview_document_alchemy

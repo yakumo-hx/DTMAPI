@@ -1,0 +1,12 @@
+/goal
+目标：完成第一方 AutoFishing 的短按输入、Capture/Reset、独立 0–1 蓄力、原生后摆与非阻塞第五存档 smoke，并保持 DTMAPI owner 生命周期、GC 与兼容 API 边界。详细任务和验收以 docs/goals/2026/20260710-0004-autofishing-input-charge-polish.md 为准。
+
+开始前必须阅读：AGENTS.md、PROJECT.md、docs/goals/README.md、上述 goal 文件、本 .goal.txt、docs/reviews/manual-qa/2026/20260710-0001-autofishing-input-charge-polish-review.md、docs/workflows/codex-api-rebuild.md、docs/updates/INDEX.md、docs/updates/2026/20260710-0004-autofishing-input-charge-polish.md、docs/debug/INDEX.md、docs/debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md、docs/debug/regressions/smoke-matrix.md、docs/hook-map/README.md、docs/api/public-api-matrix.md，以及当前反编译 Ready 方法与只读小神/SMAPI 参考。
+
+安全约束：先检查 git status；不 reset/revert 既有未提交改动；只以本 goal 为任务来源；不复制参考源码；普通 mod 不进 BepInEx/plugins；原生反射/Harmony 留在 GameBridge/Bootstrap；不扩张兼容 IFishingAutomationApi；不在产品关闭时 UnpatchSelf；自动证据不得冒充玩家视觉/物理输入证据。
+
+版本要求：目标版本固定为 0.5.2-alpha；当前已是该版本，不再升版。
+
+任务 A：Gameplay 热键与 GC；任务 B：Capture/Reset；任务 C：逐次蓄力与原生 Ready；任务 D：第五存档 smoke；任务 E：验证与文档。
+
+完成标准：只有第五存档真实通过短按、捕获顺序、Reset/清除、charge 0/0.5/1、后摆、独立/组合循环、首抛帧流畅、cleanup 和退出检查，同时 build/smoke/日志/文档齐全，才可 complete；否则保留 pending 并报告 blocker。

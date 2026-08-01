@@ -1,6 +1,6 @@
 # DTMAPI Review Records
 
-This directory stores pre-implementation review records. A review record is not an update record and is not proof that a bug is fixed. It is the durable bridge between user manual QA and the next implementation goal.
+This directory stores pre-implementation review records. A review record is not an update record and is not proof that a bug is fixed. It is the durable bridge between user manual QA and later implementation or an update record.
 
 ## Purpose
 
@@ -13,7 +13,7 @@ The review should answer:
 - Which mod, DTMAPI layer, hook, UI lifecycle, config path, or official content path is likely involved?
 - Which code paths must be inspected before a fix is attempted?
 - What acceptance check would prove the exact user-visible bug is gone?
-- What evidence gap would keep the implementation goal incomplete?
+- What evidence gap would keep the implementation incomplete or blocked?
 
 ## Relationship To Other Docs
 
@@ -23,14 +23,22 @@ The review should answer:
 - `docs/reviews/api/local-mods-native-owner`: four-round local mod semantic/API-demand to native-owner review library for current testmods, legacy local own-mod sources, and local third-party sample groups.
 - `docs/reviews/api/smapi-ecosystem-map`: four-round clean-room semantic map from mature SMAPI ecosystem mod capabilities to DTMAPI candidate API layers and research priorities.
 - `docs/reviews/code`: branch-wide or focused code-level audits that are not only user manual-QA transcription and not an API native-owner review.
-- `docs/goals/YYYY/...`: immutable implementation task ledgers for future `/goal` prompts.
-- `docs/goals/YYYY/....goal.txt`: backups of the exact short `/goal` prompts.
 - `docs/debug`: runtime investigation, evidence, regressions, and known bug state.
 - `docs/updates`: traceable records of document, runtime, workflow, or project-direction changes.
 
-Do not use a mutable root task-ledger file for review output or implementation handoff. Reviews feed dedicated files under `docs/goals/YYYY/`.
+Do not use a mutable root task-ledger file for review output. Reviews feed an in-progress `docs/updates/YYYY/...` record when implementation begins.
 
 Do not use a review record to claim a fix is complete. Completion belongs to update/debug evidence after implementation and validation.
+
+## Review Lifecycle
+
+- `draft`: analysis is still being assembled.
+- `recorded`: pre-implementation facts, hypotheses, blockers, and acceptance gates are ready for use.
+- `superseded`: a later review owns the reasoning.
+
+Freeze substantive code, API, and root-cause analysis when implementation begins. A short resolution link may point to the owning Update, but changed files, implementation narrative, and final validation do not belong in the Review.
+
+Manual QA records are the exception: after implementation begins they remain append-only for new user observations, screenshot/log transcriptions, evidence links, and acceptance-gate outcomes. Do not rewrite earlier observations or hypotheses, and do not copy the implementation completion narrative or lifecycle state into the Manual QA record.
 
 ## File Layout
 
@@ -89,11 +97,11 @@ Create or update a durable review record when:
 - the user asks for an audit, review, code-level review, or workflow-backed prompt;
 - the same issue has survived a previous claimed fix or smoke pass;
 - the issue involves UI lifecycle, input, hotkeys, map transitions, save/load, official/Workshop loading, machines, vehicles, config persistence, or GameBridge hooks;
-- the next step is to generate a dedicated goal file or short `/goal` for a fresh Codex.
+- the next step is a complex implementation that needs durable acceptance and blocker facts.
 
-For pure discussion, a chat-only review is acceptable unless the user asks to update files. If an implementation goal will be produced, prefer a durable review first for complex or repeated issues.
+For pure discussion, a chat-only review is acceptable unless the user asks to update files. Before complex or repeated implementation work, prefer a durable review followed by an in-progress update record.
 
-Create an API review record before an API rebuild goal when:
+Create an API review record before API rebuild implementation when:
 
 - an API is classified as `Gap`, `Blocked`, `debug-only`, `registry-only`, or `DTMAPI-internal`;
 - the feature currently succeeds only through UI, debug console, registry/index state, or smoke-helper evidence;
@@ -131,4 +139,4 @@ Each API/native-owner review block should include:
 - exact blocker conditions;
 - recommended next action: document, downgrade, targeted native-owner deep dive, GameBridge rebuild, or no action.
 
-The fixed native-owner domain reports must also preserve the user's fuzzy semantic target and mark each subtopic as `Found`, `Partial`, `Not found`, or `Blocked` so a future goal can avoid redoing the same reverse lookup.
+The fixed native-owner domain reports must also preserve the user's fuzzy semantic target and mark each subtopic as `Found`, `Partial`, `Not found`, or `Blocked` so future implementation can avoid redoing the same reverse lookup.

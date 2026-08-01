@@ -1,0 +1,2716 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-07-16",
+  "mode": "oldest-duplicate-runtime-snapshots",
+  "authorization": "User approved cleaning approximately 150 GiB of past duplicate data on E: while other threads might still be testing.",
+  "scope": {
+    "deletedOnly": "docs/debug/evidence/GAME-SMOKE/<historical-run>/DTMAPI-evidence",
+    "cutoffRun": "20260712-170327",
+    "preserved": [
+      "outer GAME-SMOKE run directories and run-level files",
+      "explicitly allowlisted GAME-SMOKE artifacts",
+      "canonical runtime-evidence identities",
+      "GAME-SMOKE zip files",
+      "Process-Dumps",
+      "live game DTMAPI/evidence",
+      "current Batch 4 source and test worktree changes"
+    ]
+  },
+  "result": {
+    "targetGiB": 150,
+    "selectedRuns": 284,
+    "deletedRuns": 284,
+    "selectedLogicalBytes": 161858900344,
+    "selectedLogicalGiB": 150.743,
+    "freeBeforeDeleteGiB": 94.962,
+    "freeAfterDeleteGiB": 246.605,
+    "actualFreeGainGiB": 151.643,
+    "deletedFiles": 490390,
+    "deletedDirectories": 204854,
+    "earliestRun": "20260610-163928",
+    "latestRun": "20260705-001613"
+  },
+  "inventory": {
+    "timestampRuns": 1139,
+    "candidatesThroughCutoff": 462,
+    "eligibleRuns": 436,
+    "skippedRuns": 26,
+    "eligibleLogicalBytes": 428717259035,
+    "eligibleLogicalGiB": 399.274
+  },
+  "canonicalRetention": {
+    "path": "docs/debug/evidence/RETAINED-RUNTIME",
+    "identityCount": 62,
+    "files": 194,
+    "bytes": 82493022,
+    "identities": [
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260531-022409/animal-viewer-ui-delayed.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 1005367,
+        "sha256": "85a524c8d5e318605715529b84417696c1124b9790c131bbe67eb71d65277299"
+      },
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260531-022409/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 645,
+        "sha256": "9ca13590f9df208a7d6a3192795d5100829829d46586d415d21d2d9a784be174"
+      },
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260602-003035/animal-viewer-ui-delayed.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 1047660,
+        "sha256": "16902a8840f50ee28cc050f1d0a6b4b7923e26f082a9b5fb66014f48df369691"
+      },
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260603-040437/animal-viewer-ui-delayed.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 978568,
+        "sha256": "6091369e07d4604a5121904295adea47f0e4e79297b3df8548a66ff3953b9593"
+      },
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260603-040437/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 750,
+        "sha256": "0dbe6ae4fb4bdf8c6d7fc4d8d46328794278402138bace9d2e6901b050f0b1ea"
+      },
+      {
+        "identity": "DTMAPI-evidence/ANIMAL-001/20260605-232057",
+        "type": "directory",
+        "files": 3,
+        "bytes": 2742950,
+        "sha256": "0d0568425fef21054e6567499c4d7e68714e00431cae7cb9f4ea2a6d72fbef68"
+      },
+      {
+        "identity": "DTMAPI-evidence/AUTO-FISHING-PERF/20260711-014032/auto-fishing-performance.json",
+        "type": "file",
+        "files": 1,
+        "bytes": 2020,
+        "sha256": "9e8699842515b0c3ebadcaf3c830ca8b00bd23a0b034f0ba0cc025fc503fd157"
+      },
+      {
+        "identity": "DTMAPI-evidence/AUTO-FISHING-PERF/20260711-025609/auto-fishing-performance.json",
+        "type": "file",
+        "files": 1,
+        "bytes": 2130,
+        "sha256": "a38b9898ecca6d906fc31dfd1e301cb171e9c6a60e77cdb06e84913574780bb7"
+      },
+      {
+        "identity": "DTMAPI-evidence/AUTO-FISHING-PERF/20260711-070201/auto-fishing-performance.json",
+        "type": "file",
+        "files": 1,
+        "bytes": 2757,
+        "sha256": "a9023417742f1f541842ff0a2bb5f367c9d31852c0d407a5566bae3e2bc8f573"
+      },
+      {
+        "identity": "DTMAPI-evidence/AUTO-FISHING-PERF/20260711-123039/auto-fishing-performance.json",
+        "type": "file",
+        "files": 1,
+        "bytes": 52513,
+        "sha256": "940f8a781a62747ee20f66cbaf65558701c05a4c8a3030e3851b5e38eebbec79"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260608-150952",
+        "type": "directory",
+        "files": 4,
+        "bytes": 927906,
+        "sha256": "664d9f87d02189f1df1a120887cb3dbdcaf3fdc4079214f596d89489c7ca26ad"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260608-222622",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3312899,
+        "sha256": "d79807f069393a03ca573aeac36e6e7f3811e0513f06253546a55a46384e6294"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260608-222622/camera-playable-dynamic-telemetry.csv",
+        "type": "file",
+        "files": 1,
+        "bytes": 14550,
+        "sha256": "7178aef4b78fcd2e019dd17468b2dd5707bd2e6ffee7d6b7df464fe0b5b8208c"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260608-222622/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 5938,
+        "sha256": "33c06892e28b09ec57af151ae9f69c3a720751600771817101b55ecdbf55ae47"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-015844",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3318800,
+        "sha256": "5f4a305b90de6d0c86ebd10d72c217468a5042e88a1c45984c4ed500ed35f89b"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-015844/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 5934,
+        "sha256": "de13fc47cf0b4bc8ecbc18345da1e7478fb92b506504e1898331f4b53f1b540c"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-030147",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3311015,
+        "sha256": "01b083111338bce119a7eb344bb299e4ece32aba2a631e4ed77274882e430298"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-030147/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 5937,
+        "sha256": "a7b766757622dc45de4b8ee5262d06a4b7682c0b8e979dfc2bc9807153fe5ed3"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-031342",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3288976,
+        "sha256": "f9b20c9826ced40c3f6b20edeb4c503ff28a5d1a8e3b870e9525aa092193c6fa"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-031342/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 5938,
+        "sha256": "eb5cd41dba24c4f781bdcc15321162e2e0170139db1c9ddc30094058d04ffaba"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-100258",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3316056,
+        "sha256": "7c68f7eabd35aba973a9fc92c752869bdf8c53bc7303abda153a9e713ac531e2"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-102609",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3309278,
+        "sha256": "63b8cd73e9fcc1412a16f237321159d5b9601dae58ab9cb4b7447d497dbf02e6"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-110612",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3310769,
+        "sha256": "b98dc3f2dd5955289663c60d7ed03dc171b540b033b52a54133e1c5692796778"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-134452",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3794940,
+        "sha256": "163a4e32fef127711e11ea40236c0d81cefeea35040c4c815f8bd82c9f406182"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260609-141649/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 5934,
+        "sha256": "d6fc4bb8fa7cf1e628344a61cf27b2ca0636e3979823d68289f51879f1cea45a"
+      },
+      {
+        "identity": "DTMAPI-evidence/CAMERA-PLAYABLE/20260610-041023",
+        "type": "directory",
+        "files": 11,
+        "bytes": 3780737,
+        "sha256": "0dbfcf57b061dafd93ebcc6a5cfc5551d65c636b75c8ec8299a22aa9e7f4ffb1"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260602-022500",
+        "type": "directory",
+        "files": 2,
+        "bytes": 296031,
+        "sha256": "cbcd4b909c46f4744ea18843367bcd1ac67c7d0346685699f378c841305d9501"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260602-022500/debug-console.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 295752,
+        "sha256": "cb2ca7876e7cf75eeda8034286464c8331aea377403d76a5e8937becaf80bdcd"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260602-122951/debug-console.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 316360,
+        "sha256": "07ca4c56455e04ccae4c8a4df55f6b5323dca792d6532618edc82f64eb9f5bab"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260603-032451/debug-console.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 278404,
+        "sha256": "395cdfb5ab7ed883dc1ff1d979e9347a481e5197ddd5f1ae3b783be658a343b4"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260603-035737/debug-console.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 278103,
+        "sha256": "b33b4af8223d8f083f9eba170e15d4aa6522805bf06df9eb28c3d85112e805de"
+      },
+      {
+        "identity": "DTMAPI-evidence/DEBUG-CONSOLE-UI/20260605-181315/debug-console.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 385552,
+        "sha256": "e3ec2015c7de671026601c08a4c4eccfaabcca45e4001ba1fddc607412bccfc9"
+      },
+      {
+        "identity": "DTMAPI-evidence/NEWCONTENT-024/20260603-210256/mine-placed-dtmapi-mine.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 334600,
+        "sha256": "36ee2c1946ae8b7f9f6df1c6dff8a17622fe392192aaba64d991ec120f81ae6e"
+      },
+      {
+        "identity": "DTMAPI-evidence/NEWCONTENT-025/20260604-111618/mine-placed-dtmapi-mine.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 350698,
+        "sha256": "2f91092a88905d824e97ae76c36e297adc4d5a7701772c71278ba81c3d69e2cd"
+      },
+      {
+        "identity": "DTMAPI-evidence/NEWCONTENT-025/20260605-181312/mine-official-tech-tree-dtmapi-mine.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 119998,
+        "sha256": "fbfdab4ab6a4f3bbb1156c8d68679ea36988f0a614eafe209de360f46be6015c"
+      },
+      {
+        "identity": "DTMAPI-evidence/NEWCONTENT-025/20260605-181312/mine-placed-dtmapi-mine.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 306023,
+        "sha256": "6ea913a3e1291191da718fe3525f207a345412e5b204f2b5ad7b5a67b8e281d2"
+      },
+      {
+        "identity": "DTMAPI-evidence/NEWCONTENT-025/20260605-232005",
+        "type": "directory",
+        "files": 4,
+        "bytes": 348144,
+        "sha256": "bf258fdeda92fce4152a374b7f6c5888b7c111c125d475afbf5d80d13579b168"
+      },
+      {
+        "identity": "DTMAPI-evidence/OFFICIAL-001/20260531-051312/official-mod-ui.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 230308,
+        "sha256": "be85b282699d13786e2e493ed784faae2f2583be7a3d245a4ec7556ce56af7b5"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260531-042057/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 490,
+        "sha256": "8600d7e090819810b46697c5b08eef34f114d9bd48b5325204d093daf5c4ca05"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260531-042057/title-settings-button.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 601094,
+        "sha256": "4dbc359d7fad09cda98ab6b1b4c3fe2b51e4152e0f543edf95e926cf427a299c"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260531-042057/title-settings-menu.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 771286,
+        "sha256": "3a2411221da7c3a10bd2d0a06f24e125ad1e05b28ed7b9f0e0a655404bd49b58"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260531-155324/title-settings-menu.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 812820,
+        "sha256": "710b4bd2f548b754c781ff6f9ab5dcfe73b47a476f67bee80f653af61b73ef33"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260531-161433/title-settings-menu.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 809456,
+        "sha256": "b734d95c9d0c69ec73fc044530c6cf171d0627933df888c8e762ceeb914a685c"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260602-020747/title-settings-config-action-speed.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 865471,
+        "sha256": "09b52ce6d9f4ac9a4cdb78ab43e1cffffc800d01ebb2e7584191120368c1a7cd"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260602-020747/title-settings-config-animal-husbandry-progress.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 804094,
+        "sha256": "12b98d2f42df0e79aab14b07ccbe14ef38d5326c434f0c0f43f5991473aa5ad6"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-041133/title-settings-config-animal-husbandry-progress.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 759168,
+        "sha256": "efec32d4dac0cfe56288ece6ed8ea63c2e0ef4fce372da99def22f0d72b7db30"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-045153/title-settings-config-second-motor.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 778587,
+        "sha256": "49dcb4dc8ac87bb67a4a1af498756db5d7a129b005fccbdfdfe597f53f32741d"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-052523",
+        "type": "directory",
+        "files": 7,
+        "bytes": 4828411,
+        "sha256": "933110115807eef7a34a4bb64f67fd1fa9f5a0dcac5e51379a33d00bc672573a"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-052523/summary.txt",
+        "type": "file",
+        "files": 1,
+        "bytes": 1600,
+        "sha256": "97360e2f3832b4863ac3dcc5222ce7a71504740a1cc3f2512e65cbd74dc5f88a"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-action-speed.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 831590,
+        "sha256": "189fe01c98db501cc723faaf896c7df9387d37f79fa071f9b12de7fdfb061737"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-animal-husbandry-progress.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 750945,
+        "sha256": "ad82c5498a35cd27350d59d581270ca8af85afab76d1cdeebe055dba89d851bb"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-auto-fishing.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 833970,
+        "sha256": "30b6d85533e76be22a437f77307b8d3d23af8e1629cd6d880c8bf763528c787a"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260603-160812/title-settings-config-animal-husbandry-progress.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 820577,
+        "sha256": "cc78ed32d486a869e3910dd914f9a6f496df603793492d8b4fe44fd354f1598e"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260606-150959/title-settings-config-animal-husbandry-progress.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 809679,
+        "sha256": "e4421073fbd2ffd11d86f861a88e3be2ce582960f0a259b2f4871a44be8d3077"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260612-165531",
+        "type": "directory",
+        "files": 10,
+        "bytes": 7666096,
+        "sha256": "88e8c8e9053eb3818ded024ba71388c20312ff0ded5e74f2a407b146370f752e"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260612-170153",
+        "type": "directory",
+        "files": 5,
+        "bytes": 3238937,
+        "sha256": "e22a4f832d0b51008454d5bd7d6d231a40664e9f6147a25be96113561f3ba291"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260612-204434",
+        "type": "directory",
+        "files": 10,
+        "bytes": 7022132,
+        "sha256": "cd00f2619c076cd3437947a1662f40c137126639192670d72f7240d8e7b69dbb"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-004/20260612-204434/title-settings-button.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 568470,
+        "sha256": "3e4b51a1f2a486c42fc4da6fe5979905212f34bf34ef8613a41f0a8f2effc407"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-006/20260531-111940/title-settings-after-return.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 936769,
+        "sha256": "2ac206ec2c60ebfa749a746c9df29814eae164774e5e005951f6e9997b279b54"
+      },
+      {
+        "identity": "DTMAPI-evidence/UI-007/20260613-143712",
+        "type": "directory",
+        "files": 3,
+        "bytes": 5370847,
+        "sha256": "9959aa0dfbc1bc0e46c8cc4099d99c82cda3d81dd87a8ef0fe8d9614eb7bd082"
+      },
+      {
+        "identity": "DTMAPI-evidence/ZOOM-042/20260607-072308",
+        "type": "directory",
+        "files": 4,
+        "bytes": 1186605,
+        "sha256": "742bfc6a505a8b6e8f8b25ea7ff8949bae615b30cf10438427395952a825799e"
+      },
+      {
+        "identity": "DTMAPI-evidence/ZOOM-042/20260607-072308/zoom-before.png",
+        "type": "file",
+        "files": 1,
+        "bytes": 332988,
+        "sha256": "4fb3ee5b17654a416f90320c863cad10f67dcc9b8ccdfe822437ba6cbbf9e356"
+      }
+    ]
+  },
+  "allowlist": {
+    "sha256Before": "b9919af9983dd70175f2b58ddb95fbf85d8cfa9279a1795e53a8aa1f9e09a536",
+    "sha256After": "b9919af9983dd70175f2b58ddb95fbf85d8cfa9279a1795e53a8aa1f9e09a536",
+    "listedRuns": 719,
+    "existingRunsBefore": 706,
+    "existingRunsAfter": 706,
+    "missingRunsBefore": [
+      "GAME-SMOKE/20260614-004621",
+      "GAME-SMOKE/20260614-011222",
+      "GAME-SMOKE/20260614-043810",
+      "GAME-SMOKE/20260614-045125",
+      "GAME-SMOKE/20260614-045247",
+      "GAME-SMOKE/20260614-063456",
+      "GAME-SMOKE/20260614-063639",
+      "GAME-SMOKE/20260615-191720",
+      "GAME-SMOKE/20260615-192916",
+      "GAME-SMOKE/20260615-193040",
+      "GAME-SMOKE/20260618-010235",
+      "GAME-SMOKE/20260618-012012",
+      "GAME-SMOKE/20260618-012554"
+    ],
+    "listedArtifacts": 225,
+    "literalArtifacts": 224,
+    "existingLiteralArtifactsBefore": 223,
+    "existingLiteralArtifactsAfter": 223,
+    "missingLiteralArtifactsBefore": [
+      "GAME-SMOKE/20260618-010235/post-cleanup-status.txt"
+    ],
+    "runtimeIdentities": 62,
+    "processDumpIdentities": 6,
+    "skippedExplicitArtifactRuns": 26
+  },
+  "preservedSizes": {
+    "gameSmokeZipFiles": 28,
+    "gameSmokeZipBytes": 6685760566,
+    "gameSmokeZipGiB": 6.227,
+    "processDumpFiles": 47,
+    "processDumpBytes": 29445527186,
+    "processDumpGiB": 27.423
+  },
+  "validation": [
+    "all selected targets resolved exactly one historical run below GAME-SMOKE with leaf DTMAPI-evidence",
+    "all selected targets and descendants had zero reparse points",
+    "all runs containing explicit nested artifact references were excluded",
+    "all 62 canonical runtime identities were hashed before and after deletion",
+    "all 284 selected nested targets were absent after deletion",
+    "all 284 selected outer run directories remained present",
+    "allowlisted run and literal-artifact existence sets were identical before and after deletion",
+    "allowlist SHA-256 was identical before and after deletion",
+    "GAME-SMOKE ZIP files, Process-Dumps, live runtime evidence, current runs, and shared G3 worktree changes were outside deletion scope"
+  ],
+  "selected": [
+    {
+      "run": "20260610-163928",
+      "createdUtc": "2026-06-10T08:39:28.3467738Z",
+      "logicalBytes": 320302456,
+      "files": 1094,
+      "directories": 422
+    },
+    {
+      "run": "20260610-164830",
+      "createdUtc": "2026-06-10T08:48:30.1567024Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-165043",
+      "createdUtc": "2026-06-10T08:50:43.4451059Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-170839",
+      "createdUtc": "2026-06-10T09:08:39.5220141Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-170950",
+      "createdUtc": "2026-06-10T09:09:50.874408Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-202047",
+      "createdUtc": "2026-06-10T12:20:47.1920517Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-203301",
+      "createdUtc": "2026-06-10T12:33:01.9965047Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-204134",
+      "createdUtc": "2026-06-10T12:41:34.2414106Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-205153",
+      "createdUtc": "2026-06-10T12:51:53.8370152Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-205841",
+      "createdUtc": "2026-06-10T12:58:41.4812031Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-220230",
+      "createdUtc": "2026-06-10T14:02:30.3686024Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-220835",
+      "createdUtc": "2026-06-10T14:08:35.8787641Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-221703",
+      "createdUtc": "2026-06-10T14:17:03.5975135Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260610-223354",
+      "createdUtc": "2026-06-10T14:33:54.8189381Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260611-000932",
+      "createdUtc": "2026-06-10T16:09:32.4783704Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260611-002930",
+      "createdUtc": "2026-06-10T16:29:30.4306825Z",
+      "logicalBytes": 324060160,
+      "files": 1105,
+      "directories": 423
+    },
+    {
+      "run": "20260611-024629",
+      "createdUtc": "2026-06-10T18:46:29.6918234Z",
+      "logicalBytes": 330214746,
+      "files": 1120,
+      "directories": 426
+    },
+    {
+      "run": "20260611-024851",
+      "createdUtc": "2026-06-10T18:48:51.598979Z",
+      "logicalBytes": 330214746,
+      "files": 1120,
+      "directories": 426
+    },
+    {
+      "run": "20260611-025010",
+      "createdUtc": "2026-06-10T18:50:10.2361863Z",
+      "logicalBytes": 330214746,
+      "files": 1120,
+      "directories": 426
+    },
+    {
+      "run": "20260611-031502",
+      "createdUtc": "2026-06-10T19:15:02.8634644Z",
+      "logicalBytes": 333959366,
+      "files": 1131,
+      "directories": 427
+    },
+    {
+      "run": "20260611-031721",
+      "createdUtc": "2026-06-10T19:17:21.6032712Z",
+      "logicalBytes": 333959366,
+      "files": 1131,
+      "directories": 427
+    },
+    {
+      "run": "20260611-031838",
+      "createdUtc": "2026-06-10T19:18:38.6777477Z",
+      "logicalBytes": 333959366,
+      "files": 1131,
+      "directories": 427
+    },
+    {
+      "run": "20260611-031954",
+      "createdUtc": "2026-06-10T19:19:54.7876401Z",
+      "logicalBytes": 334128565,
+      "files": 1135,
+      "directories": 429
+    },
+    {
+      "run": "20260611-085926",
+      "createdUtc": "2026-06-11T00:59:26.8370608Z",
+      "logicalBytes": 334364534,
+      "files": 1137,
+      "directories": 430
+    },
+    {
+      "run": "20260611-090710",
+      "createdUtc": "2026-06-11T01:07:10.2766031Z",
+      "logicalBytes": 334416749,
+      "files": 1139,
+      "directories": 431
+    },
+    {
+      "run": "20260611-091239",
+      "createdUtc": "2026-06-11T01:12:39.8657965Z",
+      "logicalBytes": 336839292,
+      "files": 1143,
+      "directories": 432
+    },
+    {
+      "run": "20260611-091349",
+      "createdUtc": "2026-06-11T01:13:49.9767186Z",
+      "logicalBytes": 337008493,
+      "files": 1147,
+      "directories": 434
+    },
+    {
+      "run": "20260611-092012",
+      "createdUtc": "2026-06-11T01:20:12.1471876Z",
+      "logicalBytes": 338968638,
+      "files": 1151,
+      "directories": 435
+    },
+    {
+      "run": "20260611-095311",
+      "createdUtc": "2026-06-11T01:53:11.3052895Z",
+      "logicalBytes": 340780828,
+      "files": 1155,
+      "directories": 436
+    },
+    {
+      "run": "20260611-100522",
+      "createdUtc": "2026-06-11T02:05:22.8825942Z",
+      "logicalBytes": 342207372,
+      "files": 1158,
+      "directories": 437
+    },
+    {
+      "run": "20260611-100827",
+      "createdUtc": "2026-06-11T02:08:27.9089001Z",
+      "logicalBytes": 344136156,
+      "files": 1162,
+      "directories": 438
+    },
+    {
+      "run": "20260611-101818",
+      "createdUtc": "2026-06-11T02:18:18.1426476Z",
+      "logicalBytes": 346233182,
+      "files": 1166,
+      "directories": 439
+    },
+    {
+      "run": "20260611-102823",
+      "createdUtc": "2026-06-11T02:28:23.1827364Z",
+      "logicalBytes": 348047446,
+      "files": 1170,
+      "directories": 440
+    },
+    {
+      "run": "20260611-102922",
+      "createdUtc": "2026-06-11T02:29:22.7039699Z",
+      "logicalBytes": 350146565,
+      "files": 1174,
+      "directories": 441
+    },
+    {
+      "run": "20260611-103601",
+      "createdUtc": "2026-06-11T02:36:01.3294669Z",
+      "logicalBytes": 352197286,
+      "files": 1178,
+      "directories": 442
+    },
+    {
+      "run": "20260611-103701",
+      "createdUtc": "2026-06-11T02:37:01.9413837Z",
+      "logicalBytes": 352366487,
+      "files": 1182,
+      "directories": 444
+    },
+    {
+      "run": "20260611-112148",
+      "createdUtc": "2026-06-11T03:21:48.270314Z",
+      "logicalBytes": 355350483,
+      "files": 1187,
+      "directories": 445
+    },
+    {
+      "run": "20260611-112402",
+      "createdUtc": "2026-06-11T03:24:02.2805385Z",
+      "logicalBytes": 355519682,
+      "files": 1191,
+      "directories": 447
+    },
+    {
+      "run": "20260611-113018",
+      "createdUtc": "2026-06-11T03:30:18.7101052Z",
+      "logicalBytes": 358535898,
+      "files": 1196,
+      "directories": 448
+    },
+    {
+      "run": "20260611-113156",
+      "createdUtc": "2026-06-11T03:31:56.5068239Z",
+      "logicalBytes": 358705099,
+      "files": 1200,
+      "directories": 450
+    },
+    {
+      "run": "20260611-123852",
+      "createdUtc": "2026-06-11T04:38:52.7565633Z",
+      "logicalBytes": 361538961,
+      "files": 1205,
+      "directories": 451
+    },
+    {
+      "run": "20260611-124008",
+      "createdUtc": "2026-06-11T04:40:08.2210241Z",
+      "logicalBytes": 361708160,
+      "files": 1209,
+      "directories": 453
+    },
+    {
+      "run": "20260611-124600",
+      "createdUtc": "2026-06-11T04:46:00.8531967Z",
+      "logicalBytes": 364737583,
+      "files": 1214,
+      "directories": 454
+    },
+    {
+      "run": "20260611-124719",
+      "createdUtc": "2026-06-11T04:47:19.5912483Z",
+      "logicalBytes": 364906784,
+      "files": 1218,
+      "directories": 456
+    },
+    {
+      "run": "20260611-214536",
+      "createdUtc": "2026-06-11T13:45:36.6831619Z",
+      "logicalBytes": 419891548,
+      "files": 1290,
+      "directories": 492
+    },
+    {
+      "run": "20260611-214654",
+      "createdUtc": "2026-06-11T13:46:54.3261595Z",
+      "logicalBytes": 420057191,
+      "files": 1294,
+      "directories": 494
+    },
+    {
+      "run": "20260611-214845",
+      "createdUtc": "2026-06-11T13:48:45.1846251Z",
+      "logicalBytes": 424359630,
+      "files": 1301,
+      "directories": 497
+    },
+    {
+      "run": "20260611-215014",
+      "createdUtc": "2026-06-11T13:50:14.6200445Z",
+      "logicalBytes": 424525279,
+      "files": 1305,
+      "directories": 499
+    },
+    {
+      "run": "20260612-000310",
+      "createdUtc": "2026-06-11T16:03:10.8296382Z",
+      "logicalBytes": 430400368,
+      "files": 1316,
+      "directories": 503
+    },
+    {
+      "run": "20260612-000435",
+      "createdUtc": "2026-06-11T16:04:35.2474393Z",
+      "logicalBytes": 430566009,
+      "files": 1320,
+      "directories": 505
+    },
+    {
+      "run": "20260612-000606",
+      "createdUtc": "2026-06-11T16:06:06.3766409Z",
+      "logicalBytes": 434351236,
+      "files": 1331,
+      "directories": 506
+    },
+    {
+      "run": "20260612-000817",
+      "createdUtc": "2026-06-11T16:08:17.9207259Z",
+      "logicalBytes": 434351236,
+      "files": 1331,
+      "directories": 506
+    },
+    {
+      "run": "20260612-000929",
+      "createdUtc": "2026-06-11T16:09:29.4410268Z",
+      "logicalBytes": 434351236,
+      "files": 1331,
+      "directories": 506
+    },
+    {
+      "run": "20260612-001041",
+      "createdUtc": "2026-06-11T16:10:41.582429Z",
+      "logicalBytes": 434351236,
+      "files": 1331,
+      "directories": 506
+    },
+    {
+      "run": "20260612-001151",
+      "createdUtc": "2026-06-11T16:11:51.365242Z",
+      "logicalBytes": 434364658,
+      "files": 1332,
+      "directories": 507
+    },
+    {
+      "run": "20260612-001359",
+      "createdUtc": "2026-06-11T16:13:59.0196876Z",
+      "logicalBytes": 434364658,
+      "files": 1332,
+      "directories": 507
+    },
+    {
+      "run": "20260612-001516",
+      "createdUtc": "2026-06-11T16:15:16.4152861Z",
+      "logicalBytes": 438666452,
+      "files": 1339,
+      "directories": 510
+    },
+    {
+      "run": "20260612-002033",
+      "createdUtc": "2026-06-11T16:20:33.7657624Z",
+      "logicalBytes": 438832095,
+      "files": 1343,
+      "directories": 512
+    },
+    {
+      "run": "20260612-015402",
+      "createdUtc": "2026-06-11T17:54:02.2261427Z",
+      "logicalBytes": 438832095,
+      "files": 1343,
+      "directories": 512
+    },
+    {
+      "run": "20260612-015716",
+      "createdUtc": "2026-06-11T17:57:16.3227703Z",
+      "logicalBytes": 441914289,
+      "files": 1348,
+      "directories": 513
+    },
+    {
+      "run": "20260612-015832",
+      "createdUtc": "2026-06-11T17:58:32.7196849Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-060648",
+      "createdUtc": "2026-06-11T22:06:48.4354505Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-061539",
+      "createdUtc": "2026-06-11T22:15:39.7501803Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-062154",
+      "createdUtc": "2026-06-11T22:21:54.8698529Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-071939",
+      "createdUtc": "2026-06-11T23:19:39.0413966Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-072544",
+      "createdUtc": "2026-06-11T23:25:44.1120501Z",
+      "logicalBytes": 442079930,
+      "files": 1352,
+      "directories": 515
+    },
+    {
+      "run": "20260612-085717",
+      "createdUtc": "2026-06-12T00:57:17.8941963Z",
+      "logicalBytes": 442254783,
+      "files": 1356,
+      "directories": 517
+    },
+    {
+      "run": "20260612-101549",
+      "createdUtc": "2026-06-12T02:15:49.0840623Z",
+      "logicalBytes": 442904118,
+      "files": 1358,
+      "directories": 518
+    },
+    {
+      "run": "20260612-102642",
+      "createdUtc": "2026-06-12T02:26:42.4574729Z",
+      "logicalBytes": 442904118,
+      "files": 1358,
+      "directories": 518
+    },
+    {
+      "run": "20260612-165456",
+      "createdUtc": "2026-06-12T08:54:56.9909911Z",
+      "logicalBytes": 450570214,
+      "files": 1368,
+      "directories": 519
+    },
+    {
+      "run": "20260612-170119",
+      "createdUtc": "2026-06-12T09:01:19.6480346Z",
+      "logicalBytes": 453809151,
+      "files": 1373,
+      "directories": 520
+    },
+    {
+      "run": "20260612-170240",
+      "createdUtc": "2026-06-12T09:02:40.000319Z",
+      "logicalBytes": 454647099,
+      "files": 1378,
+      "directories": 524
+    },
+    {
+      "run": "20260612-170331",
+      "createdUtc": "2026-06-12T09:03:31.2656934Z",
+      "logicalBytes": 455635760,
+      "files": 1383,
+      "directories": 527
+    },
+    {
+      "run": "20260612-170421",
+      "createdUtc": "2026-06-12T09:04:21.3780794Z",
+      "logicalBytes": 456447951,
+      "files": 1388,
+      "directories": 530
+    },
+    {
+      "run": "20260612-170512",
+      "createdUtc": "2026-06-12T09:05:12.0425108Z",
+      "logicalBytes": 457441948,
+      "files": 1393,
+      "directories": 533
+    },
+    {
+      "run": "20260612-170708",
+      "createdUtc": "2026-06-12T09:07:08.3194653Z",
+      "logicalBytes": 458625696,
+      "files": 1402,
+      "directories": 537
+    },
+    {
+      "run": "20260612-170819",
+      "createdUtc": "2026-06-12T09:08:19.2795586Z",
+      "logicalBytes": 463693263,
+      "files": 1410,
+      "directories": 541
+    },
+    {
+      "run": "20260612-170928",
+      "createdUtc": "2026-06-12T09:09:28.3746908Z",
+      "logicalBytes": 464783036,
+      "files": 1415,
+      "directories": 544
+    },
+    {
+      "run": "20260612-203558",
+      "createdUtc": "2026-06-12T12:35:58.7575386Z",
+      "logicalBytes": 465444775,
+      "files": 1416,
+      "directories": 545
+    },
+    {
+      "run": "20260612-203718",
+      "createdUtc": "2026-06-12T12:37:18.26314Z",
+      "logicalBytes": 466111591,
+      "files": 1418,
+      "directories": 547
+    },
+    {
+      "run": "20260612-204934",
+      "createdUtc": "2026-06-12T12:49:34.8376685Z",
+      "logicalBytes": 473795987,
+      "files": 1429,
+      "directories": 549
+    },
+    {
+      "run": "20260612-205040",
+      "createdUtc": "2026-06-12T12:50:40.2378172Z",
+      "logicalBytes": 474418732,
+      "files": 1430,
+      "directories": 550
+    },
+    {
+      "run": "20260612-205147",
+      "createdUtc": "2026-06-12T12:51:47.2448071Z",
+      "logicalBytes": 475136918,
+      "files": 1431,
+      "directories": 551
+    },
+    {
+      "run": "20260612-205248",
+      "createdUtc": "2026-06-12T12:52:48.4519656Z",
+      "logicalBytes": 475857271,
+      "files": 1432,
+      "directories": 552
+    },
+    {
+      "run": "20260612-210544",
+      "createdUtc": "2026-06-12T13:05:44.8269938Z",
+      "logicalBytes": 477231190,
+      "files": 1434,
+      "directories": 554
+    },
+    {
+      "run": "20260612-210646",
+      "createdUtc": "2026-06-12T13:06:46.4872389Z",
+      "logicalBytes": 477761165,
+      "files": 1435,
+      "directories": 555
+    },
+    {
+      "run": "20260612-210744",
+      "createdUtc": "2026-06-12T13:07:44.6085275Z",
+      "logicalBytes": 478368690,
+      "files": 1436,
+      "directories": 556
+    },
+    {
+      "run": "20260612-210900",
+      "createdUtc": "2026-06-12T13:09:00.1774952Z",
+      "logicalBytes": 479123812,
+      "files": 1441,
+      "directories": 559
+    },
+    {
+      "run": "20260613-094928",
+      "createdUtc": "2026-06-13T01:49:28.6098459Z",
+      "logicalBytes": 481993639,
+      "files": 1457,
+      "directories": 568
+    },
+    {
+      "run": "20260613-095209",
+      "createdUtc": "2026-06-13T01:52:09.6701636Z",
+      "logicalBytes": 482856461,
+      "files": 1462,
+      "directories": 571
+    },
+    {
+      "run": "20260613-100450",
+      "createdUtc": "2026-06-13T02:04:50.7746271Z",
+      "logicalBytes": 483961266,
+      "files": 1469,
+      "directories": 575
+    },
+    {
+      "run": "20260613-101842",
+      "createdUtc": "2026-06-13T02:18:42.1715737Z",
+      "logicalBytes": 484181011,
+      "files": 1470,
+      "directories": 576
+    },
+    {
+      "run": "20260613-102412",
+      "createdUtc": "2026-06-13T02:24:12.5834921Z",
+      "logicalBytes": 484428261,
+      "files": 1471,
+      "directories": 577
+    },
+    {
+      "run": "20260613-102534",
+      "createdUtc": "2026-06-13T02:25:34.8884258Z",
+      "logicalBytes": 484607775,
+      "files": 1472,
+      "directories": 578
+    },
+    {
+      "run": "20260613-102848",
+      "createdUtc": "2026-06-13T02:28:48.6394518Z",
+      "logicalBytes": 484810720,
+      "files": 1473,
+      "directories": 579
+    },
+    {
+      "run": "20260613-103216",
+      "createdUtc": "2026-06-13T02:32:16.3359201Z",
+      "logicalBytes": 485007467,
+      "files": 1474,
+      "directories": 580
+    },
+    {
+      "run": "20260613-103328",
+      "createdUtc": "2026-06-13T02:33:28.5816389Z",
+      "logicalBytes": 485057849,
+      "files": 1475,
+      "directories": 581
+    },
+    {
+      "run": "20260613-103427",
+      "createdUtc": "2026-06-13T02:34:27.9770377Z",
+      "logicalBytes": 485337787,
+      "files": 1476,
+      "directories": 582
+    },
+    {
+      "run": "20260613-103531",
+      "createdUtc": "2026-06-13T02:35:31.026138Z",
+      "logicalBytes": 485538845,
+      "files": 1477,
+      "directories": 583
+    },
+    {
+      "run": "20260613-103621",
+      "createdUtc": "2026-06-13T02:36:21.8322476Z",
+      "logicalBytes": 485589227,
+      "files": 1478,
+      "directories": 584
+    },
+    {
+      "run": "20260613-110125",
+      "createdUtc": "2026-06-13T03:01:25.3483158Z",
+      "logicalBytes": 490016574,
+      "files": 1484,
+      "directories": 585
+    },
+    {
+      "run": "20260613-110635",
+      "createdUtc": "2026-06-13T03:06:35.6896301Z",
+      "logicalBytes": 493416366,
+      "files": 1489,
+      "directories": 586
+    },
+    {
+      "run": "20260613-110956",
+      "createdUtc": "2026-06-13T03:09:56.8727398Z",
+      "logicalBytes": 497173031,
+      "files": 1495,
+      "directories": 587
+    },
+    {
+      "run": "20260613-111316",
+      "createdUtc": "2026-06-13T03:13:16.0616212Z",
+      "logicalBytes": 499803508,
+      "files": 1499,
+      "directories": 588
+    },
+    {
+      "run": "20260613-111646",
+      "createdUtc": "2026-06-13T03:16:46.9405872Z",
+      "logicalBytes": 502396027,
+      "files": 1503,
+      "directories": 589
+    },
+    {
+      "run": "20260613-112108",
+      "createdUtc": "2026-06-13T03:21:08.2771409Z",
+      "logicalBytes": 504344862,
+      "files": 1507,
+      "directories": 590
+    },
+    {
+      "run": "20260613-112301",
+      "createdUtc": "2026-06-13T03:23:01.3170618Z",
+      "logicalBytes": 504554096,
+      "files": 1508,
+      "directories": 591
+    },
+    {
+      "run": "20260613-112900",
+      "createdUtc": "2026-06-13T03:29:00.6640821Z",
+      "logicalBytes": 505198146,
+      "files": 1511,
+      "directories": 593
+    },
+    {
+      "run": "20260613-113127",
+      "createdUtc": "2026-06-13T03:31:27.9702919Z",
+      "logicalBytes": 505421636,
+      "files": 1512,
+      "directories": 594
+    },
+    {
+      "run": "20260613-113240",
+      "createdUtc": "2026-06-13T03:32:40.9103543Z",
+      "logicalBytes": 505639864,
+      "files": 1513,
+      "directories": 595
+    },
+    {
+      "run": "20260613-113404",
+      "createdUtc": "2026-06-13T03:34:04.8846703Z",
+      "logicalBytes": 506379464,
+      "files": 1516,
+      "directories": 597
+    },
+    {
+      "run": "20260613-113654",
+      "createdUtc": "2026-06-13T03:36:54.701436Z",
+      "logicalBytes": 506671741,
+      "files": 1517,
+      "directories": 598
+    },
+    {
+      "run": "20260613-113824",
+      "createdUtc": "2026-06-13T03:38:24.1048439Z",
+      "logicalBytes": 506858132,
+      "files": 1518,
+      "directories": 599
+    },
+    {
+      "run": "20260613-113937",
+      "createdUtc": "2026-06-13T03:39:37.1880049Z",
+      "logicalBytes": 507101725,
+      "files": 1519,
+      "directories": 600
+    },
+    {
+      "run": "20260613-114113",
+      "createdUtc": "2026-06-13T03:41:13.0610868Z",
+      "logicalBytes": 511715675,
+      "files": 1525,
+      "directories": 601
+    },
+    {
+      "run": "20260613-114850",
+      "createdUtc": "2026-06-13T03:48:50.1688691Z",
+      "logicalBytes": 512811463,
+      "files": 1530,
+      "directories": 604
+    },
+    {
+      "run": "20260613-120733",
+      "createdUtc": "2026-06-13T04:07:33.0822052Z",
+      "logicalBytes": 513687924,
+      "files": 1531,
+      "directories": 605
+    },
+    {
+      "run": "20260613-121252",
+      "createdUtc": "2026-06-13T04:12:52.1416444Z",
+      "logicalBytes": 520038693,
+      "files": 1535,
+      "directories": 608
+    },
+    {
+      "run": "20260613-122313",
+      "createdUtc": "2026-06-13T04:23:13.7359929Z",
+      "logicalBytes": 526087108,
+      "files": 1539,
+      "directories": 610
+    },
+    {
+      "run": "20260613-122550",
+      "createdUtc": "2026-06-13T04:25:50.0536316Z",
+      "logicalBytes": 527639896,
+      "files": 1542,
+      "directories": 612
+    },
+    {
+      "run": "20260613-122714",
+      "createdUtc": "2026-06-13T04:27:14.3713747Z",
+      "logicalBytes": 528801222,
+      "files": 1547,
+      "directories": 615
+    },
+    {
+      "run": "20260613-123521",
+      "createdUtc": "2026-06-13T04:35:21.7210078Z",
+      "logicalBytes": 529530265,
+      "files": 1548,
+      "directories": 616
+    },
+    {
+      "run": "20260613-124240",
+      "createdUtc": "2026-06-13T04:42:40.9566461Z",
+      "logicalBytes": 529777460,
+      "files": 1553,
+      "directories": 619
+    },
+    {
+      "run": "20260613-142220",
+      "createdUtc": "2026-06-13T06:22:20.1538356Z",
+      "logicalBytes": 539766811,
+      "files": 1577,
+      "directories": 627
+    },
+    {
+      "run": "20260613-142631",
+      "createdUtc": "2026-06-13T06:26:31.4508601Z",
+      "logicalBytes": 547366140,
+      "files": 1587,
+      "directories": 628
+    },
+    {
+      "run": "20260613-142822",
+      "createdUtc": "2026-06-13T06:28:22.4109075Z",
+      "logicalBytes": 553536114,
+      "files": 1591,
+      "directories": 630
+    },
+    {
+      "run": "20260613-143434",
+      "createdUtc": "2026-06-13T06:34:34.2546953Z",
+      "logicalBytes": 561129592,
+      "files": 1601,
+      "directories": 631
+    },
+    {
+      "run": "20260613-144038",
+      "createdUtc": "2026-06-13T06:40:38.0891656Z",
+      "logicalBytes": 567814252,
+      "files": 1606,
+      "directories": 634
+    },
+    {
+      "run": "20260613-153632",
+      "createdUtc": "2026-06-13T07:36:32.0586405Z",
+      "logicalBytes": 568019520,
+      "files": 1607,
+      "directories": 635
+    },
+    {
+      "run": "20260613-153850",
+      "createdUtc": "2026-06-13T07:38:50.0784635Z",
+      "logicalBytes": 568069902,
+      "files": 1608,
+      "directories": 636
+    },
+    {
+      "run": "20260613-154252",
+      "createdUtc": "2026-06-13T07:42:52.5528596Z",
+      "logicalBytes": 568120284,
+      "files": 1609,
+      "directories": 637
+    },
+    {
+      "run": "20260613-160354",
+      "createdUtc": "2026-06-13T08:03:54.6184311Z",
+      "logicalBytes": 568315813,
+      "files": 1610,
+      "directories": 638
+    },
+    {
+      "run": "20260613-163257",
+      "createdUtc": "2026-06-13T08:32:57.305491Z",
+      "logicalBytes": 568497842,
+      "files": 1611,
+      "directories": 639
+    },
+    {
+      "run": "20260613-163812",
+      "createdUtc": "2026-06-13T08:38:12.4584529Z",
+      "logicalBytes": 568753273,
+      "files": 1612,
+      "directories": 640
+    },
+    {
+      "run": "20260613-170514",
+      "createdUtc": "2026-06-13T09:05:14.0055933Z",
+      "logicalBytes": 569012519,
+      "files": 1613,
+      "directories": 641
+    },
+    {
+      "run": "20260613-171104",
+      "createdUtc": "2026-06-13T09:11:04.7433587Z",
+      "logicalBytes": 569272491,
+      "files": 1614,
+      "directories": 642
+    },
+    {
+      "run": "20260613-171405",
+      "createdUtc": "2026-06-13T09:14:05.5947795Z",
+      "logicalBytes": 569532185,
+      "files": 1615,
+      "directories": 643
+    },
+    {
+      "run": "20260613-175055",
+      "createdUtc": "2026-06-13T09:50:55.2537947Z",
+      "logicalBytes": 569734603,
+      "files": 1616,
+      "directories": 644
+    },
+    {
+      "run": "20260613-200911",
+      "createdUtc": "2026-06-13T12:09:11.5709791Z",
+      "logicalBytes": 574546318,
+      "files": 1624,
+      "directories": 648
+    },
+    {
+      "run": "20260613-201326",
+      "createdUtc": "2026-06-13T12:13:26.5173542Z",
+      "logicalBytes": 575175766,
+      "files": 1625,
+      "directories": 649
+    },
+    {
+      "run": "20260614-082151",
+      "createdUtc": "2026-06-14T00:21:51.961521Z",
+      "logicalBytes": 583890178,
+      "files": 1658,
+      "directories": 670
+    },
+    {
+      "run": "20260614-091839",
+      "createdUtc": "2026-06-14T01:18:39.6317151Z",
+      "logicalBytes": 584925459,
+      "files": 1664,
+      "directories": 673
+    },
+    {
+      "run": "20260614-102730",
+      "createdUtc": "2026-06-14T02:27:30.428682Z",
+      "logicalBytes": 585859605,
+      "files": 1670,
+      "directories": 676
+    },
+    {
+      "run": "20260614-120739",
+      "createdUtc": "2026-06-14T04:07:39.0672983Z",
+      "logicalBytes": 586891014,
+      "files": 1678,
+      "directories": 680
+    },
+    {
+      "run": "20260614-132024",
+      "createdUtc": "2026-06-14T05:20:24.5900764Z",
+      "logicalBytes": 587199237,
+      "files": 1680,
+      "directories": 681
+    },
+    {
+      "run": "20260614-222525",
+      "createdUtc": "2026-06-14T14:25:25.3419698Z",
+      "logicalBytes": 587487667,
+      "files": 1682,
+      "directories": 682
+    },
+    {
+      "run": "20260614-223311",
+      "createdUtc": "2026-06-14T14:33:11.7595869Z",
+      "logicalBytes": 587806389,
+      "files": 1684,
+      "directories": 683
+    },
+    {
+      "run": "20260614-232339",
+      "createdUtc": "2026-06-14T15:23:39.5299656Z",
+      "logicalBytes": 588091330,
+      "files": 1686,
+      "directories": 684
+    },
+    {
+      "run": "20260614-235540",
+      "createdUtc": "2026-06-14T15:55:40.7117477Z",
+      "logicalBytes": 588397396,
+      "files": 1688,
+      "directories": 685
+    },
+    {
+      "run": "20260615-010503",
+      "createdUtc": "2026-06-14T17:05:03.5502492Z",
+      "logicalBytes": 588713961,
+      "files": 1690,
+      "directories": 686
+    },
+    {
+      "run": "20260616-002528",
+      "createdUtc": "2026-06-15T16:25:28.2595703Z",
+      "logicalBytes": 598724902,
+      "files": 1710,
+      "directories": 694
+    },
+    {
+      "run": "20260616-012415",
+      "createdUtc": "2026-06-15T17:24:15.0426513Z",
+      "logicalBytes": 599666190,
+      "files": 1715,
+      "directories": 697
+    },
+    {
+      "run": "20260616-042724",
+      "createdUtc": "2026-06-15T20:27:24.5890039Z",
+      "logicalBytes": 599902496,
+      "files": 1716,
+      "directories": 698
+    },
+    {
+      "run": "20260616-044055",
+      "createdUtc": "2026-06-15T20:40:55.3781349Z",
+      "logicalBytes": 600580827,
+      "files": 1719,
+      "directories": 700
+    },
+    {
+      "run": "20260616-044434",
+      "createdUtc": "2026-06-15T20:44:34.3284897Z",
+      "logicalBytes": 600788980,
+      "files": 1720,
+      "directories": 701
+    },
+    {
+      "run": "20260616-045133",
+      "createdUtc": "2026-06-15T20:51:33.2494955Z",
+      "logicalBytes": 600997242,
+      "files": 1721,
+      "directories": 702
+    },
+    {
+      "run": "20260616-082044",
+      "createdUtc": "2026-06-16T00:20:44.0400079Z",
+      "logicalBytes": 602240664,
+      "files": 1730,
+      "directories": 707
+    },
+    {
+      "run": "20260616-112534",
+      "createdUtc": "2026-06-16T03:25:34.7555115Z",
+      "logicalBytes": 610105027,
+      "files": 1748,
+      "directories": 716
+    },
+    {
+      "run": "20260616-113543",
+      "createdUtc": "2026-06-16T03:35:43.487985Z",
+      "logicalBytes": 610772485,
+      "files": 1755,
+      "directories": 720
+    },
+    {
+      "run": "20260616-114226",
+      "createdUtc": "2026-06-16T03:42:26.4875822Z",
+      "logicalBytes": 611666079,
+      "files": 1762,
+      "directories": 724
+    },
+    {
+      "run": "20260616-115114",
+      "createdUtc": "2026-06-16T03:51:14.5231299Z",
+      "logicalBytes": 612526451,
+      "files": 1769,
+      "directories": 728
+    },
+    {
+      "run": "20260616-115752",
+      "createdUtc": "2026-06-16T03:57:52.7066591Z",
+      "logicalBytes": 613194535,
+      "files": 1776,
+      "directories": 732
+    },
+    {
+      "run": "20260616-120453",
+      "createdUtc": "2026-06-16T04:04:53.4372163Z",
+      "logicalBytes": 614018010,
+      "files": 1783,
+      "directories": 736
+    },
+    {
+      "run": "20260616-120817",
+      "createdUtc": "2026-06-16T04:08:17.1882889Z",
+      "logicalBytes": 618604157,
+      "files": 1791,
+      "directories": 740
+    },
+    {
+      "run": "20260616-124555",
+      "createdUtc": "2026-06-16T04:45:55.5736478Z",
+      "logicalBytes": 619512447,
+      "files": 1798,
+      "directories": 744
+    },
+    {
+      "run": "20260617-033400",
+      "createdUtc": "2026-06-16T19:34:00.5531837Z",
+      "logicalBytes": 629652532,
+      "files": 1833,
+      "directories": 762
+    },
+    {
+      "run": "20260617-034546",
+      "createdUtc": "2026-06-16T19:45:46.939178Z",
+      "logicalBytes": 630430183,
+      "files": 1834,
+      "directories": 763
+    },
+    {
+      "run": "20260617-035632",
+      "createdUtc": "2026-06-16T19:56:32.1938003Z",
+      "logicalBytes": 631049198,
+      "files": 1835,
+      "directories": 764
+    },
+    {
+      "run": "20260617-041210",
+      "createdUtc": "2026-06-16T20:12:10.0278777Z",
+      "logicalBytes": 631864879,
+      "files": 1836,
+      "directories": 765
+    },
+    {
+      "run": "20260617-041937",
+      "createdUtc": "2026-06-16T20:19:37.5655129Z",
+      "logicalBytes": 632770166,
+      "files": 1837,
+      "directories": 766
+    },
+    {
+      "run": "20260617-042656",
+      "createdUtc": "2026-06-16T20:26:56.1411388Z",
+      "logicalBytes": 633634189,
+      "files": 1838,
+      "directories": 767
+    },
+    {
+      "run": "20260617-043646",
+      "createdUtc": "2026-06-16T20:36:46.8579875Z",
+      "logicalBytes": 634416678,
+      "files": 1839,
+      "directories": 768
+    },
+    {
+      "run": "20260617-044655",
+      "createdUtc": "2026-06-16T20:46:55.8982925Z",
+      "logicalBytes": 634467060,
+      "files": 1840,
+      "directories": 769
+    },
+    {
+      "run": "20260617-050104",
+      "createdUtc": "2026-06-16T21:01:04.798409Z",
+      "logicalBytes": 634517442,
+      "files": 1841,
+      "directories": 770
+    },
+    {
+      "run": "20260617-050812",
+      "createdUtc": "2026-06-16T21:08:12.1552393Z",
+      "logicalBytes": 635261531,
+      "files": 1842,
+      "directories": 771
+    },
+    {
+      "run": "20260617-051953",
+      "createdUtc": "2026-06-16T21:19:53.482575Z",
+      "logicalBytes": 636010492,
+      "files": 1843,
+      "directories": 772
+    },
+    {
+      "run": "20260617-052549",
+      "createdUtc": "2026-06-16T21:25:49.3823373Z",
+      "logicalBytes": 636652463,
+      "files": 1844,
+      "directories": 773
+    },
+    {
+      "run": "20260617-053452",
+      "createdUtc": "2026-06-16T21:34:52.2971587Z",
+      "logicalBytes": 637557416,
+      "files": 1845,
+      "directories": 774
+    },
+    {
+      "run": "20260617-060219",
+      "createdUtc": "2026-06-16T22:02:19.956651Z",
+      "logicalBytes": 637607798,
+      "files": 1846,
+      "directories": 775
+    },
+    {
+      "run": "20260617-061723",
+      "createdUtc": "2026-06-16T22:17:23.757065Z",
+      "logicalBytes": 638196794,
+      "files": 1847,
+      "directories": 776
+    },
+    {
+      "run": "20260617-062938",
+      "createdUtc": "2026-06-16T22:29:38.7054006Z",
+      "logicalBytes": 638979725,
+      "files": 1848,
+      "directories": 777
+    },
+    {
+      "run": "20260617-065447",
+      "createdUtc": "2026-06-16T22:54:47.742378Z",
+      "logicalBytes": 639842091,
+      "files": 1849,
+      "directories": 778
+    },
+    {
+      "run": "20260618-003746",
+      "createdUtc": "2026-06-17T16:37:46.642951Z",
+      "logicalBytes": 642598999,
+      "files": 1861,
+      "directories": 787
+    },
+    {
+      "run": "20260618-004336",
+      "createdUtc": "2026-06-17T16:43:36.9564896Z",
+      "logicalBytes": 646734373,
+      "files": 1873,
+      "directories": 792
+    },
+    {
+      "run": "20260618-004614",
+      "createdUtc": "2026-06-17T16:46:14.4950579Z",
+      "logicalBytes": 647548439,
+      "files": 1878,
+      "directories": 795
+    },
+    {
+      "run": "20260628-185705",
+      "createdUtc": "2026-06-28T10:57:05.6497192Z",
+      "logicalBytes": 653863079,
+      "files": 1892,
+      "directories": 802
+    },
+    {
+      "run": "20260628-190043",
+      "createdUtc": "2026-06-28T11:00:43.3819737Z",
+      "logicalBytes": 654868607,
+      "files": 1897,
+      "directories": 805
+    },
+    {
+      "run": "20260628-191239",
+      "createdUtc": "2026-06-28T11:12:39.4503527Z",
+      "logicalBytes": 655685271,
+      "files": 1902,
+      "directories": 808
+    },
+    {
+      "run": "20260628-201917",
+      "createdUtc": "2026-06-28T12:19:17.2710098Z",
+      "logicalBytes": 657477314,
+      "files": 1920,
+      "directories": 817
+    },
+    {
+      "run": "20260628-202858",
+      "createdUtc": "2026-06-28T12:28:58.3650789Z",
+      "logicalBytes": 657477314,
+      "files": 1920,
+      "directories": 817
+    },
+    {
+      "run": "20260628-203345",
+      "createdUtc": "2026-06-28T12:33:45.922345Z",
+      "logicalBytes": 657477314,
+      "files": 1920,
+      "directories": 817
+    },
+    {
+      "run": "20260628-203832",
+      "createdUtc": "2026-06-28T12:38:32.4694965Z",
+      "logicalBytes": 657477314,
+      "files": 1920,
+      "directories": 817
+    },
+    {
+      "run": "20260628-205615",
+      "createdUtc": "2026-06-28T12:56:15.7394938Z",
+      "logicalBytes": 657964020,
+      "files": 1925,
+      "directories": 820
+    },
+    {
+      "run": "20260629-164028",
+      "createdUtc": "2026-06-29T08:40:28.2896924Z",
+      "logicalBytes": 662770838,
+      "files": 1960,
+      "directories": 838
+    },
+    {
+      "run": "20260630-182610",
+      "createdUtc": "2026-06-30T10:26:10.4048322Z",
+      "logicalBytes": 666448564,
+      "files": 1975,
+      "directories": 846
+    },
+    {
+      "run": "20260630-183043",
+      "createdUtc": "2026-06-30T10:30:43.2506717Z",
+      "logicalBytes": 666862878,
+      "files": 1980,
+      "directories": 849
+    },
+    {
+      "run": "20260630-184600",
+      "createdUtc": "2026-06-30T10:46:00.4912821Z",
+      "logicalBytes": 668357483,
+      "files": 1991,
+      "directories": 855
+    },
+    {
+      "run": "20260630-195052",
+      "createdUtc": "2026-06-30T11:50:52.5841279Z",
+      "logicalBytes": 669413910,
+      "files": 2002,
+      "directories": 861
+    },
+    {
+      "run": "20260630-205912",
+      "createdUtc": "2026-06-30T12:59:12.7100419Z",
+      "logicalBytes": 671530176,
+      "files": 2017,
+      "directories": 869
+    },
+    {
+      "run": "20260630-212844",
+      "createdUtc": "2026-06-30T13:28:44.0940506Z",
+      "logicalBytes": 672419285,
+      "files": 2024,
+      "directories": 873
+    },
+    {
+      "run": "20260630-222709",
+      "createdUtc": "2026-06-30T14:27:09.8451275Z",
+      "logicalBytes": 672866219,
+      "files": 2029,
+      "directories": 876
+    },
+    {
+      "run": "20260630-230749",
+      "createdUtc": "2026-06-30T15:07:49.2970228Z",
+      "logicalBytes": 674038206,
+      "files": 2040,
+      "directories": 882
+    },
+    {
+      "run": "20260701-072530",
+      "createdUtc": "2026-06-30T23:25:30.225889Z",
+      "logicalBytes": 675040699,
+      "files": 2050,
+      "directories": 888
+    },
+    {
+      "run": "20260701-073005",
+      "createdUtc": "2026-06-30T23:30:05.8826475Z",
+      "logicalBytes": 675557134,
+      "files": 2055,
+      "directories": 891
+    },
+    {
+      "run": "20260701-141821",
+      "createdUtc": "2026-07-01T06:18:21.8409552Z",
+      "logicalBytes": 678042225,
+      "files": 2076,
+      "directories": 902
+    },
+    {
+      "run": "20260701-234850",
+      "createdUtc": "2026-07-01T15:48:50.5036404Z",
+      "logicalBytes": 679965901,
+      "files": 2091,
+      "directories": 910
+    },
+    {
+      "run": "20260702-080518",
+      "createdUtc": "2026-07-02T00:05:18.1680892Z",
+      "logicalBytes": 684323818,
+      "files": 2120,
+      "directories": 925
+    },
+    {
+      "run": "20260702-081159",
+      "createdUtc": "2026-07-02T00:11:59.7898777Z",
+      "logicalBytes": 685104346,
+      "files": 2121,
+      "directories": 926
+    },
+    {
+      "run": "20260702-081400",
+      "createdUtc": "2026-07-02T00:14:00.6364956Z",
+      "logicalBytes": 685974527,
+      "files": 2122,
+      "directories": 927
+    },
+    {
+      "run": "20260702-083259",
+      "createdUtc": "2026-07-02T00:32:59.8433324Z",
+      "logicalBytes": 686861856,
+      "files": 2123,
+      "directories": 928
+    },
+    {
+      "run": "20260702-083843",
+      "createdUtc": "2026-07-02T00:38:43.3845947Z",
+      "logicalBytes": 687638605,
+      "files": 2124,
+      "directories": 929
+    },
+    {
+      "run": "20260702-105351",
+      "createdUtc": "2026-07-02T02:53:51.0684729Z",
+      "logicalBytes": 688407656,
+      "files": 2127,
+      "directories": 931
+    },
+    {
+      "run": "20260702-105859",
+      "createdUtc": "2026-07-02T02:58:59.6418536Z",
+      "logicalBytes": 688712929,
+      "files": 2128,
+      "directories": 932
+    },
+    {
+      "run": "20260702-111813",
+      "createdUtc": "2026-07-02T03:18:13.5049055Z",
+      "logicalBytes": 690547410,
+      "files": 2133,
+      "directories": 935
+    },
+    {
+      "run": "20260702-122940",
+      "createdUtc": "2026-07-02T04:29:40.3640306Z",
+      "logicalBytes": 691947712,
+      "files": 2138,
+      "directories": 938
+    },
+    {
+      "run": "20260702-150149",
+      "createdUtc": "2026-07-02T07:01:49.6900058Z",
+      "logicalBytes": 694492083,
+      "files": 2145,
+      "directories": 942
+    },
+    {
+      "run": "20260702-151111",
+      "createdUtc": "2026-07-02T07:11:11.4442376Z",
+      "logicalBytes": 694767926,
+      "files": 2146,
+      "directories": 943
+    },
+    {
+      "run": "20260702-151640",
+      "createdUtc": "2026-07-02T07:16:40.9909446Z",
+      "logicalBytes": 697674345,
+      "files": 2155,
+      "directories": 948
+    },
+    {
+      "run": "20260702-151743",
+      "createdUtc": "2026-07-02T07:17:43.9296576Z",
+      "logicalBytes": 697967443,
+      "files": 2156,
+      "directories": 949
+    },
+    {
+      "run": "20260702-151833",
+      "createdUtc": "2026-07-02T07:18:33.4029155Z",
+      "logicalBytes": 698902571,
+      "files": 2157,
+      "directories": 950
+    },
+    {
+      "run": "20260702-152614",
+      "createdUtc": "2026-07-02T07:26:14.9541193Z",
+      "logicalBytes": 702117629,
+      "files": 2166,
+      "directories": 955
+    },
+    {
+      "run": "20260702-152728",
+      "createdUtc": "2026-07-02T07:27:28.7718022Z",
+      "logicalBytes": 702413665,
+      "files": 2167,
+      "directories": 956
+    },
+    {
+      "run": "20260702-152855",
+      "createdUtc": "2026-07-02T07:28:55.2701559Z",
+      "logicalBytes": 704246943,
+      "files": 2172,
+      "directories": 959
+    },
+    {
+      "run": "20260702-183509",
+      "createdUtc": "2026-07-02T10:35:09.1756312Z",
+      "logicalBytes": 707102941,
+      "files": 2181,
+      "directories": 964
+    },
+    {
+      "run": "20260702-183915",
+      "createdUtc": "2026-07-02T10:39:15.6496485Z",
+      "logicalBytes": 709911641,
+      "files": 2190,
+      "directories": 969
+    },
+    {
+      "run": "20260702-184039",
+      "createdUtc": "2026-07-02T10:40:39.2375757Z",
+      "logicalBytes": 710198569,
+      "files": 2191,
+      "directories": 970
+    },
+    {
+      "run": "20260702-184205",
+      "createdUtc": "2026-07-02T10:42:05.6126934Z",
+      "logicalBytes": 711788481,
+      "files": 2196,
+      "directories": 973
+    },
+    {
+      "run": "20260702-203922",
+      "createdUtc": "2026-07-02T12:39:22.772566Z",
+      "logicalBytes": 713292918,
+      "files": 2201,
+      "directories": 976
+    },
+    {
+      "run": "20260702-204727",
+      "createdUtc": "2026-07-02T12:47:27.8887867Z",
+      "logicalBytes": 715637483,
+      "files": 2208,
+      "directories": 980
+    },
+    {
+      "run": "20260702-204851",
+      "createdUtc": "2026-07-02T12:48:51.3600068Z",
+      "logicalBytes": 715878951,
+      "files": 2209,
+      "directories": 981
+    },
+    {
+      "run": "20260702-204954",
+      "createdUtc": "2026-07-02T12:49:54.4801812Z",
+      "logicalBytes": 715929333,
+      "files": 2210,
+      "directories": 982
+    },
+    {
+      "run": "20260702-205551",
+      "createdUtc": "2026-07-02T12:55:51.6639375Z",
+      "logicalBytes": 716204482,
+      "files": 2211,
+      "directories": 983
+    },
+    {
+      "run": "20260702-210050",
+      "createdUtc": "2026-07-02T13:00:50.042029Z",
+      "logicalBytes": 717093056,
+      "files": 2212,
+      "directories": 984
+    },
+    {
+      "run": "20260703-194001",
+      "createdUtc": "2026-07-03T11:40:01.8545299Z",
+      "logicalBytes": 723544898,
+      "files": 2235,
+      "directories": 996
+    },
+    {
+      "run": "20260703-200525",
+      "createdUtc": "2026-07-03T12:05:25.2884318Z",
+      "logicalBytes": 725288352,
+      "files": 2242,
+      "directories": 1000
+    },
+    {
+      "run": "20260703-200627",
+      "createdUtc": "2026-07-03T12:06:27.4794018Z",
+      "logicalBytes": 725568220,
+      "files": 2243,
+      "directories": 1001
+    },
+    {
+      "run": "20260703-201031",
+      "createdUtc": "2026-07-03T12:10:31.4444708Z",
+      "logicalBytes": 727315120,
+      "files": 2250,
+      "directories": 1005
+    },
+    {
+      "run": "20260703-201129",
+      "createdUtc": "2026-07-03T12:11:29.4263945Z",
+      "logicalBytes": 727523786,
+      "files": 2251,
+      "directories": 1006
+    },
+    {
+      "run": "20260703-201302",
+      "createdUtc": "2026-07-03T12:13:02.2178411Z",
+      "logicalBytes": 728503656,
+      "files": 2256,
+      "directories": 1009
+    },
+    {
+      "run": "20260703-220819",
+      "createdUtc": "2026-07-03T14:08:19.1627153Z",
+      "logicalBytes": 730256614,
+      "files": 2263,
+      "directories": 1013
+    },
+    {
+      "run": "20260703-220920",
+      "createdUtc": "2026-07-03T14:09:20.3053842Z",
+      "logicalBytes": 730459183,
+      "files": 2264,
+      "directories": 1014
+    },
+    {
+      "run": "20260703-221013",
+      "createdUtc": "2026-07-03T14:10:13.7063495Z",
+      "logicalBytes": 730686531,
+      "files": 2265,
+      "directories": 1015
+    },
+    {
+      "run": "20260703-224309",
+      "createdUtc": "2026-07-03T14:43:09.4548418Z",
+      "logicalBytes": 732491915,
+      "files": 2272,
+      "directories": 1019
+    },
+    {
+      "run": "20260703-224422",
+      "createdUtc": "2026-07-03T14:44:22.2764098Z",
+      "logicalBytes": 732748591,
+      "files": 2273,
+      "directories": 1020
+    },
+    {
+      "run": "20260703-224524",
+      "createdUtc": "2026-07-03T14:45:24.7206546Z",
+      "logicalBytes": 732950148,
+      "files": 2274,
+      "directories": 1021
+    },
+    {
+      "run": "20260703-224713",
+      "createdUtc": "2026-07-03T14:47:13.1740171Z",
+      "logicalBytes": 733224558,
+      "files": 2275,
+      "directories": 1022
+    },
+    {
+      "run": "20260703-225344",
+      "createdUtc": "2026-07-03T14:53:44.9149298Z",
+      "logicalBytes": 733274940,
+      "files": 2276,
+      "directories": 1023
+    },
+    {
+      "run": "20260703-231541",
+      "createdUtc": "2026-07-03T15:15:41.9611707Z",
+      "logicalBytes": 738739444,
+      "files": 2284,
+      "directories": 1027
+    },
+    {
+      "run": "20260703-231700",
+      "createdUtc": "2026-07-03T15:17:00.8629509Z",
+      "logicalBytes": 738941557,
+      "files": 2285,
+      "directories": 1028
+    },
+    {
+      "run": "20260703-231929",
+      "createdUtc": "2026-07-03T15:19:29.1893148Z",
+      "logicalBytes": 740867895,
+      "files": 2290,
+      "directories": 1031
+    },
+    {
+      "run": "20260704-004551",
+      "createdUtc": "2026-07-03T16:45:51.8011942Z",
+      "logicalBytes": 742760884,
+      "files": 2297,
+      "directories": 1035
+    },
+    {
+      "run": "20260704-005016",
+      "createdUtc": "2026-07-03T16:50:16.2514443Z",
+      "logicalBytes": 744638405,
+      "files": 2304,
+      "directories": 1039
+    },
+    {
+      "run": "20260704-005121",
+      "createdUtc": "2026-07-03T16:51:21.8117262Z",
+      "logicalBytes": 744896880,
+      "files": 2305,
+      "directories": 1040
+    },
+    {
+      "run": "20260704-005217",
+      "createdUtc": "2026-07-03T16:52:17.874487Z",
+      "logicalBytes": 748083879,
+      "files": 2309,
+      "directories": 1042
+    },
+    {
+      "run": "20260704-005317",
+      "createdUtc": "2026-07-03T16:53:17.899336Z",
+      "logicalBytes": 748367344,
+      "files": 2310,
+      "directories": 1043
+    },
+    {
+      "run": "20260704-010303",
+      "createdUtc": "2026-07-03T17:03:03.2087159Z",
+      "logicalBytes": 751228792,
+      "files": 2315,
+      "directories": 1046
+    },
+    {
+      "run": "20260704-031102",
+      "createdUtc": "2026-07-03T19:11:02.6161129Z",
+      "logicalBytes": 751950908,
+      "files": 2319,
+      "directories": 1048
+    },
+    {
+      "run": "20260704-032123",
+      "createdUtc": "2026-07-03T19:21:23.5537486Z",
+      "logicalBytes": 752687922,
+      "files": 2323,
+      "directories": 1050
+    },
+    {
+      "run": "20260704-033112",
+      "createdUtc": "2026-07-03T19:31:12.3453871Z",
+      "logicalBytes": 755574234,
+      "files": 2334,
+      "directories": 1057
+    },
+    {
+      "run": "20260704-033314",
+      "createdUtc": "2026-07-03T19:33:14.3451275Z",
+      "logicalBytes": 755898569,
+      "files": 2335,
+      "directories": 1058
+    },
+    {
+      "run": "20260704-060434",
+      "createdUtc": "2026-07-03T22:04:34.5112561Z",
+      "logicalBytes": 758853382,
+      "files": 2346,
+      "directories": 1065
+    },
+    {
+      "run": "20260704-060648",
+      "createdUtc": "2026-07-03T22:06:48.2236772Z",
+      "logicalBytes": 761233797,
+      "files": 2352,
+      "directories": 1069
+    },
+    {
+      "run": "20260704-074952",
+      "createdUtc": "2026-07-03T23:49:52.5364331Z",
+      "logicalBytes": 762342594,
+      "files": 2357,
+      "directories": 1072
+    },
+    {
+      "run": "20260704-075237",
+      "createdUtc": "2026-07-03T23:52:37.6012766Z",
+      "logicalBytes": 763450897,
+      "files": 2362,
+      "directories": 1075
+    },
+    {
+      "run": "20260704-075419",
+      "createdUtc": "2026-07-03T23:54:19.8856473Z",
+      "logicalBytes": 766689180,
+      "files": 2367,
+      "directories": 1078
+    },
+    {
+      "run": "20260704-081707",
+      "createdUtc": "2026-07-04T00:17:07.7277329Z",
+      "logicalBytes": 767801489,
+      "files": 2372,
+      "directories": 1081
+    },
+    {
+      "run": "20260704-081844",
+      "createdUtc": "2026-07-04T00:18:44.5269605Z",
+      "logicalBytes": 771125132,
+      "files": 2377,
+      "directories": 1084
+    },
+    {
+      "run": "20260704-142213",
+      "createdUtc": "2026-07-04T06:22:13.4193565Z",
+      "logicalBytes": 774763252,
+      "files": 2388,
+      "directories": 1091
+    },
+    {
+      "run": "20260704-142402",
+      "createdUtc": "2026-07-04T06:24:02.1306084Z",
+      "logicalBytes": 777106894,
+      "files": 2396,
+      "directories": 1096
+    },
+    {
+      "run": "20260704-151818",
+      "createdUtc": "2026-07-04T07:18:18.129361Z",
+      "logicalBytes": 779264989,
+      "files": 2403,
+      "directories": 1100
+    },
+    {
+      "run": "20260704-151937",
+      "createdUtc": "2026-07-04T07:19:37.8043595Z",
+      "logicalBytes": 781565511,
+      "files": 2411,
+      "directories": 1105
+    },
+    {
+      "run": "20260704-152059",
+      "createdUtc": "2026-07-04T07:20:59.4889887Z",
+      "logicalBytes": 785196379,
+      "files": 2422,
+      "directories": 1112
+    },
+    {
+      "run": "20260704-152238",
+      "createdUtc": "2026-07-04T07:22:38.360817Z",
+      "logicalBytes": 785450868,
+      "files": 2423,
+      "directories": 1113
+    },
+    {
+      "run": "20260704-152339",
+      "createdUtc": "2026-07-04T07:23:39.1771139Z",
+      "logicalBytes": 785735460,
+      "files": 2424,
+      "directories": 1114
+    },
+    {
+      "run": "20260704-152523",
+      "createdUtc": "2026-07-04T07:25:23.1289207Z",
+      "logicalBytes": 788726182,
+      "files": 2428,
+      "directories": 1116
+    },
+    {
+      "run": "20260704-152629",
+      "createdUtc": "2026-07-04T07:26:29.170581Z",
+      "logicalBytes": 788925040,
+      "files": 2429,
+      "directories": 1117
+    },
+    {
+      "run": "20260704-154234",
+      "createdUtc": "2026-07-04T07:42:34.8140926Z",
+      "logicalBytes": 797231213,
+      "files": 2444,
+      "directories": 1127
+    },
+    {
+      "run": "20260704-184517",
+      "createdUtc": "2026-07-04T10:45:17.027941Z",
+      "logicalBytes": 885429078,
+      "files": 2506,
+      "directories": 1168
+    },
+    {
+      "run": "20260704-185211",
+      "createdUtc": "2026-07-04T10:52:11.4395875Z",
+      "logicalBytes": 889662973,
+      "files": 2515,
+      "directories": 1174
+    },
+    {
+      "run": "20260704-201151",
+      "createdUtc": "2026-07-04T12:11:51.1497254Z",
+      "logicalBytes": 892955006,
+      "files": 2523,
+      "directories": 1179
+    },
+    {
+      "run": "20260704-201341",
+      "createdUtc": "2026-07-04T12:13:41.823897Z",
+      "logicalBytes": 909387368,
+      "files": 2543,
+      "directories": 1192
+    },
+    {
+      "run": "20260704-214043",
+      "createdUtc": "2026-07-04T13:40:43.9740245Z",
+      "logicalBytes": 919741468,
+      "files": 2557,
+      "directories": 1201
+    },
+    {
+      "run": "20260704-225729",
+      "createdUtc": "2026-07-04T14:57:29.918931Z",
+      "logicalBytes": 929665781,
+      "files": 2571,
+      "directories": 1210
+    },
+    {
+      "run": "20260705-001613",
+      "createdUtc": "2026-07-04T16:16:13.0243587Z",
+      "logicalBytes": 939728830,
+      "files": 2585,
+      "directories": 1219
+    }
+  ],
+  "skippedExplicitArtifactRuns": [
+    {
+      "run": "20260531-022415",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-022415/DTMAPI-evidence/ANIMAL-001/20260531-022409/animal-viewer-ui-delayed.png",
+        "GAME-SMOKE/20260531-022415/DTMAPI-evidence/ANIMAL-001/20260531-022409/summary.txt"
+      ]
+    },
+    {
+      "run": "20260531-042239",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-042239/DTMAPI-evidence/UI-004/20260531-042057/summary.txt",
+        "GAME-SMOKE/20260531-042239/DTMAPI-evidence/UI-004/20260531-042057/title-settings-button.png",
+        "GAME-SMOKE/20260531-042239/DTMAPI-evidence/UI-004/20260531-042057/title-settings-menu.png"
+      ]
+    },
+    {
+      "run": "20260531-051312",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-051312/DTMAPI-evidence/OFFICIAL-001/20260531-051312/official-mod-ui.png"
+      ]
+    },
+    {
+      "run": "20260531-111940",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-111940/DTMAPI-evidence/UI-006/20260531-111940/title-settings-after-return.png"
+      ]
+    },
+    {
+      "run": "20260531-155436",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-155436/DTMAPI-evidence/UI-004/20260531-155324/title-settings-menu.png"
+      ]
+    },
+    {
+      "run": "20260531-161545",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260531-161545/DTMAPI-evidence/UI-004/20260531-161433/title-settings-menu.png"
+      ]
+    },
+    {
+      "run": "20260602-002953",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260602-002953/DTMAPI-evidence/ANIMAL-001/20260602-003035/animal-viewer-ui-delayed.png"
+      ]
+    },
+    {
+      "run": "20260602-020710",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260602-020710/DTMAPI-evidence/UI-004/20260602-020747/title-settings-config-action-speed.png",
+        "GAME-SMOKE/20260602-020710/DTMAPI-evidence/UI-004/20260602-020747/title-settings-config-animal-husbandry-progress.png"
+      ]
+    },
+    {
+      "run": "20260602-022417",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260602-022417/DTMAPI-evidence/DEBUG-CONSOLE-UI/20260602-022500/debug-console.png"
+      ]
+    },
+    {
+      "run": "20260603-032406",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-032406/DTMAPI-evidence/DEBUG-CONSOLE-UI/20260603-032451/debug-console.png"
+      ]
+    },
+    {
+      "run": "20260603-035653",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-035653/DTMAPI-evidence/DEBUG-CONSOLE-UI/20260603-035737/debug-console.png"
+      ]
+    },
+    {
+      "run": "20260603-040354",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-040354/DTMAPI-evidence/ANIMAL-001/20260603-040437/animal-viewer-ui-delayed.png",
+        "GAME-SMOKE/20260603-040354/DTMAPI-evidence/ANIMAL-001/20260603-040437/summary.txt"
+      ]
+    },
+    {
+      "run": "20260603-041053",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-041053/DTMAPI-evidence/UI-004/20260603-041133/title-settings-config-animal-husbandry-progress.png"
+      ]
+    },
+    {
+      "run": "20260603-052444",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-action-speed.png",
+        "GAME-SMOKE/20260603-052444/DTMAPI-evidence/UI-004/20260603-052523/title-settings-config-auto-fishing.png"
+      ]
+    },
+    {
+      "run": "20260603-160739",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-160739/DTMAPI-evidence/UI-004/20260603-160812/title-settings-config-animal-husbandry-progress.png"
+      ]
+    },
+    {
+      "run": "20260603-210216",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260603-210216/DTMAPI-evidence/NEWCONTENT-024/20260603-210256/mine-placed-dtmapi-mine.png"
+      ]
+    },
+    {
+      "run": "20260605-181224",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260605-181224/DTMAPI-evidence/DEBUG-CONSOLE-UI/20260605-181315/debug-console.png",
+        "GAME-SMOKE/20260605-181224/DTMAPI-evidence/NEWCONTENT-025/20260605-181312/mine-official-tech-tree-dtmapi-mine.png",
+        "GAME-SMOKE/20260605-181224/DTMAPI-evidence/NEWCONTENT-025/20260605-181312/mine-placed-dtmapi-mine.png"
+      ]
+    },
+    {
+      "run": "20260606-150928",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260606-150928/DTMAPI-evidence/UI-004/20260606-150959/title-settings-config-animal-husbandry-progress.png"
+      ]
+    },
+    {
+      "run": "20260607-072228",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260607-072228/DTMAPI-evidence/ZOOM-042/20260607-072308/zoom-before.png"
+      ]
+    },
+    {
+      "run": "20260609-100218",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260609-100218/DTMAPI-evidence/CAMERA-PLAYABLE/20260609-100258"
+      ]
+    },
+    {
+      "run": "20260609-102529",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260609-102529/DTMAPI-evidence/CAMERA-PLAYABLE/20260609-102609"
+      ]
+    },
+    {
+      "run": "20260609-110528",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260609-110528/DTMAPI-evidence/CAMERA-PLAYABLE/20260609-110612"
+      ]
+    },
+    {
+      "run": "20260612-204350",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260612-204350/DTMAPI-evidence/UI-004/20260612-204434/title-settings-button.png"
+      ]
+    },
+    {
+      "run": "20260613-143621",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260613-143621/DTMAPI-evidence/UI-007/20260613-143712"
+      ]
+    },
+    {
+      "run": "20260711-012851",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260711-012851/DTMAPI-evidence/AUTO-FISHING-PERF/20260711-014032/auto-fishing-performance.json"
+      ]
+    },
+    {
+      "run": "20260711-024427",
+      "reason": "explicit-artifact-reference",
+      "artifactReferences": [
+        "GAME-SMOKE/20260711-024427/DTMAPI-evidence/AUTO-FISHING-PERF/20260711-025609/auto-fishing-performance.json"
+      ]
+    }
+  ]
+}

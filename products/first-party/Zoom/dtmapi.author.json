@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.Zoom",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "DTMAPI",
+      "Camera",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 大视野",
+      "tchinese": "DTMAPI 大視野",
+      "english": "DTMAPI Zoom"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n按 + / - 调整世界相机视野，最小为原版，最大默认 400%。",
+      "tchinese": "依賴 DTMAPI。\n按 + / - 調整世界相機視野，最小為原版，最大預設 400%。",
+      "english": "Requires DTMAPI.\nUse + / - to adjust the world camera view, from the original size up to a default maximum of 400%."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-zoom-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

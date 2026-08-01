@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.MoreEquipmentSlots",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Functional",
+      "DTMAPI",
+      "Equipment",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 更多装备槽",
+      "tchinese": "DTMAPI 更多裝備槽",
+      "english": "DTMAPI More Equipment Slots"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n增加三个独立的属性装备槽。",
+      "tchinese": "依賴 DTMAPI。\n增加三個獨立的屬性裝備槽。",
+      "english": "Requires DTMAPI.\nAdds three independent attribute equipment slots."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-moreequipmentslots-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

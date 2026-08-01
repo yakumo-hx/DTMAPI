@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>DTMAPI.InstallDoctor</AssemblyName>
+    <RootNamespace>DTMAPI.InstallDoctor</RootNamespace>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DTMAPI.Tooling.Metadata\DTMAPI.Tooling.Metadata.csproj" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json"
+                      LogicalName="DTMAPI.InstallDoctor.AdvancedReferencePolicyRegistry.json" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\*.json"
+                      Exclude="..\..\author-sdk\advanced-reference-policies\registry.json"
+                      LogicalName="DTMAPI.InstallDoctor.AdvancedReferencePolicy.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

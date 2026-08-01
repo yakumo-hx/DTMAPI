@@ -1,0 +1,23 @@
+{
+  "mod.name": "DTMAPI One Action Complete",
+  "config.section.main": "DTMAPI One Action Complete",
+  "config.status.experimental": "Supports resource/tool-hit completion, the tree/ore/garbage/weeds wrong-tool matrix, and fuel/feeder native consume/fill. Vegetation/dandelion is a native tool-constraint exception path, not a DungeonResource one-action path.",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Master switch for all one-action behavior.",
+  "config.trees.name": "Trees",
+  "config.trees.tooltip": "Finish trees after one normal tool hit.",
+  "config.ores.name": "Ores",
+  "config.ores.tooltip": "Finish ore resources after one normal tool hit.",
+  "config.garbage.name": "Garbage",
+  "config.garbage.tooltip": "Finish pickaxe garbage resources after one normal tool hit.",
+  "config.weeds.name": "Weeds",
+  "config.weeds.tooltip": "Finish grass and weeds after one normal tool hit.",
+  "config.fuel.name": "Fuel machines",
+  "config.fuel.tooltip": "Fill fuel machines after one direct add interaction.",
+  "config.feeders.name": "Feeders",
+  "config.feeders.tooltip": "Fill feeders after one direct add interaction.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency migration diagnostics.",
+  "config.menuKey.name": "Menu key",
+  "config.menuKey.tooltip": "Opens this DTMAPI config page."
+}

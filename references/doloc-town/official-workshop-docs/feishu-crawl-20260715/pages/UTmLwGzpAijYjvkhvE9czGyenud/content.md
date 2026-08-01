@@ -1,0 +1,302 @@
+# 06 ID对照表（资源&植被）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud>
+
+Source modified label: 4月21日修改
+
+## 1.资源ID对照表
+
+#### Embedded sheet `ixa2tf`
+
+[TSV](sheets/01-01-ixa2tf.tsv) · [rendered screenshot](sheets/01-01-ixa2tf.png)
+
+```tsv
+资源名称	资源ID	阶段数	场景贴图-命名格式	场景贴图（额外皮肤）-命名格式	图鉴（图标）-命名格式	图鉴（详情）-命名格式
+垃圾
+生活垃圾	drone_bing	1	sprite_resource_drone_bing		icon_document_drone_bing	preview_document_drone_bing
+机械残骸	machine_bing	1	sprite_resource_machine_bing		icon_document_machine_bing	preview_document_machine_bing
+纸盒	paper_box	1	sprite_resource_paper_box		icon_document_paper_box	preview_document_paper_box
+废品堆	large_machine_bing	1	sprite_resource_large_machine_bing		icon_document_large_machine_bing	preview_document_large_machine_bing
+废弃置物架	waste_furniture	1	sprite_resource_waste_furniture		icon_document_waste_furniture	preview_document_waste_furniture
+仿生蜂巢	hive	1	sprite_resource_hive		icon_document_hive	preview_document_hive
+车辆残骸	waste_car	1	sprite_resource_waste_car		icon_document_waste_car	preview_document_waste_car
+矿物
+沙堆	sand	1	sprite_resource_sand		icon_document_sand	preview_document_sand
+土堆	soil	1	sprite_resource_soil		icon_document_soil	preview_document_soil
+湿土堆	soil_wetland	1	sprite_resource_soil_wetland		icon_document_soil_wetland	preview_document_soil_wetland
+岩石堆	stone	1	sprite_resource_stone		icon_document_stone	preview_document_stone
+大岩石堆	big_stone	1	sprite_resource_big_stone		icon_document_big_stone	preview_document_big_stone
+煤矿	coal_mine	1	sprite_resource_coal_mine		icon_document_coal_mine	preview_document_coal_mine
+铜矿	copper_mine	1	sprite_resource_copper_mine		icon_document_copper_mine	preview_document_copper_mine
+铁矿	iron_mine	1	sprite_resource_iron_mine		icon_document_iron_mine	preview_document_iron_mine
+金矿	gold_mine	1	sprite_resource_gold_mine		icon_document_gold_mine	preview_document_gold_mine
+草类
+杂草	weeds	4	sprite_resource_weeds_[0~3]	sprite_resource_weeds_variant0_[0~3]	icon_document_weeds	preview_document_weeds
+野花	flower	4	sprite_resource_flower_[0~3]		icon_document_flower	preview_document_flower
+芦苇	reed	4	sprite_resource_reed_[0~3]		icon_document_reed	preview_document_reed
+苜蓿草	alfalfa	3	sprite_resource_alfalfa_[0~2]		icon_document_alfalfa	preview_document_alfalfa
+野荆棘	thorns	4	sprite_resource_thorns_[0~3]		icon_document_thorns	preview_document_thorns
+树类
+树木	tree	5	sprite_resource_tree_[0~4]	sprite_resource_tree_variant0_[0~4]	icon_document_tree	preview_document_tree
+岩树	stone_tree	7	sprite_resource_stone_tree_[0~6]		icon_document_stone_tree	preview_document_stone_tree
+岩树桩	stone_tree_trunk	1	sprite_resource_stone_tree_trunk		icon_document_stone_tree_trunk	preview_document_stone_tree_trunk
+竹子	bamboo	5	sprite_resource_bamboo_[0~4]		icon_document_bamboo	preview_document_bamboo
+红树	mangrove	6	sprite_resource_mangrove_[0~5]		icon_document_mangrove	preview_document_mangrove
+可采集植被
+蓝莓丛	berry_thicket	2	sprite_resource_berry_thicket_[0~1]		icon_document_berry_thicket	preview_document_berry_thicket
+磷虫草	psinensis	2	sprite_resource_psinensis_[0~1]		icon_document_psinensis	preview_document_psinensis
+末芋	endyam	4	sprite_resource_endyam_[0~3]
+多肉	succulent	4	sprite_resource_succulent_[0~3]
+装饰植被
+蒲公英	dandelion	2	sprite_resource_dandelion_[0~1]
+灯泡香蒲	glow_cattail_s	1	sprite_resource_glow_cattail_s
+灯泡香蒲	glow_cattail_l	1	sprite_resource_glow_cattail_l
+荧光草	fluor_grass_s	1	sprite_resource_fluor_grass_s
+荧光草	fluor_grass_l	1	sprite_resource_fluor_grass_l
+树根	tree_root	3	sprite_resource_tree_root_[0~2]
+水草	water_grass	4	sprite_resource_water_grass_[0~3]
+洞穴植物	cave_grass	5	sprite_resource_cave_grass_[0~4]
+荷叶	lotus_leaf	5	sprite_resource_lotus_leaf_[0~4]
+荷花	lotus_flower	4	sprite_resource_lotus_flower_[0~3]
+洞穴蘑菇	cave_mushroom	4	sprite_resource_cave_mushroom_[0~3]
+茎秆	fresh_stem	6	sprite_resource_fresh_stem_[0~5]
+干枯植物	hay_stem	3	sprite_resource_hay_stem_[0~2]
+苔藓树	moss_tree	3	sprite_resource_moss_tree_[0~2]
+```
+
+## 2.资源&植被类型ID对照表
+
+#### Embedded sheet `lTgg6z`
+
+[TSV](sheets/02-01-ltgg6z.tsv) · [rendered screenshot](sheets/02-01-ltgg6z.png)
+
+```tsv
+类型名称	类型ID	举例
+资源
+树	0	树木、岩树、竹子
+树干	1	岩树桩
+矿石	2	土堆、岩石堆、铜矿
+一般草	3	草、芦苇、荆棘
+小型草	4	花、苜蓿
+纸箱	5	纸盒
+机械残骸	6	生活垃圾、机械残骸
+蜂巢	9	暂无
+沙子	10	沙堆
+植被
+通用	0
+环境	1	蒲公英
+可采集	2	蓝莓、末芋
+浅水植被	3	"
+水草、荷叶"
+发光植物	4	灯泡香蒲
+```
+
+## 3.资源&植被生成表ID对照表
+
+#### Embedded sheet `YdOq2I`
+
+[TSV](sheets/03-01-ydoq2i.tsv) · [rendered screenshot](sheets/03-01-ydoq2i.png)
+
+```tsv
+场景	资源生成表ID	植被生成表ID
+多洛可
+农场	doloc_town_farm	-
+郊区-多洛可小镇后山	doloc_town_cityside	all_vegetation
+郊区-东部远郊	doloc_town_cityside	all_vegetation
+郊区-上游丘陵1	doloc_town_cityside	all_vegetation
+郊区-东部池塘	doloc_town_lake	berry_thicket_1
+郊区-东部近郊1	doloc_town_suburb_1	all_vegetation
+郊区-东部近郊2	doloc_town_junkyard	all_vegetation
+郊区-农场上路1	doloc_town_farm_aside_1	berry_thicket_1
+郊区-农场上路2	doloc_town_farm_aside_1	all_vegetation
+郊区-农场近郊	doloc_town_farm_aside_1	berry_thicket_1
+郊区-后山丘陵1	doloc_town_suburb_2	berry_thicket_1
+郊区-后山丘陵2	doloc_town_suburb_3	all_vegetation
+郊区-后山山麓1	doloc_town_suburb_2	all_vegetation
+郊区-后山山麓2	doloc_town_suburb_2	all_vegetation
+郊区-后山悬崖	doloc_town_cityside	all_vegetation
+郊区-小林地	doloc_town_forest	all_vegetation
+郊区-山区池塘	doloc_town_farm	all_vegetation
+郊区-山间小路	doloc_town_ruins_1	dandelion
+郊区-村镇废墟1	doloc_town_ruins_2	dandelion
+郊区-村镇废墟2	doloc_town_ruins_2	dandelion
+郊区-林地深处	river_valley_stage2_7	all_vegetation
+郊区-植生研究所后院	doloc_town_backyard	dandelion
+郊区-矿区	doloc_town_mining_area	dandelion
+郊区-码头小径	doloc_town_farm_aside_1	dandelion
+郊区-码头边岸	doloc_town_cityside	dandelion
+郊区-西侧峭壁	doloc_town_suburb_2	all_vegetation
+河谷
+多洛可河谷.stage1_河谷入口一	river_valley_stage1_7	dandelion
+多洛可河谷.stage1_隐藏洞穴	river_valley_stage1_10	dandelion
+多洛可河谷.stage1_小路口	river_valley_stage1_5	all_vegetation
+多洛可河谷.stage1_大路口	river_valley_stage1_4	all_vegetation
+多洛可河谷.stage1_4_垃圾场边缘	river_valley_stage1_3	dandelion
+多洛可河谷.stage1_上侧通道	river_valley_stage1_1	berry_thicket_2
+多洛可河谷.stage1_洞穴入口	river_valley_stage1_9	-
+多洛可河谷.stage1_驿站通道	river_valley_stage1_11	berry_thicket_2
+多洛可河谷.stage1_上强度	river_valley_stage1_2	-
+多洛可河谷.stage1_洞穴	river_valley_stage1_8	-
+多洛可河谷.stage2_哨站	river_valley_stage2_8	river_valley_putpost
+多洛可河谷.stage1_巨石封路	river_valley_stage1_6	-
+多洛可河谷.stage2_垃圾场矿区交界	river_valley_stage2_5	dandelion
+多洛可河谷.stage2_L41	river_valley_stage2_5	all_vegetation
+多洛可河谷.stage2_下捷径+隐藏房间	river_valley_stage2_7	berry_thicket_1
+多洛可河谷.stage2_mine	river_valley_stage2_2	all_vegetation
+多洛可河谷.stage2_核心矿区	river_valley_stage2_3	dandelion
+多洛可河谷.stage2_end	river_valley_stage2_4	dandelion
+多洛可河谷.stage2_垃圾山	river_valley_stage2_1	-
+多洛可河谷.stage2_河谷入口二	river_valley_stage1_3	-
+多洛可河谷.stage2_巨大的树	river_valley_stage2_2	all_vegetation
+多洛可河谷.stage3_2	river_valley_stage1_4	all_vegetation
+多洛可河谷.stage3_end	river_valley_stage2_6	all_vegetation
+多洛可河谷.mission_room	river_valley_stage1_7	all_vegetation
+多洛可河谷.stage2_垃圾通道	river_valley_stage1_12	-
+多洛可河谷.stage3_休息一下	river_valley_stage1_7	berry_thicket_2
+多洛可河谷.stage3_信仰之跃	river_valley_stage1_7	all_vegetation
+多洛可河谷.多洛可河谷	river_valley_stage1_7	all_vegetation
+多洛可河谷.stage2_垃圾山隐藏	river_valley_stage1_3	-
+多洛可河谷.stage3_崖角	river_valley_stage1_4	all_vegetation
+多洛可河谷.stage3_崖角左侧	river_valley_stage1_4	berry_thicket_2
+多洛可河谷.extra_入口	river_valley_stage3	-
+多洛可河谷.extra_上侧	river_valley_stage3	-
+多洛可河谷.extra_主要	river_valley_stage3	-
+多洛可河谷.extra_隐藏	river_valley_stage2_7	-
+山脊谷地
+山脊谷地.入口	ridge_valley_stage1	all_vegetation
+山脊谷地.谷地	ridge_valley_stage1	all_vegetation
+山脊谷地.隐秘峭壁	doloc_town_suburb_3	all_vegetation
+山脊谷地.高台	ridge_valley_stage1	all_vegetation
+山脊谷地.隐藏区域入口	ridge_valley_stage1	all_vegetation
+山脊谷地.小土坡	ridge_valley_stage1	all_vegetation
+山脊谷地.里峭壁	doloc_town_mining_area	all_vegetation
+山脊谷地.山洞内	doloc_town_mining_area	all_vegetation
+山脊谷地.秘密房间	doloc_town_mining_area	all_vegetation
+山脊谷地.山洞外	doloc_town_mining_area	all_vegetation
+山脊谷地.谷底小山顶	doloc_town_mining_area	all_vegetation
+湿地
+湿地.淹没草原_0	wetland_grassland	wetland_outside
+湿地.淹没草原_R	wetland_grassland	wetland_outside
+湿地.淹没草原_L	wetland_grassland	wetland_outside
+湿地.淹没草原_R2	wetland_grassland	wetland_outside
+湿地.湿地入口_R3	wetland_grassland	wetland_outside
+湿地.污染区_0	wetland_fish_farm	wetland_outside
+湿地.污染区_1	wetland_polluted_area	wetland_outside
+湿地.污染区_R	wetland_fish_farm	wetland_outside
+湿地.污染区_L	wetland_polluted_area	wetland_outside
+湿地.养殖场_R	wetland_fish_farm	-
+湿地.养殖场_L	wetland_fish_farm	-
+湿地.红树林_养殖场	wetland_forest_1	wetland_outside
+湿地.红树林_DOWN	wetland_forest_1	wetland_outside
+湿地.红树林_R	wetland_forest_1	wetland_outside
+湿地.红树林_TOP	wetland_forest_2	wetland_outside
+湿地.红树林_L	wetland_forest_1	wetland_outside
+湿地.泥炭地R	wetland_peatland	wetland_outside
+湿地.泥炭地_MID	wetland_peatland	wetland_outside
+湿地.泥炭地_DOWN	wetland_peatland	wetland_outside
+湿地.泥炭地_L	wetland_peatland	wetland_outside
+湿地.泥炭地_红树林	wetland_peatland	wetland_outside
+湿地.睡莲地L	wetland_lily_pond	wetland_lotus
+湿地.睡莲地R	wetland_lily_pond	wetland_lotus
+湿地.洞穴_睡莲地	wetland_cave	wetland_outside
+湿地.洞穴_L	wetland_cave	wetland_cave
+湿地.洞穴_泥炭地	wetland_peatland	wetland_outside
+湿地.洞穴_开阔地	wetland_cave	wetland_cave
+湿地.洞穴_隐藏	wetland_grassland	wetland_outside
+湿地.洞穴_红树林	wetland_cave	wetland_outside
+湿地.洞穴_MID	wetland_cave	wetland_cave
+湿地.洞穴_R2	wetland_cave_depths	wetland_cave
+湿地.洞穴_R3	wetland_cave_depths	wetland_cave
+湿地.洞穴_污染区	wetland_cave	wetland_cave
+```
+
+## 4.资源掉落库ID对照表
+
+#### Embedded sheet `KAfBYg`
+
+[TSV](sheets/04-01-kafbyg.tsv) · [rendered screenshot](sheets/04-01-kafbyg.png)
+
+```tsv
+资源	掉落库ID
+资源
+生活垃圾	waste_garbage_drop
+小机械残骸	machine_bing_drop
+纸盒	paper_box_drop
+种子盒	seed_box_drop
+废品堆	large_machine_bing_drop
+废弃置物架	waste_furniture_drop
+仿生蜂巢	bee_drone_drop
+车辆残骸	waste_car_drop
+沙堆	sand_drop
+土堆	soil_drop
+岩石堆	stone_drop
+大岩石堆	big_stone_drop
+煤矿	coal_mine_drop
+铜矿	copper_mine_drop
+铁矿	iron_mine_drop
+湿地土堆	soil_drop
+金矿	gold_mine_drop
+杂草_0	weeds_drop_lv1
+杂草_1	weeds_drop_lv1
+杂草_2	weeds_drop_lv1
+杂草_3	weeds_drop_lv2
+野花_0	weeds_drop_lv1
+野花_1	weeds_drop_lv1
+野花_2	weeds_drop_lv1
+野花_3	weeds_drop_lv2
+芦苇_0	weeds_drop_lv1
+芦苇_1	weeds_drop_lv1
+芦苇_2	weeds_drop_lv2
+芦苇_3	weeds_drop_lv2
+苜蓿草_0	alfalfa_drop_lv1
+苜蓿草_1	alfalfa_drop_lv1
+苜蓿草_2	alfalfa_drop_lv2
+野荆棘_0	thorns_drop_lv1
+野荆棘_1	thorns_drop_lv1
+野荆棘_2	thorns_drop_lv2
+野荆棘_3	thorns_drop_lv3
+树木_0	tree_drop_lv1
+树木_1	tree_drop_lv2
+树木_2	tree_drop_lv2
+树木_3	tree_drop_lv3
+树木_4	tree_drop_lv3
+岩树_0	stone_tree_drop_lv0
+岩树_1	stone_tree_drop_lv1
+岩树_2	stone_tree_drop_lv1
+岩树_3	stone_tree_drop_lv2
+岩树_4	stone_tree_drop_lv2
+岩树_5	stone_tree_drop_lv3
+岩树_6	stone_tree_drop_lv3
+岩树桩	stone_tree_drop_lv1
+竹子_0	bamboo_drop_seed
+竹子_1	bamboo_drop_lv2
+竹子_2	bamboo_drop_lv2
+竹子_3	bamboo_drop_lv2
+竹子_4	bamboo_drop_lv2
+红树_0	mangrove_drop_lv0
+红树_1	mangrove_drop_lv1
+红树_2	mangrove_drop_lv1
+红树_3	mangrove_drop_lv1
+红树_4	mangrove_drop_lv1
+红树_5	mangrove_drop_lv1
+植被（可采集）
+蓝莓丛	berry_drop
+磷虫草	psinensis_drop
+endyam	endyam
+succulent	succulent
+植被（纯装饰）
+dandelion	weeds_drop_lv1
+glow_cattail_s	weeds_drop_lv1
+glow_cattail_l	weeds_drop_lv1
+fluor_grass_s	weeds_drop_lv1
+fluor_grass_l	weeds_drop_lv1
+tree_root	weeds_drop_lv1
+water_grass	weeds_drop_lv1
+cave_grass	weeds_drop_lv1
+lotus_leaf	weeds_drop_lv1
+lotus_flower	weeds_drop_lv1
+cave_mushroom	weeds_drop_lv1
+fresh_stem	weeds_drop_lv1
+hay_stem	weeds_drop_lv1
+moss_tree	weeds_drop_lv1
+```

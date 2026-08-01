@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.GameBridge.DolocTown.Compatibility</AssemblyName>
+    <AssemblyVersion>9.9.9.9</AssemblyVersion>
+  </PropertyGroup>
+</Project>

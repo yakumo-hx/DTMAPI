@@ -1,0 +1,8 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	lightman	anim_npc_lightman_idle_[0~5]
+帧动画（对话）	6	talk	lightman	anim_npc_lightman_talk_[0~5]
+帧动画（移动）	8	walk	lightman	anim_npc_lightman_walk_[0~7]
+帧动画（钓鱼）	4	fishing	lightman	anim_npc_lightman_fishing_[0~3]
+图标（日历）	1		lightman	icon_calendar_lightman
+图标（图鉴）	1		lightman	icon_document_lightman
+详情图（图鉴）	1		lightman	preview_document_lightman

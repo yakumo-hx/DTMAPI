@@ -1,0 +1,4 @@
+/goal
+目标：为通用 RuntimeMemoryTrendProbe 增加 0–180s、180s–结束、最后 10 分钟窗口、最小二乘斜率和 Gen2 后 MonoUsed 低水位，并只运行一条第五存档 1800 秒 InactiveNoConsumer 判断后半段是否趋平。详细要求以 docs/goals/2026/20260711-0004-runtime-memory-stable-window.md 为准。
+
+保持 0.5.3-alpha，不新增公开 API，不启用 AutoFishing，不钓鱼，不调用 GC.Collect，不重复 EnabledNoRod。只有尾段仍持续线性增长才进入无 DTMAPI 与 Core/Bootstrap-only 平台分层基线；否则停止并将 inactive AutoFishing GC 嫌疑暂时解除，ISSUE-010 仅保留活跃钓鱼长期循环验证。

@@ -15,10 +15,11 @@ namespace DTMAPI.BepInExBootstrap
     {
         private const int ConfigListPageSize = 14;
         private const int ConfigItemPageSize = 12;
-        private const int ManagerModsPageSize = 16;
-        private const int ManagerDiagnosticPageSize = 7;
+        private const int ManagerModsPageSize = 10;
+        private const int ManagerDiagnosticPageSize = 15;
         private const int ManagerHookPageSize = 17;
-        private const int ManagerFeaturePageSize = 17;
+        private const int ManagerFeaturePageSize = 14;
+        private const int ManagerAdvancedPageSize = 14;
 
         private readonly DtmApiRuntime runtime;
         private readonly IConfigMenuRuntime configMenu;
@@ -56,29 +57,40 @@ namespace DTMAPI.BepInExBootstrap
 
         private object? root;
         private object? eventSystemRoot;
+        private object? eventSystemComponent;
         private object? titleButtonRoot;
         private object? panelRoot;
         private object? panelContentRoot;
         private object? iconSprite;
         private string? selectedConfigModId;
         private string? capturingKeybindItemId;
+        private bool keyCaptureArming;
+        private int keyCaptureStartedFrame = -1;
         private string statusMessage = string.Empty;
         private bool initialized;
         private bool dirty = true;
         private bool wasTitleVisible;
         private bool buttonVisibleLogged;
         private bool menuOpenLogged;
+        private bool eventSystemPendingLogged;
+        private int eventSystemFailureCount;
+        private string eventSystemFailureFingerprint = string.Empty;
+        private DateTimeOffset nextEventSystemRetryAtUtc = DateTimeOffset.MinValue;
         private DtmOverlayPage renderedPage = (DtmOverlayPage)(-1);
         private string? renderedConfigUniqueId;
         private bool trackingRenderedObjects = true;
+        private long renderedOverlaySessionSequence = -1;
         private bool buildingStaticUi;
         private int configListPageIndex;
         private int configItemPageIndex;
         private int managerModsPageIndex;
         private int managerErrorsPageIndex;
-        private int managerWarningsPageIndex;
         private int managerHooksPageIndex;
         private int managerFeaturesPageIndex;
+        private int managerAdvancedPageIndex;
+        private string? selectedManagerModId;
+        private bool managerShowingWarnings;
+        private bool managerAdvancedShowingFeatures;
 
         public ReflectedTitleMenuSettingsUi(DtmApiRuntime runtime, IConfigMenuRuntime configMenu)
         {
@@ -94,15 +106,56 @@ namespace DTMAPI.BepInExBootstrap
 
         public bool IsCapturingKey => capturingKeybindItemId != null;
 
-        public bool ClickTitleButtonForSmoke()
+        public string GetLifecycleSummary()
         {
-            if (!EnsureInitialized())
-                return false;
-            if (!runtime.UI.InputContext.Equals("HomePageUiState", StringComparison.OrdinalIgnoreCase))
-                return false;
+            return "initialized=" + initialized.ToString(CultureInfo.InvariantCulture) +
+                "; rootAlive=" + IsAlive(root).ToString(CultureInfo.InvariantCulture) +
+                "; root=" + FormatUnityObjectState(root) +
+                "; titleButton=" + FormatUnityObjectState(titleButtonRoot) +
+                "; panelRoot=" + FormatUnityObjectState(panelRoot) +
+                "; panelContent=" + FormatUnityObjectState(panelContentRoot) +
+                "; renderedObjects=" + renderedObjects.Count.ToString(CultureInfo.InvariantCulture) +
+                "; renderedAlive=" + CountAliveUnityObjects(renderedObjects).ToString(CultureInfo.InvariantCulture) +
+                "; eventBinders=" + eventBinders.Count.ToString(CultureInfo.InvariantCulture) +
+                "; staticEventBinders=" + staticEventBinders.Count.ToString(CultureInfo.InvariantCulture) +
+                "; inputValues=" + inputValues.Count.ToString(CultureInfo.InvariantCulture) +
+                "; capturingKey=" + (capturingKeybindItemId != null).ToString(CultureInfo.InvariantCulture) +
+                "; eventSystemRoot=" + FormatUnityObjectState(eventSystemRoot) +
+                "; eventSystemComponent=" + FormatUnityObjectState(eventSystemComponent) +
+                "; iconSprite=" + FormatUnityObjectState(iconSprite) +
+                "; wasTitleVisible=" + wasTitleVisible.ToString(CultureInfo.InvariantCulture) +
+                "; menuOpen=" + runtime.UI.IsOpen.ToString(CultureInfo.InvariantCulture);
+        }
 
-            OpenFromTitleButton();
-            return true;
+        public string GetOwnerObjectGraphSummary()
+        {
+            int eventSystems = IsAlive(eventSystemRoot) > 0 || IsAlive(eventSystemComponent) > 0 ? 1 : 0;
+            int buttonCount = IsAlive(titleButtonRoot);
+            int unityEventListeners = eventBinders.Count + staticEventBinders.Count;
+            return "DTMAPI.TitleSettings={Canvas=" + IsAlive(root).ToString(CultureInfo.InvariantCulture) +
+                "; EventSystem=" + eventSystems.ToString(CultureInfo.InvariantCulture) +
+                "; Button=" + buttonCount.ToString(CultureInfo.InvariantCulture) +
+                "; InputField=" + inputValues.Count.ToString(CultureInfo.InvariantCulture) +
+                "; ScrollRect=0" +
+                "; UnityEventListeners=" + unityEventListeners.ToString(CultureInfo.InvariantCulture) +
+                "; DynamicBinders=" + eventBinders.Count.ToString(CultureInfo.InvariantCulture) +
+                "; rootAlive=" + IsAlive(root).ToString(CultureInfo.InvariantCulture) + "}";
+        }
+
+        public void ResetForSaveBoundary(int? saveSlot, bool isNewGame)
+        {
+            ResetBoundaryState("SaveLoaded slot=" + (saveSlot?.ToString(CultureInfo.InvariantCulture) ?? "unknown") + " isNewGame=" + isNewGame.ToString(CultureInfo.InvariantCulture));
+        }
+
+        public void ResetForTitleBoundary()
+        {
+            ResetBoundaryState("ReturnedToTitle");
+        }
+
+        public void Shutdown(string reason)
+        {
+            ResetBoundaryState("Shutdown " + (reason ?? string.Empty));
+            ResetUiReferences("Shutdown " + (reason ?? string.Empty));
         }
 
         public void Update()
@@ -116,6 +169,7 @@ namespace DTMAPI.BepInExBootstrap
             SetActive(root, titleVisible);
             if (titleVisible)
             {
+                EnsureEventSystem();
                 if (!wasTitleVisible)
                     dirty = true;
                 if (!buttonVisibleLogged)
@@ -129,19 +183,29 @@ namespace DTMAPI.BepInExBootstrap
 
             if (!titleVisible)
             {
-                if (runtime.UI.IsOpen)
-                    runtime.UI.Close();
-                SetActive(panelRoot, false);
-                capturingKeybindItemId = null;
-                buttonVisibleLogged = false;
-                menuOpenLogged = false;
+                ResetBoundaryState("title hidden");
                 return;
             }
 
-            if (capturingKeybindItemId != null && ReflectedUnityInput.TryGetPressedKey(out string key))
+            if (capturingKeybindItemId != null && keyCaptureArming)
+            {
+                int currentFrame = ReflectedUnityInput.GetUnityFrameCount();
+                if (keyCaptureStartedFrame < 0 || currentFrame < 0)
+                {
+                    // Conservative fallback when Unity frameCount is unavailable.
+                    keyCaptureArming = false;
+                    return;
+                }
+                if (currentFrame == keyCaptureStartedFrame)
+                    return;
+                keyCaptureArming = false;
+            }
+            if (capturingKeybindItemId != null && !keyCaptureArming && ReflectedUnityInput.TryGetPressedKey(out string key))
             {
                 TrySetCapturingKey(key);
                 capturingKeybindItemId = null;
+                keyCaptureArming = false;
+                keyCaptureStartedFrame = -1;
                 dirty = true;
             }
 
@@ -149,7 +213,7 @@ namespace DTMAPI.BepInExBootstrap
             SetActive(panelRoot, showPanel);
             SetActive(titleButtonRoot, !showPanel);
             bool configRequestChanged = !string.Equals(renderedConfigUniqueId, runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase);
-            if (showPanel && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage || configRequestChanged))
+            if (showPanel && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage || configRequestChanged || renderedOverlaySessionSequence != runtime.UI.OverlaySessionSequence))
             {
                 if (!menuOpenLogged)
                 {
@@ -184,7 +248,6 @@ namespace DTMAPI.BepInExBootstrap
             }
 
             DontDestroyOnLoad(root);
-            EnsureEventSystem();
             iconSprite = LoadIconSprite();
             CreateTitleButton();
             CreatePanelRoot();
@@ -283,17 +346,278 @@ namespace DTMAPI.BepInExBootstrap
         {
             if (eventSystemType == null)
                 return;
+                if (eventSystemRoot != null)
+                {
+                    if (IsDestroyed(eventSystemRoot))
+                    {
+                        eventSystemRoot = null;
+                        eventSystemComponent = null;
+                    }
+                    else
+                    {
+                        if (FindExternalEventSystem() != null)
+                            DestroyOwnedEventSystem("native EventSystem detected");
+                    else
+                        return;
+                }
+            }
+
             if (FindObjectOfType(eventSystemType) != null)
+            {
+                if (eventSystemPendingLogged)
+                {
+                    eventSystemPendingLogged = false;
+                    runtime.SetHookStatus("UI.TitleSettingsEventSystem", "verified", "Native EventSystem", "Reused scene EventSystem for title settings button input.");
+                }
+                return;
+            }
+            if (DateTimeOffset.UtcNow < nextEventSystemRetryAtUtc)
                 return;
 
-            eventSystemRoot = CreatePlainObject("DTMAPI.TitleSettings.EventSystem");
-            AddComponent(eventSystemRoot, eventSystemType);
+            if (!TrySelectEventSystemInputModule(out Type? inputModuleType, out string inputModuleSource))
+            {
+                if (!eventSystemPendingLogged)
+                {
+                    eventSystemPendingLogged = true;
+                    runtime.RuntimeMonitor.Log("DTMAPI title settings UI delayed EventSystem creation: " + inputModuleSource + ".", LogLevel.Warn);
+                    runtime.SetHookStatus("UI.TitleSettingsEventSystem", "pending", "Unity UI Canvas", inputModuleSource);
+                }
+                nextEventSystemRetryAtUtc = DateTimeOffset.UtcNow.AddSeconds(2);
+                return;
+            }
+
+            if (TryCreateFallbackEventSystem(inputModuleType, inputModuleSource, out Exception rootCause))
+                return;
+
+            string message = rootCause.GetType().Name + ": " + rootCause.Message;
+            bool inputSystemDeferred = inputSystemUiInputModuleType != null && !IsUnityInputSystemReady();
+            if ((inputModuleType == inputSystemUiInputModuleType && IsInputSystemNotInitializedException(rootCause)) ||
+                inputSystemDeferred)
+            {
+                if (inputModuleType != standaloneInputModuleType &&
+                    standaloneInputModuleType != null &&
+                    TryCreateFallbackEventSystem(standaloneInputModuleType, "StandaloneInputModule; InputSystemUIInputModule failed during startup and is deferred.", out rootCause))
+                {
+                    runtime.RuntimeMonitor.LogOnce(
+                        "title-ui-eventsystem-input-deferred-standalone",
+                        "DTMAPI title settings UI deferred InputSystemUIInputModule after startup failure and used StandaloneInputModule.",
+                        LogLevel.Warn);
+                    return;
+                }
+
+                message = rootCause.GetType().Name + ": " + rootCause.Message;
+                runtime.RuntimeMonitor.LogOnce(
+                    "title-ui-eventsystem-input-pending",
+                    "DTMAPI title settings UI delayed EventSystem creation because Unity Input System is not initialized yet.",
+                    LogLevel.Warn);
+                runtime.SetHookStatus("UI.TitleSettingsEventSystem", "pending", inputModuleSource, message);
+                nextEventSystemRetryAtUtc = DateTimeOffset.UtcNow.AddSeconds(2);
+                return;
+            }
+
+            RecordEventSystemFallbackFailure(inputModuleSource, rootCause);
+        }
+
+        private bool TryCreateFallbackEventSystem(Type? inputModuleType, string inputModuleSource, out Exception rootCause)
+        {
+            object? candidateRoot = null;
+            try
+            {
+                if (eventSystemType == null)
+                {
+                    rootCause = new InvalidOperationException("Unity EventSystem type is unavailable.");
+                    return false;
+                }
+
+                candidateRoot = CreatePlainObject("DTMAPI.TitleSettings.EventSystem");
+                eventSystemComponent = AddComponent(candidateRoot, eventSystemType);
+                if (inputModuleType != null)
+                    AddComponent(candidateRoot, inputModuleType);
+                eventSystemRoot = candidateRoot;
+                eventSystemPendingLogged = false;
+                eventSystemFailureCount = 0;
+                eventSystemFailureFingerprint = string.Empty;
+                runtime.RuntimeMonitor.Log("DTMAPI title settings UI created an EventSystem for button input using " + inputModuleSource + ".");
+                runtime.SetHookStatus("UI.TitleSettingsEventSystem", "verified", inputModuleSource, "Owned fallback EventSystem created for title settings button input; it is destroyed when title UI is hidden or a native EventSystem appears.");
+                rootCause = new InvalidOperationException("No error.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (candidateRoot != null && objectType != null && !IsDestroyed(candidateRoot))
+                    Destroy(candidateRoot);
+                eventSystemRoot = null;
+                eventSystemComponent = null;
+
+                rootCause = UnwrapReflectionException(ex);
+                return false;
+            }
+        }
+
+        private void RecordEventSystemFallbackFailure(string inputModuleSource, Exception rootCause)
+        {
+            string fingerprint = rootCause.GetType().FullName + "|" + rootCause.Message;
+            if (!string.Equals(eventSystemFailureFingerprint, fingerprint, StringComparison.Ordinal))
+            {
+                eventSystemFailureFingerprint = fingerprint;
+                eventSystemFailureCount = 0;
+            }
+
+            eventSystemFailureCount++;
+            string message = rootCause.GetType().Name + ": " + rootCause.Message;
+            if (eventSystemFailureCount <= 3)
+                runtime.Diagnostics.RecordError("DTMAPI.TitleSettingsUI", "Title settings EventSystem fallback creation failed; retrying.", rootCause.ToString());
+            else
+                runtime.RuntimeMonitor.LogOnce("title-ui-eventsystem-retry-suppressed-" + rootCause.GetType().Name, "DTMAPI title settings UI suppressed repeated EventSystem fallback failures for " + rootCause.GetType().Name + "; retry remains active.", LogLevel.Warn);
+
+            nextEventSystemRetryAtUtc = DateTimeOffset.UtcNow.AddSeconds(eventSystemFailureCount <= 3 ? 2 : 10);
+            runtime.SetHookStatus("UI.TitleSettingsEventSystem", eventSystemFailureCount <= 3 ? "retrying" : "degraded", inputModuleSource, message + "; retryCount=" + eventSystemFailureCount.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private object? FindExternalEventSystem()
+        {
+            if (eventSystemType == null || objectType == null)
+                return null;
+
+            try
+            {
+                MethodInfo? findObjects = objectType.GetMethod("FindObjectsOfType", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Type) }, null);
+                if (findObjects == null)
+                    return null;
+                var found = findObjects.Invoke(null, new object[] { eventSystemType }) as Array;
+                if (found == null)
+                    return null;
+
+                foreach (object? candidate in found)
+                {
+                    if (candidate == null || IsDestroyed(candidate))
+                        continue;
+                    if (IsOwnedEventSystem(candidate))
+                        continue;
+                    return candidate;
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+        private bool IsOwnedEventSystem(object candidate)
+        {
+            if (eventSystemComponent != null && IsSameUnityObject(candidate, eventSystemComponent))
+                return true;
+            if (eventSystemRoot != null && IsSameUnityObject(candidate, eventSystemRoot))
+                return true;
+            if (eventSystemRoot == null)
+                return false;
+            try
+            {
+                object? gameObject = GetProperty(candidate, "gameObject");
+                return gameObject != null && IsSameUnityObject(gameObject, eventSystemRoot);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsSameUnityObject(object left, object right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            try
+            {
+                return left.Equals(right);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void DestroyOwnedEventSystem(string reason)
+        {
+            if (eventSystemRoot == null)
+                return;
+
+            object? rootToDestroy = eventSystemRoot;
+            eventSystemRoot = null;
+            eventSystemComponent = null;
+            if (rootToDestroy != null && !IsDestroyed(rootToDestroy))
+                Destroy(rootToDestroy);
+            runtime.SetHookStatus("UI.TitleSettingsEventSystem", "released", "DTMAPI-owned EventSystem", reason ?? string.Empty);
+        }
+
+        private bool TrySelectEventSystemInputModule(out Type? inputModuleType, out string source)
+        {
+            inputModuleType = null;
+            source = "No EventSystem input module type is available.";
+
+            if (inputSystemUiInputModuleType != null && IsUnityInputSystemReady())
+            {
+                inputModuleType = inputSystemUiInputModuleType;
+                source = "InputSystemUIInputModule";
+                return true;
+            }
+
+            if (standaloneInputModuleType != null)
+            {
+                inputModuleType = standaloneInputModuleType;
+                source = inputSystemUiInputModuleType == null
+                    ? "StandaloneInputModule"
+                    : "StandaloneInputModule; InputSystemUIInputModule is deferred until Unity Input System is initialized.";
+                return true;
+            }
+
             if (inputSystemUiInputModuleType != null)
-                AddComponent(eventSystemRoot, inputSystemUiInputModuleType);
-            else if (standaloneInputModuleType != null)
-                AddComponent(eventSystemRoot, standaloneInputModuleType);
-            DontDestroyOnLoad(eventSystemRoot);
-            runtime.RuntimeMonitor.Log("DTMAPI title settings UI created an EventSystem for button input.");
+                source = "InputSystemUIInputModule is available but Unity Input System is not initialized yet.";
+
+            return false;
+        }
+
+        private static bool IsUnityInputSystemReady()
+        {
+            Type? inputSystemType = Type.GetType("UnityEngine.InputSystem.InputSystem, Unity.InputSystem");
+            if (inputSystemType == null)
+                return false;
+
+            try
+            {
+                PropertyInfo? settings = inputSystemType.GetProperty("settings", BindingFlags.Public | BindingFlags.Static);
+                if (settings != null)
+                    return settings.GetValue(null, null) != null;
+
+                PropertyInfo? devices = inputSystemType.GetProperty("devices", BindingFlags.Public | BindingFlags.Static);
+                if (devices != null)
+                {
+                    _ = devices.GetValue(null, null);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (IsInputSystemNotInitializedException(UnwrapReflectionException(ex)))
+                    return false;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsInputSystemNotInitializedException(Exception ex)
+        {
+            string text = (ex.Message ?? string.Empty) + " " + ex.ToString();
+            return text.IndexOf("Input System not yet initialized", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                text.IndexOf("InputSystem not yet initialized", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static Exception UnwrapReflectionException(Exception ex)
+        {
+            while (ex is TargetInvocationException && ex.InnerException != null)
+                ex = ex.InnerException;
+            return ex;
         }
 
         private void RenderPanel()
@@ -304,6 +628,7 @@ namespace DTMAPI.BepInExBootstrap
             ClearRenderedObjects();
             RuntimeSnapshot snapshot = runtime.CreateSnapshot();
             renderedPage = runtime.UI.CurrentPage;
+            renderedOverlaySessionSequence = runtime.UI.OverlaySessionSequence;
             renderedConfigUniqueId = runtime.UI.RequestedConfigUniqueId;
 
             AddText(panelContentRoot, "DTMAPI.Title", T("ui.title", "DTMAPI Settings") + "  " + DtmApiRuntime.ApiVersion, 22, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, 40, -36, 520, 32);
@@ -320,7 +645,7 @@ namespace DTMAPI.BepInExBootstrap
                 Tuple.Create(T("tab.status", "Status"), DtmOverlayPage.Status),
                 Tuple.Create(T("tab.errors", "Errors"), DtmOverlayPage.Errors),
                 Tuple.Create(T("tab.hooks", "Hooks"), DtmOverlayPage.Hooks),
-                Tuple.Create(T("tab.features", "Features"), DtmOverlayPage.Features),
+                Tuple.Create(T("tab.advanced", "Advanced"), DtmOverlayPage.Features),
                 Tuple.Create(T("tab.logs", "Logs"), DtmOverlayPage.Logs)
             };
             for (int i = 0; i < tabs.Length; i++)
@@ -565,10 +890,24 @@ namespace DTMAPI.BepInExBootstrap
                 AddText(panelContentRoot!, "DTMAPI.Item.KeyValue." + item.ItemId, capturing ? T("item.pressKey", "Press key...") : item.PendingValue, 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, controlX, y, 100, 26);
                 CreateButton(panelContentRoot!, "DTMAPI.Item.KeyCapture." + item.ItemId, capturing ? T("config.cancel", "Cancel") : T("item.capture", "Capture"), () =>
                 {
-                    capturingKeybindItemId = capturing ? null : item.ItemId;
+                    if (capturing)
+                    {
+                        capturingKeybindItemId = null;
+                        keyCaptureArming = false;
+                        keyCaptureStartedFrame = -1;
+                    }
+                    else
+                    {
+                        keyCaptureStartedFrame = ReflectedUnityInput.BeginKeyCapture();
+                        capturingKeybindItemId = item.ItemId;
+                        keyCaptureArming = true;
+                    }
                     dirty = true;
                 }, capturing ? Color(0.43f, 0.24f, 0.18f, 1f) : Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), controlX + 106, y, 90, 26);
-                CreateButton(panelContentRoot!, "DTMAPI.Item.KeyNone." + item.ItemId, T("item.none", "None"), () => TrySetPending(item, "None"), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 66, 26);
+                if (item is IResettableKeybindConfigMenuItem resettable && resettable.HasDefaultValue)
+                    CreateButton(panelContentRoot!, "DTMAPI.Item.KeyReset." + item.ItemId, T("config.reset", "Reset"), () => TryResetKeybind(item, resettable), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 66, 26);
+                else
+                    CreateButton(panelContentRoot!, "DTMAPI.Item.KeyNone." + item.ItemId, T("item.none", "None"), () => TrySetPending(item, "None"), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 66, 26);
             }
             else if (item.Kind == "Button")
             {
@@ -585,13 +924,13 @@ namespace DTMAPI.BepInExBootstrap
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
             if (manager == null)
             {
-                AddText(panelContentRoot!, "DTMAPI.Mods.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -172, 900, 26);
+                AddText(panelContentRoot!, "DTMAPI.Mods.Unavailable", FormatManagerUnavailable(), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -172, 900, 26);
                 return;
             }
 
             ClampPage(ref managerModsPageIndex, manager.Mods.Count, ManagerModsPageSize);
             GetPageBounds(manager.Mods.Count, managerModsPageIndex, ManagerModsPageSize, out int modStart, out int modEnd, out int modPageCount);
-            AddText(panelContentRoot!, "DTMAPI.Mods.Count", FormatShowingPage("Mods", modStart, modEnd, manager.Mods.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -160, 620, 22);
+            AddText(panelContentRoot!, "DTMAPI.Mods.Count", FormatShowingPage(T("mods.count", "Mods"), modStart, modEnd, manager.Mods.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -160, 620, 22);
             if (modPageCount > 1)
                 RenderPager("DTMAPI.Mods.Pager", managerModsPageIndex, modPageCount, manager.Mods.Count, modStart, modEnd, 732, -160, page =>
                 {
@@ -605,13 +944,44 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
 
+            if (selectedManagerModId == null ||
+                !manager.Mods.Any(mod => mod.UniqueID.Equals(selectedManagerModId, StringComparison.OrdinalIgnoreCase)) ||
+                !manager.Mods.Skip(modStart).Take(modEnd - modStart).Any(mod => mod.UniqueID.Equals(selectedManagerModId, StringComparison.OrdinalIgnoreCase)))
+                selectedManagerModId = manager.Mods[modStart].UniqueID;
+
             int i = 0;
             for (int row = modStart; row < modEnd; row++)
             {
                 ManagerModRow mod = manager.Mods[row];
-                AddText(panelContentRoot!, "DTMAPI.Mods.Row." + i, Truncate(ManagerPageRowFormatter.FormatModRow(mod), 136), 13, GetModRowColor(mod), TextAnchorMiddleLeft, 52, -190 - i * 30, 930, 24);
+                bool selected = mod.UniqueID.Equals(selectedManagerModId, StringComparison.OrdinalIgnoreCase);
+                CreateButton(
+                    panelContentRoot!,
+                    "DTMAPI.Mods.Row." + i,
+                    Truncate(FormatManagerModListRow(mod), 124),
+                    () =>
+                    {
+                        selectedManagerModId = mod.UniqueID;
+                        dirty = true;
+                    },
+                    selected ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.12f, 0.15f, 0.18f, 1f),
+                    GetModRowColor(mod),
+                    52,
+                    -190 - i * 30,
+                    930,
+                    24);
                 i++;
             }
+
+            ManagerModRow selectedMod = manager.Mods.First(mod => mod.UniqueID.Equals(selectedManagerModId, StringComparison.OrdinalIgnoreCase));
+            string detailTitle = string.Format(
+                CultureInfo.InvariantCulture,
+                T("mods.detailsTitleFormat", "Selected Mod: {0} ({1})"),
+                FirstManagerText(selectedMod.Name, T("mods.unknownName", "unnamed")),
+                FirstManagerText(selectedMod.UniqueID, T("mods.unknownId", "no id")));
+            AddText(panelContentRoot!, "DTMAPI.Mods.DetailTitle", detailTitle, 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -500, 900, 24);
+            IReadOnlyList<string> detailLines = FormatManagerModDetailLines(selectedMod);
+            for (int detailIndex = 0; detailIndex < detailLines.Count; detailIndex++)
+                AddText(panelContentRoot!, "DTMAPI.Mods.Detail." + detailIndex, Truncate(detailLines[detailIndex], 136), 13, GetModRowColor(selectedMod), TextAnchorMiddleLeft, 52, -526 - detailIndex * 28, 930, 22);
         }
 
         private void RenderStatus(RuntimeSnapshot snapshot)
@@ -637,34 +1007,21 @@ namespace DTMAPI.BepInExBootstrap
             string[] lines = manager == null
                 ? new[]
                 {
-                    string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
-                        ? T("status.managerUnavailable", "Manager model unavailable.")
-                        : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
-                    T("status.runtimeActiveSince", "Runtime active since ") + snapshot.StartedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                    T("status.gamePath", "Game path: ") + snapshot.Paths.GamePath,
-                    T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
+                    FormatManagerUnavailable(),
                     T("status.officialEnablement", "Official enablement remains source-owned; DTMAPI config editing does not hot-unload DLLs or override official state."),
-                    T("status.diagnosticsHotkey", "F8 diagnostics overlay is disabled by default; use the title-page DTMAPI Settings entry.")
+                    T("status.advancedHint", "Use Advanced for registry, compatibility, Hook, and feature evidence.")
                 }
                 : new[]
             {
-                T("status.managerOverall", "Overall status: ") + manager.Summary.OverallStatus,
+                T("status.managerOverall", "Overall status: ") + TranslateManagerStatus(manager.Summary.OverallStatus),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerMods", "Mods loaded: {0} | blocked: {1} | disabled: {2}"), manager.Summary.LoadedModCount, manager.Summary.BlockedModCount, manager.Summary.DisabledModCount),
+                string.Format(CultureInfo.InvariantCulture, T("status.managerDependencies", "Dependency issues: {0} | restart required now: {1}"), manager.Summary.DependencyIssueModCount, manager.Summary.RestartRequiredModCount),
                 string.Format(CultureInfo.InvariantCulture, T("status.managerDiagnostics", "Diagnostics errors: {0} | warnings: {1}"), manager.Summary.ErrorCount, manager.Summary.WarningCount),
-                string.Format(CultureInfo.InvariantCulture, T("status.managerHooks", "Hooks failed: {0} | missing: {1}"), manager.Summary.FailedHookCount, manager.Summary.MissingHookCount),
-                string.Format(CultureInfo.InvariantCulture, T("status.managerFeatures", "Features failed: {0} | degraded: {1}"), manager.Summary.FailedFeatureCount, manager.Summary.DegradedFeatureCount),
                 string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
                     ? T("status.managerRefreshOk", "Manager refresh: refreshed")
                     : T("status.managerRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError,
-                T("status.summaryCopy", "Copy Summary: ") + (runtime.UI.LastManagerSummaryCopy?.Status ?? T("status.notCopied", "not-copied")),
-                T("status.installState", "Install state: ") + ManagerPageRowFormatter.FormatInstallState(manager.InstallState),
-                T("status.uninstallScript", "Uninstall script: ") + (manager.InstallState.UninstallScriptAvailable ? T("common.available", "available") : T("common.missing", "missing")),
-                T("status.managerReport", "Report export: ") + (runtime.UI.LastManagerReportExport?.Status ?? manager.ExportReport.Status),
-                FormatManagerPathStatus(T("status.latestLog", "Latest log"), manager.ExportReport.HasLatestLogPath, manager.ExportReport.LatestLogExists, manager.LatestLogPath),
-                FormatManagerPathStatus(T("status.latestReport", "Latest report"), manager.ExportReport.HasLatestReportPath, manager.ExportReport.LatestReportExists, manager.LatestReportPath),
-                T("status.titleEntry", "Title settings entry: Unity UI Canvas, visible only on the unobstructed title homepage, anchored top-left."),
                 T("status.officialEnablement", "Official enablement remains source-owned; DTMAPI config editing does not hot-unload DLLs or override official state."),
-                T("status.diagnosticsHotkey", "F8 diagnostics overlay is disabled by default; use the title-page DTMAPI Settings entry.")
+                T("status.advancedHint", "Use Advanced for registry, compatibility, Hook, and feature evidence.")
             };
             for (int i = 0; i < lines.Length; i++)
                 AddText(panelContentRoot!, "DTMAPI.Status.Row." + i, Truncate(lines[i], 140), 15, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -176 - i * 32, 930, 26);
@@ -683,7 +1040,7 @@ namespace DTMAPI.BepInExBootstrap
             pageCount = Math.Max(1, pageCount);
             string label = total <= 0
                 ? "0/0"
-                : string.Format(CultureInfo.InvariantCulture, "{0}-{1}/{2}  Page {3}/{4}", start + 1, end, total, pageIndex + 1, pageCount);
+                : string.Format(CultureInfo.InvariantCulture, T("pager.page", "{0}-{1}/{2}  Page {3}/{4}"), start + 1, end, total, pageIndex + 1, pageCount);
             AddText(panelContentRoot!, id + ".Label", label, 12, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, x, y, 160, 22);
             CreateButton(panelContentRoot!, id + ".Prev", "<", () =>
             {
@@ -703,25 +1060,22 @@ namespace DTMAPI.BepInExBootstrap
 
         private static void ClampPage(ref int pageIndex, int total, int pageSize)
         {
-            int pageCount = Math.Max(1, (int)Math.Ceiling(Math.Max(0, total) / (double)Math.Max(1, pageSize)));
-            pageIndex = Math.Max(0, Math.Min(pageIndex, pageCount - 1));
+            pageIndex = ManagerPagination.Create(total, pageIndex, pageSize).PageIndex;
         }
 
         private static void GetPageBounds(int total, int pageIndex, int pageSize, out int start, out int end, out int pageCount)
         {
-            total = Math.Max(0, total);
-            pageSize = Math.Max(1, pageSize);
-            pageCount = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
-            pageIndex = Math.Max(0, Math.Min(pageIndex, pageCount - 1));
-            start = Math.Min(total, pageIndex * pageSize);
-            end = Math.Min(total, start + pageSize);
+            ManagerPageWindow page = ManagerPagination.Create(total, pageIndex, pageSize);
+            start = page.Start;
+            end = page.End;
+            pageCount = page.PageCount;
         }
 
-        private static string FormatShowingPage(string label, int start, int end, int total)
+        private string FormatShowingPage(string label, int start, int end, int total)
         {
             if (total <= 0)
                 return label + ": 0/0";
-            return string.Format(CultureInfo.InvariantCulture, "{0}: showing {1}-{2} of {3}", label, start + 1, end, total);
+            return string.Format(CultureInfo.InvariantCulture, T("pager.showing", "{0}: showing {1}-{2} of {3}"), label, start + 1, end, total);
         }
 
         private void RenderErrors(RuntimeSnapshot snapshot)
@@ -729,67 +1083,58 @@ namespace DTMAPI.BepInExBootstrap
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
             if (manager == null)
             {
-                AddText(panelContentRoot!, "DTMAPI.Errors.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
+                AddText(panelContentRoot!, "DTMAPI.Errors.Unavailable", FormatManagerUnavailable(), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
                 return;
             }
 
-            if (manager.Errors.Count == 0 && manager.Warnings.Count == 0)
+            CreateButton(panelContentRoot!, "DTMAPI.Errors.SelectErrors", T("errors.label", "Errors") + " (" + manager.Errors.Count.ToString(CultureInfo.InvariantCulture) + ")", () =>
             {
-                AddText(panelContentRoot!, "DTMAPI.Errors.Count", ManagerPageRowFormatter.FormatShowingFirst("Errors", 0, 0) + " | " + ManagerPageRowFormatter.FormatShowingFirst("Warnings", 0, 0), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -136, 900, 22);
-                AddText(panelContentRoot!, "DTMAPI.Errors.Empty", T("errors.empty", "No DTMAPI errors or warnings recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 700, 26);
+                managerShowingWarnings = false;
+                managerErrorsPageIndex = 0;
+                dirty = true;
+            }, !managerShowingWarnings ? Color(0.48f, 0.22f, 0.20f, 1f) : Color(0.12f, 0.15f, 0.18f, 1f), Color(1f, 1f, 1f, 1f), 52, -136, 140, 28);
+            CreateButton(panelContentRoot!, "DTMAPI.Errors.SelectWarnings", T("warnings.label", "Warnings") + " (" + manager.Warnings.Count.ToString(CultureInfo.InvariantCulture) + ")", () =>
+            {
+                managerShowingWarnings = true;
+                managerErrorsPageIndex = 0;
+                dirty = true;
+            }, managerShowingWarnings ? Color(0.48f, 0.38f, 0.16f, 1f) : Color(0.12f, 0.15f, 0.18f, 1f), Color(1f, 1f, 1f, 1f), 202, -136, 160, 28);
+
+            IReadOnlyList<ManagerDiagnosticRow> rows = managerShowingWarnings ? manager.Warnings : manager.Errors;
+            string label = managerShowingWarnings ? T("warnings.label", "Warnings") : T("errors.label", "Errors");
+            ClampPage(ref managerErrorsPageIndex, rows.Count, ManagerDiagnosticPageSize);
+            GetPageBounds(rows.Count, managerErrorsPageIndex, ManagerDiagnosticPageSize, out int start, out int end, out int pageCount);
+            AddText(panelContentRoot!, "DTMAPI.Errors.Count", FormatShowingPage(label, start, end, rows.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 390, -139, 300, 22);
+            if (pageCount > 1)
+                RenderPager("DTMAPI.Errors.Pager", managerErrorsPageIndex, pageCount, rows.Count, start, end, 732, -139, page =>
+            {
+                managerErrorsPageIndex = page;
+                dirty = true;
+            });
+
+            if (rows.Count == 0)
+            {
+                AddText(panelContentRoot!, "DTMAPI.Errors.EmptySelected", managerShowingWarnings
+                    ? T("warnings.noneSelected", "No warnings recorded.")
+                    : T("errors.noneSelected", "No errors recorded."), 15, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -184, 720, 24);
                 return;
             }
 
-            ClampPage(ref managerErrorsPageIndex, manager.Errors.Count, ManagerDiagnosticPageSize);
-            ClampPage(ref managerWarningsPageIndex, manager.Warnings.Count, ManagerDiagnosticPageSize);
-            GetPageBounds(manager.Errors.Count, managerErrorsPageIndex, ManagerDiagnosticPageSize, out int errorStart, out int errorEnd, out int errorPageCount);
-            GetPageBounds(manager.Warnings.Count, managerWarningsPageIndex, ManagerDiagnosticPageSize, out int warningPageStart, out int warningPageEnd, out int warningPageCount);
-
-            int line = 0;
-            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsTitle", T("errors.errorsTitle", "Errors"), 15, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -136, 160, 24);
-            AddText(panelContentRoot!, "DTMAPI.Errors.ErrorsCount", FormatShowingPage("Errors", errorStart, errorEnd, manager.Errors.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -136, 360, 22);
-            if (errorPageCount > 1)
-                RenderPager("DTMAPI.Errors.Pager", managerErrorsPageIndex, errorPageCount, manager.Errors.Count, errorStart, errorEnd, 694, -136, page =>
-                {
-                    managerErrorsPageIndex = page;
-                    dirty = true;
-                });
-            if (manager.Errors.Count == 0)
+            for (int row = start; row < end; row++)
             {
-                AddText(panelContentRoot!, "DTMAPI.Errors.NoErrors", T("errors.noErrors", "No DTMAPI errors recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -164, 720, 22);
-                line = 1;
-            }
-            else
-            {
-                for (int row = errorStart; row < errorEnd; row++)
-                {
-                    ManagerDiagnosticRow error = manager.Errors[row];
-                    AddText(panelContentRoot!, "DTMAPI.Errors.Row." + line, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(error), 132), 13, Color(1f, 0.76f, 0.70f, 1f), TextAnchorMiddleLeft, 52, -164 - line * 28, 930, 22);
-                    line++;
-                }
-            }
-
-            int warningStart = line + 1;
-            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsTitle", T("errors.warningsTitle", "Warnings"), 15, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -164 - warningStart * 28, 160, 24);
-            AddText(panelContentRoot!, "DTMAPI.Errors.WarningsCount", FormatShowingPage("Warnings", warningPageStart, warningPageEnd, manager.Warnings.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 210, -164 - warningStart * 28, 360, 22);
-            if (warningPageCount > 1)
-                RenderPager("DTMAPI.Warnings.Pager", managerWarningsPageIndex, warningPageCount, manager.Warnings.Count, warningPageStart, warningPageEnd, 694, -164 - warningStart * 28, page =>
-                {
-                    managerWarningsPageIndex = page;
-                    dirty = true;
-                });
-            if (manager.Warnings.Count == 0)
-            {
-                AddText(panelContentRoot!, "DTMAPI.Errors.NoWarnings", T("errors.noWarnings", "No DTMAPI warnings recorded."), 13, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28, 720, 22);
-                return;
-            }
-
-            int warningLine = 0;
-            for (int row = warningPageStart; row < warningPageEnd; row++)
-            {
-                ManagerDiagnosticRow warning = manager.Warnings[row];
-                AddText(panelContentRoot!, "DTMAPI.Warnings.Row." + warningLine, Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(warning), 132), 13, Color(1f, 0.88f, 0.62f, 1f), TextAnchorMiddleLeft, 52, -192 - warningStart * 28 - warningLine * 28, 930, 22);
-                warningLine++;
+                ManagerDiagnosticRow diagnostic = rows[row];
+                AddText(
+                    panelContentRoot!,
+                    "DTMAPI.Errors.Row." + row,
+                    Truncate(ManagerPageRowFormatter.FormatDiagnosticRow(diagnostic) +
+                        (string.IsNullOrWhiteSpace(diagnostic.Details) ? string.Empty : " | " + diagnostic.Details), 132),
+                    13,
+                    managerShowingWarnings ? Color(1f, 0.88f, 0.62f, 1f) : Color(1f, 0.76f, 0.70f, 1f),
+                    TextAnchorMiddleLeft,
+                    52,
+                    -180 - (row - start) * 30,
+                    930,
+                    24);
             }
         }
 
@@ -798,7 +1143,7 @@ namespace DTMAPI.BepInExBootstrap
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
             if (manager == null)
             {
-                AddText(panelContentRoot!, "DTMAPI.Hooks.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
+                AddText(panelContentRoot!, "DTMAPI.Hooks.Unavailable", FormatManagerUnavailable(), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
                 return;
             }
 
@@ -810,7 +1155,7 @@ namespace DTMAPI.BepInExBootstrap
             AddText(panelContentRoot!, "DTMAPI.Hooks.Title", T("hooks.title", "Hooks"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
             ClampPage(ref managerHooksPageIndex, manager.Hooks.Count, ManagerHookPageSize);
             GetPageBounds(manager.Hooks.Count, managerHooksPageIndex, ManagerHookPageSize, out int hookStart, out int hookEnd, out int hookPageCount);
-            AddText(panelContentRoot!, "DTMAPI.Hooks.Count", FormatShowingPage("Hooks", hookStart, hookEnd, manager.Hooks.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 620, 22);
+            AddText(panelContentRoot!, "DTMAPI.Hooks.Count", FormatShowingPage(T("hooks.title", "Hooks"), hookStart, hookEnd, manager.Hooks.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 620, 22);
             if (hookPageCount > 1)
                 RenderPager("DTMAPI.Hooks.Pager", managerHooksPageIndex, hookPageCount, manager.Hooks.Count, hookStart, hookEnd, 732, -158, page =>
                 {
@@ -829,30 +1174,78 @@ namespace DTMAPI.BepInExBootstrap
             DtmManagerViewModel? manager = runtime.UI.CurrentManagerModel;
             if (manager == null)
             {
-                AddText(panelContentRoot!, "DTMAPI.Features.Unavailable", ManagerPageRowFormatter.ModelUnavailable(runtime.UI.LastManagerRefreshError), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
+                AddText(panelContentRoot!, "DTMAPI.Features.Unavailable", FormatManagerUnavailable(), 16, Color(1f, 0.82f, 0.58f, 1f), TextAnchorMiddleLeft, 52, -144, 900, 26);
                 return;
             }
 
-            if (manager.Features.Count == 0)
+            AddText(panelContentRoot!, "DTMAPI.Advanced.Title", T("advanced.title", "Advanced diagnostics"), 16, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 300, 24);
+            AddText(panelContentRoot!, "DTMAPI.Advanced.Summary", Truncate(FormatAdvancedSummary(manager.AdvancedDiagnostics), 136), 13, Color(0.86f, 0.92f, 1f, 1f), TextAnchorMiddleLeft, 52, -160, 930, 22);
+            CreateButton(panelContentRoot!, "DTMAPI.Advanced.SelectRegistry", T("advanced.registry", "Registry evidence") + " (" + manager.AdvancedDiagnostics.Rows.Count.ToString(CultureInfo.InvariantCulture) + ")", () =>
             {
-                AddText(panelContentRoot!, "DTMAPI.Features.Empty", T("features.empty", "No feature statuses recorded."), 16, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -144, 600, 26);
-                return;
-            }
+                managerAdvancedShowingFeatures = false;
+                managerAdvancedPageIndex = 0;
+                dirty = true;
+            }, !managerAdvancedShowingFeatures ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.12f, 0.15f, 0.18f, 1f), Color(1f, 1f, 1f, 1f), 52, -190, 210, 28);
+            CreateButton(panelContentRoot!, "DTMAPI.Advanced.SelectFeatures", T("advanced.features", "Feature evidence") + " (" + manager.Features.Count.ToString(CultureInfo.InvariantCulture) + ")", () =>
+            {
+                managerAdvancedShowingFeatures = true;
+                managerFeaturesPageIndex = 0;
+                dirty = true;
+            }, managerAdvancedShowingFeatures ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.12f, 0.15f, 0.18f, 1f), Color(1f, 1f, 1f, 1f), 272, -190, 200, 28);
 
-            AddText(panelContentRoot!, "DTMAPI.Features.Title", T("features.title", "Features"), 15, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 52, -132, 900, 24);
-            ClampPage(ref managerFeaturesPageIndex, manager.Features.Count, ManagerFeaturePageSize);
-            GetPageBounds(manager.Features.Count, managerFeaturesPageIndex, ManagerFeaturePageSize, out int featureStart, out int featureEnd, out int featurePageCount);
-            AddText(panelContentRoot!, "DTMAPI.Features.Count", FormatShowingPage("Features", featureStart, featureEnd, manager.Features.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 52, -158, 620, 22);
-            if (featurePageCount > 1)
-                RenderPager("DTMAPI.Features.Pager", managerFeaturesPageIndex, featurePageCount, manager.Features.Count, featureStart, featureEnd, 732, -158, page =>
+            if (managerAdvancedShowingFeatures)
+            {
+                ClampPage(ref managerFeaturesPageIndex, manager.Features.Count, ManagerFeaturePageSize);
+                GetPageBounds(manager.Features.Count, managerFeaturesPageIndex, ManagerFeaturePageSize, out int featureStart, out int featureEnd, out int featurePageCount);
+                AddText(panelContentRoot!, "DTMAPI.Advanced.Count", FormatShowingPage(T("advanced.features", "Feature evidence"), featureStart, featureEnd, manager.Features.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 500, -193, 220, 22);
+                if (featurePageCount > 1)
+                    RenderPager("DTMAPI.Features.Pager", managerFeaturesPageIndex, featurePageCount, manager.Features.Count, featureStart, featureEnd, 732, -193, page =>
+                    {
+                        managerFeaturesPageIndex = page;
+                        dirty = true;
+                    });
+                if (manager.Features.Count == 0)
                 {
-                    managerFeaturesPageIndex = page;
-                    dirty = true;
-                });
-            for (int i = featureStart; i < featureEnd; i++)
+                    AddText(panelContentRoot!, "DTMAPI.Advanced.Empty", T("advanced.featuresEmpty", "No feature status evidence recorded."), 15, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -232, 700, 24);
+                    return;
+                }
+
+                for (int row = featureStart; row < featureEnd; row++)
+                {
+                    ManagerFeatureRow feature = manager.Features[row];
+                    AddText(panelContentRoot!, "DTMAPI.Features.Row." + row, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -232 - (row - featureStart) * 28, 930, 22);
+                }
+                return;
+            }
+
+            IReadOnlyList<ManagerAdvancedDiagnosticRow> advancedRows = manager.AdvancedDiagnostics.Rows;
+            ClampPage(ref managerAdvancedPageIndex, advancedRows.Count, ManagerAdvancedPageSize);
+            GetPageBounds(advancedRows.Count, managerAdvancedPageIndex, ManagerAdvancedPageSize, out int advancedStart, out int advancedEnd, out int advancedPageCount);
+            AddText(panelContentRoot!, "DTMAPI.Advanced.Count", FormatShowingPage(T("advanced.registry", "Registry evidence"), advancedStart, advancedEnd, advancedRows.Count), 13, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, 500, -193, 220, 22);
+            if (advancedPageCount > 1)
+                RenderPager("DTMAPI.Advanced.Pager", managerAdvancedPageIndex, advancedPageCount, advancedRows.Count, advancedStart, advancedEnd, 732, -193, page =>
             {
-                ManagerFeatureRow feature = manager.Features[i];
-                AddText(panelContentRoot!, "DTMAPI.Features.Row." + i, Truncate(ManagerPageRowFormatter.FormatFeatureRow(feature), 132), 13, GetFeatureRowColor(feature), TextAnchorMiddleLeft, 52, -188 - (i - featureStart) * 28, 930, 22);
+                managerAdvancedPageIndex = page;
+                dirty = true;
+            });
+            if (advancedRows.Count == 0)
+            {
+                string empty = manager.AdvancedDiagnostics.RegistryAvailable
+                    ? T("advanced.registryClean", "Registry checks are clean; no sampled diagnostics or legacy diffs.")
+                    : T("advanced.registryUnavailable", "Content/manifest registry evidence is not available yet.");
+                AddText(panelContentRoot!, "DTMAPI.Advanced.Empty", empty, 15, Color(0.88f, 1f, 0.88f, 1f), TextAnchorMiddleLeft, 52, -232, 820, 24);
+                return;
+            }
+
+            for (int row = advancedStart; row < advancedEnd; row++)
+            {
+                ManagerAdvancedDiagnosticRow advanced = advancedRows[row];
+                object color = advanced.Severity.Equals("error", StringComparison.OrdinalIgnoreCase)
+                    ? Color(1f, 0.76f, 0.70f, 1f)
+                    : advanced.Severity.Equals("warning", StringComparison.OrdinalIgnoreCase)
+                        ? Color(1f, 0.88f, 0.62f, 1f)
+                        : Color(0.86f, 0.92f, 1f, 1f);
+                AddText(panelContentRoot!, "DTMAPI.Advanced.Row." + row, Truncate(ManagerPageRowFormatter.FormatAdvancedDiagnosticRow(advanced), 132), 13, color, TextAnchorMiddleLeft, 52, -232 - (row - advancedStart) * 28, 930, 22);
             }
         }
 
@@ -973,26 +1366,98 @@ namespace DTMAPI.BepInExBootstrap
 
         private void CloseMenu()
         {
-            if (selectedConfigModId != null)
+            string cancelResult = CancelSelectedConfigPendingChanges("CloseMenu");
+            if (cancelResult.StartsWith("failed:", StringComparison.OrdinalIgnoreCase))
             {
-                IConfigMenuPage? page = configMenu.GetPage(selectedConfigModId);
-                if (page != null && page.HasPendingChanges)
-                {
-                    try
-                    {
-                        configMenu.Cancel(page.Manifest.UniqueID);
-                    }
-                    catch (Exception ex)
-                    {
-                        statusMessage = page.Manifest.UniqueID + ": " + ex.Message;
-                        dirty = true;
-                        return;
-                    }
-                }
+                statusMessage = cancelResult.Substring("failed:".Length);
+                dirty = true;
+                return;
             }
             capturingKeybindItemId = null;
             inputValues.Clear();
-            runtime.UI.Close();
+            CloseOwnedRuntimeMenu();
+        }
+
+        private void ResetBoundaryState(string reason)
+        {
+            string normalizedReason = reason ?? string.Empty;
+            bool forceLog = normalizedReason.StartsWith("SaveLoaded", StringComparison.OrdinalIgnoreCase) ||
+                normalizedReason.StartsWith("ReturnedToTitle", StringComparison.OrdinalIgnoreCase) ||
+                normalizedReason.StartsWith("Shutdown", StringComparison.OrdinalIgnoreCase);
+            bool hadTransientState = IsOwnedRuntimeMenuOpen() ||
+                renderedObjects.Count > 0 ||
+                eventBinders.Count > 0 ||
+                inputValues.Count > 0 ||
+                capturingKeybindItemId != null ||
+                eventSystemRoot != null ||
+                menuOpenLogged ||
+                buttonVisibleLogged ||
+                wasTitleVisible ||
+                renderedPage != (DtmOverlayPage)(-1) ||
+                renderedConfigUniqueId != null;
+            string cancelResult = CancelSelectedConfigPendingChanges(normalizedReason);
+            CloseOwnedRuntimeMenu();
+            SetActive(panelRoot, false);
+            SetActive(titleButtonRoot, true);
+            DestroyOwnedEventSystem(normalizedReason);
+            ClearRenderedObjects();
+            inputValues.Clear();
+            capturingKeybindItemId = null;
+            statusMessage = string.Empty;
+            dirty = true;
+            wasTitleVisible = false;
+            menuOpenLogged = false;
+            buttonVisibleLogged = false;
+            renderedPage = (DtmOverlayPage)(-1);
+            renderedOverlaySessionSequence = -1;
+            renderedConfigUniqueId = null;
+            configListPageIndex = 0;
+            configItemPageIndex = 0;
+            managerModsPageIndex = 0;
+            managerErrorsPageIndex = 0;
+            managerHooksPageIndex = 0;
+            managerFeaturesPageIndex = 0;
+            managerAdvancedPageIndex = 0;
+            selectedManagerModId = null;
+            managerShowingWarnings = false;
+            managerAdvancedShowingFeatures = false;
+            if (forceLog || hadTransientState || !cancelResult.Equals("none", StringComparison.OrdinalIgnoreCase))
+                runtime.RuntimeMonitor.Log("DTMAPI title settings UI boundary reset reason=" + normalizedReason + " pendingConfig=" + cancelResult + ".");
+        }
+
+        private bool IsOwnedRuntimeMenuOpen()
+        {
+            return runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(
+                "DTMAPI." + runtime.UI.CurrentPage,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void CloseOwnedRuntimeMenu()
+        {
+            if (IsOwnedRuntimeMenuOpen())
+                runtime.UI.Close();
+        }
+
+        private string CancelSelectedConfigPendingChanges(string reason)
+        {
+            if (selectedConfigModId == null)
+                return "none";
+
+            IConfigMenuPage? page = configMenu.GetPage(selectedConfigModId);
+            if (page == null || !page.HasPendingChanges)
+                return "none";
+
+            try
+            {
+                configMenu.Cancel(page.Manifest.UniqueID);
+                return "cancelled:" + page.Manifest.UniqueID;
+            }
+            catch (Exception ex)
+            {
+                string message = page.Manifest.UniqueID + ": " + ex.Message;
+                runtime.Diagnostics.RecordError("DTMAPI.TitleSettings", "Failed to cancel pending config changes at title UI boundary.", "reason=" + (reason ?? string.Empty) + "; " + ex);
+                return "failed:" + message;
+            }
         }
 
         private void TryPageAction(IConfigMenuPage page, string success, Action action)
@@ -1018,6 +1483,19 @@ namespace DTMAPI.BepInExBootstrap
             else
                 statusMessage = string.Empty;
             inputValues[item.ItemId] = item.PendingValue;
+            dirty = true;
+        }
+
+        private void TryResetKeybind(IConfigMenuItem item, IResettableKeybindConfigMenuItem resettable)
+        {
+            if (!resettable.TryResetPendingValue(out string error))
+                statusMessage = item.Name + ": " + error;
+            else
+                statusMessage = string.Empty;
+            inputValues[item.ItemId] = item.PendingValue;
+            capturingKeybindItemId = null;
+            keyCaptureArming = false;
+            keyCaptureStartedFrame = -1;
             dirty = true;
         }
 
@@ -1254,6 +1732,28 @@ namespace DTMAPI.BepInExBootstrap
             objectType.GetMethod("Destroy", new[] { objectType })?.Invoke(null, new[] { go });
         }
 
+        private void DestroyIconSprite()
+        {
+            object? sprite = iconSprite;
+            iconSprite = null;
+            if (sprite == null)
+                return;
+
+            object? texture = null;
+            try
+            {
+                texture = GetProperty(sprite, "texture");
+            }
+            catch
+            {
+                texture = null;
+            }
+
+            Destroy(sprite);
+            if (texture != null)
+                Destroy(texture);
+        }
+
         private void DontDestroyOnLoad(object go)
         {
             objectType?.GetMethod("DontDestroyOnLoad", BindingFlags.Public | BindingFlags.Static, null, new[] { objectType! }, null)?.Invoke(null, new[] { go });
@@ -1314,6 +1814,35 @@ namespace DTMAPI.BepInExBootstrap
             }
         }
 
+        private string FormatUnityObjectState(object? value)
+        {
+            if (value == null)
+                return "null";
+            if (IsDestroyed(value))
+                return "destroyed";
+
+            PropertyInfo? activeSelf = value.GetType().GetProperty("activeSelf", BindingFlags.Public | BindingFlags.Instance);
+            if (activeSelf != null && activeSelf.GetValue(value, null) is bool active)
+                return active ? "alive-active" : "alive-inactive";
+            return "alive";
+        }
+
+        private int IsAlive(object? value)
+        {
+            return value != null && !IsDestroyed(value) ? 1 : 0;
+        }
+
+        private int CountAliveUnityObjects(IEnumerable<object> values)
+        {
+            int count = 0;
+            foreach (object value in values)
+            {
+                if (value != null && !IsDestroyed(value))
+                    count++;
+            }
+            return count;
+        }
+
         private void InvalidateIfMountedObject(object? go)
         {
             if (go != null &&
@@ -1328,14 +1857,14 @@ namespace DTMAPI.BepInExBootstrap
 
         private void ResetUiReferences(string reason)
         {
+            DestroyOwnedEventSystem("title UI rebuild");
             if (root != null && objectType != null && !IsDestroyed(root))
                 Destroy(root);
             root = null;
-            eventSystemRoot = null;
             titleButtonRoot = null;
             panelRoot = null;
             panelContentRoot = null;
-            iconSprite = null;
+            DestroyIconSprite();
             initialized = false;
             dirty = true;
             wasTitleVisible = false;
@@ -1354,6 +1883,242 @@ namespace DTMAPI.BepInExBootstrap
 
         private object Color(float r, float g, float b, float a) => Activator.CreateInstance(colorType!, r, g, b, a);
         private object Vector2(float x, float y) => Activator.CreateInstance(vector2Type!, x, y);
+        private string FormatManagerUnavailable()
+        {
+            return string.IsNullOrWhiteSpace(runtime.UI.LastManagerRefreshError)
+                ? T("manager.modelUnavailable", "Manager model unavailable.")
+                : T("manager.modelRefreshFailed", "Manager model refresh failed: ") + runtime.UI.LastManagerRefreshError;
+        }
+
+        private string FormatManagerModListRow(ManagerModRow mod)
+        {
+            int issueCount = mod.Dependencies.Count(dependency => dependency.IsIssue);
+            string line = "[" + TranslateManagerStatus(FirstManagerText(mod.StatusCode, mod.Status, "unknown")) + "] " +
+                FirstManagerText(mod.Name, T("mods.unknownName", "unnamed")) +
+                "  " + FirstManagerText(mod.Version, T("mods.unknownVersion", "no version")) +
+                " | " + FirstManagerText(mod.UniqueID, T("mods.unknownId", "no id")) +
+                " | " + TranslateManagerSource(mod.Source);
+            if (mod.Dependencies.Count > 0)
+            {
+                line += " | " + T("mods.dependencies", "Dependencies") + "=" +
+                    mod.Dependencies.Count.ToString(CultureInfo.InvariantCulture) + " (" +
+                    (issueCount > 0
+                        ? string.Format(CultureInfo.InvariantCulture, T("mods.dependencyIssue", "{0} issue(s)"), issueCount)
+                        : T("mods.dependencyOk", "ok")) + ")";
+            }
+            if (mod.RequiresRestart)
+                line += " | " + T("mods.restartRequired", "restart required");
+            return line;
+        }
+
+        private IReadOnlyList<string> FormatManagerModDetailLines(ManagerModRow mod)
+        {
+            string state = T("mods.stateLabel", "State") + ": " +
+                TranslateManagerStatus(FirstManagerText(mod.StatusCode, mod.Status, "unknown")) +
+                " | " + (mod.Loaded ? T("mods.loadedYes", "loaded") : T("mods.loadedNo", "not loaded")) +
+                " | " + (mod.OfficialEnablementManaged
+                    ? mod.OfficialEnabled
+                        ? T("mods.officialEnabled", "official enabled")
+                        : T("mods.officialDisabled", "official disabled")
+                    : T("mods.officialUnmanaged", "not officially managed"));
+            if (!string.IsNullOrWhiteSpace(mod.Reason))
+                state += " | " + text.TranslateEnablementReason(mod.Reason);
+
+            string identity = T("mods.identityLabel", "Identity") + ": " +
+                TranslateManagerIdentity(FirstManagerText(mod.ManagedIdentity, mod.Type, T("mods.unknownIdentity", "unknown identity"))) +
+                " | " + T("mods.placementLabel", "placement") + "=" +
+                TranslateManagerPlacement(FirstManagerText(mod.ManagedPlacement, T("common.none", "none"))) +
+                " | " + T("mods.compatibilityLabel", "compatibility") + "=" +
+                TranslateManagerCompatibility(FirstManagerText(mod.GameCompatibility, T("common.none", "none")));
+            string dependencies = T("mods.dependencies", "Dependencies") + ": " +
+                (mod.Dependencies.Count == 0
+                    ? T("mods.dependenciesNone", "none declared")
+                    : string.Join("; ", mod.Dependencies.Select(FormatManagerDependencyRow).ToArray()));
+            string restart = T("mods.restartLabel", "Restart") + ": " +
+                (string.IsNullOrWhiteSpace(mod.RestartHint)
+                    ? T("mods.restartNone", "not currently required")
+                    : TranslateManagerRestartHint(mod.RestartHint));
+            return new[] { state, identity, dependencies, restart };
+        }
+
+        private string FormatManagerDependencyRow(ManagerDependencyRow dependency)
+        {
+            return FirstManagerText(dependency.UniqueID, T("mods.unknownId", "no id")) +
+                (string.IsNullOrWhiteSpace(dependency.MinimumVersion) ? string.Empty : ">=" + dependency.MinimumVersion) +
+                " [" + (dependency.Required
+                    ? T("mods.dependencyRequired", "required")
+                    : T("mods.dependencyOptional", "optional")) +
+                "/" + TranslateDependencyStatus(dependency.Status) + "]";
+        }
+
+        private string FormatAdvancedSummary(ManagerAdvancedDiagnostics advanced)
+        {
+            if (!advanced.RegistryAvailable)
+                return T("advanced.unavailable", "Content/manifest registry unavailable; refresh after discovery completes.");
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                T("advanced.summary", "registry {0} | manifest issues {1} | dependency errors/warnings {2}/{3} | Advanced receipts {4}/{5} | restart required {6} | Hook/feature issues {7}/{8}"),
+                advanced.RegistryRowCount,
+                advanced.ManifestIssueCount,
+                advanced.DependencyErrorCount,
+                advanced.DependencyWarningCount,
+                advanced.AdvancedReferenceVerifiedCount,
+                advanced.AdvancedModCount,
+                advanced.RestartRequiredModCount,
+                advanced.FailedOrMissingHookCount,
+                advanced.FailedOrDegradedFeatureCount);
+        }
+
+        private string TranslateManagerSource(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return T("mods.unknownSource", "unknown source");
+            if (source.IndexOf("Workshop", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                source.IndexOf("Official", StringComparison.OrdinalIgnoreCase) >= 0)
+                return T("mods.source.official", "official/Steam managed");
+            if (source.IndexOf("Local", StringComparison.OrdinalIgnoreCase) >= 0)
+                return T("mods.source.local", "local DTMAPI file");
+            return source;
+        }
+
+        private string TranslateManagerIdentity(string identity)
+        {
+            string normalized = (identity ?? string.Empty).Trim().Replace(" ", string.Empty).Replace("-", string.Empty).ToLowerInvariant();
+            switch (normalized)
+            {
+                case "strictcodemod":
+                case "strict":
+                    return T("mods.identity.strict", "Strict CodeMod");
+                case "advancedcodemod":
+                case "advanced":
+                    return T("mods.identity.advanced", "Advanced CodeMod");
+                case "contentpack":
+                    return T("mods.identity.contentPack", "ContentPack");
+                default:
+                    return FirstManagerText(identity, T("mods.unknownIdentity", "unknown identity"));
+            }
+        }
+
+        private string TranslateManagerPlacement(string placement)
+        {
+            switch ((placement ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "managed-local":
+                    return T("mods.placement.local", "managed local");
+                case "managed-official-local":
+                    return T("mods.placement.officialLocal", "managed official local");
+                case "managed-workshop-native-verified":
+                    return T("mods.placement.workshopVerified", "native-verified Workshop");
+                case "managed-workshop-compatibility":
+                    return T("mods.placement.workshopCompatibility", "compatibility Workshop");
+                default:
+                    return FirstManagerText(placement, T("common.none", "none"));
+            }
+        }
+
+        private string TranslateManagerCompatibility(string compatibility)
+        {
+            string value = (compatibility ?? string.Empty).Trim();
+            if (value.Equals("unverified", StringComparison.OrdinalIgnoreCase))
+                return T("mods.compatibilityUnverified", "unverified");
+            if (value.Equals("not-applicable", StringComparison.OrdinalIgnoreCase))
+                return T("mods.compatibilityNotApplicable", "not applicable");
+            const string verifiedPrefix = "verified build=";
+            if (!value.StartsWith(verifiedPrefix, StringComparison.OrdinalIgnoreCase))
+                return FirstManagerText(value, T("common.none", "none"));
+
+            string build = value.Substring(verifiedPrefix.Length);
+            string hash = string.Empty;
+            int separator = build.IndexOf(';');
+            if (separator >= 0)
+            {
+                string remainder = build.Substring(separator + 1).Trim();
+                build = build.Substring(0, separator).Trim();
+                const string hashPrefix = "gameAssemblySha256=";
+                hash = remainder.StartsWith(hashPrefix, StringComparison.OrdinalIgnoreCase)
+                    ? remainder.Substring(hashPrefix.Length).Trim()
+                    : remainder;
+            }
+            return T("mods.compatibilityVerified", "verified") +
+                " | " + T("mods.gameBuildLabel", "game build") + "=" + build +
+                (string.IsNullOrWhiteSpace(hash)
+                    ? string.Empty
+                    : " | " + T("mods.gameAssemblyLabel", "game assembly SHA-256") + "=" + hash);
+        }
+
+        private string TranslateManagerRestartHint(string hint)
+        {
+            string value = (hint ?? string.Empty).Trim();
+            if (value.IndexOf("before this Mod can run again", StringComparison.OrdinalIgnoreCase) >= 0)
+                return T("mods.restartRunAgain", value);
+            if (value.IndexOf("unload this disabled CodeMod", StringComparison.OrdinalIgnoreCase) >= 0)
+                return T("mods.restartUnloadDisabled", value);
+            if (value.IndexOf("Assembly updates", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                value.IndexOf("take effect after restart", StringComparison.OrdinalIgnoreCase) >= 0)
+                return T("mods.restartAssemblyChanges", value);
+            return text.TranslateEnablementReason(value);
+        }
+
+        private string TranslateManagerStatus(string? status)
+        {
+            switch ((status ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "healthy":
+                case "ok":
+                case "verified":
+                case "active":
+                    return T("status.state.healthy", "healthy");
+                case "loaded":
+                    return T("mods.state.loaded", "loaded");
+                case "loaded-disabled":
+                    return T("mods.state.loadedDisabled", "loaded; restart to stop");
+                case "restart-required":
+                case "dependency-blocked":
+                case "blocked":
+                    return T("mods.state.restart", "restart/dependency required");
+                case "warning":
+                case "warnings":
+                case "attention-required":
+                    return T("status.state.attention", "attention required");
+                case "degraded":
+                    return T("status.state.degraded", "degraded");
+                case "failed":
+                case "error":
+                    return T("status.state.failed", "failed");
+                default:
+                    return FirstManagerText(status, T("common.none", "none"));
+            }
+        }
+
+        private string TranslateDependencyStatus(string? status)
+        {
+            switch ((status ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "satisfied":
+                case "ok":
+                case "loaded":
+                    return T("mods.dependencyOk", "ok");
+                case "required-missing":
+                    return T("mods.dependencyRequiredMissing", "required missing");
+                case "optional-missing":
+                    return T("mods.dependencyOptionalMissing", "optional missing");
+                case "version-too-old":
+                    return T("mods.dependencyVersionOld", "version too old");
+                default:
+                    return FirstManagerText(status, T("common.none", "none"));
+            }
+        }
+
+        private static string FirstManagerText(params string?[] values)
+        {
+            foreach (string? value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value!;
+            }
+            return string.Empty;
+        }
+
         private string T(string key, string fallback) => text.Get(key, fallback);
 
         private object ColorFromHex(string hex, float alpha)

@@ -1,0 +1,40 @@
+[
+  {
+    "id": "platform0", //平台ID，同道具ID
+    "scene_sprite_asset": {
+      "url": "preview_craft_platform0" //平台详情图，格式为preview_craft_[平台ID]
+    },
+    "platform_suface": {
+      "left_sock": {
+        "url": "tile_platform_platform0_platform_left_0" //平台表面左侧瓦片贴图，格式为tile_platform_[平台ID]_platform_left_0
+      },
+      "left_sequence": [], //平台表面左侧衔接瓦片贴图组（可选）
+      "fill_tiles": [
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform0_platform_middle_0" //平台表面中间部分随机瓦片贴图1，格式为tile_platform_[平台ID]_platform_middle_0
+          },
+          "weight": 100 //该贴图出现权重
+        }
+      ],
+      "right_sequence": [], //平台表面右侧衔接瓦片贴图组（可选）
+      "right_sock": {
+        "url": "tile_platform_platform0_platform_right_0" //平台表面右侧瓦片贴图，格式为tile_platform_[平台ID]_platform_right_0
+      }
+    },
+    "platform_left_column": {
+      "fixed_sequence": [], //平台左柱体顶部瓦片贴图组（可选）
+      "fill_tiles": [], //平台左柱体中间部分随机瓦片贴图组（可选）
+      "column_bottom_tile": {
+        "url": "tile_platform_platform0_column_left_bottom_0"//平台左柱体底部瓦片贴图，格式为tile_platform_[平台ID]_column_left_bottom_0
+      }
+    },
+    "platform_right_column": {
+      "fixed_sequence": [], //平台右柱体顶部瓦片贴图组（可选）
+      "fill_tiles": [], //平台右柱体中间部分随机瓦片贴图组（可选）
+      "column_bottom_tile": {
+        "url": "tile_platform_platform0_column_right_bottom_0" //平台右柱体底部瓦片贴图，格式为tile_platform_[平台ID]_column_right_bottom_0
+      }
+    }
+  }
+]

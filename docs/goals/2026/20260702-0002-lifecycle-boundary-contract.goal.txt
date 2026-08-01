@@ -1,0 +1,1 @@
+Implement docs/goals/2026/20260702-0002-lifecycle-boundary-contract.md: add an internal lifecycle boundary contract/diagnostics layer only. Do not take over registry/resources/hooks, do not alter CustomAnimals or AnimalVoice logic, keep RegistryTakesOver=false, update smoke fields/docs, and validate with Release tests plus targeted smoke when practical.

@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI自动钓鱼",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "需要 DTMAPI 0.5.5 或更高版本。\n进入存档后按 F6 开启或关闭；默认处于关闭状态。\n自动执行抛竿、完成小游戏、收竿循环。\n左上角配置界面提供额外的功能。\n\nupdate 0731\n降低闪退风险。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI自动钓鱼",
+    "tchinese": "DTMAPI自動釣魚",
+    "english": "DTMAPI Auto Fishing"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.5.5 或更高版本。\n进入存档后按 F6 开启或关闭；默认处于关闭状态。\n自动执行抛竿、完成小游戏、收竿循环。\n左上角配置界面提供额外的功能。\n\nupdate 0731\n降低闪退风险。",
+    "tchinese": "需要 DTMAPI 0.5.5 或更高版本。\n進入存檔後按 F6 開啟或關閉；預設處於關閉狀態。\n自動執行拋竿、完成小遊戲、收竿循環。\n左上角設定介面提供額外功能。\n\nupdate 0731\n降低閃退風險。",
+    "english": "Requires DTMAPI 0.5.5 or later.\nAfter loading a save, press F6 to turn it on or off; it is off by default.\nAutomatically casts, completes the minigame, reels in, and repeats.\nAdditional options are available from the configuration menu in the top-left corner.\n\nupdate 0731\nReduced crash risk."
+  }
+}

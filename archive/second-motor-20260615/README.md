@@ -4,6 +4,8 @@ Status: archived / not active.
 
 This archive preserves the DTMAPI-authored `SecondMotorMod` source snapshot after the experimental custom motor route was merged for history but retired as an active local project.
 
+Retirement retrospective: [SecondMotor Retirement Retrospective - 2026-07-06](../../docs/reviews/api/2026/20260706-0002-second-motor-retirement-retrospective.md).
+
 ## Why Archived
 
 User manual QA on 2026-06-15 reported the rebuilt second motor as effectively unusable:

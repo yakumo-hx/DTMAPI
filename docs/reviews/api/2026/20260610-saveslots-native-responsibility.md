@@ -6,6 +6,8 @@ Public symbol/domain: `ISaveSlotsApi`, `SaveSlotsOptions`, `SaveSlotsRegisterRes
 
 Current matrix status: `Experimental`.
 
+2026-07-13 manual-evidence correction: `docs/reviews/manual-qa/2026/20260713-0001-moresaves-long-term-player-baseline-review.md` records the user's long-term confirmation that slots 7-12 create/save/reload and survive restart, copy/delete work, disable/re-enable is non-destructive, and 12/16 slots work; 18 slots overflow the single-page UI. The native-owner map remains valid. The earlier `Unverified Points` section describes what the cited automated evidence had not proven, not the absence of all player evidence. Current-build formal regression conversion and arbitrary public-API semantics remain open.
+
 Recommended status after this review: keep `Experimental`. The current implementation reaches the native global archive-count owner, but it is not a general save-system or per-mod slot namespace contract.
 
 This review is docs-only. It does not change runtime, public API, mods, game files, Workshop files, official DLLs, or reverse/decompiled reference material.

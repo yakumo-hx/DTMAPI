@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 3,
+  "overallPass": true,
+  "runtimeValidation": "NotRunDotNet8HostOnly",
+  "baseline": {
+    "fileName": "DTMAPI.Abstractions.dll",
+    "sha256": "39A51683034FF0B7495BEB3DD1C50F76F591D4E24C63872B6502EA360EF8880B",
+    "assemblyVersion": "0.5.2.0",
+    "fileVersion": "0.5.2.0",
+    "publicApiCount": 5105
+  },
+  "candidate": {
+    "fileName": "DTMAPI.Abstractions.dll",
+    "sha256": "3CD0EEE2815E5B8254C4D9C2B32D101C77364B55ECA462759F2244B94ADD1295",
+    "assemblyVersion": "0.5.3.0",
+    "fileVersion": "0.5.5.0",
+    "publicApiCount": 5279
+  },
+  "consumer": {
+    "fileName": "Yuuka.DTMAPI.AutoFishing.dll",
+    "sha256": "E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+    "referencedAbstractionsVersion": "0.5.1.0",
+    "metadataStopOnManualMoveSetterReferences": 1,
+    "resolvedStopOnManualMoveSetterReferences": 1,
+    "typeCount": 8
+  },
+  "removedPublicApiCount": 0,
+  "removedPublicApi": [],
+  "retainedLampTypeNames": [
+    "DTMAPI.Abstractions.ILampControlApi",
+    "DTMAPI.Abstractions.LampManualToggleOptions",
+    "DTMAPI.Abstractions.LampManualToggleRegisterResult",
+    "DTMAPI.Abstractions.LampManualToggleState"
+  ],
+  "retainedPublicProductCount": 11,
+  "retainedPublicProductLampMemberReferenceCount": 0,
+  "retainedPublicProducts": [
+    {
+      "productId": "action-speed",
+      "fileName": "Yuuka.DTMAPI.ActionSpeed.dll",
+      "sha256": "3169DB47BA7686B124F2BC907FED89605DF5B1BD17703C33566A147DD8D7B13A",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.ActionSpeedOptions::.ctor",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_AutoFillBottle",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_AutoFillCooldownSeconds",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_AutoFillStrong",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_AutoFillStrongCooldownSeconds",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_BottleFillMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_BottleFillSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_ContinuousDrinkWithRightClick",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_EatDrinkMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_EatDrinkSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_Enabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_HarvestMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_HarvestSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_MachineAddMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_MachineAddSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_PlantMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_PlantSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_ToolMultiplier",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_ToolSpeedEnabled",
+        "DTMAPI.Abstractions.ActionSpeedOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.IActionSpeedApi::Configure",
+        "DTMAPI.Abstractions.IActionSpeedApi::GetStatus"
+      ]
+    },
+    {
+      "productId": "animal-husbandry-progress",
+      "fileName": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+      "sha256": "E5DAA3B385AD30E9671FD9BC0407534A66390F28B327358183C65D9F68DA7530",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.AnimalHusbandryProgressOptions::.ctor",
+        "DTMAPI.Abstractions.AnimalHusbandryProgressOptions::set_CacheSeconds",
+        "DTMAPI.Abstractions.AnimalHusbandryProgressOptions::set_Enabled",
+        "DTMAPI.Abstractions.AnimalHusbandryProgressOptions::set_ProgressColor",
+        "DTMAPI.Abstractions.AnimalHusbandryProgressOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.IAnimalViewerApi::ConfigureSpecialProduceProgress",
+        "DTMAPI.Abstractions.IAnimalViewerApi::GetStatus"
+      ]
+    },
+    {
+      "productId": "auto-fishing",
+      "fileName": "Yuuka.DTMAPI.AutoFishing.dll",
+      "sha256": "E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.FishingAutomationOptions::.ctor",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_AnimationMode",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_AnimationMultiplier",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_BiteWaitMode",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_CastChargeRatio",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_RecastDelaySeconds",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_ResultMode",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_StopOnManualMove",
+        "DTMAPI.Abstractions.FishingAutomationOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.FishingAutomationState::.ctor",
+        "DTMAPI.Abstractions.FishingAutomationState::get_Enabled",
+        "DTMAPI.Abstractions.FishingAutomationState::get_LastReason",
+        "DTMAPI.Abstractions.FishingAutomationState::get_Phase",
+        "DTMAPI.Abstractions.FishingAutomationState::set_Enabled",
+        "DTMAPI.Abstractions.IFishingAutomationApi::Configure",
+        "DTMAPI.Abstractions.IFishingAutomationApi::GetState",
+        "DTMAPI.Abstractions.IFishingAutomationApi::GetStatus",
+        "DTMAPI.Abstractions.IFishingAutomationApi::SetEnabled"
+      ]
+    },
+    {
+      "productId": "chest-locator-enhancer",
+      "fileName": "DTMAPI.ChestLocatorEnhancer.dll",
+      "sha256": "125704135FFF47778993B268F89A90E911B7757D14938B731AB91CCC7BCDE2CE",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::.ctor",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::set_Enabled",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::set_IncludeSharedCases",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::set_IncludeSharedStorageShelfBoxes",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::set_RespectNativeAutoUseBoxSetting",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerRegisterResult::get_Enabled",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerRegisterResult::get_HookInstalled",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerRegisterResult::get_Message",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerRegisterResult::get_Success",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_HookInstalled",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_LastAppendedInventoryCount",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_LastMessage",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_LastSharedCaseCount",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_LastSharedStorageBoxCount",
+        "DTMAPI.Abstractions.ChestLocatorEnhancerState::get_Status",
+        "DTMAPI.Abstractions.IChestLocatorEnhancerApi::GetState",
+        "DTMAPI.Abstractions.IChestLocatorEnhancerApi::Register"
+      ]
+    },
+    {
+      "productId": "fish-roe-info",
+      "fileName": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+      "sha256": "128EE6AD1893A8C98C0A6BC879E398371350B555E7BA47CE5D54AEE248031BEA",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::.ctor",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_FishId",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_FishTitle",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_GrowText",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_IncubateText",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_ParentSummary",
+        "DTMAPI.Abstractions.FishRoeDisplayInfo::set_RoeTitle",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::.ctor",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::set_CacheSeconds",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::set_Enabled",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::set_LabelFishRoeDetails",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::set_LabelFishRoeTitle",
+        "DTMAPI.Abstractions.FishRoeTooltipOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.IItemTooltipApi::ConfigureFishRoeProvider",
+        "DTMAPI.Abstractions.IItemTooltipApi::GetStatus"
+      ]
+    },
+    {
+      "productId": "manbo-cardboard-audio",
+      "fileName": "Yuuka.DTMAPI.ManboCardboardAudio.dll",
+      "sha256": "AB85C0BAB39702E7FE2689BB4D528B6EF3726F0BB272F6F172CFFE8A57A17EC4",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": []
+    },
+    {
+      "productId": "more-equipment-slots",
+      "fileName": "DTMAPI.MoreEquipmentSlots.dll",
+      "sha256": "092807CC5C5DB359B40D5325EDD6EBC6860238E51F7F65014F5B39FBC0CF71ED",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::.ctor",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_AutoRecoverOnMissingMod",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_Enabled",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_ExtraAttributeSlots",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_ExtraSlotsAffectVisuals",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_PreserveVanillaVisualSlots",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_SafeUnequipOnDisable",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_SlotIdPrefix",
+        "DTMAPI.Abstractions.EquipmentSlotsOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.EquipmentSlotsRegisterResult::get_Message",
+        "DTMAPI.Abstractions.EquipmentSlotsRegisterResult::get_Success",
+        "DTMAPI.Abstractions.IEquipmentSlotsApi::RegisterSlots"
+      ]
+    },
+    {
+      "productId": "more-saves",
+      "fileName": "DTMAPI.MoreSaves.dll",
+      "sha256": "F9CB4CE42BBECF7541C963B600440C65007E0C9F088C4414046658539862226E",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.ISaveSlotsApi::GetState",
+        "DTMAPI.Abstractions.ISaveSlotsApi::RegisterSlots",
+        "DTMAPI.Abstractions.SaveSlotsOptions::.ctor",
+        "DTMAPI.Abstractions.SaveSlotsOptions::set_Enabled",
+        "DTMAPI.Abstractions.SaveSlotsOptions::set_SlotCount",
+        "DTMAPI.Abstractions.SaveSlotsOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.SaveSlotsRegisterResult::get_AppliedSlotCount",
+        "DTMAPI.Abstractions.SaveSlotsRegisterResult::get_Message",
+        "DTMAPI.Abstractions.SaveSlotsRegisterResult::get_RequestedSlotCount",
+        "DTMAPI.Abstractions.SaveSlotsRegisterResult::get_Success",
+        "DTMAPI.Abstractions.SaveSlotsState::get_AppliedSlotCount",
+        "DTMAPI.Abstractions.SaveSlotsState::get_LastMessage",
+        "DTMAPI.Abstractions.SaveSlotsState::get_NativeSlotCount",
+        "DTMAPI.Abstractions.SaveSlotsState::get_RequestedSlotCount",
+        "DTMAPI.Abstractions.SaveSlotsState::get_Status"
+      ]
+    },
+    {
+      "productId": "one-action-complete",
+      "fileName": "Yuuka.DTMAPI.OneActionComplete.dll",
+      "sha256": "612B173653EB22E3EB46C7882D97BB1117D308A70EF00773C8031E79DF5626E6",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.ActionCompletionOptions::.ctor",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteFeeder",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteGarbage",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteMachineFuel",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteOres",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteTrees",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_CompleteWeeds",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_Enabled",
+        "DTMAPI.Abstractions.ActionCompletionOptions::set_VerboseLogging",
+        "DTMAPI.Abstractions.IActionCompletionApi::Configure",
+        "DTMAPI.Abstractions.IActionCompletionApi::GetStatus"
+      ]
+    },
+    {
+      "productId": "y-console",
+      "fileName": "DTMAPI.YKeyConsole.dll",
+      "sha256": "E5A34963C0B66D6168104AF27DB849D707EE644F07917D8274868F8B8299B41E",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.IDebugConsoleApi::Bind",
+        "DTMAPI.Abstractions.IDebugConsoleApi::BindAdvanced",
+        "DTMAPI.Abstractions.IDebugConsoleApi::Close",
+        "DTMAPI.Abstractions.IDebugConsoleApi::SetLanguage",
+        "DTMAPI.Abstractions.IDebugConsoleApi::Toggle",
+        "DTMAPI.Abstractions.IDebugConsoleApi::get_IsOpen",
+        "DTMAPI.Abstractions.IMovementDebugApi::ResetSpeed"
+      ]
+    },
+    {
+      "productId": "zoom",
+      "fileName": "DTMAPI.Zoom.dll",
+      "sha256": "DFA74BDD3561A9E9647FEC01AB9B48F095826D2A752AE920566BE2C5063971B3",
+      "lampMemberReferences": [],
+      "gameBridgeProviderUniqueIdPresent": true,
+      "frozenCompatibilityMemberReferences": [
+        "DTMAPI.Abstractions.CameraViewRequest::.ctor",
+        "DTMAPI.Abstractions.CameraViewRequest::set_Enabled",
+        "DTMAPI.Abstractions.CameraViewRequest::set_LeaseName",
+        "DTMAPI.Abstractions.CameraViewRequest::set_MaxViewScale",
+        "DTMAPI.Abstractions.CameraViewRequest::set_MinViewScale",
+        "DTMAPI.Abstractions.CameraViewRequest::set_Priority",
+        "DTMAPI.Abstractions.CameraViewRequest::set_Step",
+        "DTMAPI.Abstractions.CameraViewRequest::set_VerboseLogging",
+        "DTMAPI.Abstractions.CameraViewRequest::set_ViewScale",
+        "DTMAPI.Abstractions.CameraViewResult::get_AfterViewScale",
+        "DTMAPI.Abstractions.CameraViewResult::get_AppliedViewScale",
+        "DTMAPI.Abstractions.CameraViewResult::get_BeforeViewScale",
+        "DTMAPI.Abstractions.CameraViewResult::get_Message",
+        "DTMAPI.Abstractions.CameraViewResult::get_Success",
+        "DTMAPI.Abstractions.CameraViewState::get_ActiveOwnerId",
+        "DTMAPI.Abstractions.CameraViewState::get_AppliedOrthographicSize",
+        "DTMAPI.Abstractions.CameraViewState::get_AppliedViewScale",
+        "DTMAPI.Abstractions.CameraViewState::get_ArbitrationStatus",
+        "DTMAPI.Abstractions.CameraViewState::get_CameraAvailable",
+        "DTMAPI.Abstractions.CameraViewState::get_CameraOwnerStatus",
+        "DTMAPI.Abstractions.CameraViewState::get_CurrentViewScale",
+        "DTMAPI.Abstractions.CameraViewState::get_LastMessage",
+        "DTMAPI.Abstractions.CameraViewState::get_LifecycleStatus",
+        "DTMAPI.Abstractions.CameraViewState::get_MaxViewScale",
+        "DTMAPI.Abstractions.CameraViewState::get_MinViewScale",
+        "DTMAPI.Abstractions.CameraViewState::get_NativeRefreshStatus",
+        "DTMAPI.Abstractions.CameraViewState::get_Status",
+        "DTMAPI.Abstractions.CameraViewState::get_VanillaOrthographicSize",
+        "DTMAPI.Abstractions.ICameraViewApi::AcquireLease",
+        "DTMAPI.Abstractions.ICameraViewApi::GetState",
+        "DTMAPI.Abstractions.ICameraViewLease::GetState",
+        "DTMAPI.Abstractions.ICameraViewLease::SetViewScale",
+        "DTMAPI.Abstractions.ICameraViewLease::Update",
+        "DTMAPI.Abstractions.ICameraViewLease::get_IsReleased",
+        "DTMAPI.Abstractions.ICameraViewLease::get_LastResult"
+      ]
+    }
+  ],
+  "retainedExternalConsumerCount": 4,
+  "retainedExternalConsumers": [
+    {
+      "workshopId": "3743621104",
+      "fileName": "DolocStorageExpansionMod.dll",
+      "sha256": "45B5522948770C04575E57C58CCC5F87AAD3091B680873FAB283F3C89372B366",
+      "assemblyName": "DolocStorageExpansionMod",
+      "assemblyVersion": "1.0.0.0",
+      "referencedAbstractionsVersion": "0.5.1.0",
+      "metadataAbstractionsMemberReferenceCount": 3,
+      "resolvedAbstractionsMemberReferenceCount": 3,
+      "abstractionsMemberReferences": [
+        "DTMAPI.Abstractions.DtmMod::.ctor",
+        "DTMAPI.Abstractions.DtmMod::get_Monitor",
+        "DTMAPI.Abstractions.IMonitor::Log"
+      ]
+    },
+    {
+      "workshopId": "3743644065",
+      "fileName": "DolocStoreCapacityMod.dll",
+      "sha256": "BC3511AA5ECF33CBF005C9F314C9625FBA6577EA10270BD77C89F71D6C2D3BBF",
+      "assemblyName": "DolocStoreCapacityMod",
+      "assemblyVersion": "1.0.0.0",
+      "referencedAbstractionsVersion": "0.5.1.0",
+      "metadataAbstractionsMemberReferenceCount": 4,
+      "resolvedAbstractionsMemberReferenceCount": 4,
+      "abstractionsMemberReferences": [
+        "DTMAPI.Abstractions.DtmMod::.ctor",
+        "DTMAPI.Abstractions.DtmMod::get_Monitor",
+        "DTMAPI.Abstractions.IDtmHelper::ReadConfig",
+        "DTMAPI.Abstractions.IMonitor::Log"
+      ]
+    },
+    {
+      "workshopId": "3754869009",
+      "fileName": "DolocTownQoL.dll",
+      "sha256": "FAD056E44418FF3CB818F927BB59AC328CD8024EC53348A937FD5F6D28534A10",
+      "assemblyName": "DolocTownQoL",
+      "assemblyVersion": "0.0.0.0",
+      "referencedAbstractionsVersion": "0.5.2.0",
+      "metadataAbstractionsMemberReferenceCount": 13,
+      "resolvedAbstractionsMemberReferenceCount": 13,
+      "abstractionsMemberReferences": [
+        "DTMAPI.Abstractions.DtmMod::.ctor",
+        "DTMAPI.Abstractions.IDtmConfigMenuApi::AddBoolOption",
+        "DTMAPI.Abstractions.IDtmConfigMenuApi::AddSectionTitle",
+        "DTMAPI.Abstractions.IDtmConfigMenuApi::Register",
+        "DTMAPI.Abstractions.IDtmConfigMenuApi::SetDisplayName",
+        "DTMAPI.Abstractions.IDtmHelper::ReadConfig",
+        "DTMAPI.Abstractions.IDtmHelper::WriteConfig",
+        "DTMAPI.Abstractions.IDtmHelper::get_ModManifest",
+        "DTMAPI.Abstractions.IDtmHelper::get_ModRegistry",
+        "DTMAPI.Abstractions.IDtmHelper::get_Monitor",
+        "DTMAPI.Abstractions.IModRegistry::GetApi",
+        "DTMAPI.Abstractions.IMonitor::Log",
+        "DTMAPI.Abstractions.IMonitor::LogException"
+      ]
+    },
+    {
+      "workshopId": "3759797170",
+      "fileName": "Mxx_DolocTownMod_Installer.dll",
+      "sha256": "F2E92A2A1310194EFE2E4C05E393B9FA30BEE4941F095CAEEBA5E715E7AADE2D",
+      "assemblyName": "Mxx_DolocTownMod_Installer",
+      "assemblyVersion": "1.0.0.0",
+      "referencedAbstractionsVersion": "0.5.2.0",
+      "metadataAbstractionsMemberReferenceCount": 3,
+      "resolvedAbstractionsMemberReferenceCount": 3,
+      "abstractionsMemberReferences": [
+        "DTMAPI.Abstractions.DtmMod::.ctor",
+        "DTMAPI.Abstractions.DtmMod::get_Monitor",
+        "DTMAPI.Abstractions.IMonitor::Log"
+      ]
+    }
+  ],
+  "stopOnManualMove": {
+    "getter": true,
+    "setter": true,
+    "defaultValue": true,
+    "roundTrip": true,
+    "obsoleteIsError": false
+  },
+  "lampCompatibility": {
+    "typeCount": 4,
+    "obsoleteTypeCount": 4,
+    "obsoleteIsError": false,
+    "disabledStatusAttributes": true,
+    "historicalDefaults": true
+  },
+  "compatibilityHost": null
+}

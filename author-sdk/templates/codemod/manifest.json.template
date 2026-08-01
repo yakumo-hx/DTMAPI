@@ -1,0 +1,14 @@
+{
+  "Name": {{NAME_JSON}},
+  "Author": {{AUTHOR_JSON}},
+  "Version": {{VERSION_JSON}},
+  "Description": {{DESCRIPTION_JSON}},
+  "UniqueID": {{UNIQUE_ID_JSON}},
+  "EntryDll": {{ASSEMBLY_DLL_JSON}},
+  "EntryType": {{ENTRY_TYPE_JSON}},
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "CodeModKind": "Strict",
+  "Dependencies": [],
+  "UpdateKeys": []
+}

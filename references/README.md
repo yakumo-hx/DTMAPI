@@ -25,13 +25,16 @@ Those local-only folders may exist in a developer workspace, but they must not b
 ## Doloc Town
 
 - `doloc-town/official-workshop-docs/pdf`: copied official Workshop/modding PDFs from the private predecessor research workspace.
-- `doloc-town/official-workshop-docs/feishu-crawl-20260517`: latest extracted official Workshop documentation crawl.
+- `doloc-town/official-workshop-docs/feishu-crawl-20260715`: latest complete browser-rendered official Workshop documentation crawl, including real embedded-sheet TSV/screenshot exports and a SHA-256 inventory.
+- `doloc-town/official-workshop-docs/feishu-crawl-20260517`: preserved historical predecessor-workflow crawl; useful for token/history comparison, but not the current sheet/text authority.
 - `doloc-town/official-workshop-docs/update-notes`: local notes for Doloc Town Workshop updates `0.96.05` and `0.96.06`.
 - `doloc-town/research-notes`: selected factual notes about Doloc APIs, official Workshop behavior, and vehicle research. These are not old runtime source.
-- `doloc-town/reverse/builds`: copied decompiled build research for `23249387_workshop_247ACD` and `23465763_workshop_38581E`.
+- `doloc-town/reverse/builds`: local-only decompiled/unpacked build research. A build may include frozen official player bytes, a recovered Unity project, SHA-256 inventories, and structural diffs; none of those private artifacts may be committed, published, or required for a normal DTMAPI build.
 - `doloc-town/own-mod-sources`: selected source-only copies of the user's five old Doloc Town mods, kept as migration inputs and compatibility references.
 
-The reverse build folders include `input/Assembly-CSharp.dll` and decompiled game code for local research. Do not publish or package those files.
+The reverse build folders may include `input/Assembly-CSharp.dll`, full official player snapshots, decompiled game code, and extracted Unity assets for local research. Do not publish or package those files.
+
+DTMAPI's tracked clean-room capture/index entry point is `../tools/scripts/capture-doloctown-reverse-baseline.ps1`. It writes official bytes and extracted output only under the ignored reverse tree; tracked documentation may record counts, hashes, limitations, and derived behavior conclusions, but not copied official content.
 
 DTMAPI-authored native-owner summaries derived from these local references belong in `../docs/reviews/api/native-owner-domains/INDEX.md`. That library may name classes, members, maps, and official docs, but it must not copy decompiled method bodies or distribute official binaries.
 

@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // This feature registers the frozen IChestLocatorEnhancerApi compatibility shell.
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
@@ -16,13 +17,24 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public string Id => "ChestLocatorEnhancer";
 
+        public GameBridgeFeatureContract Contract { get; } = new GameBridgeFeatureContract(
+            "ChestLocatorEnhancer",
+            requiresSave: true,
+            allowsTitleScreen: false,
+            requiresNativeScene: true,
+            requiresUi: false,
+            environmentResetSensitive: false,
+            hasSaveLifetimeState: false,
+            hasTitleLifetimeState: false,
+            canAutoPauseAfterFailure: false);
+
         internal ChestLocatorEnhancerService Service { get; }
 
         internal ChestLocatorEnhancerHookBridge HookBridge { get; }
 
         public void RegisterApis(IManifest manifest)
         {
-            runtime.RegisterRuntimeApi<IChestLocatorEnhancerApi>(manifest, Service);
+            runtime.RegisterRuntimeApi<IChestLocatorEnhancerApi>(manifest, Service, OwnerBoundGameBridgeApis.ForChestLocatorEnhancer(Service));
         }
 
         public void PublishHookStatuses()

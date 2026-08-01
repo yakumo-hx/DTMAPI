@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI One Action Complete",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod for one-action resource and equipment completion.",
+  "UniqueID": "Yuuka.DTMAPI.OneActionComplete",
+  "EntryDll": "Yuuka.DTMAPI.OneActionComplete.dll",
+  "EntryType": "Yuuka.DTMAPI.OneActionComplete.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DTMAPI.InstallDoctor.Tests</AssemblyName>
+    <RootNamespace>DTMAPI.InstallDoctor.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="9.2.2" />
+    <Compile Remove="Fixtures\**\*.cs" />
+    <ProjectReference Include="..\..\src\DTMAPI.InstallDoctor\DTMAPI.InstallDoctor.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.PlayerDoctor\DTMAPI.PlayerDoctor.csproj" />
+    <ProjectReference Include="Fixtures\CodeModFixture\CodeModFixture.csproj" />
+    <ProjectReference Include="Fixtures\AdvancedCodeModFixture\AdvancedCodeModFixture.csproj" />
+    <ProjectReference Include="Fixtures\GameReferenceFixture\GameReferenceFixture.csproj" />
+    <ProjectReference Include="Fixtures\HarmonyReferenceFixture\HarmonyReferenceFixture.csproj" />
+    <ProjectReference Include="Fixtures\BepInExPluginFixture\BepInExPluginFixture.csproj" />
+    <ProjectReference Include="Fixtures\RuntimeBootstrapIdentityFixture\RuntimeBootstrapIdentityFixture.csproj" />
+    <ProjectReference Include="Fixtures\RuntimeCoreIdentityFixture\RuntimeCoreIdentityFixture.csproj" />
+    <ProjectReference Include="Fixtures\RuntimeGameBridgeIdentityFixture\RuntimeGameBridgeIdentityFixture.csproj" />
+    <ProjectReference Include="Fixtures\RuntimeModConfigMenuIdentityFixture\RuntimeModConfigMenuIdentityFixture.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\author-sdk\schemas\advanced-reference-policy.schema.json"
+          Link="Schemas\advanced-reference-policy.schema.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\schemas\advanced-reference-policy-registry.schema.json"
+          Link="Schemas\advanced-reference-policy-registry.schema.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\schemas\advanced-reference-receipt.schema.json"
+          Link="Schemas\advanced-reference-receipt.schema.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\schemas\doctor-report.schema.json"
+          Link="Schemas\doctor-report.schema.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\advanced-reference-policies\doloctown-23762374-g2-v1.json"
+          Link="Schemas\doloctown-23762374-g2-v1.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\advanced-reference-policies\doloctown-23762374-actionspeed-v1.json"
+          Link="Schemas\doloctown-23762374-actionspeed-v1.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\advanced-reference-policies\doloctown-23762374-autofishing-v1.json"
+          Link="Schemas\doloctown-23762374-autofishing-v1.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\advanced-reference-policies\doloctown-23762374-oneactioncomplete-v1.json"
+          Link="Schemas\doloctown-23762374-oneactioncomplete-v1.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\author-sdk\advanced-reference-policies\registry.json"
+          Link="Schemas\advanced-reference-policy-registry.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\release\dtmapi-product-catalog.json"
+          Link="Schemas\dtmapi-product-catalog.json"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="CopyCompatibilityHostFixture" AfterTargets="Build">
+    <Copy
+      SourceFiles="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\bin\$(Configuration)\netstandard2.0\DTMAPI.GameBridge.DolocTown.Compatibility.dll"
+      DestinationFolder="$(OutDir)"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

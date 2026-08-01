@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "contractId": "batch6-g2-advanced-synthetic-vertical-slice",
+  "schemaPath": "tools/release/contracts/batch6-g2-ownership-semantic-allowances.schema.json",
+  "architectureAuthority": "docs/architecture/batch6-managed-mod-identity-contract.md",
+  "reviewAuthority": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+  "baselineCommit": "1239aa577d74e4f0c29131ba644e8a751eebbf5f",
+  "implementationCommit": "c79306dfc7de0e85c74e24ece7d4c5cd47cb0822",
+  "allowances": [
+    {
+      "path": "src/DTMAPI.Core/DTMAPI.Core.csproj",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Embeds the tracked Advanced reference policy as a Core classification input; this is Runtime platform build topology, not product-native behavior.",
+      "expectedTargetBlob": "94e42fcac3863202d1fd8547cd65a346df1296bd",
+      "expectedDiffSha256": "F971D556DF69D8C3F61272E9A26A7E512A380888B303A7E0A00BCE8FD803569C"
+    },
+    {
+      "path": "src/DTMAPI.Core/Diagnostics/DiagnosticsModels.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Projects declared/effective Advanced identity, provenance, compatibility, native risk, and restart policy into DTMAPI-owned diagnostics DTOs.",
+      "expectedTargetBlob": "84e81c436e2ad1ab065063121aff59c57f705abc",
+      "expectedDiffSha256": "9685FFFDF5A0F881BAC6C452503E9F5DEE269C756018B23E5A3C92D601B71190"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manager/DtmManagerViewModels.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Carries managed identity and restart-policy diagnostics into the DTMAPI Manager view model without product gameplay behavior.",
+      "expectedTargetBlob": "d4dfa9d6a62480ffbe84520e291c5e7554fc5e62",
+      "expectedDiffSha256": "EB970A1941B46345016B109640D2A4848D5A1A8C9F310D28F22F30327E4FFE67"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manager/ManagerPageRowFormatter.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Formats platform-owned Advanced identity and risk fields for Manager status rows.",
+      "expectedTargetBlob": "b6bce0ace5ae4d85541df9eff45fdac1eecfe8df",
+      "expectedDiffSha256": "A3DBF6EB7D4E2E1329A3E275D8B98A92C80786A4F92FFC000CFF3D5261E01A31"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManagedModClassification.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Implements the single pre-load platform classifier and receipt/reference fail-closed checks for managed Mod identity.",
+      "expectedTargetBlob": "596bf991807008b8e7f9be8d4df9a8776b3c4182",
+      "expectedDiffSha256": "FF0664455294AD8230E4705D945EA2FBCD83DAC65C115BA6AAF1FB3544C6D0D6"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestModels.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Defines the DTMAPI manifest wire model for the Strict or Advanced discriminator.",
+      "expectedTargetBlob": "be8d166d4daa4c16f47b9094688fcd48fed658fb",
+      "expectedDiffSha256": "CF4FF87F28D3B9129943194B40D4F18EBB03172ED0018768ACDB5B6FAE4FBD67"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestReader.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Parses and validates the DTMAPI-owned manifest discriminator before managed assembly loading.",
+      "expectedTargetBlob": "55246f493df9cfa32f52ed1543a52c7b73545c16",
+      "expectedDiffSha256": "2D588FCB3C5F5C932C07A8BB74874971055516636D8710D50944814FF7323DFC"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/PortableAssemblyReferenceInspector.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Inspects portable assembly metadata to enforce Advanced reference policy before execution; it contains no product-native state machine.",
+      "expectedTargetBlob": "cd88b28992f5a8648c4afc4b879629adc776a4f1",
+      "expectedDiffSha256": "487BD3DEB7C442FB5D902A30DD7DCF4389D82DC7F448449B1FB53CF4D787FA0B"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/AdvancedHarmonySupervisor.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Supervises canonical Harmony owner attribution, isolation, diagnostics, and cleanup as managed-owner platform lifecycle.",
+      "expectedTargetBlob": "1f9559dcf0d0b696b38dd69813ab44849b51a77b",
+      "expectedDiffSha256": "3A8F541D54B0A177596AD5E77545642E543509A0BBB264FA71FEE0C8972D03A2"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ContentManifestRegistry.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Publishes managed manifest identity to the existing DTMAPI registry after classification.",
+      "expectedTargetBlob": "98c2719a195e8f0ec47f3111f289ea2349aeb0bf",
+      "expectedDiffSha256": "2A79D720F50B225D4E7F5960D97DB70E312F96E29289F8C35D7CEED6D2EA662C"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/DtmApiRuntime.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Sequences classification, owner publication, Entry, and failure rollback in the DTMAPI Runtime platform.",
+      "expectedTargetBlob": "18919b31e2252afed3e508a695d3b2c85c6af7e0",
+      "expectedDiffSha256": "5DB20B05C06DFAB2D039FE2D8F355BB62FDD0D05727CC8B93EAFEB6AA37A4C8A"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ModOwnerCleanup.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Preserves bounded participant cleanup diagnostics for the platform-owned Mod owner lifecycle.",
+      "expectedTargetBlob": "d9dd3baebb0bf57b5ce530f164e2da2ff0a15278",
+      "expectedDiffSha256": "A76A9FBF3C5E39431B47112FD9BF6015B6C436755D16A140FDED497249D0832B"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/RuntimeSnapshotFactory.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Projects managed identity into the DTMAPI Runtime diagnostic snapshot.",
+      "expectedTargetBlob": "47f802fc423f3aacf4e6a05a941792cb50ceab3c",
+      "expectedDiffSha256": "7D1792B0ABB46C3B8A0F95B8A7D962B1D8CF7065EBB9C4EA4F47EF57AF7C5D7F"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ShadowContentRegistry.cs",
+      "classification": "Platform",
+      "review": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+      "reason": "Maintains platform-owned shadow registry visibility after managed Mod classification.",
+      "expectedTargetBlob": "c2c5825f77eecb159349401ba85f7db04db39639",
+      "expectedDiffSha256": "CC80287994BDDF752A7F8D2E40B4F2E111643CAC5D76C9BDCA88ECD397627AE6"
+    }
+  ]
+}

@@ -1,0 +1,1384 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-07-18",
+  "mode": "remaining-pre-fix-duplicate-runtime-snapshots",
+  "authorization": "User explicitly authorized cleanup of previously uncleaned duplicate useless E-drive records, primarily duplicated DTMAPI-evidence, on 2026-07-18.",
+  "apply": true,
+  "cutoffRunExclusive": "20260712-170327",
+  "scope": {
+    "selectedLeaf": "docs/debug/evidence/GAME-SMOKE/<historical-run>/DTMAPI-evidence",
+    "preserved": [
+      "outer GAME-SMOKE run directories and run-level files",
+      "all explicitly allowlisted nested GAME-SMOKE artifacts",
+      "all runs at or after the bounded-collector cutoff",
+      "docs/debug/evidence/RETAINED-RUNTIME canonical identities",
+      "GAME-SMOKE root ZIP files",
+      "Process-Dumps",
+      "live game Runtime evidence",
+      "repository tmp/package candidates and source worktree"
+    ]
+  },
+  "allowlist": {
+    "path": "docs/debug/evidence-retention-allowlist.json",
+    "sha256": "864c2f0788f492da9b6a5a55dfd708bdbef1e33f623842587fa78f248c524a30",
+    "sourceFiles": 399,
+    "gameSmokeRuns": 758,
+    "gameSmokeArtifacts": 225,
+    "runtimeEvidence": 62,
+    "processDumps": 6
+  },
+  "canonicalBefore": {
+    "path": "docs/debug/evidence/RETAINED-RUNTIME",
+    "identityCount": 62,
+    "identityFingerprintSha256": "b1e69d14bda182c6d6f259c9df25bf0638214ecd18d35ba2a1576d17a146ecf6",
+    "files": 182,
+    "bytes": 78839410,
+    "fileManifestSha256": "b2f7f54ada22192bf80bbfd65fa6b69ac780a2913a3388a3d829665f93009cb3"
+  },
+  "referencesBefore": {
+    "existingRuns": 745,
+    "missingRuns": 13,
+    "existingRunFingerprintSha256": "7a84e53ee5a94f6a6b28d319197c70428add3a021c8a8fa8b0356d5c6669864a",
+    "missingRunIdentities": [
+      "GAME-SMOKE/20260614-004621",
+      "GAME-SMOKE/20260614-011222",
+      "GAME-SMOKE/20260614-043810",
+      "GAME-SMOKE/20260614-045125",
+      "GAME-SMOKE/20260614-045247",
+      "GAME-SMOKE/20260614-063456",
+      "GAME-SMOKE/20260614-063639",
+      "GAME-SMOKE/20260615-191720",
+      "GAME-SMOKE/20260615-192916",
+      "GAME-SMOKE/20260615-193040",
+      "GAME-SMOKE/20260618-010235",
+      "GAME-SMOKE/20260618-012012",
+      "GAME-SMOKE/20260618-012554"
+    ],
+    "existingLiteralArtifacts": 223,
+    "missingLiteralArtifacts": 1,
+    "existingLiteralArtifactFingerprintSha256": "621a078c044fb3f48f54c1de2fc0ba77f294ae8156e3cba584a8af11b3b462f2",
+    "missingLiteralArtifactIdentities": [
+      "GAME-SMOKE/20260618-010235/post-cleanup-status.txt"
+    ],
+    "rootZipFiles": 28,
+    "rootZipBytes": 6685760566
+  },
+  "inventory": {
+    "historicalNestedTargets": 178,
+    "historicalNestedBytes": 273786839035,
+    "selectedTargets": 152,
+    "selectedLogicalBytes": 266858358691,
+    "selectedFiles": 500804,
+    "selectedDirectories": 248622,
+    "excludedExplicitArtifactRuns": 26,
+    "excludedExplicitArtifactBytes": 6928480344,
+    "reparsePoints": 0
+  },
+  "selected": [
+    {
+      "run": "20260705-013446",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-013446/DTMAPI-evidence",
+      "logicalBytes": 944884960,
+      "files": 2596,
+      "directories": 1226
+    },
+    {
+      "run": "20260705-013648",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-013648/DTMAPI-evidence",
+      "logicalBytes": 947145874,
+      "files": 2601,
+      "directories": 1229
+    },
+    {
+      "run": "20260705-023843",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-023843/DTMAPI-evidence",
+      "logicalBytes": 951790771,
+      "files": 2609,
+      "directories": 1234
+    },
+    {
+      "run": "20260705-034457",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-034457/DTMAPI-evidence",
+      "logicalBytes": 956786817,
+      "files": 2617,
+      "directories": 1239
+    },
+    {
+      "run": "20260705-045059",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-045059/DTMAPI-evidence",
+      "logicalBytes": 961893360,
+      "files": 2625,
+      "directories": 1244
+    },
+    {
+      "run": "20260705-055655",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-055655/DTMAPI-evidence",
+      "logicalBytes": 962890978,
+      "files": 2626,
+      "directories": 1245
+    },
+    {
+      "run": "20260705-074300",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-074300/DTMAPI-evidence",
+      "logicalBytes": 1113845386,
+      "files": 2688,
+      "directories": 1286
+    },
+    {
+      "run": "20260705-075428",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-075428/DTMAPI-evidence",
+      "logicalBytes": 1284393628,
+      "files": 2750,
+      "directories": 1327
+    },
+    {
+      "run": "20260705-080223",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-080223/DTMAPI-evidence",
+      "logicalBytes": 1468490125,
+      "files": 2812,
+      "directories": 1368
+    },
+    {
+      "run": "20260705-101446",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-101446/DTMAPI-evidence",
+      "logicalBytes": 1470662721,
+      "files": 2817,
+      "directories": 1371
+    },
+    {
+      "run": "20260705-101737",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-101737/DTMAPI-evidence",
+      "logicalBytes": 1476632806,
+      "files": 2825,
+      "directories": 1376
+    },
+    {
+      "run": "20260705-111900",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-111900/DTMAPI-evidence",
+      "logicalBytes": 1482690868,
+      "files": 2833,
+      "directories": 1381
+    },
+    {
+      "run": "20260705-122003",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-122003/DTMAPI-evidence",
+      "logicalBytes": 1488733425,
+      "files": 2841,
+      "directories": 1386
+    },
+    {
+      "run": "20260705-132240",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-132240/DTMAPI-evidence",
+      "logicalBytes": 1494746694,
+      "files": 2849,
+      "directories": 1391
+    },
+    {
+      "run": "20260705-142438",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-142438/DTMAPI-evidence",
+      "logicalBytes": 1500729656,
+      "files": 2857,
+      "directories": 1396
+    },
+    {
+      "run": "20260705-152600",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-152600/DTMAPI-evidence",
+      "logicalBytes": 1506711308,
+      "files": 2865,
+      "directories": 1401
+    },
+    {
+      "run": "20260705-162708",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-162708/DTMAPI-evidence",
+      "logicalBytes": 1512679035,
+      "files": 2873,
+      "directories": 1406
+    },
+    {
+      "run": "20260705-184626",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-184626/DTMAPI-evidence",
+      "logicalBytes": 1518545023,
+      "files": 2881,
+      "directories": 1411
+    },
+    {
+      "run": "20260705-194759",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-194759/DTMAPI-evidence",
+      "logicalBytes": 3038953058,
+      "files": 5764,
+      "directories": 2825
+    },
+    {
+      "run": "20260705-205236",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-205236/DTMAPI-evidence",
+      "logicalBytes": 3045688656,
+      "files": 5774,
+      "directories": 2831
+    },
+    {
+      "run": "20260705-231212",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260705-231212/DTMAPI-evidence",
+      "logicalBytes": 3047515726,
+      "files": 5776,
+      "directories": 2833
+    },
+    {
+      "run": "20260706-005212",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-005212/DTMAPI-evidence",
+      "logicalBytes": 3052971904,
+      "files": 5786,
+      "directories": 2839
+    },
+    {
+      "run": "20260706-025334",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-025334/DTMAPI-evidence",
+      "logicalBytes": 3054826766,
+      "files": 5788,
+      "directories": 2841
+    },
+    {
+      "run": "20260706-075600",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-075600/DTMAPI-evidence",
+      "logicalBytes": 3056882564,
+      "files": 5790,
+      "directories": 2843
+    },
+    {
+      "run": "20260706-085929",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-085929/DTMAPI-evidence",
+      "logicalBytes": 3058935356,
+      "files": 5792,
+      "directories": 2845
+    },
+    {
+      "run": "20260706-100234",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-100234/DTMAPI-evidence",
+      "logicalBytes": 3060988562,
+      "files": 5794,
+      "directories": 2847
+    },
+    {
+      "run": "20260706-113849",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-113849/DTMAPI-evidence",
+      "logicalBytes": 3063206856,
+      "files": 5796,
+      "directories": 2849
+    },
+    {
+      "run": "20260706-131450",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-131450/DTMAPI-evidence",
+      "logicalBytes": 3065438484,
+      "files": 5798,
+      "directories": 2851
+    },
+    {
+      "run": "20260706-150952",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-150952/DTMAPI-evidence",
+      "logicalBytes": 3067546050,
+      "files": 5800,
+      "directories": 2853
+    },
+    {
+      "run": "20260706-163322",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-163322/DTMAPI-evidence",
+      "logicalBytes": 1535807739,
+      "files": 2902,
+      "directories": 1428
+    },
+    {
+      "run": "20260706-174103",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-174103/DTMAPI-evidence",
+      "logicalBytes": 1537813352,
+      "files": 2904,
+      "directories": 1430
+    },
+    {
+      "run": "20260706-185612",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-185612/DTMAPI-evidence",
+      "logicalBytes": 3077541468,
+      "files": 5810,
+      "directories": 2863
+    },
+    {
+      "run": "20260706-201209",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-201209/DTMAPI-evidence",
+      "logicalBytes": 1540551313,
+      "files": 2907,
+      "directories": 1433
+    },
+    {
+      "run": "20260706-211430",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-211430/DTMAPI-evidence",
+      "logicalBytes": 1542277613,
+      "files": 2909,
+      "directories": 1435
+    },
+    {
+      "run": "20260706-221651",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260706-221651/DTMAPI-evidence",
+      "logicalBytes": 3086382476,
+      "files": 5820,
+      "directories": 2873
+    },
+    {
+      "run": "20260707-000526",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-000526/DTMAPI-evidence",
+      "logicalBytes": 1544992205,
+      "files": 2912,
+      "directories": 1438
+    },
+    {
+      "run": "20260707-011257",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-011257/DTMAPI-evidence",
+      "logicalBytes": 1546794231,
+      "files": 2914,
+      "directories": 1440
+    },
+    {
+      "run": "20260707-054818",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-054818/DTMAPI-evidence",
+      "logicalBytes": 1548710969,
+      "files": 2916,
+      "directories": 1442
+    },
+    {
+      "run": "20260707-065046",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-065046/DTMAPI-evidence",
+      "logicalBytes": 1550673349,
+      "files": 2918,
+      "directories": 1444
+    },
+    {
+      "run": "20260707-075645",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-075645/DTMAPI-evidence",
+      "logicalBytes": 1552658031,
+      "files": 2920,
+      "directories": 1446
+    },
+    {
+      "run": "20260707-085818",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-085818/DTMAPI-evidence",
+      "logicalBytes": 1554640712,
+      "files": 2922,
+      "directories": 1448
+    },
+    {
+      "run": "20260707-152226",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-152226/DTMAPI-evidence",
+      "logicalBytes": 1554640712,
+      "files": 2922,
+      "directories": 1448
+    },
+    {
+      "run": "20260707-153023",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-153023/DTMAPI-evidence",
+      "logicalBytes": 1555640608,
+      "files": 2923,
+      "directories": 1449
+    },
+    {
+      "run": "20260707-153322",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-153322/DTMAPI-evidence",
+      "logicalBytes": 3113436472,
+      "files": 5848,
+      "directories": 2901
+    },
+    {
+      "run": "20260707-172738",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-172738/DTMAPI-evidence",
+      "logicalBytes": 1557787586,
+      "files": 2925,
+      "directories": 1451
+    },
+    {
+      "run": "20260707-173334",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-173334/DTMAPI-evidence",
+      "logicalBytes": 1558817625,
+      "files": 2926,
+      "directories": 1452
+    },
+    {
+      "run": "20260707-173636",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-173636/DTMAPI-evidence",
+      "logicalBytes": 1564478600,
+      "files": 2938,
+      "directories": 1454
+    },
+    {
+      "run": "20260707-173940",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-173940/DTMAPI-evidence",
+      "logicalBytes": 1565548249,
+      "files": 2939,
+      "directories": 1455
+    },
+    {
+      "run": "20260707-184940",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-184940/DTMAPI-evidence",
+      "logicalBytes": 1565919551,
+      "files": 2941,
+      "directories": 1456
+    },
+    {
+      "run": "20260707-185110",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-185110/DTMAPI-evidence",
+      "logicalBytes": 1566851677,
+      "files": 2942,
+      "directories": 1457
+    },
+    {
+      "run": "20260707-185717",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-185717/DTMAPI-evidence",
+      "logicalBytes": 1567725648,
+      "files": 2943,
+      "directories": 1458
+    },
+    {
+      "run": "20260707-190231",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-190231/DTMAPI-evidence",
+      "logicalBytes": 1573418819,
+      "files": 2955,
+      "directories": 1460
+    },
+    {
+      "run": "20260707-191553",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-191553/DTMAPI-evidence",
+      "logicalBytes": 1574378662,
+      "files": 2956,
+      "directories": 1461
+    },
+    {
+      "run": "20260707-195714",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-195714/DTMAPI-evidence",
+      "logicalBytes": 1576370752,
+      "files": 2963,
+      "directories": 1465
+    },
+    {
+      "run": "20260707-195938",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-195938/DTMAPI-evidence",
+      "logicalBytes": 1578039693,
+      "files": 2968,
+      "directories": 1468
+    },
+    {
+      "run": "20260707-200227",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260707-200227/DTMAPI-evidence",
+      "logicalBytes": 1579513365,
+      "files": 2973,
+      "directories": 1471
+    },
+    {
+      "run": "20260708-014247",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-014247/DTMAPI-evidence",
+      "logicalBytes": 1588925975,
+      "files": 2995,
+      "directories": 1478
+    },
+    {
+      "run": "20260708-021606",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-021606/DTMAPI-evidence",
+      "logicalBytes": 1601951965,
+      "files": 3023,
+      "directories": 1484
+    },
+    {
+      "run": "20260708-021859",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-021859/DTMAPI-evidence",
+      "logicalBytes": 1601951965,
+      "files": 3023,
+      "directories": 1484
+    },
+    {
+      "run": "20260708-030543",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-030543/DTMAPI-evidence",
+      "logicalBytes": 1602892779,
+      "files": 3024,
+      "directories": 1485
+    },
+    {
+      "run": "20260708-032723",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-032723/DTMAPI-evidence",
+      "logicalBytes": 1604754914,
+      "files": 3026,
+      "directories": 1487
+    },
+    {
+      "run": "20260708-042909",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-042909/DTMAPI-evidence",
+      "logicalBytes": 1606682802,
+      "files": 3028,
+      "directories": 1489
+    },
+    {
+      "run": "20260708-075829",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-075829/DTMAPI-evidence",
+      "logicalBytes": 1668888821,
+      "files": 3060,
+      "directories": 1510
+    },
+    {
+      "run": "20260708-132338",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-132338/DTMAPI-evidence",
+      "logicalBytes": 1669987446,
+      "files": 3061,
+      "directories": 1511
+    },
+    {
+      "run": "20260708-132708",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-132708/DTMAPI-evidence",
+      "logicalBytes": 1670872912,
+      "files": 3062,
+      "directories": 1512
+    },
+    {
+      "run": "20260708-132852",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-132852/DTMAPI-evidence",
+      "logicalBytes": 1671814332,
+      "files": 3063,
+      "directories": 1513
+    },
+    {
+      "run": "20260708-133007",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133007/DTMAPI-evidence",
+      "logicalBytes": 1672576365,
+      "files": 3064,
+      "directories": 1514
+    },
+    {
+      "run": "20260708-133306",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133306/DTMAPI-evidence",
+      "logicalBytes": 1673348236,
+      "files": 3065,
+      "directories": 1515
+    },
+    {
+      "run": "20260708-133413",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133413/DTMAPI-evidence",
+      "logicalBytes": 1674332307,
+      "files": 3066,
+      "directories": 1516
+    },
+    {
+      "run": "20260708-133519",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133519/DTMAPI-evidence",
+      "logicalBytes": 1675138430,
+      "files": 3067,
+      "directories": 1517
+    },
+    {
+      "run": "20260708-133642",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133642/DTMAPI-evidence",
+      "logicalBytes": 1675909787,
+      "files": 3068,
+      "directories": 1518
+    },
+    {
+      "run": "20260708-133900",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-133900/DTMAPI-evidence",
+      "logicalBytes": 1676754144,
+      "files": 3069,
+      "directories": 1519
+    },
+    {
+      "run": "20260708-134408",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-134408/DTMAPI-evidence",
+      "logicalBytes": 1677696881,
+      "files": 3070,
+      "directories": 1520
+    },
+    {
+      "run": "20260708-135031",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-135031/DTMAPI-evidence",
+      "logicalBytes": 1678462693,
+      "files": 3071,
+      "directories": 1521
+    },
+    {
+      "run": "20260708-135517",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-135517/DTMAPI-evidence",
+      "logicalBytes": 1679446574,
+      "files": 3072,
+      "directories": 1522
+    },
+    {
+      "run": "20260708-135946",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-135946/DTMAPI-evidence",
+      "logicalBytes": 1680124873,
+      "files": 3073,
+      "directories": 1523
+    },
+    {
+      "run": "20260708-140326",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-140326/DTMAPI-evidence",
+      "logicalBytes": 1680803359,
+      "files": 3074,
+      "directories": 1524
+    },
+    {
+      "run": "20260708-140444",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-140444/DTMAPI-evidence",
+      "logicalBytes": 1681454669,
+      "files": 3075,
+      "directories": 1525
+    },
+    {
+      "run": "20260708-140615",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-140615/DTMAPI-evidence",
+      "logicalBytes": 1682405911,
+      "files": 3076,
+      "directories": 1526
+    },
+    {
+      "run": "20260708-140733",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-140733/DTMAPI-evidence",
+      "logicalBytes": 1682456293,
+      "files": 3077,
+      "directories": 1527
+    },
+    {
+      "run": "20260708-141038",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-141038/DTMAPI-evidence",
+      "logicalBytes": 1683261513,
+      "files": 3078,
+      "directories": 1528
+    },
+    {
+      "run": "20260708-141642",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-141642/DTMAPI-evidence",
+      "logicalBytes": 1684033362,
+      "files": 3079,
+      "directories": 1529
+    },
+    {
+      "run": "20260708-142256",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-142256/DTMAPI-evidence",
+      "logicalBytes": 1684829082,
+      "files": 3080,
+      "directories": 1530
+    },
+    {
+      "run": "20260708-143408",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-143408/DTMAPI-evidence",
+      "logicalBytes": 1685743408,
+      "files": 3081,
+      "directories": 1531
+    },
+    {
+      "run": "20260708-143733",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-143733/DTMAPI-evidence",
+      "logicalBytes": 1686430457,
+      "files": 3082,
+      "directories": 1532
+    },
+    {
+      "run": "20260708-143905",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-143905/DTMAPI-evidence",
+      "logicalBytes": 1687295824,
+      "files": 3083,
+      "directories": 1533
+    },
+    {
+      "run": "20260708-144029",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-144029/DTMAPI-evidence",
+      "logicalBytes": 1688209476,
+      "files": 3084,
+      "directories": 1534
+    },
+    {
+      "run": "20260708-144151",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-144151/DTMAPI-evidence",
+      "logicalBytes": 1688878006,
+      "files": 3085,
+      "directories": 1535
+    },
+    {
+      "run": "20260708-144556",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-144556/DTMAPI-evidence",
+      "logicalBytes": 1689556416,
+      "files": 3086,
+      "directories": 1536
+    },
+    {
+      "run": "20260708-144724",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260708-144724/DTMAPI-evidence",
+      "logicalBytes": 1690235513,
+      "files": 3087,
+      "directories": 1537
+    },
+    {
+      "run": "20260710-101949",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-101949/DTMAPI-evidence",
+      "logicalBytes": 1698891616,
+      "files": 3105,
+      "directories": 1546
+    },
+    {
+      "run": "20260710-102210",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-102210/DTMAPI-evidence",
+      "logicalBytes": 1699589215,
+      "files": 3106,
+      "directories": 1547
+    },
+    {
+      "run": "20260710-102651",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-102651/DTMAPI-evidence",
+      "logicalBytes": 1700441655,
+      "files": 3107,
+      "directories": 1548
+    },
+    {
+      "run": "20260710-103002",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103002/DTMAPI-evidence",
+      "logicalBytes": 1701126351,
+      "files": 3108,
+      "directories": 1549
+    },
+    {
+      "run": "20260710-103205",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103205/DTMAPI-evidence",
+      "logicalBytes": 1701775784,
+      "files": 3109,
+      "directories": 1550
+    },
+    {
+      "run": "20260710-103350",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103350/DTMAPI-evidence",
+      "logicalBytes": 1702690898,
+      "files": 3110,
+      "directories": 1551
+    },
+    {
+      "run": "20260710-103514",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103514/DTMAPI-evidence",
+      "logicalBytes": 1703370031,
+      "files": 3111,
+      "directories": 1552
+    },
+    {
+      "run": "20260710-103724",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103724/DTMAPI-evidence",
+      "logicalBytes": 1704213954,
+      "files": 3112,
+      "directories": 1553
+    },
+    {
+      "run": "20260710-103938",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-103938/DTMAPI-evidence",
+      "logicalBytes": 1704809350,
+      "files": 3113,
+      "directories": 1554
+    },
+    {
+      "run": "20260710-104158",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-104158/DTMAPI-evidence",
+      "logicalBytes": 1704859732,
+      "files": 3114,
+      "directories": 1555
+    },
+    {
+      "run": "20260710-104404",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-104404/DTMAPI-evidence",
+      "logicalBytes": 1704910114,
+      "files": 3115,
+      "directories": 1556
+    },
+    {
+      "run": "20260710-104754",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-104754/DTMAPI-evidence",
+      "logicalBytes": 1704960496,
+      "files": 3116,
+      "directories": 1557
+    },
+    {
+      "run": "20260710-105201",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-105201/DTMAPI-evidence",
+      "logicalBytes": 1705876104,
+      "files": 3117,
+      "directories": 1558
+    },
+    {
+      "run": "20260710-134005",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-134005/DTMAPI-evidence",
+      "logicalBytes": 1706720854,
+      "files": 3118,
+      "directories": 1559
+    },
+    {
+      "run": "20260710-134449",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-134449/DTMAPI-evidence",
+      "logicalBytes": 1707457992,
+      "files": 3119,
+      "directories": 1560
+    },
+    {
+      "run": "20260710-134805",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-134805/DTMAPI-evidence",
+      "logicalBytes": 1708395864,
+      "files": 3120,
+      "directories": 1561
+    },
+    {
+      "run": "20260710-135136",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-135136/DTMAPI-evidence",
+      "logicalBytes": 1709358566,
+      "files": 3121,
+      "directories": 1562
+    },
+    {
+      "run": "20260710-171352",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-171352/DTMAPI-evidence",
+      "logicalBytes": 1709801778,
+      "files": 3122,
+      "directories": 1563
+    },
+    {
+      "run": "20260710-172128",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-172128/DTMAPI-evidence",
+      "logicalBytes": 1710694274,
+      "files": 3123,
+      "directories": 1564
+    },
+    {
+      "run": "20260710-172756",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-172756/DTMAPI-evidence",
+      "logicalBytes": 1710744656,
+      "files": 3124,
+      "directories": 1565
+    },
+    {
+      "run": "20260710-173218",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-173218/DTMAPI-evidence",
+      "logicalBytes": 1710795038,
+      "files": 3125,
+      "directories": 1566
+    },
+    {
+      "run": "20260710-173812",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-173812/DTMAPI-evidence",
+      "logicalBytes": 1711768171,
+      "files": 3126,
+      "directories": 1567
+    },
+    {
+      "run": "20260710-185323",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-185323/DTMAPI-evidence",
+      "logicalBytes": 1712498956,
+      "files": 3129,
+      "directories": 1569
+    },
+    {
+      "run": "20260710-185537",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-185537/DTMAPI-evidence",
+      "logicalBytes": 1712791148,
+      "files": 3130,
+      "directories": 1570
+    },
+    {
+      "run": "20260710-185857",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-185857/DTMAPI-evidence",
+      "logicalBytes": 1713086641,
+      "files": 3131,
+      "directories": 1571
+    },
+    {
+      "run": "20260710-231630",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-231630/DTMAPI-evidence",
+      "logicalBytes": 1713803127,
+      "files": 3134,
+      "directories": 1573
+    },
+    {
+      "run": "20260710-232054",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-232054/DTMAPI-evidence",
+      "logicalBytes": 1714083962,
+      "files": 3135,
+      "directories": 1574
+    },
+    {
+      "run": "20260710-232653",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-232653/DTMAPI-evidence",
+      "logicalBytes": 1714364677,
+      "files": 3136,
+      "directories": 1575
+    },
+    {
+      "run": "20260710-233452",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-233452/DTMAPI-evidence",
+      "logicalBytes": 1714645414,
+      "files": 3137,
+      "directories": 1576
+    },
+    {
+      "run": "20260710-235339",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-235339/DTMAPI-evidence",
+      "logicalBytes": 1714929182,
+      "files": 3138,
+      "directories": 1577
+    },
+    {
+      "run": "20260710-235813",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260710-235813/DTMAPI-evidence",
+      "logicalBytes": 1715210133,
+      "files": 3139,
+      "directories": 1578
+    },
+    {
+      "run": "20260711-011246",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-011246/DTMAPI-evidence",
+      "logicalBytes": 1716062324,
+      "files": 3140,
+      "directories": 1579
+    },
+    {
+      "run": "20260711-011445",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-011445/DTMAPI-evidence",
+      "logicalBytes": 1716913539,
+      "files": 3141,
+      "directories": 1580
+    },
+    {
+      "run": "20260711-011805",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-011805/DTMAPI-evidence",
+      "logicalBytes": 1717764278,
+      "files": 3142,
+      "directories": 1581
+    },
+    {
+      "run": "20260711-011935",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-011935/DTMAPI-evidence",
+      "logicalBytes": 1718615414,
+      "files": 3143,
+      "directories": 1582
+    },
+    {
+      "run": "20260711-012129",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-012129/DTMAPI-evidence",
+      "logicalBytes": 1719474108,
+      "files": 3144,
+      "directories": 1583
+    },
+    {
+      "run": "20260711-012337",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-012337/DTMAPI-evidence",
+      "logicalBytes": 1720333775,
+      "files": 3145,
+      "directories": 1584
+    },
+    {
+      "run": "20260711-012546",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-012546/DTMAPI-evidence",
+      "logicalBytes": 1721184929,
+      "files": 3146,
+      "directories": 1585
+    },
+    {
+      "run": "20260711-012735",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-012735/DTMAPI-evidence",
+      "logicalBytes": 1722036871,
+      "files": 3147,
+      "directories": 1586
+    },
+    {
+      "run": "20260711-014421",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-014421/DTMAPI-evidence",
+      "logicalBytes": 1723741873,
+      "files": 3150,
+      "directories": 1590
+    },
+    {
+      "run": "20260711-023842",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-023842/DTMAPI-evidence",
+      "logicalBytes": 1727152509,
+      "files": 3157,
+      "directories": 1597
+    },
+    {
+      "run": "20260711-024233",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-024233/DTMAPI-evidence",
+      "logicalBytes": 1728006354,
+      "files": 3159,
+      "directories": 1599
+    },
+    {
+      "run": "20260711-065929",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-065929/DTMAPI-evidence",
+      "logicalBytes": 1729185321,
+      "files": 3162,
+      "directories": 1602
+    },
+    {
+      "run": "20260711-070116",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-070116/DTMAPI-evidence",
+      "logicalBytes": 1729513357,
+      "files": 3164,
+      "directories": 1604
+    },
+    {
+      "run": "20260711-073623",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-073623/DTMAPI-evidence",
+      "logicalBytes": 1730477700,
+      "files": 3166,
+      "directories": 1606
+    },
+    {
+      "run": "20260711-074859",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-074859/DTMAPI-evidence",
+      "logicalBytes": 1731445344,
+      "files": 3168,
+      "directories": 1608
+    },
+    {
+      "run": "20260711-080312",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-080312/DTMAPI-evidence",
+      "logicalBytes": 1732409992,
+      "files": 3170,
+      "directories": 1610
+    },
+    {
+      "run": "20260711-081532",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-081532/DTMAPI-evidence",
+      "logicalBytes": 1733374721,
+      "files": 3172,
+      "directories": 1612
+    },
+    {
+      "run": "20260711-115939",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-115939/DTMAPI-evidence",
+      "logicalBytes": 1734449679,
+      "files": 3174,
+      "directories": 1614
+    },
+    {
+      "run": "20260711-150532",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-150532/DTMAPI-evidence",
+      "logicalBytes": 1737397922,
+      "files": 3181,
+      "directories": 1618
+    },
+    {
+      "run": "20260711-150855",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-150855/DTMAPI-evidence",
+      "logicalBytes": 1740323945,
+      "files": 3188,
+      "directories": 1622
+    },
+    {
+      "run": "20260711-151205",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-151205/DTMAPI-evidence",
+      "logicalBytes": 1743248410,
+      "files": 3195,
+      "directories": 1626
+    },
+    {
+      "run": "20260711-162335",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-162335/DTMAPI-evidence",
+      "logicalBytes": 1746177134,
+      "files": 3202,
+      "directories": 1630
+    },
+    {
+      "run": "20260711-230125",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-230125/DTMAPI-evidence",
+      "logicalBytes": 1748830188,
+      "files": 3209,
+      "directories": 1634
+    },
+    {
+      "run": "20260711-233404",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-233404/DTMAPI-evidence",
+      "logicalBytes": 1756615330,
+      "files": 3224,
+      "directories": 1637
+    },
+    {
+      "run": "20260711-233720",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-233720/DTMAPI-evidence",
+      "logicalBytes": 1763972994,
+      "files": 3240,
+      "directories": 1641
+    },
+    {
+      "run": "20260712-010905",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-010905/DTMAPI-evidence",
+      "logicalBytes": 1767828391,
+      "files": 3251,
+      "directories": 1647
+    },
+    {
+      "run": "20260712-011551",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-011551/DTMAPI-evidence",
+      "logicalBytes": 1770547509,
+      "files": 3258,
+      "directories": 1651
+    },
+    {
+      "run": "20260712-011924",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-011924/DTMAPI-evidence",
+      "logicalBytes": 1772460329,
+      "files": 3263,
+      "directories": 1654
+    },
+    {
+      "run": "20260712-080130",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-080130/DTMAPI-evidence",
+      "logicalBytes": 1775360694,
+      "files": 3270,
+      "directories": 1658
+    },
+    {
+      "run": "20260712-093048",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-093048/DTMAPI-evidence",
+      "logicalBytes": 1778339964,
+      "files": 3281,
+      "directories": 1664
+    },
+    {
+      "run": "20260712-101106",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260712-101106/DTMAPI-evidence",
+      "logicalBytes": 1779721676,
+      "files": 3286,
+      "directories": 1667
+    }
+  ],
+  "excludedExplicitArtifactRuns": [
+    {
+      "run": "20260531-022415",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-022415/DTMAPI-evidence",
+      "logicalBytes": 16187414,
+      "files": 103,
+      "directories": 52
+    },
+    {
+      "run": "20260531-042239",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-042239/DTMAPI-evidence",
+      "logicalBytes": 19730023,
+      "files": 111,
+      "directories": 56
+    },
+    {
+      "run": "20260531-051312",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-051312/DTMAPI-evidence",
+      "logicalBytes": 20193825,
+      "files": 115,
+      "directories": 59
+    },
+    {
+      "run": "20260531-111940",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-111940/DTMAPI-evidence",
+      "logicalBytes": 25135694,
+      "files": 121,
+      "directories": 63
+    },
+    {
+      "run": "20260531-155436",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-155436/DTMAPI-evidence",
+      "logicalBytes": 28246025,
+      "files": 127,
+      "directories": 65
+    },
+    {
+      "run": "20260531-161545",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260531-161545/DTMAPI-evidence",
+      "logicalBytes": 29808486,
+      "files": 130,
+      "directories": 66
+    },
+    {
+      "run": "20260602-002953",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260602-002953/DTMAPI-evidence",
+      "logicalBytes": 71520059,
+      "files": 200,
+      "directories": 94
+    },
+    {
+      "run": "20260602-020710",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260602-020710/DTMAPI-evidence",
+      "logicalBytes": 82983938,
+      "files": 223,
+      "directories": 101
+    },
+    {
+      "run": "20260602-022417",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260602-022417/DTMAPI-evidence",
+      "logicalBytes": 83279969,
+      "files": 225,
+      "directories": 102
+    },
+    {
+      "run": "20260603-032406",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-032406/DTMAPI-evidence",
+      "logicalBytes": 87096178,
+      "files": 239,
+      "directories": 109
+    },
+    {
+      "run": "20260603-035653",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-035653/DTMAPI-evidence",
+      "logicalBytes": 88490689,
+      "files": 249,
+      "directories": 114
+    },
+    {
+      "run": "20260603-040354",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-040354/DTMAPI-evidence",
+      "logicalBytes": 91222148,
+      "files": 252,
+      "directories": 115
+    },
+    {
+      "run": "20260603-041053",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-041053/DTMAPI-evidence",
+      "logicalBytes": 96981817,
+      "files": 262,
+      "directories": 117
+    },
+    {
+      "run": "20260603-052444",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-052444/DTMAPI-evidence",
+      "logicalBytes": 116639876,
+      "files": 293,
+      "directories": 122
+    },
+    {
+      "run": "20260603-160739",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-160739/DTMAPI-evidence",
+      "logicalBytes": 138654370,
+      "files": 330,
+      "directories": 134
+    },
+    {
+      "run": "20260603-210216",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260603-210216/DTMAPI-evidence",
+      "logicalBytes": 140059372,
+      "files": 341,
+      "directories": 143
+    },
+    {
+      "run": "20260605-181224",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260605-181224/DTMAPI-evidence",
+      "logicalBytes": 151717790,
+      "files": 418,
+      "directories": 184
+    },
+    {
+      "run": "20260606-150928",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260606-150928/DTMAPI-evidence",
+      "logicalBytes": 201102501,
+      "files": 580,
+      "directories": 263
+    },
+    {
+      "run": "20260607-072228",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260607-072228/DTMAPI-evidence",
+      "logicalBytes": 206508031,
+      "files": 613,
+      "directories": 280
+    },
+    {
+      "run": "20260609-100218",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260609-100218/DTMAPI-evidence",
+      "logicalBytes": 243523245,
+      "files": 835,
+      "directories": 359
+    },
+    {
+      "run": "20260609-102529",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260609-102529/DTMAPI-evidence",
+      "logicalBytes": 246956990,
+      "files": 850,
+      "directories": 362
+    },
+    {
+      "run": "20260609-110528",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260609-110528/DTMAPI-evidence",
+      "logicalBytes": 250392232,
+      "files": 865,
+      "directories": 365
+    },
+    {
+      "run": "20260612-204350",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260612-204350/DTMAPI-evidence",
+      "logicalBytes": 473133723,
+      "files": 1428,
+      "directories": 548
+    },
+    {
+      "run": "20260613-143621",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260613-143621/DTMAPI-evidence",
+      "logicalBytes": 567166135,
+      "files": 1605,
+      "directories": 633
+    },
+    {
+      "run": "20260711-012851",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-012851/DTMAPI-evidence",
+      "logicalBytes": 1722890010,
+      "files": 3149,
+      "directories": 1589
+    },
+    {
+      "run": "20260711-024427",
+      "path": "docs/debug/evidence/GAME-SMOKE/20260711-024427/DTMAPI-evidence",
+      "logicalBytes": 1728859804,
+      "files": 3161,
+      "directories": 1601
+    }
+  ],
+  "result": {
+    "status": "applied",
+    "deletedTargets": 152,
+    "deletedLogicalBytes": 266858358691,
+    "deletedFiles": 500804,
+    "deletedDirectories": 248622,
+    "freeBeforeBytes": 217889681408,
+    "freeAfterBytes": 485682810880,
+    "actualFreeGainBytes": 267793129472
+  },
+  "canonicalAfter": {
+    "path": "docs/debug/evidence/RETAINED-RUNTIME",
+    "identityCount": 62,
+    "identityFingerprintSha256": "b1e69d14bda182c6d6f259c9df25bf0638214ecd18d35ba2a1576d17a146ecf6",
+    "files": 182,
+    "bytes": 78839410,
+    "fileManifestSha256": "b2f7f54ada22192bf80bbfd65fa6b69ac780a2913a3388a3d829665f93009cb3"
+  },
+  "referencesAfter": {
+    "existingRuns": 745,
+    "missingRuns": 13,
+    "existingRunFingerprintSha256": "7a84e53ee5a94f6a6b28d319197c70428add3a021c8a8fa8b0356d5c6669864a",
+    "missingRunIdentities": [
+      "GAME-SMOKE/20260614-004621",
+      "GAME-SMOKE/20260614-011222",
+      "GAME-SMOKE/20260614-043810",
+      "GAME-SMOKE/20260614-045125",
+      "GAME-SMOKE/20260614-045247",
+      "GAME-SMOKE/20260614-063456",
+      "GAME-SMOKE/20260614-063639",
+      "GAME-SMOKE/20260615-191720",
+      "GAME-SMOKE/20260615-192916",
+      "GAME-SMOKE/20260615-193040",
+      "GAME-SMOKE/20260618-010235",
+      "GAME-SMOKE/20260618-012012",
+      "GAME-SMOKE/20260618-012554"
+    ],
+    "existingLiteralArtifacts": 223,
+    "missingLiteralArtifacts": 1,
+    "existingLiteralArtifactFingerprintSha256": "621a078c044fb3f48f54c1de2fc0ba77f294ae8156e3cba584a8af11b3b462f2",
+    "missingLiteralArtifactIdentities": [
+      "GAME-SMOKE/20260618-010235/post-cleanup-status.txt"
+    ],
+    "rootZipFiles": 28,
+    "rootZipBytes": 6685760566
+  },
+  "validation": [
+    "current Runtime identity set exactly matches the previously materialized 62-identity canonical baseline",
+    "all selected targets are direct historical DTMAPI-evidence children before the bounded-collector cutoff",
+    "all runs with explicit nested artifact references are excluded",
+    "selected targets and descendants contain zero reparse points",
+    "all selected nested targets are absent and every outer run remains present",
+    "canonical file-manifest SHA-256 is unchanged after deletion",
+    "allowlist SHA-256 and referenced run/literal-artifact fingerprints are unchanged",
+    "root ZIP count and bytes are unchanged",
+    "Process-Dumps and post-cutoff evidence were outside deletion scope"
+  ]
+}

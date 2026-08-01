@@ -14,38 +14,13 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    internal sealed partial class DolocTownExperimentalBridgeApi : IInventoryDebugApi, IMailDeliveryApi, IWeatherDebugApi, ITeleportDebugApi, IInstantSaveDebugApi, ITimeDebugApi, IMovementDebugApi, IMachineProductionApi, IEquipmentSlotsApi, IAdvancedDebugApi
+    internal sealed partial class DolocTownExperimentalBridgeApi :
+        IMailDeliveryApi
     {
         private const int VanillaArchiveSlotCount = 6;
 
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
-        private readonly Dictionary<string, List<MachineDefinition>> machineDefinitions = new Dictionary<string, List<MachineDefinition>>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, MachineProductionState> machineStates = new Dictionary<string, MachineProductionState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, MachineRuntimeEntry> machineRuntimeEntries = new Dictionary<string, MachineRuntimeEntry>(StringComparer.OrdinalIgnoreCase);
-        private readonly Random machineRandom = new Random();
-        private readonly Dictionary<string, EquipmentSlotsOptions> equipmentSlotOptions = new Dictionary<string, EquipmentSlotsOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, EquipmentSlotsState> equipmentSlotStates = new Dictionary<string, EquipmentSlotsState>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, List<EquipmentSlotRuntimeEntry>> equipmentSlotEntries = new Dictionary<string, List<EquipmentSlotRuntimeEntry>>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loadedEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> dirtyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> migratedLegacyEquipmentSlotStorageOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly List<object> activeEquipmentSlotUiObjects = new List<object>();
-        private readonly List<object> equipmentSlotUiEventBinders = new List<object>();
         private ActionSpeedService? actionSpeedService;
-        private DateTimeOffset lastMachineProductionPollAt = DateTimeOffset.MinValue;
-        private int lastMachineProductionTotalTus = -1;
-        private bool machineRuntimeLoopInstalled;
-        private bool equipmentSlotsRuntimeHooksInstalled;
-        private bool equipmentSlotsUiHooksInstalled;
-        private bool equipmentSlotsUiRendered;
-        private bool equipmentSlotsUiEvidenceRecorded;
-        private bool equipmentSlotsUiBindDiagnosticLogged;
-        private bool equipmentSlotsUiCloneDiagnosticLogged;
-        private bool equipmentSlotsUiInteractionFailureLogged;
-        private bool equipmentSlotsApplyingFunctions;
-        private bool equipmentSlotsOrphanRecoveryChecked;
-        private DateTimeOffset lastEquipmentSlotsUiRefreshAt = DateTimeOffset.MinValue;
-        private string equipmentSlotsUiLastSummary = string.Empty;
 
         public DolocTownExperimentalBridgeApi(DTMAPI.Core.Runtime.DtmApiRuntime runtime)
         {
@@ -70,16 +45,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal int ActionSpeedAutoFillApplicationCount => actionSpeedService?.ActionSpeedAutoFillApplicationCount ?? 0;
 
-        internal bool SuppressActionSpeedAutoFillForSmoke
-        {
-            get => actionSpeedService?.SuppressActionSpeedAutoFillForSmoke ?? false;
-            set
-            {
-                if (actionSpeedService != null)
-                    actionSpeedService.SuppressActionSpeedAutoFillForSmoke = value;
-            }
-        }
-
         internal bool TryGetConfiguredActionSpeedOwner(out string ownerId)
         {
             if (actionSpeedService != null)
@@ -103,14 +68,10 @@ namespace DTMAPI.GameBridge.DolocTown
             actionSpeedService?.RestoreActionSpeed(reason);
         }
 
-        internal bool ForceMachineProductionDueForSmoke { get; set; }
-
-        internal void UpdateRuntimeAutomation(bool forceMachineProductionPoll = false)
+        internal string GetRuntimeAutomationLifecycleSummary()
         {
-            RecoverOrphanEquipmentSlotsIfNeeded();
-            UpdateMachineProduction(forceMachineProductionPoll);
-            RenderEquipmentSlotsUiForCurrentAccessoriesBar("runtime", force: false);
-            UpdateMovementDebugLease(forceMachineProductionPoll ? "runtime-forced" : "runtime");
+            return actionSpeedService?.GetActionSpeedLifecycleSummary() ??
+                "actionAnimators=0, actionAutoFillApplications=0, actionPendingAnimalInteract=false";
         }
 
 
@@ -163,10 +124,10 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
 
-        private static IEnumerable<object> EnumerateMachineCandidateEquipments(Type dolocApi, object archive, object currentRoom)
+        private static IEnumerable<object> EnumerateCandidateEquipments(Type dolocApi, object archive, object currentRoom)
         {
             var visitedEquipment = new HashSet<int>();
-            foreach (object room in EnumerateMachineCandidateRooms(dolocApi, archive, currentRoom))
+            foreach (object room in EnumerateCandidateRooms(dolocApi, archive, currentRoom))
             {
                 foreach (object equipment in EnumerateEquipments(room))
                 {
@@ -177,7 +138,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static IEnumerable<object> EnumerateMachineCandidateRooms(Type dolocApi, object archive, object currentRoom)
+        private static IEnumerable<object> EnumerateCandidateRooms(Type dolocApi, object archive, object currentRoom)
         {
             var visitedRooms = new HashSet<int>();
             void AddRoom(object? room, List<object> rooms)
@@ -242,7 +203,7 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
 
-        private static int ClampInt(int value, int min, int max)
+        internal static int ClampInt(int value, int min, int max)
         {
             return Math.Max(min, Math.Min(max, value));
         }
@@ -359,7 +320,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.ReadDoubleMember(instance, name, fallback);
         }
 
-        private static bool TryGenerateNativeItem(string itemId, int count, out object? item, out string reason, out string message)
+        internal static bool TryGenerateNativeItem(string itemId, int count, out object? item, out string reason, out string message)
         {
             item = null;
             reason = string.Empty;
@@ -516,7 +477,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return false;
         }
 
-        private static bool TrySetMemberValue(object? instance, string name, object value)
+        internal static bool TrySetMemberValue(object? instance, string name, object value)
         {
             if (instance == null)
                 return false;
@@ -531,7 +492,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static bool TryInvokeNoArg(object? instance, string methodName)
+        internal static bool TryInvokeNoArg(object? instance, string methodName)
         {
             if (instance == null || string.IsNullOrWhiteSpace(methodName))
                 return false;
@@ -704,95 +665,6 @@ namespace DTMAPI.GameBridge.DolocTown
             return GameBridgeNativeHelpers.FindMethodInHierarchy(type, name, parameterCount);
         }
 
-        internal static bool TryCaptureScreenshot(string path)
-        {
-            try
-            {
-                Type? screenCapture = ResolveType("UnityEngine.ScreenCapture, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.ScreenCapture, UnityEngine");
-                MethodInfo? captureTexture = screenCapture?.GetMethod("CaptureScreenshotAsTexture", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
-                object? texture = captureTexture?.Invoke(null, null);
-                if (texture != null)
-                {
-                    try
-                    {
-                        MethodInfo? encodeToPng = texture.GetType().GetMethod("EncodeToPNG", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-                        if (encodeToPng?.Invoke(texture, null) is byte[] bytes && bytes.Length > 0)
-                        {
-                            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
-                            File.WriteAllBytes(path, bytes);
-                            return true;
-                        }
-                    }
-                    finally
-                    {
-                        DestroyUnityObject(texture);
-                    }
-                }
-
-                if (TryCaptureScreenshotWithReadPixels(path))
-                    return true;
-
-                MethodInfo? capture = screenCapture?.GetMethod("CaptureScreenshot", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
-                if (capture == null)
-                    return false;
-                capture.Invoke(null, new object[] { path });
-                return File.Exists(path);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool TryCaptureScreenshotWithReadPixels(string path)
-        {
-            object? texture = null;
-            try
-            {
-                Type? screenType = ResolveType("UnityEngine.Screen, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Screen, UnityEngine");
-                Type? texture2DType = ResolveType("UnityEngine.Texture2D, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Texture2D, UnityEngine");
-                Type? textureFormatType = ResolveType("UnityEngine.TextureFormat, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.TextureFormat, UnityEngine");
-                Type? rectType = ResolveType("UnityEngine.Rect, UnityEngine.CoreModule") ?? ResolveType("UnityEngine.Rect, UnityEngine");
-                if (screenType == null || texture2DType == null || textureFormatType == null || rectType == null)
-                    return false;
-
-                int width = Math.Max(1, Convert.ToInt32(screenType.GetProperty("width", BindingFlags.Public | BindingFlags.Static)?.GetValue(null), CultureInfo.InvariantCulture));
-                int height = Math.Max(1, Convert.ToInt32(screenType.GetProperty("height", BindingFlags.Public | BindingFlags.Static)?.GetValue(null), CultureInfo.InvariantCulture));
-                object format = Enum.Parse(textureFormatType, "RGB24");
-                texture = Activator.CreateInstance(texture2DType, width, height, format, false);
-                if (texture == null)
-                    return false;
-
-                object rect = Activator.CreateInstance(rectType, 0f, 0f, (float)width, (float)height)!;
-                MethodInfo? readPixels = texture2DType.GetMethod("ReadPixels", BindingFlags.Public | BindingFlags.Instance, null, new[] { rectType, typeof(int), typeof(int) }, null);
-                MethodInfo? apply = texture2DType.GetMethod("Apply", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-                MethodInfo? encodeToPng = texture2DType.GetMethod("EncodeToPNG", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-                if (readPixels == null || apply == null || encodeToPng == null)
-                    return false;
-
-                readPixels.Invoke(texture, new object[] { rect, 0, 0 });
-                apply.Invoke(texture, null);
-                if (encodeToPng.Invoke(texture, null) is byte[] bytes && bytes.Length > 0)
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
-                    File.WriteAllBytes(path, bytes);
-                    return true;
-                }
-
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                if (texture != null)
-                    DestroyUnityObject(texture);
-            }
-        }
-
-
         private static MethodInfo? FindMethod(Type? type, string name, int parameterCount)
         {
             if (type == null)
@@ -819,7 +691,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private static int InvokeInt(MethodInfo? method, object? target, object?[] args, int fallback)
+        internal static int InvokeInt(MethodInfo? method, object? target, object?[] args, int fallback)
         {
             try
             {

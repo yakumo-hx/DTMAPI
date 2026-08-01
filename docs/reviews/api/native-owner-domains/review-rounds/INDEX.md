@@ -25,4 +25,4 @@ This directory records the three-agent review loop requested after the initial n
 
 - These records are review notes derived from read-only reverse inspection and parallel sub-agent review.
 - Evidence is limited to paths, symbols, maps, and report text. No decompiled source is copied here.
-- Runtime behavior still needs a separate GameBridge implementation goal, third-save game evidence, and public API matrix update before any stability claim.
+- Runtime behavior still needs a separate GameBridge implementation record, third-save game evidence, and public API matrix update before any stability claim.

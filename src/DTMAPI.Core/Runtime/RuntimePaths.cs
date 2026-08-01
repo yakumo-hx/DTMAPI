@@ -20,7 +20,10 @@ namespace DTMAPI.Core.Runtime
             ReportsPath = Path.Combine(DtmApiPath, "reports");
             ConfigPath = Path.Combine(DtmApiPath, "config");
             EvidencePath = Path.Combine(DtmApiPath, "evidence");
-            SmokeSettingsPath = Path.Combine(DtmApiPath, "smoke-settings.json");
+            PlayerDoctorPath = Path.Combine(DtmApiPath, "tools", "player-doctor", "dtmapi-player-doctor.exe");
+            PlayerDoctorJsonReportPath = Path.Combine(ReportsPath, "player-doctor-latest.json");
+            PlayerDoctorTextReportPath = Path.Combine(ReportsPath, "player-doctor-latest.txt");
+            PlayerDoctorSummaryPath = Path.Combine(ReportsPath, "player-doctor-latest.summary.txt");
         }
 
         public string GamePath { get; }
@@ -31,7 +34,10 @@ namespace DTMAPI.Core.Runtime
         public string ReportsPath { get; }
         public string ConfigPath { get; }
         public string EvidencePath { get; }
-        public string SmokeSettingsPath { get; }
+        public string PlayerDoctorPath { get; }
+        public string PlayerDoctorJsonReportPath { get; }
+        public string PlayerDoctorTextReportPath { get; }
+        public string PlayerDoctorSummaryPath { get; }
 
         public void Ensure()
         {

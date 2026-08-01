@@ -1,0 +1,171 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+  "token": "SNOywxdl5iccH8kO413czWBKnwe",
+  "title": "01 美化模组（替换现有贴图）",
+  "document_title": "01 美化模组（替换现有贴图）",
+  "source_modified_label": "5月15日修改",
+  "status_code": 200,
+  "elapsed_seconds": 11.782,
+  "block_count": 29,
+  "blocks_by_type": {
+    "heading1": 4,
+    "bullet": 18,
+    "text": 5,
+    "image": 2
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1823,
+  "links": [
+    {
+      "text": "03 备用贴图",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/NKSJwBudUi9q89kN9GXcpQKwnRe",
+      "kind": "official-wiki",
+      "target_token": "NKSJwBudUi9q89kN9GXcpQKwnRe"
+    },
+    {
+      "text": "05 贴图锚点说明",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+      "kind": "official-wiki",
+      "target_token": "Rdp1with9ih1frk7Pl8cbFD9nDc"
+    },
+    {
+      "text": "01 主角（本体&帽子&工具）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/FHmFwDuySip8M6krNnxcyR91nXg",
+      "kind": "official-wiki",
+      "target_token": "FHmFwDuySip8M6krNnxcyR91nXg"
+    },
+    {
+      "text": "02 NPC",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/HUAbwaN2hiWLsAkSwrJczQmun9e",
+      "kind": "official-wiki",
+      "target_token": "HUAbwaN2hiWLsAkSwrJczQmun9e"
+    },
+    {
+      "text": "03 小动物",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/POkcwjhF3iPzmikWRZ2cn8n9ncf",
+      "kind": "official-wiki",
+      "target_token": "POkcwjhF3iPzmikWRZ2cn8n9ncf"
+    },
+    {
+      "text": "04 道具",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/CDfmwzDwHi4GJgksMfZcC2mqnTe",
+      "kind": "official-wiki",
+      "target_token": "CDfmwzDwHi4GJgksMfZcC2mqnTe"
+    },
+    {
+      "text": "05 设备",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/OAMZwIqkLi7xw3k7JcIcvxAQnHg",
+      "kind": "official-wiki",
+      "target_token": "OAMZwIqkLi7xw3k7JcIcvxAQnHg"
+    },
+    {
+      "text": "06 资源",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/R8V7wQUQuiEdq8kaDRzcT1vXn5c",
+      "kind": "official-wiki",
+      "target_token": "R8V7wQUQuiEdq8kaDRzcT1vXn5c"
+    },
+    {
+      "text": "07 建筑",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/SqhhwDgKAi2NLhkYRgwcdWrdnff",
+      "kind": "official-wiki",
+      "target_token": "SqhhwDgKAi2NLhkYRgwcdWrdnff"
+    },
+    {
+      "text": "08 平台",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/V8l8wVIUaitF7rkIBpQcSVLPnWe",
+      "kind": "official-wiki",
+      "target_token": "V8l8wVIUaitF7rkIBpQcSVLPnWe"
+    },
+    {
+      "text": "09 载具",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b",
+      "kind": "official-wiki",
+      "target_token": "ApFewNFGeie7OYkImngcrxyQn2b"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b",
+    "https://ka7deoo0opr.feishu.cn/wiki/CDfmwzDwHi4GJgksMfZcC2mqnTe",
+    "https://ka7deoo0opr.feishu.cn/wiki/FHmFwDuySip8M6krNnxcyR91nXg",
+    "https://ka7deoo0opr.feishu.cn/wiki/HUAbwaN2hiWLsAkSwrJczQmun9e",
+    "https://ka7deoo0opr.feishu.cn/wiki/NKSJwBudUi9q89kN9GXcpQKwnRe",
+    "https://ka7deoo0opr.feishu.cn/wiki/OAMZwIqkLi7xw3k7JcIcvxAQnHg",
+    "https://ka7deoo0opr.feishu.cn/wiki/POkcwjhF3iPzmikWRZ2cn8n9ncf",
+    "https://ka7deoo0opr.feishu.cn/wiki/R8V7wQUQuiEdq8kaDRzcT1vXn5c",
+    "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+    "https://ka7deoo0opr.feishu.cn/wiki/SqhhwDgKAi2NLhkYRgwcdWrdnff",
+    "https://ka7deoo0opr.feishu.cn/wiki/V8l8wVIUaitF7rkIBpQcSVLPnWe"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "16",
+      "image_tokens": [
+        "PlF8b0QBtoh1Ckx0D1Fch0NAnRc"
+      ],
+      "rendered_path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/rendered-01-16.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "18",
+      "image_tokens": [
+        "UgotbpGnVoUhHMxhWXdcA8IGn4g"
+      ],
+      "rendered_path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/rendered-02-18.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/PlF8b0QBtoh1Ckx0D1Fch0NAnRc/?fallback_source=1&height=1280&mount_node_token=WN68dgu7joputLxPfIlcF9AUncg&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/original/image-01-d8c01d8f59ebfd0f.png",
+      "bytes": 1228,
+      "sha256": "994f0ce41c67092da067d35c9e9100ddd74a14cf3192351ff7d66c5ad8f574fb"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/UgotbpGnVoUhHMxhWXdcA8IGn4g/?fallback_source=1&height=1280&mount_node_token=Gg1adIpthoIl94x1FRfc7PgMnCg&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/original/image-02-d3035af845d14b93.png",
+      "bytes": 31233,
+      "sha256": "c7754c14665a11e6462b0ecdbb9e553a8fb7558c5fec06b6f659d318b0fa42c0"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/original/image-03-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/original/image-04-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SNOywxdl5iccH8kO413czWBKnwe/images/original/image-05-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/SNOywxdl5iccH8kO413czWBKnwe/source.html",
+    "rendered_html": "pages/SNOywxdl5iccH8kO413czWBKnwe/rendered.html",
+    "text": "pages/SNOywxdl5iccH8kO413czWBKnwe/content.txt",
+    "markdown": "pages/SNOywxdl5iccH8kO413czWBKnwe/content.md",
+    "metadata": "pages/SNOywxdl5iccH8kO413czWBKnwe/page.json"
+  }
+}

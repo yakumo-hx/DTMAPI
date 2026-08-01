@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/deployment-journal.schema.json",
+  "title": "DTMAPI Author SDK package-external deployment journal",
+  "$comment": "Current writer contract: deployment journal schema 3. Package-local receipts and package markers remain schema 2. The CLI reader also accepts the exact historical schema-1 and prior schema-2 journal shapes, then writes schema 3 on the next mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "gameRoot",
+    "gameRootKey",
+    "uniqueId",
+    "packageKind",
+    "codeModKind",
+    "destinationPath",
+    "status",
+    "committed",
+    "active",
+    "localInstall",
+    "recoveryArtifacts"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 3 },
+    "gameRoot": { "type": "string", "minLength": 1 },
+    "gameRootKey": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+    "uniqueId": { "$ref": "#/$defs/uniqueId" },
+    "packageKind": { "enum": ["CodeMod", "ContentPack"] },
+    "codeModKind": { "enum": ["", "Strict", "Advanced"] },
+    "destinationPath": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["Absent", "Prepared", "Installed", "Withdrawn"] },
+    "committed": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/record" }]
+    },
+    "active": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/transaction" }]
+    },
+    "localInstall": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/localInstallTransaction" }]
+    },
+    "recoveryArtifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recoveryArtifact" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "packageKind": { "const": "ContentPack" } }, "required": ["packageKind"] },
+      "then": { "properties": { "codeModKind": { "const": "" } } }
+    },
+    {
+      "if": { "properties": { "packageKind": { "const": "CodeMod" } }, "required": ["packageKind"] },
+      "then": { "properties": { "codeModKind": { "enum": ["Strict", "Advanced"] } } }
+    }
+  ],
+  "$defs": {
+    "uniqueId": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
+    "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+    "inventoryFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "length", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "length": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["treeSha256", "files", "directories"],
+      "properties": {
+        "treeSha256": { "$ref": "#/$defs/sha256" },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/inventoryFile" } },
+        "directories": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transactionId", "packageSha256", "payloadTreeSha256", "receiptSha256", "inventory"],
+      "properties": {
+        "transactionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "packageSha256": { "$ref": "#/$defs/sha256" },
+        "payloadTreeSha256": { "$ref": "#/$defs/sha256" },
+        "receiptSha256": { "$ref": "#/$defs/sha256" },
+        "inventory": { "$ref": "#/$defs/inventory" }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionId",
+        "operation",
+        "phase",
+        "stagingPath",
+        "recoveryPath",
+        "failedPath",
+        "previous",
+        "next"
+      ],
+      "properties": {
+        "transactionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "operation": { "enum": ["deploy", "update", "withdraw"] },
+        "phase": { "enum": ["Prepared", "PreviousMoved", "Published"] },
+        "stagingPath": { "type": "string" },
+        "recoveryPath": { "type": "string" },
+        "failedPath": { "type": "string" },
+        "previous": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/record" }] },
+        "next": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/record" }] }
+      }
+    },
+    "localInstallTransaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionId",
+        "phase",
+        "expectedVersion",
+        "expectedPackageSha256",
+        "journalBeforeExisted",
+        "journalBeforeBase64",
+        "sourceStateBeforeExisted",
+        "sourceStateBeforeBase64",
+        "sourceStatePath",
+        "stagingPath",
+        "recoveryPath",
+        "failedPath",
+        "previous",
+        "next"
+      ],
+      "properties": {
+        "transactionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "phase": { "const": "Prepared" },
+        "expectedVersion": { "type": "string", "minLength": 1 },
+        "expectedPackageSha256": { "$ref": "#/$defs/sha256" },
+        "journalBeforeExisted": { "type": "boolean" },
+        "journalBeforeBase64": { "type": "string" },
+        "sourceStateBeforeExisted": { "type": "boolean" },
+        "sourceStateBeforeBase64": { "type": "string" },
+        "sourceStatePath": { "type": "string", "minLength": 1 },
+        "stagingPath": { "type": "string", "minLength": 1 },
+        "recoveryPath": { "type": "string" },
+        "failedPath": { "type": "string", "minLength": 1 },
+        "previous": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/record" }] },
+        "next": { "$ref": "#/$defs/record" }
+      }
+    },
+    "recoveryArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "treeSha256"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "treeSha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

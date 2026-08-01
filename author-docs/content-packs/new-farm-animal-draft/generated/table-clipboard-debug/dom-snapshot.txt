@@ -1,0 +1,90 @@
+- button:
+- heading "飞书云文档" [level=1]
+- generic: 搜索
+- button "主页":
+  - generic: 主页
+- button "云盘 我的空间和共享空间搬到云盘了":
+  - generic: 云盘
+  - generic: 我的空间和共享空间搬到云盘了
+- button "知识库":
+  - generic: 知识库
+- button "智能纪要":
+  - generic: 智能纪要
+- button "置顶知识库":
+  - generic: 置顶知识库
+- text: 新建或置顶知识库
+- button "我的文档库":
+  - generic: 我的文档库
+- button:
+- list:
+  - button "知识问答":
+    - generic: 知识问答
+  - button "JSON + PNG + WAV 自定义小动物指南":
+    - generic: JSON + PNG + WAV 自定义小动物指南
+  - button "新增养殖动物":
+    - generic: 新增养殖动物
+  - button "未命名文档":
+    - generic: 未命名文档
+  - button "未命名文档":
+    - generic: 未命名文档
+- generic: 用户822241的组织
+- generic: Yakumo Yukari
+- generic: 未命名文档
+- button:
+- generic: 已经保存到云端
+- button "分享":
+  - generic: 分享
+- button "编辑":
+  - generic: 编辑
+- button:
+- button:
+- button:
+- generic: 添加图标
+- generic: 添加封面
+- heading "请输入标题 请输入标题" [level=1]:
+  - text: 请输入标题
+  - text: 请输入标题
+- generic: Yakumo Yukari
+- generic: 今天修改
+- generic: 评论（0）
+- button:
+- generic: 真诚点赞，手留余香
+- generic: 输入评论
+- button:
+- menu:
+  - menuitem "上传日志":
+    - generic: 上传日志
+  - menuitem "联系客服":
+    - generic: 联系客服
+  - menuitem "功能更新":
+    - generic: 功能更新
+  - menuitem "帮助中心":
+    - generic: 帮助中心
+  - menuitem "效率指南":
+    - generic: 效率指南
+- textbox
+- generic: 加载中...
+- textbox
+- textbox
+- iframe
+- iframe
+- generic: 附件
+- generic: 加粗
+- generic: 清除格式
+- generic: 评论
+- generic: 下拉列表
+- generic: 筛选
+- generic: 查找和替换
+- generic: 更多
+- generic: 默认字体
+- generic: "10"
+- generic: 格式刷（双击连续使用）
+- generic: 常规
+- generic: 冻结
+- generic: 全屏
+- generic: 斜体
+- generic: 链接
+- generic: 复制选区链接
+- generic: 合并单元格
+- generic: 删除线
+- generic: 下划线

@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	claud	anim_npc_claud_idle_[0~5]
+帧动画（对话）	6	talk	claud	anim_npc_claud_talk_[0~5]
+帧动画（移动）	8	walk	claud	anim_npc_claud_walk_[0~7]
+图标（日历）	1		claud	icon_calendar_claud
+图标（图鉴）	1		claud	icon_document_claud
+详情图（图鉴）	1		claud	preview_document_claud

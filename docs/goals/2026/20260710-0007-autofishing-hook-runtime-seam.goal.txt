@@ -1,0 +1,2 @@
+/goal
+实现 docs/goals/2026/20260710-0007-autofishing-hook-runtime-seam.md：先跑一条鱼的第五存档 Unity Mono 门禁，不跑 soak；随后修复 UseFishRod/accessor telemetry/session Release 生命周期，新增 internal IFishingHookRuntime 与 FishingPrimitiveHookRuntime，切断第一方对 legacy service 的创建，并将旧实现重命名移动到 Compatibility。保持公开 API、玩家功能、共享 Harmony owner 和唯一 Gameplay toggle 不变。

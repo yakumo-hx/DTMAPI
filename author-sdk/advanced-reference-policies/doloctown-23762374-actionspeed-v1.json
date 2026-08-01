@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "policyId": "doloctown-23762374-actionspeed-v1",
+  "policyVersion": 1,
+  "gameBuildId": "23762374",
+  "gameAssemblyRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+  "gameAssemblySha256": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404",
+  "references": [
+    {
+      "gameRelativePath": "BepInEx/core/0Harmony.dll",
+      "assemblyName": "0Harmony",
+      "length": 204800,
+      "sha256": "1A21CC03424FC82C3DD1346905D16494536B9595AE4162228D99FB7C285C1031",
+      "copyLocal": false
+    },
+    {
+      "gameRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "assemblyName": "Assembly-CSharp",
+      "length": 5993984,
+      "sha256": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404",
+      "copyLocal": false
+    }
+  ]
+}

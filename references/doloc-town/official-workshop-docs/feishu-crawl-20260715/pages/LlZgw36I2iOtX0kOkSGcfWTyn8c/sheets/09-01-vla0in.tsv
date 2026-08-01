@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	orlando	anim_npc_orlando_idle_[0~5]
+帧动画（对话）	6	talk	orlando	anim_npc_orlando_talk_[0~5]
+帧动画（移动）	8	walk	orlando	anim_npc_orlando_walk_[0~7]
+图标（日历）	1		orlando	icon_calendar_orlando
+图标（图鉴）	1		orlando	icon_document_orlando
+详情图（图鉴）	1		orlando	preview_document_orlando

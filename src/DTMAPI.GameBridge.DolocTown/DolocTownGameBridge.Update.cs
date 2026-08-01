@@ -4,9 +4,8 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         public void Update()
         {
-            RefreshUiContext();
+            ProcessPendingOfficialModUiCommit();
             UpdateRuntimeAutomation();
-            SmokeUpdate();
         }
     }
 }

@@ -1,0 +1,116 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/FOMvwdhipi0ojgkt2eQcU8dVnib",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/FOMvwdhipi0ojgkt2eQcU8dVnib",
+  "token": "FOMvwdhipi0ojgkt2eQcU8dVnib",
+  "title": "03 进阶内容模组",
+  "document_title": "03 进阶内容模组",
+  "source_modified_label": "4月14日修改",
+  "status_code": 200,
+  "elapsed_seconds": 9.734,
+  "block_count": 13,
+  "blocks_by_type": {
+    "heading1": 2,
+    "bullet": 10,
+    "text": 1
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1220,
+  "links": [
+    {
+      "text": "01 新增作物（种子+果实）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/LO6uwLfSXilCHLkAymLclh1jncd",
+      "kind": "official-wiki",
+      "target_token": "LO6uwLfSXilCHLkAymLclh1jncd"
+    },
+    {
+      "text": "02 新增鱼",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/O64fw47MJiC2qXk8A4fc4RsInyf",
+      "kind": "official-wiki",
+      "target_token": "O64fw47MJiC2qXk8A4fc4RsInyf"
+    },
+    {
+      "text": "03 新增料理",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "kind": "official-wiki",
+      "target_token": "KaKyw74DnibQhmkjPlMcJgZXnBf"
+    },
+    {
+      "text": "04 新增资源",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "kind": "official-wiki",
+      "target_token": "DSwGwUzfki0gkPk1k6dcio6bnpb"
+    },
+    {
+      "text": "05 新增植被",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "kind": "official-wiki",
+      "target_token": "NwWvwfh7fin9WOk5vVQcyDSGnpb"
+    },
+    {
+      "text": "06 综合案例一（新增作物）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb",
+      "kind": "official-wiki",
+      "target_token": "V3mywFHTtiE7kfk9RUVcrrednLb"
+    },
+    {
+      "text": "07 综合案例二（新增鱼)",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "kind": "official-wiki",
+      "target_token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd"
+    },
+    {
+      "text": "08 综合案例三（新增资源）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+      "kind": "official-wiki",
+      "target_token": "U75Lwhq4qi4prxkti3zcffplnhf"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/DSwGwUzfki0gkPk1k6dcio6bnpb",
+    "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+    "https://ka7deoo0opr.feishu.cn/wiki/KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+    "https://ka7deoo0opr.feishu.cn/wiki/LO6uwLfSXilCHLkAymLclh1jncd",
+    "https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb",
+    "https://ka7deoo0opr.feishu.cn/wiki/O64fw47MJiC2qXk8A4fc4RsInyf",
+    "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+    "https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/source.html",
+    "rendered_html": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/rendered.html",
+    "text": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/content.txt",
+    "markdown": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/content.md",
+    "metadata": "pages/FOMvwdhipi0ojgkt2eQcU8dVnib/page.json"
+  }
+}

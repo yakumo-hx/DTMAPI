@@ -1,0 +1,23 @@
+[
+  {
+    "id": "fish_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  },
+  {
+    "id": "meat_fish_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  },
+  {
+    "id": "meat_vegetable_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  }
+]

@@ -1,16 +1,16 @@
-# DTMAPI 0.4.0 Custom Entity Stable-Candidate Contracts
+# DTMAPI 0.4.0 Custom Entity Frozen Compatibility Contracts
 
 Status:
 
-- `StableCandidate` for definition and registry contracts.
+- `Experimental / Frozen` for the retained definition and registry ABI.
 - `Experimental (blocked)` for native runtime creation.
 
-This file name is historical. The current stability contract is registry-first:
-ordinary mods may use the definition, validation, query, snapshot, and status
-surfaces as candidate-stable contracts, but must not depend on runtime creation
-verbs until native GameBridge adapters are proven in game.
+This file name is historical. The current C# contract is retained for ABI
+compatibility only. Existing binaries may continue to resolve the definition,
+validation, query, snapshot, and status surfaces, but new mods must not adopt
+them and no native CustomEntity host is admitted.
 
-## Stable-Candidate Surfaces
+## Frozen Registry Compatibility Surfaces
 
 DTMAPI 0.4.0 adds four author-facing APIs in `DTMAPI.Abstractions`:
 
@@ -21,11 +21,11 @@ DTMAPI 0.4.0 adds four author-facing APIs in `DTMAPI.Abstractions`:
 
 The contracts use stable DTMAPI DTOs and handles only. They do not expose raw Doloc Town, Unity, Harmony, BepInEx, or decompiled types.
 
-These APIs are `StableCandidate` for definition and registry work. They are not
-`Stable` until at least two real mods use them successfully, game evidence
-covers the relevant paths, visual/UI behavior is manually reviewed when
-applicable, and the regression matrix records the main success and failure
-paths.
+These APIs are `Experimental` with `Frozen` disposition. Their signatures and
+Core registry provider remain available for existing binaries, with a
+non-error source warning. They are not an adoption or promotion path. Any
+future custom-entity public API requires a fresh native-owner and consumer
+review rather than expansion of these interfaces.
 
 ## Shared Contract Rules
 
@@ -59,7 +59,8 @@ CustomAttacks.RegistryContract
 CustomDrones.RegistryContract
 ```
 
-Each family status remains `configured-blocked` with detail `StableCandidate registry contract; runtime creation remains blocked`.
+Each family status remains `configured-blocked` with detail
+`Experimental/Frozen registry compatibility contract; runtime creation remains blocked`.
 
 Ordinary mods must not depend on animal or monster `RequestSpawn`, attack
 `SpawnProjectile` or `ExecuteAttack`, drone `RequestSummon`, `Equip`, or

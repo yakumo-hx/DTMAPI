@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.local/contracts/batch6-autofishing-pre-migration-baseline.schema.json",
+  "title": "Batch 6 AutoFishing pre-migration baseline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptKind",
+    "baselineCommit",
+    "baselineTree",
+    "baselineCommittedAtUtc",
+    "capturedAtUtc",
+    "sourceState",
+    "mandatoryRoots",
+    "reproduceCommand",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "receiptKind": { "const": "batch6-autofishing-pre-migration-baseline" },
+    "baselineCommit": { "const": "9fb8d87d5c03916f2ca083ffb235b293aea58d61" },
+    "baselineTree": { "const": "cd7090868ef3f979bd86b81c28238da3b1114202" },
+    "baselineCommittedAtUtc": { "const": "2026-07-20T15:05:34Z" },
+    "capturedAtUtc": { "type": "string", "format": "date-time" },
+    "sourceState": { "const": "immutable-clean-post-g2-closure-commit" },
+    "mandatoryRoots": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        { "$ref": "#/$defs/abstractions" },
+        { "$ref": "#/$defs/core" },
+        { "$ref": "#/$defs/bootstrap" },
+        { "$ref": "#/$defs/gameBridge" },
+        { "$ref": "#/$defs/modConfigMenu" }
+      ],
+      "items": false
+    },
+    "reproduceCommand": { "type": "string", "minLength": 1 },
+    "notes": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "tree"],
+      "properties": {
+        "path": { "type": "string" },
+        "tree": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "abstractions": {
+      "allOf": [
+        { "$ref": "#/$defs/root" },
+        { "properties": { "path": { "const": "src/DTMAPI.Abstractions" }, "tree": { "const": "57cc8d874b662888405106ad2bae39e736e97ecb" } } }
+      ]
+    },
+    "core": {
+      "allOf": [
+        { "$ref": "#/$defs/root" },
+        { "properties": { "path": { "const": "src/DTMAPI.Core" }, "tree": { "const": "fb3fdf2f40d4a8420271327e8cf10490a4192ed1" } } }
+      ]
+    },
+    "bootstrap": {
+      "allOf": [
+        { "$ref": "#/$defs/root" },
+        { "properties": { "path": { "const": "src/DTMAPI.BepInExBootstrap" }, "tree": { "const": "c0317d903672dd64e69f37a719009daed6f540e7" } } }
+      ]
+    },
+    "gameBridge": {
+      "allOf": [
+        { "$ref": "#/$defs/root" },
+        { "properties": { "path": { "const": "src/DTMAPI.GameBridge.DolocTown" }, "tree": { "const": "3532484f9d94a87ff4b6f5c074902e686b67c386" } } }
+      ]
+    },
+    "modConfigMenu": {
+      "allOf": [
+        { "$ref": "#/$defs/root" },
+        { "properties": { "path": { "const": "src/DTMAPI.ModConfigMenu" }, "tree": { "const": "30d474a8a19c458eed3dac30599a6ffeeec43a4e" } } }
+      ]
+    }
+  }
+}

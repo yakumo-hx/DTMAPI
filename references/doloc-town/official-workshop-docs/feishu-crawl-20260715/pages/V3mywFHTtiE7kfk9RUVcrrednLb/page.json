@@ -1,0 +1,230 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb",
+  "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+  "title": "06 综合案例一（新增作物）",
+  "document_title": "06 综合案例一（新增作物）",
+  "source_modified_label": "5月22日修改",
+  "status_code": 200,
+  "elapsed_seconds": 14.062,
+  "block_count": 52,
+  "blocks_by_type": {
+    "heading1": 3,
+    "bullet": 26,
+    "heading2": 11,
+    "code": 9,
+    "ordered": 1,
+    "image": 1,
+    "text": 1
+  },
+  "scroll_samples": 13,
+  "scroll_height_max": 10143,
+  "links": [
+    {
+      "text": "01 新增作物（种子+果实）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/LO6uwLfSXilCHLkAymLclh1jncd",
+      "kind": "official-wiki",
+      "target_token": "LO6uwLfSXilCHLkAymLclh1jncd"
+    },
+    {
+      "text": "11 ID对照表（料理）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+      "kind": "official-wiki",
+      "target_token": "MZXHwVGgsieTCdkyhpycIEDnnqb"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/LO6uwLfSXilCHLkAymLclh1jncd",
+    "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "51",
+      "image_tokens": [
+        "LxX0bfqC8o5Gumx20TfcwWgLndh"
+      ],
+      "rendered_path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/images/rendered-01-51.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "24",
+      "record_id": "XQsKdNLIIoUNVBxUpUuce7CInFd",
+      "heading": "3.mod_tbmodstoreextension.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 85,
+      "line_count": 85,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/01-code.jsonc",
+      "bytes": 3175,
+      "sha256": "0e1e383be841e9669624f0910529d9b13843b10854550a2112ab043a8d12b203"
+    },
+    {
+      "index": 2,
+      "block_id": "27",
+      "record_id": "KoMidpH0nolXYOxjmU3czL7Hngf",
+      "heading": "4.plant_tbcropgenematrix.json",
+      "caption": "作物基因信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 91,
+      "line_count": 91,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/02-code.jsonc",
+      "bytes": 1573,
+      "sha256": "57c2346119b79ddb2d2555bd8a4cdfab7cc7186daeeae57f8e057c3ac5567e1d"
+    },
+    {
+      "index": 3,
+      "block_id": "30",
+      "record_id": "Wk2IdwpOEoBxLDxwHpncSEjhnJd",
+      "heading": "5.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 74,
+      "line_count": 74,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/03-code.jsonc",
+      "bytes": 2669,
+      "sha256": "0450d889953392393f4096b0f1b02f0e84fded2385888814395e59d5233b7058"
+    },
+    {
+      "index": 4,
+      "block_id": "33",
+      "record_id": "Hq5IdCvgHoKl8Dx61QMc4fh9nId",
+      "heading": "6.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/04-code.jsonc",
+      "bytes": 484,
+      "sha256": "1e5278ae0bd15ccd45a4ebaf7ea95274b12df3bf77494b7fbb280e52a61e9ef4"
+    },
+    {
+      "index": 5,
+      "block_id": "36",
+      "record_id": "YcmVdpUbUotxkoxIsJzcliUYneh",
+      "heading": "7.archives_tbplantdocument.json",
+      "caption": "档案信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/05-code.jsonc",
+      "bytes": 665,
+      "sha256": "377aec80bb24404226a1cf32850f65516007fbcadfce173dacb0bd97a10b8f14"
+    },
+    {
+      "index": 6,
+      "block_id": "39",
+      "record_id": "H4FDdHk0Lok0MdxvGsncnhhGnje",
+      "heading": "8.mod_tbmodingredientgroupextension.json",
+      "caption": "食材信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/06-code.jsonc",
+      "bytes": 319,
+      "sha256": "b2b8a2fa5f0b19b3054aed6f0119cc7ec234b89f056754cfa569d5b10b6c1079"
+    },
+    {
+      "index": 7,
+      "block_id": "43",
+      "record_id": "Y9NGdfzP3omeGIxUVp1cweyDnZf",
+      "heading": "9.fishing_tbfishfeed.json",
+      "caption": "渔业喂食信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 6,
+      "line_count": 6,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/07-code.jsonc",
+      "bytes": 72,
+      "sha256": "2350ee7a0d12f633cf4afb0fd10093ef2957b3f98dbdbd2ae6c4966574f74b73"
+    },
+    {
+      "index": 8,
+      "block_id": "46",
+      "record_id": "O1Y8dMQGUoo0iyxUmfRcQx9Pn3f",
+      "heading": "10.animal_tbfeed.json",
+      "caption": "畜牧喂食信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 6,
+      "line_count": 6,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/08-code.jsonc",
+      "bytes": 70,
+      "sha256": "7a78e7e3104d59afd180135d12bb7877d846009281dad2d50e77c3211b5da6dd"
+    },
+    {
+      "index": 9,
+      "block_id": "49",
+      "record_id": "XxETdN2fXoYyfZxYy0JcfPJHnuc",
+      "heading": "11.animal_tbhusbandryenergy.json",
+      "caption": "放牧喂食信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 7,
+      "line_count": 7,
+      "line_complete": true,
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/09-code.jsonc",
+      "bytes": 122,
+      "sha256": "3a122b2b074b9649c3c893020c62b53ba3b2a09764e294fe7dedfea956d6605b"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/source.html",
+    "rendered_html": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/rendered.html",
+    "text": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/content.txt",
+    "markdown": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/content.md",
+    "metadata": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/page.json"
+  }
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "fish_can", //食谱配方ID
+    "title": {
+      "key": "",
+      "text": ""
+    },
+    "unlockable": true, //是否默认解锁
+    "cost_time": 2, //耗时（288=一天）
+    "output_item_by_thresholds": [
+      {
+        "price_threshold": 0, //原材料价格阈值（填0不动）
+        "ranged_item": {
+          "item_name": "fish_can", //产出道具ID
+          "min_count": 1, //最小产出数量
+          "max_count": 1 //最大产出数量
+        }
+      },
+      {
+        "price_threshold": 250, //原材料价格阈值（超过这个值则产出美味版）
+        "ranged_item": {
+          "item_name": "fish_can_plus", //产出道具ID
+          "min_count": 1, //最小产出数量
+          "max_count": 1 //最大产出数量
+        }
+      }
+    ],
+    "tech_point": 2, //增加科技点数
+    //以下为具体配方
+    "input_class": [
+      {
+        "array": [
+          "canned_fish_class" // 食材类ID
+        ]
+      },
+      {
+        "array": [
+          "can_class" // 食材类ID
+        ]
+      },
+      {
+        "array": [
+          "canned_fish_class", // 食材类ID
+          "can_class",
+          "none"
+        ]
+      },
+      {
+        "array": [
+          "canned_fish_class", // 食材类ID
+          "can_class",
+          "none"
+        ]
+      }
+    ]
+  }
+]

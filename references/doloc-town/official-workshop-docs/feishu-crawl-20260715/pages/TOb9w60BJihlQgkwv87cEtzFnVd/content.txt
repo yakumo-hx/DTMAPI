@@ -1,0 +1,210 @@
+12 ID对照表（掉落库）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd
+
+Source modified label: 6月12日修改
+
+1.资源掉落库ID对照表
+
+•采集资源时，必然触发对应的掉落库。
+
+[Embedded sheet: KAfBYg]
+
+资源	掉落库ID	最小掉落数量	最大掉落数量
+资源
+生活垃圾	waste_garbage_drop	1	2
+小机械残骸	machine_bing_drop	2	2
+纸盒	paper_box_drop	2	2
+种子盒	seed_box_drop	12	12
+废品堆	large_machine_bing_drop	3	4
+废弃置物架	waste_furniture_drop	4	6
+仿生蜂巢	bee_drone_drop	5	7
+车辆残骸	waste_car_drop	7	9
+沙堆	sand_drop	1	1
+土堆	soil_drop	2	2
+岩石堆	stone_drop	3	5
+大岩石堆	big_stone_drop	7	9
+煤矿	coal_mine_drop	3	4
+铜矿	copper_mine_drop	5	6
+铁矿	iron_mine_drop	5	6
+湿地土堆	soil_drop	2	2
+金矿	gold_mine_drop	3	4
+杂草_0	weeds_drop_lv1	0	1
+杂草_1	weeds_drop_lv1	1	1
+杂草_2	weeds_drop_lv1	1	2
+杂草_3	weeds_drop_lv2	2	2
+野花_0	weeds_drop_lv1	0	1
+野花_1	weeds_drop_lv1	1	1
+野花_2	weeds_drop_lv1	1	2
+野花_3	weeds_drop_lv2	2	2
+芦苇_0	weeds_drop_lv1	0	1
+芦苇_1	weeds_drop_lv1	1	1
+芦苇_2	weeds_drop_lv2	2	2
+芦苇_3	weeds_drop_lv2	3	4
+苜蓿草_0	alfalfa_drop_lv1	1	1
+苜蓿草_1	alfalfa_drop_lv1	1	2
+苜蓿草_2	alfalfa_drop_lv2	1	2
+野荆棘_0	thorns_drop_lv1	0	1
+野荆棘_1	thorns_drop_lv1	1	1
+野荆棘_2	thorns_drop_lv2	1	2
+野荆棘_3	thorns_drop_lv3	2	3
+树木_0	tree_drop_lv1	1	1
+树木_1	tree_drop_lv2	1	2
+树木_2	tree_drop_lv2	3	4
+树木_3	tree_drop_lv3	6	8
+树木_4	tree_drop_lv3	9	12
+岩树_0	stone_tree_drop_lv0	1	1
+岩树_1	stone_tree_drop_lv1	1	1
+岩树_2	stone_tree_drop_lv1	1	2
+岩树_3	stone_tree_drop_lv2	2	3
+岩树_4	stone_tree_drop_lv2	3	4
+岩树_5	stone_tree_drop_lv3	5	6
+岩树_6	stone_tree_drop_lv3	7	8
+岩树桩	stone_tree_drop_lv1	5	6
+竹子_0	bamboo_drop_seed	1	1
+竹子_1	bamboo_drop_lv2	1	1
+竹子_2	bamboo_drop_lv2	2	4
+竹子_3	bamboo_drop_lv2	3	6
+竹子_4	bamboo_drop_lv2	5	8
+红树_0	mangrove_drop_lv0	1	1
+红树_1	mangrove_drop_lv1	1	1
+红树_2	mangrove_drop_lv1	2	3
+红树_3	mangrove_drop_lv1	4	6
+红树_4	mangrove_drop_lv1	7	9
+红树_5	mangrove_drop_lv1	11	13
+植被（可采集）
+蓝莓丛	berry_drop	1	2
+磷虫草	psinensis_drop	1	2
+endyam	endyam	1	1
+succulent	succulent	1	1
+植被（纯装饰）
+dandelion	weeds_drop_lv1	0	1
+glow_cattail_s	weeds_drop_lv1	0	1
+glow_cattail_l	weeds_drop_lv1	0	1
+fluor_grass_s	weeds_drop_lv1	0	1
+fluor_grass_l	weeds_drop_lv1	0	1
+tree_root	weeds_drop_lv1	0	1
+water_grass	weeds_drop_lv1	0	1
+cave_grass	weeds_drop_lv1	0	1
+lotus_leaf	weeds_drop_lv1	0	1
+lotus_flower	weeds_drop_lv1	0	1
+cave_mushroom	weeds_drop_lv1	0	1
+fresh_stem	weeds_drop_lv1	0	1
+hay_stem	weeds_drop_lv1	0	1
+moss_tree	weeds_drop_lv1	0	1
+
+2.怪物掉落库ID对照表
+
+•击败怪物时，必然触发对应的掉落库。
+
+[Embedded sheet: r0mctW]
+
+怪物	掉落库ID	最小掉落数量	最大掉落数量
+变形虫	amoeba_drop	1	1
+小飞虫	fwb_drone_drop	1	1
+仿生黄蜂	bee_drone_drop	1	1
+33号无人机	normal_drone_drop	1	2
+熊虫无人机	tardigrade_drone_drop	1	2
+运种机	seedcarrier_drone_drop	5	7
+食人花	chomper_drop	2	3
+湿地变形虫	amoeba_wet_land_drop	1	1
+66号	drone_ex_drop	1	2
+轰炸机	bomber_drop	1	2
+球形无人机	ball_drone_drop	1	2
+重型飞船	aircraft_drop	4	6
+真菌	fungus_drop	1	1
+年兽	nian_drop	6	6
+
+3.小鸟掉落库ID对照表
+
+•经过小鸟时，有10%概率触发对应的掉落库。
+
+[Embedded sheet: 86gEkw]
+
+小鸟	掉落库ID	最小掉落数量	最大掉落数量
+雨季小鸟	bird_drop_rainy_season	1	1
+旱季小鸟	bird_drop_dry_season	1	1
+
+4.畜牧掉落库ID对照表
+
+•采集小动物畜牧产出时，必然触发对应的掉落库。
+
+[Embedded sheet: 6hRsFD]
+
+小动物	掉落库ID	最小掉落数量	最大掉落数量
+立尾雉	chicken_produce	1	1
+角羊驼	goat_produce	1	1
+沼泽兽	marsh_pangolin_produce	1	1
+变形蜜虫	slime_produce	1	1
+
+5.渔业掉落库ID对照表
+
+•采集鱼缸产出时，必然触发对应的掉落库。
+
+[Embedded sheet: rDqx9o]
+
+鱼	掉落库ID	最小掉落数量	最大掉落数量
+淡水鱼
+鲤鱼	carp_produce	1	1
+锦鲤	koi_produce	1	1
+虹鳟鱼	rainbow_trout_produce	1	1
+牙鱼	hoplias_produce	1	1
+鲶鱼	catfish_produce	1	1
+草鱼	grass_carp_produce	1	1
+水生变形虫	waste_garbage_drop	1	1
+鲟鱼	sturgeon_produce	1	1
+泥鳅	loach_produce	1	1
+田螺	snail_produce	2	2
+闪亮黄金鱼	golden_fish_produce	1	1
+黄鳝	ricefield_eel_produce	1	1
+狗鱼	pike_produce	1	1
+海水鱼
+沙丁鱼	sardine_produce	1	1
+鲈鱼	seabass_produce	1	1
+鳕鱼	codfish_produce	1	1
+金枪鱼	tuna_produce	1	1
+鳗鱼	eel_produce	1	1
+荧光鳗鱼	fluorescent_eel_produce	1	1
+拟态骨架鱼	skeleton_fish_produce	1	1
+特殊鱼
+虾	shrimp_produce	2	2
+鲑鱼	salmon_produce	1	1
+亚种鱼
+黑夜骨架鱼	nightbone_fish_produce	1	1
+银光鳗	silverlight_eel_produce	1	1
+大马哈鱼	humpback_salmon_produce	1	1
+红鳕鱼	crimson_cod_produce	1	1
+蓝狗鱼	azure_pike_produce	1	1
+黑背沙丁鱼	blackback_sardine_produce	1	1
+帝王金枪鱼	monarch_tuna_produce	1	1
+草叶蛞蝓	leaf_slug_produce	1	1
+雾隐鳝	mist_eel_produce	1	1
+恐鱼	terror_fish_produce	1	1
+渊潜灯笼鲈	abyss_lantern_seabass_produce	1	1
+
+6.生日礼物掉落库ID对照表
+
+•玩家生日当天在酒馆的庆生动画中，必然触发对应的掉落库。
+
+[Embedded sheet: x6h4aj]
+
+NPC	掉落库ID	最小掉落数量	最大掉落数量
+澳柯玛	birthday_gift_alchemy	1	1
+克劳德	birthday_gift_claud	1	1
+达达	birthday_gift_dada	1	1
+卡莎	birthday_gift_kasia	1	1
+朗克	birthday_gift_lank	1	1
+梅林	birthday_gift_merlin	1	1
+墨翟	birthday_gift_mody	1	1
+奥兰多	birthday_gift_orlando	1	1
+萨科	birthday_gift_sacco	1	1
+
+7.垃圾桶掉落库ID对照表
+
+•在翻垃圾桶时，必然触发对应的掉落库。
+
+[Embedded sheet: grn19r]
+
+垃圾桶	掉落库ID	最小掉落数量	最大掉落数量
+小垃圾桶	trash_can_small_drop	1	1
+大垃圾箱	trash_can_big_drop	4	6

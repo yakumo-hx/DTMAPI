@@ -1,0 +1,16 @@
+名称	帽子ID	命名格式
+帕依雅的头饰
+帧动画（角色默认）	hat0	anim_hat_hat0_idle_0
+帧动画（角色攀爬）	hat0	anim_hat_hat0_climb_0
+图标（道具）	hat0	icon_item_hat0
+场景贴图（展示台）	hat0	preview_hat_hat0
+墨镜
+帧动画（角色默认）	hat1	anim_hat_hat1_idle_0
+帧动画（角色攀爬）	hat1	anim_hat_hat1_climb_0
+图标（道具）	hat1	icon_item_hat1
+场景贴图（展示台）	hat1	preview_hat_hat1
+丸子造型
+帧动画（角色默认）	hat2	anim_hat_hat2_idle_0
+帧动画（角色攀爬）	hat2	anim_hat_hat2_climb_0
+图标（道具）	hat2	icon_item_hat2
+场景贴图（展示台）	hat2	preview_hat_hat2

@@ -1,0 +1,39 @@
+[
+ //以下为添加食材类：罐头鱼类
+  {
+    "id": "canned_fish_class", //食材类ID
+    "title": {
+      "key": "ingredient_canned_fish_class_title", //食材类标题ID，格式为：ingredient_[食材类ID]_title
+      "text": "罐头鱼类"  //食材类标题文本
+    },
+    "icon": {
+      "url": "icon_item_fish_can" //食材类图标，同道具图标
+    },
+    "items": [
+      "fish0",  //具体食材的道具ID
+      "fish1",
+      "sardine",
+      "codfish",
+      "eel",
+      "sturgeon",
+      "seabass",
+      "crimson_cod",
+      "blackback_sardine",
+      "monarch_tuna"
+    ]
+  },
+  //以下为添加食材类：纯罐头类
+  {
+    "id": "can_class", //食材类ID
+    "title": {
+      "key": "",
+      "text": ""
+    },
+    "icon": {
+      "url": ""
+    },
+    "items": [
+      "can"  //具体食材的道具ID
+    ]
+  }
+]

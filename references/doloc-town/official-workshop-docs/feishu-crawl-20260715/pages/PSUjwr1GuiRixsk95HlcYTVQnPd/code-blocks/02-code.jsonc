@@ -1,0 +1,30 @@
+[
+  {
+    "id": "decoration0", //设备ID，同道具ID
+    "menu_type": 2, //设备工作台里的菜单类型(0农业，1工业，2生活，3养殖)
+    "scene_asset": {
+      "url": "sprite_equipment_decoration0"  //设备场景贴图，格式为：sprite_equipment_[设备ID]
+    },
+    "flip_asset": {
+      "url": "sprite_equipment_decoration0_flip" //设备场景贴图（翻转），格式为：sprite_equipment_[设备ID]_flip
+    },
+    "animator_asset": {
+      "url": "" //仅用于风能发电机，无特殊情况为空
+    },
+    "env_type": 0, //环境适配类型（0通用，1地面）
+    "fit_type": 0, //地形适配类型（0通用，1室内，2室外）
+    "cover_size": {
+      "x": 2, //占地格子数（宽）
+      "y": 3 //占地格子数（高）
+    },
+    "base_equipment": "", //前置设备，无特殊情况为空
+    "display_lock": true, //未解锁时是否显示(设备工作台)
+    "show_complete_info_lock": false, //未解锁时是否显示完整信息(设备工作台)
+    "function": {
+      "$type": "EquipmentFuncDecorator" //设备类型，EquipmentFuncDecorator为装饰设备
+    },
+    "processors": [], //天气数据，留空
+    "fit_slot_datas": [],  //贴纸数据，留空
+    "contained_slot_datas": [] //贴纸宿主数据，留空
+  }
+]

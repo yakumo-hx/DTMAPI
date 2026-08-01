@@ -1,0 +1,14 @@
+池塘名称	池塘ID	具体场景
+基础淡水池	freshwater_default	山脊谷地、东部池塘
+基础海洋池	marine_default	码头中央
+基础浅滩池	shoal_default	小林地、河谷哨站、河谷矿业遗址
+林地深处池	freshwater_forest	林地深处
+码头栈桥下	marine_wharfbridge	码头栈桥下
+基础污染池	polluted_water_default	河谷垃圾山
+基础湿地池-海洋	wetland_seadefault	湿地-深水
+基础湿地池-浅滩	wetland_default	湿地-浅滩
+湿地养殖场	wetland_aquafarm	湿地-养殖场
+湿地洞穴	wetland_cave	湿地-洞穴
+湿地污水池	wetland_wastewater	湿地-污水池
+湿地睡莲地	wetland_lotus	湿地-睡莲地
+湿地洞穴（隐藏）	wetland_hide	湿地-洞穴（隐藏）

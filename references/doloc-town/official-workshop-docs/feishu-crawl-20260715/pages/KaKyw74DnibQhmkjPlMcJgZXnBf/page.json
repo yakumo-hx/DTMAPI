@@ -1,0 +1,290 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+  "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+  "title": "03 新增料理",
+  "document_title": "03 新增料理",
+  "source_modified_label": "6月21日修改",
+  "status_code": 200,
+  "elapsed_seconds": 22.157,
+  "block_count": 61,
+  "blocks_by_type": {
+    "heading1": 5,
+    "bullet": 29,
+    "heading2": 2,
+    "heading3": 9,
+    "code": 9,
+    "text": 3,
+    "sheet": 2,
+    "image": 2
+  },
+  "scroll_samples": 14,
+  "scroll_height_max": 10143,
+  "links": [
+    {
+      "text": "04 新增配方",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+      "kind": "official-wiki",
+      "target_token": "VxeWw7ZDjiqFcTk0yLxcnB53n9b"
+    },
+    {
+      "text": "11 ID对照表（料理）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+      "kind": "official-wiki",
+      "target_token": "MZXHwVGgsieTCdkyhpycIEDnnqb"
+    },
+    {
+      "text": "08 ID对照表（配方）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+      "kind": "official-wiki",
+      "target_token": "Vm9YwaBVMiZtvbkf5kIcASronye"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+    "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+    "https://ka7deoo0opr.feishu.cn/wiki/VxeWw7ZDjiqFcTk0yLxcnB53n9b"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "57",
+      "image_tokens": [
+        "D2WQbKlYio5aHQxcXdycuSeVnqc"
+      ],
+      "rendered_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/images/rendered-01-57.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "59",
+      "image_tokens": [
+        "PZl0b5kOQoh6k2xhhypcnhoSn1f"
+      ],
+      "rendered_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/images/rendered-02-59.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "52",
+      "sheet_id": "bTdjQR",
+      "tsv_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/sheets/01-01-btdjqr.tsv",
+      "screenshot_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/sheets/01-01-btdjqr.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 3
+    },
+    {
+      "block_id": "54",
+      "sheet_id": "jpw0Jc",
+      "tsv_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/sheets/02-01-jpw0jc.tsv",
+      "screenshot_path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/sheets/02-01-jpw0jc.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 2
+    }
+  ],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "21",
+      "record_id": "Q9c7dgfU4oKUWYx78ThckcKNn56",
+      "heading": "1.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/01-code.jsonc",
+      "bytes": 1247,
+      "sha256": "6f4216909d21e2a6723b7ecd219fcd679fcfd9ed7ae53ec20d026be2d7dd1475"
+    },
+    {
+      "index": 2,
+      "block_id": "24",
+      "record_id": "I66idovrQoV7nvxd44icatcfnyf",
+      "heading": "1.2item_tbeatingeffect.json",
+      "caption": "食用效果信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 17,
+      "line_count": 17,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/02-code.jsonc",
+      "bytes": 414,
+      "sha256": "5194eaff374ea8ff8724d833e97a96bb5311c2ce06429301e66eb7a54b4940a6"
+    },
+    {
+      "index": 3,
+      "block_id": "28",
+      "record_id": "LFggdqOUdo3ZqQxJw4Tcm7Rfnvb",
+      "heading": "1.3recipe_tbrecipe.json",
+      "caption": "固定配方食谱信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 29,
+      "line_count": 29,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/03-code.jsonc",
+      "bytes": 977,
+      "sha256": "a47cdf9a16c947326005b7e340f4495b84cf0e88ba5d5fb159f3496f96364321"
+    },
+    {
+      "index": 4,
+      "block_id": "31",
+      "record_id": "Zi5Zdu6BJo1tUtx9D7fcHf2KnQd",
+      "heading": "1.4mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 14,
+      "line_count": 14,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/04-code.jsonc",
+      "bytes": 247,
+      "sha256": "599dc9c108500ced58cc1c315ef01a2d89ea1fe6060b0d01c997698cda0043c7"
+    },
+    {
+      "index": 5,
+      "block_id": "36",
+      "record_id": "RXeFduILwoIryrxVNB0cH0m9nob",
+      "heading": "2.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 66,
+      "line_count": 66,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/05-code.jsonc",
+      "bytes": 2606,
+      "sha256": "9ae0ec7deb0fb5675ce1202fb36de9a37adcbfe05855cbf54e2a82695c114d0d"
+    },
+    {
+      "index": 6,
+      "block_id": "39",
+      "record_id": "Kfegdm9w9oQzF8xD3umcfvRpn7g",
+      "heading": "2.2item_tbeatingeffect.json",
+      "caption": "食用效果信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 34,
+      "line_count": 34,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/06-code.jsonc",
+      "bytes": 860,
+      "sha256": "3a7038abf92d732f38731fd9e9f395f7090611c1bc8344a74db8facb9459517d"
+    },
+    {
+      "index": 7,
+      "block_id": "43",
+      "record_id": "JGJhd6e85oI7hkxCTQKchrKXned",
+      "heading": "2.3recipe_tbingredientgroup.json",
+      "caption": "食材类信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 39,
+      "line_count": 39,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/07-code.jsonc",
+      "bytes": 855,
+      "sha256": "9cfb8d2b08332441defca73fedcb30a7a0db3fd67f2efe1d183e85b2858631bb"
+    },
+    {
+      "index": 8,
+      "block_id": "46",
+      "record_id": "X2KcdNuOHoQE1rxIgwwcnOoWnHg",
+      "heading": "2.4recipe_tbdish.json",
+      "caption": "自由烹饪食谱信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 57,
+      "line_count": 57,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/08-code.jsonc",
+      "bytes": 1336,
+      "sha256": "6021e7c8f7048748fc4bdc5a9aa81f24e70b85655b4564a1a4c95d624dd958f6"
+    },
+    {
+      "index": 9,
+      "block_id": "49",
+      "record_id": "MYkSd0kpqowNMLxqPxCc9OO6nKc",
+      "heading": "2.5mod_tbmoddishgroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 14,
+      "line_count": 14,
+      "line_complete": true,
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/09-code.jsonc",
+      "bytes": 241,
+      "sha256": "5220ee34a24be1655f83c63a83928892614e19656301391c75ed5768f6241dc0"
+    }
+  ],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=GRxPsVyXfhbd0MtpN7xcFS65nqb&block_token=block_7628261346299104203_3729710019_9%2Cblock_7628261346299104203_456055280_9%2Cblock_7628261346299104203_3736686489_9&schema_version=9&blockIds=block_7628261346299104203_3729710019_9&blockIds=block_7628261346299104203_456055280_9&blockIds=block_7628261346299104203_3736686489_9",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/raw-api/sheet-api-01-0e5a4ce3948af5f3.json",
+      "bytes": 1846,
+      "sha256": "3cae36915d31ddf86c2c041157667843a8052723b019829ce6996189bbb2c091"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 2975,
+      "sha256": "8bf615c77f7d9dbedad401f6b41eb38b748438162d67668a0e741d5423042567"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 155,
+      "sha256": "d8b0afb447adfb5ec02544b13c951f68247a3419d37d35e31df95943d6356006"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/source.html",
+    "rendered_html": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/rendered.html",
+    "text": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/content.txt",
+    "markdown": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/content.md",
+    "metadata": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/page.json"
+  }
+}

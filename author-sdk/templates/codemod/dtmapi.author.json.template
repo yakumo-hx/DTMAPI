@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "codeModKind": "Strict",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": {{ASSEMBLY_NAME_JSON}},
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  }
+}

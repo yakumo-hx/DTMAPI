@@ -315,7 +315,9 @@ namespace DTMAPI.Abstractions
         void MigrateSaveState(CustomEntitySaveMigrationContext context);
     }
 
-    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.4.0", Notes = "Definition and registry contract only; native runtime creation blocked until Doloc Town adapters are verified.")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.0", Notes = "Registry-only compatibility contract. Native runtime creation remains blocked and no new C# CustomEntity capability will be added through this surface.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for ABI compatibility; do not adopt for new mods. No native CustomEntity host is admitted.")]
+    [Obsolete("The custom-entity C# API is experimental and frozen; no native host is admitted. Do not adopt it for new mods.", false)]
     public interface ICustomAnimalApi
     {
         event EventHandler<CustomAnimalLifecycleEventArgs>? LifecycleChanged;
@@ -331,7 +333,9 @@ namespace DTMAPI.Abstractions
         CustomEntityCapabilityStatus GetStatus(string? ownerUniqueId = null);
     }
 
-    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.4.0", Notes = "Definition and registry contract only; native runtime creation blocked until Doloc Town adapters are verified.")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.0", Notes = "Registry-only compatibility contract. Native runtime creation remains blocked and no new C# CustomEntity capability will be added through this surface.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for ABI compatibility; do not adopt for new mods. No native CustomEntity host is admitted.")]
+    [Obsolete("The custom-entity C# API is experimental and frozen; no native host is admitted. Do not adopt it for new mods.", false)]
     public interface ICustomMonsterApi
     {
         event EventHandler<CustomMonsterLifecycleEventArgs>? LifecycleChanged;
@@ -348,7 +352,9 @@ namespace DTMAPI.Abstractions
         CustomEntityCapabilityStatus GetStatus(string? ownerUniqueId = null);
     }
 
-    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.4.0", Notes = "Definition and registry contract only; native runtime creation blocked until Doloc Town adapters are verified.")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.0", Notes = "Registry-only compatibility contract. Native runtime creation remains blocked and no new C# CustomEntity capability will be added through this surface.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for ABI compatibility; do not adopt for new mods. No native CustomEntity host is admitted.")]
+    [Obsolete("The custom-entity C# API is experimental and frozen; no native host is admitted. Do not adopt it for new mods.", false)]
     public interface ICustomAttackApi
     {
         event EventHandler<CustomAttackLifecycleEventArgs>? LifecycleChanged;
@@ -365,7 +371,9 @@ namespace DTMAPI.Abstractions
         CustomEntityCapabilityStatus GetStatus(string? ownerUniqueId = null);
     }
 
-    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.4.0", Notes = "Definition and registry contract only; native runtime creation blocked until Doloc Town adapters are verified.")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.0", Notes = "Registry-only compatibility contract. Native runtime creation remains blocked and no new C# CustomEntity capability will be added through this surface.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for ABI compatibility; do not adopt for new mods. No native CustomEntity host is admitted.")]
+    [Obsolete("The custom-entity C# API is experimental and frozen; no native host is admitted. Do not adopt it for new mods.", false)]
     public interface ICustomDroneApi
     {
         event EventHandler<CustomDroneLifecycleEventArgs>? LifecycleChanged;

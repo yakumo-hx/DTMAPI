@@ -1,0 +1,34 @@
+[
+  //以下为鱼罐头的食用效果
+  {
+    "id": "fish_can",
+    "sound_event": "PLAY_CHARACTER_EAT",
+    "output_items": [], //使用后生成道具，一般留空
+    "effects": [
+      {
+        "buff": "energy_increase_fixed", //BUFF ID
+        "scale": 120 //BUFF数值（若有）
+      },
+      {
+        "buff": "health_increase_fixed", //BUFF ID
+        "scale": 100 //BUFF数值（若有）
+      }
+    ]
+  },
+  //以下为美味鱼罐头的食用效果
+  {
+    "id": "fish_can_plus",
+    "sound_event": "PLAY_CHARACTER_EAT",
+    "output_items": [], //使用后生成道具，一般留空
+    "effects": [
+      {
+        "buff": "energy_increase_fixed", //BUFF ID
+        "scale": 240 //BUFF数值（若有）
+      },
+      {
+        "buff": "health_increase_fixed", //BUFF ID
+        "scale": 200 //BUFF数值（若有）
+      }
+    ]
+  }
+]

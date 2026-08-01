@@ -1,0 +1,23 @@
+{
+  "mod.name": "DTMAPI自动钓鱼",
+  "config.section.main": "DTMAPI自动钓鱼",
+  "config.status.experimental": "{0} 切换原生自动钓鱼循环。当前状态：{1}。",
+  "config.boundary.current": "默认循环：按设定蓄力抛竿、等待原生咬钩、自动收竿、按原生绿/红/黄条完成真实小游戏、收获结果，然后再次抛竿。立即咬钩、蓄力幅度、跳过小游戏和动画倍率互相独立。",
+  "state.enabled": "已开启",
+  "state.disabled": "已关闭",
+  "state.notEnabled": "未启用",
+  "state.waitingFishing": "等待钓鱼",
+  "state.experimental": "实验阶段",
+  "state.conflict": "按键冲突",
+  "state.hotkeyDisabled": "热键已禁用",
+  "config.toggleKey.name": "切换热键",
+  "config.toggleKey.tooltip": "先点击捕获，再按下下一个按键。重置会恢复 F6；Escape、Backspace 或 Delete 可清除绑定。",
+  "config.castChargeRatio.name": "抛竿蓄力幅度",
+  "config.castChargeRatio.tooltip": "设置为 0（最短距离）到 1（蓄满）。这项设置不改变动画速度。",
+  "config.skipMinigame.name": "跳过小游戏",
+  "config.skipMinigame.tooltip": "把已咬钩结果送入原生无小游戏结果路径；保留原生成功/失败判定。",
+  "config.instantBite.name": "立即咬钩",
+  "config.instantBite.tooltip": "鱼钩入水后跳过原生等待时间，然后收竿进入正常小游戏/结果路径。",
+  "config.fastAnimations.name": "钓鱼动画加速",
+  "config.fastAnimations.tooltip": "一并加速原生后摆/蓄力动画、蓄力计时、鱼钩飞行和收竿阶段；不会改变设定的蓄力幅度。倍率支持 1-4 倍。"
+}

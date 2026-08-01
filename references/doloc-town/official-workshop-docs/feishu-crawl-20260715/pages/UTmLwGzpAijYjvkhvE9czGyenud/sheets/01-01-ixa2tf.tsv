@@ -1,0 +1,51 @@
+资源名称	资源ID	阶段数	场景贴图-命名格式	场景贴图（额外皮肤）-命名格式	图鉴（图标）-命名格式	图鉴（详情）-命名格式
+垃圾
+生活垃圾	drone_bing	1	sprite_resource_drone_bing		icon_document_drone_bing	preview_document_drone_bing
+机械残骸	machine_bing	1	sprite_resource_machine_bing		icon_document_machine_bing	preview_document_machine_bing
+纸盒	paper_box	1	sprite_resource_paper_box		icon_document_paper_box	preview_document_paper_box
+废品堆	large_machine_bing	1	sprite_resource_large_machine_bing		icon_document_large_machine_bing	preview_document_large_machine_bing
+废弃置物架	waste_furniture	1	sprite_resource_waste_furniture		icon_document_waste_furniture	preview_document_waste_furniture
+仿生蜂巢	hive	1	sprite_resource_hive		icon_document_hive	preview_document_hive
+车辆残骸	waste_car	1	sprite_resource_waste_car		icon_document_waste_car	preview_document_waste_car
+矿物
+沙堆	sand	1	sprite_resource_sand		icon_document_sand	preview_document_sand
+土堆	soil	1	sprite_resource_soil		icon_document_soil	preview_document_soil
+湿土堆	soil_wetland	1	sprite_resource_soil_wetland		icon_document_soil_wetland	preview_document_soil_wetland
+岩石堆	stone	1	sprite_resource_stone		icon_document_stone	preview_document_stone
+大岩石堆	big_stone	1	sprite_resource_big_stone		icon_document_big_stone	preview_document_big_stone
+煤矿	coal_mine	1	sprite_resource_coal_mine		icon_document_coal_mine	preview_document_coal_mine
+铜矿	copper_mine	1	sprite_resource_copper_mine		icon_document_copper_mine	preview_document_copper_mine
+铁矿	iron_mine	1	sprite_resource_iron_mine		icon_document_iron_mine	preview_document_iron_mine
+金矿	gold_mine	1	sprite_resource_gold_mine		icon_document_gold_mine	preview_document_gold_mine
+草类
+杂草	weeds	4	sprite_resource_weeds_[0~3]	sprite_resource_weeds_variant0_[0~3]	icon_document_weeds	preview_document_weeds
+野花	flower	4	sprite_resource_flower_[0~3]		icon_document_flower	preview_document_flower
+芦苇	reed	4	sprite_resource_reed_[0~3]		icon_document_reed	preview_document_reed
+苜蓿草	alfalfa	3	sprite_resource_alfalfa_[0~2]		icon_document_alfalfa	preview_document_alfalfa
+野荆棘	thorns	4	sprite_resource_thorns_[0~3]		icon_document_thorns	preview_document_thorns
+树类
+树木	tree	5	sprite_resource_tree_[0~4]	sprite_resource_tree_variant0_[0~4]	icon_document_tree	preview_document_tree
+岩树	stone_tree	7	sprite_resource_stone_tree_[0~6]		icon_document_stone_tree	preview_document_stone_tree
+岩树桩	stone_tree_trunk	1	sprite_resource_stone_tree_trunk		icon_document_stone_tree_trunk	preview_document_stone_tree_trunk
+竹子	bamboo	5	sprite_resource_bamboo_[0~4]		icon_document_bamboo	preview_document_bamboo
+红树	mangrove	6	sprite_resource_mangrove_[0~5]		icon_document_mangrove	preview_document_mangrove
+可采集植被
+蓝莓丛	berry_thicket	2	sprite_resource_berry_thicket_[0~1]		icon_document_berry_thicket	preview_document_berry_thicket
+磷虫草	psinensis	2	sprite_resource_psinensis_[0~1]		icon_document_psinensis	preview_document_psinensis
+末芋	endyam	4	sprite_resource_endyam_[0~3]
+多肉	succulent	4	sprite_resource_succulent_[0~3]
+装饰植被
+蒲公英	dandelion	2	sprite_resource_dandelion_[0~1]
+灯泡香蒲	glow_cattail_s	1	sprite_resource_glow_cattail_s
+灯泡香蒲	glow_cattail_l	1	sprite_resource_glow_cattail_l
+荧光草	fluor_grass_s	1	sprite_resource_fluor_grass_s
+荧光草	fluor_grass_l	1	sprite_resource_fluor_grass_l
+树根	tree_root	3	sprite_resource_tree_root_[0~2]
+水草	water_grass	4	sprite_resource_water_grass_[0~3]
+洞穴植物	cave_grass	5	sprite_resource_cave_grass_[0~4]
+荷叶	lotus_leaf	5	sprite_resource_lotus_leaf_[0~4]
+荷花	lotus_flower	4	sprite_resource_lotus_flower_[0~3]
+洞穴蘑菇	cave_mushroom	4	sprite_resource_cave_mushroom_[0~3]
+茎秆	fresh_stem	6	sprite_resource_fresh_stem_[0~5]
+干枯植物	hay_stem	3	sprite_resource_hay_stem_[0~2]
+苔藓树	moss_tree	3	sprite_resource_moss_tree_[0~2]

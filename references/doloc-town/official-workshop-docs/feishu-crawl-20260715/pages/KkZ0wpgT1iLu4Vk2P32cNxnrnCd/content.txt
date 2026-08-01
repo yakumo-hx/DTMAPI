@@ -1,0 +1,451 @@
+07 综合案例二（新增鱼)
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/KkZ0wpgT1iLu4Vk2P32cNxnrnCd
+
+Source modified label: 5月20日修改
+
+一、整体说明
+
+•在02 新增鱼、03 新增料理（自由烹饪料理）的基础上新增：
+
+◦养殖鱼-道具信息item_tbitem.json、
+
+◦养殖鱼-孵化fishing_tbfarmfish.json
+
+◦养殖鱼-杂交阵型与产出fishing_tbfarmfishformation.json、item_tbitemspawn.json
+
+◦烘干机配方recipe_tbrecipe.json、mod_tbmodrecipegroupextension.json
+
+◦加入食材组mod_tbmodingredientgroupextension.json
+
+◦鱼图鉴fishing_tbfishdocument.json
+
+•配置示例中，标黄的字段为【需要修改的字段】。
+
+二、配置示例及数据结构说明
+
+1.item_tbitem.json
+
+•养殖鱼-道具信息。
+
+[
+// 以下为新增道具 ： 鲮鱼
+  {
+    "id": "fish0", //道具ID
+    "sub_type": "husbandry_fish", //子道具类型，husbandry_fish为鱼类
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": true, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": false, //是否显示在图鉴
+    "source": [
+      "fresh_water"  //获取途径（显示在图鉴）
+    ],
+    "selling_price": 30, //售出价格
+    "buying_price": 60, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fish0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fish0", //道具标题ID，格式为：item_道具ID
+      "text": "鲮鱼" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fish0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "普通的鲮鱼。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunction"  //功能类型，ItemFunction为无功能道具
+    }
+  },
+  // 以下为新增道具 ： 蓝色鲮鱼
+    {
+    "id": "fish1", //道具ID
+    "sub_type": "husbandry_fish", //子道具类型，husbandry_fish为鱼类
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": true, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": false, //是否显示在图鉴
+    "source": [], //获取途径（显示在图鉴）
+    "selling_price": 50, //售出价格
+    "buying_price": 100, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fish1" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fish1", //道具标题ID，格式为：item_道具ID
+      "text": "蓝色鲮鱼" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fish1_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "蓝色的鲮鱼。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunction"  //功能类型，ItemFunction为无功能道具
+    }
+  },
+  //以下为新增道具 鱼罐头
+  {
+    "id": "fish_can", //道具ID
+    "sub_type": "product_farm", //子道具类型，product_farm为农业制品
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": [
+      "processing"  //获取途径（显示在图鉴）
+    ],
+    "selling_price": 100, //售出价格
+    "buying_price": 200, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fish_can" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fish_can", //道具标题ID，格式为：item_道具ID
+      "text": "鱼罐头" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fish_can_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "将鱼肉调味后封存于金属罐中，风味稳定，开罐食用。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionFood", //功能类型，ItemFunctionFood为食物道具
+      "eating_effect": "fish_can"  //食用效果ID
+    }
+  },
+  //以下为新增道具 美味鱼罐头
+    {
+    "id": "fish_can_plus", //道具ID
+    "sub_type": "product_farm", //子道具类型，product_farm为农业制品
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": [
+      "processing"  //获取途径（显示在图鉴）
+    ],
+    "selling_price": 300, //售出价格
+    "buying_price": 600, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fish_can_plus" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fish_can_plus", //道具标题ID，格式为：item_道具ID
+      "text": "美味鱼罐头" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fish_can_plus_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "将鱼肉精心调味后封存于金属罐中，风味优良，开罐食用。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionFood" , //功能类型，ItemFunction为无功能道具
+      "eating_effect": "fish_can"  //食用效果ID
+    }
+  }
+]
+
+2.fishing_tbfish.json
+
+•新增鱼：鲮鱼。
+
+•见02 新增鱼。
+
+3.mod_tbmodfishingpoolextension.json
+
+•将鲮鱼加入池塘基础淡水池、林地深处池、湿地睡莲地。
+
+•见02 新增鱼。
+
+4.item_tbeatingeffect.json
+
+•新增鱼罐头、美味鱼罐头的食用效果。
+
+•见03 新增料理。
+
+5.recipe_tbingredientgroup.json
+
+•定义新的食材类：罐头鱼类、纯罐头类。
+
+•见03 新增料理。
+
+6.recipe_tbdish.json
+
+•新增自由烹饪食谱：1*鱼罐头/美味鱼罐头 = 1*罐头鱼类 + 1* 纯罐头类 （+ 1*罐头鱼类/ 纯罐头类)（+ 1*罐头鱼类/ 纯罐头类)。
+
+•03 新增料理。
+
+7.mod_tbmoddishgroupextension.json
+
+•在烹煮锅、大烹煮锅新增上述食谱配方。
+
+•见03 新增料理。
+
+8.fishing_tbfarmfish.json
+
+•养殖鱼-孵化
+
+[
+    {
+    "id": "fish0",
+    "energy_cost": 1, //食量
+    "metabolism_increase": 2, //代谢速度
+    "incubate_duration": 48, //孵化出鱼卵的时长（288=1天）
+    "grow_duration": 144, //鱼苗长大的时长（288=1天）
+    "produce_spawn_entry": {
+      "spawn_lut": "fish0_produce", //产出物的道具生成表ID
+      "count_range": {
+        "min_count": 1, //最小产出数量
+        "max_count": 1 //最大产出数量
+      }
+    },
+    "tech_point": 5, //增加科技点数
+    "roe_item": "fish_roe" //（三个级别的鱼籽道具：fish_roe、fish_roe_2、fish_roe_3）
+  },
+  {
+    "id": "fish1",
+    "energy_cost": 1, //食量
+    "metabolism_increase": 2, //代谢速度
+    "incubate_duration": 48, //孵化出鱼卵的时长（288=1天）
+    "grow_duration": 144, //鱼苗长大的时长（288=1天）
+    "produce_spawn_entry": {
+      "spawn_lut": "fish1_produce", //产出物的道具生成表ID
+      "count_range": {
+        "min_count": 1, //最小产出数量
+        "max_count": 1 //最大产出数量
+      }
+    },
+    "tech_point": 5, //增加科技点数
+    "roe_item": "fish_roe" //（三个级别的鱼籽道具：fish_roe、fish_roe_2、fish_roe_3）
+  }
+]
+
+9.fishing_tbfarmfishformation.json
+
+•养殖鱼的杂交阵型：3条或以上鲮鱼（fish0），能产出掉落库fish1。
+
+[
+  {
+    "id": "fish1", //阵型ID，同养殖鱼OD
+    "weight": 6,  //阵型权重
+    "formation_output_fish": "fish1", //道具生成表ID
+    "count_range": {
+      "x": 1, //产出最小数量
+      "y": 1 //产出最大数量
+    },
+    //以下为需要满足的阵型要求
+    "formation_conditions": [
+      {
+        "fish_id": "fish0",   //鱼ID
+        "count_range": {
+          "x": 3, //最小要求数量（闭区间，-1为无限制）
+          "y": -1 //最大要求数量（闭区间，-1为无限制）
+        },
+        "index": -1 //填-1，不动
+      }
+    ]
+  }
+]
+
+10.item_tbitemspawn.json
+
+•产出物的道具生成表
+
+[
+  {
+    "id": "fish0_produce", //掉落库ID
+    "spawn_datas": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0,  //生成上限（0则无上限）
+        "item_name": "fish0" //生成道具ID
+      }
+    ]
+  },
+  {
+    "id": "fish1_produce", //掉落库ID
+    "spawn_datas": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "fish1" //生成道具ID
+      }
+    ]
+  }
+]
+
+11.recipe_tbrecipe.json
+
+•新增烘干机配方：
+
+◦2*鱼干（dried_fish_small） =  1*鲮鱼（fish0）
+
+◦4*鱼干（dried_fish_small） =  1*蓝色鲮鱼（fish1）
+
+[
+//以下为鲮鱼的烘干配方
+  {
+    "id": "dried_fish_fish0", //配方ID，一般等同道具ID
+    "default_unlock": false, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 288, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "dried_fish_small", //输出道具的道具ID
+      "min_count": 2, //最小输出数量
+      "max_count": 2 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "fish0", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+    ],
+    "recipe_sub_type": "cook", //配方小类
+    "tech_point": 5, //完成配方增加的科技点数
+    "show_in_handbook": true //配方是否显示在图鉴
+  },
+  //以下为蓝色鲮鱼的烘干配方
+    {
+    "id": "dried_fish_fish1", //配方ID，一般等同道具ID
+    "default_unlock": false, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 288, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "dried_fish_small", //输出道具的道具ID
+      "min_count": 4, //最小输出数量
+      "max_count": 4 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "fish1", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "cook", //配方小类
+    "tech_point": 5, //完成配方增加的科技点数
+    "show_in_handbook": true //配方是否显示在图鉴
+  }
+]
+
+12.mod_tbmodrecipegroupextension.json
+
+•在烘干机中新增上述配方：
+
+[
+  {
+    "id": "air_drying_box", //配方组ID，同设备ID
+    "extra_recipes": [
+      "dried_fish_fish0", //配方ID
+      "dried_fish_fish1" //配方ID
+    ]
+  },
+  {
+    "id": "air_drying_box_big", //配方组ID，同设备ID
+    "extra_recipes": [
+      "dried_fish_fish0", //配方ID
+      "dried_fish_fish1" //配方ID
+    ]
+  }
+]
+
+•配方组ID见08 ID对照表（配方）。
+
+13.mod_tbmodingredientgroupextension.json
+
+•添加鲮鱼、蓝色鲮鱼进食材组。
+
+[
+  {
+    "id": "fish_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  },
+  {
+    "id": "meat_fish_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  },
+  {
+    "id": "meat_vegetable_class", //食材组ID
+    "extra_items": [
+     "fish0", //道具ID
+     "fish1"
+    ]
+  }
+]
+
+•食材组ID见11 ID对照表（料理）。
+
+14.fishing_tbfishdocument.json
+
+•鱼图鉴
+
+[
+  {
+    "id": "fish0", //图鉴ID，等同鱼ID
+    "habitat": {
+      "key": "fish_fish0_habitat", //出末地点ID，格式为：fish_[鱼ID]_habitat
+      "text": "淡水" //出末地点文本
+    },
+    "document_infos": [
+      {
+        "id": "fish0_0", //文档ID，格式为鱼ID_[编号]
+        "document_type": 1, //档案类型，填1不动
+        "value": 0, //档案类型参数，填0不动
+        "description_append": {
+          "key": "document_fish_fish0_0", //追加描述ID，格式为：document_fish_[文档ID]
+          "text": "随处可见的淡水鱼，普普通通，平平无奇。" //追加描述文本
+        }
+      }
+    ],
+    "display": true //是否显示详细信息，填true不动
+  },
+  {
+    "id": "fish1", //图鉴ID，等同鱼ID
+    "habitat": {
+      "key": "fish_fish1_habitat", //出末地点ID，格式为：fish_[鱼ID]_habitat
+      "text": "暂无记录" //出末地点文本
+    },
+    "document_infos": [
+      {
+        "id": "fish1_0", //文档ID，格式为鱼ID_[编号]
+        "document_type": 1, //档案类型，填1不动
+        "value": 0, //档案类型参数，填0不动
+        "description_append": {
+          "key": "document_fish_fish1_0", //追加描述ID，格式为：document_fish_[文档ID]
+          "text": "在普通的鲮鱼群中显得不是那么普通。" //追加描述文本
+        }
+      }
+    ],
+    "display": true //是否显示详细信息，填true不动
+  }
+]
+
+三、参考示例
+
+•新增可钓鱼鲮鱼（fish0）、养殖鱼蓝色鲮鱼（fish1）、鱼罐头（fish_can）、美味鱼罐头（fish_can_plus）、及上述道具的加工配方和图鉴。
+
+•示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\03 进阶内容模组示例\07 综合案例二（新增鱼）

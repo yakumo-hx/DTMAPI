@@ -1,4 +1,3 @@
-using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 
@@ -9,18 +8,29 @@ namespace DTMAPI.GameBridge.DolocTown
     internal sealed class CameraFeature : IGameBridgeFeature
     {
         private readonly DtmApiRuntime runtime;
-        private readonly CameraDiagnosticsService diagnostics;
         private readonly CameraViewService viewService;
         private readonly CameraZoomCompatibilityService zoomCompatibilityService;
-        private bool cameraViewSetEnvCameraPatched;
 
         public CameraFeature(DtmApiRuntime runtime)
         {
             this.runtime = runtime;
-            diagnostics = new CameraDiagnosticsService(runtime);
-            viewService = new CameraViewService(runtime, diagnostics);
-            zoomCompatibilityService = new CameraZoomCompatibilityService(runtime, viewService);
-            viewService.ViewApplied += zoomCompatibilityService.SynchronizeFromView;
+            viewService = new CameraViewService(
+                runtime,
+                CameraCompatibilityHookBridge
+                    .IsManagedProductOwnerPresent);
+            zoomCompatibilityService =
+                new CameraZoomCompatibilityService(
+                    runtime,
+                    CameraCompatibilityHookBridge
+                        .IsManagedProductOwnerPresent);
+            HookBridge =
+                new CameraCompatibilityHookBridge(
+                    runtime,
+                    viewService);
+            viewService.ConfigureCompatibilityOwnerClaim(
+                HookBridge.EnsureCompatibilityOwnerClaim);
+            zoomCompatibilityService.ConfigureCompatibilityOwnerClaim(
+                HookBridge.EnsureCompatibilityOwnerClaim);
         }
 
         public ICameraViewApi ViewApi => viewService;
@@ -29,27 +39,39 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public string Id => "Camera";
 
-        internal bool CameraViewSetEnvCameraPatched => cameraViewSetEnvCameraPatched;
+        public GameBridgeFeatureContract Contract { get; } = new GameBridgeFeatureContract(
+            "Camera",
+            requiresSave: true,
+            allowsTitleScreen: false,
+            requiresNativeScene: true,
+            requiresUi: false,
+            environmentResetSensitive: true,
+            hasSaveLifetimeState: true,
+            hasTitleLifetimeState: false,
+            canAutoPauseAfterFailure: false);
+
+        internal bool HasEnvironmentResetDemand => viewService.HasEnvironmentResetDemand;
+
+        internal CameraCompatibilityHookBridge HookBridge { get; }
 
         public void RegisterApis(IManifest manifest)
         {
-            runtime.RegisterRuntimeApi<ICameraViewApi>(manifest, viewService);
-            runtime.RegisterRuntimeApi<ICameraZoomApi>(manifest, zoomCompatibilityService);
+            runtime.RegisterRuntimeApi<ICameraViewApi>(manifest, viewService, OwnerBoundGameBridgeApis.ForCameraView(viewService));
+            runtime.RegisterRuntimeApi<ICameraZoomApi>(manifest, zoomCompatibilityService, OwnerBoundGameBridgeApis.ForCameraZoom(zoomCompatibilityService));
         }
 
         public void PublishHookStatuses()
         {
-            diagnostics.PublishHookStatuses();
+            HookBridge.PublishHookStatuses();
         }
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
-            if (cameraViewSetEnvCameraPatched)
-                return;
-
-            cameraViewSetEnvCameraPatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "SetEnvCamera", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix), BindingFlags.Public | BindingFlags.Static), 5);
-            diagnostics.SetEnvironmentLifecyclePatched(cameraViewSetEnvCameraPatched);
+            HookBridge.InstallHooks();
         }
+
+        internal void ReconcileManagedProductOwnerBeforeHookInstall() =>
+            viewService.ReconcileManagedProductOwnerBeforeHookInstall();
 
         public void Update()
         {
@@ -70,6 +92,17 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             viewService.NotifyEnvironmentReset(reason);
         }
+
+        internal int RemoveOwner(string ownerId, string reason)
+        {
+            int removed = viewService.RemoveOwner(ownerId, reason);
+            if (!viewService.HasEnvironmentResetDemand)
+                HookBridge.RemoveOwnedHook();
+            return removed;
+        }
+
+        internal int CountOwnerResources(string ownerId) =>
+            viewService.CountOwnerResources(ownerId);
     }
 }
 

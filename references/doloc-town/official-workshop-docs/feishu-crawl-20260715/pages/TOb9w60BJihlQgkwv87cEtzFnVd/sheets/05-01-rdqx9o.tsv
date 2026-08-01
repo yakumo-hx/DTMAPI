@@ -1,0 +1,38 @@
+鱼	掉落库ID	最小掉落数量	最大掉落数量
+淡水鱼
+鲤鱼	carp_produce	1	1
+锦鲤	koi_produce	1	1
+虹鳟鱼	rainbow_trout_produce	1	1
+牙鱼	hoplias_produce	1	1
+鲶鱼	catfish_produce	1	1
+草鱼	grass_carp_produce	1	1
+水生变形虫	waste_garbage_drop	1	1
+鲟鱼	sturgeon_produce	1	1
+泥鳅	loach_produce	1	1
+田螺	snail_produce	2	2
+闪亮黄金鱼	golden_fish_produce	1	1
+黄鳝	ricefield_eel_produce	1	1
+狗鱼	pike_produce	1	1
+海水鱼
+沙丁鱼	sardine_produce	1	1
+鲈鱼	seabass_produce	1	1
+鳕鱼	codfish_produce	1	1
+金枪鱼	tuna_produce	1	1
+鳗鱼	eel_produce	1	1
+荧光鳗鱼	fluorescent_eel_produce	1	1
+拟态骨架鱼	skeleton_fish_produce	1	1
+特殊鱼
+虾	shrimp_produce	2	2
+鲑鱼	salmon_produce	1	1
+亚种鱼
+黑夜骨架鱼	nightbone_fish_produce	1	1
+银光鳗	silverlight_eel_produce	1	1
+大马哈鱼	humpback_salmon_produce	1	1
+红鳕鱼	crimson_cod_produce	1	1
+蓝狗鱼	azure_pike_produce	1	1
+黑背沙丁鱼	blackback_sardine_produce	1	1
+帝王金枪鱼	monarch_tuna_produce	1	1
+草叶蛞蝓	leaf_slug_produce	1	1
+雾隐鳝	mist_eel_produce	1	1
+恐鱼	terror_fish_produce	1	1
+渊潜灯笼鲈	abyss_lantern_seabass_produce	1	1

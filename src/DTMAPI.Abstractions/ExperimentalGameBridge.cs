@@ -1,16 +1,21 @@
+#pragma warning disable CS0618 // Obsolete fishing DTOs reference each other inside their frozen declaration surface.
 using System;
 using System.Collections.Generic;
 
 namespace DTMAPI.Abstractions
 {
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party OneActionComplete owns the current product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IActionCompletionApi is deprecated and frozen. Use the first-party OneActionComplete product; no replacement public completion API is exposed.", false)]
     public interface IActionCompletionApi
     {
         void Configure(IManifest owner, ActionCompletionOptions options);
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party AutoFishing is a self-contained Advanced CodeMod and does not consume this API.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IFishingAutomationApi is deprecated and frozen. Use the first-party AutoFishing product; no public Fishing Primitives replacement is exposed. Removal requires the documented preview-cycle gates.", false)]
     public interface IFishingAutomationApi
     {
         void Configure(IManifest owner, FishingAutomationOptions options);
@@ -19,21 +24,39 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.12")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.12", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party ActionSpeed owns the current product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IActionSpeedApi is deprecated and frozen. Use the first-party ActionSpeed product; no replacement public action-speed API is exposed.", false)]
     public interface IActionSpeedApi
     {
         void Configure(IManifest owner, ActionSpeedOptions options);
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party FishBreedingAssistant owns the current product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IItemTooltipApi is deprecated and frozen. Use the first-party FishBreedingAssistant product; no replacement public title-formatting API is exposed.", false)]
     public interface IItemTooltipApi
     {
         void ConfigureFishRoeProvider(IManifest owner, FishRoeTooltipOptions options, Func<string, FishRoeDisplayInfo?> lookup);
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10")]
+    /// <summary>
+    /// On the DTMAPI Runtime/main thread, performs a read-only lookup from an item id to its current localized display name.
+    /// Implementations cache only successful non-empty results, do not negatively cache failures, and clear the cache across
+    /// save load, return-to-title, and runtime-environment reset boundaries. This contract does not expose item DTOs,
+    /// enumeration, mutation, hooks, formatting, or UI behavior.
+    /// </summary>
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.5.5")]
+    public interface IItemDisplayNameApi
+    {
+        bool TryGetDisplayName(string itemId, out string displayName);
+    }
+
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party AnimalHusbandryProgress owns the current product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IAnimalViewerApi is deprecated and frozen. Use the first-party AnimalHusbandryProgress product; no replacement public animal-viewer API is exposed.", false)]
     public interface IAnimalViewerApi
     {
         void ConfigureSpecialProduceProgress(IManifest owner, AnimalHusbandryProgressOptions options);
@@ -41,6 +64,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.0")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IDebugConsoleApi
     {
         bool IsOpen { get; }
@@ -54,6 +78,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.0")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IInventoryDebugApi
     {
         InventoryDebugPage GetItems(InventoryDebugQuery query);
@@ -69,6 +94,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.0")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IWeatherDebugApi
     {
         WeatherDebugState GetState();
@@ -78,6 +104,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.0")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface ITeleportDebugApi
     {
         IReadOnlyList<TeleportDestination> GetDestinations();
@@ -88,6 +115,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IInstantSaveDebugApi
     {
         InstantSaveDebugState GetState();
@@ -96,6 +124,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.1")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface ITimeDebugApi
     {
         TimeDebugState GetState();
@@ -104,6 +133,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.1")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IMovementDebugApi
     {
         MovementDebugState GetState();
@@ -112,7 +142,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus();
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility facade. No runtime provider remains; the first-party Mine product owns its fixed ProductNative behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods. Calls have no registered runtime provider.")]
+    [Obsolete("IMachineProductionApi is deprecated and frozen without a runtime provider. Use the first-party Mine product; no replacement public machine-production API is exposed.", false)]
     public interface IMachineProductionApi
     {
         MachineRegisterResult RegisterMachine(IManifest owner, MachineDefinition definition);
@@ -121,7 +153,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility facade. The first-party MoreEquipmentSlots product owns a fixed three-slot ProductNative policy; this retained API preserves the historical 0..24 compatibility behavior only.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IEquipmentSlotsApi is deprecated and frozen. Use the first-party MoreEquipmentSlots product; no replacement public equipment-slots API is exposed.", false)]
     public interface IEquipmentSlotsApi
     {
         EquipmentSlotsRegisterResult RegisterSlots(IManifest owner, EquipmentSlotsOptions options);
@@ -133,7 +167,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party MoreSaves owns the current fixed-six/twelve product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("ISaveSlotsApi is deprecated and frozen. Use the first-party MoreSaves product; no replacement public save-slot API is exposed.", false)]
     public interface ISaveSlotsApi
     {
         SaveSlotsRegisterResult RegisterSlots(IManifest owner, SaveSlotsOptions options);
@@ -141,7 +177,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Deprecated/Frozen compatibility facade. First-party Zoom owns the current ProductNative camera behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for the published Zoom 0.4.2 binary consumer only; do not adopt in new mods.")]
+    [Obsolete("ICameraViewApi is deprecated and frozen. Use the first-party Zoom product; no replacement public camera API is exposed.", false)]
     public interface ICameraViewApi
     {
         ICameraViewLease AcquireLease(IManifest owner, CameraViewRequest request);
@@ -150,6 +188,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2", Notes = "Deprecated/Frozen lease shape retained with ICameraViewApi binary compatibility.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for the published Zoom 0.4.2 binary consumer only; do not adopt in new mods.")]
+    [Obsolete("ICameraViewLease is deprecated and frozen with ICameraViewApi. Use the first-party Zoom product.", false)]
     public interface ICameraViewLease : IDisposable
     {
         string LeaseId { get; }
@@ -167,8 +208,9 @@ namespace DTMAPI.Abstractions
     {
     }
 
-    [Obsolete("ICameraZoomApi is obsolete. Use lease-based ICameraViewApi for playable camera zoom.")]
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [Obsolete("ICameraZoomApi is deprecated and frozen. Use the first-party Zoom product; no replacement public camera API is exposed.", false)]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0", Notes = "Deprecated/Frozen compatibility facade retained for binary compatibility.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
     public interface ICameraZoomApi
     {
         CameraZoomRegisterResult Register(IManifest owner, CameraZoomOptions options);
@@ -180,7 +222,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0", Notes = "Deprecated/Frozen compatibility facade. No new capabilities will be added; first-party ChestLocatorEnhancer owns the current product behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained for existing binary consumers only; do not adopt in new mods.")]
+    [Obsolete("IChestLocatorEnhancerApi is deprecated and frozen. Use the first-party ChestLocatorEnhancer product; no replacement public inventory-query API is exposed.", false)]
     public interface IChestLocatorEnhancerApi
     {
         ChestLocatorEnhancerRegisterResult Register(IManifest owner, ChestLocatorEnhancerOptions options);
@@ -188,7 +232,9 @@ namespace DTMAPI.Abstractions
         BridgeFeatureStatus GetStatus(string uniqueId);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0", Notes = "Deprecated/Frozen compatibility shape. No Runtime provider is retained because no published or retained binary consumer exists; first-party StrongPlantingGun owns the fixed-three ProductNative behavior.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5", Notes = "Retained as an ABI warning shell only; no GameBridge compatibility executor is available and new mods must not adopt it.")]
+    [Obsolete("IStrongPlantingGunApi is deprecated and frozen. Use the first-party StrongPlantingGun product; no replacement public farming-gun API or compatibility provider is exposed.", false)]
     public interface IStrongPlantingGunApi
     {
         StrongPlantingGunRegisterResult Register(IManifest owner, StrongPlantingGunOptions options);
@@ -213,6 +259,7 @@ namespace DTMAPI.Abstractions
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Diagnostic, Since = "0.5.5", Notes = "Frozen DebugConsole compatibility diagnostic surface; retained for exact legacy consumers and not a gameplay authoring API.")]
     public interface IAdvancedDebugApi
     {
         IReadOnlyList<TechPointDebugOption> GetTechPointOptions();
@@ -588,6 +635,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO. It does not describe the fixed first-party Mine ProductNative policy.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("MachineDefinition is retained only for frozen IMachineProductionApi binary compatibility.", false)]
     public sealed class MachineDefinition
     {
         public string MachineId { get; set; } = string.Empty;
@@ -618,12 +668,18 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("MachineRecipeInput is retained only for frozen IMachineProductionApi binary compatibility.", false)]
     public sealed class MachineRecipeInput
     {
         public string ItemId { get; set; } = string.Empty;
         public int Count { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("MachineOutputRule is retained only for frozen IMachineProductionApi binary compatibility.", false)]
     public sealed class MachineOutputRule
     {
         public string ItemId { get; set; } = string.Empty;
@@ -635,6 +691,9 @@ namespace DTMAPI.Abstractions
         public bool AllowProbabilityOverride { get; set; } = true;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("MachineRegisterResult is retained only for frozen IMachineProductionApi binary compatibility.", false)]
     public sealed class MachineRegisterResult
     {
         public bool Success { get; set; }
@@ -645,6 +704,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("MachineProductionState is retained only for frozen IMachineProductionApi binary compatibility.", false)]
     public sealed class MachineProductionState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -688,6 +750,9 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4", Notes = "Deprecated/Frozen compatibility DTO. ExtraAttributeSlots retains the historical 0..24 ABI behavior and does not describe the fixed-three-slot first-party product.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotsOptions is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotsOptions
     {
         public bool Enabled { get; set; } = true;
@@ -700,6 +765,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("SaveSlotsOptions is retained only for frozen ISaveSlotsApi binary compatibility.", false)]
     public sealed class SaveSlotsOptions
     {
         public bool Enabled { get; set; } = true;
@@ -712,6 +780,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("SaveSlotsRegisterResult is retained only for frozen ISaveSlotsApi binary compatibility.", false)]
     public sealed class SaveSlotsRegisterResult
     {
         public bool Success { get; set; }
@@ -723,6 +794,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.9")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("SaveSlotsState is retained only for frozen ISaveSlotsApi binary compatibility.", false)]
     public sealed class SaveSlotsState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -735,6 +809,9 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraViewRequest is retained only for frozen ICameraViewApi binary compatibility.", false)]
     public sealed class CameraViewRequest
     {
         public bool Enabled { get; set; } = true;
@@ -747,6 +824,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraViewResult is retained only for frozen ICameraViewApi binary compatibility.", false)]
     public sealed class CameraViewResult
     {
         public bool Success { get; set; }
@@ -770,6 +850,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.4.2")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraViewState is retained only for frozen ICameraViewApi binary compatibility.", false)]
     public sealed class CameraViewState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -804,6 +887,9 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraZoomOptions is retained only for frozen ICameraZoomApi binary compatibility.", false)]
     public sealed class CameraZoomOptions
     {
         public bool Enabled { get; set; } = true;
@@ -821,6 +907,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraZoomRegisterResult is retained only for frozen ICameraZoomApi binary compatibility.", false)]
     public sealed class CameraZoomRegisterResult
     {
         public bool Success { get; set; }
@@ -840,6 +929,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraZoomResult is retained only for frozen ICameraZoomApi binary compatibility.", false)]
     public sealed class CameraZoomResult
     {
         public bool Success { get; set; }
@@ -862,6 +954,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("CameraZoomState is retained only for frozen ICameraZoomApi binary compatibility.", false)]
     public sealed class CameraZoomState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -895,6 +990,9 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("ChestLocatorEnhancerOptions is retained only for frozen IChestLocatorEnhancerApi binary compatibility.", false)]
     public sealed class ChestLocatorEnhancerOptions
     {
         public bool Enabled { get; set; } = true;
@@ -904,6 +1002,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("ChestLocatorEnhancerRegisterResult is retained only for frozen IChestLocatorEnhancerApi binary compatibility.", false)]
     public sealed class ChestLocatorEnhancerRegisterResult
     {
         public bool Success { get; set; }
@@ -914,6 +1015,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("ChestLocatorEnhancerState is retained only for frozen IChestLocatorEnhancerApi binary compatibility.", false)]
     public sealed class ChestLocatorEnhancerState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -931,13 +1035,16 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0", Notes = "Deprecated/Frozen compatibility DTO. The first-party product remains fixed at three seed/film/fertilizer slots and does not consume this DTO.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("StrongPlantingGunOptions is retained only as a frozen ABI warning shell; no Runtime compatibility provider is exposed.", false)]
     public sealed class StrongPlantingGunOptions
     {
         public bool Enabled { get; set; } = true;
         /// <summary>
-        /// Requested farming-gun slot count. In 0.5.0-alpha this value is accepted
-        /// for compatibility but normalized by the Doloc Town GameBridge to the
-        /// verified three-slot seed/film/fertilizer contract.
+        /// Historical requested farming-gun slot count. The retired GameBridge
+        /// provider normalized it to three; the current first-party product is
+        /// independently fixed at three and does not consume this DTO.
         /// </summary>
         public int SlotCount { get; set; } = 3;
         public bool IncludeSeeds { get; set; } = true;
@@ -947,6 +1054,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("StrongPlantingGunRegisterResult is retained only as a frozen ABI warning shell; no Runtime compatibility provider is exposed.", false)]
     public sealed class StrongPlantingGunRegisterResult
     {
         public bool Success { get; set; }
@@ -959,6 +1069,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.3.0")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("StrongPlantingGunState is retained only as a frozen ABI warning shell; no Runtime compatibility provider is exposed.", false)]
     public sealed class StrongPlantingGunState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -1108,6 +1221,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotsRegisterResult is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotsRegisterResult
     {
         public bool Success { get; set; }
@@ -1117,6 +1233,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotsState is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotsState
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -1137,6 +1256,9 @@ namespace DTMAPI.Abstractions
         public string LastRecoveryMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotInfo is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotInfo
     {
         public string OwnerId { get; set; } = string.Empty;
@@ -1152,6 +1274,9 @@ namespace DTMAPI.Abstractions
         public string LastMessage { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotEquipResult is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotEquipResult
     {
         public bool Success { get; set; }
@@ -1166,6 +1291,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.2.4")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("EquipmentSlotsRecoveryResult is retained only for frozen IEquipmentSlotsApi binary compatibility.", false)]
     public sealed class EquipmentSlotsRecoveryResult
     {
         public bool Success { get; set; }
@@ -1175,6 +1303,9 @@ namespace DTMAPI.Abstractions
         public string Message { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Options DTO for the frozen IActionCompletionApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("ActionCompletionOptions is retained only for frozen IActionCompletionApi binary compatibility.", false)]
     public sealed class ActionCompletionOptions
     {
         public bool Enabled { get; set; }
@@ -1187,18 +1318,27 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Strategy enum for the frozen IFishingAutomationApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("Legacy IFishingAutomationApi strategy type; deprecated and frozen.", false)]
     public enum FishingBiteWaitMode
     {
         NativeWait,
         InstantNativeBite
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Strategy enum for the frozen IFishingAutomationApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("Legacy IFishingAutomationApi strategy type; deprecated and frozen.", false)]
     public enum FishingResultMode
     {
         AutoCompleteVisibleMiniGame,
         SkipMiniGameNativeResult
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Strategy enum for the frozen IFishingAutomationApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("Legacy IFishingAutomationApi strategy type; deprecated and frozen.", false)]
     public enum FishingAnimationMode
     {
         Normal,
@@ -1206,15 +1346,17 @@ namespace DTMAPI.Abstractions
     }
 
     /// <summary>
-    /// Experimental AutoFishing policy options. These options intentionally model
-    /// the native fishing responsibilities instead of the old migrated-mod toggles.
+    /// Frozen legacy IFishingAutomationApi options retained for binary compatibility.
+    /// The self-contained AutoFishing Advanced product does not consume this DTO.
     /// </summary>
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Options DTO for the frozen IFishingAutomationApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("Legacy IFishingAutomationApi options DTO; deprecated and frozen.", false)]
     public sealed class FishingAutomationOptions
     {
         public FishingBiteWaitMode BiteWaitMode { get; set; } = FishingBiteWaitMode.NativeWait;
         public FishingResultMode ResultMode { get; set; } = FishingResultMode.AutoCompleteVisibleMiniGame;
         public FishingAnimationMode AnimationMode { get; set; } = FishingAnimationMode.Normal;
-        public bool StopOnManualMove { get; set; } = true;
         public double RecastDelaySeconds { get; set; } = 0.25;
         /// <summary>
         /// Target native cast-charge ratio for the Ready phase. 0 releases
@@ -1222,9 +1364,14 @@ namespace DTMAPI.Abstractions
         /// </summary>
         public double CastChargeRatio { get; set; }
         public double AnimationMultiplier { get; set; } = 3;
+        [Obsolete("Retained for binary compatibility. Movement cancellation remains AutoFishing/consumer policy; GameBridge stores but does not execute this option.", false)]
+        public bool StopOnManualMove { get; set; } = true;
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.12", Notes = "Options DTO for the frozen IActionSpeedApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("ActionSpeedOptions is retained only for frozen IActionSpeedApi binary compatibility.", false)]
     public sealed class ActionSpeedOptions
     {
         public bool Enabled { get; set; }
@@ -1248,6 +1395,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "State DTO for the frozen IFishingAutomationApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("Legacy IFishingAutomationApi state DTO; deprecated and frozen.", false)]
     public sealed class FishingAutomationState
     {
         public bool Enabled { get; set; }
@@ -1258,6 +1408,9 @@ namespace DTMAPI.Abstractions
         public string LastResult { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Options DTO for the frozen IItemTooltipApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("FishRoeTooltipOptions is retained only for frozen IItemTooltipApi binary compatibility.", false)]
     public sealed class FishRoeTooltipOptions
     {
         public bool Enabled { get; set; } = true;
@@ -1267,6 +1420,9 @@ namespace DTMAPI.Abstractions
         public bool VerboseLogging { get; set; }
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Display DTO for the frozen IItemTooltipApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("FishRoeDisplayInfo is retained only for frozen IItemTooltipApi binary compatibility.", false)]
     public sealed class FishRoeDisplayInfo
     {
         public string FishId { get; set; } = string.Empty;
@@ -1277,6 +1433,9 @@ namespace DTMAPI.Abstractions
         public string ParentSummary { get; set; } = string.Empty;
     }
 
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.10", Notes = "Options DTO for the frozen IAnimalViewerApi compatibility facade.")]
+    [DtmApiDisposition(DtmApiDisposition.Frozen, Since = "0.5.5")]
+    [Obsolete("AnimalHusbandryProgressOptions is retained only for frozen IAnimalViewerApi binary compatibility.", false)]
     public sealed class AnimalHusbandryProgressOptions
     {
         public bool Enabled { get; set; } = true;

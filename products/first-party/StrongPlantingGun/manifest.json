@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI Strong Planting Gun",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod for the official farming gun's fixed three-slot policy.",
+  "UniqueID": "DTMAPI.StrongPlantingGunMod",
+  "EntryDll": "DTMAPI.StrongPlantingGun.dll",
+  "EntryType": "DTMAPI.StrongPlantingGun.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

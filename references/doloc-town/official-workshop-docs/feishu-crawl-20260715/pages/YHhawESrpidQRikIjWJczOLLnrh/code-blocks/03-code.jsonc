@@ -1,0 +1,42 @@
+[
+  {
+    "id": "phone_booth_shop", //商店ID
+    "extra_items": [
+      {
+        "item_name": "exterior0",
+        "storage": 0, //商品全局存量，即整局游戏最多能卖多少个（0则无存量上限）
+        "default_unlock": true, //是否默认解锁
+        "season_spawn_data": [ //以下分别为四个月份的商品属性
+          {
+            "count_range": {
+              "min_count": 99, //单次出现最小数量：一月
+              "max_count": 99 //单次出现最大数量：一月
+            },
+            "spawn_weight": 0 //商品刷新权重：一月（0则固定刷新）
+          },
+          {
+            "count_range": {
+              "min_count": 99 , //单次出现最小数量数量：二月
+              "max_count": 99  //单次出现最大数量：二月
+            },
+            "spawn_weight": 0 //商品刷新权重：二月（0则固定刷新）
+          },
+          {
+            "count_range": {
+              "min_count": 99 , //单次出现最小数量数量：三月
+              "max_count": 99  //单次出现最大数量：三月
+            },
+            "spawn_weight": 0 //商品刷新权重：三月（0则固定刷新）
+          },
+          {
+            "count_range": {
+              "min_count": 99 , //单次出现最小数量数量：四月
+              "max_count": 99  //单次出现最大数量：四月
+            },
+            "spawn_weight": 0 //商品刷新权重：四月（0则固定刷新）
+          }
+        ]
+       }
+     ]
+   }
+]

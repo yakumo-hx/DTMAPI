@@ -1,0 +1,37 @@
+{
+  "format": "dtmapi.synthetic-ordered-draw-semantics/v1",
+  "purpose": "DTMAPI-authored normalized inputs for the Oil ordered-weight probability regression. This fixture contains no official table rows, field schema, identifiers, or decompiled source.",
+  "orderedDraw": {
+    "baseEntries": [
+      {
+        "role": "uncapped-base",
+        "weight": 990,
+        "operationCap": null
+      },
+      {
+        "role": "single-cap-base",
+        "weight": 10,
+        "operationCap": 1
+      }
+    ],
+    "appendedEntry": {
+      "role": "target-extension",
+      "weight": 25,
+      "operationCap": null
+    },
+    "drawRange": {
+      "minimum": 3,
+      "maximum": 4,
+      "monotonicCheckMaximum": 8
+    },
+    "semantics": {
+      "replacementAppendsAfterBaseEntries": true,
+      "selectedCappedIntervalFallsThrough": true
+    }
+  },
+  "expectedTargetProbability": {
+    "minimumDraws": 0.0716773117047055,
+    "maximumDraws": 0.09458570516048614,
+    "uniformRangeAverage": 0.08313150843259582
+  }
+}

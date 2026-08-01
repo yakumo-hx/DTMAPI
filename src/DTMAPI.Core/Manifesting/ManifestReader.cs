@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Diagnostics;
+using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
 using DTMAPI.Core.Runtime;
 
@@ -13,6 +14,10 @@ namespace DTMAPI.Core.Manifesting
     {
         public ManifestModel Read(string path)
         {
+            IReadOnlyList<string> properties = JsonTopLevelPropertyReader.Read(path);
+            RejectMisCasedOrDuplicateWireField(properties, "Type");
+            RejectMisCasedOrDuplicateWireField(properties, "CodeModKind");
+
             ManifestModel model = JsonFile.Read<ManifestModel>(path);
             model.Normalize();
             if (string.IsNullOrWhiteSpace(model.UniqueID))
@@ -23,22 +28,64 @@ namespace DTMAPI.Core.Manifesting
                 model.Author = "Unknown";
             return model;
         }
+
+        private static void RejectMisCasedOrDuplicateWireField(IReadOnlyList<string> properties, string canonicalName)
+        {
+            string[] matches = properties
+                .Where(name => string.Equals(name, canonicalName, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (matches.Length == 0)
+                return;
+            if (matches.Length != 1 || !string.Equals(matches[0], canonicalName, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    "manifest field " + canonicalName + " is case-sensitive and may appear exactly once; received " +
+                    string.Join(", ", matches) + ".");
+            }
+        }
     }
 
     internal sealed class ModScanner
     {
+        internal const int MaxDiagnosticSamplesPerSeverity = 128;
+        internal const int MaxDuplicateCandidateSamples = 16;
+
         private readonly RuntimePaths paths;
         private readonly ManifestReader reader = new ManifestReader();
+        private readonly ManagedModClassifier classifier;
         private readonly List<string> errors = new List<string>();
         private readonly List<string> warnings = new List<string>();
+        private readonly List<AuthorSourceSelectionDecision> sourceSelectionDecisions = new List<AuthorSourceSelectionDecision>();
+        private readonly NativeWorkshopSubscriptionSnapshot workshopSubscriptions;
+        private readonly AuthorSourceSelectionState authorSourceState;
+        private readonly bool authorSessionActive;
+        private int errorCount;
+        private int warningCount;
+        private int duplicateUniqueIdWarningCount;
+        private long diagnosticTrimmedBytes;
 
-        public ModScanner(RuntimePaths paths)
+        public ModScanner(
+            RuntimePaths paths,
+            NativeWorkshopSubscriptionSnapshot? workshopSubscriptions = null,
+            AuthorSourceSelectionState? authorSourceState = null,
+            bool authorSessionActive = false)
         {
             this.paths = paths;
+            classifier = new ManagedModClassifier(paths.GamePath);
+            this.workshopSubscriptions = workshopSubscriptions ?? NativeWorkshopSubscriptionSnapshot.Unavailable("snapshot not supplied");
+            this.authorSourceState = authorSourceState ?? new AuthorSourceSelectionState(paths.GamePath, false, string.Empty, Array.Empty<AuthorSourceSelection>(), string.Empty, string.Empty);
+            this.authorSessionActive = authorSessionActive;
         }
 
         public IReadOnlyList<string> Errors => errors;
         public IReadOnlyList<string> Warnings => warnings;
+        public ModScannerDiagnosticTotals DiagnosticTotals => new ModScannerDiagnosticTotals(
+            errorCount,
+            warningCount,
+            duplicateUniqueIdWarningCount,
+            errors.Count,
+            warnings.Count,
+            diagnosticTrimmedBytes);
         public string OfficialLocalModsRoot { get; private set; } = string.Empty;
         public bool OfficialLocalModsRootExists { get; private set; }
         public int OfficialLocalDirectoryCount { get; private set; }
@@ -49,6 +96,8 @@ namespace DTMAPI.Core.Manifesting
         public long OfficialModsScanElapsedMilliseconds { get; private set; }
         public long WorkshopScanElapsedMilliseconds { get; private set; }
         public long ContentQueryElapsedMilliseconds { get; private set; }
+        public string SourceSelectionSummary { get; private set; } = string.Empty;
+        public IReadOnlyList<AuthorSourceSelectionDecision> SourceSelectionDecisions => sourceSelectionDecisions.ToArray();
 
         public IReadOnlyList<DiscoveredMod> Discover()
         {
@@ -56,6 +105,11 @@ namespace DTMAPI.Core.Manifesting
             var mods = new List<DiscoveredMod>();
             errors.Clear();
             warnings.Clear();
+            errorCount = 0;
+            warningCount = 0;
+            duplicateUniqueIdWarningCount = 0;
+            diagnosticTrimmedBytes = 0;
+            sourceSelectionDecisions.Clear();
             OfficialModEnablementIndex official = OfficialModEnablementIndex.Load();
             OfficialLocalModsRoot = official.LocalModsRoot;
             OfficialEnablementFilePath = official.EnablementFilePath;
@@ -73,7 +127,7 @@ namespace DTMAPI.Core.Manifesting
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(official.LocalModsRoot + ": failed to enumerate official local mods root: " + ex.Message);
+                    RecordError(official.LocalModsRoot + ": failed to enumerate official local mods root: " + ex.Message);
                 }
                 AddFromRoot(official.LocalModsRoot, "OfficialLocal", canDtmApiToggle: false, official, useOfficialEnablement: true, mods);
                 OfficialModsScanElapsedMilliseconds = officialWatch.ElapsedMilliseconds;
@@ -87,6 +141,12 @@ namespace DTMAPI.Core.Manifesting
                 AddWorkshopRoot(siblingWorkshopRoot, official, mods);
             WorkshopScanElapsedMilliseconds = workshopWatch.ElapsedMilliseconds;
             IReadOnlyList<DiscoveredMod> result = PreferSourceManagedDuplicates(mods);
+            SourceSelectionSummary = "nativeSubscriptions=" + workshopSubscriptions.Available +
+                "/" + workshopSubscriptions.Count +
+                "; playerReproduction=" + authorSourceState.PlayerReproductionActive +
+                "; authorSession=" + authorSessionActive +
+                "; overrides=" + authorSourceState.Selections.Count +
+                "; selected=" + result.Count;
             ContentQueryElapsedMilliseconds = total.ElapsedMilliseconds;
             return result;
         }
@@ -118,7 +178,15 @@ namespace DTMAPI.Core.Manifesting
             try
             {
                 ManifestModel manifest = reader.Read(manifestPath);
-                bool enabled = !File.Exists(Path.Combine(dir, "dtmapi.disabled")) && !Directory.Exists(Path.Combine(dir, ".disabled"));
+                if (manifest.UpdateKeyModels.Any(key => !string.IsNullOrWhiteSpace(key)))
+                {
+                    RecordWarning(
+                        "Manifest " + manifest.UniqueID +
+                        " declares UpdateKeys, but DTMAPI currently treats them as inactive schema-only metadata; " +
+                        "no update service, network request, or compatibility decision is performed from these values.");
+                }
+                bool localMarkerEnabled = !File.Exists(Path.Combine(dir, "dtmapi.disabled")) && !Directory.Exists(Path.Combine(dir, ".disabled"));
+                bool enabled = localMarkerEnabled;
                 string reason = enabled ? string.Empty : "此 Mod 已被本地 DTMAPI 禁用标记停用。";
                 string officialId = string.Empty;
                 if (useOfficialEnablement)
@@ -140,11 +208,66 @@ namespace DTMAPI.Core.Manifesting
                             reason = "无法读取官方启用状态：" + official.LoadError;
                     }
                 }
-                mods.Add(new DiscoveredMod(manifest, dir, manifestPath, source, workshopId, enabled, canDtmApiToggle, officialId, useOfficialEnablement, reason));
+                bool subscriptionVerified = false;
+                if (source.Equals("Workshop", StringComparison.OrdinalIgnoreCase) && workshopId.HasValue && workshopSubscriptions.Available)
+                {
+                    bool subscriptionKnown = workshopSubscriptions.TryGet(workshopId.Value, out NativeWorkshopSubscription subscription);
+                    subscriptionVerified = subscriptionKnown &&
+                        !string.IsNullOrWhiteSpace(subscription.InstallPath) &&
+                        PathsEqual(subscription.InstallPath, dir);
+                    if (!subscriptionKnown)
+                    {
+                        enabled = false;
+                        reason = "此 Workshop 目录不在 ModManager.GetSubscribedMods 的当前订阅快照中。";
+                    }
+                    else if (string.IsNullOrWhiteSpace(subscription.InstallPath))
+                    {
+                        enabled = false;
+                        reason = "此 Workshop 订阅项没有可由 ModManager 证明的已安装根目录；数值目录本身不构成来源授权。";
+                        RecordWarning("Workshop " + workshopId.Value + " is subscribed but ModManager did not provide an installed root; enumerated raw directory is not verified: " + dir + ".");
+                    }
+                    else if (!subscriptionVerified)
+                    {
+                        enabled = false;
+                        reason = "此 Workshop 目录与 ModManager 的当前已安装根目录不一致。";
+                        RecordWarning("Workshop " + workshopId.Value + " native install path differs from enumerated directory; native=" + subscription.InstallPath + "; enumerated=" + dir + ".");
+                    }
+                    else if (!subscription.NativeEnabled.HasValue)
+                    {
+                        if (string.IsNullOrWhiteSpace(workshopSubscriptions.Failure))
+                        {
+                            enabled = false;
+                            reason = "此 Workshop 订阅项未出现在 ModManager.GetAllValidModInfos 的当前原生快照中。";
+                        }
+                        else
+                        {
+                            RecordWarning("Workshop " + workshopId.Value + " subscription and installed root were verified, but optional native enablement enrichment failed; official enablement state remains authoritative for this scan. failure=" + workshopSubscriptions.Failure);
+                        }
+                    }
+                    else
+                    {
+                        enabled = localMarkerEnabled && subscription.NativeEnabled.Value;
+                        officialId = string.IsNullOrWhiteSpace(subscription.NativeOfficialId)
+                            ? officialId
+                            : subscription.NativeOfficialId;
+                        if (!subscription.NativeEnabled.Value)
+                            reason = "此 Workshop Mod 已在 ModManager 的当前原生状态中禁用。";
+                        else if (localMarkerEnabled)
+                            reason = string.Empty;
+                    }
+                }
+                ManagedModClassification classification = classifier.Classify(
+                    manifest,
+                    dir,
+                    manifestPath,
+                    source,
+                    subscriptionVerified,
+                    workshopId);
+                mods.Add(new DiscoveredMod(manifest, dir, manifestPath, source, workshopId, enabled, canDtmApiToggle, officialId, useOfficialEnablement, reason, subscriptionVerified, classification: classification));
             }
             catch (Exception ex)
             {
-                errors.Add($"{manifestPath}: {ex.Message}");
+                RecordError($"{manifestPath}: {ex.Message}");
             }
         }
 
@@ -173,37 +296,260 @@ namespace DTMAPI.Core.Manifesting
                     continue;
                 }
 
-                DiscoveredMod[] ordered = group
-                    .OrderBy(m => SourcePriority(m.Source))
-                    .ThenBy(m => m.RootPath, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-                DiscoveredMod selected = ordered[0];
+                AuthorSourceMode mode = authorSourceState.GetMode(id);
+                DiscoveredMod[] candidates = group.ToArray();
+                DiscoveredMod[] ordered = OrderCandidatesForMode(id, mode, candidates).ToArray();
+                if (ordered.Length == 0)
+                {
+                    sourceSelectionDecisions.Add(new AuthorSourceSelectionDecision(id, mode, "blocked/no-authorized-source", null, candidates));
+                    continue;
+                }
+                string outcome = "mode=" + mode +
+                    "; selected=" + DescribeDuplicateCandidate(ordered[0]) +
+                    "; nativeSnapshot=" + workshopSubscriptions.Available;
+                DiscoveredMod selected = ordered[0].WithSelectionReason(outcome);
                 byId[id] = selected;
+                sourceSelectionDecisions.Add(new AuthorSourceSelectionDecision(id, mode, outcome, selected, candidates));
 
                 if (ordered.Length <= 1)
                     continue;
 
                 string ignored = string.Join("; ", ordered
                     .Skip(1)
-                    .Select(m => m.Source + " root=" + m.RootPath)
+                    .Take(MaxDuplicateCandidateSamples)
+                    .Select(DescribeDuplicateCandidate)
                     .ToArray());
-                warnings.Add(
+                int omittedCandidates = Math.Max(0, ordered.Length - 1 - MaxDuplicateCandidateSamples);
+                RecordWarning(
                     "Duplicate UniqueID " + id +
-                    " discovered; using " + selected.Source + " root=" + selected.RootPath +
-                    "; ignored " + ignored + ".");
+                    " discovered; using " + DescribeDuplicateCandidate(selected) +
+                    "; mode=" + mode +
+                    (omittedCandidates > 0 ? "; omittedCandidates=" + omittedCandidates : string.Empty) +
+                    "; ignored " + ignored + ".",
+                    duplicateUniqueId: true);
             }
 
             unnamed.AddRange(byId.Values.OrderBy(m => m.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase));
             return unnamed;
         }
 
-        private static int SourcePriority(string source)
+        private static string DescribeDuplicateCandidate(DiscoveredMod mod)
         {
-            if (source.Equals("OfficialLocal", StringComparison.OrdinalIgnoreCase))
+            return mod.Source + " enabled=" + (mod.OfficialEnabled ? "true" : "false") + " root=" + mod.RootPath;
+        }
+
+        private IEnumerable<DiscoveredMod> OrderCandidatesForMode(string uniqueId, AuthorSourceMode mode, DiscoveredMod[] candidates)
+        {
+            if (mode == AuthorSourceMode.LocalDevelopment)
+            {
+                if (!authorSourceState.TryGetSelection(uniqueId, out AuthorSourceSelection selection) || string.IsNullOrWhiteSpace(selection.SourcePath))
+                {
+                    RecordWarning("Local Development selection is incomplete for " + uniqueId + "; using safe Player/Workshop fallback.");
+                    return OrderPlayerWorkshopCandidates(uniqueId, candidates);
+                }
+
+                DiscoveredMod[] matches = candidates
+                    .Where(candidate => !candidate.Source.Equals("Workshop", StringComparison.OrdinalIgnoreCase) && PathsEqual(candidate.RootPath, selection.SourcePath))
+                    .OrderBy(candidate => candidate.RootPath, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                if (matches.Length == 0)
+                {
+                    RecordWarning("Local Development source is unavailable for " + uniqueId + ": " + selection.SourcePath + "; using safe Player/Workshop fallback.");
+                    return OrderPlayerWorkshopCandidates(uniqueId, candidates);
+                }
+
+                if (!TryValidateExpectedSourceTree(uniqueId, selection, matches[0], out string localTreeFailure))
+                {
+                    RecordWarning("Local Development source validation failed for " + uniqueId + ": " + localTreeFailure + "; using safe Player/Workshop fallback.");
+                    return OrderPlayerWorkshopCandidates(uniqueId, candidates);
+                }
+
+                return matches.Concat(candidates.Where(candidate => !matches.Contains(candidate)).OrderBy(candidate => candidate.RootPath, StringComparer.OrdinalIgnoreCase));
+            }
+
+            if (mode == AuthorSourceMode.WorkshopValidation)
+            {
+                if (!authorSessionActive)
+                {
+                    RecordWarning("Workshop Validation blocked for " + uniqueId + ": no active startup-authorized author session.");
+                    return Array.Empty<DiscoveredMod>();
+                }
+                if (!workshopSubscriptions.Available)
+                {
+                    RecordWarning("Workshop Validation blocked for " + uniqueId + ": native subscription snapshot unavailable: " + workshopSubscriptions.Failure + ".");
+                    return Array.Empty<DiscoveredMod>();
+                }
+
+                DiscoveredMod[] matches = candidates
+                    .Where(candidate => candidate.Source.Equals("Workshop", StringComparison.OrdinalIgnoreCase) && candidate.NativeSubscriptionVerified)
+                    .OrderBy(candidate => candidate.OfficialEnabled ? 0 : 1)
+                    .ThenBy(candidate => candidate.RootPath, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                if (matches.Length == 0)
+                {
+                    RecordWarning("Workshop Validation blocked for " + uniqueId + ": no native-subscribed installed source.");
+                    return Array.Empty<DiscoveredMod>();
+                }
+
+                if (!authorSourceState.TryGetSelection(uniqueId, out AuthorSourceSelection validationSelection))
+                {
+                    RecordWarning("Workshop Validation blocked for " + uniqueId + ": no exact SDK source selection was recorded.");
+                    return Array.Empty<DiscoveredMod>();
+                }
+                return matches.Concat(candidates.Where(candidate => !matches.Contains(candidate)).OrderBy(candidate => candidate.RootPath, StringComparer.OrdinalIgnoreCase));
+            }
+
+            return OrderPlayerWorkshopCandidates(uniqueId, candidates);
+        }
+
+        private IEnumerable<DiscoveredMod> OrderPlayerWorkshopCandidates(string uniqueId, DiscoveredMod[] candidates)
+        {
+            bool useNativeWorkshopAuthority = workshopSubscriptions.Available;
+            if (!useNativeWorkshopAuthority && candidates.Length > 1)
+            {
+                RecordWarning(
+                    "Duplicate UniqueID " + uniqueId +
+                    " blocked because the native Workshop subscription snapshot is unavailable; raw directory priority cannot prove player source authority. failure=" +
+                    workshopSubscriptions.Failure + ".",
+                    duplicateUniqueId: true);
+                return Array.Empty<DiscoveredMod>();
+            }
+            if (!useNativeWorkshopAuthority && candidates.Length == 1)
+            {
+                RecordWarning(
+                    "Sole-source compatibility fallback for " + uniqueId +
+                    " because the native Workshop subscription snapshot is unavailable; source is not native-subscription-verified. source=" +
+                    candidates[0].Source + "; root=" + candidates[0].RootPath + "; failure=" + workshopSubscriptions.Failure + ".");
+            }
+            return candidates
+                .OrderBy(candidate => CandidatePriority(candidate, useNativeWorkshopAuthority))
+                .ThenBy(candidate => candidate.RootPath, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool TryValidateExpectedSourceTree(
+            string uniqueId,
+            AuthorSourceSelection selection,
+            DiscoveredMod candidate,
+            out string failure)
+        {
+            failure = string.Empty;
+            if (selection == null || !AuthorSessionProtocol.IsSha256(selection.ExpectedTreeSha256))
+            {
+                failure = "missing " + AuthorFileTreeDigest.Algorithm + " expectedTreeSha256";
+                return false;
+            }
+            if (!string.IsNullOrWhiteSpace(selection.SourcePath) && !PathsEqual(selection.SourcePath, candidate.RootPath))
+            {
+                failure = "selected source path no longer matches the recorded exact root";
+                return false;
+            }
+
+            try
+            {
+                string actual = AuthorFileTreeDigest.Compute(candidate.RootPath);
+                if (!string.Equals(actual, selection.ExpectedTreeSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    failure = AuthorFileTreeDigest.Algorithm + " mismatch expected=" + selection.ExpectedTreeSha256 + "; actual=" + actual;
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                failure = "failed to hash source tree for " + uniqueId + ": " + ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
+        }
+
+        private static int CandidatePriority(DiscoveredMod mod, bool useNativeWorkshopAuthority)
+        {
+            if (useNativeWorkshopAuthority && mod.Source.Equals("Workshop", StringComparison.OrdinalIgnoreCase) && mod.NativeSubscriptionVerified)
+                return mod.OfficialEnabled ? 0 : 1;
+            if (mod.OfficialEnabled)
+                return 10 + SourcePriority(mod.Source, useNativeWorkshopAuthority);
+            return 30 + SourcePriority(mod.Source, useNativeWorkshopAuthority);
+        }
+
+        private static int SourcePriority(string source, bool nativeWorkshopAuthority)
+        {
+            if (nativeWorkshopAuthority && source.Equals("Workshop", StringComparison.OrdinalIgnoreCase))
                 return 0;
+            if (source.Equals("OfficialLocal", StringComparison.OrdinalIgnoreCase))
+                return nativeWorkshopAuthority ? 1 : 0;
             if (source.Equals("Workshop", StringComparison.OrdinalIgnoreCase))
                 return 1;
             return 2;
+        }
+
+        private static bool PathsEqual(string left, string right)
+        {
+            try
+            {
+                string leftFull = Path.GetFullPath(left ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string rightFull = Path.GetFullPath(right ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                return string.Equals(leftFull, rightFull, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void RecordError(string value)
+        {
+            errorCount++;
+            if (errors.Count < MaxDiagnosticSamplesPerSeverity)
+                errors.Add(BoundedDiagnosticScalar.Sanitize(value, BoundedDiagnosticScalar.DetailsChars, ref diagnosticTrimmedBytes));
+        }
+
+        private void RecordWarning(string value, bool duplicateUniqueId = false)
+        {
+            warningCount++;
+            if (duplicateUniqueId)
+                duplicateUniqueIdWarningCount++;
+            if (warnings.Count < MaxDiagnosticSamplesPerSeverity)
+                warnings.Add(BoundedDiagnosticScalar.Sanitize(value, BoundedDiagnosticScalar.DetailsChars, ref diagnosticTrimmedBytes));
+        }
+    }
+
+    internal readonly struct ModScannerDiagnosticTotals
+    {
+        public ModScannerDiagnosticTotals(
+            int errorCount,
+            int warningCount,
+            int duplicateUniqueIdWarningCount,
+            int errorSampleCount,
+            int warningSampleCount,
+            long trimmedBytes = 0)
+        {
+            ErrorCount = Math.Max(0, errorCount);
+            WarningCount = Math.Max(0, warningCount);
+            DuplicateUniqueIdWarningCount = Math.Max(0, Math.Min(WarningCount, duplicateUniqueIdWarningCount));
+            ErrorSampleCount = Math.Max(0, Math.Min(ErrorCount, errorSampleCount));
+            WarningSampleCount = Math.Max(0, Math.Min(WarningCount, warningSampleCount));
+            TrimmedBytes = Math.Max(0, trimmedBytes);
+        }
+
+        public int ErrorCount { get; }
+        public int WarningCount { get; }
+        public int DuplicateUniqueIdWarningCount { get; }
+        public int ErrorSampleCount { get; }
+        public int WarningSampleCount { get; }
+        public long TrimmedBytes { get; }
+        public int ErrorTrimmedCount => ErrorCount - ErrorSampleCount;
+        public int WarningTrimmedCount => WarningCount - WarningSampleCount;
+
+        public string FormatSummary()
+        {
+            return "errors=" + ErrorCount +
+                "; errorSamples=" + ErrorSampleCount +
+                "; errorsTrimmed=" + ErrorTrimmedCount +
+                "; warnings=" + WarningCount +
+                "; warningSamples=" + WarningSampleCount +
+                "; warningsTrimmed=" + WarningTrimmedCount +
+                "; duplicateUniqueIds=" + DuplicateUniqueIdWarningCount +
+                "; trimmedBytes=" + TrimmedBytes +
+                "; maxSamplesPerSeverity=" + ModScanner.MaxDiagnosticSamplesPerSeverity;
         }
     }
 

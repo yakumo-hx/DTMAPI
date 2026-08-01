@@ -1,0 +1,107 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+  "token": "RsaywZ3JdieYHDkZpCLc1vYenvg",
+  "title": "04 掉落上限、保底配置",
+  "document_title": "04 掉落上限、保底配置",
+  "source_modified_label": "5月21日修改",
+  "status_code": 200,
+  "elapsed_seconds": 11.344,
+  "block_count": 12,
+  "blocks_by_type": {
+    "heading1": 1,
+    "heading2": 1,
+    "heading3": 3,
+    "bullet": 3,
+    "code": 3,
+    "text": 1
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 1702,
+  "links": [],
+  "children": [],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "6",
+      "record_id": "BEVBdHlmSorUyGxF0BWcloBGnCc",
+      "heading": "1.资源采集掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/01-code.jsonc",
+      "bytes": 558,
+      "sha256": "9413e20e9ce42dbeb212cbba3b09eac7de97684571428d7e1e527780c02a4587"
+    },
+    {
+      "index": 2,
+      "block_id": "9",
+      "record_id": "OOc1dw74KohUQ5xCW6AcFy6MnJf",
+      "heading": "2.怪物掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/02-code.jsonc",
+      "bytes": 462,
+      "sha256": "206d81162ddbff01e5a9d698f341fab9c42077ddf7e12b8938c9b4551b2843cd"
+    },
+    {
+      "index": 3,
+      "block_id": "12",
+      "record_id": "JmIIdJ5T5o0TnXx4w9NcO4nSn9e",
+      "heading": "3.钓鱼掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/03-code.jsonc",
+      "bytes": 410,
+      "sha256": "33f75299d4f7b91d777d63e2f39db79e7a18b5a00bf3d21d7ba82af8bc36dd3a"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/source.html",
+    "rendered_html": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/rendered.html",
+    "text": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/content.txt",
+    "markdown": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/content.md",
+    "metadata": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/page.json"
+  }
+}

@@ -1,0 +1,17 @@
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	7	eat	marsh_pangolin_young	anim_animal_marsh_pangolin_young_eat_[0~6]
+帧动画（待机）	4	idle	marsh_pangolin_young	anim_animal_marsh_pangolin_young_idle_[0~3]
+帧动画（跳跃）	2	jump	marsh_pangolin_young	anim_animal_marsh_pangolin_young_jump_[0~1]
+帧动画（移动）	8	move	marsh_pangolin_young	anim_animal_marsh_pangolin_young_move_[0~7]
+帧动画（睡觉）	1	sleep	marsh_pangolin_young	anim_animal_marsh_pangolin_young_sleep_0
+图标（图鉴）	1		marsh_pangolin_young	icon_document_marsh_pangolin_young
+详情图（图鉴）	1		marsh_pangolin_young	preview_document_marsh_pangolin_young
+成年
+帧动画（进食）	8	eat	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_eat_[0~7]
+帧动画（待机）	4	idle	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_idle_[0~3]
+帧动画（跳跃）	2	jump	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_jump_[0~1]
+帧动画（移动）	8	move	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_sleep_0
+图标（图鉴）	1		marsh_pangolin_adult	icon_document_marsh_pangolin_adult
+详情图（图鉴）	1		marsh_pangolin_adult	preview_document_marsh_pangolin_adult

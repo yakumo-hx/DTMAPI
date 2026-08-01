@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI More Equipment Slots",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that adds three product-owned attribute equipment slots.",
+  "UniqueID": "DTMAPI.MoreEquipmentSlotsMod",
+  "EntryDll": "DTMAPI.MoreEquipmentSlots.dll",
+  "EntryType": "DTMAPI.MoreEquipmentSlots.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

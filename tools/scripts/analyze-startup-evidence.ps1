@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)]
     [string[]] $EvidencePath,
     [string] $OutputDirectory,
@@ -128,7 +128,10 @@ function Analyze-EvidenceDirectory {
     }
 
     $startupLineCount = Get-StartupLineCount -Text $runtimeText
-    $bootstrapAwakeMs = Get-FirstNumber -Text $runtimeText -Pattern 'Bootstrap\.Awake totalMs=(\d+)'
+    $bootstrapAwakeMs = Get-FirstNumber -Text $runtimeText -Pattern 'Bootstrap\.StartRuntime totalMs=(\d+)'
+    if ($null -eq $bootstrapAwakeMs) {
+        $bootstrapAwakeMs = Get-FirstNumber -Text $runtimeText -Pattern 'Bootstrap\.Awake totalMs=(\d+)'
+    }
     $discoverModsMs = Get-FirstNumber -Text $runtimeText -Pattern 'DiscoverMods totalMs=(\d+)'
     $manifestScanMs = Get-FirstNumber -Text $runtimeText -Pattern 'ManifestScan elapsedMs=(\d+)'
     $officialModsScanMs = Get-FirstNumber -Text $runtimeText -Pattern 'OfficialModsScan elapsedMs=(\d+)'
@@ -260,7 +263,7 @@ foreach ($item in $items) {
     $lines.Add("| $evidenceCell | $($item.Classification) | $($item.RuntimeLogSource) | $($item.StartupLog) | $($item.GameLaunched) | $($item.SaveLoaded) | $($item.LaunchToProcessMs) | $($item.LaunchToStartupPatternMs) | $($item.BootstrapAwakeTotalMs) | $($item.DiscoverModsTotalMs) | $($item.ModLoadMs) | $($item.BootstrapHarmonyInitializeMs) | $($item.IconLoadMs) | $processText | $fatalText |")
 }
 $lines.Add('')
-$lines.Add('Interpretation rule: only evidence with fresh DTMAPI startup segment lines near 30000ms can prove a DTMAPI runtime startup slowdown. If launch-to-startup is slow but `Bootstrap.Awake totalMs` is normal, classify it as a pre-runtime launch delay. A run with no `DolocTown.exe`, no fatal popup, and no startup segments is launch-blocking evidence, not a DTMAPI runtime timing sample.')
+$lines.Add('Interpretation rule: only evidence with fresh DTMAPI startup segment lines near 30000ms can prove a DTMAPI runtime startup slowdown. Current runs use `Bootstrap.StartRuntime totalMs`; historical runs fall back to `Bootstrap.Awake totalMs`. If launch-to-startup is slow but that runtime segment is normal, classify it as a pre-runtime launch delay. A run with no `DolocTown.exe`, no fatal popup, and no startup segments is launch-blocking evidence, not a DTMAPI runtime timing sample.')
 $lines | Set-Content -LiteralPath $mdPath
 
 if (-not $Quiet) {

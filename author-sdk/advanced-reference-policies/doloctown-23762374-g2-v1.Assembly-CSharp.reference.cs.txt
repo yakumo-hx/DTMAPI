@@ -1,0 +1,7 @@
+public static class DolocAPI
+{
+    public static bool Has087DemoData()
+    {
+        throw new System.NotSupportedException("Reference surface only.");
+    }
+}

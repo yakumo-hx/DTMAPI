@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+  "publish": {
+    "tags": ["Mod", "Gameplay", "Functional", "DTMAPI", "Chinese"],
+    "localizedName": {
+      "schinese": "DTMAPI牧铃隐藏产物进度",
+      "tchinese": "DTMAPI牧鈴隱藏產物進度",
+      "english": "DTMAPI Animal Bell Hidden Produce Progress"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n在牧铃动物查看界面显示隐藏产物进度。",
+      "tchinese": "依賴 DTMAPI。\n在牧鈴動物查看介面顯示隱藏產物進度。",
+      "english": "Requires DTMAPI.\nShows hidden special-produce progress in the animal bell viewer."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-animalhusbandryprogress-v1",
+    "references": ["0Harmony", "Assembly-CSharp"]
+  }
+}

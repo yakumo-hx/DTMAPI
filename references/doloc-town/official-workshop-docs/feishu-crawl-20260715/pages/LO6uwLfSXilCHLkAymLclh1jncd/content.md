@@ -1,0 +1,203 @@
+# 01 新增作物（种子+果实）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/LO6uwLfSXilCHLkAymLclh1jncd>
+
+Source modified label: 5月20日修改
+
+## 一、整体说明
+
+- 作物模组由【2个】json文件组成，分别是：
+
+- ◦道具信息item_tbitem.json
+
+- ◦作物信息plant_tbseed.json
+
+- Content文件夹内必须包含上述【2个】文件。
+
+- 配置示例中，标黄的字段为【需要修改的字段】。
+
+- 新增作物的获取方式、基因词条、加工途径等【配套设施】需要通过【其他模组】实现。详见06 综合案例一（新增作物）。
+
+- 注意作物分作物种子（种植时使用的）和作物果实（种植获取的果实），需要配置两个不同的物品
+
+## 二、配置示例及数据结构说明
+
+### 1.item_tbitem.json
+
+- 新增道具：艳丽红菌种子、艳丽红菌。
+
+_道具信息-配置示例_
+
+```json
+[
+   //以下为新增道具 艳丽红菌种子
+  {
+    "id": "seed_crop0", //道具ID
+    "sub_type": "farm_seed", //子道具类型，farm_seed为种子
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": [
+      "swap"  //获取途径（显示在图鉴）
+    ],
+    "selling_price": 4, //售出价格
+    "buying_price": 20, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_seed_crop0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_seed_crop0", //道具标题ID，格式为：item_道具ID
+      "text": "艳丽红菌种子" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_seed_crop0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "真菌作物，约1天成熟，只能在极为湿润的月份种植，色彩异常鲜艳。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionSeed" , //功能类型，ItemFunctionSeed为种子道具
+      "seed_id": "seed_crop0" //种子ID
+    }
+  },
+  //以下为新增道具 艳丽红菌
+  {
+    "id": "crop0", //道具ID
+    "sub_type": "farm_crop", //子道具类型，farm_seed为种子
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": true, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": [
+      "plant",  //获取途径（显示在图鉴）
+      "swap"
+    ],
+    "selling_price": 25, //售出价格
+    "buying_price": 50, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_crop0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_crop0", //道具标题ID，格式为：item_道具ID
+      "text": "艳丽红菌" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_crop0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "异常艳丽，但意外地可以吃？" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionCrop" , //功能类型，ItemFunctionCrop为作物道具
+      "seed_item": "seed_crop0", //种子ID
+      "eating_effect": ""  //食用效果ID
+    }
+  }
+]
+```
+
+### 2.plant_tbseed.json
+
+- 新增作物：艳丽红菌。
+
+_作物信息-配置示例_
+
+```json
+[
+  {
+    "id": "seed_crop0", //种子ID
+    "seed_type": "fungus", //作物类型（universal一般作物，fungus真菌作物，vine藤蔓作物，shrub灌木作物）
+    "nature_genes": [], //初始基因组
+    "health_value": 7.5, //血量
+    "damage_rate": 1, //承伤转化率
+    "growth_months": [ //（生长月份，为空表示没有限制）
+      2
+    ],
+    "tech_point": 2, //收获增长科技点数
+    "crop_outputs": [
+      {
+        "item_name": "crop0", //收获道具ID
+        "min_count": 2, //最小收获数量
+        "max_count": 2 //最大收获数量
+      }
+    ],
+    "lifespan": 1, //最大收获次数
+    "repeat_level": 2, //收获后重复的阶段
+    "level_datas": [
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_0" //场景贴图ID，格式为sprite_[种子ID]_阶段，下同。
+          }
+        ]
+      },
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_1" //场景贴图ID
+          }
+        ]
+      },
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_2" //场景贴图ID
+          }
+        ]
+      },
+      {
+        "growth_value": 0, //阶段成长值（一天=288），最后一阶段为0
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_3" //场景贴图ID
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+## 三、图片格式要求
+
+#### Embedded sheet `zciC2X`
+
+[TSV](sheets/01-01-zcic2x.tsv) · [rendered screenshot](sheets/01-01-zcic2x.png)
+
+```tsv
+类型	图片大小（像素）	作图规范
+道具图标	28*28	整体居中
+场景贴图	不限制	四周留1像素
+```
+
+## 四、图片命名对照表
+
+#### Embedded sheet `LUfpoS`
+
+[TSV](sheets/02-01-lufpos.tsv) · [rendered screenshot](sheets/02-01-lufpos.png)
+
+```tsv
+名称	命名格式
+[道具ID]	icon_item_[道具ID]
+```
+
+## 五、参考示例
+
+- 新增作物艳丽红菌（crop0）。
+
+![Official document image](images/rendered-01-23.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\03 进阶内容模组示例\01 新增作物
+
+## Links
+
+- [06 综合案例一（新增作物）](https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

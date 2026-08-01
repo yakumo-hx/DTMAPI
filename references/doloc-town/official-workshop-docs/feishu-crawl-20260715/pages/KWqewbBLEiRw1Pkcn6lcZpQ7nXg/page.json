@@ -1,0 +1,162 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+  "token": "KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+  "title": "06 综合案例一（新增道具）",
+  "document_title": "06 综合案例一（新增道具）",
+  "source_modified_label": "5月21日修改",
+  "status_code": 200,
+  "elapsed_seconds": 18.25,
+  "block_count": 26,
+  "blocks_by_type": {
+    "heading1": 5,
+    "bullet": 13,
+    "heading2": 2,
+    "code": 2,
+    "sheet": 2,
+    "image": 1,
+    "text": 1
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 3107,
+  "links": [
+    {
+      "text": "12 ID对照表（掉落库）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd",
+      "kind": "official-wiki",
+      "target_token": "TOb9w60BJihlQgkwv87cEtzFnVd"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "25",
+      "image_tokens": [
+        "ZKEWbzbQioBtrjxW4uHcBmFznJe"
+      ],
+      "rendered_path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/images/rendered-01-25.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "20",
+      "sheet_id": "FiSjpe",
+      "tsv_path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/sheets/01-01-fisjpe.tsv",
+      "screenshot_path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/sheets/01-01-fisjpe.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 3
+    },
+    {
+      "block_id": "22",
+      "sheet_id": "m897Wo",
+      "tsv_path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/sheets/02-01-m897wo.tsv",
+      "screenshot_path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/sheets/02-01-m897wo.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 2
+    }
+  ],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "12",
+      "record_id": "WsqFdtVb0oyar2x6uzKcmSz2nee",
+      "heading": "1.item_tbitem.json",
+      "caption": "装饰设备道具信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/code-blocks/01-code.jsonc",
+      "bytes": 1155,
+      "sha256": "66a9c9498741314480cd5c6cb62c20e6209e1fbcb9ca7f6aa2f7f0e17500e96b"
+    },
+    {
+      "index": 2,
+      "block_id": "15",
+      "record_id": "RvhLd1s1fo8VI6xut02cdUWOnKb",
+      "heading": "2.mod_tbmoditemspawnextension.json",
+      "caption": "掉落库信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/code-blocks/02-code.jsonc",
+      "bytes": 620,
+      "sha256": "d77c5cbb4f7dc681241ce4581f5b80002a295af7163da21fa5e914a1b52d3ca3"
+    }
+  ],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=E3ios3HithuaTdtSgMkcz0ymnVc&block_token=block_7629655247111441338_2001975938_9%2Cblock_7629655247111441338_1569349534_0%2Cblock_7629655247111441338_1188138836_0%2Cblock_7629655247111441338_1848775590_9&schema_version=9&blockIds=block_7629655247111441338_2001975938_9&blockIds=block_7629655247111441338_1569349534_0&blockIds=block_7629655247111441338_1188138836_0&blockIds=block_7629655247111441338_1848775590_9",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/raw-api/sheet-api-01-9df276b45a43eac9.json",
+      "bytes": 2199,
+      "sha256": "5a55ff1388ae26d000735a490a1a69af022b0f13cb8abace2cb3703ea5df9f1d"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 2048,
+      "sha256": "477988553f5fe4df77ce3c0b85598542ad91745139e664ce4d676a07eb711956"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 179,
+      "sha256": "146f1a94748e2d758be8ee1b753da5bf2f463cf9d1db090f35263ed7d913a508"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/source.html",
+    "rendered_html": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/rendered.html",
+    "text": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/content.txt",
+    "markdown": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/content.md",
+    "metadata": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/page.json"
+  }
+}

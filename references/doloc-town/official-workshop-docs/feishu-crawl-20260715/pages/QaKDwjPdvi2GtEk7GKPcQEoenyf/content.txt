@@ -1,0 +1,138 @@
+04 ID对照表（道具）
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/QaKDwjPdvi2GtEk7GKPcQEoenyf
+
+Source modified label: 5月18日修改
+
+1.道具ID对照表
+
+[Embedded sheet: bgGHOw]
+
+名称	ID	道具图标-命名格式	额外贴图（若有）	命名格式
+工具
+采集工具
+老旧镐	old_pickaxe	icon_item_old_pickaxe
+铜镐	copper_pickaxe	icon_item_copper_pickaxe
+铁镐	iron_pickaxe	icon_item_iron_pickaxe
+钢镐	steel_pickaxe	icon_item_steel_pickaxe
+老旧斧头	old_axe	icon_item_old_axe
+铜斧头	copper_axe	icon_item_copper_axe
+铁斧头	iron_axe	icon_item_iron_axe
+钢斧头	steel_axe	icon_item_steel_axe
+老旧镰刀	old_sickle	icon_item_old_sickle
+铜镰刀	copper_sickle	icon_item_copper_sickle
+铁镰刀	iron_sickle	icon_item_iron_sickle
+钢镰刀	steel_sickle	icon_item_steel_sickle
+水壶
+老旧水壶	old_watercan	icon_item_old_watercan
+铜水壶	copper_watercan	icon_item_copper_watercan
+铁水壶	iron_watercan	icon_item_iron_watercan
+钢水壶	steel_watercan	icon_item_steel_watercan
+鱼竿
+简易鱼竿	simple_fishrod	icon_item_simple_fishrod
+老旧鱼竿	old_fishrod	icon_item_old_fishrod
+竹鱼竿	bamboo_fishrod	icon_item_bamboo_fishrod
+玻璃纤维鱼竿	glass_fishrod	icon_item_glass_fishrod
+碳纤维鱼竿	carbon_fishrod	icon_item_carbon_fishrod
+农用喷枪
+农用喷枪	farming_gun	icon_item_farming_gun
+装备
+无人机
+废弃无人机	structure0	icon_item_structure0
+破旧的无人机	drone_structure_old	icon_item_drone_structure_old
+墨翟的手工无人机	drone_structure_modi_simple	icon_item_drone_structure_modi_simple
+多洛可警用无人机	drone_structure_doloc	icon_item_drone_structure_doloc
+
+2.子道具类型ID对照表
+
+[Embedded sheet: rwtLS5]
+
+子道具类型名称	子道具类型ID
+矿物素材	material_ore
+自然素材	material_nature
+垃圾素材	material_garbage
+怪物素材	material_monster
+种子	farm_seed
+作物	farm_crop
+水果	farm_fruit
+花卉	farm_flower
+野外采集	farm_wild
+鱼类	husbandry_fish
+动物	husbandry_animal
+动物产出	husbandry_animal_product
+农业制品	product_farm
+动物制品	product_animal
+工业制品	product_industry
+手工制品	product_handmade
+烘焙	food_baking
+菜品	food_cooking
+饮品	food_drink
+酒类	food_wine
+烹饪失败品	food_fail
+无人机框架	kit_structure
+枪械	kit_gun
+辅助装置	kit_assist
+引擎	kit_engine
+强化芯片	kit_dronechip
+帽子	kit_hat
+主动道具	kit_activeprop
+饰品	kit_passiveprop
+电力设备	equipment_fuel_generator
+工业加工设备	equipment_industry_synthesizer
+气象设备	equipment_weather
+种植盆	equipment_plantbasin
+农业加工设备	equipment_farm_synthesizer
+农用设备	equipment_farm_industry
+采集类设备	equipment_gather
+储物设备	equipment_stockpile
+灯具	equipment_lamps
+家具	equipment_ornament
+烹饪设备	equipment_cooking
+轻加工设备	equipment_food_grind
+渔业设备	equipment_brewing_wine
+功能设备	equipment_workbench
+畜牧设备	equipment_animal
+平台	construction_platform
+建筑蓝图	construction_building
+矿物收集品	special_mineral
+战前收集品	special_treasure
+任务物品	special_mission
+其他	special_other
+种子母本	special_maternal_seed
+基因胶囊	special_capsule
+工具	tool
+无	none
+
+3.获取途径ID对照表
+
+[Embedded sheet: p6NjlQ]
+
+获取途径名称	获取途径ID
+采集	gather
+战斗	battle
+交易	swap
+加工制造	processing
+垃圾分解	decomposition
+烹饪	cook
+礼物	npc
+海水	sea_water
+淡水	fresh_water
+种植	plant
+
+4.功能类型ID对照表
+
+[Embedded sheet: nl8E3B]
+
+功能类型名称	功能类型ID	使用效果	配置示例	举例	额外字段1	额外字段2
+默认	ItemFunction		01 新增道具	石头、鲑鱼
+帽子	ItemFunctionHat	穿戴帽子	02 新增帽子	焊工面罩、钢盔
+设备	ItemFunctionEquipment	放置设备	03 新增装饰设备	简易种植盆、熔炉
+作物种子	ItemFunctionSeed	种下种子	01 新增作物	末芋种子、龙舌兰种子	seed_id（对应的种子ID）
+作物果实	ItemFunctionCrop	食用（部分）	01 新增作物	末芋、龙舌兰	seed_item（对应的种子道具ID）	eating_effect（对应的食用效果ID）
+食物	ItemFunctionFood	食用	03 新增料理	罐头、葡萄酒	"
+eating_effect（对应的食用效果ID）
+"
+建筑外部墙纸	ItemFunctionBuildingExterior	改变建筑外部外观	09 综合案例四（新增墙纸）（暂未实装） 		exterior_id（对应的墙纸ID）
+建筑内部墙纸	ItemFunctionWallpaper	改变建筑室内外观	09 综合案例四（新增墙纸）（暂未实装） 		exterior_id（对应的墙纸ID）
+
+•官方参考模板中，提供了各类型道具的模板，详见02 道具数据模板。

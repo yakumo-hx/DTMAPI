@@ -1,0 +1,24 @@
+[
+  {
+    "id": "fish0_produce", //掉落库ID
+    "spawn_datas": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0,  //生成上限（0则无上限）
+        "item_name": "fish0" //生成道具ID
+      }
+    ]
+  },
+  {
+    "id": "fish1_produce", //掉落库ID
+    "spawn_datas": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "fish1" //生成道具ID
+      }
+    ]
+  }
+]

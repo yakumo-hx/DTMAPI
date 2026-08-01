@@ -1,0 +1,30 @@
+[
+  {
+    "id": "decoration0", //道具ID
+    "sub_type": "equipment_ornament", //子道具类型，equipment_ornament为设备道具
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": ["processing"], //获取途径（显示在图鉴），processing为加工制造
+    "selling_price": -1, //售出价格（设备道具填“-1”则根据配方自动计算）
+    "buying_price": 250, //购买价格
+    "overlay": 99, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_decoration0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_decoration0", //道具标题ID，格式为：item_道具ID
+      "text": "垃圾盆栽" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_decoration0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "用垃圾袋临时装了起来的树苗，没法继续生长，但能作为装饰。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionEquipment" //功能类型，ItemFunctionEquipment为设备道具
+    }
+  }
+]

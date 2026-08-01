@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI More Saves",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that expands the native archive count without owning save files or UI.",
+  "UniqueID": "DTMAPI.MoreSavesMod",
+  "EntryDll": "DTMAPI.MoreSaves.dll",
+  "EntryType": "DTMAPI.MoreSaves.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

@@ -1,0 +1,17 @@
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	7	eat	chicken_young	anim_animal_chicken_young_eat_[0~6]
+帧动画（待机）	4	idle	chicken_young	anim_animal_chicken_young_idle_[0~3]
+帧动画（跳跃）	2	jump	chicken_young	anim_animal_chicken_young_jump_[0~1]
+帧动画（移动）	4	move	chicken_young	anim_animal_chicken_young_move_[0~3]
+帧动画（睡觉）	1	sleep	chicken_young	anim_animal_chicken_young_sleep_0
+图标（图鉴）	1		chicken_young	icon_document_chicken_young
+详情图（图鉴）	1		chicken_young	preview_document_chicken_young
+成年
+帧动画（进食）	7	eat	chicken_adult	anim_animal_chicken_adult_eat_[0~6]
+帧动画（待机）	4	idle	chicken_adult	anim_animal_chicken_adult_idle_[0~3]
+帧动画（跳跃）	3	jump	chicken_adult	anim_animal_chicken_adult_jump_[0~2]
+帧动画（移动）	8	move	chicken_adult	anim_animal_chicken_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	chicken_adult	anim_animal_chicken_adult_sleep_0
+图标（图鉴）	1		chicken_adult	icon_document_chicken_adult
+详情图（图鉴）	1		chicken_adult	preview_document_chicken_adult

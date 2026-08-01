@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "Yuuka.DTMAPI.ActionSpeed",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Gameplay",
+      "Functional",
+      "DTMAPI",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI动作加速",
+      "tchinese": "DTMAPI動作加速",
+      "english": "DTMAPI Action Speed"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n加速工具、交互、吃喝、种植与收获动作。",
+      "tchinese": "依賴 DTMAPI。\n加速工具、互動、吃喝、種植與收穫動作。",
+      "english": "Requires DTMAPI.\nSpeeds tool, interaction, eating, planting, and harvesting actions."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-actionspeed-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

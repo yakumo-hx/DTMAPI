@@ -1,0 +1,13 @@
+[
+  {
+    "id": "coal_mine_drop",
+    "extra_items": [
+      {
+        "spawn_weight": 25,
+        "min_count": 0,
+        "max_count": 0,
+        "item_name": "crude_oil"
+      }
+    ]
+  }
+]

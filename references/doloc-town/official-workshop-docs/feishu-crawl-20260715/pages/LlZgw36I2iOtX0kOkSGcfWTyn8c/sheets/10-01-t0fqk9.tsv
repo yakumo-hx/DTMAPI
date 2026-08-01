@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	witch	anim_npc_witch_idle_[0~5]
+帧动画（对话）	6	talk	witch	anim_npc_witch_talk_[0~5]
+帧动画（移动）	8	walk	witch	anim_npc_witch_walk_[0~7]
+图标（日历）	1		witch	icon_calendar_witch
+图标（图鉴）	1		witch	icon_document_witch
+详情图（图鉴）	1		witch	preview_document_witch

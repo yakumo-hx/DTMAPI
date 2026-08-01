@@ -131,7 +131,7 @@ The intended player/support loop is:
 2. Manager shows status summary and failed rows first.
 3. Player clicks Export Report.
 4. Player uploads the report zip or compact web evidence to an issue/review.
-5. Maintainer triages report data into a review record, known issue, compatibility database entry, or implementation goal.
+5. Maintainer triages report data into a review record, known issue, compatibility database entry, or in-progress update record.
 6. Fixes cite update records and smoke/manual evidence.
 7. Known Issues and compatibility notes are refreshed so repeated reports become searchable, not rediscovered.
 

@@ -50,3 +50,5 @@ Livestock and animal behavior, including eating, defecation, breeding, products,
 
 Maps: `Assets_Content.md`, `Action_Interaction.md`, `Resource_Gathering.md`, `Shop.md`.
 Classes/symbols: `Animal`, `AnimalManager`, `AnimalController`, `AnimalAI`, `IFeeder`, `Toilet`, `LivestockNursery`, `MilkingMachine`, `LintRoller`, `HoneyComb`, `ItemAnimalPackage`.
+
+Task-specific follow-up: [Kenenimuu Decorative Animal Capture Native-Owner Review](../2026/20260717-0005-kenenimuu-decorative-animal-capture-native-owner-review.md) confirms that the animals outside Kenenimuu's home use the separate scene-owned `DecorativeAnimalManager`/`DecorativeAnimal` lifecycle rather than NPC-owned ordinary livestock, and records the conversion, persistence, and respawn boundary for any future capture feature.

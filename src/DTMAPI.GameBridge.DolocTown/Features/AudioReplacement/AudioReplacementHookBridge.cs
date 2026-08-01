@@ -7,6 +7,11 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly DtmApiRuntime runtime;
         private readonly AudioReplacementService service;
+        private bool hasPublishedPhysicalState;
+        private bool publishedInternalPostSoundEventPatched;
+        private bool publishedPaperBoxInteractPatched;
+        private bool publishedAnimalPlayAnimalSoundPrefixPatched;
+        private bool publishedAnimalPlayAnimalSoundPostfixPatched;
 
         public AudioReplacementHookBridge(DtmApiRuntime runtime, AudioReplacementService service)
         {
@@ -16,14 +21,16 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal bool InternalPostSoundEventPatched { get; private set; }
         internal bool PaperBoxInteractPatched { get; private set; }
+        internal bool AnimalPlayAnimalSoundPrefixPatched { get; private set; }
+        internal bool AnimalPlayAnimalSoundPostfixPatched { get; private set; }
 
         public void PublishHookStatuses()
         {
             runtime.SetHookStatus(
                 "Audio.SoundEventReplacement",
                 "contract",
-                "IAudioReplacementApi -> WwiseSoundManager.InternalPostSoundEvent Prefix",
-                "Experimental native sound-event replacement contract. Public API uses string event names; GameBridge owns Wwise/Unity reflection and must fail open when replacement audio is not playable.");
+                "IAudioReplacementApi/content-pack JSON -> WwiseSoundManager.InternalPostSoundEvent Prefix",
+                "Experimental native sound-event replacement contract. Public API uses string event names; content packs may declare reviewed short SFX replacements; GameBridge owns Wwise/Unity reflection and must fail open when replacement audio is not playable.");
         }
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
@@ -56,7 +63,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         exactNestedCallbackSignature);
             }
 
-            if (!PaperBoxInteractPatched)
+            if (service.HasEnabledPaperBoxDiagnosticDefinitions && !PaperBoxInteractPatched)
             {
                 PaperBoxInteractPatched = patcher.TryPatchPostfix(
                     "DolocTown.DungeonResourceModelPaperBox, Assembly-CSharp",
@@ -65,14 +72,61 @@ namespace DTMAPI.GameBridge.DolocTown
                     0);
             }
 
-            service.SetHookInstalled(InternalPostSoundEventPatched);
+            if (service.HasEnabledAnimalVoiceDefinitions && !AnimalPlayAnimalSoundPrefixPatched)
+            {
+                AnimalPlayAnimalSoundPrefixPatched = patcher.TryPatchPrefix(
+                    "DolocTown.Animal, Assembly-CSharp",
+                    "PlayAnimalSound",
+                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalPlayAnimalSoundPrefix), BindingFlags.Public | BindingFlags.Static),
+                    0);
+            }
+
+            if (service.HasEnabledAnimalVoiceDefinitions && !AnimalPlayAnimalSoundPostfixPatched)
+            {
+                AnimalPlayAnimalSoundPostfixPatched = patcher.TryPatchPostfix(
+                    "DolocTown.Animal, Assembly-CSharp",
+                    "PlayAnimalSound",
+                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AnimalPlayAnimalSoundPostfix), BindingFlags.Public | BindingFlags.Static),
+                    0);
+            }
+
+            PublishPhysicalHookStateIfChanged(
+                InternalPostSoundEventPatched,
+                PaperBoxInteractPatched,
+                AnimalPlayAnimalSoundPrefixPatched,
+                AnimalPlayAnimalSoundPostfixPatched);
+        }
+
+        internal bool PublishPhysicalHookStateIfChanged(
+            bool internalPostSoundEventPatched,
+            bool paperBoxInteractPatched,
+            bool animalPlayAnimalSoundPrefixPatched,
+            bool animalPlayAnimalSoundPostfixPatched)
+        {
+            if (hasPublishedPhysicalState &&
+                publishedInternalPostSoundEventPatched == internalPostSoundEventPatched &&
+                publishedPaperBoxInteractPatched == paperBoxInteractPatched &&
+                publishedAnimalPlayAnimalSoundPrefixPatched == animalPlayAnimalSoundPrefixPatched &&
+                publishedAnimalPlayAnimalSoundPostfixPatched == animalPlayAnimalSoundPostfixPatched)
+            {
+                return false;
+            }
+
+            service.SetHookInstalled(internalPostSoundEventPatched);
             runtime.SetHookStatus(
                 "Audio.SoundEventReplacement",
-                InternalPostSoundEventPatched ? "experimental" : "pending",
-                "Harmony Prefix: WwiseSoundManager.InternalPostSoundEvent; diagnostic Postfix: DungeonResourceModelPaperBox.OnInteract",
-                InternalPostSoundEventPatched
-                    ? "Patched the native Wwise event bridge. Replacement playback suppresses native audio only after local audio is ready and a replacement backend starts successfully. Paper-box native owner diagnostic patched=" + PaperBoxInteractPatched + "."
-                    : "Waiting for WwiseSoundManager.InternalPostSoundEvent to become patchable. Paper-box native owner diagnostic patched=" + PaperBoxInteractPatched + ".");
+                internalPostSoundEventPatched ? "experimental" : "pending",
+                "Harmony Prefix: WwiseSoundManager.InternalPostSoundEvent; Animal.PlayAnimalSound context; diagnostic Postfix: DungeonResourceModelPaperBox.OnInteract",
+                internalPostSoundEventPatched
+                    ? "Patched the native Wwise event bridge. Replacement playback suppresses native audio only after local audio is ready and a replacement backend starts successfully. Paper-box native owner diagnostic patched=" + paperBoxInteractPatched + "; animalVoiceContextPrefix=" + animalPlayAnimalSoundPrefixPatched + "; animalVoiceContextPostfix=" + animalPlayAnimalSoundPostfixPatched + "."
+                    : "Waiting for WwiseSoundManager.InternalPostSoundEvent to become patchable. Paper-box native owner diagnostic patched=" + paperBoxInteractPatched + "; animalVoiceContextPrefix=" + animalPlayAnimalSoundPrefixPatched + "; animalVoiceContextPostfix=" + animalPlayAnimalSoundPostfixPatched + ".");
+
+            hasPublishedPhysicalState = true;
+            publishedInternalPostSoundEventPatched = internalPostSoundEventPatched;
+            publishedPaperBoxInteractPatched = paperBoxInteractPatched;
+            publishedAnimalPlayAnimalSoundPrefixPatched = animalPlayAnimalSoundPrefixPatched;
+            publishedAnimalPlayAnimalSoundPostfixPatched = animalPlayAnimalSoundPostfixPatched;
+            return true;
         }
     }
 }

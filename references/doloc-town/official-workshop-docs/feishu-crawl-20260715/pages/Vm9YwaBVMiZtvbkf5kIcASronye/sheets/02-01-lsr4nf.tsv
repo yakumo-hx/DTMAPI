@@ -1,0 +1,35 @@
+设备名称	设备ID
+工业设备
+设备工作台	equipment_workbench
+熔炉	smelter
+铸造熔炉	large_smelter
+木炭窑	charcoal_kiln
+组装塑形机	assemble_molding_machine
+岩石粉碎机	rock_grinder
+充电器	charger
+垃圾熔炼机	garbage_collector
+农业设备
+树脂压制机	resin_compacting_machine
+堆肥桶	compost_barrel
+肥料压制机	compost_grinder
+乔木堆肥桶	tree_compost_barrel
+生活设备-炊具
+烤箱	oven
+大烤箱	large_oven
+烹煮锅	pot
+大烹煮锅	large_pot
+茶壶	teapot
+大茶壶	large_teapot
+生活设备-其他
+手工工作台	manual_workbench
+纺织机	loom
+研磨机	grinder
+腌制罐	pickled_jar
+大腌制罐	pickled_jar_big
+烘干箱	air_drying_box
+电力烘干箱	air_drying_box_big
+酿酒桶	brewing_barrel
+大酿酒桶	large_brewing_barrel
+窖藏架	brewing_rack
+畜牧设备
+饲料机	feed_machine

@@ -10,7 +10,8 @@ This directory records the four-round review of current local mods as API demand
 local mod behavior
   -> semantic target
   -> native responsibility function / state holder candidate
-  -> GameBridge or Core adapter boundary
+  -> Platform / SharedNative / ProductNative / ContentOwner classification
+  -> Core, GameBridge, future managed Advanced CodeMod, or optional Content Host boundary
   -> public API status recommendation
 ```
 
@@ -85,5 +86,5 @@ The confidence score is the review confidence for semantic target to native-owne
 1. Pick one local mod or one demand cluster.
 2. Re-open the linked native-owner domain report and public API matrix row.
 3. Inspect method bodies for the exact native owner and state holder.
-4. Write one narrow API rebuild goal only if the owner questions are concrete.
+4. Classify physical ownership under [`PROJECT.md`](../../../../PROJECT.md), then write one narrow API rebuild goal only if the owner questions are concrete. A single-product native path does not enter GameBridge merely because it uses Harmony or reflection.
 5. Keep third-party samples out of implementation unless license/permission is explicit and compatible.

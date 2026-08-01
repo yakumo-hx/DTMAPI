@@ -6,11 +6,143 @@
     <RootNamespace>DTMAPI.UnitTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\DtmApiTestSession.cs" Link="DtmApiTestSession.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\src\FishingDecisionEngine.cs" Link="AutoFishing\FishingDecisionEngine.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\src\FishingProductContracts.cs" Link="AutoFishing\FishingProductContracts.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\src\AutoFishingConfig.cs" Link="AutoFishing\AutoFishingConfig.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\src\Native\FishingMiniGameInputState.cs" Link="AutoFishing\FishingMiniGameInputState.cs" />
+    <Compile Include="..\..\products\first-party\AnimalHusbandryProgress\src\Native\AnimalOverlaySessionState.cs" Link="AnimalHusbandryProgress\AnimalOverlaySessionState.cs" />
+    <Compile Include="..\..\products\first-party\MoreSaves\src\MoreSavesConfig.cs" Link="MoreSaves\MoreSavesConfig.cs" />
+    <Compile Include="..\..\products\first-party\MoreSaves\src\MoreSavesNativeRuntime.cs" Link="MoreSaves\MoreSavesNativeRuntime.cs" />
+    <Compile Include="..\..\products\first-party\ChestLocatorEnhancer\src\Native\ChestLocatorHookOwnership.cs" Link="ChestLocatorEnhancer\ChestLocatorHookOwnership.cs" />
+    <Compile Include="..\..\products\first-party\ChestLocatorEnhancer\src\Native\ChestLocatorInventoryTraversal.cs" Link="ChestLocatorEnhancer\ChestLocatorInventoryTraversal.cs" />
+    <Compile Include="..\..\products\first-party\ChestLocatorEnhancer\src\Native\ChestLocatorObservationLogGate.cs" Link="ChestLocatorEnhancer\ChestLocatorObservationLogGate.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotContracts.cs" Link="MoreEquipmentSlots\EquipmentSlotContracts.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotTransactionJournal.cs" Link="MoreEquipmentSlots\EquipmentSlotTransactionJournal.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotStorageFormatProbe.cs" Link="MoreEquipmentSlots\EquipmentSlotStorageFormatProbe.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotLegacyMigration.cs" Link="MoreEquipmentSlots\EquipmentSlotLegacyMigration.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotDocumentStore.cs" Link="MoreEquipmentSlots\EquipmentSlotDocumentStore.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotDocumentStore.Migration.cs" Link="MoreEquipmentSlots\EquipmentSlotDocumentStore.Migration.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotNativePlacement.cs" Link="MoreEquipmentSlots\EquipmentSlotNativePlacement.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotNativeMailEvidence.cs" Link="MoreEquipmentSlots\EquipmentSlotNativeMailEvidence.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\MoreEquipmentSlotsHookOwnership.cs" Link="MoreEquipmentSlots\MoreEquipmentSlotsHookOwnership.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\MoreEquipmentSlotsEffectPolicy.cs" Link="MoreEquipmentSlots\MoreEquipmentSlotsEffectPolicy.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\MoreEquipmentSlotsReflectionAccess.cs" Link="MoreEquipmentSlots\MoreEquipmentSlotsReflectionAccess.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunProductContract.cs" Link="StrongPlantingGun\StrongPlantingGunProductContract.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunHookOwnership.cs" Link="StrongPlantingGun\StrongPlantingGunHookOwnership.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunLogGate.cs" Link="StrongPlantingGun\StrongPlantingGunLogGate.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunReflectionCache.cs" Link="StrongPlantingGun\StrongPlantingGunReflectionCache.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunCleanupTransaction.cs" Link="StrongPlantingGun\StrongPlantingGunCleanupTransaction.cs" />
+    <Compile Include="..\..\products\first-party\StrongPlantingGun\src\Native\StrongPlantingGunLifecycleSummary.cs" Link="StrongPlantingGun\StrongPlantingGunLifecycleSummary.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\ZoomConfig.cs" Link="Zoom\ZoomConfig.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\Native\ZoomProductContract.cs" Link="Zoom\ZoomProductContract.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\Native\ZoomHookOwnership.cs" Link="Zoom\ZoomHookOwnership.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\Native\ZoomHookTransaction.cs" Link="Zoom\ZoomHookTransaction.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\Native\ZoomCallbacks.cs" Link="Zoom\ZoomCallbacks.cs" />
+    <Compile Include="..\..\products\first-party\Zoom\src\Native\ZoomNativeRuntime.cs" Link="Zoom\ZoomNativeRuntime.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.cs" Link="DebugConsole\DebugConsoleUi.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\IDebugConsoleActions.cs" Link="DebugConsole\IDebugConsoleActions.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\IDebugConsoleRuntime.cs" Link="DebugConsole\IDebugConsoleRuntime.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleText.cs" Link="DebugConsole\DebugConsoleText.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleRawInput.cs" Link="DebugConsole\DebugConsoleRawInput.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\DebugConsoleSaveSessionGate.cs" Link="DebugConsole\DebugConsoleSaveSessionGate.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeAccess.cs" Link="DebugConsole\DebugConsoleNativeAccess.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Core.cs" Link="DebugConsole\DebugConsoleNativeActions.Core.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Advanced.cs" Link="DebugConsole\DebugConsoleNativeActions.Advanced.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Helpers.cs" Link="DebugConsole\DebugConsoleNativeActions.Helpers.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleCreativeHooks.cs" Link="DebugConsole\DebugConsoleCreativeHooks.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleMovementHooks.cs" Link="DebugConsole\DebugConsoleMovementHooks.cs" />
+    <Compile Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DebugConsole\CompatibilityDebugConsoleRuntimeAdapter.cs" Link="DebugConsole\CompatibilityDebugConsoleRuntimeAdapter.cs" />
+    <Compile Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DebugConsole\CompatibilityDebugConsoleInputHooks.cs" Link="DebugConsole\CompatibilityDebugConsoleInputHooks.cs" />
+    <Compile Include="..\..\src\DTMAPI.GameBridge.DolocTown\Compatibility\EquipmentSlots\EquipmentSlotProtectedStoragePolicy.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotProtectedStoragePolicy.cs" />
+    <Compile Include="..\..\src\DTMAPI.GameBridge.DolocTown\Compatibility\EquipmentSlots\EquipmentSlotShieldPolicy.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotShieldPolicy.cs" />
+    <Compile Include="..\..\src\DTMAPI.GameBridge.DolocTown\Compatibility\EquipmentSlots\EquipmentSlotJournalRecoveryPolicy.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotJournalRecoveryPolicy.cs" />
+    <Compile Remove="Fixtures\RuntimeCodeModFixture\**\*.cs" />
+    <Compile Remove="Fixtures\LegacyNativeCodeModFixture\**\*.cs" />
+    <Compile Remove="Fixtures\LegacyNativeHelperFixture\**\*.cs" />
+    <Compile Remove="Fixtures\LegacyNativeThrowingCodeModFixture\**\*.cs" />
+    <Compile Remove="Fixtures\LegacyCollisionA\**\*.cs" />
+    <Compile Remove="Fixtures\LegacyCollisionB\**\*.cs" />
+    <Compile Remove="Fixtures\CompatibilityHostWrongNameFixture\**\*.cs" />
+    <Compile Remove="Fixtures\CompatibilityHostWrongVersionFixture\**\*.cs" />
+    <Compile Remove="Fixtures\CompatibilityHostWrongFrameworkFixture\**\*.cs" />
+    <Compile Remove="Fixtures\ChestLocatorHarmonyOwnerFixture\**\*.cs" />
+    <Compile Remove="Fixtures\EquipmentSlotsNativeFixture\**\*.cs" />
+    <Compile Remove="Fixtures\EquipmentSlotsHarmonyOwnerFixture\**\*.cs" />
+    <Compile Remove="Fixtures\StrongPlantingGunNativeFixture\**\*.cs" />
+    <Compile Remove="Fixtures\StrongPlantingGunHarmonyOwnerFixture\**\*.cs" />
+    <Compile Remove="Fixtures\ZoomHarmonyOwnerFixture\**\*.cs" />
+    <Compile Remove="Fixtures\MineNativeFixture\**\*.cs" />
+    <Compile Remove="Fixtures\MineHarmonyOwnerFixture\**\*.cs" />
+    <Compile Remove="Fixtures\DebugConsoleNativeFixture\**\*.cs" />
+    <Compile Remove="Fixtures\DebugConsoleHarmonyOwnerFixture\**\*.cs" />
     <ProjectReference Include="..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\src\DTMAPI.BepInExBootstrap\DTMAPI.BepInExBootstrap.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
-    <ProjectReference Include="..\..\testmods\AutoFishingMod\AutoFishingMod.csproj" />
+    <ProjectReference Include="Fixtures\RuntimeCodeModFixture\RuntimeCodeModFixture.csproj" />
+    <ProjectReference Include="Fixtures\LegacyNativeCodeModFixture\LegacyNativeCodeModFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\LegacyNativeThrowingCodeModFixture\LegacyNativeThrowingCodeModFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\LegacyCollisionA\LegacyCollisionA.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\LegacyCollisionB\LegacyCollisionB.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\CompatibilityHostWrongNameFixture\CompatibilityHostWrongNameFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\CompatibilityHostWrongVersionFixture\CompatibilityHostWrongVersionFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Fixtures\CompatibilityHostWrongFrameworkFixture\CompatibilityHostWrongFrameworkFixture.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <Target Name="BuildChestLocatorHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\ChestLocatorHarmonyOwnerFixture\ChestLocatorHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="BuildEquipmentSlotsHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\EquipmentSlotsHarmonyOwnerFixture\EquipmentSlotsHarmonyOwnerFixture.csproj"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="Fixtures\EquipmentSlotsHarmonyOwnerFixture\EquipmentSlotsHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="BuildStrongPlantingGunHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\StrongPlantingGunHarmonyOwnerFixture\StrongPlantingGunHarmonyOwnerFixture.csproj"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="Fixtures\StrongPlantingGunHarmonyOwnerFixture\StrongPlantingGunHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="BuildZoomHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\ZoomHarmonyOwnerFixture\ZoomHarmonyOwnerFixture.csproj"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="Fixtures\ZoomHarmonyOwnerFixture\ZoomHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="BuildMineHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\MineHarmonyOwnerFixture\MineHarmonyOwnerFixture.csproj"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="Fixtures\MineHarmonyOwnerFixture\MineHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="BuildDebugConsoleHarmonyOwnerFixture" BeforeTargets="Build">
+    <MSBuild Projects="Fixtures\DebugConsoleHarmonyOwnerFixture\DebugConsoleHarmonyOwnerFixture.csproj"
+             Targets="Restore"
+             Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="Fixtures\DebugConsoleHarmonyOwnerFixture\DebugConsoleHarmonyOwnerFixture.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+  <Target Name="CopyCompatibilityHostFixture" AfterTargets="Build">
+    <ItemGroup>
+      <CompatibilityHostFixture Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\bin\$(Configuration)\netstandard2.0\DTMAPI.GameBridge.DolocTown.Compatibility.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CompatibilityHostFixture)" DestinationFolder="$(OutDir)CompatibilityHostFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="Fixtures\CompatibilityHostWrongNameFixture\bin\$(Configuration)\netstandard2.0\DTMAPI.GameBridge.DolocTown.Compatibility.Substitute.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongNameFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="Fixtures\CompatibilityHostWrongVersionFixture\bin\$(Configuration)\netstandard2.0\DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongVersionFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="Fixtures\CompatibilityHostWrongFrameworkFixture\bin\$(Configuration)\net8.0\DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongFrameworkFixture" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

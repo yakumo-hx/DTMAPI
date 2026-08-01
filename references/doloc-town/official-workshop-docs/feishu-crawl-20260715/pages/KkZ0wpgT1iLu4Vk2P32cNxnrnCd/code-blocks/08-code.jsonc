@@ -1,0 +1,40 @@
+[
+  {
+    "id": "fish0", //图鉴ID，等同鱼ID
+    "habitat": {
+      "key": "fish_fish0_habitat", //出末地点ID，格式为：fish_[鱼ID]_habitat
+      "text": "淡水" //出末地点文本
+    },
+    "document_infos": [
+      {
+        "id": "fish0_0", //文档ID，格式为鱼ID_[编号]
+        "document_type": 1, //档案类型，填1不动
+        "value": 0, //档案类型参数，填0不动
+        "description_append": {
+          "key": "document_fish_fish0_0", //追加描述ID，格式为：document_fish_[文档ID]
+          "text": "随处可见的淡水鱼，普普通通，平平无奇。" //追加描述文本
+        }
+      }
+    ],
+    "display": true //是否显示详细信息，填true不动
+  },
+  {
+    "id": "fish1", //图鉴ID，等同鱼ID
+    "habitat": {
+      "key": "fish_fish1_habitat", //出末地点ID，格式为：fish_[鱼ID]_habitat
+      "text": "暂无记录" //出末地点文本
+    },
+    "document_infos": [
+      {
+        "id": "fish1_0", //文档ID，格式为鱼ID_[编号]
+        "document_type": 1, //档案类型，填1不动
+        "value": 0, //档案类型参数，填0不动
+        "description_append": {
+          "key": "document_fish_fish1_0", //追加描述ID，格式为：document_fish_[文档ID]
+          "text": "在普通的鲮鱼群中显得不是那么普通。" //追加描述文本
+        }
+      }
+    ],
+    "display": true //是否显示详细信息，填true不动
+  }
+]

@@ -1,0 +1,91 @@
+[
+    {
+    "id": "seed_crop0", //种子ID
+    "gene_map": [
+      [
+        "anti_acid_rain", //角化
+        0 //权重
+      ],
+      [
+        "conifer_leaf", //针叶
+        0 //权重
+      ],
+      [
+        "time_gift", //时间馈赠
+        0 //权重
+      ],
+      [
+        "robust_health", //体质增强
+        0 //权重
+      ],
+      [
+        "spore_spray", //孢子喷射
+        15 //权重
+      ],
+      [
+        "charge", //充能
+        2 //权重
+      ],
+      [
+        "immortal_jellyfish", //灯塔水母
+        3 //权重
+      ],
+      [
+        "fractal_crop", //分形作物
+        3 //权重
+      ],
+      [
+        "wind_sow", //风媒传播
+        2 //权重
+      ],
+      [
+        "hope", //希望
+        0 //权重
+      ],
+      [
+        "florescence_extend", //花期延长
+        3 //权重
+      ],
+      [
+        "symbiotic_supply", //共生滋养
+        2 //权重
+      ],
+      [
+        "fertility_enhance", //肥力提升
+        3 //权重
+      ],
+      [
+        "bonsai", //盆景
+        2 //权重
+      ],
+      [
+        "aerial_root", //气生根
+        1 //权重
+      ],
+      [
+        "oxygen", //富氧化
+        1 //权重
+      ],
+      [
+        "grow_unchecked", //野蛮生长
+        1 //权重
+      ],
+      [
+        "sprinkler", //雨露均沾
+        0 //权重
+      ],
+      [
+        "hanabi", //昙华
+        0 //权重
+      ],
+      [
+        "parasite", //寄生体
+        1 //权重
+      ],
+      [
+        "firefly", //萤火虫
+        0 //权重
+      ]
+    ]
+  }
+]

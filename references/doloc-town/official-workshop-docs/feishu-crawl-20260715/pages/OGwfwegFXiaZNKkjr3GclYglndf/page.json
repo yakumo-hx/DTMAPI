@@ -1,0 +1,104 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+  "token": "OGwfwegFXiaZNKkjr3GclYglndf",
+  "title": "07 ID对照表（建筑）",
+  "document_title": "07 ID对照表（建筑）",
+  "source_modified_label": "5月14日修改",
+  "status_code": 200,
+  "elapsed_seconds": 16.797,
+  "block_count": 6,
+  "blocks_by_type": {
+    "heading1": 2,
+    "sheet": 2,
+    "bullet": 1,
+    "text": 1
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 1348,
+  "links": [
+    {
+      "text": "05 贴图锚点说明",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+      "kind": "official-wiki",
+      "target_token": "Rdp1with9ih1frk7Pl8cbFD9nDc"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/images/original/image-02-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "3",
+      "sheet_id": "RxwenO",
+      "tsv_path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/sheets/01-01-rxweno.tsv",
+      "screenshot_path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/sheets/01-01-rxweno.png",
+      "status": "captured",
+      "rows": 13,
+      "columns_max": 7
+    },
+    {
+      "block_id": "6",
+      "sheet_id": "o22LKy",
+      "tsv_path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/sheets/02-01-o22lky.tsv",
+      "screenshot_path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/sheets/02-01-o22lky.png",
+      "status": "captured",
+      "rows": 15,
+      "columns_max": 5
+    }
+  ],
+  "code_blocks": [],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=MuzlsFygIhebqPtHKuTcqMsPnfK&block_token=block_7628508196608429017_1713542833_72&schema_version=9&blockIds=block_7628508196608429017_1713542833_72",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/raw-api/sheet-api-01-c8826cd1ec956b83.json",
+      "bytes": 1276,
+      "sha256": "711b5d2cad431cd19c033fe464124902ea26b4fe2ed1bd50f48f834b733a6b10"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 2703,
+      "sha256": "4eaff3bff3bd85fde3b0328dd97bc0d893d64c07472c2133961fdcda80a8950d"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/OGwfwegFXiaZNKkjr3GclYglndf/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 105,
+      "sha256": "2b363de4f78c644867c346f81f3ef0b86c60f7f15acd2887fa41141863c56978"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/OGwfwegFXiaZNKkjr3GclYglndf/source.html",
+    "rendered_html": "pages/OGwfwegFXiaZNKkjr3GclYglndf/rendered.html",
+    "text": "pages/OGwfwegFXiaZNKkjr3GclYglndf/content.txt",
+    "markdown": "pages/OGwfwegFXiaZNKkjr3GclYglndf/content.md",
+    "metadata": "pages/OGwfwegFXiaZNKkjr3GclYglndf/page.json"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "mod.name": "DTMAPI 更多装备槽",
+  "mod.loaded": "DTMAPI 更多装备槽 ProductNative 运行时已加载。",
+  "config.section.main": "额外装备槽",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "增加固定三个由产品持有的属性装备槽。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "记录低频生命周期与恢复诊断。"
+}

@@ -1,0 +1,199 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb",
+  "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+  "title": "05 新增植被",
+  "document_title": "05 新增植被",
+  "source_modified_label": "4月21日修改",
+  "status_code": 200,
+  "elapsed_seconds": 19.016,
+  "block_count": 37,
+  "blocks_by_type": {
+    "heading1": 5,
+    "bullet": 18,
+    "heading3": 5,
+    "code": 4,
+    "sheet": 2,
+    "image": 1,
+    "text": 2
+  },
+  "scroll_samples": 8,
+  "scroll_height_max": 5256,
+  "links": [
+    {
+      "text": "08 综合案例三（新增资源）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+      "kind": "official-wiki",
+      "target_token": "U75Lwhq4qi4prxkti3zcffplnhf"
+    },
+    {
+      "text": "06 ID对照表（资源&植被）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud",
+      "kind": "official-wiki",
+      "target_token": "UTmLwGzpAijYjvkhvE9czGyenud"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+    "https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "35",
+      "image_tokens": [
+        "QktOb5SLSohz5rx8spPcsFrlnXd"
+      ],
+      "rendered_path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/images/rendered-01-35.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "30",
+      "sheet_id": "ZKonXZ",
+      "tsv_path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/sheets/01-01-zkonxz.tsv",
+      "screenshot_path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/sheets/01-01-zkonxz.png",
+      "status": "captured",
+      "rows": 5,
+      "columns_max": 3
+    },
+    {
+      "block_id": "32",
+      "sheet_id": "j3J2n2",
+      "tsv_path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/sheets/02-01-j3j2n2.tsv",
+      "screenshot_path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/sheets/02-01-j3j2n2.png",
+      "status": "captured",
+      "rows": 5,
+      "columns_max": 3
+    }
+  ],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "15",
+      "record_id": "doxcnyntW1kXH0FCxpQUoQtrlhb",
+      "heading": "1.resource_tbvegetation.json",
+      "caption": "植被信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 44,
+      "line_count": 44,
+      "line_complete": true,
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/01-code.jsonc",
+      "bytes": 1557,
+      "sha256": "3430aab1475783dc84818366784ef4abfa5cafc46d51b6d7991219cb797bebd1"
+    },
+    {
+      "index": 2,
+      "block_id": "19",
+      "record_id": "doxcnouRDeRloBnYLWCvgQnzm0c",
+      "heading": "2.mod_tbmodvegetationspawnextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/02-code.jsonc",
+      "bytes": 643,
+      "sha256": "05f72e5ed66345888176a899dde15c5541f318db8ab588bdcfde894211652406"
+    },
+    {
+      "index": 3,
+      "block_id": "25",
+      "record_id": "doxcnanCNUtcMbAHbORUnpGUHzN",
+      "heading": "4.item_tbitemspawn.json",
+      "caption": "追加掉落库信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 13,
+      "line_count": 13,
+      "line_complete": true,
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/03-code.jsonc",
+      "bytes": 307,
+      "sha256": "f2f99892d753ecbb0de7e4cd5811c921b702b1bb1bc8a2c7034b2a7ac57dd90e"
+    },
+    {
+      "index": 4,
+      "block_id": "28",
+      "record_id": "doxcnDp32sf60Hie5sv4BMF9DF7",
+      "heading": "5.resource_tbresourcedocument.json（可选）",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 45,
+      "line_count": 45,
+      "line_complete": true,
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/04-code.jsonc",
+      "bytes": 2088,
+      "sha256": "4eea4663f9317892a5062fae964dae49227dfe7ca4a79a62764788156e0d1155"
+    }
+  ],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=SZIdserKthGr6Wt0n2QczqsonZc&block_token=block_7627811811631942607_3006892617_13%2Cblock_7627811811631942607_1822841541_0%2Cblock_7627811811631942607_3539821458_0%2Cblock_7627811811631942607_2462694195_0&schema_version=9&blockIds=block_7627811811631942607_3006892617_13&blockIds=block_7627811811631942607_1822841541_0&blockIds=block_7627811811631942607_3539821458_0&blockIds=block_7627811811631942607_2462694195_0",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/raw-api/sheet-api-01-26b699eb2997c5ab.json",
+      "bytes": 6484,
+      "sha256": "87eaa3ead721acef4f29cf8019048c81d46ba6e1954df041fc1f66a1833bb90c"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 2139,
+      "sha256": "5ecea66466492cb24b8b4cd2477886097ced3c5fc594b6db3481e6b776b2c1aa"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 180,
+      "sha256": "e49301ee0dfae00bd774553fc32152088f599260cc317a3c434dad7ca43a7ae3"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/source.html",
+    "rendered_html": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/rendered.html",
+    "text": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/content.txt",
+    "markdown": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/content.md",
+    "metadata": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/page.json"
+  }
+}

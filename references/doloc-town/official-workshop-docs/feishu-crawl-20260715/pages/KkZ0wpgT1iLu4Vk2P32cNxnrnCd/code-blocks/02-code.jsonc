@@ -1,0 +1,34 @@
+[
+    {
+    "id": "fish0",
+    "energy_cost": 1, //食量
+    "metabolism_increase": 2, //代谢速度
+    "incubate_duration": 48, //孵化出鱼卵的时长（288=1天）
+    "grow_duration": 144, //鱼苗长大的时长（288=1天）
+    "produce_spawn_entry": {
+      "spawn_lut": "fish0_produce", //产出物的道具生成表ID
+      "count_range": {
+        "min_count": 1, //最小产出数量
+        "max_count": 1 //最大产出数量
+      }
+    },
+    "tech_point": 5, //增加科技点数
+    "roe_item": "fish_roe" //（三个级别的鱼籽道具：fish_roe、fish_roe_2、fish_roe_3）
+  },
+  {
+    "id": "fish1",
+    "energy_cost": 1, //食量
+    "metabolism_increase": 2, //代谢速度
+    "incubate_duration": 48, //孵化出鱼卵的时长（288=1天）
+    "grow_duration": 144, //鱼苗长大的时长（288=1天）
+    "produce_spawn_entry": {
+      "spawn_lut": "fish1_produce", //产出物的道具生成表ID
+      "count_range": {
+        "min_count": 1, //最小产出数量
+        "max_count": 1 //最大产出数量
+      }
+    },
+    "tech_point": 5, //增加科技点数
+    "roe_item": "fish_roe" //（三个级别的鱼籽道具：fish_roe、fish_roe_2、fish_roe_3）
+  }
+]

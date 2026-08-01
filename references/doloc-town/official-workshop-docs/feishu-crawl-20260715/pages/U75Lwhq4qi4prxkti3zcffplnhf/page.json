@@ -1,0 +1,140 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf",
+  "token": "U75Lwhq4qi4prxkti3zcffplnhf",
+  "title": "08 综合案例三（新增资源）",
+  "document_title": "08 综合案例三（新增资源）",
+  "source_modified_label": "4月17日修改",
+  "status_code": 200,
+  "elapsed_seconds": 11.64,
+  "block_count": 35,
+  "blocks_by_type": {
+    "heading1": 3,
+    "bullet": 20,
+    "heading2": 7,
+    "code": 3,
+    "image": 1,
+    "text": 1
+  },
+  "scroll_samples": 7,
+  "scroll_height_max": 4564,
+  "links": [
+    {
+      "text": "04 新增资源",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "kind": "official-wiki",
+      "target_token": "DSwGwUzfki0gkPk1k6dcio6bnpb"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/DSwGwUzfki0gkPk1k6dcio6bnpb",
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "34",
+      "image_tokens": [
+        "Lb9DbBOS5oTncFxZn9icnsOUnAh"
+      ],
+      "rendered_path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/images/rendered-01-34.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/images/original/image-01-ce24e25c0763d89d.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/images/original/image-02-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/images/original/image-03-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/images/original/image-04-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "25",
+      "record_id": "doxcnEKGWsTaX3nqCSEL4UxmN56",
+      "heading": "5.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 48,
+      "line_count": 48,
+      "line_complete": true,
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/01-code.jsonc",
+      "bytes": 1756,
+      "sha256": "ac6ccd12ac85c23b130a9daf40fee73709c97a56cad86a029445fecd83c79b92"
+    },
+    {
+      "index": 2,
+      "block_id": "28",
+      "record_id": "doxcnlNo7KkRmXSsU11emv64NKc",
+      "heading": "6.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/02-code.jsonc",
+      "bytes": 521,
+      "sha256": "ee75c3e4463e9fec41fdee07c61f3284dbbb2d9668977cf834e96ee96177bd40"
+    },
+    {
+      "index": 3,
+      "block_id": "31",
+      "record_id": "CzVUdNzdkoeBMxx9w7ncYr59nKc",
+      "heading": "7.resource_tbresourcedocument.json",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 45,
+      "line_count": 45,
+      "line_complete": true,
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/03-code.jsonc",
+      "bytes": 1973,
+      "sha256": "13e2c3e8b995194ab14204cbcd68a414d496934fe0b15a32e68a98e5d04b87b8"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/U75Lwhq4qi4prxkti3zcffplnhf/source.html",
+    "rendered_html": "pages/U75Lwhq4qi4prxkti3zcffplnhf/rendered.html",
+    "text": "pages/U75Lwhq4qi4prxkti3zcffplnhf/content.txt",
+    "markdown": "pages/U75Lwhq4qi4prxkti3zcffplnhf/content.md",
+    "metadata": "pages/U75Lwhq4qi4prxkti3zcffplnhf/page.json"
+  }
+}

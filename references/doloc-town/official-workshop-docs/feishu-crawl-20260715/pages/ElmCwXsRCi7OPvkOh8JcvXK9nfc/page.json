@@ -1,0 +1,141 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/ElmCwXsRCi7OPvkOh8JcvXK9nfc",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/ElmCwXsRCi7OPvkOh8JcvXK9nfc",
+  "token": "ElmCwXsRCi7OPvkOh8JcvXK9nfc",
+  "title": "《多洛可小镇》创意工坊模组制作说明",
+  "document_title": "《多洛可小镇》创意工坊模组制作说明",
+  "source_modified_label": "6月12日修改",
+  "status_code": 200,
+  "elapsed_seconds": 12.438,
+  "block_count": 33,
+  "blocks_by_type": {
+    "text": 18,
+    "bullet": 15
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 1710,
+  "links": [
+    {
+      "text": "https://docs.google.com/document/d/1D9zV8NAYkAMKZ3_l4RO8mAUEQS1_8LQK6XiDcm8Mkfk/edit?usp=sharing",
+      "url": "https://docs.google.com/document/d/1D9zV8NAYkAMKZ3_l4RO8mAUEQS1_8LQK6XiDcm8Mkfk/edit?usp=sharing",
+      "kind": "external",
+      "target_token": ""
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    },
+    {
+      "text": "创建你的模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+      "kind": "official-wiki",
+      "target_token": "Df5cwl6u2irIogkazI5crevfnWf"
+    },
+    {
+      "text": "01 美化模组（替换现有贴图）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+      "kind": "official-wiki",
+      "target_token": "SNOywxdl5iccH8kO413czWBKnwe"
+    },
+    {
+      "text": "02 基础内容模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/PwfowuR9Ti1OJGkH6j8cypQ6n6D",
+      "kind": "official-wiki",
+      "target_token": "PwfowuR9Ti1OJGkH6j8cypQ6n6D"
+    },
+    {
+      "text": "03 进阶内容模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/FOMvwdhipi0ojgkt2eQcU8dVnib",
+      "kind": "official-wiki",
+      "target_token": "FOMvwdhipi0ojgkt2eQcU8dVnib"
+    },
+    {
+      "text": "在创意工坊上传你的模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/CEJyw2PSpiVtx9kdWCocGxdon1f",
+      "kind": "official-wiki",
+      "target_token": "CEJyw2PSpiVtx9kdWCocGxdon1f"
+    },
+    {
+      "text": "04 其他内容",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/LHe9w2v8ui1HFok6axUcR5kbnNd",
+      "kind": "official-wiki",
+      "target_token": "LHe9w2v8ui1HFok6axUcR5kbnNd"
+    },
+    {
+      "text": "05 ID对照表",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Y9KzwjpI2ilLMdkWpmCcJhTtng8",
+      "kind": "official-wiki",
+      "target_token": "Y9KzwjpI2ilLMdkWpmCcJhTtng8"
+    },
+    {
+      "text": "文档更新记录",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/F4c0wCf5Ui6kX6kqtZBcZw3jncf",
+      "kind": "official-wiki",
+      "target_token": "F4c0wCf5Ui6kX6kqtZBcZw3jncf"
+    },
+    {
+      "text": "02 新增帽子",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/PxaIwKgsPiua7okPqgdcoCOZnkF",
+      "kind": "official-wiki",
+      "target_token": "PxaIwKgsPiua7okPqgdcoCOZnkF"
+    },
+    {
+      "text": "BUG & 反馈问卷",
+      "url": "https://wj.qq.com/s2/21559693/3345/",
+      "kind": "external",
+      "target_token": ""
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/CEJyw2PSpiVtx9kdWCocGxdon1f",
+    "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+    "https://ka7deoo0opr.feishu.cn/wiki/F4c0wCf5Ui6kX6kqtZBcZw3jncf",
+    "https://ka7deoo0opr.feishu.cn/wiki/FOMvwdhipi0ojgkt2eQcU8dVnib",
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/LHe9w2v8ui1HFok6axUcR5kbnNd",
+    "https://ka7deoo0opr.feishu.cn/wiki/PwfowuR9Ti1OJGkH6j8cypQ6n6D",
+    "https://ka7deoo0opr.feishu.cn/wiki/PxaIwKgsPiua7okPqgdcoCOZnkF",
+    "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+    "https://ka7deoo0opr.feishu.cn/wiki/Y9KzwjpI2ilLMdkWpmCcJhTtng8"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/source.html",
+    "rendered_html": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/rendered.html",
+    "text": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/content.txt",
+    "markdown": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/content.md",
+    "metadata": "pages/ElmCwXsRCi7OPvkOh8JcvXK9nfc/page.json"
+  }
+}

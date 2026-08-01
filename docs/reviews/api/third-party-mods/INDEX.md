@@ -45,10 +45,10 @@ Round 1 Agent E covered these local samples:
 
 ## Next Use
 
-Before turning any finding here into an API rebuild goal:
+Before turning any finding here into API rebuild implementation:
 
 1. Pick one semantic target and one possible public API boundary.
 2. Re-open the relevant native-owner domain report.
 3. Inspect exact native owners in the current reverse baseline.
 4. Mark the API proposal as `stable open`, `experimental open`, `debug-only`, `registry-only`, `DTMAPI-internal`, or `blocked-rebuild`.
-5. Create a dedicated `docs/goals/YYYY/...` handoff only after the owner questions are concrete.
+5. Create or update a task-specific `docs/updates/YYYY/...` record only after the owner questions are concrete.

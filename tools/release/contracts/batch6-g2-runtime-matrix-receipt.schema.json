@@ -1,0 +1,980 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.local/contracts/batch6-g2-runtime-matrix-receipt.schema.json",
+  "title": "DTMAPI Batch 6 G2 committed runtime matrix receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "contractId",
+    "receiptKind",
+    "architectureAuthority",
+    "reviewAuthority",
+    "rootCauseReviewAuthority",
+    "updateAuthority",
+    "implementationCommit",
+    "capturedAtUtc",
+    "runtimeRelease",
+    "fixture",
+    "environment",
+    "artifacts",
+    "cases",
+    "matrixSha256"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "contractId": { "const": "batch6-g2-advanced-synthetic-vertical-slice" },
+    "receiptKind": { "const": "committed-runtime-matrix" },
+    "architectureAuthority": { "const": "docs/architecture/batch6-managed-mod-identity-contract.md" },
+    "reviewAuthority": { "const": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md" },
+    "rootCauseReviewAuthority": { "const": "docs/reviews/code/2026/20260720-0005-batch6-g2-first-runtime-matrix-root-cause.md" },
+    "updateAuthority": { "const": "docs/updates/2026/20260720-0007-batch6-g2-advanced-synthetic-vertical-slice.md" },
+    "implementationCommit": { "$ref": "#/$defs/gitCommit" },
+    "capturedAtUtc": { "$ref": "#/$defs/dateTime" },
+    "runtimeRelease": { "$ref": "#/$defs/runtimeRelease" },
+    "fixture": { "$ref": "#/$defs/fixtureIdentity" },
+    "environment": { "$ref": "#/$defs/environment" },
+    "artifacts": { "$ref": "#/$defs/artifacts" },
+    "cases": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "prefixItems": [
+        { "$ref": "#/$defs/wrongOwnerColdCase" },
+        { "$ref": "#/$defs/duplicatePatchColdCase" },
+        { "$ref": "#/$defs/entryFailureColdCase" },
+        { "$ref": "#/$defs/lateOwnerDriftColdCase" },
+        { "$ref": "#/$defs/disabledColdCase" },
+        { "$ref": "#/$defs/normalV1ColdCase" },
+        { "$ref": "#/$defs/postLoadDisableV1Case" },
+        { "$ref": "#/$defs/liveUpdateV1ToV2Case" },
+        { "$ref": "#/$defs/finalCleanV2ColdCase" }
+      ],
+      "items": false
+    },
+    "matrixSha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "gitCommitPrefix": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9A-F]{64}$"
+    },
+    "nullableSha256": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha256" },
+        { "type": "null" }
+      ]
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time",
+      "minLength": 20
+    },
+    "nullableDateTime": {
+      "oneOf": [
+        { "$ref": "#/$defs/dateTime" },
+        { "type": "null" }
+      ]
+    },
+    "repoRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!.*(?:^|/)\\.\\.(?:/|$))[^/\\\\:][^\\\\:]*$"
+    },
+    "fileRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "length", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repoRelativePath" },
+        "length": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "nullableFileRow": {
+      "oneOf": [
+        { "$ref": "#/$defs/fileRow" },
+        { "type": "null" }
+      ]
+    },
+    "assemblyRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "length", "sha256"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "length": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "runtimeRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "buildCommitPrefix",
+        "buildTimeUtc",
+        "dtmApiVersion",
+        "releaseManifestSha256",
+        "assemblies"
+      ],
+      "properties": {
+        "buildCommitPrefix": { "$ref": "#/$defs/gitCommitPrefix" },
+        "buildTimeUtc": { "$ref": "#/$defs/dateTime" },
+        "dtmApiVersion": { "const": "0.5.5" },
+        "releaseManifestSha256": { "$ref": "#/$defs/sha256" },
+        "assemblies": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/assemblyRow" },
+                { "properties": { "name": { "const": "DTMAPI.BepInExBootstrap.dll" } } }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/assemblyRow" },
+                { "properties": { "name": { "const": "DTMAPI.Abstractions.dll" } } }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/assemblyRow" },
+                { "properties": { "name": { "const": "DTMAPI.Core.dll" } } }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/assemblyRow" },
+                { "properties": { "name": { "const": "DTMAPI.GameBridge.DolocTown.dll" } } }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/assemblyRow" },
+                { "properties": { "name": { "const": "DTMAPI.ModConfigMenu.dll" } } }
+              ]
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "fixtureIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uniqueId",
+        "canonicalHarmonyOwner",
+        "gameBuildId",
+        "gameAssemblySha256",
+        "nativeType",
+        "nativeMethod",
+        "nativeMethodToken",
+        "saveSlot",
+        "runtimeSlot",
+        "strictSiblingUniqueId"
+      ],
+      "properties": {
+        "uniqueId": { "const": "DTMAPI.AdvancedFixture" },
+        "canonicalHarmonyOwner": { "const": "dtmapi.mod.dtmapi.advancedfixture" },
+        "gameBuildId": { "const": "23762374" },
+        "gameAssemblySha256": { "const": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404" },
+        "nativeType": { "const": "DolocAPI" },
+        "nativeMethod": { "const": "Has087DemoData" },
+        "nativeMethodToken": { "const": "0x060000A0" },
+        "saveSlot": { "const": 3 },
+        "runtimeSlot": { "const": 2 },
+        "strictSiblingUniqueId": { "const": "DTMAPI.HookProbeMod" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gameBuildId", "gameAssemblySha256", "launchMode", "saveSlot", "runtimeSlot"],
+      "properties": {
+        "gameBuildId": { "const": "23762374" },
+        "gameAssemblySha256": { "const": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404" },
+        "launchMode": { "const": "Steam" },
+        "saveSlot": { "const": 3 },
+        "runtimeSlot": { "const": 2 }
+      }
+    },
+    "authorSdkArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logicalName", "path", "length", "sha256"],
+      "properties": {
+        "logicalName": { "type": "string", "minLength": 1, "pattern": "^DTMAPI-Author-SDK-.+\\.zip$" },
+        "path": { "$ref": "#/$defs/repoRelativePath" },
+        "length": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "fixturePackageArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "package",
+        "packageReport",
+        "manifestSha256",
+        "entryAssemblySha256",
+        "advancedReferenceReceiptSha256",
+        "fileCount",
+        "bundledNativeRuntimeDependencyCount"
+      ],
+      "properties": {
+        "version": { "enum": ["0.1.0", "0.1.1"] },
+        "package": { "$ref": "#/$defs/fileRow" },
+        "packageReport": { "$ref": "#/$defs/fileRow" },
+        "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "entryAssemblySha256": { "$ref": "#/$defs/sha256" },
+        "advancedReferenceReceiptSha256": { "$ref": "#/$defs/sha256" },
+        "fileCount": { "const": 6 },
+        "bundledNativeRuntimeDependencyCount": { "const": 0 }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorSdkZip", "fixturePackages"],
+      "properties": {
+        "authorSdkZip": { "$ref": "#/$defs/authorSdkArtifact" },
+        "fixturePackages": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/fixturePackageArtifact" },
+                { "properties": { "version": { "const": "0.1.0" } } }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/fixturePackageArtifact" },
+                { "properties": { "version": { "const": "0.1.1" } } }
+              ]
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "expectedOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "statusCode", "loaded", "officialEnabled", "fixtureVersion", "restartRequired"],
+      "properties": {
+        "classification": { "const": "Advanced" },
+        "statusCode": { "enum": ["loaded", "disabled", "restart-required"] },
+        "loaded": { "type": "boolean" },
+        "officialEnabled": { "type": "boolean" },
+        "fixtureVersion": { "enum": ["0.1.0", "0.1.1"] },
+        "restartRequired": { "type": "boolean" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runRootPath",
+        "result",
+        "summary",
+        "runtimeLog",
+        "qaCleanup",
+        "profileRestore",
+        "processCheck",
+        "reportZip",
+        "reportRuntimeContext",
+        "reportRuntimeLog",
+        "reportReleaseManifest",
+        "reportPlayerDoctor",
+        "runnerReceipt",
+        "postLoadOrchestration",
+        "liveUpdateOrchestration",
+        "sessionPrepare",
+        "deploymentStatusV1",
+        "sessionSnapshot",
+        "sdkUpdate",
+        "deploymentStatusV2",
+        "sessionReload",
+        "sessionClear"
+      ],
+      "properties": {
+        "runRootPath": { "$ref": "#/$defs/repoRelativePath" },
+        "result": { "$ref": "#/$defs/fileRow" },
+        "summary": { "$ref": "#/$defs/fileRow" },
+        "runtimeLog": { "$ref": "#/$defs/fileRow" },
+        "qaCleanup": { "$ref": "#/$defs/fileRow" },
+        "profileRestore": { "$ref": "#/$defs/fileRow" },
+        "processCheck": { "$ref": "#/$defs/fileRow" },
+        "reportZip": { "$ref": "#/$defs/fileRow" },
+        "reportRuntimeContext": { "$ref": "#/$defs/fileRow" },
+        "reportRuntimeLog": { "$ref": "#/$defs/fileRow" },
+        "reportReleaseManifest": { "$ref": "#/$defs/fileRow" },
+        "reportPlayerDoctor": { "$ref": "#/$defs/fileRow" },
+        "runnerReceipt": { "$ref": "#/$defs/nullableFileRow" },
+        "postLoadOrchestration": { "$ref": "#/$defs/nullableFileRow" },
+        "liveUpdateOrchestration": { "$ref": "#/$defs/nullableFileRow" },
+        "sessionPrepare": { "$ref": "#/$defs/nullableFileRow" },
+        "deploymentStatusV1": { "$ref": "#/$defs/nullableFileRow" },
+        "sessionSnapshot": { "$ref": "#/$defs/nullableFileRow" },
+        "sdkUpdate": { "$ref": "#/$defs/nullableFileRow" },
+        "deploymentStatusV2": { "$ref": "#/$defs/nullableFileRow" },
+        "sessionReload": { "$ref": "#/$defs/nullableFileRow" },
+        "sessionClear": { "$ref": "#/$defs/nullableFileRow" }
+      }
+    },
+    "commonObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resultSchemaVersion",
+        "resultRunStatus",
+        "failedResultFields",
+        "saveLoaded",
+        "hookProbe",
+        "gameLaunched",
+        "processExited",
+        "noFatalInstanceWindow",
+        "forcedClose",
+        "qaHostCleanup",
+        "qaSaveLoadedObservation",
+        "officialModProfileRestored",
+        "localAuthorSourceStateRestored",
+        "local11AuthorSourceStateRestored",
+        "isolateAllOfficialMods",
+        "officialModProfileApplied",
+        "summarySaveSlot",
+        "summaryIncludeHookProbe",
+        "summaryLaunchMode",
+        "qaCleanupExactArtifacts",
+        "qaCleanupExactQaEvidence",
+        "qaCleanupExactTree",
+        "qaCleanupCleaned",
+        "qaCleanupRetained",
+        "profileRestoreExactLength",
+        "profileRestoreExactSha256",
+        "profileRestorePassed",
+        "processAbsent",
+        "reportRuntimeLogIsRunPrefix",
+        "reportStartedAtUtc",
+        "reportGeneratedAtUtc",
+        "playerDoctorRuntimeAssemblyHashMatch",
+        "playerDoctorErrorCount",
+        "playerDoctorWarningCount",
+        "playerDoctorMisplacedCount"
+      ],
+      "properties": {
+        "resultSchemaVersion": { "const": 2 },
+        "resultRunStatus": { "enum": ["Passed", "Failed"] },
+        "failedResultFields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "saveLoaded": { "const": "Passed" },
+        "hookProbe": { "const": "Passed" },
+        "gameLaunched": { "const": "Passed" },
+        "processExited": { "const": "Passed" },
+        "noFatalInstanceWindow": { "const": "Passed" },
+        "forcedClose": { "const": "Passed" },
+        "qaHostCleanup": { "const": "Passed" },
+        "qaSaveLoadedObservation": { "const": "Passed" },
+        "officialModProfileRestored": { "const": true },
+        "localAuthorSourceStateRestored": { "const": true },
+        "local11AuthorSourceStateRestored": { "const": true },
+        "isolateAllOfficialMods": { "const": true },
+        "officialModProfileApplied": { "const": true },
+        "summarySaveSlot": { "const": 3 },
+        "summaryIncludeHookProbe": { "const": true },
+        "summaryLaunchMode": { "const": "Steam" },
+        "qaCleanupExactArtifacts": { "const": true },
+        "qaCleanupExactQaEvidence": { "const": true },
+        "qaCleanupExactTree": { "const": true },
+        "qaCleanupCleaned": { "const": true },
+        "qaCleanupRetained": { "const": false },
+        "profileRestoreExactLength": { "const": true },
+        "profileRestoreExactSha256": { "const": true },
+        "profileRestorePassed": { "const": true },
+        "processAbsent": { "const": true },
+        "reportRuntimeLogIsRunPrefix": { "const": true },
+        "reportStartedAtUtc": { "$ref": "#/$defs/dateTime" },
+        "reportGeneratedAtUtc": { "$ref": "#/$defs/dateTime" },
+        "playerDoctorRuntimeAssemblyHashMatch": { "const": true },
+        "playerDoctorErrorCount": { "const": 0 },
+        "playerDoctorWarningCount": { "const": 0 },
+        "playerDoctorMisplacedCount": { "const": 0 }
+      }
+    },
+    "strictSiblingObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entryCount", "gameLaunchedCount", "oneSecondCount", "saveLoadedSlot", "saveLoadedCount", "reportStatusCode", "reportLoaded"],
+      "properties": {
+        "entryCount": { "const": 1 },
+        "gameLaunchedCount": { "const": 1 },
+        "oneSecondCount": { "type": "integer", "minimum": 1 },
+        "saveLoadedSlot": { "const": 2 },
+        "saveLoadedCount": { "const": 1 },
+        "reportStatusCode": { "const": "loaded" },
+        "reportLoaded": { "const": true }
+      }
+    },
+    "advancedIdentityObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verifiedFixtureLoadSourceCount",
+        "foreignAdvancedLoadSourceCount",
+        "unexpectedManagedLoadSourceCount",
+        "autoFishingLoadSourceCount",
+        "autoFishingEntryLogCount",
+        "autoFishingReportStatusCode",
+        "autoFishingReportLoaded",
+        "autoFishingReportOfficialEnabled",
+        "autoFishingReportVersion",
+        "playerDoctorFixtureManagedIdentity",
+        "playerDoctorFixtureProvenanceStatus",
+        "playerDoctorFixturePolicyId",
+        "playerDoctorFixtureGameBuildId",
+        "playerDoctorFixtureHarmonyOwner",
+        "playerDoctorStrictSiblingCount",
+        "playerDoctorAutoFishingCount"
+      ],
+      "properties": {
+        "verifiedFixtureLoadSourceCount": { "type": "integer", "minimum": 0 },
+        "foreignAdvancedLoadSourceCount": { "const": 0 },
+        "unexpectedManagedLoadSourceCount": { "const": 0 },
+        "autoFishingLoadSourceCount": { "const": 0 },
+        "autoFishingEntryLogCount": { "const": 0 },
+        "autoFishingReportStatusCode": { "const": "disabled" },
+        "autoFishingReportLoaded": { "const": false },
+        "autoFishingReportOfficialEnabled": { "const": false },
+        "autoFishingReportVersion": { "const": "1.4.3-dtmapi" },
+        "playerDoctorFixtureManagedIdentity": { "const": "AdvancedCodeMod" },
+        "playerDoctorFixtureProvenanceStatus": { "const": "VerifiedReferenceReceipt" },
+        "playerDoctorFixturePolicyId": { "const": "doloctown-23762374-g2-v1" },
+        "playerDoctorFixtureGameBuildId": { "const": "23762374" },
+        "playerDoctorFixtureHarmonyOwner": { "const": "dtmapi.mod.dtmapi.advancedfixture" },
+        "playerDoctorStrictSiblingCount": { "const": 3 },
+        "playerDoctorAutoFishingCount": { "const": 0 }
+      }
+    },
+    "fixtureObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryCount",
+        "completionCount",
+        "patchPostfixCount",
+        "nativeQueryCount",
+        "queryAndPostfixResultEqual",
+        "disabledSkipCount",
+        "lateInstallCount",
+        "entryFailureMessage"
+      ],
+      "properties": {
+        "entryCount": { "type": "integer", "minimum": 0 },
+        "completionCount": { "type": "integer", "minimum": 0 },
+        "patchPostfixCount": { "type": "integer", "minimum": 0 },
+        "nativeQueryCount": { "type": "integer", "minimum": 0 },
+        "queryAndPostfixResultEqual": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        },
+        "disabledSkipCount": { "type": "integer", "minimum": 0 },
+        "lateInstallCount": { "type": "integer", "minimum": 0 },
+        "entryFailureMessage": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "cleanupObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "participants", "removed", "remaining", "failures", "machineCode", "machineCodeRuntimeCount", "machineCodeReportCount"],
+      "properties": {
+        "reason": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "participants": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "removed": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "remaining": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "failures": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "machineCode": {
+          "oneOf": [
+            { "enum": ["advanced-harmony-cleanup-complete", "advanced-harmony-cleanup-failed"] },
+            { "type": "null" }
+          ]
+        },
+        "machineCodeRuntimeCount": { "type": "integer", "minimum": 0 },
+        "machineCodeReportCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "diagnosticObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ownerMismatchCount",
+        "cleanupFailedCount",
+        "cleanupCompleteCount",
+        "duplicatePatchCount",
+        "lateOwnerDriftCount",
+        "entryFailureCount",
+        "restartRequiredCount",
+        "sdk602Count",
+        "sdk603Count"
+      ],
+      "properties": {
+        "ownerMismatchCount": { "type": "integer", "minimum": 0 },
+        "cleanupFailedCount": { "type": "integer", "minimum": 0 },
+        "cleanupCompleteCount": { "type": "integer", "minimum": 0 },
+        "duplicatePatchCount": { "type": "integer", "minimum": 0 },
+        "lateOwnerDriftCount": { "type": "integer", "minimum": 0 },
+        "entryFailureCount": { "type": "integer", "minimum": 0 },
+        "restartRequiredCount": { "type": "integer", "minimum": 0 },
+        "sdk602Count": { "type": "integer", "minimum": 0 },
+        "sdk603Count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "reportObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statusCode", "loaded", "officialEnabled", "version"],
+      "properties": {
+        "statusCode": { "enum": ["loaded", "disabled", "restart-required"] },
+        "loaded": { "type": "boolean" },
+        "officialEnabled": { "type": "boolean" },
+        "version": { "enum": ["0.1.0", "0.1.1"] }
+      }
+    },
+    "stateObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "markerAbsentBefore",
+        "queryObservedAtUtc",
+        "markerCreatedAtUtc",
+        "markerLength",
+        "reloadObservedAtUtc",
+        "markerAbsentAfter",
+        "configRestoredExact",
+        "processAbsentAfter",
+        "qaWorkshopReloadCompleted"
+      ],
+      "properties": {
+        "markerAbsentBefore": { "$ref": "#/$defs/nullableBoolean" },
+        "queryObservedAtUtc": { "$ref": "#/$defs/nullableDateTime" },
+        "markerCreatedAtUtc": { "$ref": "#/$defs/nullableDateTime" },
+        "markerLength": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "reloadObservedAtUtc": { "$ref": "#/$defs/nullableDateTime" },
+        "markerAbsentAfter": { "$ref": "#/$defs/nullableBoolean" },
+        "configRestoredExact": { "$ref": "#/$defs/nullableBoolean" },
+        "processAbsentAfter": { "$ref": "#/$defs/nullableBoolean" },
+        "qaWorkshopReloadCompleted": { "$ref": "#/$defs/nullableBoolean" }
+      }
+    },
+    "nullableBoolean": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    },
+    "nullableString": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "nullableFixtureVersion": {
+      "oneOf": [
+        { "enum": ["0.1.0", "0.1.1"] },
+        { "type": "null" }
+      ]
+    },
+    "sessionObservations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prepareSuccess",
+        "sessionId",
+        "deploymentStatusV1Success",
+        "deploymentStatusV1RecoveryArtifacts",
+        "snapshotSuccess",
+        "snapshotRuntimeStatus",
+        "snapshotRuntimeCode",
+        "snapshotVersion",
+        "snapshotTreeSha256",
+        "updateSuccess",
+        "updatedVersion",
+        "deploymentStatusV2Success",
+        "deploymentStatusV2RecoveryArtifacts",
+        "reloadSuccess",
+        "reloadRuntimeStatus",
+        "reloadRuntimeCode",
+        "reloadDiagnosticCodes",
+        "clearSuccess",
+        "credentialsCleared",
+        "clearedCredentialFileCount",
+        "preUpdateTreeSha256",
+        "postUpdateTreeSha256"
+      ],
+      "properties": {
+        "prepareSuccess": { "$ref": "#/$defs/nullableBoolean" },
+        "sessionId": { "$ref": "#/$defs/nullableString" },
+        "deploymentStatusV1Success": { "$ref": "#/$defs/nullableBoolean" },
+        "deploymentStatusV1RecoveryArtifacts": {
+          "oneOf": [
+            { "const": 0 },
+            { "type": "null" }
+          ]
+        },
+        "snapshotSuccess": { "$ref": "#/$defs/nullableBoolean" },
+        "snapshotRuntimeStatus": { "$ref": "#/$defs/nullableString" },
+        "snapshotRuntimeCode": { "$ref": "#/$defs/nullableString" },
+        "snapshotVersion": { "$ref": "#/$defs/nullableFixtureVersion" },
+        "snapshotTreeSha256": { "$ref": "#/$defs/nullableSha256" },
+        "updateSuccess": { "$ref": "#/$defs/nullableBoolean" },
+        "updatedVersion": { "$ref": "#/$defs/nullableFixtureVersion" },
+        "deploymentStatusV2Success": { "$ref": "#/$defs/nullableBoolean" },
+        "deploymentStatusV2RecoveryArtifacts": {
+          "oneOf": [
+            { "const": 1 },
+            { "type": "null" }
+          ]
+        },
+        "reloadSuccess": { "$ref": "#/$defs/nullableBoolean" },
+        "reloadRuntimeStatus": { "$ref": "#/$defs/nullableString" },
+        "reloadRuntimeCode": { "$ref": "#/$defs/nullableString" },
+        "reloadDiagnosticCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "clearSuccess": { "$ref": "#/$defs/nullableBoolean" },
+        "credentialsCleared": { "$ref": "#/$defs/nullableBoolean" },
+        "clearedCredentialFileCount": {
+          "oneOf": [
+            { "const": 1 },
+            { "type": "null" }
+          ]
+        },
+        "preUpdateTreeSha256": { "$ref": "#/$defs/nullableSha256" },
+        "postUpdateTreeSha256": { "$ref": "#/$defs/nullableSha256" }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["common", "strictSibling", "advancedIdentity", "fixture", "cleanup", "diagnostics", "report", "state", "session"],
+      "properties": {
+        "common": { "$ref": "#/$defs/commonObservations" },
+        "strictSibling": { "$ref": "#/$defs/strictSiblingObservations" },
+        "advancedIdentity": { "$ref": "#/$defs/advancedIdentityObservations" },
+        "fixture": { "$ref": "#/$defs/fixtureObservations" },
+        "cleanup": { "$ref": "#/$defs/cleanupObservations" },
+        "diagnostics": { "$ref": "#/$defs/diagnosticObservations" },
+        "report": { "$ref": "#/$defs/reportObservations" },
+        "state": { "$ref": "#/$defs/stateObservations" },
+        "session": { "$ref": "#/$defs/sessionObservations" }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "kind",
+        "startedAtUtc",
+        "completedAtUtc",
+        "genericSmokeExitCode",
+        "fixtureVersionAtStart",
+        "expectedOutcome",
+        "expectedDiagnostics",
+        "evidence",
+        "observations",
+        "accepted"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["cold", "post-load-disable", "live-update"] },
+        "startedAtUtc": { "$ref": "#/$defs/dateTime" },
+        "completedAtUtc": { "$ref": "#/$defs/dateTime" },
+        "genericSmokeExitCode": { "type": "integer", "enum": [0, 1] },
+        "fixtureVersionAtStart": { "enum": ["0.1.0", "0.1.1"] },
+        "expectedOutcome": { "$ref": "#/$defs/expectedOutcome" },
+        "expectedDiagnostics": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "observations": { "$ref": "#/$defs/observations" },
+        "accepted": { "const": true }
+      }
+    },
+    "normalV1ColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "normal-v1-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 0 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "loaded",
+                "loaded": true,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": false
+              }
+            },
+            "expectedDiagnostics": { "const": [] }
+          }
+        }
+      ]
+    },
+    "wrongOwnerColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "wrong-owner-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 1 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "restart-required",
+                "loaded": false,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["advanced-harmony-owner-mismatch", "advanced-harmony-cleanup-failed"] }
+          }
+        }
+      ]
+    },
+    "duplicatePatchColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "duplicate-patch-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 1 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "restart-required",
+                "loaded": false,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["advanced-harmony-duplicate-patch", "advanced-harmony-cleanup-complete"] }
+          }
+        }
+      ]
+    },
+    "entryFailureColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "entry-failure-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 1 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "restart-required",
+                "loaded": false,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["advanced-harmony-cleanup-complete"] }
+          }
+        }
+      ]
+    },
+    "lateOwnerDriftColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "late-owner-drift-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 1 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "restart-required",
+                "loaded": false,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["advanced-harmony-late-owner-drift", "advanced-harmony-cleanup-complete"] }
+          }
+        }
+      ]
+    },
+    "disabledColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "disabled-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 0 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "disabled",
+                "loaded": false,
+                "officialEnabled": false,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": false
+              }
+            },
+            "expectedDiagnostics": { "const": [] }
+          }
+        }
+      ]
+    },
+    "postLoadDisableV1Case": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "postload-disable-v1" },
+            "kind": { "const": "post-load-disable" },
+            "genericSmokeExitCode": { "const": 1 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "restart-required",
+                "loaded": false,
+                "officialEnabled": false,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["advanced-harmony-cleanup-complete"] }
+          }
+        }
+      ]
+    },
+    "liveUpdateV1ToV2Case": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "live-update-v1-to-v2" },
+            "kind": { "const": "live-update" },
+            "genericSmokeExitCode": { "const": 0 },
+            "fixtureVersionAtStart": { "const": "0.1.0" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "loaded",
+                "loaded": true,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.0",
+                "restartRequired": true
+              }
+            },
+            "expectedDiagnostics": { "const": ["SDK602"] }
+          }
+        }
+      ]
+    },
+    "finalCleanV2ColdCase": {
+      "allOf": [
+        { "$ref": "#/$defs/case" },
+        {
+          "properties": {
+            "caseId": { "const": "final-clean-v2-cold" },
+            "kind": { "const": "cold" },
+            "genericSmokeExitCode": { "const": 0 },
+            "fixtureVersionAtStart": { "const": "0.1.1" },
+            "expectedOutcome": {
+              "const": {
+                "classification": "Advanced",
+                "statusCode": "loaded",
+                "loaded": true,
+                "officialEnabled": true,
+                "fixtureVersion": "0.1.1",
+                "restartRequired": false
+              }
+            },
+            "expectedDiagnostics": { "const": [] }
+          }
+        }
+      ]
+    }
+  }
+}

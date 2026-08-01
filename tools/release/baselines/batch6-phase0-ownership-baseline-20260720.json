@@ -1,0 +1,3896 @@
+{
+  "schemaVersion": 2,
+  "contractId": "batch6-phase0-domain-ownership",
+  "gitCommit": "653487b7463778c23e9b96aed9ef713364def22a",
+  "sourceCommitTimeUtc": "2026-07-19T19:12:24Z",
+  "auditedGitCommit": "2c7b1425a0d4a3a8fb3f6766ea251d253bc48782",
+  "auditedCommitTimeUtc": "2026-07-20T09:02:25Z",
+  "capturedAtUtc": "2026-07-20T09:02:36Z",
+  "projectScope": "Batch 6 Phase 0 ownership domains at tracked source commit",
+  "includeRule": "Tracked .cs files at gitCommit that equal or are beneath each declared scope path.",
+  "excludeRules": [
+    "Untracked and ignored files",
+    "bin and obj outputs",
+    "Generated runtime evidence and local game files",
+    "Documentation, scripts and package artifacts unless separately classified by Batch 5 rules"
+  ],
+  "reproduceCommand": "pwsh -NoProfile -File tools/scripts/build-batch6-phase0-baseline.ps1 -GitRef 653487b7463778c23e9b96aed9ef713364def22a -AuditGitRef 2c7b1425a0d4a3a8fb3f6766ea251d253bc48782 -CapturedAtUtc 2026-07-20T09:02:36Z -OutputPath tools/release/baselines/batch6-phase0-ownership-baseline-20260720.json",
+  "domainCount": 23,
+  "domains": [
+    {
+      "id": "auto-fishing",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.AutoFishing"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+          "catalogId": "auto-fishing",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/AutoFishingMod",
+          "trackedSourceManifest": "first-party-mods/AutoFishingMod/manifest.json",
+          "trackedSourceManifestBlob": "30e3defd2fbb32798c0f3437de68bcae53af70bf",
+          "retainedTreeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "BodyController.UseFishRod; AgentStateFishingReady/Cast/Wait/Pull; FishingGameScrollBar; DolocUserInput; FishRodRenderer",
+      "stateHolder": "active Agent/state manager, selected FishRod, fishing phase caches, minigame handle, animator and Hook Rigidbody",
+      "targetAssembly": "Yuuka.DTMAPI.AutoFishing Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Remove first-party friend/primitives seam with the admitted pilot; keep frozen IFishingAutomationApi compatibility until its gate.",
+      "hookAndLifetime": "Product owns canonical Harmony owner, native caches, updater/session, input and cleanup; fifth-save behavior and GC authority.",
+      "marginalPlan": "Move fishing ProductNative and product QA out of mandatory GameBridge; isolate then retire Compatibility.",
+      "uniqueFileCount": 35,
+      "uniquePhysicalLines": 13455,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [
+            "src/DTMAPI.Abstractions/FirstPartyFishingPrimitives.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 227,
+          "treeSha256": "eca72d50521120081d75514accdb45c5de7699c3d981a4f7c61931d14b639e98",
+          "files": [
+            {
+              "path": "src/DTMAPI.Abstractions/FirstPartyFishingPrimitives.cs",
+              "physicalLines": 227,
+              "gitBlob": "778448e4bcbb8e08d2af679a28ac0f8e947d6ed9"
+            }
+          ]
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation",
+            "src/DTMAPI.GameBridge.DolocTown/Demand/GameBridgeDemandRoutes.cs",
+            "src/DTMAPI.GameBridge.DolocTown/Hooking/AgentStateLifecycleHookBridge.cs"
+          ],
+          "fileCount": 20,
+          "physicalLines": 5588,
+          "treeSha256": "73174ffcdff4ba63ad624df63078a70499484d39374653c5006a8ad59eb67837",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Demand/GameBridgeDemandRoutes.cs",
+              "physicalLines": 141,
+              "gitBlob": "a5bf1269fd8975a66901b24eb389bcb4ff724ab2"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAnimationController.cs",
+              "physicalLines": 299,
+              "gitBlob": "b667a17b896f767b49160988b39e229b2818ca11"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAnimationNativeCache.cs",
+              "physicalLines": 588,
+              "gitBlob": "9f9cd893e7749e8e264dc08e83fd37e038f936f8"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationFeature.cs",
+              "physicalLines": 505,
+              "gitBlob": "3fa1d3f59c6bc892420517030ce645cf77121a46"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationHookBridge.cs",
+              "physicalLines": 254,
+              "gitBlob": "3ad379ce12327cae18fee26ee6979fd90ed7b6fd"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingInputOverride.cs",
+              "physicalLines": 35,
+              "gitBlob": "aaf3f7700a0ddb17b7d9af8dcfddfaba456b1fbe"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingMiniGameNativeCache.cs",
+              "physicalLines": 305,
+              "gitBlob": "2a12202a9dcb6b563ced4074ef13fc95779ca551"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeAccessors.cs",
+              "physicalLines": 286,
+              "gitBlob": "5fb3d186d5e2752bd6b3db94bc5fab6beaded826"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeAdapter.cs",
+              "physicalLines": 225,
+              "gitBlob": "bc034ad24573a21e2cd9882c219da7c81c73746b"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeControlQaSession.cs",
+              "physicalLines": 103,
+              "gitBlob": "8e51df20730320846a277ebfdc0ae9e87c1ba833"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeEnergyGate.cs",
+              "physicalLines": 150,
+              "gitBlob": "0c34039f95382c6abaaf1eb083fc9fb076cf4603"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeStateCache.cs",
+              "physicalLines": 451,
+              "gitBlob": "a703aecb7b79f46d65aa067c57afa177c76e643c"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeTransactionCache.cs",
+              "physicalLines": 497,
+              "gitBlob": "df2a93c97321ec0e12d7c14d69392e18d315ab85"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingPrimitiveHookRuntime.cs",
+              "physicalLines": 410,
+              "gitBlob": "34f55ce7a3da9a79df31ceca17512df6756986dd"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingPrimitivesService.cs",
+              "physicalLines": 875,
+              "gitBlob": "ecb3ba9316705d5533f8eea232e98e87a5529226"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingRuntimeComponents.cs",
+              "physicalLines": 212,
+              "gitBlob": "0786b411f973dd347126596faa38dad5c3735ac0"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingVisibleReelInputState.cs",
+              "physicalLines": 139,
+              "gitBlob": "458fca977533f799d54aa7436f9dd159a3288ad2"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/IFishingHookCoordinator.cs",
+              "physicalLines": 38,
+              "gitBlob": "0d0373920c473809c0b06db45671925dca1cda6c"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/IFishingHookRuntime.cs",
+              "physicalLines": 31,
+              "gitBlob": "7b09d878dfbb5ac59ff42ed5be9659f4076bfcaf"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/AgentStateLifecycleHookBridge.cs",
+              "physicalLines": 44,
+              "gitBlob": "20a51d5700c620c6f4c3c2299eac777fa5f1da2a"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "first-party-mods/AutoFishingMod"
+          ],
+          "fileCount": 3,
+          "physicalLines": 512,
+          "treeSha256": "7a54a78cac95dfbb0f86e45160409d54b62cdd764e72e7833725a32b9155d7f1",
+          "files": [
+            {
+              "path": "first-party-mods/AutoFishingMod/AssemblyInfo.cs",
+              "physicalLines": 3,
+              "gitBlob": "83c1ee8403330dc9cb3ce3b09ff07cc83c4bd142"
+            },
+            {
+              "path": "first-party-mods/AutoFishingMod/FishingDecisionEngine.cs",
+              "physicalLines": 80,
+              "gitBlob": "802139ffd1342b185e1e37d1572b46b59ec6a1eb"
+            },
+            {
+              "path": "first-party-mods/AutoFishingMod/ModEntry.cs",
+              "physicalLines": 429,
+              "gitBlob": "b3fdaa3d8a442e64cdc7624951cf654c5b5904cc"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Performance",
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingFixtureCase.cs",
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingPrimitiveFixtureCase.cs",
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeControlFixturePolicy.cs",
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeVitalsCommandAdapter.cs"
+          ],
+          "fileCount": 8,
+          "physicalLines": 4121,
+          "treeSha256": "8e5aab479de426aa4012c5acb0481a76f4cb7be48d82dca20aa607ef3dfc71e7",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/AutoFishingPerformanceOrchestrator.cs",
+              "physicalLines": 1115,
+              "gitBlob": "6fc72746b5fb0ab595b82fb3e1960035c065cb14"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/Batch5GcLadderOrchestrator.cs",
+              "physicalLines": 392,
+              "gitBlob": "90c024017c8ddeedafe2e9c3d06f65ab63dd6885"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/Batch5NoDemandPerformanceReceipt.cs",
+              "physicalLines": 106,
+              "gitBlob": "9da0ba4cfe0e8108e1c579d610ac5a2dbf08e7ac"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/FishingPerformanceProbe.cs",
+              "physicalLines": 402,
+              "gitBlob": "77faafb04f48f436e89afb860ce0981dd192d758"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingFixtureCase.cs",
+              "physicalLines": 1603,
+              "gitBlob": "abfb8f1463eab2c6380d51f44c27e0634d8a3fd2"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeControlFixturePolicy.cs",
+              "physicalLines": 73,
+              "gitBlob": "89e2825be166b16e386c0d4bf7503e73ff17c62b"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeVitalsCommandAdapter.cs",
+              "physicalLines": 358,
+              "gitBlob": "f3f666918f9af0bb3b3f667e775fe051ebb0bf2f"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingPrimitiveFixtureCase.cs",
+              "physicalLines": 72,
+              "gitBlob": "40db66ce8a7fcb564da0fbe9f39339be467d4df6"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation"
+          ],
+          "fileCount": 3,
+          "physicalLines": 3007,
+          "treeSha256": "c5fde33405a9ad319845810c3d058f3dfe9162e54085f0d01bdf00aeaebf0e39",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/FishingCompatibilityController.cs",
+              "physicalLines": 35,
+              "gitBlob": "125d645ee6900d31e0d62f4cf574acddb9a58f6c"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/LegacyFishingAutomationService.cs",
+              "physicalLines": 2903,
+              "gitBlob": "ab6267686acffb0e39bea05be41fb8b17dbf306b"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/OwnerBoundFishingAutomationApi.cs",
+              "physicalLines": 69,
+              "gitBlob": "dc802373bd8c83954328b69baaf91fa18b0b024b"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "zoom",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.ZoomMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.ZoomMod",
+          "catalogId": "zoom",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/ZoomMod",
+          "trackedSourceManifest": "first-party-mods/ZoomMod/manifest.json",
+          "trackedSourceManifestBlob": "ae8aeaec0ae86fa2c6b32496ea3687d574eecbdb",
+          "retainedTreeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "CameraController playable camera and Camera.orthographicSize; background/fog owners remain separately reviewed",
+      "stateHolder": "playable Camera plus DTMAPI lease/arbitration state",
+      "targetAssembly": "DTMAPI.ZoomMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve compatibility until a focused consumer decision; no Camera stability promotion.",
+      "hookAndLifetime": "Product owns native zoom and restore; title/Manager global repair requires separate Platform/SharedNative proof.",
+      "marginalPlan": "Move single-product camera implementation to product; no mandatory replacement capability by default.",
+      "uniqueFileCount": 6,
+      "uniquePhysicalLines": 2101,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/Camera"
+          ],
+          "fileCount": 4,
+          "physicalLines": 1513,
+          "treeSha256": "3131a99ac1292a39f8ce7aa037a563db870ddf71d02b79be42f83d837ceb9e94",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraDiagnosticsService.cs",
+              "physicalLines": 170,
+              "gitBlob": "b67815e90836bc53ecad52d3f38a7c23b3f18a10"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraFeature.cs",
+              "physicalLines": 100,
+              "gitBlob": "cdac4b886688a75c01e5c44701fdf5847e20d083"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraViewService.cs",
+              "physicalLines": 859,
+              "gitBlob": "5b36451f884b908bd87121b5e7e54c2ddded7615"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraZoomCompatibilityService.cs",
+              "physicalLines": 384,
+              "gitBlob": "aef6c2f668c359f3084a3eb6a87dd45cb278fec5"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "first-party-mods/ZoomMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 221,
+          "treeSha256": "aa90983f4e64c1fb6011e687368c890f825bf5be6bb66d55c60593101074d819",
+          "files": [
+            {
+              "path": "first-party-mods/ZoomMod/ModEntry.cs",
+              "physicalLines": 221,
+              "gitBlob": "1af8963975ca8e440f4d0e11b0643031ad76fb42"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/G4CameraPlayableFixtureScenario.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 367,
+          "treeSha256": "0180309b681939a0dfca7f7aa5c11c215e2c8a6f1e01cc293a92dc461e7152b4",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/G4CameraPlayableFixtureScenario.cs",
+              "physicalLines": 367,
+              "gitBlob": "83378e69691e44af07a33de67b9e8a9bc79b64d8"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "one-action-complete",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.OneActionComplete"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+          "catalogId": "one-action-complete",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/OneActionCompleteMod",
+          "trackedSourceManifest": "testmods/OneActionCompleteMod/manifest.json",
+          "trackedSourceManifestBlob": "a4d0405c8b239611417c1433798e9931f1d11399",
+          "retainedTreeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "ToolCollider.HandleTools and AgentStateInteract.OnExit",
+      "stateHolder": "current tool/interact state and product completion policy",
+      "targetAssembly": "Yuuka.DTMAPI.OneActionComplete Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Do not add a new product-shaped public API; review existing IActionCompletionApi compatibility during migration.",
+      "hookAndLifetime": "Product owns patch/state; any shared native exit hook needs two-consumer conflict proof.",
+      "marginalPlan": "Candidate only after AutoFishing proves the template.",
+      "uniqueFileCount": 4,
+      "uniquePhysicalLines": 757,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion"
+          ],
+          "fileCount": 3,
+          "physicalLines": 612,
+          "treeSha256": "c9cc3d5fc6cc516bbceb717422c23aec965bcaf42f26778839bd31acc77c5329",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion/ActionCompletionFeature.cs",
+              "physicalLines": 67,
+              "gitBlob": "86531239f3318f5c7d3677c44efeca4e7ce3abef"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion/ActionCompletionHookBridge.cs",
+              "physicalLines": 54,
+              "gitBlob": "767bb33a923b17128a17a61cad27dd062ad472ca"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion/ActionCompletionService.cs",
+              "physicalLines": 491,
+              "gitBlob": "40911ea2d7bb0165ea7e9cd895d0ab2eaf50a649"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/OneActionCompleteMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 145,
+          "treeSha256": "00934b2248476d536aa62016ea4d4389efd554398348d5366fe0a4255bfc03e7",
+          "files": [
+            {
+              "path": "testmods/OneActionCompleteMod/ModEntry.cs",
+              "physicalLines": 145,
+              "gitBlob": "9d318bbdca32a13c3cc731035128213f8ab61749"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "auto-harvest",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.AutoHarvest"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.AutoHarvest",
+          "catalogId": "auto-harvest-sample",
+          "catalogRole": "ApiDemandSample",
+          "evidenceKinds": [
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/AutoHarvestMod",
+          "trackedSourceManifest": "testmods/AutoHarvestMod/manifest.json",
+          "trackedSourceManifestBlob": "e092195bc8daa369e728f3bdad4e0aed3aeb2241",
+          "retainedTreeSha256": "",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "PlantBasin.CouldHarvest and PlantBasin.Harvest(bool,bool)",
+      "stateHolder": "native crop container plus product target/scheduling policy",
+      "targetAssembly": "Yuuka.DTMAPI.AutoHarvest Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep product-owned first; extract a transaction only after independent reuse.",
+      "hookAndLifetime": "Product owns scheduling and target state; explicit native transaction has no standing Hook today.",
+      "marginalPlan": "Move CropHarvesting implementation with product unless later SharedNative evidence exists.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 1499,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting"
+          ],
+          "fileCount": 2,
+          "physicalLines": 644,
+          "treeSha256": "def376a71283f324b3167ceab6f40a54e1086c8f265175c7c278c81c9fb768b8",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting/CropHarvestingFeature.cs",
+              "physicalLines": 65,
+              "gitBlob": "7e5751b95fcedbd0464518625fb534882ee9a376"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting/CropHarvestingService.cs",
+              "physicalLines": 579,
+              "gitBlob": "b488f8073c456d70744d47e4ddc31274cd15ce95"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/AutoHarvestMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 244,
+          "treeSha256": "066c5bea26503713010c4fa39297554e6592a0dfd9fcbbb7c09ca6bb56714f99",
+          "files": [
+            {
+              "path": "testmods/AutoHarvestMod/ModEntry.cs",
+              "physicalLines": 244,
+              "gitBlob": "26b5fba72fb7bf1f570d711bc20184a06e130189"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "testmods/CropHarvestingQaMod",
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/CropHarvestingFixtureCase.cs"
+          ],
+          "fileCount": 2,
+          "physicalLines": 611,
+          "treeSha256": "dea60a7f3d8320415e6d28f0315241cae4a2f00d4b5c10cf8208c1f845bdb393",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/CropHarvestingFixtureCase.cs",
+              "physicalLines": 253,
+              "gitBlob": "6847b5dc711df71043cba7d5d3b6fa40839a2d54"
+            },
+            {
+              "path": "testmods/CropHarvestingQaMod/ModEntry.cs",
+              "physicalLines": 358,
+              "gitBlob": "a4863ddf2cfcf76e222c4ba8add09a09ef6354e1"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "action-speed",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.ActionSpeed"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+          "catalogId": "action-speed",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ActionSpeedMod",
+          "trackedSourceManifest": "testmods/ActionSpeedMod/manifest.json",
+          "trackedSourceManifestBlob": "67d93907080848e6d26c54f42066df326babade1",
+          "retainedTreeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "AgentControllerState interaction timers and reviewed tool/plant/animal/electric/resin action owners",
+      "stateHolder": "current Agent state and product multiplier/restore markers",
+      "targetAssembly": "Yuuka.DTMAPI.ActionSpeed Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Existing experimental contract needs a consumer-compatible migration decision; no promotion.",
+      "hookAndLifetime": "Product owns patches, markers and restoration; third-save behavior, independent GC ladder and clean exit remain required.",
+      "marginalPlan": "Migrate only after smaller template and AutoFishing proof.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 3382,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed"
+          ],
+          "fileCount": 3,
+          "physicalLines": 1400,
+          "treeSha256": "676cee8d9927163683bb8b476aa2de4692d0f1ab5ba94c93ad42bfb3a9a8543e",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedFeature.cs",
+              "physicalLines": 70,
+              "gitBlob": "db30b95eb9b6af9df9222b1cbea067773f795ba7"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedHookBridge.cs",
+              "physicalLines": 100,
+              "gitBlob": "9fa1f763b1b61b42974580b643ba3444cb26c808"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedService.cs",
+              "physicalLines": 1230,
+              "gitBlob": "3c414fcdeaf97905537eff8c3b189e825d45206c"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/ActionSpeedMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 216,
+          "treeSha256": "5a12c97bfcae4ba3fdcc8745329cc475f32d22c64b82ae7c713d9e5c6ba9bf39",
+          "files": [
+            {
+              "path": "testmods/ActionSpeedMod/ModEntry.cs",
+              "physicalLines": 216,
+              "gitBlob": "3c80699ef52e802d1b7e56e73c63e3e754374483"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 1766,
+          "treeSha256": "d1debafdacda99d0bb098d2bf93581b1dd25a232e8c11f1db6f11137b8b24a64",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs",
+              "physicalLines": 1766,
+              "gitBlob": "5e9ca65696c608ad59e20093dd33e500db72d7b2"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "more-saves",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.MoreSavesMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.MoreSavesMod",
+          "catalogId": "more-saves",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreSavesMod",
+          "trackedSourceManifest": "testmods/MoreSavesMod/manifest.json",
+          "trackedSourceManifestBlob": "3b01846b2ae4967eb259a2f44bde9c611b2008f1",
+          "retainedTreeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "DolocAPI.gameManager.archiveFileCount; LocalSave/DataPersistenceManager; GameDataUiState/GameDataPanel",
+      "stateHolder": "official archive count/files/UI plus product slot/page policy",
+      "targetAssembly": "DTMAPI.MoreSavesMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve current experimental ABI until save/UI migration and compatibility review.",
+      "hookAndLifetime": "Product owns slot/page patches; Platform may own generic save data/lifecycle only.",
+      "marginalPlan": "Separate high-risk save/UI migration with rollback and user data evidence.",
+      "uniqueFileCount": 3,
+      "uniquePhysicalLines": 978,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots"
+          ],
+          "fileCount": 2,
+          "physicalLines": 885,
+          "treeSha256": "2aeb83ab968b2bf43b6e57f94d13bd1baa194e9e313fccaca5840824a6285947",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots/SaveSlotsFeature.cs",
+              "physicalLines": 91,
+              "gitBlob": "f06966a3fce6b201a73094fa7bf22341f816089a"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots/SaveSlotsService.cs",
+              "physicalLines": 794,
+              "gitBlob": "9e7701adcb618215cf40321f5021513abbe9b687"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/MoreSavesMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 93,
+          "treeSha256": "a51f8b1159e8e57565c078de091351228e391e53099c869685506805266a2bd0",
+          "files": [
+            {
+              "path": "testmods/MoreSavesMod/ModEntry.cs",
+              "physicalLines": 93,
+              "gitBlob": "752864dab67bd15a607a898ffdbf2626485381b0"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "y-console",
+      "reviewDisposition": "ProductNative+PlatformSeam",
+      "physicalOwnershipCandidates": [
+        "ProductNative",
+        "Platform"
+      ],
+      "decisionState": "split-decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod",
+        "DTMAPI Runtime"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.DebugConsoleMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.DebugConsoleMod",
+          "catalogId": "y-console",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/DebugConsoleMod",
+          "trackedSourceManifest": "testmods/DebugConsoleMod/manifest.json",
+          "trackedSourceManifestBlob": "92f26a29d53c56c11d4497177eb34d5fe57b6829",
+          "retainedTreeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "Product-specific debug verbs have separate native owners; command registration/logging is DTMAPI-owned Platform",
+      "stateHolder": "reflected console UI/modal state plus command registry",
+      "targetAssembly": "Optional DTMAPI.DebugConsoleMod plus Platform command service",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep generic command/log contract only; do not promote cheat/debug APIs.",
+      "hookAndLifetime": "Product owns UI, hotkey and native verbs; Platform owns owner-bound command cleanup.",
+      "marginalPlan": "Extract product UI/verbs; retain only generic command seam.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 5680,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [
+            "src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 2335,
+          "treeSha256": "cc3a72e9601dcdcf77b8ce1da7445a5c8e03eca348aa23d0656936c2018bb5f9",
+          "files": [
+            {
+              "path": "src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs",
+              "physicalLines": 2335,
+              "gitBlob": "071b73f23f78b61353689311c6eab149d881bfed"
+            }
+          ]
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Diagnostics",
+            "src/DTMAPI.GameBridge.DolocTown/Features/UiDiagnostics"
+          ],
+          "fileCount": 3,
+          "physicalLines": 3197,
+          "treeSha256": "808c8acbb085ae1546d53f89a535b2c7f65b2afb2b4814ec30751905ebe7e64c",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Diagnostics/DolocTownExperimentalBridgeApi.Diagnostics.cs",
+              "physicalLines": 2699,
+              "gitBlob": "4e4f03c9eaa975d3b6d591472b94b843f4e4e40d"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/UiDiagnostics/NativeUiLayoutDiagnosticsFeature.cs",
+              "physicalLines": 210,
+              "gitBlob": "810489e99111f1d216e69d78bccaf58c97c577a2"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/UiDiagnostics/NativeUiLayoutRepairService.cs",
+              "physicalLines": 288,
+              "gitBlob": "a4f964c7ecd205961cef4767566d87b7e77bc310"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/DebugConsoleMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 148,
+          "treeSha256": "202d247a9bf081c11439c87c5bb8ebb38a8e30e971656bac24b40f54bf77a484",
+          "files": [
+            {
+              "path": "testmods/DebugConsoleMod/ModEntry.cs",
+              "physicalLines": 148,
+              "gitBlob": "a26acc09adc9628e6ac508bc812369130962fee2"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "chest-locator",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.ChestLocatorEnhancerMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+          "catalogId": "chest-locator-enhancer",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ChestLocatorEnhancerMod",
+          "trackedSourceManifest": "testmods/ChestLocatorEnhancerMod/manifest.json",
+          "trackedSourceManifestBlob": "d5cfdd2e312400f0e6d64cdc37c54b29c4d4f8d2",
+          "retainedTreeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "ArchiveDataHandle.GetAvailableInventories and native CountItem/CostItem paths",
+      "stateHolder": "available inventory set and product policy",
+      "targetAssembly": "DTMAPI.ChestLocatorEnhancerMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Review existing experimental API compatibility; no permanent internal service in GameBridge.",
+      "hookAndLifetime": "Product owns patch and merged policy state.",
+      "marginalPlan": "Move implementation with product after pilot gate.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 778,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer"
+          ],
+          "fileCount": 3,
+          "physicalLines": 542,
+          "treeSha256": "6bbb6525a4427933b54d2e8bbb30c0634924bacf5f60080651422058cd39e9d7",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerFeature.cs",
+              "physicalLines": 66,
+              "gitBlob": "092273a7b36ec84074825e5d25d5953bc329dd46"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerHookBridge.cs",
+              "physicalLines": 50,
+              "gitBlob": "d03012e44931f48f189216e639541bfb83ef7ce4"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerService.cs",
+              "physicalLines": 426,
+              "gitBlob": "3f6ed87f01545f6ab8c73a94e3edf9ba715e21fd"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/ChestLocatorEnhancerMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 101,
+          "treeSha256": "a58be7d4549fcbbbeec4f16ea2f25444032ed267f6330a5c741556dd0a1e740c",
+          "files": [
+            {
+              "path": "testmods/ChestLocatorEnhancerMod/ModEntry.cs",
+              "physicalLines": 101,
+              "gitBlob": "e067ed77776824d3f98724e2976083cf28186552"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ChestLocatorEnhancerFixtureCase.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 135,
+          "treeSha256": "5a424336dfa454b6f704791d6601d210f66adfd44cf586b2ac1e8e9356864c1c",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ChestLocatorEnhancerFixtureCase.cs",
+              "physicalLines": 135,
+              "gitBlob": "6a6d9cdd710de742c606bbd15a4ea0afef70d0d8"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "fish-roe-tooltip",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.FishBreedingAssistant"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+          "catalogId": "fish-roe-info",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/FishBreedingAssistantMod",
+          "trackedSourceManifest": "testmods/FishBreedingAssistantMod/manifest.json",
+          "trackedSourceManifestBlob": "22b52d46ee748db36c07f5d52984d8de393bf823",
+          "retainedTreeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "ItemFishRoe.fishName and DolocAPI.QueryItemProto title lookup",
+      "stateHolder": "native item proto/title plus product tooltip policy",
+      "targetAssembly": "Yuuka.DTMAPI.FishBreedingAssistant Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Move product tooltip API use; only a future multi-consumer tooltip host may be shared.",
+      "hookAndLifetime": "Product owns tooltip patch/provider and cleanup.",
+      "marginalPlan": "No fish-roe-specific mandatory capability.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 548,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip"
+          ],
+          "fileCount": 3,
+          "physicalLines": 365,
+          "treeSha256": "8a5ab0df1d96528ad43c59df4bc5fafdaaad4123818acfa6a4fa78a79c292a26",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip/FishRoeTooltipFeature.cs",
+              "physicalLines": 66,
+              "gitBlob": "02fb871e9cf30087e20adf5a66911b24504f8b73"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip/FishRoeTooltipHookBridge.cs",
+              "physicalLines": 74,
+              "gitBlob": "e164ad8464de54c8415d6f0f7ce0dea8a3492153"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip/FishRoeTooltipService.cs",
+              "physicalLines": 225,
+              "gitBlob": "efb25f43e9ad5018ffd0b94986fdcb7e274425f1"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/FishBreedingAssistantMod"
+          ],
+          "fileCount": 2,
+          "physicalLines": 183,
+          "treeSha256": "f7bf31b7f3b89fcba49f5c36196b397f33d6a7d5ecb34b458fb4d712c66a53fe",
+          "files": [
+            {
+              "path": "testmods/FishBreedingAssistantMod/Generated/FishBreedingLookup.g.cs",
+              "physicalLines": 36,
+              "gitBlob": "15b61b70178d90811b2e6a6cfdf3fc5e4a4aba06"
+            },
+            {
+              "path": "testmods/FishBreedingAssistantMod/ModEntry.cs",
+              "physicalLines": 147,
+              "gitBlob": "af52c6a121ef3d5073aa28e91e422c3b842ff6c4"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "animal-viewer",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.AnimalHusbandryProgress"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+          "catalogId": "animal-husbandry-progress",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/AnimalHusbandryProgressMod",
+          "trackedSourceManifest": "testmods/AnimalHusbandryProgressMod/manifest.json",
+          "trackedSourceManifestBlob": "8aabb5cfee901adec919fc4acf028d0971fc4a39",
+          "retainedTreeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "AnimalFullInfoData, AnimalViewer.Show and AnimalPanelUiState.Unregister",
+      "stateHolder": "native animal/viewer panel plus product progress rows",
+      "targetAssembly": "Yuuka.DTMAPI.AnimalHusbandryProgress Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve experimental ABI until visual/native migration review; no promotion.",
+      "hookAndLifetime": "Product owns UI patches, coalescing and native-close cleanup.",
+      "marginalPlan": "Move viewer policy and patches with product; keep QA optional.",
+      "uniqueFileCount": 4,
+      "uniquePhysicalLines": 1254,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer"
+          ],
+          "fileCount": 3,
+          "physicalLines": 1097,
+          "treeSha256": "1c4ac15a597f0db24be633d74a5fdb5cbf9c79409559fd06e72fbb6dafa7ffae",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer/AnimalViewerFeature.cs",
+              "physicalLines": 70,
+              "gitBlob": "4e002b9f5bddac1b3734b61a790349d0764fc370"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer/AnimalViewerHookBridge.cs",
+              "physicalLines": 76,
+              "gitBlob": "1fc70a63c3a2bdbd1d2af9a07007e7fe6b0fef06"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer/AnimalViewerService.cs",
+              "physicalLines": 951,
+              "gitBlob": "01c6b28b554bb2403db7b9f3d40ddcbdbd4e2e73"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/AnimalHusbandryProgressMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 157,
+          "treeSha256": "38ea3d0c7e79f58774634f8956613060ee49209d61980bba13e35fabd480d6e2",
+          "files": [
+            {
+              "path": "testmods/AnimalHusbandryProgressMod/ModEntry.cs",
+              "physicalLines": 157,
+              "gitBlob": "529badda2793ea558846d9da796e59ec69e1a424"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "strong-planting",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.StrongPlantingGunMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.StrongPlantingGunMod",
+          "catalogId": "strong-planting-gun",
+          "catalogRole": "PlannedProduct",
+          "evidenceKinds": [
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/StrongPlantingGunMod",
+          "trackedSourceManifest": "testmods/StrongPlantingGunMod/manifest.json",
+          "trackedSourceManifestBlob": "0760bb8d9163b51211cfed6d3ea579e0c5808164",
+          "retainedTreeSha256": "",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "ItemFarmingGun construction/use and FarmingGunUiState transfer",
+      "stateHolder": "native farming-gun inventory/UI plus product three-slot policy",
+      "targetAssembly": "DTMAPI.StrongPlantingGunMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep the experimental compatibility contract until the product migration decides its retained-consumer boundary.",
+      "hookAndLifetime": "Product owns patches, slot policy and exact capacity restore after migration.",
+      "marginalPlan": "Planned product remains blocked behind the earlier Batch 6 pilot and template gates.",
+      "uniqueFileCount": 4,
+      "uniquePhysicalLines": 1138,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun"
+          ],
+          "fileCount": 3,
+          "physicalLines": 1019,
+          "treeSha256": "162456d08d468766ce21b751a0d06a53aa8cac75c4118ea63560ef8bc716e090",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun/StrongPlantingGunFeature.cs",
+              "physicalLines": 66,
+              "gitBlob": "c1e2835d8347404a6116e3a9b70adf7d50431cef"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun/StrongPlantingGunHookBridge.cs",
+              "physicalLines": 85,
+              "gitBlob": "c42fe2049f25ed283a8968d92541b9d3e31857a6"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun/StrongPlantingGunService.cs",
+              "physicalLines": 868,
+              "gitBlob": "892f1d107cadd679211570dfa05175c68dfed131"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/StrongPlantingGunMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 119,
+          "treeSha256": "20a01006d1f86d6a93927ceb8c21d8474a582b29cad583359b6dac736a13213f",
+          "files": [
+            {
+              "path": "testmods/StrongPlantingGunMod/ModEntry.cs",
+              "physicalLines": 119,
+              "gitBlob": "dc86056bd170ec588084161770fdf77832dc0251"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "oil-drop",
+      "reviewDisposition": "ContentPack",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "content-only-decided",
+      "targetDeploymentForms": [
+        "ContentPack"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.OilMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.OilMod",
+          "catalogId": "oil",
+          "catalogRole": "Prototype",
+          "evidenceKinds": [
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/OilMod",
+          "trackedSourceManifest": "testmods/OilMod/manifest.json",
+          "trackedSourceManifestBlob": "7fbcb432217abcf603aea5286d4716fdf18c8174",
+          "retainedTreeSha256": "",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "GuaranteedManager -> ISpawnLut -> IDropItemHost official JSON path",
+      "stateHolder": "official drop tables and native spawn host",
+      "targetAssembly": "No product DLL; official JSON ContentPack",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No Oil public/native API; keep generic ActionCompletion separate.",
+      "hookAndLifetime": "Native official content path owns drop; no Oil Hook/session/cache.",
+      "marginalPlan": "Keep Oil separate from Mine and out of GameBridge.",
+      "uniqueFileCount": 0,
+      "uniquePhysicalLines": 0,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "mine-machine",
+      "reviewDisposition": "ProductNative+ContentOwner",
+      "physicalOwnershipCandidates": [
+        "ProductNative",
+        "ContentOwner"
+      ],
+      "decisionState": "split-decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod",
+        "ContentPack"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.MineMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.MineMod",
+          "catalogId": "mine",
+          "catalogRole": "Prototype",
+          "evidenceKinds": [
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MineMod",
+          "trackedSourceManifest": "testmods/MineMod/manifest.json",
+          "trackedSourceManifestBlob": "33946999c8393ffb11aaf317dfbe8326eb494cbc",
+          "retainedTreeSha256": "",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "native equipment/container, electric Launch, archive pass-time and production/storage owners",
+      "stateHolder": "placed equipment, native power/inventory state, exact-restorable recipe/tech/visual originals and a session-derived product scheduler",
+      "targetAssembly": "Official JSON ContentPack for static content plus the admitted DTMAPI.MineMod Advanced CodeMod for runtime cycle and economy; no new host assembly",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Do not keep IMachineProductionApi as a mandatory product engine and do not add a public machine DTO or host API.",
+      "hookAndLifetime": "Official JSON owns stable item/equipment/recipe/group content; ProductNative owns three exact-owner visual hooks, RNG, archive-time polling, fixed native power, transactional output, exact recipe/tech/visual restoration and a session-derived scheduler restarted after SaveLoaded. Title, disable and unload clear all session state.",
+      "marginalPlan": "Keep static content in official JSON and runtime/economy in the admitted Mine product; no Mine sidecar, candidate generation, journal, SharedNative or Content Host without a later explicit requirement and owner review.",
+      "uniqueFileCount": 3,
+      "uniquePhysicalLines": 3236,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/MachineProduction"
+          ],
+          "fileCount": 1,
+          "physicalLines": 1468,
+          "treeSha256": "236aada2444da99b9b4b9a4af78d47226dc63e8cf0bd10cf0a4e7f034c461640",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/MachineProduction/DolocTownExperimentalBridgeApi.MachineProduction.cs",
+              "physicalLines": 1468,
+              "gitBlob": "93ed826aeb221ef5a4ec2101c885e55c6442fb9f"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/MineMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 221,
+          "treeSha256": "a1736583f7fb7c1d3bd7a752ffbfb887edd6842a0f3374d655737873fff3ff38",
+          "files": [
+            {
+              "path": "testmods/MineMod/ModEntry.cs",
+              "physicalLines": 221,
+              "gitBlob": "15f47409024ff2319bd17e391d03e900a8e9f5c6"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 1547,
+          "treeSha256": "c135d901cf2614e899ad0f7140b888a97d8787f10c915ed1b807e6a9371e0068",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+              "physicalLines": 1547,
+              "gitBlob": "683f6888be54d2e5d6a14c697c53fdf6b35b5a35"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "equipment-slots",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": [
+        "ProductNative"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Advanced CodeMod"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "DTMAPI.MoreEquipmentSlotsMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+          "catalogId": "more-equipment-slots",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreEquipmentSlotsMod",
+          "trackedSourceManifest": "testmods/MoreEquipmentSlotsMod/manifest.json",
+          "trackedSourceManifestBlob": "bd8dc5c782435f878f58df603c91414363d5723f",
+          "retainedTreeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "AgentEquipmentFunction/Manager, AccessorySlot UI, native inventory/save transaction and shield hit path",
+      "stateHolder": "native equipment/inventory plus protected per-save sidecar and durable prepared/committed journal",
+      "targetAssembly": "DTMAPI.MoreEquipmentSlotsMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Freeze IEquipmentSlotsApi plus six DTOs as Experimental/Deprecated/Frozen: ProductNative is fixed at three slots while the existing Compatibility Host preserves legacy arbitrary-owner 0..24 semantics.",
+      "hookAndLifetime": "Product atomically owns four UI/native patches, fixed-three sidecar/journal recovery and disable/title/Loader cleanup; Compatibility owns only the frozen old ABI executor.",
+      "marginalPlan": "Separate migration with save backup, rollback and player evidence.",
+      "uniqueFileCount": 5,
+      "uniquePhysicalLines": 4453,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots"
+          ],
+          "fileCount": 3,
+          "physicalLines": 2814,
+          "treeSha256": "2b77504c8ca48c7f1ff6bf2d8839823e66555fe39f915b98abb1ab4e078bd287",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/DolocTownExperimentalBridgeApi.EquipmentSlots.cs",
+              "physicalLines": 2650,
+              "gitBlob": "ca3a9a8a1323a0d4be31969a79123f8f42d5cdf4"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/EquipmentSlotProtectedStoragePolicy.cs",
+              "physicalLines": 99,
+              "gitBlob": "4eb8fe0f9dfc8502ccf2710b3439378a8a512310"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/EquipmentSlotShieldPolicy.cs",
+              "physicalLines": 65,
+              "gitBlob": "e8306164ecec2b27122d70d3beee9ed66969b14e"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/MoreEquipmentSlotsMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 92,
+          "treeSha256": "7d2175d26b202952430850737568a7f9106cc8fcd71b8037804090b0301783ad",
+          "files": [
+            {
+              "path": "testmods/MoreEquipmentSlotsMod/ModEntry.cs",
+              "physicalLines": 92,
+              "gitBlob": "fc74f26c4acc6442430eaf67800d7a1227b7aa07"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"
+          ],
+          "fileCount": 1,
+          "physicalLines": 1547,
+          "treeSha256": "c135d901cf2614e899ad0f7140b888a97d8787f10c915ed1b807e6a9371e0068",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+              "physicalLines": 1547,
+              "gitBlob": "683f6888be54d2e5d6a14c697c53fdf6b35b5a35"
+            }
+          ]
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "custom-animals-host",
+      "reviewDisposition": "ContentOwner",
+      "physicalOwnershipCandidates": [
+        "ContentOwner"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "Content Host"
+      ],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [
+        {
+          "catalogId": "hatch-assets-input",
+          "uniqueId": "DTMAPI.HatchAssets",
+          "evidenceAuthority": "MutableLocalEvidenceOnly",
+          "qualifiesAsIndependentRealConsumer": false
+        },
+        {
+          "catalogId": "mole-assets-input",
+          "uniqueId": "DTMAPI.MoleAssets",
+          "evidenceAuthority": "MutableLocalEvidenceOnly",
+          "qualifiesAsIndependentRealConsumer": false
+        },
+        {
+          "catalogId": "drecko-assets-input",
+          "uniqueId": "DTMAPI.DreckoAssets",
+          "evidenceAuthority": "MutableLocalEvidenceOnly",
+          "qualifiesAsIndependentRealConsumer": false
+        },
+        {
+          "catalogId": "oilfloater-assets-input",
+          "uniqueId": "DTMAPI.OilfloaterAssets",
+          "evidenceAuthority": "MutableLocalEvidenceOnly",
+          "qualifiesAsIndependentRealConsumer": false
+        },
+        {
+          "catalogId": "shell-crab",
+          "uniqueId": "DTMAPI.ShellCrabMod",
+          "evidenceAuthority": "MutableLocalEvidenceOnly",
+          "qualifiesAsIndependentRealConsumer": false
+        }
+      ],
+      "nativeOwner": "native animal creation/release, growth, feeding, breeding, production, capacity, AI, animation and save state",
+      "stateHolder": "native Animal/proto/room/save state plus host schema/resource generations",
+      "targetAssembly": "Optional DTMAPI.CustomAnimals Content Host",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "G7 adds ContentPackFor/host contracts; species policy never enters host.",
+      "hookAndLifetime": "Host owns shared animal bridge, schema, asset generations and native cleanup; packs own species/economy.",
+      "marginalPlan": "Physically optionalize host after separate G7 design/validation.",
+      "uniqueFileCount": 3,
+      "uniquePhysicalLines": 3807,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals"
+          ],
+          "fileCount": 3,
+          "physicalLines": 3807,
+          "treeSha256": "81a76e5ad7233ad1349ec8da40bc34586c7e1c7a739d2f89d26d8a503a9f2b88",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/CustomAnimalAnimatorBridgeFeature.cs",
+              "physicalLines": 107,
+              "gitBlob": "73dad2438c65746cd29f5c0d4d441f4f7c1a096c"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/CustomAnimalAnimatorBridgeHookBridge.cs",
+              "physicalLines": 286,
+              "gitBlob": "6fd0bd02759c04f1488a984af7434d5f77c707e7"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/CustomAnimalAnimatorBridgeService.cs",
+              "physicalLines": 3414,
+              "gitBlob": "70f23f526e767f5c31b0c928e92415f305eb9e8f"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "animal-pack",
+      "reviewDisposition": "ContentPack",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "content-only-decided",
+      "targetDeploymentForms": [
+        "ContentPack"
+      ],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [
+        {
+          "catalogId": "animal-pack",
+          "uniqueId": "DTMAPI.AnimalPack",
+          "state": "FrozenReservedNoArtifact"
+        }
+      ],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "No product-native owner; content is interpreted by the CustomAnimals host and official game tables",
+      "stateHolder": "species/economy/item/content files",
+      "targetAssembly": "No DLL; unified AnimalPack ContentPack",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Depends on future G7 host contract without adding product code to host.",
+      "hookAndLifetime": "Content-only; host owns resource lifetime.",
+      "marginalPlan": "Consolidate species product content only after host contract.",
+      "uniqueFileCount": 0,
+      "uniquePhysicalLines": 0,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "audio-replacement-host",
+      "reviewDisposition": "ContentOwnerCandidate",
+      "physicalOwnershipCandidates": [
+        "ContentOwner"
+      ],
+      "decisionState": "candidate",
+      "targetDeploymentForms": [
+        "Content Host"
+      ],
+      "realConsumerCount": 1,
+      "currentConsumers": [
+        "Yuuka.DTMAPI.ManboCardboardAudio"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+          "catalogId": "manbo-cardboard-audio",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ManboCardboardAudioMod",
+          "trackedSourceManifest": "testmods/ManboCardboardAudioMod/manifest.json",
+          "trackedSourceManifestBlob": "e3af359346b55ec6f865a10ca27e4b1b29f3db7b",
+          "retainedTreeSha256": "23a3209e75788b68041f4e1eecfe81550f87d6579893272af67711b2c0bfc40e",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [
+        {
+          "id": "custom-animals-animal-voice",
+          "description": "CustomAnimals AnimalVoice route",
+          "qualifiesAsIndependentRealConsumer": false
+        }
+      ],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "WwiseSoundManager.InternalPostSoundEvent plus category-specific native context owners",
+      "stateHolder": "native Wwise event/context and host replacement/resource state",
+      "targetAssembly": "Optional audio Content Host after focused native-owner review",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep current experimental API frozen; split reusable host from paper-box/product QA.",
+      "hookAndLifetime": "Host candidate owns shared Wwise conflict/lifecycle only if two-consumer semantics remain equivalent.",
+      "marginalPlan": "Optionalize; do not hard-code each audio case in mandatory GameBridge.",
+      "uniqueFileCount": 4,
+      "uniquePhysicalLines": 3536,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement"
+          ],
+          "fileCount": 3,
+          "physicalLines": 3450,
+          "treeSha256": "cd3afe5eefb3a83b3029ebdad8492de15e82594d0cbbce9d36313d4c4ca4163d",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementFeature.cs",
+              "physicalLines": 75,
+              "gitBlob": "be108d792f466cceace3173ffbba4c1b22f1da18"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementHookBridge.cs",
+              "physicalLines": 99,
+              "gitBlob": "0a392bd86c9773c7052bb296b0e9fb385192952b"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementService.cs",
+              "physicalLines": 3276,
+              "gitBlob": "01317ef574728e1ca6876608c48baf2b01259607"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [
+            "testmods/ManboCardboardAudioMod"
+          ],
+          "fileCount": 1,
+          "physicalLines": 86,
+          "treeSha256": "645c515ba61916b93d030afbb89d60517888507655686a0be8c9b2ce677de31a",
+          "files": [
+            {
+              "path": "testmods/ManboCardboardAudioMod/ModEntry.cs",
+              "physicalLines": 86,
+              "gitBlob": "a36dd975151fe9af7315b557de26edc0d0f578eb"
+            }
+          ]
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "bgm-replacement",
+      "reviewDisposition": "ContentOwnerCandidate-deferred",
+      "physicalOwnershipCandidates": [
+        "ContentOwner"
+      ],
+      "decisionState": "candidate-deferred",
+      "targetDeploymentForms": [
+        "Content Host"
+      ],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "Not established; loop, stop, callback, RTPC/state, bus and mixer owners remain unreviewed",
+      "stateHolder": "not established",
+      "targetAssembly": "Deferred optional host only after native-owner proof",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No API or stub.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Research-only; zero base growth.",
+      "uniqueFileCount": 0,
+      "uniquePhysicalLines": 0,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "gmcm-manager-ui",
+      "reviewDisposition": "Platform",
+      "physicalOwnershipCandidates": [
+        "Platform"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "DTMAPI Runtime"
+      ],
+      "realConsumerCount": 11,
+      "currentConsumers": [
+        "DTMAPI.ZoomMod",
+        "DTMAPI.DebugConsoleMod",
+        "DTMAPI.MoreSavesMod",
+        "Yuuka.DTMAPI.ActionSpeed",
+        "Yuuka.DTMAPI.OneActionComplete",
+        "Yuuka.DTMAPI.FishBreedingAssistant",
+        "Yuuka.DTMAPI.AnimalHusbandryProgress",
+        "DTMAPI.ChestLocatorEnhancerMod",
+        "Yuuka.DTMAPI.AutoFishing",
+        "DTMAPI.MoreEquipmentSlotsMod",
+        "Yuuka.DTMAPI.ManboCardboardAudio"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.ZoomMod",
+          "catalogId": "zoom",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/ZoomMod",
+          "trackedSourceManifest": "first-party-mods/ZoomMod/manifest.json",
+          "trackedSourceManifestBlob": "ae8aeaec0ae86fa2c6b32496ea3687d574eecbdb",
+          "retainedTreeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.DebugConsoleMod",
+          "catalogId": "y-console",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/DebugConsoleMod",
+          "trackedSourceManifest": "testmods/DebugConsoleMod/manifest.json",
+          "trackedSourceManifestBlob": "92f26a29d53c56c11d4497177eb34d5fe57b6829",
+          "retainedTreeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.MoreSavesMod",
+          "catalogId": "more-saves",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreSavesMod",
+          "trackedSourceManifest": "testmods/MoreSavesMod/manifest.json",
+          "trackedSourceManifestBlob": "3b01846b2ae4967eb259a2f44bde9c611b2008f1",
+          "retainedTreeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+          "catalogId": "action-speed",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ActionSpeedMod",
+          "trackedSourceManifest": "testmods/ActionSpeedMod/manifest.json",
+          "trackedSourceManifestBlob": "67d93907080848e6d26c54f42066df326babade1",
+          "retainedTreeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+          "catalogId": "one-action-complete",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/OneActionCompleteMod",
+          "trackedSourceManifest": "testmods/OneActionCompleteMod/manifest.json",
+          "trackedSourceManifestBlob": "a4d0405c8b239611417c1433798e9931f1d11399",
+          "retainedTreeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+          "catalogId": "fish-roe-info",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/FishBreedingAssistantMod",
+          "trackedSourceManifest": "testmods/FishBreedingAssistantMod/manifest.json",
+          "trackedSourceManifestBlob": "22b52d46ee748db36c07f5d52984d8de393bf823",
+          "retainedTreeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+          "catalogId": "animal-husbandry-progress",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/AnimalHusbandryProgressMod",
+          "trackedSourceManifest": "testmods/AnimalHusbandryProgressMod/manifest.json",
+          "trackedSourceManifestBlob": "8aabb5cfee901adec919fc4acf028d0971fc4a39",
+          "retainedTreeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+          "catalogId": "chest-locator-enhancer",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ChestLocatorEnhancerMod",
+          "trackedSourceManifest": "testmods/ChestLocatorEnhancerMod/manifest.json",
+          "trackedSourceManifestBlob": "d5cfdd2e312400f0e6d64cdc37c54b29c4d4f8d2",
+          "retainedTreeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+          "catalogId": "auto-fishing",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/AutoFishingMod",
+          "trackedSourceManifest": "first-party-mods/AutoFishingMod/manifest.json",
+          "trackedSourceManifestBlob": "30e3defd2fbb32798c0f3437de68bcae53af70bf",
+          "retainedTreeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+          "catalogId": "more-equipment-slots",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreEquipmentSlotsMod",
+          "trackedSourceManifest": "testmods/MoreEquipmentSlotsMod/manifest.json",
+          "trackedSourceManifestBlob": "bd8dc5c782435f878f58df603c91414363d5723f",
+          "retainedTreeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+          "catalogId": "manbo-cardboard-audio",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ManboCardboardAudioMod",
+          "trackedSourceManifest": "testmods/ManboCardboardAudioMod/manifest.json",
+          "trackedSourceManifestBlob": "e3af359346b55ec6f865a10ca27e4b1b29f3db7b",
+          "retainedTreeSha256": "23a3209e75788b68041f4e1eecfe81550f87d6579893272af67711b2c0bfc40e",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "DTMAPI config registry, diagnostics snapshot and title settings UI host",
+      "stateHolder": "Core Manager model, ModConfigMenu registry and Bootstrap title UI",
+      "targetAssembly": "DTMAPI.Core + DTMAPI.ModConfigMenu + DTMAPI.BepInExBootstrap",
+      "targetMandatoryLoad": true,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Platform identity/status projection only; no gameplay API promotion.",
+      "hookAndLifetime": "Platform owns config/Manager lifecycle and player support rows, never product native behavior.",
+      "marginalPlan": "Retain Platform; future identity rows arrive atomically in G2.",
+      "uniqueFileCount": 8,
+      "uniquePhysicalLines": 4244,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [
+            "src/DTMAPI.Core/Manager",
+            "src/DTMAPI.ModConfigMenu",
+            "src/DTMAPI.BepInExBootstrap/ReflectedTitleMenuSettingsUi.cs"
+          ],
+          "fileCount": 8,
+          "physicalLines": 4244,
+          "treeSha256": "7131c20ad22c0261a47d40a3139febceaf2d6401b39b9c803888487d680a6fab",
+          "files": [
+            {
+              "path": "src/DTMAPI.BepInExBootstrap/ReflectedTitleMenuSettingsUi.cs",
+              "physicalLines": 1946,
+              "gitBlob": "9218bafb75af378fb7b7351460cdf67d41ff8c27"
+            },
+            {
+              "path": "src/DTMAPI.Core/Manager/DtmManagerRuntimeModelProvider.cs",
+              "physicalLines": 108,
+              "gitBlob": "b67332d4a98fc5e284322c376a1baa9da68dd93c"
+            },
+            {
+              "path": "src/DTMAPI.Core/Manager/DtmManagerViewModels.cs",
+              "physicalLines": 570,
+              "gitBlob": "778f2dcbbd726302193438ced954fe30186bcd1c"
+            },
+            {
+              "path": "src/DTMAPI.Core/Manager/ManagerPageRowFormatter.cs",
+              "physicalLines": 171,
+              "gitBlob": "f87afe4f589fc91c4fa8e50b225ccc7955bece91"
+            },
+            {
+              "path": "src/DTMAPI.ModConfigMenu/ConfigMenuItems.cs",
+              "physicalLines": 669,
+              "gitBlob": "a3f95cd41653cfe78e135cc1704bb95767a0df9b"
+            },
+            {
+              "path": "src/DTMAPI.ModConfigMenu/ConfigMenuPage.cs",
+              "physicalLines": 512,
+              "gitBlob": "dd217f2abd93d5490ba7956949500e6b61746dbc"
+            },
+            {
+              "path": "src/DTMAPI.ModConfigMenu/ConfigMenuRegistry.cs",
+              "physicalLines": 243,
+              "gitBlob": "2a85684edbf63d55d34c40a48442877ffc29bad5"
+            },
+            {
+              "path": "src/DTMAPI.ModConfigMenu/ConfigMenuTransactions.cs",
+              "physicalLines": 25,
+              "gitBlob": "b0339fd647c3cd2f778122d7138000fa77a13009"
+            }
+          ]
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "event-lifetime-kernel",
+      "reviewDisposition": "Platform",
+      "physicalOwnershipCandidates": [
+        "Platform"
+      ],
+      "decisionState": "decided",
+      "targetDeploymentForms": [
+        "DTMAPI Runtime"
+      ],
+      "realConsumerCount": 11,
+      "currentConsumers": [
+        "DTMAPI.ZoomMod",
+        "DTMAPI.DebugConsoleMod",
+        "DTMAPI.MoreSavesMod",
+        "Yuuka.DTMAPI.ActionSpeed",
+        "Yuuka.DTMAPI.OneActionComplete",
+        "Yuuka.DTMAPI.FishBreedingAssistant",
+        "Yuuka.DTMAPI.AnimalHusbandryProgress",
+        "DTMAPI.ChestLocatorEnhancerMod",
+        "Yuuka.DTMAPI.AutoFishing",
+        "DTMAPI.MoreEquipmentSlotsMod",
+        "DTMAPI.HookProbeMod"
+      ],
+      "currentConsumerEvidence": [
+        {
+          "uniqueId": "DTMAPI.ZoomMod",
+          "catalogId": "zoom",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/ZoomMod",
+          "trackedSourceManifest": "first-party-mods/ZoomMod/manifest.json",
+          "trackedSourceManifestBlob": "ae8aeaec0ae86fa2c6b32496ea3687d574eecbdb",
+          "retainedTreeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.DebugConsoleMod",
+          "catalogId": "y-console",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/DebugConsoleMod",
+          "trackedSourceManifest": "testmods/DebugConsoleMod/manifest.json",
+          "trackedSourceManifestBlob": "92f26a29d53c56c11d4497177eb34d5fe57b6829",
+          "retainedTreeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.MoreSavesMod",
+          "catalogId": "more-saves",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreSavesMod",
+          "trackedSourceManifest": "testmods/MoreSavesMod/manifest.json",
+          "trackedSourceManifestBlob": "3b01846b2ae4967eb259a2f44bde9c611b2008f1",
+          "retainedTreeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+          "catalogId": "action-speed",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ActionSpeedMod",
+          "trackedSourceManifest": "testmods/ActionSpeedMod/manifest.json",
+          "trackedSourceManifestBlob": "67d93907080848e6d26c54f42066df326babade1",
+          "retainedTreeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+          "catalogId": "one-action-complete",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/OneActionCompleteMod",
+          "trackedSourceManifest": "testmods/OneActionCompleteMod/manifest.json",
+          "trackedSourceManifestBlob": "a4d0405c8b239611417c1433798e9931f1d11399",
+          "retainedTreeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+          "catalogId": "fish-roe-info",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/FishBreedingAssistantMod",
+          "trackedSourceManifest": "testmods/FishBreedingAssistantMod/manifest.json",
+          "trackedSourceManifestBlob": "22b52d46ee748db36c07f5d52984d8de393bf823",
+          "retainedTreeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+          "catalogId": "animal-husbandry-progress",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/AnimalHusbandryProgressMod",
+          "trackedSourceManifest": "testmods/AnimalHusbandryProgressMod/manifest.json",
+          "trackedSourceManifestBlob": "8aabb5cfee901adec919fc4acf028d0971fc4a39",
+          "retainedTreeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+          "catalogId": "chest-locator-enhancer",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/ChestLocatorEnhancerMod",
+          "trackedSourceManifest": "testmods/ChestLocatorEnhancerMod/manifest.json",
+          "trackedSourceManifestBlob": "d5cfdd2e312400f0e6d64cdc37c54b29c4d4f8d2",
+          "retainedTreeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+          "catalogId": "auto-fishing",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "first-party-mods/AutoFishingMod",
+          "trackedSourceManifest": "first-party-mods/AutoFishingMod/manifest.json",
+          "trackedSourceManifestBlob": "30e3defd2fbb32798c0f3437de68bcae53af70bf",
+          "retainedTreeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+          "catalogId": "more-equipment-slots",
+          "catalogRole": "PublishedProduct",
+          "evidenceKinds": [
+            "retained-artifact",
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/MoreEquipmentSlotsMod",
+          "trackedSourceManifest": "testmods/MoreEquipmentSlotsMod/manifest.json",
+          "trackedSourceManifestBlob": "bd8dc5c782435f878f58df603c91414363d5723f",
+          "retainedTreeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6",
+          "qualifiesAsIndependentRealConsumer": true
+        },
+        {
+          "uniqueId": "DTMAPI.HookProbeMod",
+          "catalogId": "hook-probe-qa",
+          "catalogRole": "QaFixture",
+          "evidenceKinds": [
+            "tracked-source"
+          ],
+          "trackedSourceRoot": "testmods/HookProbeMod",
+          "trackedSourceManifest": "testmods/HookProbeMod/manifest.json",
+          "trackedSourceManifestBlob": "98f004275ce1e72c506c18856f7cced3ca449647",
+          "retainedTreeSha256": "",
+          "qualifiesAsIndependentRealConsumer": true
+        }
+      ],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "DTMAPI event publication, content generation, demand accounting, runtime boundary and owner cleanup",
+      "stateHolder": "Core owner/event/demand/generation ledgers and boundary slots",
+      "targetAssembly": "DTMAPI.Core; only proven shared-native adapters remain in GameBridge",
+      "targetMandatoryLoad": true,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve generic Experimental event semantics; remove product-specific routes with products.",
+      "hookAndLifetime": "Platform owns thread/publication/owner cleanup; mixed GameBridge route files must split generic shell from product routes.",
+      "marginalPlan": "Retain generic Batch 5 kernel; zero product implementation growth.",
+      "uniqueFileCount": 9,
+      "uniquePhysicalLines": 6296,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [
+            "src/DTMAPI.Core/Services/EventManager.cs",
+            "src/DTMAPI.Core/Runtime/ContentRefreshGenerationService.cs",
+            "src/DTMAPI.Core/Runtime/RuntimeBoundarySlot.cs",
+            "src/DTMAPI.Core/Runtime/RuntimeDemandCoordinator.cs",
+            "src/DTMAPI.Core/Runtime/ResourceLifecycleLedgerService.cs",
+            "src/DTMAPI.Core/Runtime/HookStatusPublicationQueue.cs"
+          ],
+          "fileCount": 6,
+          "physicalLines": 5206,
+          "treeSha256": "0dfc16c4126835f6eab45958cb8dfef6e4c3cade95c29649bcc98b1742c212d2",
+          "files": [
+            {
+              "path": "src/DTMAPI.Core/Runtime/ContentRefreshGenerationService.cs",
+              "physicalLines": 782,
+              "gitBlob": "ba76a07947605815af359f9ab19843af70c1b8b5"
+            },
+            {
+              "path": "src/DTMAPI.Core/Runtime/HookStatusPublicationQueue.cs",
+              "physicalLines": 258,
+              "gitBlob": "2ea602f107c252320304bfe85fab2c865fafc383"
+            },
+            {
+              "path": "src/DTMAPI.Core/Runtime/ResourceLifecycleLedgerService.cs",
+              "physicalLines": 991,
+              "gitBlob": "d87f538885abcb7d57e7da1d906bb391b09645bd"
+            },
+            {
+              "path": "src/DTMAPI.Core/Runtime/RuntimeBoundarySlot.cs",
+              "physicalLines": 67,
+              "gitBlob": "fd71b468adb44ea9578fa1acf501cedd20c51cb7"
+            },
+            {
+              "path": "src/DTMAPI.Core/Runtime/RuntimeDemandCoordinator.cs",
+              "physicalLines": 1073,
+              "gitBlob": "54e05dd130bd86cc8f10896f2df6ee5974f86095"
+            },
+            {
+              "path": "src/DTMAPI.Core/Services/EventManager.cs",
+              "physicalLines": 2035,
+              "gitBlob": "fa7abfc73effc86f011079e2a735ba096deb8193"
+            }
+          ]
+        },
+        "gameBridge": {
+          "scopePaths": [
+            "src/DTMAPI.GameBridge.DolocTown/Demand"
+          ],
+          "fileCount": 3,
+          "physicalLines": 1090,
+          "treeSha256": "fcc796f2beb1cd91d4113d25db84694a61b059bb983973e4bca7b373c5a039e7",
+          "files": [
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Demand/Batch5NoDemandRuntimeSnapshot.cs",
+              "physicalLines": 47,
+              "gitBlob": "863b99d89be703b5954af747bb672f1e1505a4f4"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Demand/DolocTownGameBridge.Demand.cs",
+              "physicalLines": 902,
+              "gitBlob": "9d9fa9b14078aa5148c67cf85e5738a877113410"
+            },
+            {
+              "path": "src/DTMAPI.GameBridge.DolocTown/Demand/GameBridgeDemandRoutes.cs",
+              "physicalLines": 141,
+              "gitBlob": "a5bf1269fd8975a66901b24eb389bcb4ff724ab2"
+            }
+          ]
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "custom-entities",
+      "reviewDisposition": "blocked-retire-or-internalize",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "blocked-unresolved",
+      "targetDeploymentForms": [],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "Registry owner exists; animal/monster/projectile/attack/drone runtime creation owners are not established",
+      "stateHolder": "DTMAPI definition registry only; native runtime state intentionally absent",
+      "targetAssembly": "No admitted host; retire or internalize the speculative registry until a real optional ContentOwner is proven",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No silent removal; consumer scan and warning-bearing breaking boundary required.",
+      "hookAndLifetime": "No native creation Hook is admitted.",
+      "marginalPlan": "Freeze speculative expansion and plan retirement/internalization.",
+      "uniqueFileCount": 3,
+      "uniquePhysicalLines": 2273,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [
+            "src/DTMAPI.Abstractions/CustomEntities.cs",
+            "src/DTMAPI.Core/Services/CustomEntityRegistryService.cs",
+            "src/DTMAPI.Core/Services/OwnerBoundCustomEntityApis.cs"
+          ],
+          "fileCount": 3,
+          "physicalLines": 2273,
+          "treeSha256": "c62c613d0f0ea3fa14480e48d479a5cae371fd64d1a5fe9c623f94172a320952",
+          "files": [
+            {
+              "path": "src/DTMAPI.Abstractions/CustomEntities.cs",
+              "physicalLines": 964,
+              "gitBlob": "390598e4d84f6d368acf475ba8235c0a0c8bc980"
+            },
+            {
+              "path": "src/DTMAPI.Core/Services/CustomEntityRegistryService.cs",
+              "physicalLines": 1092,
+              "gitBlob": "06533c2d3bc7523bb4fe9d7414875c7faa900a55"
+            },
+            {
+              "path": "src/DTMAPI.Core/Services/OwnerBoundCustomEntityApis.cs",
+              "physicalLines": 217,
+              "gitBlob": "6f38acd26f85bdaa11298869fdf02a114dadf33b"
+            }
+          ]
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "multiplayer",
+      "reviewDisposition": "deferred-independent-project",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "deferred-independent",
+      "targetDeploymentForms": [],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "No Doloc Town multiplayer model established",
+      "stateHolder": "not established",
+      "targetAssembly": "No Batch 6 assembly; any future multiplayer Platform is an independent reviewed project",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No speculative API.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Outside Batch 6.",
+      "uniqueFileCount": 0,
+      "uniquePhysicalLines": 0,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    },
+    {
+      "id": "pets-and-vehicles",
+      "reviewDisposition": "deferred-unadjudicated",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "deferred-unadjudicated",
+      "targetDeploymentForms": [],
+      "realConsumerCount": 0,
+      "currentConsumers": [],
+      "currentConsumerEvidence": [],
+      "plannedConsumers": [],
+      "dependentRoutes": [],
+      "observedPrototypeInputs": [],
+      "nativeOwner": "Pet and independent vehicle owners require new focused reviews; retired MotorVehicle evidence is historical only",
+      "stateHolder": "not established",
+      "targetAssembly": "No admitted assembly; future pet and vehicle products remain ProductNative unless a focused review proves another owner",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Do not revive retired MotorVehicle API or preassign to CustomAnimals/GameBridge.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Outside current migration admission.",
+      "uniqueFileCount": 0,
+      "uniquePhysicalLines": 0,
+      "categories": {
+        "corePlatform": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "gameBridge": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "product": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "qa": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        },
+        "compatibility": {
+          "scopePaths": [],
+          "fileCount": 0,
+          "physicalLines": 0,
+          "treeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "files": []
+        }
+      }
+    }
+  ],
+  "compatibilityConsumerScan": [
+    {
+      "id": "legacy-fishing-public",
+      "symbols": [
+        {
+          "symbol": "IFishingAutomationApi",
+          "trackedProductSourceMatches": []
+        },
+        {
+          "symbol": "FishingAutomationOptions",
+          "trackedProductSourceMatches": []
+        }
+      ],
+      "trackedProductSourceMatches": [],
+      "declaredKnownTrackedConsumers": [],
+      "retainedArtifactConsumer": "Published AutoFishing 0.5.2 DLL, SHA-256 E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+      "plan": "Freeze through 0.5.5 with warning; optionalize executor; earliest removal 0.6.0 after zero-consumer rescan, migration guide and one published warning-bearing preview."
+    },
+    {
+      "id": "first-party-fishing-primitives",
+      "symbols": [
+        {
+          "symbol": "IFirstPartyFishingPrimitivesApi",
+          "trackedProductSourceMatches": [
+            "first-party-mods/AutoFishingMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IFirstPartyFishingSession",
+          "trackedProductSourceMatches": [
+            "first-party-mods/AutoFishingMod/ModEntry.cs"
+          ]
+        }
+      ],
+      "trackedProductSourceMatches": [
+        "first-party-mods/AutoFishingMod/ModEntry.cs"
+      ],
+      "declaredKnownTrackedConsumers": [
+        "first-party-mods/AutoFishingMod"
+      ],
+      "retainedArtifactConsumer": "none; internal friend surface",
+      "plan": "Remove only inside the admitted AutoFishing pilot after the G2 fixture, together with provider/facade/demand/tests."
+    },
+    {
+      "id": "camera-compatibility",
+      "symbols": [
+        {
+          "symbol": "ICameraZoomApi",
+          "trackedProductSourceMatches": []
+        },
+        {
+          "symbol": "ICameraViewApi",
+          "trackedProductSourceMatches": [
+            "first-party-mods/ZoomMod/ModEntry.cs"
+          ]
+        }
+      ],
+      "trackedProductSourceMatches": [
+        "first-party-mods/ZoomMod/ModEntry.cs"
+      ],
+      "declaredKnownTrackedConsumers": [
+        "first-party-mods/ZoomMod"
+      ],
+      "retainedArtifactConsumer": "unknown outside retained scans",
+      "plan": "Keep compatibility while Zoom migration is blocked; no removal or stability promotion without a focused consumer/native-owner Update."
+    },
+    {
+      "id": "lamp-disabled-shell",
+      "symbols": [
+        {
+          "symbol": "ILampControlApi",
+          "trackedProductSourceMatches": []
+        }
+      ],
+      "trackedProductSourceMatches": [],
+      "declaredKnownTrackedConsumers": [],
+      "retainedArtifactConsumer": "retained ABI requires four types and 92 signatures",
+      "plan": "Keep disabled shell through 0.5.5; earliest removal 0.6.0 after warning cycle and renewed consumer scan."
+    },
+    {
+      "id": "product-mirror-apis",
+      "symbols": [
+        {
+          "symbol": "IActionCompletionApi",
+          "trackedProductSourceMatches": [
+            "testmods/OneActionCompleteMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IActionSpeedApi",
+          "trackedProductSourceMatches": [
+            "testmods/ActionSpeedMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "ISaveSlotsApi",
+          "trackedProductSourceMatches": [
+            "testmods/MoreSavesMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IChestLocatorEnhancerApi",
+          "trackedProductSourceMatches": [
+            "testmods/ChestLocatorEnhancerMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IItemTooltipApi",
+          "trackedProductSourceMatches": [
+            "testmods/FishBreedingAssistantMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IAnimalViewerApi",
+          "trackedProductSourceMatches": [
+            "testmods/AnimalHusbandryProgressMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IStrongPlantingGunApi",
+          "trackedProductSourceMatches": [
+            "testmods/StrongPlantingGunMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "ICropHarvestingApi",
+          "trackedProductSourceMatches": [
+            "testmods/AutoHarvestMod/ModEntry.cs",
+            "testmods/CropHarvestingQaMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IEquipmentSlotsApi",
+          "trackedProductSourceMatches": [
+            "testmods/MoreEquipmentSlotsMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IMachineProductionApi",
+          "trackedProductSourceMatches": [
+            "testmods/MineMod/ModEntry.cs"
+          ]
+        },
+        {
+          "symbol": "IAudioReplacementApi",
+          "trackedProductSourceMatches": [
+            "testmods/ManboCardboardAudioMod/ModEntry.cs"
+          ]
+        }
+      ],
+      "trackedProductSourceMatches": [
+        "testmods/ActionSpeedMod/ModEntry.cs",
+        "testmods/AnimalHusbandryProgressMod/ModEntry.cs",
+        "testmods/AutoHarvestMod/ModEntry.cs",
+        "testmods/ChestLocatorEnhancerMod/ModEntry.cs",
+        "testmods/CropHarvestingQaMod/ModEntry.cs",
+        "testmods/FishBreedingAssistantMod/ModEntry.cs",
+        "testmods/ManboCardboardAudioMod/ModEntry.cs",
+        "testmods/MineMod/ModEntry.cs",
+        "testmods/MoreEquipmentSlotsMod/ModEntry.cs",
+        "testmods/MoreSavesMod/ModEntry.cs",
+        "testmods/OneActionCompleteMod/ModEntry.cs",
+        "testmods/StrongPlantingGunMod/ModEntry.cs"
+      ],
+      "declaredKnownTrackedConsumers": [
+        "testmods/OneActionCompleteMod",
+        "testmods/ActionSpeedMod",
+        "testmods/MoreSavesMod",
+        "testmods/ChestLocatorEnhancerMod",
+        "testmods/FishBreedingAssistantMod",
+        "testmods/AnimalHusbandryProgressMod",
+        "testmods/StrongPlantingGunMod",
+        "testmods/AutoHarvestMod",
+        "testmods/CropHarvestingQaMod",
+        "testmods/MoreEquipmentSlotsMod",
+        "testmods/MineMod",
+        "testmods/ManboCardboardAudioMod"
+      ],
+      "retainedArtifactConsumer": "tracked product Catalog plus retained public ABI audit; external universe is not provably closed",
+      "plan": "No Phase 0 deletion. Each migration preserves ABI or records a warning-bearing breaking boundary and fresh external scan."
+    },
+    {
+      "id": "custom-entity-speculative-public",
+      "symbols": [
+        {
+          "symbol": "ICustomAnimalApi",
+          "trackedProductSourceMatches": []
+        },
+        {
+          "symbol": "ICustomMonsterApi",
+          "trackedProductSourceMatches": []
+        },
+        {
+          "symbol": "ICustomAttackApi",
+          "trackedProductSourceMatches": []
+        },
+        {
+          "symbol": "ICustomDroneApi",
+          "trackedProductSourceMatches": []
+        }
+      ],
+      "trackedProductSourceMatches": [],
+      "declaredKnownTrackedConsumers": [],
+      "retainedArtifactConsumer": "none known; tests exercise registry and blocked runtime verbs",
+      "plan": "Freeze expansion; retire/internalize only at an explicit breaking boundary after warning and consumer scan."
+    }
+  ],
+  "mandatoryRuntimeAudit": {
+    "roots": [
+      "src/DTMAPI.Abstractions",
+      "src/DTMAPI.Core",
+      "src/DTMAPI.BepInExBootstrap",
+      "src/DTMAPI.GameBridge.DolocTown",
+      "src/DTMAPI.ModConfigMenu"
+    ],
+    "baselineFileCount": 158,
+    "baselinePhysicalLines": 77289,
+    "baselineTreeSha256": "e518f75a3fbe59f01fa59ef741ebcb9a4f677f3f8b35eb85ed240166d791b7e7",
+    "auditedFileCount": 158,
+    "auditedPhysicalLines": 77328,
+    "auditedTreeSha256": "456a1cf278dc9318a80b659184940151c63e6c5d5b7d83dde20575a6041b86c7",
+    "changedFileCount": 1,
+    "unclassifiedChangedFileCount": 0,
+    "productNativeAddedPhysicalLines": 0,
+    "targetProductNativeAddedPhysicalLinesMax": 0,
+    "changedFiles": [
+      {
+        "path": "src/DTMAPI.Core/Manifesting/ManifestReader.cs",
+        "status": "Modified",
+        "classification": "Platform",
+        "review": "docs/reviews/code/2026/20260720-0003-batch5-closeout-and-batch6-phase0-acceptance-audit.md",
+        "reason": "Core manifest identity parsing and pre-load admission are Platform responsibilities.",
+        "baselineBlob": "f7b24f1de567773af0dc70efbb8e25e9a07027ac",
+        "auditedBlob": "091ee26f98298ac00df11528ec030f82fb168899",
+        "baselinePhysicalLines": 640,
+        "auditedPhysicalLines": 679,
+        "addedPhysicalLines": 39,
+        "deletedPhysicalLines": 0
+      }
+    ]
+  },
+  "batch5SourceRanges": [
+    "7ff75c4c^..9e31aae5",
+    "e5aaa964..653487b7463778c23e9b96aed9ef713364def22a"
+  ],
+  "batch5SourceRangeNote": "Union of the Batch 5 checkpoint-to-closure source/tooling ranges; excludes the intervening e5aaa964 reverse-baseline-only correction while retaining the shared test.ps1 entry point where Batch 5 also changed it.",
+  "batch5ClassifiedFileCount": 115,
+  "batch5ClassifiedFiles": [
+    {
+      "path": "first-party-mods/AutoFishingMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "first-party-mods/ZoomMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestModels.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestReader.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ContentManifestRegistry.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ContentRefreshGenerationService.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/DtmApiRuntime.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/HookStatusPublicationQueue.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/RefactorScaffoldOptions.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ResourceLifecycleLedgerService.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/RuntimeBoundarySlot.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/RuntimeDemandCoordinator.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Services/ConfigService.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Services/EventManager.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.Core/Services/WorkshopContentInputUi.cs",
+      "ruleId": "core-platform-kernel",
+      "classification": "Platform",
+      "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Contracts/AutoFishingPerformanceFixtureContracts.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Contracts/Batch5GcLadderFixtureOptions.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Diagnostics/RuntimeMemoryTrendProbe.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/AutoFishingPerformanceOrchestrator.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/Batch5GcLadderOrchestrator.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/Batch5NoDemandPerformanceReceipt.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Performance/FishingPerformanceProbe.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/QaHostParticipant.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/QaHostSettings.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G4Fixtures.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G5Fixtures.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G6Fixtures.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingFixtureCase.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeControlFixturePolicy.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeVitalsCommandAdapter.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingPrimitiveFixtureCase.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/G4CameraPlayableFixtureScenario.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/QaScenarioController.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/AuthorSessionReloadBridge.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/LegacyFishingAutomationService.cs",
+      "ruleId": "frozen-compatibility",
+      "classification": "Compatibility",
+      "targetAction": "No new product logic; optionalize and retire only after warning/consumer/version gates.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Demand/Batch5NoDemandRuntimeSnapshot.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Demand/DolocTownGameBridge.Demand.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Demand/GameBridgeDemandRoutes.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Diagnostics/DolocTownExperimentalBridgeApi.Diagnostics.cs",
+      "ruleId": "gamebridge-diagnostic-projection",
+      "classification": "Mixed-PlatformDiagnostic-ProductStatus",
+      "targetAction": "Retain generic bounded diagnostics; remove product status/probe branches with the owning product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs",
+      "ruleId": "gamebridge-diagnostic-projection",
+      "classification": "Mixed-PlatformDiagnostic-ProductStatus",
+      "targetAction": "Retain generic bounded diagnostics; remove product status/probe branches with the owning product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Features.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Hooks.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Update.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion/ActionCompletionService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedHookBridge.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer/AnimalViewerService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementFeature.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementHookBridge.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement/AudioReplacementService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraFeature.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraViewService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerHookBridge.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting/CropHarvestingService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/CustomAnimalAnimatorBridgeFeature.cs",
+      "ruleId": "custom-animals-content-owner",
+      "classification": "ContentOwner",
+      "targetAction": "Target an optional Content Host under G7; do not mix species policy.",
+      "additionalMatchingRuleIds": [
+        "product-feature-routes"
+      ]
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/CustomAnimalAnimatorBridgeService.cs",
+      "ruleId": "custom-animals-content-owner",
+      "classification": "ContentOwner",
+      "targetAction": "Target an optional Content Host under G7; do not mix species policy.",
+      "additionalMatchingRuleIds": [
+        "product-feature-routes"
+      ]
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/DolocTownExperimentalBridgeApi.EquipmentSlots.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip/FishRoeTooltipService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingAutomationFeature.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeAccessors.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeAdapter.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeControlQaSession.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingNativeEnergyGate.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingPrimitivesService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation/FishingRuntimeComponents.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/MachineProduction/DolocTownExperimentalBridgeApi.MachineProduction.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/OwnerCleanup/DolocTownExperimentalBridgeApi.OwnerCleanup.cs",
+      "ruleId": "generic-owner-cleanup",
+      "classification": "Platform-SharedNative",
+      "targetAction": "Retain generic participant/restore accounting while deleting product-specific cleanup branches with products.",
+      "additionalMatchingRuleIds": [
+        "product-feature-routes"
+      ]
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/OwnerCleanup/GameBridgeModOwnerCleanupParticipant.cs",
+      "ruleId": "generic-owner-cleanup",
+      "classification": "Platform-SharedNative",
+      "targetAction": "Retain generic participant/restore accounting while deleting product-specific cleanup branches with products.",
+      "additionalMatchingRuleIds": [
+        "product-feature-routes"
+      ]
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots/SaveSlotsFeature.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots/SaveSlotsService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun/StrongPlantingGunService.cs",
+      "ruleId": "product-feature-routes",
+      "classification": "ProductNative-transition",
+      "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/AgentStateLifecycleHookBridge.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/DolocTownHookCallbacks.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/HarmonyReflectionPatcher.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/HookInstallScheduler.cs",
+      "ruleId": "mixed-gamebridge-shell",
+      "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+      "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown/QaHost/DolocTownGameBridge.QaHost.cs",
+      "ruleId": "gamebridge-qa-host-seam",
+      "classification": "QA-seam",
+      "targetAction": "Keep only the neutral optional-host seam; product scenario authority stays in the optional QA assembly.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/ActionSpeedMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/AnimalHusbandryProgressMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/AutoHarvestMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/DebugConsoleMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/FishBreedingAssistantMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "testmods/OneActionCompleteMod/ModEntry.cs",
+      "ruleId": "product-source",
+      "classification": "ProductNative-or-product-policy",
+      "targetAction": "Keep policy with product; native code moves only after its Advanced admission.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.QaUnitTests/Program.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5ContentGenerationTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5DemandCoordinatorTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5EventKernelTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5GameBridgeDemandTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5ManifestContractTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Batch5RuntimeBoundaryTests.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Program.cs",
+      "ruleId": "optional-qa",
+      "classification": "QA",
+      "targetAction": "Remain optional/test-only; product-native QA follows the admitted product.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/batch5-gc-source-transaction.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/build-evidence-retention-allowlist.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/build-release-workshop-packages.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/candidate11-source-transaction.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/check-doc-governance.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/check-product-catalog.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/cleanup-duplicate-runtime-evidence.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/cleanup-test-artifacts.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/common.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/release-common.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/run-batch5-gc-ladder.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/run-batch5-no-demand-profile.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/run-game-smoke.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/run-hook-probe.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-batch4-qa-semantic-inventory.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-batch5-gc-ladder.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-batch5-no-demand-profile.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-candidate11-source-transaction.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-noqa-deadline.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-runtime-evidence-retention.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test-workshop-download-markers.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    },
+    {
+      "path": "tools/scripts/test.ps1",
+      "ruleId": "batch5-tooling",
+      "classification": "QA-release-tooling",
+      "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA.",
+      "additionalMatchingRuleIds": []
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+# 《多洛可小镇》创意工坊模组制作说明
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/ElmCwXsRCi7OPvkOh8JcvXK9nfc>
+
+Source modified label: 6月12日修改
+
+感谢您游玩《多洛可小镇》，也感谢您关注和参与模组制作。无论您是想简单体验他人分享的模组，还是想亲手制作属于自己的内容，我们都希望这份文档能为你提供一些帮助。 每位愿意尝试、分享和创作的玩家，都会让小镇变得更加丰富和有趣！
+
+For English Modding Guide, Please Find Here: https://docs.google.com/document/d/1D9zV8NAYkAMKZ3_l4RO8mAUEQS1_8LQK6XiDcm8Mkfk/edit?usp=sharing
+
+本文档内容包括：
+
+- 如何查看示例模组
+
+查看示例模组
+
+- 如何创建你的模组
+
+创建你的模组
+
+- 如何替换现有内容贴图
+
+01 美化模组（替换现有贴图）
+
+- 如何创作全新游戏内容
+
+02 基础内容模组
+
+03 进阶内容模组
+
+- 如何上传与发布模组
+
+在创意工坊上传你的模组
+
+- 其他内容（MOD本地化 & 模板等）
+
+04 其他内容
+
+- ID 对照表
+
+05 ID对照表
+
+- MOD文档更新记录
+
+文档更新记录
+
+重要提示：
+
+- 请务必优先阅读 查看示例模组 以下载示例模组以供后续参考，这非常重要！
+
+- 在制作新模组并进行测试前，我们强烈建议您对当前存档进行备份（存档地址: C:/Users/用户名/AppData/LocalLow/RedSawGames/DolocTown/SAVE   存档文件: ea-doloc-archive-x.data(第一个栏位的存档对应ea-doloc-archive-0.data)
+
+- 如果您是第一次体验创意工坊创作，亦或是不想处理代码相关内容，我们建议优先考虑 01 美化模组（替换现有贴图）与 02 基础内容模组 里的 02 新增帽子（静态帽子）。美化模组仅需要您替换当前游戏内贴图，不涉及json文件的修改。静态帽子对贴图数量要求不高，也非常适合新玩家上手。
+
+- 如果您有一定的动手能力，亦或是已上手上述模组创作，则可以尝试除静态帽子外的其他 02 基础内容模组功能，以及更复杂的 03 进阶内容模组。
+
+- 请不要通过创意工坊创作及传播违禁或违反公序良俗的内容！我们会定期审核并下架创意工坊中的违规内容，同时违规玩家将会被警告或列入黑名单。
+
+- 如果您在使用创意工坊功能中遇到BUG或需要反馈建议，可以通过此处的问卷链接告诉我们。BUG反馈请在版本一栏里填入 “创意工坊”  BUG & 反馈问卷
+
+- 欢迎各位创作者加入创意工坊交流Q群 (群号：1083622378)，与其他创作者一起讨论内容，我们同时也会定期查看并回复玩家在中反馈的问题与建议，感谢您的支持~！
+
+## Links
+
+- [https://docs.google.com/document/d/1D9zV8NAYkAMKZ3_l4RO8mAUEQS1_8LQK6XiDcm8Mkfk/edit?usp=sharing](https://docs.google.com/document/d/1D9zV8NAYkAMKZ3_l4RO8mAUEQS1_8LQK6XiDcm8Mkfk/edit?usp=sharing)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)
+- [创建你的模组](https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf)
+- [01 美化模组（替换现有贴图）](https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe)
+- [02 基础内容模组](https://ka7deoo0opr.feishu.cn/wiki/PwfowuR9Ti1OJGkH6j8cypQ6n6D)
+- [03 进阶内容模组](https://ka7deoo0opr.feishu.cn/wiki/FOMvwdhipi0ojgkt2eQcU8dVnib)
+- [在创意工坊上传你的模组](https://ka7deoo0opr.feishu.cn/wiki/CEJyw2PSpiVtx9kdWCocGxdon1f)
+- [04 其他内容](https://ka7deoo0opr.feishu.cn/wiki/LHe9w2v8ui1HFok6axUcR5kbnNd)
+- [05 ID对照表](https://ka7deoo0opr.feishu.cn/wiki/Y9KzwjpI2ilLMdkWpmCcJhTtng8)
+- [文档更新记录](https://ka7deoo0opr.feishu.cn/wiki/F4c0wCf5Ui6kX6kqtZBcZw3jncf)
+- [02 新增帽子](https://ka7deoo0opr.feishu.cn/wiki/PxaIwKgsPiua7okPqgdcoCOZnkF)
+- [BUG & 反馈问卷](https://wj.qq.com/s2/21559693/3345/)

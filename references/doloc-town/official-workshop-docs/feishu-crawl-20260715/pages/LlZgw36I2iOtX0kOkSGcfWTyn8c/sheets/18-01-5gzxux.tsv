@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	loveyer	anim_npc_loveyer_idle_[0~5]
+帧动画（对话）	6	talk	loveyer	anim_npc_loveyer_talk_[0~5]
+帧动画（移动）	6	walk	loveyer	anim_npc_loveyer_walk_[0~5]
+图标（日历）	1		loveyer	icon_calendar_loveyer
+图标（图鉴）	1		loveyer	icon_document_loveyer
+详情图（图鉴）	1		loveyer	preview_document_loveyer

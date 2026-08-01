@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.MoreSaves",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "Functional",
+      "DTMAPI",
+      "Save",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 更多存档",
+      "tchinese": "DTMAPI 更多存檔",
+      "english": "DTMAPI More Saves"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n将官方存档界面扩容为 12 个总槽位，禁用后不会删除额外存档文件。",
+      "tchinese": "依賴 DTMAPI。\n將官方存檔介面擴容為 12 個總槽位，停用後不會刪除額外存檔檔案。",
+      "english": "Requires DTMAPI.\nExpands the official save UI to 12 total slots. Extra save files are not deleted when the mod is disabled."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-moresaves-v1",
+    "references": [
+      "Assembly-CSharp"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "Content",
+  "assemblyName": "DTMAPI.DebugConsole",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Gameplay",
+      "Functional",
+      "DTMAPI",
+      "Diagnostic",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "Y键控制台",
+      "tchinese": "Y鍵控制台",
+      "english": "Y Key Console"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n存档内按 Y 打开产品自有的诊断控制台。提供限定的物品、天气、传送、时间、移动和高级调试操作；不提供任意命令执行。",
+      "tchinese": "依賴 DTMAPI。\n存檔內按 Y 開啟產品自有的診斷控制台。提供限定的物品、天氣、傳送、時間、移動與進階除錯操作；不提供任意命令執行。",
+      "english": "Requires DTMAPI.\nPress Y in a loaded save to open the product-owned diagnostic console. It offers a bounded set of item, weather, teleport, time, movement, and advanced debug actions; arbitrary commands are not exposed."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-debugconsole-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

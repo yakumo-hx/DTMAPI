@@ -1,0 +1,57 @@
+# 07 ID对照表（建筑）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf>
+
+Source modified label: 5月14日修改
+
+## 1.建筑外观ID对照表
+
+#### Embedded sheet `RxwenO`
+
+[TSV](sheets/01-01-rxweno.tsv) · [rendered screenshot](sheets/01-01-rxweno.png)
+
+```tsv
+		场景贴图组（关门）		场景贴图组（开门）
+名称	ID	场景贴图-命名格式	门的贴图-命名格式	场景贴图-命名格式	门的贴图-命名格式
+外部墙纸（默认）	wall_default					四周留1像素
+帐篷	tent	sprite_building_external_tent	sprite_building_external_door_tent
+小型集装箱	small_container	sprite_building_external_small_container	sprite_building_external_door_small_container
+中型集装箱	medium_container	sprite_building_external_medium_container	sprite_building_external_door_medium_container
+大型集装箱	large_container	sprite_building_external_large_container	sprite_building_external_door_large_container
+植物大棚	plant_greenhouse	sprite_building_external_plant_greenhouse	sprite_building_external_door_plant_greenhouse
+温室	greenhouse	sprite_building_external_greenhouse	sprite_building_external_door_greenhouse
+电力控制室	power_control_compartment	sprite_building_external_power_control_compartment	sprite_building_external_door_power_control_compartment
+小型畜棚	small_barn	sprite_building_external_small_barn	sprite_building_external_door_small_barn	sprite_building_external_small_barn_opened	sprite_building_external_door_small_barn_opened
+大型畜棚	large_barn	sprite_building_external_large_barn	sprite_building_external_door_large_barn	sprite_building_external_large_barn_opened	sprite_building_external_door_large_barn_opened
+地窖	cellar	sprite_building_external_cellar	sprite_building_external_door_cellar
+```
+
+## 2.建筑内部ID对照表
+
+- 注：部分建筑内部的贴图需要通过手动创建同名json文件指定贴图的锚点（见05 贴图锚点说明）。下表中标为灰色的锚点代表底部中心，可以不用额外标注。
+
+#### Embedded sheet `o22LKy`
+
+[TSV](sheets/02-01-o22lky.tsv) · [rendered screenshot](sheets/02-01-o22lky.png)
+
+```tsv
+名称	ID	锚点(x,y)	场景贴图-命名格式	窗户遮罩贴图-命名格式
+内部墙纸（默认）	wall_default
+帐篷	tent	9	sprite_building_internal_tent
+小型集装箱	small_container	96,0	sprite_building_internal_small_container
+中型集装箱	medium_container	144,1	sprite_building_internal_medium_container
+大型集装箱	large_container	204,0	sprite_building_internal_large_container
+植物大棚	plant_greenhouse	168,0	sprite_building_internal_plant_greenhouse
+温室	greenhouse	126,0	sprite_building_internal_greenhouse
+电力控制室	power_control_compartment	120,0	sprite_building_internal_power_control_compartment
+小型畜棚	small_barn	130,10	sprite_building_internal_small_barn	sprite_building_internal_small_barn_mask
+大型畜棚	large_barn	146,5	sprite_building_internal_large_barn	sprite_building_internal_large_barn_mask
+内部墙纸（带窗）	wall_window
+小型集装箱	small_container	96,0	sprite_building_internal_small_container_wall_window	sprite_building_internal_small_container_wall_window_mask
+中型集装箱	medium_container	144,1	sprite_building_internal_medium_container_wall_window	sprite_building_internal_medium_container_wall_window_mask
+大型集装箱	large_container	204,0	sprite_building_internal_large_container_wall_window	sprite_building_internal_large_container_wall_window_mask
+```
+
+## Links
+
+- [05 贴图锚点说明](https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc)

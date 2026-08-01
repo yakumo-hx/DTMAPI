@@ -1,0 +1,4 @@
+references/doloc-town/official-workshop-docs/feishu-crawl-*/** -whitespace
+author-sdk/advanced-reference-policies/*.json text eol=lf
+author-sdk/advanced-reference-policies/*.txt text eol=lf
+author-sdk/compatibility/**/*.props text eol=lf

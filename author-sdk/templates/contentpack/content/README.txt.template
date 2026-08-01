@@ -1,0 +1,5 @@
+Place an already supported DTMAPI content shape here, such as custom-animals.json,
+audio-replacements.json, and its relative assets. The SDK does not invent a wrapper
+or Format field. In the complete Batch 3 preview, explicit session reload supports only
+audio-replacements.json; custom animals, CodeMods, official-native JSON, and unknown formats
+remain restart-required.

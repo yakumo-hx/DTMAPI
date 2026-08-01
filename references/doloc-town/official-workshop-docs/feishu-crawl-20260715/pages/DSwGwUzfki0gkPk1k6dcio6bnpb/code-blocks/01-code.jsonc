@@ -1,0 +1,58 @@
+[
+  {
+    "id": "fertile_soil", //资源ID
+    "default_unlock": true, //是否默认解锁
+    "resource_type": 2, //资源类型，详见对照表
+    "size": {
+      "x": 3, //占地格子数：宽
+      "y": 2  //占地格子数：高
+    },
+    "pixel_offset": {
+      "x": 1, //最大偏移像素：左
+      "y": 1 //最大偏移像素：右
+    },
+    "spawn_months": [], //出现月份（为空表示没有限制）
+    "level_datas": [
+      {
+        "max_health": 10, //阶段生命值
+        "growth_value": {
+          "x": 0, //阶段成长值：最小值
+          "y": 0 //阶段成长值：最大值
+        },
+        "drop_spawn_entry": {
+          "spawn_lut": "fertile_soil_drop", //掉落库ID（决定掉落的道具）
+          "count_range": {
+            "min_count": 2, //掉落数量范围：最小值
+            "max_count": 3 //掉落数量范围：最大值
+          }
+        },
+        "tech_points": [
+          {
+            "type": 1, //增加科技点类型（0自然，1操作，2科技，3养殖）
+            "count": 1 //增加科技点数值
+          }
+        ],
+        "bullet_level_constraint": 0, //采集所需等级：无人机插件
+        "tool_constraints": [
+          {
+            "tool_type": 1, //采集所需工具（0斧头,1镐子，2镰刀）
+            "tool_level": 0 //采集所需工具等级（0老旧，1铜，2铁，3钢，4钛）
+          }
+        ],
+        "skins": [
+          {
+            "url": "sprite_resource_fertile_soil" //场景贴图
+          }
+        ],
+        "sub_prefabs": [
+          {
+            "url": "" //预制体，仅红树有用，无需填写
+          }
+        ]
+      }
+    ],
+    "fit_slot_datas": [], //树脂数据，无需填写
+    "contained_slot_datas": [], //树脂数据，无需填写
+    "resin_collector_output": "" //树脂数据，无需填写
+  }
+]

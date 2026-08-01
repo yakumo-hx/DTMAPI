@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	zenis	anim_npc_zenis_idle_[0~5]
+帧动画（对话）	6	talk	zenis	anim_npc_zenis_talk_[0~5]
+帧动画（移动）	8	walk	zenis	anim_npc_zenis_walk_[0~7]
+图标（日历）	1		zenis	icon_calendar_zenis
+图标（图鉴）	1		zenis	icon_document_zenis
+详情图（图鉴）	1		zenis	preview_document_zenis

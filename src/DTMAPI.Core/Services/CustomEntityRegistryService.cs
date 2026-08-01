@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // Core intentionally preserves the frozen CustomEntity registry ABI.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace DTMAPI.Core.Services
     {
         private const string RuntimeCreationBlocked = "runtime-creation-blocked";
         private readonly DiagnosticsService diagnostics;
+        private readonly Action<string, string, string, string>? recordOwnerRegistration;
         private readonly object gate = new object();
         private readonly Dictionary<string, DefinitionRecord<CustomAnimalSpeciesDefinition>> animals = new Dictionary<string, DefinitionRecord<CustomAnimalSpeciesDefinition>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, DefinitionRecord<CustomMonsterDefinition>> monsters = new Dictionary<string, DefinitionRecord<CustomMonsterDefinition>>(StringComparer.OrdinalIgnoreCase);
@@ -23,9 +25,12 @@ namespace DTMAPI.Core.Services
         private int? currentSaveSlot;
         private long saveSession;
 
-        public CustomEntityRegistryService(DiagnosticsService diagnostics)
+        public CustomEntityRegistryService(
+            DiagnosticsService diagnostics,
+            Action<string, string, string, string>? recordOwnerRegistration = null)
         {
             this.diagnostics = diagnostics;
+            this.recordOwnerRegistration = recordOwnerRegistration;
         }
 
         public event EventHandler<CustomAnimalLifecycleEventArgs>? AnimalLifecycleChanged;
@@ -74,6 +79,7 @@ namespace DTMAPI.Core.Services
 
             InvokeProvider(ownerId, validDefinition.SpeciesId, "animal provider OnRegistered", () => validDefinition.Provider?.OnRegistered(BuildBehaviorContext(CustomEntityFamily.Animal, ownerId, validDefinition.SpeciesId)));
             RaiseAnimal(ownerId, validDefinition.SpeciesId, CustomEntityLifecycleKind.Registered, "registered");
+            recordOwnerRegistration?.Invoke(ownerId, "CustomEntity.Animal", validDefinition.SpeciesId, "Custom animal definition registration.");
             return AnimalRegistration(true, ownerId, validDefinition.SpeciesId, string.Empty, messages);
         }
 
@@ -152,6 +158,7 @@ namespace DTMAPI.Core.Services
 
             InvokeProvider(ownerId, validDefinition.MonsterId, "monster provider OnRegistered", () => validDefinition.Provider?.OnRegistered(BuildBehaviorContext(CustomEntityFamily.Monster, ownerId, validDefinition.MonsterId)));
             RaiseMonster(ownerId, validDefinition.MonsterId, CustomEntityLifecycleKind.Registered, "registered");
+            recordOwnerRegistration?.Invoke(ownerId, "CustomEntity.Monster", validDefinition.MonsterId, "Custom monster definition registration.");
             return MonsterRegistration(true, ownerId, validDefinition.MonsterId, string.Empty, messages);
         }
 
@@ -171,6 +178,7 @@ namespace DTMAPI.Core.Services
             }
 
             RaiseMonster(ownerId, validSpawnTable.SpawnTableId, CustomEntityLifecycleKind.Registered, "spawn-table-registered");
+            recordOwnerRegistration?.Invoke(ownerId, "CustomEntity.MonsterSpawnTable", validSpawnTable.SpawnTableId, "Custom monster spawn-table registration.");
             return MonsterRegistration(true, ownerId, validSpawnTable.SpawnTableId, string.Empty, messages);
         }
 
@@ -251,6 +259,7 @@ namespace DTMAPI.Core.Services
 
             InvokeProvider(ownerId, validDefinition.AttackId, "attack provider OnRegistered", () => validDefinition.Provider?.OnRegistered(BuildBehaviorContext(CustomEntityFamily.Attack, ownerId, validDefinition.AttackId)));
             RaiseAttack(ownerId, validDefinition.AttackId, CustomEntityLifecycleKind.Registered, "registered");
+            recordOwnerRegistration?.Invoke(ownerId, "CustomEntity.Attack", validDefinition.AttackId, "Custom attack definition registration.");
             return AttackRegistration(true, ownerId, validDefinition.AttackId, string.Empty, messages);
         }
 
@@ -324,6 +333,7 @@ namespace DTMAPI.Core.Services
 
             InvokeProvider(ownerId, validDefinition.DroneId, "drone provider OnRegistered", () => validDefinition.Provider?.OnRegistered(BuildBehaviorContext(CustomEntityFamily.Drone, ownerId, validDefinition.DroneId)));
             RaiseDrone(ownerId, validDefinition.DroneId, CustomEntityLifecycleKind.Registered, "registered");
+            recordOwnerRegistration?.Invoke(ownerId, "CustomEntity.Drone", validDefinition.DroneId, "Custom drone definition registration.");
             return DroneRegistration(true, ownerId, validDefinition.DroneId, string.Empty, messages);
         }
 

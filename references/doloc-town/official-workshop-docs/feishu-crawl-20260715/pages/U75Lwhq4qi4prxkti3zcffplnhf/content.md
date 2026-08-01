@@ -1,0 +1,202 @@
+# 08 综合案例三（新增资源）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf>
+
+Source modified label: 4月17日修改
+
+## 一、整体说明
+
+- 在04 新增资源的基础上新增：
+
+- ◦新道具的加工途径（配方）recipe_tbrecipe.json、mod_tbmodrecipegroupextension.json
+
+- ◦资源图鉴resource_tbresourcedocument.json
+
+- 植被也可以通过上述json文件增加对应功能。
+
+- 配置示例中，标黄的字段为【需要修改的字段】。
+
+## 二、配置示例及数据结构说明
+
+### 1.resource_tbresource.json
+
+- 添加单阶段资源 沃土堆（fertile_soil）的相关信息。
+
+- 见04 新增资源。
+
+### 2.mod_tbmodresourcespawnextension.json
+
+- 在小林地（doloc_town_forest）有概率生成沃土堆（fertile_soil）。
+
+- 见04 新增资源。
+
+### 3.item_tbitem.json
+
+- 添加掉落物沃土块（fertile_soil）的相关道具信息。
+
+- 见04 新增资源。
+
+### 4.item_tbitemspawn.json
+
+- 采集资源沃土堆，会根据掉落库fertile_soil_drop，掉落道具沃土块（fertile_soil）。
+
+- 见04 新增资源。
+
+### 5.recipe_tbrecipe.json
+
+- 新增配方：
+
+- ◦3*有机肥料（organic_fertilizer） =  1*沃土块（fertile_soil）
+
+- ◦3*有机树肥（organic_fertilizer_tree） =  1*沃土块（fertile_soil）
+
+_配方信息-配置示例_
+
+```json
+[
+  {
+    "id": "fertilizer_fertile_soil", //配方ID
+    "default_unlock": true, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 72, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "organic_fertilizer", //输出道具的道具ID
+      "min_count": 3, //最小输出数量
+      "max_count": 3 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "fertile_soil", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "cultivate", //配方小类，用于自动化
+    "tech_point": 1, //完成配方增加的科技点数
+    "show_in_handbook": true //配方是否显示在图鉴
+  },
+  {
+    "id": "fertilizer_tree_fertile_soil", //配方ID
+    "default_unlock": true, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 144, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "organic_fertilizer_tree", //输出道具的道具ID
+      "min_count": 3, //最小输出数量
+      "max_count": 3 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "fertile_soil", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "cultivate", //配方小类，用于自动化
+    "tech_point": 1, //完成配方增加的科技点数
+    "show_in_handbook": true //配方是否显示在图鉴
+  }
+]
+```
+
+### 6.mod_tbmodrecipegroupextension.json
+
+- 在堆肥桶（compost_barrel）、乔木堆肥桶（tree_compost_barrel）、肥料压制机（compost_grinder）新增有机肥料、有机树肥的制作配方。
+
+_配方组信息-配置示例_
+
+```json
+[
+  {
+    "id": "compost_barrel", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  },
+    {
+    "id": "tree_compost_barrel", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_tree_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  },
+   {
+    "id": "compost_grinder", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  }
+]
+```
+
+### 7.resource_tbresourcedocument.json
+
+- 添加资源沃土堆的图鉴信息。
+
+_图鉴信息-配置示例_
+
+```json
+[
+  {
+    "id": "fertile_soil", //资源ID
+    "title": {
+      "key": "resource_title_fertile_soil", //图鉴标题ID，格式为：resource_title_[资源ID]
+      "text": "沃土堆" //图鉴标题文本
+    },
+    "resource_type": 0, //资源类型(0资源，1植被)
+    "ui_sprite_asset": {
+      "url": "icon_document_fertile_soil" //资源图标，格式为：icon_document_[资源ID]
+    },
+    "scene_sprite_asset": {
+      "url": "preview_document_fertile_soil" //资源详情贴图，格式为：preview_document_[资源ID]
+    },
+    "is_plant": false, //是否为植物(是的话显示生长时期)
+    "habitat": {
+      "key": "resource_fertile_soil_habitat", //分布地ID，格式为：resource_[资源ID]_habitat
+      "text": "随处可见" //分布地文本
+    },
+    "document_infos": [
+      {
+        "id": "fertile_soil_collect_1", //文档ID，格式为：[资源ID]_collect_[数字]
+        "document_type": 1, //文档类型(1默认，8采集)
+        "value": 0, //解锁文档需要采集资源的数量
+        "env_optimizer_point": 1, //解锁文档获取的环境改造点数
+        "description_append": {
+          "key": "document_resource_fertile_soil_collect_1", //文本ID，，格式为：document_resource_[文档ID]
+          "text": "通常出现在水源充足、生态系统成熟的地方。" //文档文本
+        }
+      },
+      {
+        "id": "fertile_soil_collect_2", //文档ID，格式为：[资源ID]_collect_[数字]
+        "document_type": 8, //文档类型(1默认，8采集)
+        "value": 10, //解锁文档需要采集资源的数量
+        "env_optimizer_point": 2, //解锁文档获取的环境改造点数
+        "description_append": {
+          "key": "document_resource_fertile_soil_collect_2",
+          "text": "可以通过堆肥桶制作出有机肥料。"
+        }
+      }
+    ],
+    "left_right_layout": false, //是否使用左右布局
+    "display": true //是否显示详细信息
+  }
+]
+```
+
+## 三、参考示例
+
+- 新增资源沃土堆（fertile_soil）、掉落物沃土块（fertile_soil）及其图鉴，并在堆肥设备中增加相应配方。
+
+![Official document image](images/rendered-01-34.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\03 进阶内容模组示例\08 综合案例三（新增资源）
+
+## Links
+
+- [04 新增资源](https://ka7deoo0opr.feishu.cn/wiki/DSwGwUzfki0gkPk1k6dcio6bnpb)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

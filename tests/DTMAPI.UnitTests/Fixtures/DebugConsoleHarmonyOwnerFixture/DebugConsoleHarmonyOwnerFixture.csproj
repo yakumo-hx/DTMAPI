@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DebugConsoleHarmonyOwnerFixture</AssemblyName>
+    <RootNamespace>DTMAPI.DebugConsoleHarmonyOwnerFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleInputGate.cs"
+             Link="DebugConsole\DebugConsoleInputGate.cs" />
+    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleInputHooks.cs"
+             Link="DebugConsole\DebugConsoleInputHooks.cs" />
+    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleCreativeHooks.cs"
+             Link="DebugConsole\DebugConsoleCreativeHooks.cs" />
+    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleMovementHooks.cs"
+             Link="DebugConsole\DebugConsoleMovementHooks.cs" />
+    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleHookInstaller.cs"
+             Link="DebugConsole\DebugConsoleHookInstaller.cs" />
+    <Compile Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DebugConsole\CompatibilityDebugConsoleInputHooks.cs"
+             Link="DebugConsole\CompatibilityDebugConsoleInputHooks.cs" />
+    <ProjectReference Include="..\DebugConsoleNativeFixture\DebugConsoleNativeFixture.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\.tools\bepinex\extract\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\HarmonyXInterop.dll"
+          Link="HarmonyXInterop.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.dll"
+          Link="Mono.Cecil.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Mdb.dll"
+          Link="Mono.Cecil.Mdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Pdb.dll"
+          Link="Mono.Cecil.Pdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Rocks.dll"
+          Link="Mono.Cecil.Rocks.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.RuntimeDetour.dll"
+          Link="MonoMod.RuntimeDetour.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.Utils.dll"
+          Link="MonoMod.Utils.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

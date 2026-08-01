@@ -1,0 +1,20 @@
+[
+  {
+    "id": "compost_barrel", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  },
+    {
+    "id": "tree_compost_barrel", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_tree_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  },
+   {
+    "id": "compost_grinder", //配方所属的设备ID
+    "extra_recipes": [
+      "fertilizer_fertile_soil" //配方ID（多个配方则用","隔开）
+    ]
+  }
+]

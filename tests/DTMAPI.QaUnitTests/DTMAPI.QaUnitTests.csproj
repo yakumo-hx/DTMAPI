@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DTMAPI.QaUnitTests</AssemblyName>
+    <RootNamespace>DTMAPI.QaUnitTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\DtmApiTestSession.cs" Link="DtmApiTestSession.cs" />
+    <ProjectReference Include="..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown.QA\DTMAPI.GameBridge.DolocTown.QA.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\AutoFishingQaSettings.cs" Link="AutoFishingQA\AutoFishingQaSettings.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\contracts\AutoFishingPerformanceFixtureContracts.cs" Link="AutoFishingQA\Contracts\AutoFishingPerformanceFixtureContracts.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\performance\AutoFishingPerformanceOrchestrator.cs" Link="AutoFishingQA\Performance\AutoFishingPerformanceOrchestrator.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\performance\FishingPerformanceProbe.cs" Link="AutoFishingQA\Performance\FishingPerformanceProbe.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\performance\Batch5NoDemandPerformanceReceipt.cs" Link="AutoFishingQA\Performance\Batch5NoDemandPerformanceReceipt.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\performance\AutoFishingFixtureStatusExtensions.cs" Link="AutoFishingQA\Performance\AutoFishingFixtureStatusExtensions.cs" />
+    <Compile Include="..\..\products\first-party\AutoFishing\qa\fifth-save\AutoFishingNativeControlFixturePolicy.cs" Link="AutoFishingQA\FifthSave\AutoFishingNativeControlFixturePolicy.cs" />
+  </ItemGroup>
+  <Target Name="CopyCompatibilityHostFixture" AfterTargets="Build">
+    <ItemGroup>
+      <CompatibilityHostFixture Include="..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\bin\$(Configuration)\netstandard2.0\DTMAPI.GameBridge.DolocTown.Compatibility.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CompatibilityHostFixture)" DestinationFolder="$(OutDir)CompatibilityHostFixture" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

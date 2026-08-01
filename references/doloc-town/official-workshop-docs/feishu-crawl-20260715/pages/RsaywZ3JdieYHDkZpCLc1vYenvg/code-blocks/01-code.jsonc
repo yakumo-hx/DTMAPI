@@ -1,0 +1,12 @@
+[
+  {
+    "type": 0, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+    "spawn_id": "seed_tree", // 目标道具ID
+    "global_limit": 0, // 全局数量上限（0则无上限）
+    "default_locked": false, //是否需要解锁，填false
+    "viewable": true, //是否显示在图鉴的资源掉落物品清单上
+    "active_count": 0,//保底生效次数（0则不限制次数）
+    "should_consume_guarantee": false, //正常刷出，是否消耗保底次数
+    "guarantee_threshold": 2 //保底阈值：多少次必出
+  }
+]

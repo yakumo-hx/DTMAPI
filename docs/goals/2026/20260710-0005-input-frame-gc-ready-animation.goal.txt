@@ -1,0 +1,16 @@
+/goal
+目标：修复 DTMAPI 逐帧输入/短按边沿，收紧配置与 AutoFishing GC 热路径，并把 Ready 动画与蓄力计时纳入第一方 animation lease。详细需求与验收以 docs/goals/2026/20260710-0005-input-frame-gc-ready-animation.md 为准。
+
+开始前必须阅读：AGENTS.md、PROJECT.md、docs/goals/README.md、本 goal 文件与 sibling .goal.txt、docs/reviews/README.md、docs/reviews/manual-qa/2026/20260710-0002-autofishing-input-gc-ready-review.md、docs/updates/INDEX.md、docs/updates/2026/20260710-0004-autofishing-input-charge-polish.md、docs/debug/INDEX.md、docs/debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md、docs/debug/regressions/smoke-matrix.md、docs/hook-map/README.md、docs/api/public-api-matrix.md、docs/workflows/codex-api-rebuild.md，以及当前游戏 DolocUserInput/AgentStateFishingReady 反编译责任函数。
+
+安全约束：修改前先 git status；不 reset/revert 用户或前序未提交改动；TimerFallback 不承担 Gameplay 输入或普通 Mod Update；不把 Mod 热键注入原生 ActionMap；不复制 SMAPI/GMCM；不改蓄力 target；不卸载共享 Harmony owner；脆弱 Unity/InputSystem/Harmony 逻辑留在 Bootstrap/GameBridge；所有 retained diagnostics 有界。
+
+版本要求：固定目标版本 0.5.2-alpha；当前已是该版本，不再升版本。
+
+任务 A：逐帧输入驱动与边沿 latch
+任务 B：配置预览/owner 诊断有界化
+任务 C：AutoFishing 热路径延迟格式化
+任务 D：Ready animation lease
+任务 E：第五存档验证与文档收尾
+
+完成标准：只有 goal 中 source/unit、逐帧短按、第五存档真实循环、Ready/charge、cleanup、日志/报告、进程退出和文档门全部满足才完成；玩家 Ready 视觉未复测时明确保留 manual pending，不得把 smoke 写成 user verified。

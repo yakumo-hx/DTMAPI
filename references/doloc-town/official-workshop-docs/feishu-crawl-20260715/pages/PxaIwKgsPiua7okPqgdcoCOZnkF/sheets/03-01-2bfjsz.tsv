@@ -1,0 +1,31 @@
+名称	ID	帧数	备注	命名格式
+待机-眨眼	idle	1		anim_hat_[帽子ID]_idle_0
+待机-哈欠	yawn	7		anim_hat_[帽子ID]_yawn_[0~6]
+使用工具-斧头	chop	6		anim_hat_[帽子ID]_chop_[0~5]
+使用工具-镐子	knock	6		anim_hat_[帽子ID]_knock_[0~5]
+使用工具-镰刀	swing	7		anim_hat_[帽子ID]_swing_[0~6]
+使用工具-水壶	water	10		anim_hat_[帽子ID]_water_[0~9]
+奔跑	run	8	正常移动即奔跑	anim_hat_[帽子ID]_run_[0~7]
+走路	walk	8	仅使用在交互动画	anim_hat_[帽子ID]_walk_[0~7]
+交互	interact	5		anim_hat_[帽子ID]_interact_[0~4]
+受击	hit	3		anim_hat_[帽子ID]_hit_[0~2]
+吃东西	eat	8		anim_hat_[帽子ID]_eat_[0~7]
+坐	sit	1		anim_hat_[帽子ID]_sit_0
+冲刺	dash	1		anim_hat_[帽子ID]_dash_0
+攀爬	climb	1		anim_hat_[帽子ID]_climb_0
+攀爬跳跃	climb_jump	1		anim_hat_[帽子ID]_climb_jump_0
+昏厥	faint	9		anim_hat_[帽子ID]_faint_[0~8]
+昏厥后起身	stand	13		anim_hat_[帽子ID]_stand_[0~12]
+跳跃-起跳	jump	2		anim_hat_[帽子ID]_jump_[0~1]
+跳跃-掉落	drop	3		anim_hat_[帽子ID]_drop_[0~2]
+跳跃-触地	touch_ground	4		anim_hat_[帽子ID]_touch_ground_[0~3]
+钓鱼-蓄力	fishing_ready	6		anim_hat_[帽子ID]_fishing_ready_[0~5]
+钓鱼-抛竿	fishing_cast	5		anim_hat_[帽子ID]_fishing_cast_[0~4]
+钓鱼-待机-眨眼	fishing_wait_blink	1		anim_hat_[帽子ID]_fishing_wait_blink_0
+钓鱼-待机-哈欠	fishing_wait_yawn	6		anim_hat_[帽子ID]_fishing_wait_yawn_[0~5]
+钓鱼-对峙	fishing_battle	6		anim_hat_[帽子ID]_fishing_battle_[0~5]
+钓鱼-收线	fishing_pull	4		anim_hat_[帽子ID]_fishing_pull_[0~3]
+载具-待机	ride_idle	1		anim_hat_[帽子ID]_ride_idle_0
+载具-移动	ride_run	4		anim_hat_[帽子ID]_ride_run_[0~3]
+图标（道具）		1		icon_item_[帽子ID]
+场景贴图（展示台）		1		preview_hat_[帽子ID]

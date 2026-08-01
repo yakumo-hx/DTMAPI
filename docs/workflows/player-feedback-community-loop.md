@@ -6,7 +6,7 @@ Date: 2026-06-11
 
 ## Purpose
 
-This workflow defines how player reports should move from Manager UI evidence into actionable reviews, issue triage, known issues, and future implementation goals. It complements `codex-feedback-to-goal.md`; that workflow turns manual feedback into Codex task files, while this one focuses on player-facing report collection and community support.
+This workflow defines how player reports should move from Manager UI evidence into actionable reviews, issue triage, known issues, and implementation records. It complements `codex-feedback-to-goal.md`; despite that legacy filename, the active workflow now turns manual feedback into review and update records.
 
 ## Expected Player Flow
 
@@ -53,7 +53,7 @@ When a report arrives:
    - manual QA only
 4. Link existing known issue or compatibility entry if one exists.
 5. If the issue is new, create a review record under `docs/reviews/...`.
-6. If implementation is needed, create a dedicated goal file under `docs/goals/YYYY/` and a sibling `.goal.txt` prompt.
+6. If implementation is needed, create or update a task-specific `docs/updates/YYYY/...` record with `proposed` or `in-progress` status.
 7. After fixing, update `docs/updates/INDEX.md`, relevant hook/API/smoke docs, and known issue notes.
 
 ## Known Issues And Compatibility Database
@@ -102,4 +102,4 @@ For the `0.5.0-alpha` release-preparation slice, Status/Logs also expose install
 - Do not ask players to place ordinary mods in `BepInEx/plugins`.
 - Do not ask players to share official DLLs, decompiled code, or third-party binaries.
 - Do not treat a ready feature status as proof that a gameplay API is Stable.
-- Do not convert screenshot-only feedback into implementation work without text reproduction notes and a review or goal file when needed.
+- Do not convert screenshot-only feedback into implementation work without text reproduction notes and a review record when needed.
