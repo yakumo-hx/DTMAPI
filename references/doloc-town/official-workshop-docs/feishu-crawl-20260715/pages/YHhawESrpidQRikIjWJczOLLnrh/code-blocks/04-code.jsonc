@@ -1,0 +1,31 @@
+[
+  {
+    "id": "wall0", //道具ID
+    "sub_type": "special_other", //子道具类型
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": true, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": false, //是否显示在图鉴
+    "source": [], //获取途径（显示在图鉴）
+    "selling_price": 300, //售出价格
+    "buying_price": 600, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_wall0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_wall0", //道具标题ID，格式为：item_道具ID
+      "text": "室内墙纸（贴纸）" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_wall0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "给墙上贴点贴纸。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunctionWallpaper", //功能类型
+      "wallpaper_id": "wall0"
+    }
+  }
+]

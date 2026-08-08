@@ -9,16 +9,41 @@ namespace DTMAPI.Core.Services
     internal sealed class ModRegistryService : IModRegistry
     {
         private readonly Dictionary<string, IManifest> loaded = new Dictionary<string, IManifest>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, object> apis = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<ApiRegistrationKey, object> apis = new Dictionary<ApiRegistrationKey, object>(ApiRegistrationKeyComparer.Instance);
+        private readonly Dictionary<ApiRegistrationKey, IOwnerBoundApiFactory> apiFactories = new Dictionary<ApiRegistrationKey, IOwnerBoundApiFactory>(ApiRegistrationKeyComparer.Instance);
+        private readonly Dictionary<OwnerBoundFacadeKey, object> ownerBoundFacades = new Dictionary<OwnerBoundFacadeKey, object>(OwnerBoundFacadeKeyComparer.Instance);
+        private readonly Action<string, string, string, string>? recordOwnerRegistration;
+        private readonly Action<string, string, int, string>? recordOwnerCleanup;
 
-        public void AddLoaded(IManifest manifest) => loaded[manifest.UniqueID] = manifest;
+        public ModRegistryService(
+            Action<string, string, string, string>? recordOwnerRegistration = null,
+            Action<string, string, int, string>? recordOwnerCleanup = null)
+        {
+            this.recordOwnerRegistration = recordOwnerRegistration;
+            this.recordOwnerCleanup = recordOwnerCleanup;
+        }
+
+        public void AddLoaded(IManifest manifest)
+        {
+            if (manifest == null)
+                throw new ArgumentNullException(nameof(manifest));
+            if (string.IsNullOrWhiteSpace(manifest.UniqueID))
+                throw new ArgumentException("Manifest UniqueID is required.", nameof(manifest));
+            if (loaded.TryGetValue(manifest.UniqueID, out IManifest existing))
+            {
+                if (!HasSameCanonicalManifest(existing, manifest))
+                    throw new InvalidOperationException("Owner '" + manifest.UniqueID + "' already has a different canonical loaded manifest.");
+                return;
+            }
+            loaded.Add(manifest.UniqueID, manifest);
+        }
         public bool IsLoaded(string uniqueId) => loaded.ContainsKey(uniqueId);
         public IManifest? Get(string uniqueId) => loaded.TryGetValue(uniqueId, out IManifest manifest) ? manifest : null;
         public IReadOnlyList<IManifest> GetAll() => loaded.Values.OrderBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
 
         public TApi? GetApi<TApi>(string uniqueId) where TApi : class
         {
-            return apis.TryGetValue(uniqueId + "|" + typeof(TApi).FullName, out object api) ? api as TApi : null;
+            return apis.TryGetValue(new ApiRegistrationKey(uniqueId, typeof(TApi)), out object api) ? api as TApi : null;
         }
 
         public void RegisterApi<TApi>(TApi api) where TApi : class
@@ -26,38 +51,253 @@ namespace DTMAPI.Core.Services
             throw new InvalidOperationException("API registration must use an owner-bound mod helper registry.");
         }
 
-        public IModRegistry CreateOwnerBoundRegistry(IManifest owner)
+        public IModRegistry CreateOwnerBoundRegistry(IManifest owner, Action ensureOwnerActive)
         {
             if (owner == null)
                 throw new ArgumentNullException(nameof(owner));
-            return new OwnerBoundModRegistry(this, owner);
+            if (ensureOwnerActive == null)
+                throw new ArgumentNullException(nameof(ensureOwnerActive));
+            return new OwnerBoundModRegistry(this, owner, ensureOwnerActive);
         }
 
-        internal void RegisterApiForOwner<TApi>(IManifest owner, TApi api) where TApi : class
+        internal void RegisterApiForOwner<TApi>(IManifest owner, TApi api, IOwnerBoundApiFactory? ownerBoundFactory = null) where TApi : class
         {
             if (owner == null)
                 throw new ArgumentNullException(nameof(owner));
             if (api == null)
                 throw new ArgumentNullException(nameof(api));
-            apis[owner.UniqueID + "|" + typeof(TApi).FullName] = api;
+            var key = new ApiRegistrationKey(owner.UniqueID, typeof(TApi));
+            if (apis.ContainsKey(key))
+                throw new InvalidOperationException("Owner '" + owner.UniqueID + "' already registered API contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
+            IOwnerBoundApiFactory? factory = ownerBoundFactory ?? api as IOwnerBoundApiFactory;
+            if (apiFactories.ContainsKey(key))
+                throw new InvalidOperationException("Owner '" + owner.UniqueID + "' already has an API factory for contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
+            try
+            {
+                apis.Add(key, api);
+                if (factory != null)
+                    apiFactories.Add(key, factory);
+            }
+            catch
+            {
+                apis.Remove(key);
+                apiFactories.Remove(key);
+                throw;
+            }
+            try
+            {
+                recordOwnerRegistration?.Invoke(owner.UniqueID, "Api", typeof(TApi).FullName ?? typeof(TApi).Name, "Owner-bound API registration.");
+            }
+            catch
+            {
+                // Diagnostics are observational and must not turn a completed API
+                // registration into a partial caller-visible failure.
+            }
+        }
+
+        internal void RegisterProcessLifetimeApiForOwner<TApi>(IManifest owner, TApi api, IOwnerBoundApiFactory? ownerBoundFactory = null) where TApi : class
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+            if (api == null)
+                throw new ArgumentNullException(nameof(api));
+
+            bool addedLoadedManifest = false;
+            if (loaded.TryGetValue(owner.UniqueID, out IManifest canonical))
+            {
+                if (!HasSameCanonicalManifest(canonical, owner))
+                    throw new InvalidOperationException("Process-lifetime owner '" + owner.UniqueID + "' already has a different canonical loaded manifest.");
+            }
+            else
+            {
+                AddLoaded(owner);
+                addedLoadedManifest = true;
+            }
+
+            try
+            {
+                RegisterApiForOwner(owner, api, ownerBoundFactory);
+            }
+            catch
+            {
+                if (addedLoadedManifest)
+                    loaded.Remove(owner.UniqueID);
+                throw;
+            }
+        }
+
+        internal int RemoveOwner(string uniqueId)
+        {
+            if (string.IsNullOrWhiteSpace(uniqueId))
+                return 0;
+
+            int removed = loaded.Remove(uniqueId) ? 1 : 0;
+            foreach (ApiRegistrationKey key in apis.Keys.Where(k => OwnerEquals(k.OwnerId, uniqueId)).ToArray())
+            {
+                if (apis.Remove(key))
+                    removed++;
+                apiFactories.Remove(key);
+            }
+
+            foreach (OwnerBoundFacadeKey key in ownerBoundFacades.Keys.Where(k =>
+                OwnerEquals(k.ConsumerId, uniqueId) || OwnerEquals(k.ProviderId, uniqueId)).ToArray())
+            {
+                if (ownerBoundFacades.TryGetValue(key, out object facade) && ownerBoundFacades.Remove(key))
+                {
+                    TryDeactivateFacade(facade);
+                    removed++;
+                }
+            }
+
+            if (removed > 0)
+                recordOwnerCleanup?.Invoke(uniqueId, "ApiOrLoadedMod", removed, "Owner cleanup removed loaded registry/API entries.");
+            return removed;
         }
 
         private sealed class OwnerBoundModRegistry : IModRegistry
         {
             private readonly ModRegistryService inner;
             private readonly IManifest owner;
+            private readonly Action ensureOwnerActive;
 
-            public OwnerBoundModRegistry(ModRegistryService inner, IManifest owner)
+            public OwnerBoundModRegistry(ModRegistryService inner, IManifest owner, Action ensureOwnerActive)
             {
                 this.inner = inner;
                 this.owner = owner;
+                this.ensureOwnerActive = ensureOwnerActive;
             }
 
-            public bool IsLoaded(string uniqueId) => inner.IsLoaded(uniqueId);
-            public IManifest? Get(string uniqueId) => inner.Get(uniqueId);
-            public IReadOnlyList<IManifest> GetAll() => inner.GetAll();
-            public TApi? GetApi<TApi>(string uniqueId) where TApi : class => inner.GetApi<TApi>(uniqueId);
-            public void RegisterApi<TApi>(TApi api) where TApi : class => inner.RegisterApiForOwner(owner, api);
+            public bool IsLoaded(string uniqueId) { ensureOwnerActive(); return inner.IsLoaded(uniqueId); }
+            public IManifest? Get(string uniqueId) { ensureOwnerActive(); return inner.Get(uniqueId); }
+            public IReadOnlyList<IManifest> GetAll() { ensureOwnerActive(); return inner.GetAll(); }
+            public TApi? GetApi<TApi>(string uniqueId) where TApi : class => inner.GetApiForOwner<TApi>(owner, uniqueId, ensureOwnerActive);
+            public void RegisterApi<TApi>(TApi api) where TApi : class
+            {
+                ensureOwnerActive();
+                inner.RegisterApiForOwner(owner, api);
+            }
+        }
+
+
+        private TApi? GetApiForOwner<TApi>(IManifest consumer, string providerId, Action ensureOwnerActive) where TApi : class
+        {
+            ensureOwnerActive();
+            var providerKey = new ApiRegistrationKey(providerId, typeof(TApi));
+            if (!apis.TryGetValue(providerKey, out object api))
+                return null;
+            if (!apiFactories.TryGetValue(providerKey, out IOwnerBoundApiFactory factory))
+                return api as TApi;
+
+            var facadeKey = new OwnerBoundFacadeKey(consumer.UniqueID, providerId, typeof(TApi));
+            if (!ownerBoundFacades.TryGetValue(facadeKey, out object facade))
+            {
+                Action ensureFacadeActive = () =>
+                {
+                    ensureOwnerActive();
+                    if (!apis.ContainsKey(providerKey))
+                        throw new InvalidOperationException("API provider '" + providerId + "' is inactive.");
+                };
+                facade = factory.CreateOwnerBoundApi(typeof(TApi), consumer, ensureFacadeActive);
+                if (!(facade is TApi))
+                    throw new InvalidOperationException("Owner-bound API factory for provider '" + providerId + "' returned an incompatible facade for contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
+                ownerBoundFacades.Add(facadeKey, facade);
+            }
+            return facade as TApi;
+        }
+
+        internal int CountOwner(string uniqueId)
+        {
+            return (loaded.ContainsKey(uniqueId) ? 1 : 0) +
+                apis.Keys.Count(k => OwnerEquals(k.OwnerId, uniqueId)) +
+                ownerBoundFacades.Keys.Count(k => OwnerEquals(k.ConsumerId, uniqueId) || OwnerEquals(k.ProviderId, uniqueId));
+        }
+
+        internal int TotalRootCount => loaded.Count + apis.Count + ownerBoundFacades.Count;
+
+        private static bool OwnerEquals(string left, string right) => StringComparer.OrdinalIgnoreCase.Equals(left, right);
+
+        private static bool HasSameCanonicalManifest(IManifest left, IManifest right)
+        {
+            return OwnerEquals(left.UniqueID, right.UniqueID) &&
+                string.Equals(left.Name, right.Name, StringComparison.Ordinal) &&
+                string.Equals(left.Author, right.Author, StringComparison.Ordinal) &&
+                string.Equals(left.Version, right.Version, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(left.Type, right.Type, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void TryDeactivateFacade(object facade)
+        {
+            try
+            {
+                (facade as IOwnerBoundApiFacade)?.Deactivate();
+            }
+            catch
+            {
+                // Registry cleanup must still sever the cache root. Provider-specific owner cleanup
+                // remains authoritative for native/platform resources.
+            }
+        }
+
+        private readonly struct ApiRegistrationKey
+        {
+            public ApiRegistrationKey(string ownerId, Type contract)
+            {
+                OwnerId = ownerId ?? string.Empty;
+                Contract = contract ?? throw new ArgumentNullException(nameof(contract));
+            }
+
+            public string OwnerId { get; }
+            public Type Contract { get; }
+        }
+
+        private sealed class ApiRegistrationKeyComparer : IEqualityComparer<ApiRegistrationKey>
+        {
+            public static readonly ApiRegistrationKeyComparer Instance = new ApiRegistrationKeyComparer();
+
+            public bool Equals(ApiRegistrationKey x, ApiRegistrationKey y) =>
+                OwnerEquals(x.OwnerId, y.OwnerId) && x.Contract == y.Contract;
+
+            public int GetHashCode(ApiRegistrationKey obj)
+            {
+                unchecked
+                {
+                    return (StringComparer.OrdinalIgnoreCase.GetHashCode(obj.OwnerId) * 397) ^ obj.Contract.GetHashCode();
+                }
+            }
+        }
+
+        private readonly struct OwnerBoundFacadeKey
+        {
+            public OwnerBoundFacadeKey(string consumerId, string providerId, Type contract)
+            {
+                ConsumerId = consumerId ?? string.Empty;
+                ProviderId = providerId ?? string.Empty;
+                Contract = contract ?? throw new ArgumentNullException(nameof(contract));
+            }
+
+            public string ConsumerId { get; }
+            public string ProviderId { get; }
+            public Type Contract { get; }
+        }
+
+        private sealed class OwnerBoundFacadeKeyComparer : IEqualityComparer<OwnerBoundFacadeKey>
+        {
+            public static readonly OwnerBoundFacadeKeyComparer Instance = new OwnerBoundFacadeKeyComparer();
+
+            public bool Equals(OwnerBoundFacadeKey x, OwnerBoundFacadeKey y) =>
+                OwnerEquals(x.ConsumerId, y.ConsumerId) &&
+                OwnerEquals(x.ProviderId, y.ProviderId) &&
+                x.Contract == y.Contract;
+
+            public int GetHashCode(OwnerBoundFacadeKey obj)
+            {
+                unchecked
+                {
+                    int hash = StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ConsumerId);
+                    hash = (hash * 397) ^ StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ProviderId);
+                    return (hash * 397) ^ obj.Contract.GetHashCode();
+                }
+            }
         }
     }
 

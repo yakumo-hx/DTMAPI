@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/deployment-receipt.schema.json",
+  "title": "DTMAPI Author SDK package-local deployment receipt",
+  "$comment": "Current writer contract: schema 2 only. The CLI reader accepts the exact historical schema-1 receipt only with its exact legacy marker and a Strict CodeMod or code-free ContentPack; schema 1 is never Advanced.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "gameRootKey",
+    "uniqueId",
+    "packageKind",
+    "codeModKind",
+    "destinationRelativePath",
+    "packageSha256",
+    "manifestSha256",
+    "entryDllSha256",
+    "advancedReferenceReceiptSha256",
+    "packageMarkerSha256",
+    "payloadTreeSha256",
+    "payloadFileCount",
+    "payloadDirectoryCount"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "transactionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+    "gameRootKey": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+    "uniqueId": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
+    "packageKind": { "enum": ["CodeMod", "ContentPack"] },
+    "codeModKind": { "enum": ["", "Strict", "Advanced"] },
+    "destinationRelativePath": { "type": "string", "pattern": "^Mods/[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
+    "packageSha256": { "$ref": "#/$defs/sha256" },
+    "manifestSha256": { "$ref": "#/$defs/sha256" },
+    "entryDllSha256": { "$ref": "#/$defs/nullableSha256" },
+    "advancedReferenceReceiptSha256": { "$ref": "#/$defs/nullableSha256" },
+    "packageMarkerSha256": { "$ref": "#/$defs/sha256" },
+    "payloadTreeSha256": { "$ref": "#/$defs/sha256" },
+    "payloadFileCount": { "type": "integer", "minimum": 0 },
+    "payloadDirectoryCount": { "type": "integer", "minimum": 0 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "packageKind": { "const": "ContentPack" } }, "required": ["packageKind"] },
+      "then": {
+        "properties": {
+          "codeModKind": { "const": "" },
+          "entryDllSha256": { "const": "" },
+          "advancedReferenceReceiptSha256": { "const": "" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "packageKind": { "const": "CodeMod" } }, "required": ["packageKind"] },
+      "then": {
+        "properties": {
+          "codeModKind": { "enum": ["Strict", "Advanced"] },
+          "entryDllSha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] },
+      "then": { "properties": { "advancedReferenceReceiptSha256": { "$ref": "#/$defs/sha256" } } }
+    },
+    {
+      "if": { "properties": { "codeModKind": { "const": "Strict" } }, "required": ["codeModKind"] },
+      "then": { "properties": { "advancedReferenceReceiptSha256": { "const": "" } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+    "nullableSha256": { "type": "string", "pattern": "^(?:|[A-Fa-f0-9]{64})$" }
+  }
+}

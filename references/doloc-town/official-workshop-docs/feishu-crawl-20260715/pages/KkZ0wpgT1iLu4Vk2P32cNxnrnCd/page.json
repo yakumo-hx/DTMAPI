@@ -1,0 +1,228 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+  "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+  "title": "07 综合案例二（新增鱼)",
+  "document_title": "07 综合案例二（新增鱼)",
+  "source_modified_label": "5月20日修改",
+  "status_code": 200,
+  "elapsed_seconds": 14.234,
+  "block_count": 62,
+  "blocks_by_type": {
+    "heading1": 3,
+    "bullet": 34,
+    "heading2": 14,
+    "code": 8,
+    "image": 1,
+    "text": 2
+  },
+  "scroll_samples": 13,
+  "scroll_height_max": 9803,
+  "links": [
+    {
+      "text": "02 新增鱼",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/O64fw47MJiC2qXk8A4fc4RsInyf",
+      "kind": "official-wiki",
+      "target_token": "O64fw47MJiC2qXk8A4fc4RsInyf"
+    },
+    {
+      "text": "03 新增料理",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "kind": "official-wiki",
+      "target_token": "KaKyw74DnibQhmkjPlMcJgZXnBf"
+    },
+    {
+      "text": "08 ID对照表（配方）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+      "kind": "official-wiki",
+      "target_token": "Vm9YwaBVMiZtvbkf5kIcASronye"
+    },
+    {
+      "text": "11 ID对照表（料理）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+      "kind": "official-wiki",
+      "target_token": "MZXHwVGgsieTCdkyhpycIEDnnqb"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+    "https://ka7deoo0opr.feishu.cn/wiki/MZXHwVGgsieTCdkyhpycIEDnnqb",
+    "https://ka7deoo0opr.feishu.cn/wiki/O64fw47MJiC2qXk8A4fc4RsInyf",
+    "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "60",
+      "image_tokens": [
+        "QWsQbkVKCom44kxXPyBcbjDJnxc"
+      ],
+      "rendered_path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/images/rendered-01-60.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "14",
+      "record_id": "R4Gud2lM8obaogx0eV5cPmaInjh",
+      "heading": "1.item_tbitem.json",
+      "caption": "鱼信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 126,
+      "line_count": 126,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/01-code.jsonc",
+      "bytes": 4904,
+      "sha256": "46e8c23b918f3ba54f4d3a13639b0f3350889996a81aac1b4a07dbe240527e2e"
+    },
+    {
+      "index": 2,
+      "block_id": "35",
+      "record_id": "I6gTdqLcToYGtXxURybc9nxtn0b",
+      "heading": "8.fishing_tbfarmfish.json",
+      "caption": "养殖鱼-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 34,
+      "line_count": 34,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/02-code.jsonc",
+      "bytes": 1213,
+      "sha256": "cd1b42da5140f23657a4a55f1d6bc01e4694b1468dc8e3e785bca99ef9410f21"
+    },
+    {
+      "index": 3,
+      "block_id": "38",
+      "record_id": "Lfgad7V2Po1lXKx8PpBcfTehnve",
+      "heading": "9.fishing_tbfarmfishformation.json",
+      "caption": "杂交阵型信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 22,
+      "line_count": 22,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/03-code.jsonc",
+      "bytes": 595,
+      "sha256": "0ef43440738de415eb2e50e113edee652c368b2f18a852e7f41a010829b2e65a"
+    },
+    {
+      "index": 4,
+      "block_id": "41",
+      "record_id": "Bn7TdBC0Bo3aALxJbTbcKKfVnph",
+      "heading": "10.item_tbitemspawn.json",
+      "caption": "道具生成表-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/04-code.jsonc",
+      "bytes": 562,
+      "sha256": "b1af0b7ce438f34252a97935fe3daef055ee6167b51bf03adf82e8a340ea9755"
+    },
+    {
+      "index": 5,
+      "block_id": "46",
+      "record_id": "WvV6dJhhYo6DoyxKpFlcQXwknMf",
+      "heading": "11.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 49,
+      "line_count": 49,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/05-code.jsonc",
+      "bytes": 1785,
+      "sha256": "b87218e25dd127d40968c581c1d9df8e043723efe9475a21a9c0dc120a687426"
+    },
+    {
+      "index": 6,
+      "block_id": "49",
+      "record_id": "GCTLdTlgIonvDwxrEJQcGfm9nLc",
+      "heading": "12.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 16,
+      "line_count": 16,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/06-code.jsonc",
+      "bytes": 341,
+      "sha256": "c1da02099e8ad8c4690265397fe20dc04c877bd185751446c626fe4eeea32bed"
+    },
+    {
+      "index": 7,
+      "block_id": "53",
+      "record_id": "C8zSdJkhIoB9Ggx4Uf3c07FsnRb",
+      "heading": "13.mod_tbmodingredientgroupextension.json",
+      "caption": "食材组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 23,
+      "line_count": 23,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/07-code.jsonc",
+      "bytes": 354,
+      "sha256": "0436580c6fbc4eb0a41f14b36fbcbd7fa7d89d1c6d15770a0ed4eff9b30fcc1c"
+    },
+    {
+      "index": 8,
+      "block_id": "57",
+      "record_id": "OcajdwIPko75pwxczePcpdJ3nIh",
+      "heading": "14.fishing_tbfishdocument.json",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 40,
+      "line_count": 40,
+      "line_complete": true,
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/08-code.jsonc",
+      "bytes": 1461,
+      "sha256": "a8321292e4aab12e0804137b09e171b4dad49f46208410e722cab8ac3af5b495"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/source.html",
+    "rendered_html": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/rendered.html",
+    "text": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/content.txt",
+    "markdown": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/content.md",
+    "metadata": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/page.json"
+  }
+}

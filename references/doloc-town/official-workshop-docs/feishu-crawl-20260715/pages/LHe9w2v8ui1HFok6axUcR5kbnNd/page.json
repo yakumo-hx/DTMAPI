@@ -1,0 +1,93 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/LHe9w2v8ui1HFok6axUcR5kbnNd",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/LHe9w2v8ui1HFok6axUcR5kbnNd",
+  "token": "LHe9w2v8ui1HFok6axUcR5kbnNd",
+  "title": "04 其他内容",
+  "document_title": "04 其他内容",
+  "source_modified_label": "4月29日修改",
+  "status_code": 200,
+  "elapsed_seconds": 9.75,
+  "block_count": 6,
+  "blocks_by_type": {
+    "text": 6
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1220,
+  "links": [
+    {
+      "text": "01 文本本地化",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/SYYLwefL8imZYXkivwecR7X2ntc",
+      "kind": "official-wiki",
+      "target_token": "SYYLwefL8imZYXkivwecR7X2ntc"
+    },
+    {
+      "text": "02 道具数据模板",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+      "kind": "official-wiki",
+      "target_token": "Rv1swL7JEiLHSZkaNk7cFyyXnIh"
+    },
+    {
+      "text": "03 备用贴图",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/NKSJwBudUi9q89kN9GXcpQKwnRe",
+      "kind": "official-wiki",
+      "target_token": "NKSJwBudUi9q89kN9GXcpQKwnRe"
+    },
+    {
+      "text": "04 掉落上限、保底配置",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "kind": "official-wiki",
+      "target_token": "RsaywZ3JdieYHDkZpCLc1vYenvg"
+    },
+    {
+      "text": "05 贴图锚点说明",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+      "kind": "official-wiki",
+      "target_token": "Rdp1with9ih1frk7Pl8cbFD9nDc"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/NKSJwBudUi9q89kN9GXcpQKwnRe",
+    "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+    "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+    "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+    "https://ka7deoo0opr.feishu.cn/wiki/SYYLwefL8imZYXkivwecR7X2ntc"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/source.html",
+    "rendered_html": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/rendered.html",
+    "text": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/content.txt",
+    "markdown": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/content.md",
+    "metadata": "pages/LHe9w2v8ui1HFok6axUcR5kbnNd/page.json"
+  }
+}

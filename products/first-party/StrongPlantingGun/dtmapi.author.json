@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.StrongPlantingGun",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "Functional",
+      "DTMAPI",
+      "Farming",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 强力种植枪",
+      "tchinese": "DTMAPI 強力種植槍",
+      "english": "DTMAPI Strong Planting Gun"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n让官方种植枪固定携带种子、薄膜和肥料三个槽位。",
+      "tchinese": "依賴 DTMAPI。\n讓官方種植槍固定攜帶種子、薄膜和肥料三個槽位。",
+      "english": "Requires DTMAPI.\nGives the official farming gun fixed seed, film, and fertilizer slots."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-strongplantinggun-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

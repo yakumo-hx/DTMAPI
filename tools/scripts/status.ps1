@@ -7,6 +7,8 @@ Write-Host "Repo: $repo"
 Write-Host "dotnet: $dotnet"
 & $dotnet --list-sdks
 Write-Host "GameDir: $gameDir"
+$runtimeLock = Get-DtmApiRuntimeLockInfo -RepoRoot $repo
+Write-Host (Format-DtmApiRuntimeLockInfo -LockInfo $runtimeLock)
 if ($gameDir) {
     $dtmapiDir = Resolve-DtmApiStateDir -GameDir $gameDir
     $dtmLog = Join-Path $dtmapiDir 'logs\latest.log'

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "freshwater_default", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  },
+  {
+    "id": "freshwater_forest", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  },
+  {
+    "id": "wetland_lotus", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  }
+]

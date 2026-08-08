@@ -6,7 +6,7 @@
 - Source:
 - Scope:
 - User constraints:
-- Related goal/update/debug records:
+- Related review/update/debug records:
 - Files/docs inspected:
 - Not inspected:
 
@@ -64,12 +64,12 @@ Review record:
 - Screenshot/log facts:
 - Code-path findings:
 - Risks:
-- Suggested goal shape:
+- Suggested implementation scope:
 - Items that should not be carried forward:
 
-## Readme/Goal Decision
+## Implementation Record Decision
 
-- Update goal file: yes/no and why.
-- Generate short `/goal`: yes/no and why.
+- Create/update an implementation update record: yes/no and why.
+- Additional debug/API/hook/smoke records required: yes/no and why.
 - Suggested task titles:
 - Completion standard:

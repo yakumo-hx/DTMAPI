@@ -1,0 +1,9 @@
+名称	命名格式
+道具ID	platform0
+道具图标	icon_item_platform0
+详情图	preview_craft_platform0
+平台左侧瓦片	tile_platform_platform0_platform_left_0
+平台中部随机瓦片	tile_platform_platform0_platform_middle_[0~1]
+平台右侧瓦片	tile_platform_platform0_platform_right_0
+左柱体底部瓦片	tile_platform_platform0_column_left_bottom_0
+右柱体底部瓦片	tile_platform_platform0_column_right_bottom_0

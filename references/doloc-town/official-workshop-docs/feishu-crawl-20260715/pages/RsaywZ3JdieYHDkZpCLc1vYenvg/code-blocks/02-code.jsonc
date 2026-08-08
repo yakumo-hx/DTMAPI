@@ -1,0 +1,12 @@
+[
+  {
+    "type": 1, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+    "spawn_id": "can", // 目标道具ID
+    "global_limit": 0, // 不生效
+    "default_locked": false, //不生效
+    "viewable": false, //不生效
+    "active_count": 0,//保底生效次数（0则不限制次数）
+    "should_consume_guarantee": true, //正常刷出，是否消耗保底次数
+    "guarantee_threshold": 2 //保底阈值：多少次必出
+  }
+]

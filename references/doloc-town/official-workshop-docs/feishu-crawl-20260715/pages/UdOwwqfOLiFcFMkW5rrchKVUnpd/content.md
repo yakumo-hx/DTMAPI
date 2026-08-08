@@ -1,0 +1,113 @@
+# 03 ID对照表（小动物）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/UdOwwqfOLiFcFMkW5rrchKVUnpd>
+
+Source modified label: 4月15日修改
+
+## 一、小动物ID对照表
+
+### 1.立尾雉（chicken）
+
+#### Embedded sheet `EjXMXc`
+
+[TSV](sheets/01-01-ejxmxc.tsv) · [rendered screenshot](sheets/01-01-ejxmxc.png)
+
+```tsv
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	7	eat	chicken_young	anim_animal_chicken_young_eat_[0~6]
+帧动画（待机）	4	idle	chicken_young	anim_animal_chicken_young_idle_[0~3]
+帧动画（跳跃）	2	jump	chicken_young	anim_animal_chicken_young_jump_[0~1]
+帧动画（移动）	4	move	chicken_young	anim_animal_chicken_young_move_[0~3]
+帧动画（睡觉）	1	sleep	chicken_young	anim_animal_chicken_young_sleep_0
+图标（图鉴）	1		chicken_young	icon_document_chicken_young
+详情图（图鉴）	1		chicken_young	preview_document_chicken_young
+成年
+帧动画（进食）	7	eat	chicken_adult	anim_animal_chicken_adult_eat_[0~6]
+帧动画（待机）	4	idle	chicken_adult	anim_animal_chicken_adult_idle_[0~3]
+帧动画（跳跃）	3	jump	chicken_adult	anim_animal_chicken_adult_jump_[0~2]
+帧动画（移动）	8	move	chicken_adult	anim_animal_chicken_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	chicken_adult	anim_animal_chicken_adult_sleep_0
+图标（图鉴）	1		chicken_adult	icon_document_chicken_adult
+详情图（图鉴）	1		chicken_adult	preview_document_chicken_adult
+```
+
+### 2.角羊驼（goat）
+
+#### Embedded sheet `1zef9x`
+
+[TSV](sheets/02-01-1zef9x.tsv) · [rendered screenshot](sheets/02-01-1zef9x.png)
+
+```tsv
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	3	eat	goat_young	anim_animal_goat_young_eat_[0~2]
+帧动画（待机）	4	idle	goat_young	anim_animal_goat_young_idle_[0~3]
+帧动画（跳跃）	1	jump	goat_young	anim_animal_goat_young_jump_0
+帧动画（移动）	8	move	goat_young	anim_animal_goat_young_move_[0~7]
+帧动画（睡觉）	1	sleep	goat_young	anim_animal_goat_young_sleep_0
+图标（图鉴）	1		goat_young	icon_document_goat_young
+详情图（图鉴）	1		goat_young	preview_document_goat_young
+成年
+帧动画（进食）	4	eat	goat_adult	anim_animal_goat_adult_eat_[0~3]
+帧动画（待机）	4	idle	goat_adult	anim_animal_goat_adult_idle_[0~3]
+帧动画（跳跃）	2	jump	goat_adult	anim_animal_goat_adult_jump_[0~1]
+帧动画（移动）	8	move	goat_adult	anim_animal_goat_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	goat_adult	anim_animal_goat_adult_sleep_0
+图标（图鉴）	1		goat_adult	icon_document_goat_adult
+详情图（图鉴）	1		goat_adult	preview_document_goat_adult
+```
+
+### 3.沼泽兽（marsh_pangolin）
+
+#### Embedded sheet `bUKkVz`
+
+[TSV](sheets/03-01-bukkvz.tsv) · [rendered screenshot](sheets/03-01-bukkvz.png)
+
+```tsv
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	7	eat	marsh_pangolin_young	anim_animal_marsh_pangolin_young_eat_[0~6]
+帧动画（待机）	4	idle	marsh_pangolin_young	anim_animal_marsh_pangolin_young_idle_[0~3]
+帧动画（跳跃）	2	jump	marsh_pangolin_young	anim_animal_marsh_pangolin_young_jump_[0~1]
+帧动画（移动）	8	move	marsh_pangolin_young	anim_animal_marsh_pangolin_young_move_[0~7]
+帧动画（睡觉）	1	sleep	marsh_pangolin_young	anim_animal_marsh_pangolin_young_sleep_0
+图标（图鉴）	1		marsh_pangolin_young	icon_document_marsh_pangolin_young
+详情图（图鉴）	1		marsh_pangolin_young	preview_document_marsh_pangolin_young
+成年
+帧动画（进食）	8	eat	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_eat_[0~7]
+帧动画（待机）	4	idle	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_idle_[0~3]
+帧动画（跳跃）	2	jump	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_jump_[0~1]
+帧动画（移动）	8	move	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	marsh_pangolin_adult	anim_animal_marsh_pangolin_adult_sleep_0
+图标（图鉴）	1		marsh_pangolin_adult	icon_document_marsh_pangolin_adult
+详情图（图鉴）	1		marsh_pangolin_adult	preview_document_marsh_pangolin_adult
+```
+
+### 4.变形蜜虫（slime）
+
+- 注：游戏中变形蜜虫幼年与成年的贴图是相同的。
+
+#### Embedded sheet `50Krbq`
+
+[TSV](sheets/04-01-50krbq.tsv) · [rendered screenshot](sheets/04-01-50krbq.png)
+
+```tsv
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	4	eat	slime_young	anim_animal_slime_young_eat_[0~3]
+帧动画（待机）	4	idle	slime_young	anim_animal_slime_young_idle_[0~3]
+帧动画（跳跃）	8	jump	slime_young	anim_animal_slime_young_jump_[0~7]
+帧动画（移动）	4	move	slime_young	anim_animal_slime_young_move_[0~3]
+帧动画（睡觉）	4	sleep	slime_young	anim_animal_slime_young_sleep_[0~3]
+图标（图鉴）	1		slime_young	icon_document_slime_young
+详情图（图鉴）	1		slime_young	preview_document_slime_young
+成年
+帧动画（进食）	4	eat	slime_adult	anim_animal_slime_adult_eat_[0~3]
+帧动画（待机）	4	idle	slime_adult	anim_animal_slime_adult_idle_[0~3]
+帧动画（跳跃）	8	jump	slime_adult	anim_animal_slime_adult_jump_[0~7]
+帧动画（移动）	4	move	slime_adult	anim_animal_slime_adult_move_[0~3]
+帧动画（睡觉）	4	sleep	slime_adult	anim_animal_slime_adult_sleep_[0~3]
+图标（图鉴）	1		slime_adult	icon_document_slime_adult
+详情图（图鉴）	1		slime_adult	preview_document_slime_adult
+```

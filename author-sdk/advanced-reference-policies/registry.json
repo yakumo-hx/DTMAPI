@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "policies": [
+    {
+      "policyId": "doloctown-23762374-actionspeed-v1",
+      "policySha256": "BEA3A26C2F831387127A996C326FE0C3F650CCCD7F9555192D76998A2B472473",
+      "requiredUniqueId": "Yuuka.DTMAPI.ActionSpeed",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-animalhusbandryprogress-v1",
+      "policySha256": "C868DC95ED9CBDAF44DBDFACC63F43E8089DB1A1FDF3580C4D7C083EFB6448B2",
+      "requiredUniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-chestlocator-v1",
+      "policySha256": "64F25DBDD4BA2E315AADF570CE8F022AA58CF0BDB46E6CBAD4BB4FD2456E2733",
+      "requiredUniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-fishbreedingassistant-v1",
+      "policySha256": "965FA6AB60CB2145A8E5ED78C6123F7C70B2D669140DE2CAEA25670CB15A3652",
+      "requiredUniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-g2-v1",
+      "policySha256": "2E06DB24C3CBBB5E15639FB444BCB4D981F5961402773C0D66A24FAFEEDB8153",
+      "requiredUniqueId": "DTMAPI.AdvancedFixture",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "AED8B4164E593F667A3A027A2C8ADC34390AD3381FAF74754582D43DF9802DEC"
+    },
+    {
+      "policyId": "doloctown-23762374-mine-v1",
+      "policySha256": "FE28A9197AD63F38BE19A7E574764FE7602CEE449AAE1FA3A08B12DF813BDA6A",
+      "requiredUniqueId": "DTMAPI.MineMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-oneactioncomplete-v1",
+      "policySha256": "A44AF9101D19941B5F019D625A7E74D4D49CCE7CBCF7833E8B4ADCB6BED80A8D",
+      "requiredUniqueId": "Yuuka.DTMAPI.OneActionComplete",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-strongplantinggun-v1",
+      "policySha256": "4A67C69DE1EAA527D92408469A3B778B4D1A52CCB17500F1FC7C7E4E1BA2951B",
+      "requiredUniqueId": "DTMAPI.StrongPlantingGunMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-zoom-v1",
+      "policySha256": "98485CB8504C4618EBFF8A009C85A9DE90668A64AD809F314E66AE5096E3F412",
+      "requiredUniqueId": "DTMAPI.ZoomMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-24456188-autofishing-v1",
+      "policySha256": "0D9A1FFDB8DAB1A5B43F4B88BCAE77588EEA1C5CA3C5AEDDBBF9F013683DE628",
+      "requiredUniqueId": "Yuuka.DTMAPI.AutoFishing",
+      "minimumDtmApiVersion": "0.6.0",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-24456188-debugconsole-v1",
+      "policySha256": "D399A6EC857365BE6952A8D270067230AC8E764079ED37A857CE27300E4120E4",
+      "requiredUniqueId": "DTMAPI.DebugConsoleMod",
+      "minimumDtmApiVersion": "0.6.0",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-24456188-moreequipmentslots-v1",
+      "policySha256": "21655C30DF79470CCC0A9A5222DCC566F2A44E3AFBFA24D202180C29D2C6D4A1",
+      "requiredUniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+      "minimumDtmApiVersion": "0.6.0",
+      "compilerSurfaceSha256": "70D65F0BCB013C16E7232B91D3F232E2663072D6C8C661550519F1E8A806AEB0"
+    },
+    {
+      "policyId": "doloctown-24456188-moresaves-v1",
+      "policySha256": "02606BAABE70EBDD0696F094AE96DCB78604DFC1D9878F8759919409C83F2870",
+      "requiredUniqueId": "DTMAPI.MoreSavesMod",
+      "minimumDtmApiVersion": "0.6.0",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    }
+  ]
+}

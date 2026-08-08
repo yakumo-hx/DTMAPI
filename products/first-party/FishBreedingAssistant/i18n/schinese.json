@@ -1,0 +1,11 @@
+{
+  "mod.name": "DTMAPI鱼卵信息显示",
+  "config.section.main": "鱼卵提示",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "鱼卵信息显示的总开关。",
+  "config.scope": "仅在鱼卵标题显示亲本鱼名称；不追加孵化/成长详情。",
+  "config.cacheSeconds.name": "缓存秒数",
+  "config.cacheSeconds.tooltip": "为标题 Hook 缓存原生鱼名查询结果。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "写入低频缓存诊断日志。"
+}

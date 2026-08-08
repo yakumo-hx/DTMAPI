@@ -1,0 +1,88 @@
+[
+  {
+    "id": "platform1", //平台ID，同道具ID
+    "scene_sprite_asset": {
+      "url": "preview_craft_platform1" //平台详情图，格式为preview_craft_[平台ID]
+    },
+    "platform_suface": {
+      "left_sock": {
+        "url": "tile_platform_platform1_platform_left_0" //平台表面左侧瓦片贴图，格式为tile_platform_[平台ID]_platform_left_0
+      },
+      "left_sequence": [
+        {
+          "url": "tile_platform_platform1_platform_left_1" //平台表面左侧衔接瓦片贴图，格式为tile_platform_[平台ID]_platform_left_1
+        }
+      ],
+      "fill_tiles": [
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_platform_middle_0" //平台表面中间部分随机瓦片贴图1，格式为tile_platform_[平台ID]_platform_middle_0
+          },
+          "weight": 80 //该贴图出现权重
+        },
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_platform_middle_1" //平台表面中间部分随机瓦片贴图2，格式为tile_platform_[平台ID]_platform_middle_1
+          },
+          "weight": 20 //该贴图出现权重
+        }
+      ],
+      "right_sequence": [
+        {
+          "url": "tile_platform_platform1_platform_right_1" //平台表面右侧衔接瓦片贴图，格式为tile_platform_[平台ID]_platform_right_1
+        }
+      ],
+      "right_sock": {
+        "url": "tile_platform_platform1_platform_right_0" //平台表面右侧瓦片贴图，格式为tile_platform_[平台ID]_platform_right_0
+      }
+    },
+    "platform_left_column": {
+      "fixed_sequence": [
+        {
+          "url": "tile_platform_platform1_column_left_top_0" //平台左柱体顶部瓦片贴图，格式为tile_platform_[平台ID]_column_left_top_0
+        }
+      ],
+      "fill_tiles": [
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_column_left_middle_0" //平台左柱体中间部分随机瓦片贴图1，格式为tile_platform_[平台ID]_column_left_middle_0
+          },
+          "weight": 70 //该贴图出现权重
+        },
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_column_left_middle_1" //平台左柱体中间部分随机瓦片贴图2，格式为tile_platform_[平台ID]_column_left_middle_1
+          },
+          "weight": 30 //该贴图出现权重
+        }
+      ],
+      "column_bottom_tile": {
+        "url": "tile_platform_platform1_column_left_bottom_0" //平台左柱体底部瓦片贴图，格式为tile_platform_[平台ID]_column_left_bottom_0
+      }
+    },
+    "platform_right_column": {
+      "fixed_sequence": [
+        {
+          "url": "tile_platform_platform1_column_right_top_0" //平台右柱体顶部瓦片贴图，格式为tile_platform_[平台ID]_column_right_top_0
+        }
+      ],
+      "fill_tiles": [
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_column_right_middle_0" //平台右柱体中间部分随机瓦片贴图1，格式为tile_platform_[平台ID]_column_right_middle_0
+          },
+          "weight": 70 //该贴图出现权重
+        },
+        {
+          "sprite_asset": {
+            "url": "tile_platform_platform1_column_right_middle_1" //平台右柱体中间部分随机瓦片贴图2，格式为tile_platform_[平台ID]_column_right_middle_1
+          },
+          "weight": 30 //该贴图出现权重
+        }
+      ],
+      "column_bottom_tile": {
+        "url": "tile_platform_platform1_column_right_bottom_0" //平台右柱体底部瓦片贴图，格式为tile_platform_[平台ID]_column_right_bottom_0
+      }
+    }
+  }
+]

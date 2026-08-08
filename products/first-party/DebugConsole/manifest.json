@@ -1,0 +1,19 @@
+{
+  "Name": "Y-Key Console",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "An optional ProductNative diagnostic console opened with Y after loading a save.",
+  "UniqueID": "DTMAPI.DebugConsoleMod",
+  "EntryDll": "DTMAPI.DebugConsole.dll",
+  "EntryType": "DTMAPI.DebugConsole.ModEntry",
+  "MinimumDTMApiVersion": "0.6.0",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

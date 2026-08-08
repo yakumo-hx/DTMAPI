@@ -1,10 +1,10 @@
 # DTMAPI Update Records
 
-This folder is the durable update ledger for DTMAPI. Use it for changes that future developers or Codex sessions must be able to trace back to a goal, files, validation, and evidence.
+This folder is the durable implementation lifecycle ledger for DTMAPI. Use one Update record to trace a change from scope through files, validation, evidence, rollback, and final state.
 
 ## Rule
 
-Every non-trivial update must add one record under this folder and link it from `INDEX.md`.
+Every non-trivial update must add one record under this folder and link it from the matching monthly ledger `INDEX-YYYY-MM.md`. The root `INDEX.md` and year `INDEX-YYYY.md` files are navigation only.
 
 Create a record when a change touches:
 
@@ -30,14 +30,17 @@ docs/updates/2026/20260530-0001-main-menu-config-entry.md
 
 `NNNN` is per-day sequence order. Keep slugs short and factual.
 
-## Required Fields
+## Required Fields For New Records
 
 Each record should include:
 
 - Update ID
 - Date
-- Status: proposed / implemented / verified / blocked / reverted
-- Source request or goal
+- Lifecycle Status: proposed / in-progress / implemented / verified / blocked / reverted / superseded
+- Validation Level: not-run / docs / source / unit / runtime / player; comma-separated when needed
+- Runtime Validation: not-required / not-run / passed / failed / blocked / partial
+- Related Issue State: none / open / monitoring / mitigated / verified / closed / deferred
+- Source request and relevant review
 - Summary
 - User-visible impact
 - Changed files
@@ -46,6 +49,8 @@ Each record should include:
 - Related debug issues, hook-map rows, smoke-matrix rows, or API matrix rows
 - Rollback notes
 - Follow-up
+
+Historical records and their slash-separated status strings remain unchanged. New records follow `docs/workflows/document-governance.md`.
 
 ## Evidence Policy
 
@@ -68,9 +73,11 @@ If validation was not run, say so explicitly.
 
 - Update ID:
 - Date:
-- Status:
+- Lifecycle Status:
+- Validation Level:
+- Runtime Validation:
+- Related Issue State:
 - Source:
-- Owner:
 
 ## Summary
 

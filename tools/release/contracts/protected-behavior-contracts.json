@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "statusDate": "2026-07-13",
+  "purpose": "Batch 0 protected-current behavior boundaries. These are regression contracts, not claims that every future implementation or runtime gate is complete.",
+  "contracts": [
+    {
+      "contractId": "custom-animals-json-png-wav",
+      "owner": "DTMAPI.GameBridge.DolocTown custom-animal content bridge plus the owning ContentPack",
+      "state": "ProtectedCurrent",
+      "architecture": "Official JSON plus Content/DTMAPI declarations only for PNG, WAV, template-animation, or reviewed native-adaptation gaps",
+      "requiredPaths": [
+        "Content/DTMAPI/manifest.json",
+        "Content/DTMAPI/custom-animals.json",
+        "Content/DTMAPI/audio-replacements.json",
+        "Content/Sprites/<species>_frame_manifest.json",
+        "Content/Audio/<species>_*.wav"
+      ],
+      "prototypeInputs": [
+        {
+          "uniqueId": "DTMAPI.HatchAssets",
+          "speciesId": "hatch",
+          "templateSpeciesId": "chicken",
+          "aiTemplate": "chicken",
+          "templateSpritePrefix": "anim_animal_chicken",
+          "adultAnimatorKey": "dtmapi_anim_animal_hatch",
+          "childAnimatorKey": "dtmapi_anim_animal_hatch_child",
+          "frameManifest": "Content/Sprites/hatch_frame_manifest.json",
+          "pngFrameCount": 44,
+          "packageItemId": "sack_hatch",
+          "produceLutId": "hatch_produce",
+          "storeListId": "animal_shop",
+          "documentId": "hatch",
+          "documentEntryIds": ["hatch_0", "hatch_1"],
+          "spritePrefix": "anim_animal_hatch",
+          "route": "pngSpriteOverride",
+          "wavCount": 2,
+          "voiceReplacements": [
+            { "id": "hatch-pet-child", "stage": "child", "nativeSoundEvent": "PLAY_ANIMAL_PET_CHICKEN_CHILD", "file": "Content/Audio/hatch_pet_young.wav" },
+            { "id": "hatch-pet-adult", "stage": "adult", "nativeSoundEvent": "PLAY_ANIMAL_PET_CHICKEN", "file": "Content/Audio/hatch_pet_adult.wav" }
+          ]
+        },
+        {
+          "uniqueId": "DTMAPI.MoleAssets",
+          "speciesId": "mole",
+          "templateSpeciesId": "marsh_pangolin",
+          "aiTemplate": "marsh_pangolin",
+          "templateSpritePrefix": "anim_animal_marsh_pangolin",
+          "adultAnimatorKey": "dtmapi_anim_animal_mole",
+          "childAnimatorKey": "dtmapi_anim_animal_mole_child",
+          "frameManifest": "Content/Sprites/mole_frame_manifest.json",
+          "pngFrameCount": 45,
+          "packageItemId": "sack_mole",
+          "produceLutId": "mole_produce",
+          "storeListId": "animal_shop",
+          "documentId": "mole",
+          "documentEntryIds": ["mole_0", "mole_1"],
+          "spritePrefix": "anim_animal_mole",
+          "route": "pngSpriteOverride",
+          "wavCount": 2,
+          "voiceReplacements": [
+            { "id": "mole-pet-child", "stage": "child", "nativeSoundEvent": "PLAY_ANIMAL_PET_PANGOLIN", "file": "Content/Audio/mole_pet_young.wav" },
+            { "id": "mole-pet-adult", "stage": "adult", "nativeSoundEvent": "PLAY_ANIMAL_PET_PANGOLIN", "file": "Content/Audio/mole_pet_adult.wav" }
+          ]
+        },
+        {
+          "uniqueId": "DTMAPI.DreckoAssets",
+          "speciesId": "drecko",
+          "templateSpeciesId": "goat",
+          "aiTemplate": "goat",
+          "templateSpritePrefix": "anim_animal_goat",
+          "adultAnimatorKey": "dtmapi_anim_animal_drecko",
+          "childAnimatorKey": "dtmapi_anim_animal_drecko_child",
+          "frameManifest": "Content/Sprites/drecko_frame_manifest.json",
+          "pngFrameCount": 36,
+          "packageItemId": "sack_drecko",
+          "produceLutId": "drecko_produce",
+          "storeListId": "animal_shop",
+          "documentId": "drecko",
+          "documentEntryIds": ["drecko_0", "drecko_1"],
+          "spritePrefix": "anim_animal_drecko",
+          "route": "pngSpriteOverride",
+          "wavCount": 2,
+          "voiceReplacements": [
+            { "id": "drecko-pet-child", "stage": "child", "nativeSoundEvent": "PLAY_ANIMAL_PET_SHEEP_CHILD", "file": "Content/Audio/drecko_pet_young.wav" },
+            { "id": "drecko-pet-adult", "stage": "adult", "nativeSoundEvent": "PLAY_ANIMAL_PET_SHEEP", "file": "Content/Audio/drecko_pet_adult.wav" }
+          ]
+        },
+        {
+          "uniqueId": "DTMAPI.OilfloaterAssets",
+          "speciesId": "oilfloater",
+          "templateSpeciesId": "slime",
+          "aiTemplate": "slime",
+          "templateSpritePrefix": "anim_animal_slime",
+          "adultAnimatorKey": "dtmapi_anim_animal_oilfloater",
+          "childAnimatorKey": "dtmapi_anim_animal_oilfloater_child",
+          "frameManifest": "Content/Sprites/oilfloater_frame_manifest.json",
+          "pngFrameCount": 48,
+          "packageItemId": "sack_oilfloater",
+          "produceLutId": "oilfloater_produce",
+          "storeListId": "animal_shop",
+          "documentId": "oilfloater",
+          "documentEntryIds": ["oilfloater_0"],
+          "documentSchemaState": "LegacyPrototypeShapeRequiresMigration",
+          "spritePrefix": "anim_animal_oilfloater",
+          "route": "pngSpriteOverride",
+          "wavCount": 2,
+          "voiceReplacements": [
+            { "id": "oilfloater-pet-child", "stage": "child", "nativeSoundEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD", "file": "Content/Audio/oilfloater_pet_young.wav" },
+            { "id": "oilfloater-pet-adult", "stage": "adult", "nativeSoundEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA", "file": "Content/Audio/oilfloater_pet_adult.wav" }
+          ]
+        }
+      ],
+      "preservedBehavior": [
+        "Each package identity, species id, animal-bag id, produce LUT id, animator/document/sound replacement id, sprite prefix, and referenced store/item id remains internally aligned.",
+        "Child and adult PNG animation routes render the custom species without replacing a vanilla species globally.",
+        "Child and adult WAV replacement is scoped to the matching custom-animal context; vanilla animals with the same native sound event are not polluted.",
+        "Missing, stale, or mismatched custom context fails open instead of suppressing or replacing an unrelated vanilla sound.",
+        "Enable, disable, removal, title transition, save load, save/reload, and native animal lifecycle preserve or visibly block unsafe state.",
+        "A unified future AnimalPack preserves these content identities or supplies an explicit backed-up migration; it never silently renames them.",
+        "The new pack plus any enabled old input blocks before safe play; directory enumeration order and new-pack-wins behavior are not compatibility contracts."
+      ],
+      "separateRoutes": [
+        "DTMAPI.ShellCrabMod remains a separate AdvancedAssetBundle prototype.",
+        "DTMAPI.LightningChickenMod remains retired research and NeverPublish."
+      ],
+      "forbiddenClaims": [
+        "The JSON+PNG+WAV route proves AssetBundle unload or Shell Crab lifecycle.",
+        "The route implements BGM, looping audio, or a general C# native-spawn API.",
+        "Current prototype PNG/WAV provenance is cleared for public redistribution.",
+        "Registry or UI success alone proves native save/runtime creation ownership."
+      ],
+      "releaseGates": [
+        "Original or explicitly licensed asset inventory with SHA-256 and redistribution scope",
+        "Old/new duplicate preflight",
+        "Third-save enable, disable, removal, save/reload, native lifecycle, voice, sprite, and vanilla-isolation regression",
+        "Focused native-owner review for any new adaptation outside the protected route"
+      ],
+      "evidenceState": "HistoricalRuntimeAndManualEvidenceRecorded; Batch0NoRuntimeRun",
+      "currentReleaseGateState": "BlockedByAssetProvenanceAndUnifiedPackImplementation"
+    },
+    {
+      "contractId": "zoom-current-behavior",
+      "owner": "DTMAPI.ZoomMod ProductNative with exact DolocAPI.SetEnvCamera ownership",
+      "state": "ProtectedCurrent",
+      "range": { "minimumScale": 1.0, "defaultMaximumScale": 4.0, "step": 0.25 },
+      "configRange": { "maximumScaleMinimum": 1.0, "maximumScaleMaximum": 4.0, "maximumScaleStep": 0.25, "stepMinimum": 0.05, "stepMaximum": 1.0 },
+      "defaultIncreaseBindings": ["Equals", "KeypadPlus"],
+      "acceptedIncreaseAliases": ["Plus"],
+      "defaultDecreaseBindings": ["Minus", "KeypadMinus"],
+      "preservedBehavior": [
+        "Owns one exact SetEnvCamera Postfix and changes only the world camera orthographic size.",
+        "UI scale and click mapping remain untouched.",
+        "The product is the only current gameplay consumer; frozen ICameraViewApi and ICameraZoomApi compatibility use a mutually exclusive dormant Host owner.",
+        "Save load, returned-to-title, config disable, owner deactivation, and environment-camera boundaries safely restore or reapply the playable view.",
+        "Building transitions, map boundaries, camera follow, and native clamps remain native-owned."
+      ],
+      "forbiddenCalls": [
+        "CameraController.RefreshResolution",
+        "CameraController.SetPosition",
+        "DolocAPI.RefreshScanner"
+      ],
+      "outOfScope": [
+        "Background, panorama, fog, weather, and scanner synchronization",
+        "UI zoom",
+        "Changing camera follow/range semantics"
+      ],
+      "acceptedLimitation": "At enlarged farm view, a smaller centered city/sky background rectangle can leave gray uncovered space. This is accepted and must not be described as background synchronization completion.",
+      "lifecycleCases": [
+        { "caseId": "save-loaded", "expected": "Reset ProductNative working scale to vanilla; a later player input may apply a new scale." },
+        { "caseId": "returned-to-title", "expected": "Restore the captured live playable-camera size and leave no residual enlarged view." },
+        { "caseId": "environment-reset", "expected": "The exact SetEnvCamera Postfix preserves the true baseline when native size still equals the product's last applied value, captures only a genuinely changed native baseline, and reapplies the current ProductNative scale." },
+        { "caseId": "config-disabled", "expected": "Restore vanilla, detach the callback and remove the exact product Harmony owner before reporting disabled." },
+        { "caseId": "owner-deactivated", "expected": "Restore vanilla and clear product instance, input registrations, callback, exact Hook and Core roots; a live restore failure is explicit even though exact-owner unpatch still runs." }
+      ],
+      "releaseGates": [
+        "1x through 4x key and config behavior",
+        "2x/4x playable movement and centering",
+        "building/map/title transitions",
+        "config disable, title and exact-owner cleanup with no residual 4x state",
+        "no forbidden call regression"
+      ],
+      "evidenceState": "HistoricalRuntimeAndManualEvidenceRecorded; AdvancedFocusedImplementationPassed; GAME-SMOKE/20260724-180233RetainedAsNoNativeSaveNonAcceptanceBecauseScaledBaselineCompounded; GAME-SMOKE/20260724-202032CorrectedCoveredOrthographicSizePath; Review20260724-0007ReopenedResolutionDerivedStateAndMaximumClampFailurePropagation",
+      "currentReleaseGateState": "ProtectedAdvancedMigrationImplementedOpen"
+    },
+    {
+      "contractId": "auto-fishing-current-behavior",
+      "owner": "Self-contained Yuuka.DTMAPI.AutoFishing Advanced ProductNative DLL over Doloc Town fishing native owners",
+      "state": "ProtectedCurrent",
+      "toggle": {
+        "defaultKey": "F6",
+        "registrationCount": 1,
+        "scope": "Gameplay",
+        "bindingMayBeNone": true,
+        "edgePolicy": "Owner-bound pressed edge with a press-release/re-arm guard; title screen does not poll the binding."
+      },
+      "sessionPolicy": [
+        "The SDK-admitted product owns one private fishing session and one canonical Harmony owner.",
+        "F6 off removes recurring work and transient native/input/animation state while process-lifetime callbacks fast-return.",
+        "Cold disable loads no product assembly or Harmony owner; post-load Manager disable remains restart-required; returned-to-title, save transition, entry failure, and shutdown restore product-owned transient state."
+      ],
+      "recastDelaySeconds": 0.25,
+      "manualMovementCancelArmSeconds": 1.0,
+      "castRetrySeconds": {
+        "noWaterOrNoSelectedRod": 1.0,
+        "castFailed": 2.5,
+        "default": 0.25
+      },
+      "defaultSequence": [
+        "Complete native Ready backswing/charge gate",
+        "Cast at configured charge",
+        "Wait for native bite",
+        "Reel",
+        "Show and auto-complete the real minigame",
+        "Collect the native result",
+        "Wait the product-owned 0.25-second recast interval",
+        "Recast while enabled"
+      ],
+      "movementCancel": {
+        "primary": "Native HorizontalMoveFactor abs(value) > 0.001",
+        "fallback": "A/D/Space/Shift snapshots only when the native factor is unavailable",
+        "guard": "Space/Shift alone are not movement when the native factor is readable"
+      },
+      "options": {
+        "ToggleKey": { "default": "F6", "mayBeNone": true },
+        "InstantBite": { "default": false, "scope": "SkipNativeWaitOnly" },
+        "CastChargeRatio": { "default": 0.0, "minimum": 0.0, "maximum": 1.0, "step": 0.05, "zeroMeaning": "ExactMinimumAfterNativeReadyGate" },
+        "SkipMiniGame": { "default": false, "route": "NativeNoMinigameResult" },
+        "FastAnimations": { "default": false, "multiplierDefault": 3.0, "multiplierMinimum": 1.0, "multiplierMaximum": 4.0, "multiplierStep": 0.5 }
+      },
+      "optionIndependence": [
+        "InstantBite does not imply SkipMiniGame.",
+        "SkipMiniGame does not acquire a synthetic-input lease.",
+        "FastAnimations does not change CastChargeRatio, wait policy, or result policy.",
+        "Original animator speeds are restored at state and session boundaries."
+      ],
+      "compatibility": [
+        "The old product VerboseLogging config field remains ignored.",
+        "The frozen compatibility DTO retains CastChargeRatio.",
+        "The retained binary StopOnManualMove setter dependency remains frozen through 0.5.5 even though the new product does not consume IFishingAutomationApi."
+      ],
+      "releaseGates": [
+        "Fifth-save real pond fixture; no synthetic pool/cache/wait-state setup as final evidence",
+        "10 to 20 fish active-play product gate",
+        "native 1x, enabled without acceleration, common acceleration, high multiplier, disable recovery, and title-cycle profiles",
+        "movement cancel, options cross-product, cleanup, clean exit, and no Fatal GC"
+      ],
+      "evidenceState": "CurrentSourceAndHistoricalProductEvidenceRecorded; FocusedActiveGcGatePending",
+      "currentReleaseGateState": "BlockedByAbiRestoreAndActiveGameplayGcGate"
+    },
+    {
+      "contractId": "more-saves-current-behavior",
+      "owner": "DTMAPI.MoreSavesMod ProductNative policy over GameManager.archiveFileCount and the bounded 1.00 legacy extra-slot filename migration; Doloc Town owns normal save files and UI lifecycle afterward; ISaveSlotsApi remains frozen Compatibility only",
+      "state": "ProtectedCurrent",
+      "enabledOfficialSlotCount": 12,
+      "disabledOfficialSlotCount": 6,
+      "preservedBehavior": [
+        "The first six slots remain vanilla doloc-save-{0..5}.data slots.",
+        "At startup, each legacy current/prev/bak role for indices 6 through 11 moves independently to doloc-save-{n}.data/.prev0/.bak before twelve slots become visible; missing sources skip, existing destinations preserve both paths without overwrite, and no legacy files is a successful no-op.",
+        "Slots 7 through 12 can be created, saved, loaded, copied, deleted, and recognized after restart through official owners.",
+        "Disabling restores the visible official slot count to 6 and never deletes extra doloc-save-{n}.data files or preserved legacy conflict sources.",
+        "Re-enabling makes intact extra saves available again.",
+        "DTMAPI does not claim a MoreSaves-specific save sidecar; LocalSave, DataPersistenceManager, GameDataUiState, and GameDataPanel remain native owners."
+      ],
+      "evidenceContextOnly": [
+        "User long-term manual use at 16 slots succeeded in prior experimental API layouts; this is not the current product promise."
+      ],
+      "acceptedLimitations": [
+        "An 18-slot single-page overflow was observed and is not promised as supported product behavior.",
+        "Arbitrary-count paging, naming polish, and scrolling are future work and do not expand the fixed-12 contract."
+      ],
+      "releaseGates": [
+        "Managed-fixture legacy 6-11 per-file current/prev/bak official-role migration, opaque mismatched backup content, no-source no-op, no-overwrite continuation, move-failure non-publication, source-absent/destination-present postcondition, and next-start resume",
+        "Fixed 6/12 official UI regression",
+        "Slots 7 through 12 create/save/reload/restart/copy/delete",
+        "Non-destructive disable and re-enable",
+        "Clean exit and no save-file deletion"
+      ],
+      "evidenceState": "HistoricalRuntimeAndLongTermManualEvidenceRecorded; AdvancedProductVerified; IndependentReviewClosed; CorrectedThirdSaveAcceptancePassedAt20260723-150215; InitialAndPostTitleNative12; ProtectedExtraSlotsByteUnchanged; CorrectedOfficialRoleDisposableMigrationAndIdempotencePassedAt20260806-004819-And-005111",
+      "currentReleaseGateState": "ProtectedCurrentFixed12; LightweightOfficialRoleMigrationSourceUnitAndPlayerRevalidated; Existing20260804PlayerAcceptanceIsHistoricalForSupersededBytes; CorrectedDisposableOfficialUiLoadRestartCleanExitPassedAt20260806-004819-And-005111; FullProtectedReleaseMatrixNotRun"
+    }
+  ]
+}

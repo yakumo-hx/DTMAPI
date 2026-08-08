@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "Yuuka.DTMAPI.OneActionComplete",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Gameplay",
+      "Functional",
+      "DTMAPI",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI一键完成",
+      "tchinese": "DTMAPI一鍵完成",
+      "english": "DTMAPI One Action Complete"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n一次动作完成资源采集与燃料、饲料加满。",
+      "tchinese": "依賴 DTMAPI。\n一次動作完成資源採集與燃料、飼料加滿。",
+      "english": "Requires DTMAPI.\nCompletes resource gathering and fills fuel/feed with one action."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-oneactioncomplete-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

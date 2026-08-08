@@ -1,17 +1,11 @@
 @echo off
-setlocal
-set SCRIPT_DIR=%~dp0
-for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set STAMP=%%i
-set OUTPUT_DIR=%USERPROFILE%\Desktop\DTMAPI-logs\%STAMP%
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%Content\DTMAPIInstaller\tools\collect-logs.ps1" -CaseId PLAYER-CRASH -OutputDirectory "%OUTPUT_DIR%"
-if errorlevel 1 (
-  echo.
-  echo Failed to collect DTMAPI logs. Please run 3_check_dtmapi_status.bat and include the output when asking for help.
-  pause
+setlocal EnableExtensions DisableDelayedExpansion
+set "DTMAPI_DISPATCHER=%~dp0Content\DTMAPIInstaller\tools\invoke-dtmapi-action.cmd"
+if not exist "%DTMAPI_DISPATCHER%" (
+  echo [ERROR] DTMAPI installer dispatcher is missing: "%DTMAPI_DISPATCHER%"
+  if not defined DTMAPI_NO_PAUSE pause
   exit /b 1
 )
-echo.
-echo DTMAPI logs collected:
-echo %OUTPUT_DIR%
-echo Please send this folder when asking for help after a crash.
-pause
+"%ComSpec%" /d /e:on /v:off /c call "%DTMAPI_DISPATCHER%" collect
+set "DTMAPI_EXIT=%ERRORLEVEL%"
+exit /b %DTMAPI_EXIT%

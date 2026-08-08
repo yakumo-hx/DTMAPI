@@ -1,0 +1,6 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kuma	anim_npc_kuma_idle_[0~5]
+帧动画（移动）	6	walk	kuma	anim_npc_kuma_walk_[0~5]
+图标（日历）	1		kuma	icon_calendar_kuma
+图标（图鉴）	1		kuma	icon_document_kuma
+详情图（图鉴）	1		kuma	preview_document_kuma

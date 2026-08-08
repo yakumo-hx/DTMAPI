@@ -1,0 +1,9 @@
+{
+  "mod.name": "DTMAPI More Equipment Slots",
+  "mod.loaded": "DTMAPI More Equipment Slots ProductNative runtime loaded.",
+  "config.section.main": "Extra equipment slots",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Adds exactly three product-owned attribute equipment slots.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Writes low-frequency lifecycle and recovery diagnostics."
+}

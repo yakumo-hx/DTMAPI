@@ -1,0 +1,921 @@
+{
+  "schemaVersion": 2,
+  "contractId": "batch6-phase0-domain-ownership",
+  "baseline": {
+    "gitCommit": "653487b7463778c23e9b96aed9ef713364def22a",
+    "includeRule": "Tracked .cs files at gitCommit that equal or are beneath each declared scope path.",
+    "excludeRules": [
+      "Untracked and ignored files",
+      "bin and obj outputs",
+      "Generated runtime evidence and local game files",
+      "Documentation, scripts and package artifacts unless separately classified by Batch 5 rules"
+    ],
+    "generator": "tools/scripts/build-batch6-phase0-baseline.ps1",
+    "receipt": "tools/release/baselines/batch6-phase0-ownership-baseline-20260720.json"
+  },
+  "mandatoryRuntimeAudit": {
+    "roots": [
+      "src/DTMAPI.Abstractions",
+      "src/DTMAPI.Core",
+      "src/DTMAPI.BepInExBootstrap",
+      "src/DTMAPI.GameBridge.DolocTown",
+      "src/DTMAPI.ModConfigMenu"
+    ],
+    "allowedOwnershipClassifications": ["Platform", "SharedNative", "ProductNative"],
+    "targetProductNativeAddedPhysicalLinesMax": 0,
+    "semanticPathAllowances": [
+      {
+        "path": "src/DTMAPI.Core/Manifesting/ManifestReader.cs",
+        "classification": "Platform",
+        "review": "docs/reviews/code/2026/20260720-0003-batch5-closeout-and-batch6-phase0-acceptance-audit.md",
+        "reason": "Core manifest identity parsing and pre-load admission are Platform responsibilities."
+      }
+    ]
+  },
+  "requiredDomainIds": [
+    "auto-fishing",
+    "zoom",
+    "one-action-complete",
+    "auto-harvest",
+    "action-speed",
+    "more-saves",
+    "y-console",
+    "chest-locator",
+    "fish-roe-tooltip",
+    "animal-viewer",
+    "strong-planting",
+    "oil-drop",
+    "mine-machine",
+    "equipment-slots",
+    "custom-animals-host",
+    "animal-pack",
+    "audio-replacement-host",
+    "bgm-replacement",
+    "gmcm-manager-ui",
+    "event-lifetime-kernel",
+    "custom-entities",
+    "multiplayer",
+    "pets-and-vehicles"
+  ],
+  "allowedPhysicalOwnershipCandidates": [
+    "Platform",
+    "SharedNative",
+    "ProductNative",
+    "ContentOwner"
+  ],
+  "allowedDecisionStates": [
+    "decided",
+    "split-decided",
+    "content-only-decided",
+    "candidate",
+    "candidate-deferred",
+    "blocked-unresolved",
+    "deferred-independent",
+    "deferred-unadjudicated"
+  ],
+  "allowedTargetDeploymentForms": [
+    "Advanced CodeMod",
+    "ContentPack",
+    "Content Host",
+    "DTMAPI Runtime"
+  ],
+  "domains": [
+    {
+      "id": "auto-fishing",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["Yuuka.DTMAPI.AutoFishing"],
+      "realConsumerCount": 1,
+      "nativeOwner": "BodyController.UseFishRod; AgentStateFishingReady/Cast/Wait/Pull; FishingGameScrollBar; DolocUserInput; FishRodRenderer",
+      "stateHolder": "active Agent/state manager, selected FishRod, fishing phase caches, minigame handle, animator and Hook Rigidbody",
+      "targetAssembly": "Yuuka.DTMAPI.AutoFishing Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Remove first-party friend/primitives seam with the admitted pilot; keep frozen IFishingAutomationApi compatibility until its gate.",
+      "hookAndLifetime": "Product owns canonical Harmony owner, native caches, updater/session, input and cleanup; fifth-save behavior and GC authority.",
+      "marginalPlan": "Move fishing ProductNative and product QA out of mandatory GameBridge; isolate then retire Compatibility.",
+      "sourceScopes": {
+        "corePlatform": ["src/DTMAPI.Abstractions/FirstPartyFishingPrimitives.cs"],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation", "src/DTMAPI.GameBridge.DolocTown/Demand/GameBridgeDemandRoutes.cs", "src/DTMAPI.GameBridge.DolocTown/Hooking/AgentStateLifecycleHookBridge.cs"],
+        "product": ["first-party-mods/AutoFishingMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Performance", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingFixtureCase.cs", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingPrimitiveFixtureCase.cs", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeControlFixturePolicy.cs", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/AutoFishingNativeVitalsCommandAdapter.cs"],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation"]
+      }
+    },
+    {
+      "id": "zoom",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["DTMAPI.ZoomMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "CameraController playable camera and Camera.orthographicSize; background/fog owners remain separately reviewed",
+      "stateHolder": "DTMAPI.Zoom ProductNative runtime plus the live playable Camera orthographic size",
+      "targetAssembly": "DTMAPI.ZoomMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Freeze/obsolete the retained CameraView and CameraZoom ABI shapes; the current product consumes neither API and no Camera stability promotion is authorized.",
+      "hookAndLifetime": "Product owns one exact non-suppressing DolocAPI.SetEnvCamera(Vector2,Vector2,bool,bool,bool) Postfix, config/title restoration and exact-owner cleanup; the retained ABI executor is mutually exclusive behind the existing Compatibility Host.",
+      "marginalPlan": "Move product scale/config/native snapshot and one Hook to ProductNative; move retained ABI execution to the existing dormant Host; keep only thin mandatory proxies and owner coordination.",
+      "baselineProjection": {
+        "stateHolder": "playable Camera plus DTMAPI lease/arbitration state",
+        "apiDelta": "Preserve compatibility until a focused consumer decision; no Camera stability promotion.",
+        "hookAndLifetime": "Product owns native zoom and restore; title/Manager global repair requires separate Platform/SharedNative proof.",
+        "marginalPlan": "Move single-product camera implementation to product; no mandatory replacement capability by default."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/Camera"],
+        "product": ["first-party-mods/ZoomMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/G4CameraPlayableFixtureScenario.cs"],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/Camera"],
+        "product": ["products/first-party/Zoom"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ZoomProductNativeFixtureCase.cs"],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/Camera"]
+      }
+    },
+    {
+      "id": "one-action-complete",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["Yuuka.DTMAPI.OneActionComplete"],
+      "realConsumerCount": 1,
+      "nativeOwner": "ToolCollider.HandleTools and AgentStateInteract.OnExit",
+      "stateHolder": "current tool/interact state and product completion policy",
+      "targetAssembly": "Yuuka.DTMAPI.OneActionComplete Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen IActionCompletionApi remains an on-demand Compatibility Host contract; the ProductNative product does not consume it.",
+      "hookAndLifetime": "Product owns both exact patches and action state; product/compatibility activation is dual-order fail-closed.",
+      "marginalPlan": "Second ProductNative migration is complete; no SharedNative extraction was justified.",
+      "baselineProjection": {
+        "stateHolder": "current tool/interact state and product completion policy",
+        "apiDelta": "Do not add a new product-shaped public API; review existing IActionCompletionApi compatibility during migration.",
+        "hookAndLifetime": "Product owns patch/state; any shared native exit hook needs two-consumer conflict proof.",
+        "marginalPlan": "Candidate only after AutoFishing proves the template."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion"],
+        "product": ["testmods/OneActionCompleteMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/CompatibilityHost/ActionCompletionServiceProxy.cs"],
+        "product": ["products/first-party/OneActionComplete"],
+        "qa": [],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/ActionCompletion"]
+      }
+    },
+    {
+      "id": "auto-harvest",
+      "reviewDisposition": "ApiDemandSample",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "deferred-unadjudicated",
+      "targetDeploymentForms": [],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "apiDemandSamples": [
+        {
+          "uniqueId": "Yuuka.DTMAPI.AutoHarvest",
+          "catalogId": "auto-harvest-sample",
+          "catalogRole": "ApiDemandSample",
+          "releaseEligibility": "NeverPublish",
+          "sourceRoot": "author-sdk/samples/api-demand/AutoHarvest"
+        }
+      ],
+      "nativeOwner": "PlantBasin.CouldHarvest and PlantBasin.Harvest(bool,bool)",
+      "stateHolder": "The research sample owns only its interval/config selection; the native crop container remains game-owned.",
+      "targetAssembly": "No admitted AutoHarvest product target; the current Experimental ICropHarvestingApi surface remains in GameBridge pending real-consumer ownership review.",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve the frozen Experimental ICropHarvestingApi compatibility surface; the sample does not authorize promotion, product admission or SharedNative ownership.",
+      "hookAndLifetime": "The sample has no standing native Hook and owns only its sample-local update interval/config lifetime.",
+      "marginalPlan": "Keep the sample NeverPublish and outside product admission; adjudicate the native transaction only after independent real consumers exist.",
+      "baselineProjection": {
+        "reviewDisposition": "ProductNative",
+        "physicalOwnershipCandidates": ["ProductNative"],
+        "decisionState": "decided",
+        "targetDeploymentForms": ["Advanced CodeMod"],
+        "currentConsumers": ["Yuuka.DTMAPI.AutoHarvest"],
+        "realConsumerCount": 1,
+        "stateHolder": "native crop container plus product target/scheduling policy",
+        "targetAssembly": "Yuuka.DTMAPI.AutoHarvest Advanced CodeMod",
+        "apiDelta": "Keep product-owned first; extract a transaction only after independent reuse.",
+        "hookAndLifetime": "Product owns scheduling and target state; explicit native transaction has no standing Hook today.",
+        "marginalPlan": "Move CropHarvesting implementation with product unless later SharedNative evidence exists."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting"],
+        "product": ["testmods/AutoHarvestMod"],
+        "qa": ["testmods/CropHarvestingQaMod", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/CropHarvestingFixtureCase.cs"],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/CropHarvesting"],
+        "product": [],
+        "qa": ["author-sdk/samples/api-demand/AutoHarvest", "tests/mod-fixtures/qa/CropHarvesting", "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/CropHarvestingFixtureCase.cs"],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "action-speed",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["Yuuka.DTMAPI.ActionSpeed"],
+      "realConsumerCount": 1,
+      "nativeOwner": "AgentControllerState interaction timers and reviewed tool/plant/animal/electric/resin action owners",
+      "stateHolder": "current Agent state and product multiplier/restore markers",
+      "targetAssembly": "Yuuka.DTMAPI.ActionSpeed Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen IActionSpeedApi remains an on-demand Compatibility Host contract; the ProductNative product does not consume it.",
+      "hookAndLifetime": "Product owns nine exact patches, markers and restoration; product/compatibility activation is dual-order fail-closed.",
+      "marginalPlan": "Third ProductNative migration and focused third-save acceptance are complete; no SharedNative extraction was justified.",
+      "baselineProjection": {
+        "stateHolder": "current Agent state and product multiplier/restore markers",
+        "apiDelta": "Existing experimental contract needs a consumer-compatible migration decision; no promotion.",
+        "hookAndLifetime": "Product owns patches, markers and restoration; third-save behavior, independent GC ladder and clean exit remain required.",
+        "marginalPlan": "Migrate only after smaller template and AutoFishing proof."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed"],
+        "product": ["testmods/ActionSpeedMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs"],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/CompatibilityHost/ActionSpeedServiceProxy.cs"],
+        "product": ["products/first-party/ActionSpeed"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs"],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/ActionSpeed"]
+      }
+    },
+    {
+      "id": "more-saves",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["DTMAPI.MoreSavesMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "DolocAPI.gameManager.archiveFileCount; LocalSave/DataPersistenceManager; GameDataUiState/GameDataPanel",
+      "stateHolder": "official archive count/files/UI plus ProductNative fixed six/twelve policy, exact-writer lease, and bounded 1.00 legacy indices 6-11 filename migration",
+      "targetAssembly": "DTMAPI.MoreSavesMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen ISaveSlotsApi remains only for exact old consumers in the dormant Compatibility Host; the ProductNative product does not consume or extend it.",
+      "hookAndLifetime": "Product installs zero Harmony patches; one startup pass read-only validates and moves only legacy indices 6-11 current/prev/bak members before writing GameManager.archiveFileCount=12, retries count ownership only while active, and restores native six before exact-owner release; official save/UI operations remain game-owned afterward.",
+      "marginalPlan": "Sixth product retains fixed 12/6 behavior and adds only the bounded Doloc Town 1.00 extra-slot filename migration with no conflict UI, arbitrary-count feature, save sidecar, or SharedNative expansion.",
+      "baselineProjection": {
+        "stateHolder": "official archive count/files/UI plus product slot/page policy",
+        "apiDelta": "Preserve current experimental ABI until save/UI migration and compatibility review.",
+        "hookAndLifetime": "Product owns slot/page patches; Platform may own generic save data/lifecycle only.",
+        "marginalPlan": "Separate high-risk save/UI migration with rollback and user data evidence."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots"],
+        "product": ["testmods/MoreSavesMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots", "src/DTMAPI.GameBridge.DolocTown/CompatibilityHost/SaveSlotsServiceProxy.cs"],
+        "product": ["products/first-party/MoreSaves"],
+        "qa": [],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/SaveSlots"]
+      }
+    },
+    {
+      "id": "y-console",
+      "reviewDisposition": "ProductNative+PlatformSeam",
+      "physicalOwnershipCandidates": ["ProductNative", "Platform"],
+      "decisionState": "split-decided",
+      "targetDeploymentForms": ["Advanced CodeMod", "DTMAPI Runtime"],
+      "currentConsumers": ["DTMAPI.DebugConsoleMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "Product-specific debug verbs have separate native owners; command registration/logging is DTMAPI-owned Platform",
+      "stateHolder": "reflected console UI/modal state plus command registry",
+      "targetAssembly": "Optional DTMAPI.DebugConsoleMod plus Platform command service",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep generic command/log contract only; do not promote cheat/debug APIs.",
+      "hookAndLifetime": "Product owns UI, hotkey and native verbs; Platform owns owner-bound command cleanup.",
+      "marginalPlan": "Extract product UI/verbs; retain only generic command seam.",
+      "baselineSourceScopes": {
+        "corePlatform": ["src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs"],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Diagnostics", "src/DTMAPI.GameBridge.DolocTown/Features/UiDiagnostics"],
+        "product": ["testmods/DebugConsoleMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": ["src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs"],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Diagnostics", "src/DTMAPI.GameBridge.DolocTown/Features/UiDiagnostics"],
+        "product": ["products/first-party/DebugConsole"],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "chest-locator",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["DTMAPI.ChestLocatorEnhancerMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "ArchiveDataHandle.GetAvailableInventories and native CountItem/CostItem paths",
+      "stateHolder": "available inventory set and product policy",
+      "targetAssembly": "DTMAPI.ChestLocatorEnhancerMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen IChestLocatorEnhancerApi remains an on-demand Compatibility Host contract; no new public or SharedNative API.",
+      "hookAndLifetime": "Product owns the one exact GetAvailableInventories patch and policy; frozen compatibility is dormant and dual-order fail-closed.",
+      "marginalPlan": "ProductNative implementation is outside mandatory Runtime; retain only a thin frozen ABI proxy and demand route.",
+      "baselineProjection": {
+        "stateHolder": "available inventory set and product policy",
+        "apiDelta": "Review existing experimental API compatibility; no permanent internal service in GameBridge.",
+        "hookAndLifetime": "Product owns patch and merged policy state.",
+        "marginalPlan": "Move implementation with product after pilot gate."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer"],
+        "product": ["testmods/ChestLocatorEnhancerMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ChestLocatorEnhancerFixtureCase.cs"],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer"],
+        "product": ["products/first-party/ChestLocatorEnhancer"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ChestLocatorEnhancerFixtureCase.cs"],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/ChestLocatorEnhancer"]
+      }
+    },
+    {
+      "id": "fish-roe-tooltip",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["Yuuka.DTMAPI.FishBreedingAssistant"],
+      "realConsumerCount": 1,
+      "nativeOwner": "ItemFishRoe.fishName and DolocAPI.QueryItemProto title lookup",
+      "stateHolder": "native item proto/title plus product tooltip policy",
+      "targetAssembly": "Yuuka.DTMAPI.FishBreedingAssistant Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen IItemTooltipApi remains an on-demand Compatibility Host contract; the product uses only the independent Experimental IItemDisplayNameApi SharedNative lookup.",
+      "hookAndLifetime": "Product owns tooltip patch/provider and cleanup.",
+      "marginalPlan": "Fourth ProductNative migration is complete; no fish-roe-specific mandatory capability remains.",
+      "baselineProjection": {
+        "stateHolder": "native item proto/title plus product tooltip policy",
+        "apiDelta": "Move product tooltip API use; only a future multi-consumer tooltip host may be shared.",
+        "hookAndLifetime": "Product owns tooltip patch/provider and cleanup.",
+        "marginalPlan": "No fish-roe-specific mandatory capability."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip"],
+        "product": ["testmods/FishBreedingAssistantMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/CompatibilityHost/FishRoeTooltipServiceProxy.cs"],
+        "product": ["products/first-party/FishBreedingAssistant"],
+        "qa": [],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/FishRoeTooltip"]
+      }
+    },
+    {
+      "id": "animal-viewer",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["Yuuka.DTMAPI.AnimalHusbandryProgress"],
+      "realConsumerCount": 1,
+      "nativeOwner": "AnimalFullInfoData, AnimalViewer.Show and AnimalPanelUiState.Unregister",
+      "stateHolder": "native animal/viewer panel plus product progress rows",
+      "targetAssembly": "Yuuka.DTMAPI.AnimalHusbandryProgress Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Frozen IAnimalViewerApi remains an on-demand Compatibility Host contract; the ProductNative product does not consume it.",
+      "hookAndLifetime": "Product owns UI patches, coalescing and native-close cleanup.",
+      "marginalPlan": "Fifth ProductNative migration is complete; viewer policy and QA remain product-specific.",
+      "baselineProjection": {
+        "stateHolder": "native animal/viewer panel plus product progress rows",
+        "apiDelta": "Preserve experimental ABI until visual/native migration review; no promotion.",
+        "hookAndLifetime": "Product owns UI patches, coalescing and native-close cleanup.",
+        "marginalPlan": "Move viewer policy and patches with product; keep QA optional."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer"],
+        "product": ["testmods/AnimalHusbandryProgressMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/CompatibilityHost/AnimalViewerServiceProxy.cs"],
+        "product": ["products/first-party/AnimalHusbandryProgress"],
+        "qa": [],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer"]
+      }
+    },
+    {
+      "id": "strong-planting",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["DTMAPI.StrongPlantingGunMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "ItemFarmingGun construction/use and FarmingGunUiState transfer",
+      "stateHolder": "native farming-gun inventory/UI plus product three-slot policy",
+      "targetAssembly": "DTMAPI.StrongPlantingGunMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Freeze IStrongPlantingGunApi plus its three DTOs as Experimental/Deprecated/Frozen warning shells; no Runtime provider or Compatibility Host executor remains because there is no published or retained binary consumer.",
+      "hookAndLifetime": "Product atomically owns all five concrete patches, the fixed-three slot policy and exact capacity restore.",
+      "marginalPlan": "StrongPlantingGun is the admitted ninth ProductNative extraction; no SharedNative or Compatibility Host expansion.",
+      "baselineProjection": {
+        "stateHolder": "native farming-gun inventory/UI plus product three-slot policy",
+        "apiDelta": "Keep the experimental compatibility contract until the product migration decides its retained-consumer boundary.",
+        "hookAndLifetime": "Product owns patches, slot policy and exact capacity restore after migration.",
+        "marginalPlan": "Planned product remains blocked behind the earlier Batch 6 pilot and template gates."
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun"],
+        "product": ["testmods/StrongPlantingGunMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": [],
+        "product": ["products/first-party/StrongPlantingGun"],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "oil-drop",
+      "reviewDisposition": "ContentPack",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "content-only-decided",
+      "targetDeploymentForms": ["ContentPack"],
+      "currentConsumers": ["DTMAPI.OilMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "GuaranteedManager -> ISpawnLut -> IDropItemHost official JSON path",
+      "stateHolder": "official drop tables and native spawn host",
+      "targetAssembly": "No product DLL; official JSON ContentPack",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No Oil public/native API; keep generic ActionCompletion separate.",
+      "hookAndLifetime": "Native official content path owns drop; no Oil Hook/session/cache.",
+      "marginalPlan": "Keep Oil separate from Mine and out of GameBridge.",
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": [],
+        "product": [],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "mine-machine",
+      "reviewDisposition": "ProductNative+ContentOwner",
+      "physicalOwnershipCandidates": ["ProductNative", "ContentOwner"],
+      "decisionState": "split-decided",
+      "targetDeploymentForms": ["Advanced CodeMod", "ContentPack"],
+      "currentConsumers": ["DTMAPI.MineMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "native equipment/container, electric Launch, archive pass-time and production/storage owners",
+      "stateHolder": "placed equipment, native power/inventory state, exact-restorable recipe/tech/visual originals and a session-derived product scheduler",
+      "targetAssembly": "Official JSON ContentPack for static content plus the admitted DTMAPI.MineMod Advanced CodeMod for runtime cycle and economy; no new host assembly",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Do not keep IMachineProductionApi as a mandatory product engine and do not add a public machine DTO or host API.",
+      "hookAndLifetime": "Official JSON owns stable item/equipment/recipe/group content; ProductNative owns three exact-owner visual hooks, RNG, archive-time polling, fixed native power, transactional output, exact recipe/tech/visual restoration and a session-derived scheduler restarted after SaveLoaded. Title, disable and unload clear all session state.",
+      "marginalPlan": "Keep static content in official JSON and runtime/economy in the admitted Mine product; no Mine sidecar, candidate generation, journal, SharedNative or Content Host without a later explicit requirement and owner review.",
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/MachineProduction"],
+        "product": ["testmods/MineMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": [],
+        "product": ["products/first-party/Mine"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "equipment-slots",
+      "reviewDisposition": "ProductNative",
+      "physicalOwnershipCandidates": ["ProductNative"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Advanced CodeMod"],
+      "currentConsumers": ["DTMAPI.MoreEquipmentSlotsMod"],
+      "realConsumerCount": 1,
+      "nativeOwner": "AgentEquipmentFunction/Manager, AccessorySlot UI, native inventory/save transaction and shield hit path",
+      "stateHolder": "native equipment/inventory plus protected per-save sidecar and durable prepared/committed journal",
+      "targetAssembly": "DTMAPI.MoreEquipmentSlotsMod Advanced CodeMod",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Freeze IEquipmentSlotsApi plus six DTOs as Experimental/Deprecated/Frozen: ProductNative is fixed at three slots while the existing Compatibility Host preserves legacy arbitrary-owner 0..24 semantics.",
+      "hookAndLifetime": "Product atomically owns four UI/native patches, fixed-three sidecar/journal recovery and disable/title/Loader cleanup; Compatibility owns only the frozen old ABI executor.",
+      "marginalPlan": "Separate migration with save backup, rollback and player evidence.",
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots"],
+        "product": ["products/first-party/MoreEquipmentSlots"],
+        "qa": [
+          "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+          "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/MoreEquipmentSlotsFixtureCase.cs"
+        ],
+        "compatibility": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots"]
+      },
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots"],
+        "product": ["testmods/MoreEquipmentSlotsMod"],
+        "qa": ["src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "custom-animals-host",
+      "reviewDisposition": "ContentOwner",
+      "physicalOwnershipCandidates": ["ContentOwner"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["Content Host"],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "observedPrototypeInputs": [
+        { "catalogId": "hatch-assets-input", "uniqueId": "DTMAPI.HatchAssets", "evidenceAuthority": "MutableLocalEvidenceOnly", "qualifiesAsIndependentRealConsumer": false },
+        { "catalogId": "mole-assets-input", "uniqueId": "DTMAPI.MoleAssets", "evidenceAuthority": "MutableLocalEvidenceOnly", "qualifiesAsIndependentRealConsumer": false },
+        { "catalogId": "drecko-assets-input", "uniqueId": "DTMAPI.DreckoAssets", "evidenceAuthority": "MutableLocalEvidenceOnly", "qualifiesAsIndependentRealConsumer": false },
+        { "catalogId": "oilfloater-assets-input", "uniqueId": "DTMAPI.OilfloaterAssets", "evidenceAuthority": "MutableLocalEvidenceOnly", "qualifiesAsIndependentRealConsumer": false },
+        { "catalogId": "shell-crab", "uniqueId": "DTMAPI.ShellCrabMod", "evidenceAuthority": "MutableLocalEvidenceOnly", "qualifiesAsIndependentRealConsumer": false }
+      ],
+      "nativeOwner": "native animal creation/release, growth, feeding, breeding, production, capacity, AI, animation and save state",
+      "stateHolder": "native Animal/proto/room/save state plus host schema/resource generations",
+      "targetAssembly": "Optional DTMAPI.CustomAnimals Content Host",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "G7 adds ContentPackFor/host contracts; species policy never enters host.",
+      "hookAndLifetime": "Host owns shared animal bridge, schema, asset generations and native cleanup; packs own species/economy.",
+      "marginalPlan": "Physically optionalize host after separate G7 design/validation.",
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals"],
+        "product": [],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "animal-pack",
+      "reviewDisposition": "ContentPack",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "content-only-decided",
+      "targetDeploymentForms": ["ContentPack"],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "plannedConsumers": [
+        {
+          "catalogId": "animal-pack",
+          "uniqueId": "DTMAPI.AnimalPack",
+          "state": "FrozenReservedNoArtifact"
+        }
+      ],
+      "nativeOwner": "No product-native owner; content is interpreted by the CustomAnimals host and official game tables",
+      "stateHolder": "species/economy/item/content files",
+      "targetAssembly": "No DLL; unified AnimalPack ContentPack",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Depends on future G7 host contract without adding product code to host.",
+      "hookAndLifetime": "Content-only; host owns resource lifetime.",
+      "marginalPlan": "Consolidate species product content only after host contract.",
+      "sourceScopes": {"corePlatform": [], "gameBridge": [], "product": [], "qa": [], "compatibility": []}
+    },
+    {
+      "id": "audio-replacement-host",
+      "reviewDisposition": "ContentOwnerCandidate",
+      "physicalOwnershipCandidates": ["ContentOwner"],
+      "decisionState": "candidate",
+      "targetDeploymentForms": ["Content Host"],
+      "currentConsumers": ["Yuuka.DTMAPI.ManboCardboardAudio"],
+      "realConsumerCount": 1,
+      "dependentRoutes": [
+        {
+          "id": "custom-animals-animal-voice",
+          "description": "CustomAnimals AnimalVoice route",
+          "qualifiesAsIndependentRealConsumer": false
+        }
+      ],
+      "nativeOwner": "WwiseSoundManager.InternalPostSoundEvent plus category-specific native context owners",
+      "stateHolder": "native Wwise event/context and host replacement/resource state",
+      "targetAssembly": "Optional audio Content Host after focused native-owner review",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Keep current experimental API frozen; split reusable host from paper-box/product QA.",
+      "hookAndLifetime": "Host candidate owns shared Wwise conflict/lifecycle only if two-consumer semantics remain equivalent.",
+      "marginalPlan": "Optionalize; do not hard-code each audio case in mandatory GameBridge.",
+      "baselineSourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement"],
+        "product": ["testmods/ManboCardboardAudioMod"],
+        "qa": [],
+        "compatibility": []
+      },
+      "sourceScopes": {
+        "corePlatform": [],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Features/AudioReplacement"],
+        "product": ["products/first-party/ManboCardboardAudio"],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "bgm-replacement",
+      "reviewDisposition": "ContentOwnerCandidate-deferred",
+      "physicalOwnershipCandidates": ["ContentOwner"],
+      "decisionState": "candidate-deferred",
+      "targetDeploymentForms": ["Content Host"],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "nativeOwner": "Not established; loop, stop, callback, RTPC/state, bus and mixer owners remain unreviewed",
+      "stateHolder": "not established",
+      "targetAssembly": "Deferred optional host only after native-owner proof",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No API or stub.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Research-only; zero base growth.",
+      "sourceScopes": {"corePlatform": [], "gameBridge": [], "product": [], "qa": [], "compatibility": []}
+    },
+    {
+      "id": "gmcm-manager-ui",
+      "reviewDisposition": "Platform",
+      "physicalOwnershipCandidates": ["Platform"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["DTMAPI Runtime"],
+      "currentConsumers": ["DTMAPI.ZoomMod", "DTMAPI.DebugConsoleMod", "DTMAPI.MoreSavesMod", "Yuuka.DTMAPI.ActionSpeed", "Yuuka.DTMAPI.OneActionComplete", "Yuuka.DTMAPI.FishBreedingAssistant", "Yuuka.DTMAPI.AnimalHusbandryProgress", "DTMAPI.ChestLocatorEnhancerMod", "Yuuka.DTMAPI.AutoFishing", "DTMAPI.MoreEquipmentSlotsMod", "Yuuka.DTMAPI.ManboCardboardAudio"],
+      "realConsumerCount": 11,
+      "nativeOwner": "DTMAPI config registry, diagnostics snapshot and title settings UI host",
+      "stateHolder": "Core Manager model, ModConfigMenu registry and Bootstrap title UI",
+      "targetAssembly": "DTMAPI.Core + DTMAPI.ModConfigMenu + DTMAPI.BepInExBootstrap",
+      "targetMandatoryLoad": true,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Platform identity/status projection only; no gameplay API promotion.",
+      "hookAndLifetime": "Platform owns config/Manager lifecycle and player support rows, never product native behavior.",
+      "marginalPlan": "Retain Platform; future identity rows arrive atomically in G2.",
+      "sourceScopes": {
+        "corePlatform": ["src/DTMAPI.Core/Manager", "src/DTMAPI.ModConfigMenu", "src/DTMAPI.BepInExBootstrap/ReflectedTitleMenuSettingsUi.cs"],
+        "gameBridge": [],
+        "product": [],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "event-lifetime-kernel",
+      "reviewDisposition": "Platform",
+      "physicalOwnershipCandidates": ["Platform"],
+      "decisionState": "decided",
+      "targetDeploymentForms": ["DTMAPI Runtime"],
+      "currentConsumers": ["DTMAPI.ZoomMod", "DTMAPI.DebugConsoleMod", "DTMAPI.MoreSavesMod", "Yuuka.DTMAPI.ActionSpeed", "Yuuka.DTMAPI.OneActionComplete", "Yuuka.DTMAPI.FishBreedingAssistant", "Yuuka.DTMAPI.AnimalHusbandryProgress", "DTMAPI.ChestLocatorEnhancerMod", "Yuuka.DTMAPI.AutoFishing", "DTMAPI.MoreEquipmentSlotsMod", "DTMAPI.HookProbeMod"],
+      "realConsumerCount": 11,
+      "nativeOwner": "DTMAPI event publication, content generation, demand accounting, runtime boundary and owner cleanup",
+      "stateHolder": "Core owner/event/demand/generation ledgers and boundary slots",
+      "targetAssembly": "DTMAPI.Core; only proven shared-native adapters remain in GameBridge",
+      "targetMandatoryLoad": true,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Preserve generic Experimental event semantics; remove product-specific routes with products.",
+      "hookAndLifetime": "Platform owns thread/publication/owner cleanup; mixed GameBridge route files must split generic shell from product routes.",
+      "marginalPlan": "Retain generic Batch 5 kernel; zero product implementation growth.",
+      "sourceScopes": {
+        "corePlatform": ["src/DTMAPI.Core/Services/EventManager.cs", "src/DTMAPI.Core/Runtime/ContentRefreshGenerationService.cs", "src/DTMAPI.Core/Runtime/RuntimeBoundarySlot.cs", "src/DTMAPI.Core/Runtime/RuntimeDemandCoordinator.cs", "src/DTMAPI.Core/Runtime/ResourceLifecycleLedgerService.cs", "src/DTMAPI.Core/Runtime/HookStatusPublicationQueue.cs"],
+        "gameBridge": ["src/DTMAPI.GameBridge.DolocTown/Demand"],
+        "product": [],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "custom-entities",
+      "reviewDisposition": "blocked-retire-or-internalize",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "blocked-unresolved",
+      "targetDeploymentForms": [],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "nativeOwner": "Registry owner exists; animal/monster/projectile/attack/drone runtime creation owners are not established",
+      "stateHolder": "DTMAPI definition registry only; native runtime state intentionally absent",
+      "targetAssembly": "No admitted host; retire or internalize the speculative registry until a real optional ContentOwner is proven",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No silent removal; consumer scan and warning-bearing breaking boundary required.",
+      "hookAndLifetime": "No native creation Hook is admitted.",
+      "marginalPlan": "Freeze speculative expansion and plan retirement/internalization.",
+      "sourceScopes": {
+        "corePlatform": ["src/DTMAPI.Abstractions/CustomEntities.cs", "src/DTMAPI.Core/Services/CustomEntityRegistryService.cs", "src/DTMAPI.Core/Services/OwnerBoundCustomEntityApis.cs"],
+        "gameBridge": [],
+        "product": [],
+        "qa": [],
+        "compatibility": []
+      }
+    },
+    {
+      "id": "multiplayer",
+      "reviewDisposition": "deferred-independent-project",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "deferred-independent",
+      "targetDeploymentForms": [],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "nativeOwner": "No Doloc Town multiplayer model established",
+      "stateHolder": "not established",
+      "targetAssembly": "No Batch 6 assembly; any future multiplayer Platform is an independent reviewed project",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "No speculative API.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Outside Batch 6.",
+      "sourceScopes": {"corePlatform": [], "gameBridge": [], "product": [], "qa": [], "compatibility": []}
+    },
+    {
+      "id": "pets-and-vehicles",
+      "reviewDisposition": "deferred-unadjudicated",
+      "physicalOwnershipCandidates": [],
+      "decisionState": "deferred-unadjudicated",
+      "targetDeploymentForms": [],
+      "currentConsumers": [],
+      "realConsumerCount": 0,
+      "nativeOwner": "Pet and independent vehicle owners require new focused reviews; retired MotorVehicle evidence is historical only",
+      "stateHolder": "not established",
+      "targetAssembly": "No admitted assembly; future pet and vehicle products remain ProductNative unless a focused review proves another owner",
+      "targetMandatoryLoad": false,
+      "targetMandatoryRuntimeProductLocDeltaMax": 0,
+      "apiDelta": "Do not revive retired MotorVehicle API or preassign to CustomAnimals/GameBridge.",
+      "hookAndLifetime": "No implementation admitted.",
+      "marginalPlan": "Outside current migration admission.",
+      "sourceScopes": {"corePlatform": [], "gameBridge": [], "product": [], "qa": [], "compatibility": []}
+    }
+  ],
+  "batch5Classification": {
+    "sourceCommitRanges": [
+      "7ff75c4c^..9e31aae5",
+      "e5aaa964..653487b7463778c23e9b96aed9ef713364def22a"
+    ],
+    "rangeNote": "Union of the Batch 5 checkpoint-to-closure source/tooling ranges; excludes the intervening e5aaa964 reverse-baseline-only correction while retaining the shared test.ps1 entry point where Batch 5 also changed it.",
+    "rules": [
+      {
+        "id": "core-platform-kernel",
+        "classification": "Platform",
+        "pathPrefixes": ["src/DTMAPI.Core/"],
+        "targetAction": "Retain generic event, generation, boundary, demand accounting, registry and owner-cleanup mechanisms; split any product-specific branch."
+      },
+      {
+        "id": "product-source",
+        "classification": "ProductNative-or-product-policy",
+        "baselinePathPrefixes": ["first-party-mods/", "testmods/"],
+        "pathPrefixes": ["first-party-mods/", "products/first-party/", "author-sdk/samples/"],
+        "targetAction": "Keep policy with product; native code moves only after its Advanced admission."
+      },
+      {
+        "id": "optional-qa",
+        "classification": "QA",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown.QA/", "tests/"],
+        "targetAction": "Remain optional/test-only; product-native QA follows the admitted product."
+      },
+      {
+        "id": "frozen-compatibility",
+        "classification": "Compatibility",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Compatibility/"],
+        "targetAction": "No new product logic; optionalize and retire only after warning/consumer/version gates."
+      },
+      {
+        "id": "custom-animals-content-owner",
+        "classification": "ContentOwner",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Features/CustomAnimals/"],
+        "targetAction": "Target an optional Content Host under G7; do not mix species policy."
+      },
+      {
+        "id": "generic-owner-cleanup",
+        "classification": "Platform-SharedNative",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Features/OwnerCleanup/"],
+        "targetAction": "Retain generic participant/restore accounting while deleting product-specific cleanup branches with products."
+      },
+      {
+        "id": "product-feature-routes",
+        "classification": "ProductNative-transition",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Features/"],
+        "targetAction": "Move single-product implementation with each admitted product; explicit OwnerCleanup remains generic."
+      },
+      {
+        "id": "gamebridge-diagnostic-projection",
+        "classification": "Mixed-PlatformDiagnostic-ProductStatus",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Diagnostics/", "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs"],
+        "targetAction": "Retain generic bounded diagnostics; remove product status/probe branches with the owning product."
+      },
+      {
+        "id": "gamebridge-qa-host-seam",
+        "classification": "QA-seam",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/QaHost/"],
+        "targetAction": "Keep only the neutral optional-host seam; product scenario authority stays in the optional QA assembly."
+      },
+      {
+        "id": "mixed-gamebridge-shell",
+        "classification": "Mixed-Platform-SharedNative-ProductRoutes",
+        "pathPrefixes": ["src/DTMAPI.GameBridge.DolocTown/Demand/", "src/DTMAPI.GameBridge.DolocTown/Hooking/", "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge", "src/DTMAPI.GameBridge.DolocTown/OwnerBoundGameBridgeApis.cs", "src/DTMAPI.GameBridge.DolocTown/AuthorSessionReloadBridge.cs"],
+        "targetAction": "Retain only proven generic/shared shell and remove product routes during the owning migration."
+      },
+      {
+        "id": "batch5-tooling",
+        "classification": "QA-release-tooling",
+        "pathPrefixes": ["tools/scripts/"],
+        "targetAction": "Keep evidence/release tooling outside player Runtime; product-specific orchestrators follow product QA."
+      }
+    ]
+  },
+  "compatibilitySurfaces": [
+    {
+      "id": "legacy-fishing-public",
+      "symbols": ["IFishingAutomationApi", "FishingAutomationOptions"],
+      "knownTrackedConsumers": [],
+      "retainedArtifactConsumer": "Published AutoFishing 0.5.2 DLL, SHA-256 E573F8CA1989663B672AF481921E4C6131C061294402F654A4062844DC5CA7FA",
+      "plan": "Freeze through 0.5.5 with warning; optionalize executor; earliest removal 0.6.0 after zero-consumer rescan, migration guide and one published warning-bearing preview."
+    },
+    {
+      "id": "first-party-fishing-primitives",
+      "symbols": ["IFirstPartyFishingPrimitivesApi", "IFirstPartyFishingSession"],
+      "knownTrackedConsumers": ["first-party-mods/AutoFishingMod"],
+      "retainedArtifactConsumer": "none; internal friend surface",
+      "plan": "Remove only inside the admitted AutoFishing pilot after the G2 fixture, together with provider/facade/demand/tests."
+    },
+    {
+      "id": "camera-compatibility",
+      "symbols": ["ICameraZoomApi", "ICameraViewApi"],
+      "knownTrackedConsumers": [],
+      "retainedArtifactConsumer": "Published Zoom 0.4.2-dtmapi DLL, SHA-256 DFA74BDD3561A9E9647FEC01AB9B48F095826D2A752AE920566BE2C5063971B3",
+      "plan": "Keep the exact frozen MemberRefs behind the existing dormant Compatibility Host; the current Advanced Zoom product consumes neither API, and no removal or stability promotion is authorized.",
+      "baselineKnownTrackedConsumers": ["first-party-mods/ZoomMod"],
+      "baselineRetainedArtifactConsumer": "unknown outside retained scans",
+      "baselinePlan": "Keep compatibility while Zoom migration is blocked; no removal or stability promotion without a focused consumer/native-owner Update."
+    },
+    {
+      "id": "lamp-disabled-shell",
+      "symbols": ["ILampControlApi"],
+      "knownTrackedConsumers": [],
+      "retainedArtifactConsumer": "retained ABI requires four types and 92 signatures",
+      "plan": "Keep disabled shell through 0.5.5; earliest removal 0.6.0 after warning cycle and renewed consumer scan."
+    },
+    {
+      "id": "product-mirror-apis",
+      "symbols": ["IActionCompletionApi", "IActionSpeedApi", "ISaveSlotsApi", "IChestLocatorEnhancerApi", "IItemTooltipApi", "IAnimalViewerApi", "IStrongPlantingGunApi", "ICropHarvestingApi", "IEquipmentSlotsApi", "IMachineProductionApi", "IAudioReplacementApi"],
+      "knownTrackedConsumers": ["author-sdk/samples/api-demand/AutoHarvest", "tests/mod-fixtures/qa/CropHarvesting", "products/first-party/ManboCardboardAudio"],
+      "baselineKnownTrackedConsumers": ["testmods/OneActionCompleteMod", "testmods/ActionSpeedMod", "testmods/MoreSavesMod", "testmods/ChestLocatorEnhancerMod", "testmods/FishBreedingAssistantMod", "testmods/AnimalHusbandryProgressMod", "testmods/StrongPlantingGunMod", "testmods/AutoHarvestMod", "testmods/CropHarvestingQaMod", "testmods/MoreEquipmentSlotsMod", "testmods/MineMod", "testmods/ManboCardboardAudioMod"],
+      "retainedArtifactConsumer": "tracked product Catalog plus retained public ABI audit; external universe is not provably closed",
+      "plan": "No Phase 0 deletion. Each migration preserves ABI or records a warning-bearing breaking boundary and fresh external scan."
+    },
+    {
+      "id": "custom-entity-speculative-public",
+      "symbols": ["ICustomAnimalApi", "ICustomMonsterApi", "ICustomAttackApi", "ICustomDroneApi"],
+      "knownTrackedConsumers": [],
+      "retainedArtifactConsumer": "none known; tests exercise registry and blocked runtime verbs",
+      "plan": "Freeze expansion; retire/internalize only at an explicit breaking boundary after warning and consumer scan."
+    }
+  ]
+}

@@ -1,0 +1,1933 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "DTMAPI.Batch0",
+  "statusDate": "2026-08-04",
+  "authority": {
+    "purpose": "Authoritative multi-axis identity and release-boundary catalog. It records facts and blocks drift; exact upload authorization must originate in a linked Update and is only enforced here through bounded mutation entrypoints.",
+    "constructionMap": "docs/reviews/code/2026/20260712-0003-dtmapi-full-boundary-audit.md",
+    "startingBaseline": "docs/reviews/code/2026/20260713-0014-workshop-subscription-and-prerelease-baseline-review.md",
+    "productFactReview": "docs/reviews/code/2026/20260713-0004-first-party-product-catalog-fact-review.md",
+    "compatibilityReview": "docs/reviews/api/2026/20260712-0002-workshop-055-binary-compatibility-review.md",
+    "animalPackReview": "docs/reviews/code/2026/20260713-0009-first-party-animal-pack-product-boundary-review.md",
+    "publicApiMatrix": "docs/api/public-api-matrix.md",
+    "protectedBehaviorContracts": "tools/release/contracts/protected-behavior-contracts.json",
+    "publicWorkshopSnapshot": "tools/release/baselines/workshop-public-metadata-20260728.json"
+  },
+  "releaseStop": {
+    "state": "ActiveWithExactExistingWorkshopUpdateExceptions",
+    "blockedActions": [
+      "NewWorkshopUpload",
+      "ExistingWorkshopUpdate",
+      "MassVersionEdit",
+      "UniqueIdMove",
+      "WorkshopIdReassignment",
+      "OfficialFolderMove"
+    ],
+    "releaseTarget": "DTMAPI 0.5.5",
+    "releaseTargetExists": true,
+    "authorizationUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md",
+    "treeDigestAlgorithm": "DTMAPI-Retained-SHA256SUMS-v1",
+    "publicMutationEntrypoints": [
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "runtime",
+        "workshopId": "3743016467",
+        "version": "0.5.5",
+        "officialFolder": "DTMAPI",
+        "treeSha256": "9e25425ed4eade8682981301c7a473c4fcc846a8d571efbba2d9bdaef249c1bd"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "auto-fishing",
+        "workshopId": "3743799721",
+        "version": "1.0.0",
+        "officialFolder": "Yuuka_DTMAPI_AutoFishing",
+        "treeSha256": "48d8bc81272dfd94daf5b8c90ee7035ec581a2dcaffc7071a75291909483585d"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "action-speed",
+        "workshopId": "3742763309",
+        "version": "1.0.0",
+        "officialFolder": "Yuuka_DTMAPI_ActionSpeed",
+        "treeSha256": "9189ec93b3bb32a8d952b2c4995ceec6475a7a3a8115604794739fb08e68e9c1"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "manbo-cardboard-audio",
+        "workshopId": "3746319981",
+        "version": "0.1.0-dtmapi",
+        "officialFolder": "Yuuka_DTMAPI_ManboCardboardAudio",
+        "treeSha256": "5468fe3abb7d89cfe6dcc86ddd033f1f3826a2a52cafce80fe78809140151de0"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "fish-roe-info",
+        "workshopId": "3742763706",
+        "version": "1.0.0",
+        "officialFolder": "Yuuka_DTMAPI_FishBreedingAssistant",
+        "treeSha256": "718f665ed3ad4aa055803c5e8172f4355337092301bbf6494fab498da6c823d6"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "animal-husbandry-progress",
+        "workshopId": "3742763843",
+        "version": "1.0.0",
+        "officialFolder": "Yuuka_DTMAPI_AnimalHusbandryProgress",
+        "treeSha256": "797ffffab3f373f38b2241014f5cbf9664192e62d81ed5d68920d985c8dfc5fd"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "zoom",
+        "workshopId": "3742717440",
+        "version": "1.0.0",
+        "officialFolder": "DTMAPI_Zoom",
+        "treeSha256": "b2c8ec6356dd83407141fcf288a36100f09518ce22406d71b08f96fbe2b98933"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "y-console",
+        "workshopId": "3742714442",
+        "version": "1.0.0",
+        "officialFolder": "DTMAPI_YKeyConsole",
+        "treeSha256": "a45557882add7682c014599fd7bfd2ead4c9d53e1ec1980de4ce98deacb09125"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "more-saves",
+        "workshopId": "3742763050",
+        "version": "1.0.0",
+        "officialFolder": "DTMAPI_MoreSaves",
+        "treeSha256": "90287664730918ec408ac22108445c0a49d86b0f7c89309634bd71cf6ef7cf9d"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "one-action-complete",
+        "workshopId": "3742763540",
+        "version": "1.0.0",
+        "officialFolder": "Yuuka_DTMAPI_OneActionComplete",
+        "treeSha256": "cbdf887206740ff51e86110d30ecdc3cfc6ba6f6679033e7bf7d859fed8e2cb1"
+      },
+      {
+        "action": "ExistingWorkshopUpdate",
+        "catalogId": "chest-locator-enhancer",
+        "workshopId": "3742765514",
+        "version": "1.0.0",
+        "officialFolder": "DTMAPI_ChestLocatorEnhancer",
+        "treeSha256": "470530ddd55e2561220c8d59808eec6c8ce3fe6330b33d806a97646f8464022a"
+      }
+    ],
+    "explicitlyExcludedExistingWorkshopUpdates": [
+      {
+        "catalogId": "more-equipment-slots",
+        "workshopId": "3744059735",
+        "retainedVersion": "0.3.1-dtmapi",
+        "reason": "The ProductNative 1.0.0 migration remains publication-deferred; keep the exact retained Workshop package."
+      }
+    ],
+    "note": "The global stop remains active for new items, identity moves, mass edits and every non-listed Workshop update. Update 20260801-0002 authorizes only the eleven exact existing-item trees above."
+  },
+  "runtime": {
+    "catalogId": "runtime",
+    "uniqueId": "DTMAPI.Runtime",
+    "workshopId": "3743016467",
+    "steamAppId": "2285550",
+    "publicTitle": "DTMAPI",
+    "publishedBaseline": {
+      "releaseVersion": "0.5.2-alpha",
+      "binaryFileVersion": "0.5.2.0",
+      "assemblyCompatibilityIdentity": "0.5.2.0",
+      "retainedFileCount": 46,
+      "retainedBytes": 4319645,
+      "retainedTreeSha256": "ac67aef01109c9558dde5c780c1c64127c3c8e25bf9f70b1eb30dbc9a1408d25",
+      "state": "FrozenRecordWithOwnedPrivateArchive",
+      "sourceMutability": "SteamManagedMutableSubscriptionCache",
+      "immutableArchiveState": "OwnedPrivateNonDistributionArchiveVerified",
+      "immutableArchiveLocationContract": "SiblingOfRepository/DTMAPI-retained-artifacts/runtime/DTMAPI-0.5.2-alpha-workshop-3743016467.zip",
+      "immutableArchiveEnvironmentOverride": "DTMAPI_RUNTIME_ROLLBACK_ARCHIVE",
+      "immutableArchiveBytes": 1934142,
+      "immutableArchiveSha256": "095533cb256e19381d1c51018258b239d53aa01accafa575bd24bdb93e9c4ac6",
+      "immutableArchivePayloadRoot": "payload/",
+      "immutableArchiveManifest": "SHA256SUMS",
+      "immutableArchiveVerificationScript": "tools/scripts/freeze-runtime-rollback-archive.ps1",
+      "immutableArchiveRetention": "Retain outside the source/distribution tree through the 0.5.5 rollback window; remove only through an explicit post-release retention decision."
+    },
+    "currentSourceBaseline": {
+      "releaseVersion": "0.6.1",
+      "binaryFileVersion": "0.6.1.0",
+      "assemblyCompatibilityIdentity": "0.5.3.0",
+      "candidateInfoJsonBytes": 9192,
+      "candidateInfoJsonSha256": "5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171",
+      "candidateInfoJsonState": "DeterministicSourceProjectionNotPublishedArtifact",
+      "state": "ReleaseCandidateSourceAuthority"
+    },
+    "currentPublishedArtifact": {
+      "releaseVersion": "0.5.5",
+      "binaryFileVersion": "0.5.5.0",
+      "assemblyCompatibilityIdentity": "0.5.3.0",
+      "workshopManifestId": "1475234683223104244",
+      "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+      "treeDigestNormalization": "Exclude subscription-generated Content/.tools/bepinex/extract/**. Sort files by forward-slash relative path using StringComparer.Ordinal. Each row is lowercase file SHA-256, two spaces, then relative path. Join rows with LF and no final LF; hash UTF-8 without BOM using SHA-256.",
+      "steamDeliveredFileCount": 31,
+      "steamDeliveredBytes": 71593719,
+      "steamDeliveredTreeSha256": "d7275bccc06207929de4ea62c8976bf20723ed33dd81666149a35289d29d5ebf",
+      "playerPayloadExclusion": "workshop.json",
+      "playerPayloadFileCount": 30,
+      "playerPayloadBytes": 71593686,
+      "playerPayloadTreeSha256": "571793091b47d5d2db909059b17c478bdebd60cc53a262bf88ff00e9e4becd63",
+      "infoJsonBytes": 9192,
+      "infoJsonSha256": "4ab3d471747a7e2ec37bda01884a604dcc63b0b74b764c6d34412b4dae905144",
+      "workshopControlFileBytes": 33,
+      "workshopControlFileSha256": "d6d9206a4a58b88cc985ee72832d57f226ff58767ef6e606a2731b0d604ef98d",
+      "nativeNormalizationOwner": "DolocTown.Config.ModManager.TryMigrateData/EnsureLocalizedManifestField",
+      "owningUpdate": "docs/updates/2026/20260801-0003-runtime-published-metadata-authority.md",
+      "state": "SteamPublishedObservedExact"
+    },
+    "futureTarget": {
+      "releaseVersion": "0.6.1",
+      "binaryFileVersion": "0.6.1.0",
+      "assemblyCompatibilityIdentity": "0.5.3.0",
+      "state": "NoArtifact"
+    }
+  },
+  "publishedProductRollbackArchives": {
+    "state": "OwnedPrivateNonDistributionDirectoriesVerified",
+    "locationContract": "SiblingOfRepository/DTMAPI-retained-artifacts/products",
+    "environmentOverride": "DTMAPI_PRODUCT_ROLLBACK_ARCHIVE_ROOT",
+    "payloadRoot": "payload/",
+    "manifest": "SHA256SUMS",
+    "verificationScript": "tools/scripts/freeze-product-rollback-archives.ps1",
+    "retention": "Retain outside the source/distribution tree through every 0.5.5 product-wave rollback window; remove only through an explicit post-release retention decision.",
+    "normalization": "Rows follow catalogIds order. CatalogID|WorkshopID|PublishedVersion|FileCount|Bytes|TreeSha256|ArchiveSubdirectory. Join with LF; UTF-8; SHA-256.",
+    "rowCount": 10,
+    "sha256": "7330c7bb8a42934a81a69be985f92d0999b22687d979e9edf6cbe1402087e779",
+    "catalogIds": [
+      "zoom",
+      "y-console",
+      "more-saves",
+      "action-speed",
+      "one-action-complete",
+      "fish-roe-info",
+      "animal-husbandry-progress",
+      "chest-locator-enhancer",
+      "auto-fishing",
+      "more-equipment-slots"
+    ]
+  },
+  "retainedPublishedArtifactFreeze": {
+    "normalization": "Runtime row then PublishedProduct rows sorted by catalogId. Runtime: runtime|WorkshopID|PublishedVersion|n/a|FileCount|Bytes|TreeSha256. Product: CatalogID|WorkshopID|PublishedVersion|PublishedMinimumDTMApiVersion|FileCount|Bytes|TreeSha256. Join with LF, UTF-8, SHA-256.",
+    "rowCount": 12,
+    "sha256": "2b5d9974a7e3d321c70442fd25457da9d1a91b548360e0f1cd7ffa2dd1c937ff"
+  },
+  "publicIdentityPathFreeze": {
+    "normalization": "Runtime row freezes runtime identity, public artifact facts, frozen-record state, mutable-source state, immutable-archive state/location/override/bytes/SHA/payload/manifest/verification/retention. PublishedProduct rows sort by CatalogID and freeze all role/type/distribution/eligibility/maturity, UniqueID, WorkshopID, official folder, package/DLL, source/project/manifest/version, published version/minimum, config/save/content/legacy paths, extra legacy lanes, release lane, protected contract, and retained artifact fields. String arrays sort ordinal and join with comma; extra lanes use lane~path~enabledBy~state. Join rows with LF; UTF-8; SHA-256.",
+    "rowCount": 12,
+    "sha256": "129476ff88a2cc3b408c8a8a7ca7d2927a7cf224686af3bc41dee1c3cd9e21d7"
+  },
+  "protectedBehaviorContractFreeze": {
+    "path": "tools/release/contracts/protected-behavior-contracts.json",
+    "normalization": "Read UTF-8 text, normalize CRLF and CR to LF, trim trailing whitespace from the complete file, then SHA-256.",
+    "sha256": "bd75f2a6e1dfbbcfeca38dad59a8faf5d11c04d304a4b0ab81bf1b1de7eefaf3"
+  },
+  "publicApiFreeze": {
+    "matrixPath": "docs/api/public-api-matrix.md",
+      "statusDate": "2026-07-27",
+    "normalization": "For each Stability Matrix data row: Area|API / Contract|Status; preserve Markdown cell text, trim cells, join rows with LF, encode UTF-8, SHA-256.",
+    "rowCount": 48,
+    "sha256": "c5e652f2b1d023cc0f4c158355ba14d3fe2e31aa825bd5285d47c0311655845d",
+    "abiPolicy": "DTMAPI 0.6.1 removes no existing public ABI.",
+    "knownBlocker": "The exact retained AutoFishing DLL historically loaded without recompilation under Unity Mono, resolved the restored StopOnManualMove setter, and reached Entry, warning, Configure, enable/disable, and clean exit in GAME-SMOKE/20260721-161256; the new Advanced product does not consume this compatibility API, and neither that historical pass nor the current retained-consumer Release gate authorizes ABI removal or substitutes for 0.6 final runtime/game acceptance.",
+    "knownBlockerState": "RetainedBinaryCompatibilityPassed",
+    "retainedConsumerCount": 15,
+    "retainedFirstPartyConsumerCount": 11,
+    "retainedExternalConsumerCount": 4,
+    "retainedBinaryAudit": "tools/release/baselines/retained-runtime-052-public-api-audit-20260728.json",
+    "abiSurfaceGate": "Every Release validates the tracked synthetic AutoFishing/Lamp type-surface contract against the exact built candidate as a fast private-data-independent check; it uses no private artifact and proves only the frozen synthetic contract, so it cannot replace the mandatory real retained-consumer gate.",
+    "trackedSyntheticAbiContract": "tools/release/contracts/retained-abi-synthetic-contract.json",
+    "privateAbiConsistencyMode": "ReleaseRequiredAutoResolveWithAllOrNonePathOverrides",
+    "privateAbiConsistencyGate": "Every Release auto-resolves the retained 0.5.2 baseline, AutoFishing DLL, eleven first-party consumers and four exact external consumer DLLs from the sibling retained-artifact authority. All three DTMAPI_RETAINED_* path variables may override that authority only when supplied together. Missing or incomplete inputs fail; a synthetic pass never substitutes for this mandatory real-binary consistency layer."
+  },
+  "playerRuntimePackageInvariant": {
+    "productionAssemblies": [
+      "DTMAPI.BepInExBootstrap.dll",
+      "DTMAPI.Abstractions.dll",
+      "DTMAPI.Core.dll",
+      "DTMAPI.GameBridge.DolocTown.dll",
+      "DTMAPI.ModConfigMenu.dll"
+    ],
+    "productionAssemblyCount": 5,
+    "bepInExEntryAssembly": "DTMAPI.BepInExBootstrap.dll",
+    "ordinaryModsUnderBepInExPlugins": false,
+    "optionalComponents": [
+      {
+        "id": "gamebridge-compatibility-host",
+        "distribution": "dormant-shipped",
+        "loadPolicy": "first-frozen-abi-call",
+        "relativePath": "DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll",
+        "assemblyName": "DTMAPI.GameBridge.DolocTown.Compatibility",
+        "assemblyVersion": "0.5.3.0",
+        "sourceProject": "src/DTMAPI.GameBridge.DolocTown.Compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.csproj",
+        "targetFramework": "netstandard2.0",
+        "isFrameworkComponent": true,
+        "isMod": false,
+        "isBepInExPlugin": false,
+        "includedInDownloadPackage": true,
+        "defaultLoadState": "dormant"
+      }
+    ],
+    "separateQaAssemblies": [],
+    "qaExtractionState": "CompletedOptionalHostOwnershipBatch5Local11NoQaVerifiedPublished11AndBoundedPerformanceAccepted",
+    "ordinaryNoQaAcceptance": {
+      "batch4Admission": {
+        "status": "passed-historical-exact-tree",
+        "receipt": "docs/debug/evidence/GAME-SMOKE/20260718-005546/result.json"
+      },
+      "batch5CurrentTree": {
+        "status": "passed-current-local11-exact-tree",
+        "receipt": "docs/debug/evidence/GAME-SMOKE/20260719-214048/result.json",
+        "requiredCurrentReceiptGate": "NoQaBehaviorCompletedBeforeDeadline",
+        "supersededPassingReceipts": [
+          "docs/debug/evidence/GAME-SMOKE/20260719-034102/result.json"
+        ],
+        "supersededFailedReceipts": [
+          "docs/debug/evidence/GAME-SMOKE/20260718-190150/result.json",
+          "docs/debug/evidence/GAME-SMOKE/20260718-192244/result.json"
+        ],
+        "infrastructureTimeoutReceipts": [
+          "docs/debug/evidence/GAME-SMOKE/20260719-130406/result.json",
+          "docs/debug/evidence/GAME-SMOKE/20260719-212913/result.json"
+        ]
+      }
+    },
+    "performanceAcceptance": {
+      "claim": "bounded-structural-lifecycle-trend",
+      "quantifiedBudgetStatus": "not-established",
+      "allocationMeasurement": {
+        "status": "blocked-allocation-counter-nonfunctional",
+        "numericPerUnitBudgetEstablished": false,
+        "numericThresholds": []
+      },
+      "requiredMetricCategories": [
+        "Mono",
+        "Unity",
+        "WindowsProcess",
+        "GcCollections",
+        "Owner",
+        "Event",
+        "Input",
+        "Api",
+        "Resource",
+        "Hook",
+        "Demand"
+      ],
+      "noDemand": {
+        "status": "accepted-real-unity-optional-work-silence",
+        "receipt": "docs/debug/evidence/BATCH5-NO-DEMAND/formal-final-qa-vitals-20260719-2000/result.json",
+        "smokeReceipt": "docs/debug/evidence/GAME-SMOKE/20260719-195806/result.json",
+        "saveSlot": 3,
+        "warmupFrames": 300,
+        "measurementFrames": 10000,
+        "forcedGc": false,
+        "requiredZeroDeltaMetrics": [
+          "ActiveUpdaterMembershipSnapshotRebuilds",
+          "AudioPendingEntryVisits",
+          "AudioRetainedCallbackWork",
+          "CameraEnvironmentResets",
+          "ContentQueryCandidateBuilds",
+          "CustomAnimalDefinitionCandidateBuilds",
+          "CustomAnimalsRetainedCallbackWork",
+          "EventArgsCreated",
+          "EventQueueDiagnosticRevision",
+          "EventSnapshotRebuilds",
+          "FishingNativeFrameRefreshes",
+          "HookStatusQueueDiagnosticRevision",
+          "OptionalDirectoryEnumerations",
+          "OptionalFeatureFileStatusCalls",
+          "OptionalHookInstallRequests",
+          "OptionalNativeUpdaterInvocations",
+          "OptionalPerFeatureProjectionBuilds",
+          "OptionalReflectionObjectSearches",
+          "OptionalRetainedCallbackWork"
+        ]
+      },
+      "actionSpeed": {
+        "status": "accepted-exact-24-child-set",
+        "receipt": "docs/debug/evidence/BATCH5-GC-LADDER/20260719-044157-70ce39e6/ladder-plan.json",
+        "parentPlanStatus": "failed",
+        "parentFailureScope": "legacy-autofishing-continuation",
+        "saveSlot": 3,
+        "levels": [
+          "L0",
+          "L1",
+          "L2",
+          "L3",
+          "L4",
+          "L5"
+        ],
+        "workloads": [
+          "Tool",
+          "Interact",
+          "Eat",
+          "ContinuousUse"
+        ],
+        "acceptedStageCount": 24,
+        "measureSeconds": 600,
+        "sampleSeconds": 30,
+        "sampleCount": 21,
+        "forcedGc": false
+      },
+      "autoFishing": {
+        "status": "accepted-completed-plan",
+        "receipt": "docs/debug/evidence/BATCH5-GC-LADDER/formal-autofishing-vitals250-final-20260719-2014/ladder-plan.json",
+        "saveSlot": 5,
+        "levels": [
+          "L0",
+          "L1",
+          "L2",
+          "L3",
+          "L4",
+          "L5"
+        ],
+        "acceptedStageCount": 6,
+        "measureSeconds": 600,
+        "sampleSeconds": 30,
+        "sampleCount": 21,
+        "forcedGc": false
+      }
+    },
+    "currentDebt": "No Batch 4 admission debt remains after G9. Schema-5 ownership enforcement covers 287 production source files, 4 neutral QA-host files totaling 687 physical lines, 25 contracts split as 14 forbidden-behavior plus 5 symbol-ownership plus 6 consumer contracts, 149 forbidden-pattern negative checks, 20 lifecycle contracts, 49 negative samples, 4 built IL artifacts and 12 meta-negative inventory cases. The selector is the canonical Catalog PublishedProduct/PublicWorkshop set of exactly 11 products under published-product-player-evidence-policy; production roots close over 5 default-loaded Runtime roots, 1 dormant-shipped optional Runtime component root, and 11 product roots, consumer roots over src/tests plus the same 11 product roots, all symbol contracts scan public roots unconditionally, and public roots are forbidden from consumer allowedRoots. The twelve named semantic cases, one Catalog-projection case and six receipt-set rejection cases execute and exact-set match their declarations. IL remains limited to four Runtime/optional-QA boundary artifacts rather than claiming all product DLLs. Ordinary no-QA Y-console, AnimalViewer and EquipmentSlots behavior has a historical Batch 4 exact-tree pass in retained receipt 20260718-005546. The current Batch 5 Local11 exact-tree route passed receipt 20260719-214048 with the authoritative NoQaBehaviorCompletedBeforeDeadline gate, two causal AnimalViewer renders, input provenance, native close, exact candidate Runtime binding, restoration and clean exit; superseded passing receipt 20260719-034102 remains historical. Failed product receipts 20260718-190150 and 20260718-192244 remain superseded negative evidence and are not deleted. Receipts 20260719-130406 and 20260719-212913 are classified separately as infrastructure timeout/operator-handshake timeout before SaveLoaded and are not product failures. Published11 enabled and disabled cold-run gates passed in 20260719-212635 and 20260719-212758. The exact candidate passed the receipt-bound Workshop package audit, a warmed real-Unity 10,000-frame no-optional-demand gate, the preserved 24-stage ActionSpeed formal ladder, the six-stage fifth-save AutoFishing formal ladder, and the Candidate11 byte-bound source transaction. Batch 5 refactor implementation is verified at its defined acceptance boundary only as bounded structural, lifecycle, and observed-trend acceptance. Quantified memory/GC and runtime per-unit allocation budgets are not established because the formal allocation counter was nonfunctional. ISSUE-010/ISSUE-011 remain open for the broader Unity/Mono native crash class; the bounded Batch 5 evidence does not claim that every long-session crash is solved.",
+    "semanticBoundary": {
+      "schemaVersion": 5,
+      "productionSourceFiles": 287,
+      "neutralQaHostFiles": 4,
+      "neutralQaHostPhysicalLines": 687,
+      "contractCount": 25,
+      "forbiddenBehaviorContracts": 14,
+      "symbolOwnershipContracts": 5,
+      "consumerContracts": 6,
+      "forbiddenPatternNegativeCoverage": 149,
+      "lifecycleContracts": 20,
+      "negativeSamples": 49,
+      "builtIlArtifacts": 4,
+      "metaNegativeCases": 12
+    },
+    "catalogValidationScope": "SourceProjectionPlusOptionalBuiltArtifact",
+    "actualArtifactGate": "RequiredAtEveryCleanReleaseBuild",
+    "playerDoctor": {
+      "executable": "dtmapi-player-doctor.exe",
+      "distribution": "SeparateOptInSupportTool",
+      "packageRoot": "",
+      "installedRoot": "DTMAPI/tools/player-doctor",
+      "normalRuntimePackageIncluded": false,
+      "normalRuntimeInstallRequired": false,
+      "gameLoadedAssembly": false,
+      "authority": "ReadOnlyDiagnosticsOnly",
+      "offlineEntryPoints": [],
+      "runtimeInvocation": "OnlyWhenSeparatelyInstalled",
+      "unknownArtifactPolicy": "NeverLoadMoveDeleteAdoptEnableDisableOrPatch"
+    },
+    "forbiddenPlayerPayloadEntries": [
+      "DTMAPI.GameBridge.DolocTown.QA.dll",
+      "DTMAPI.GameBridge.DolocTown.QA.pdb",
+      "DTMAPI.Smoke.dll",
+      "DTMAPI.Tests.dll",
+      "qa-host/",
+      "qa-host-activation.json",
+      "qa-settings.json",
+      "smoke-settings.json",
+      "ordinary-mod DLL under BepInEx/plugins"
+    ]
+  },
+  "pathConventions": {
+    "runtimePluginRoot": "BepInEx/plugins/DTMAPI",
+    "ordinaryOfficialPackageRoot": "MODS/<OfficialFolder>",
+    "ordinaryDtmApiContentRoot": "MODS/<OfficialFolder>/Content/DTMAPI",
+    "workshopSubscriptionRoot": "<SteamLibrary>/steamapps/workshop/content/2285550/<WorkshopID>",
+    "workshopStagingRoot": "dist/workshop-packages/<PackageName>",
+    "codeModManifest": "Content/DTMAPI/manifest.json",
+    "codeModDll": "Content/DTMAPI/<PackageDll>",
+    "canonicalConfig": "DTMAPI/config/<UniqueID>.json",
+    "observedLegacyConfigResiduePolicy": "Observed old filenames are not aliases consumed by current source and do not expand the canonical config contract.",
+    "customAnimals": "Content/DTMAPI/custom-animals.json",
+    "audioReplacements": "Content/DTMAPI/audio-replacements.json"
+  },
+  "allowedValues": {
+    "role": [
+      "PublishedProduct",
+      "PlannedProduct",
+      "Prototype",
+      "PrototypeInput",
+      "ApiDemandSample",
+      "QaFixture",
+      "Example",
+      "NegativeFixture",
+      "CompatibilityComponent",
+      "RetiredResearch",
+      "LegacyExternal"
+    ],
+    "productType": [
+      "FunctionalCodeMod",
+      "Diagnostic",
+      "OfficialJsonContent",
+      "AdvancedAssetBundle",
+      "Fixture",
+      "InternalAdapter",
+      "CompatibilityArtifact",
+      "RetiredResearch"
+    ],
+    "distributionState": [
+      "PublicWorkshop",
+      "LocalDeveloper",
+      "None",
+      "LegacyExternal"
+    ],
+    "releaseEligibility": [
+      "RebuildBlocked",
+      "PrototypeBlocked",
+      "NeverPublish",
+      "CompatibilityOnly"
+    ],
+    "maturity": [
+      "ProtectedCurrent",
+      "RebuildPending",
+      "Experimental",
+      "Prototype",
+      "Retired",
+      "Frozen",
+      "Obsolete"
+    ]
+  },
+  "products": [
+    {
+      "catalogId": "zoom",
+      "displayName": "DTMAPI Zoom",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "DTMAPI.ZoomMod",
+      "workshopId": "3742717440",
+      "officialFolder": "DTMAPI_Zoom",
+      "packageName": "DTMAPI-Zoom",
+      "packageDll": "DTMAPI.Zoom.dll",
+      "sourceRoot": "products/first-party/Zoom",
+      "productionSourceRoot": "products/first-party/Zoom/src",
+      "sourceManifest": "products/first-party/Zoom/manifest.json",
+      "project": "DTMAPI.Zoom",
+      "sourceDll": "DTMAPI.Zoom.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-zoom-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.zoommod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraDiagnosticsService.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "ZoomNativeRuntime",
+          "ZoomHookInstaller",
+          "ZoomCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace DTMAPI.Zoom"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/Camera",
+          "allowedProductIdentityToken": "DTMAPI.ZoomMod",
+          "requiredFrozenContractToken": "ICameraViewApi"
+        }
+      },
+      "publishedVersion": "0.4.2-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.ZoomMod.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "protectedBehaviorContractId": "zoom-current-behavior",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "5286680386495525564",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 10,
+        "steamDeliveredBytes": 483303,
+        "steamDeliveredTreeSha256": "b2c8ec6356dd83407141fcf288a36100f09518ce22406d71b08f96fbe2b98933",
+        "entryDllBytes": 34304,
+        "entryDllSha256": "8539ec68b299c16095180bbf61f2fb6b8335f8915bbb78726ec01b120b11cd7e",
+        "steamTimeUpdatedUtc": "2026-08-01T12:12:33Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 463988, "treeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef", "archiveSubdirectory": "zoom-0.4.2-dtmapi-workshop-3742717440" }
+    },
+    {
+      "catalogId": "y-console",
+      "displayName": "Y Key Console",
+      "role": "PublishedProduct",
+      "productType": "Diagnostic",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.DebugConsoleMod",
+      "workshopId": "3742714442",
+      "officialFolder": "DTMAPI_YKeyConsole",
+      "packageName": "DTMAPI-YKeyConsole",
+      "packageDll": "DTMAPI.DebugConsole.dll",
+      "sourceRoot": "products/first-party/DebugConsole",
+      "productionSourceRoot": "products/first-party/DebugConsole/src",
+      "sourceManifest": "products/first-party/DebugConsole/manifest.json",
+      "project": "DTMAPI.DebugConsole",
+      "sourceDll": "DTMAPI.DebugConsole.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-24456188-debugconsole-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.debugconsolemod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.BepInExBootstrap",
+          "src/DTMAPI.GameBridge.DolocTown",
+          "src/DTMAPI.GameBridge.DolocTown.Compatibility"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "ReflectedDebugConsoleUi",
+          "debugConsoleUi?.Update"
+        ],
+        "forbiddenMandatoryTokens": [
+          "new ReflectedDebugConsoleUi",
+          "namespace DTMAPI.BepInExBootstrap.DebugConsole"
+        ],
+        "forbiddenMandatoryOutsideCompatibilitySymbols": [
+          "DebugConsoleUi",
+          "DebugConsoleCompatibilityService",
+          "LegacyDebugActionAdapter",
+          "CompatibilityDebugActionService",
+          "DebugConsoleNativeActions",
+          "DebugConsoleCreativeHooks"
+        ],
+        "forbiddenMandatoryOutsideCompatibilityTokens": [
+          "Unity UI Canvas + private action allowlist"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown.Compatibility",
+          "allowedProductIdentityToken": "DebugConsoleCompatibilityService",
+          "requiredFrozenContractToken": "IDebugConsoleApi"
+        }
+      },
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.6.0",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.DebugConsoleMod.json",
+      "contentSidecars": ["Content/item_tbitem.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "additionalLegacyInstallLanes": [
+        {
+          "lane": "LooseDebugSmoke",
+          "path": "Mods/DTMAPI.DebugConsoleMod",
+          "enabledBy": "install-to-game.ps1 -IncludeDebugConsoleMod",
+          "state": "DuplicateShadowRiskDoNotCombineWithOfficialPackage"
+        }
+      ],
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "4587382938519822005",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 11,
+        "steamDeliveredBytes": 478488,
+        "steamDeliveredTreeSha256": "a45557882add7682c014599fd7bfd2ead4c9d53e1ec1980de4ce98deacb09125",
+        "entryDllBytes": 175616,
+        "entryDllSha256": "102e616c598bd4576c37014e7974c6934ad552cf2208b1b7d3b49d24fc6180ff",
+        "steamTimeUpdatedUtc": "2026-08-01T12:12:20Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 10, "bytes": 303759, "treeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60", "entryDll": "DTMAPI.YKeyConsole.dll", "entryDllSha256": "e5a34963c0b66d6168104af27db849d707ee644f07917d8274868f8b8299b41e", "archiveSubdirectory": "y-console-0.3.1-dtmapi-workshop-3742714442" }
+    },
+    {
+      "catalogId": "more-saves",
+      "displayName": "DTMAPI More Saves",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "DTMAPI.MoreSavesMod",
+      "workshopId": "3742763050",
+      "officialFolder": "DTMAPI_MoreSaves",
+      "packageName": "DTMAPI-MoreSaves",
+      "packageDll": "DTMAPI.MoreSaves.dll",
+      "sourceRoot": "products/first-party/MoreSaves",
+      "productionSourceRoot": "products/first-party/MoreSaves/src",
+      "sourceManifest": "products/first-party/MoreSaves/manifest.json",
+      "project": "DTMAPI.MoreSaves",
+      "sourceDll": "DTMAPI.MoreSaves.dll",
+      "sourceVersion": "1.0.1",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-24456188-moresaves-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.moresavesmod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/SaveSlots/SaveSlotsService.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "SaveSlotsPanelPagingState",
+          "SaveSlotsPagerActionBinder",
+          "ApplyOfficialSavePanelPagingFromUiState",
+          "EnsureOfficialSavePanelPageForSelection"
+        ],
+        "forbiddenMandatoryTokens": [
+          "GameDataUiStateShowPostfix",
+          "namespace DTMAPI.MoreSaves"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/SaveSlots",
+          "allowedProductIdentityToken": "DTMAPI.MoreSavesMod",
+          "requiredFrozenContractToken": "ISaveSlotsApi"
+        }
+      },
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.1",
+      "targetMinimumDtmApiVersion": "0.6.0",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.MoreSavesMod.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "protectedBehaviorContractId": "more-saves-current-behavior",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "6595190771075205425",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 8,
+        "steamDeliveredBytes": 21723,
+        "steamDeliveredTreeSha256": "90287664730918ec408ac22108445c0a49d86b0f7c89309634bd71cf6ef7cf9d",
+        "entryDllBytes": 17408,
+        "entryDllSha256": "09fe3d9613a3c085a0cd43aca46f348c5c251de3bb21b3941280d97b7c1b9a3f",
+        "steamTimeUpdatedUtc": "2026-08-01T12:12:07Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 140622, "treeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad", "archiveSubdirectory": "more-saves-0.3.1-dtmapi-workshop-3742763050" }
+    },
+    {
+      "catalogId": "action-speed",
+      "displayName": "DTMAPI Action Speed",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+      "workshopId": "3742763309",
+      "officialFolder": "Yuuka_DTMAPI_ActionSpeed",
+      "packageName": "DTMAPI-ActionSpeed",
+      "packageDll": "Yuuka.DTMAPI.ActionSpeed.dll",
+      "sourceRoot": "products/first-party/ActionSpeed",
+      "productionSourceRoot": "products/first-party/ActionSpeed/src",
+      "sourceManifest": "products/first-party/ActionSpeed/manifest.json",
+      "project": "Yuuka.DTMAPI.ActionSpeed",
+      "sourceDll": "Yuuka.DTMAPI.ActionSpeed.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-actionspeed-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.actionspeed",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed"
+        ],
+        "forbiddenMandatorySymbols": [
+          "ActionSpeedEngine",
+          "ActionSpeedNativeRuntime",
+          "ActionSpeedHookInstaller",
+          "ActionSpeedCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace Yuuka.DTMAPI.ActionSpeed"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/ActionSpeed",
+          "allowedProductIdentityToken": "Yuuka.DTMAPI.ActionSpeed",
+          "requiredFrozenContractToken": "IActionSpeedApi"
+        }
+      },
+      "publishedVersion": "1.3.4-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.ActionSpeed.json",
+      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.ActionSpeed.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "3207868613658110430",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 10,
+        "steamDeliveredBytes": 368423,
+        "steamDeliveredTreeSha256": "9189ec93b3bb32a8d952b2c4995ceec6475a7a3a8115604794739fb08e68e9c1",
+        "entryDllBytes": 65536,
+        "entryDllSha256": "1c115cbaa92ef2aa5dbb9df509a216cfcd195b7b5e860c563452e6db727798d5",
+        "steamTimeUpdatedUtc": "2026-08-01T12:12:42Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 325618, "treeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c", "archiveSubdirectory": "action-speed-1.3.4-dtmapi-workshop-3742763309" }
+    },
+    {
+      "catalogId": "one-action-complete",
+      "displayName": "DTMAPI One Action Complete",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+      "workshopId": "3742763540",
+      "officialFolder": "Yuuka_DTMAPI_OneActionComplete",
+      "packageName": "DTMAPI-OneActionComplete",
+      "packageDll": "Yuuka.DTMAPI.OneActionComplete.dll",
+      "sourceRoot": "products/first-party/OneActionComplete",
+      "productionSourceRoot": "products/first-party/OneActionComplete/src",
+      "sourceManifest": "products/first-party/OneActionComplete/manifest.json",
+      "project": "Yuuka.DTMAPI.OneActionComplete",
+      "sourceDll": "Yuuka.DTMAPI.OneActionComplete.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-oneactioncomplete-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.oneactioncomplete",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/ActionCompletion",
+          "src/DTMAPI.GameBridge.DolocTown/Hooking/ToolColliderHitHookBridge.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "OneActionEngine",
+          "OneActionNativeRuntime",
+          "OneActionHookInstaller",
+          "OneActionCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace Yuuka.DTMAPI.OneActionComplete"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/ActionCompletion",
+          "allowedProductIdentityToken": "Yuuka.DTMAPI.OneActionComplete",
+          "requiredFrozenContractToken": "IActionCompletionApi"
+        }
+      },
+      "publishedVersion": "1.1.2-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.OneActionComplete.json",
+      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.OneActionComplete.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "3152857404536535062",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 10,
+        "steamDeliveredBytes": 234109,
+        "steamDeliveredTreeSha256": "cbdf887206740ff51e86110d30ecdc3cfc6ba6f6679033e7bf7d859fed8e2cb1",
+        "entryDllBytes": 34816,
+        "entryDllSha256": "3e7d9ed3e00e1fa6ad69e7f3ff88b9842be3f6e07214aeaf4c260ca81e86b3d4",
+        "steamTimeUpdatedUtc": "2026-08-01T12:13:28Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 214265, "treeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895", "archiveSubdirectory": "one-action-complete-1.1.2-dtmapi-workshop-3742763540" }
+    },
+    {
+      "catalogId": "fish-roe-info",
+      "displayName": "DTMAPI Fish Roe Info Display",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+      "workshopId": "3742763706",
+      "officialFolder": "Yuuka_DTMAPI_FishBreedingAssistant",
+      "packageName": "DTMAPI-FishBreedingAssistant",
+      "packageDll": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+      "sourceRoot": "products/first-party/FishBreedingAssistant",
+      "productionSourceRoot": "products/first-party/FishBreedingAssistant/src",
+      "sourceManifest": "products/first-party/FishBreedingAssistant/manifest.json",
+      "project": "Yuuka.DTMAPI.FishBreedingAssistant",
+      "sourceDll": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-fishbreedingassistant-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.fishbreedingassistant",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/FishRoeTooltip"
+        ],
+        "forbiddenMandatorySymbols": [
+          "FishBreedingNativeRuntime",
+          "FishBreedingHookInstaller",
+          "FishBreedingCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace Yuuka.DTMAPI.FishBreedingAssistant"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishRoeTooltip",
+          "allowedProductIdentityToken": "Yuuka.DTMAPI.FishBreedingAssistant",
+          "requiredFrozenContractToken": "IItemTooltipApi"
+        }
+      },
+      "publishedVersion": "1.1.3-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.FishBreedingAssistant.json",
+      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.FishBreedingAssistant.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "749708801000628071",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 8,
+        "steamDeliveredBytes": 21246,
+        "steamDeliveredTreeSha256": "718f665ed3ad4aa055803c5e8172f4355337092301bbf6494fab498da6c823d6",
+        "entryDllBytes": 16384,
+        "entryDllSha256": "16a8eac5ac2bc98cf039f7a5f496c7950fb9a662f62ccda4db5ffb7ad150650e",
+        "steamTimeUpdatedUtc": "2026-08-01T12:13:18Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 99872, "treeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba", "archiveSubdirectory": "fish-roe-info-1.1.3-dtmapi-workshop-3742763706" }
+    },
+    {
+      "catalogId": "animal-husbandry-progress",
+      "displayName": "DTMAPI Animal Bell Hidden Produce Progress",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+      "workshopId": "3742763843",
+      "officialFolder": "Yuuka_DTMAPI_AnimalHusbandryProgress",
+      "packageName": "DTMAPI-AnimalHusbandryProgress",
+      "packageDll": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+      "sourceRoot": "products/first-party/AnimalHusbandryProgress",
+      "productionSourceRoot": "products/first-party/AnimalHusbandryProgress/src",
+      "sourceManifest": "products/first-party/AnimalHusbandryProgress/manifest.json",
+      "project": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+      "sourceDll": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-animalhusbandryprogress-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.animalhusbandryprogress",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/AnimalViewer"
+        ],
+        "forbiddenMandatorySymbols": [
+          "AnimalHusbandryNativeRuntime",
+          "AnimalHusbandryHookInstaller",
+          "AnimalHusbandryCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace Yuuka.DTMAPI.AnimalHusbandryProgress"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer",
+          "allowedProductIdentityToken": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+          "requiredFrozenContractToken": "IAnimalViewerApi"
+        }
+      },
+      "publishedVersion": "1.0.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AnimalHusbandryProgress.json",
+      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.AnimalHusbandryProgress.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "1469725703216292805",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 8,
+        "steamDeliveredBytes": 49134,
+        "steamDeliveredTreeSha256": "797ffffab3f373f38b2241014f5cbf9664192e62d81ed5d68920d985c8dfc5fd",
+        "entryDllBytes": 44032,
+        "entryDllSha256": "77c026f3f41b2306852e67d7b98d7748c6136fc90c838da39f922c36b1b240ae",
+        "steamTimeUpdatedUtc": "2026-08-01T12:12:58Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 71627, "treeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536", "archiveSubdirectory": "animal-husbandry-progress-1.0.1-dtmapi-workshop-3742763843" }
+    },
+    {
+      "catalogId": "chest-locator-enhancer",
+      "displayName": "DTMAPI Chest Locator Enhancer",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "RebuildPending",
+      "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+      "workshopId": "3742765514",
+      "officialFolder": "DTMAPI_ChestLocatorEnhancer",
+      "packageName": "DTMAPI-ChestLocatorEnhancer",
+      "packageDll": "DTMAPI.ChestLocatorEnhancer.dll",
+      "sourceRoot": "products/first-party/ChestLocatorEnhancer",
+      "productionSourceRoot": "products/first-party/ChestLocatorEnhancer/src",
+      "sourceManifest": "products/first-party/ChestLocatorEnhancer/manifest.json",
+      "project": "DTMAPI.ChestLocatorEnhancer",
+      "sourceDll": "DTMAPI.ChestLocatorEnhancer.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-chestlocator-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.chestlocatorenhancermod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/ChestLocatorEnhancer/ChestLocatorEnhancerCompatibilityService.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "ChestLocatorEnhancerNativeRuntime",
+          "ChestLocatorEnhancerHookInstaller",
+          "ChestLocatorEnhancerCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace DTMAPI.ChestLocatorEnhancer"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/ChestLocatorEnhancer",
+          "allowedProductIdentityToken": "DTMAPI.ChestLocatorEnhancerMod",
+          "requiredFrozenContractToken": "IChestLocatorEnhancerApi"
+        }
+      },
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.ChestLocatorEnhancerMod.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "8718044654627401403",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 8,
+        "steamDeliveredBytes": 39686,
+        "steamDeliveredTreeSha256": "470530ddd55e2561220c8d59808eec6c8ce3fe6330b33d806a97646f8464022a",
+        "entryDllBytes": 34304,
+        "entryDllSha256": "dc0851584c47fa250117b60a2f761f90c9cfe3dbe6295efc7d1ff53a2a141447",
+        "steamTimeUpdatedUtc": "2026-08-01T12:11:51Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 39848, "treeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3", "archiveSubdirectory": "chest-locator-enhancer-0.3.1-dtmapi-workshop-3742765514" }
+    },
+    {
+      "catalogId": "auto-fishing",
+      "displayName": "DTMAPI Auto Fishing",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+      "workshopId": "3743799721",
+      "officialFolder": "Yuuka_DTMAPI_AutoFishing",
+      "packageName": "DTMAPI-AutoFishing",
+      "packageDll": "Yuuka.DTMAPI.AutoFishing.dll",
+      "sourceRoot": "products/first-party/AutoFishing",
+      "productionSourceRoot": "products/first-party/AutoFishing/src",
+      "sourceManifest": "products/first-party/AutoFishing/manifest.json",
+      "project": "Yuuka.DTMAPI.AutoFishing",
+      "sourceDll": "Yuuka.DTMAPI.AutoFishing.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-24456188-autofishing-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.autofishing",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.Abstractions/FirstPartyFishingPrimitives.cs",
+          "src/DTMAPI.GameBridge.DolocTown/Features/FishingAutomation"
+        ],
+        "forbiddenMandatorySymbols": [
+          "FishingAutomationFeature",
+          "FishingPrimitiveSession",
+          "IFirstPartyFishingApi",
+          "IFirstPartyFishingHookService",
+          "IFirstPartyFishingNativeService",
+          "IFirstPartyFishingRuntime"
+        ],
+        "forbiddenMandatoryTokens": [
+          "InternalsVisibleTo(\"AutoFishingMod\")",
+          "dtmapi.mod.yuuka.dtmapi.autofishing"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation",
+          "allowedProductIdentityToken": "Yuuka.DTMAPI.AutoFishing",
+          "requiredFrozenContractToken": "IFishingAutomationApi"
+        }
+      },
+      "publishedVersion": "1.4.3-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.6.0",
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AutoFishing.json",
+      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.AutoFishing.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "protectedBehaviorContractId": "auto-fishing-current-behavior",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.0",
+        "minimumDtmApiVersion": "0.5.5",
+        "gameBuildId": "23762374",
+        "workshopManifestId": "864750910416179819",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 10,
+        "steamDeliveredBytes": 336231,
+        "steamDeliveredTreeSha256": "48d8bc81272dfd94daf5b8c90ee7035ec581a2dcaffc7071a75291909483585d",
+        "entryDllBytes": 135168,
+        "entryDllSha256": "1bbb0d1c26eb5154ba1efe73f431b623e1b9987a6b230c35da7ac463e9c65772",
+        "steamTimeUpdatedUtc": "2026-08-01T12:13:08Z",
+        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+      },
+      "retainedArtifact": { "fileCount": 9, "bytes": 217099, "treeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6", "archiveSubdirectory": "auto-fishing-1.4.3-dtmapi-workshop-3743799721" }
+    },
+    {
+      "catalogId": "more-equipment-slots",
+      "displayName": "DTMAPI More Equipment Slots",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+      "workshopId": "3744059735",
+      "officialFolder": "DTMAPI_MoreEquipmentSlots",
+      "packageName": "DTMAPI-MoreEquipmentSlots",
+      "packageDll": "DTMAPI.MoreEquipmentSlots.dll",
+      "sourceRoot": "products/first-party/MoreEquipmentSlots",
+      "productionSourceRoot": "products/first-party/MoreEquipmentSlots/src",
+      "sourceManifest": "products/first-party/MoreEquipmentSlots/manifest.json",
+      "project": "DTMAPI.MoreEquipmentSlots",
+      "sourceDll": "DTMAPI.MoreEquipmentSlots.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-24456188-moreequipmentslots-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.moreequipmentslotsmod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/DolocTownExperimentalBridgeApi.EquipmentSlots.cs",
+          "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/EquipmentSlotProtectedStoragePolicy.cs",
+          "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/EquipmentSlotShieldPolicy.cs"
+        ],
+        "forbiddenMandatorySymbols": [
+          "MoreEquipmentSlotsNativeRuntime",
+          "MoreEquipmentSlotsHookInstaller",
+          "MoreEquipmentSlotsCallbacks"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace DTMAPI.MoreEquipmentSlots"
+        ],
+        "forbiddenMandatoryOutsideCompatibilitySymbols": [
+          "EquipmentSlotsCompatibilityService",
+          "EquipmentSlotRuntimeEntry",
+          "EquipmentSlotStorageDocument",
+          "AgentEquipmentReloadParamsPostfix",
+          "BodyControllerOnAttackedPrefix",
+          "AccessoriesBarInitPostfix",
+          "AccessoriesBarOnStartShowPostfix",
+          "RenderEquipmentSlotsUiForAccessoriesBar",
+          "RecoverEquipmentSlotEntryTransactional"
+        ],
+        "forbiddenMandatoryOutsideCompatibilityTokens": [
+          "DTMAPI.ExtraEquipmentSlot.",
+          "AgentEquipmentFunction.CreateAgentEquipmentFunction",
+          "ItemFunctionHatShield",
+          "ShieldDefend"
+        ],
+        "compatibilityException": {
+          "root": "src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots",
+          "allowedProductIdentityToken": "DTMAPI.MoreEquipmentSlotsMod",
+          "requiredFrozenContractToken": "IEquipmentSlotsApi"
+        }
+      },
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.6.0",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.MoreEquipmentSlotsMod.json",
+      "saveSidecars": [
+        "DTMAPI/config/protected-items/equipment-slots/slot-<archiveIndex>/equipment-slots-DTMAPI.MoreEquipmentSlotsMod.json"
+      ],
+      "legacySaveSidecars": [
+        "DTMAPI/config/equipment-slots-DTMAPI.MoreEquipmentSlotsMod.json",
+        "DTMAPI/config/equipment-slots-DTMAPI.MoreEquipmentSlotsMod.json.migration-capture-<GUID>",
+        "DTMAPI/config/equipment-slots-DTMAPI.MoreEquipmentSlotsMod.json.migrated-<yyyyMMddHHmmss>",
+        "DTMAPI/config/equipment-slots-DTMAPI.MoreEquipmentSlotsMod.json.migrated-product-v3-<SHA256>",
+        "DTMAPI/config/.equipment-slot-migration-claims/DTMAPI.MoreEquipmentSlotsMod/<SHA256>.json",
+        "DTMAPI/config/.equipment-slot-migration-claims/DTMAPI.MoreEquipmentSlotsMod/<SHA256>.json.transition-<GUID>",
+        "DTMAPI/config/.equipment-slot-migration-claims/DTMAPI.MoreEquipmentSlotsMod/winner.json",
+        "DTMAPI/config/.equipment-slot-migration-claims/DTMAPI.MoreEquipmentSlotsMod/winner.json.transition-<GUID>",
+        "DTMAPI/config/.equipment-slot-migration-claims/DTMAPI.MoreEquipmentSlotsMod/operation.lock",
+        "DTMAPI/config/protected-items/equipment-slots/slot-<archiveIndex>/.legacy-migrations/<SHA256>.flat.json"
+      ],
+      "legacyReleaseLane": "PublishedBuilder",
+      "retainedArtifact": { "fileCount": 9, "bytes": 539565, "treeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6", "archiveSubdirectory": "more-equipment-slots-0.3.1-dtmapi-workshop-3744059735" }
+    },
+    {
+      "catalogId": "manbo-cardboard-audio",
+      "displayName": "DTMAPI Manbo Cardboard Audio",
+      "role": "PublishedProduct",
+      "productType": "FunctionalCodeMod",
+      "targetProductType": "OfficialJsonContent",
+      "distributionState": "PublicWorkshop",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "Experimental",
+      "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+      "workshopId": "3746319981",
+      "officialFolder": "Yuuka_DTMAPI_ManboCardboardAudio",
+      "packageName": "DTMAPI-ManboCardboardAudio",
+      "packageDll": "Yuuka.DTMAPI.ManboCardboardAudio.dll",
+      "sourceRoot": "products/first-party/ManboCardboardAudio",
+      "sourceManifest": "products/first-party/ManboCardboardAudio/manifest.json",
+      "project": "ManboCardboardAudioMod",
+      "sourceDll": "ManboCardboardAudioMod.dll",
+      "sourceVersion": "0.1.0-dtmapi",
+      "sourceMinimumDtmApiVersion": "0.5.2-alpha",
+      "publishedVersion": "0.1.0-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": null,
+      "currentContentSidecars": ["Content/DTMAPI/assets/manbo.wav"],
+      "targetContentSidecars": ["Content/DTMAPI/audio-replacements.json", "Content/DTMAPI/assets/manbo.wav"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "PublishedBuilder",
+      "retainedArtifact": { "fileCount": 7, "bytes": 229384, "entryDll": "Yuuka.DTMAPI.ManboCardboardAudio.dll", "entryDllSha256": "ab85c0bab39702e7fe2689bb4d528b6ef3726f0bb272f6f172cffe8a57a17ec4", "treeSha256": "23a3209e75788b68041f4e1eecfe81550f87d6579893272af67711b2c0bfc40e" }
+    },
+    {
+      "catalogId": "strong-planting-gun",
+      "displayName": "DTMAPI Strong Planting Gun",
+      "role": "PlannedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.StrongPlantingGunMod",
+      "workshopId": null,
+      "officialFolder": "DTMAPI_StrongPlantingGun",
+      "packageName": "DTMAPI-StrongPlantingGun",
+      "packageDll": "DTMAPI.StrongPlantingGun.dll",
+      "sourceRoot": "products/first-party/StrongPlantingGun",
+      "productionSourceRoot": "products/first-party/StrongPlantingGun/src",
+      "sourceManifest": "products/first-party/StrongPlantingGun/manifest.json",
+      "project": "DTMAPI.StrongPlantingGun",
+      "sourceDll": "DTMAPI.StrongPlantingGun.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-strongplantinggun-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.strongplantinggunmod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/StrongPlantingGun"
+        ],
+        "forbiddenMandatorySymbols": [
+          "StrongPlantingGunFeature",
+          "StrongPlantingGunHookBridge",
+          "StrongPlantingGunService",
+          "ItemFarmingGunCtorPostfix",
+          "ItemFarmingGunOnUseAsToolPrefix",
+          "FarmingGunUiStateHandlePlaceToOtherSidePrefix",
+          "FarmingGunUiStateHandleSwapOneItemPrefix"
+        ],
+        "forbiddenMandatoryTokens": [
+          "namespace DTMAPI.StrongPlantingGun",
+          "DolocTown.ItemFarmingGun, Assembly-CSharp",
+          "DolocTown.FarmingGunUiState, Assembly-CSharp"
+        ],
+        "frozenAbiNoRuntimeProvider": {
+          "root": "src/DTMAPI.Abstractions",
+          "requiredFrozenContractToken": "IStrongPlantingGunApi",
+          "providerScanRoots": [
+            "src/DTMAPI.GameBridge.DolocTown",
+            "src/DTMAPI.GameBridge.DolocTown.Compatibility"
+          ],
+          "reason": "No Workshop, published, retained-artifact or independent binary consumer exists; retain the warning-bearing type shape without a Runtime provider."
+        }
+      },
+      "publishedVersion": null,
+      "publishedMinimumDtmApiVersion": null,
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.StrongPlantingGunMod.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "DeveloperInstallOnly"
+    },
+    {
+      "catalogId": "oil",
+      "displayName": "DTMAPI Oil",
+      "role": "Prototype",
+      "productType": "OfficialJsonContent",
+      "currentImplementationType": "OfficialJsonContentPack",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "PrototypeBlocked",
+      "maturity": "Prototype",
+      "uniqueId": "DTMAPI.OilMod",
+      "workshopId": null,
+      "officialFolder": "DTMAPI_Oil",
+      "packageName": "DTMAPI-Oil",
+      "packageDll": null,
+      "sourceRoot": "products/first-party/Oil",
+      "sourceManifest": "products/first-party/Oil/manifest.json",
+      "project": null,
+      "sourceDll": null,
+      "sourceVersion": "0.3.1-dtmapi",
+      "sourceMinimumDtmApiVersion": null,
+      "publishedVersion": null,
+      "publishedMinimumDtmApiVersion": null,
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": null,
+      "promotionTargetRole": "PlannedProduct",
+      "canonicalConfigPath": null,
+      "contentSidecars": ["Content/item_tbitem.json", "Content/mod_tbmoditemspawnextension.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "DeveloperInstallOnly"
+    },
+    {
+      "catalogId": "mine",
+      "displayName": "DTMAPI Mine",
+      "role": "PlannedProduct",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "RebuildBlocked",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.MineMod",
+      "workshopId": null,
+      "officialFolder": "DTMAPI_Mine",
+      "packageName": "DTMAPI-Mine",
+      "packageDll": "DTMAPI.Mine.dll",
+      "sourceRoot": "products/first-party/Mine",
+      "productionSourceRoot": "products/first-party/Mine/src",
+      "sourceManifest": "products/first-party/Mine/manifest.json",
+      "project": "DTMAPI.Mine",
+      "sourceDll": "DTMAPI.Mine.dll",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "codeModKind": "Advanced",
+      "referencePolicyId": "doloctown-23762374-mine-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.minemod",
+      "productionBuildAuthority": "DTMAPI Author SDK build/pack/deploy",
+      "nativeOwnership": "ProductNative",
+      "migrationAcceptance": {
+        "authority": "CatalogLiveZeroLeftover",
+        "mandatoryRuntimeRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenMandatoryPaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/MachineProduction"
+        ],
+        "forbiddenMandatorySymbols": [
+          "UpdateMachineProduction",
+          "MachineRuntimeEntry",
+          "ResetEquipmentRendererScaleOnReuse",
+          "ApplyMineBuilderPreviewScale",
+          "EquipmentRendererOnReusePostfix",
+          "EquipmentBuilderCreateIndicatorPostfix",
+          "EquipmentBuilderTurnIndicatorPostfix"
+        ],
+        "forbiddenMandatoryTokens": [
+          "GameBridge.MachineProduction",
+          "GameBridge.MachineVisualContainment",
+          "Machine.ProductionApi",
+          "Machine.MineVisualContainment"
+        ],
+        "frozenAbiNoRuntimeProvider": {
+          "root": "src/DTMAPI.Abstractions",
+          "requiredFrozenContractToken": "IMachineProductionApi",
+          "providerScanRoots": [
+            "src/DTMAPI.GameBridge.DolocTown",
+            "src/DTMAPI.GameBridge.DolocTown.Compatibility"
+          ],
+          "reason": "No Workshop, published, retained-artifact or independent binary consumer exists; retain the warning-bearing type shape without a Runtime provider."
+        }
+      },
+      "publishedVersion": null,
+      "publishedMinimumDtmApiVersion": null,
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.MineMod.json",
+      "contentSidecars": ["Content/equipment_tbequipment.json", "Content/item_tbitem.json", "Content/mod_tbmodrecipegroupextension.json", "Content/recipe_tbrecipe.json"],
+      "saveSidecars": [],
+      "legacyReleaseLane": "DeveloperInstallOnly"
+    },
+    {
+      "catalogId": "auto-harvest-sample",
+      "displayName": "Auto Harvest Sample",
+      "role": "ApiDemandSample",
+      "productType": "FunctionalCodeMod",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "Yuuka.DTMAPI.AutoHarvest",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "author-sdk/samples/api-demand/AutoHarvest",
+      "sourceManifest": "author-sdk/samples/api-demand/AutoHarvest/manifest.json",
+      "project": "AutoHarvestMod",
+      "sourceDll": "AutoHarvestMod.dll",
+      "sourceVersion": "0.1.0-dtmapi",
+      "sourceMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AutoHarvest.json",
+      "saveSidecars": [],
+      "legacyWorkshopIdentityMustNotMerge": { "uniqueId": "None.AutoHarvest", "workshopId": "3742771572" },
+      "legacyReleaseLane": null
+    },
+    {
+      "catalogId": "crop-harvesting-qa",
+      "displayName": "Crop Harvesting QA",
+      "role": "QaFixture",
+      "productType": "Fixture",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.CropHarvestingQaMod",
+      "workshopId": null,
+      "officialFolder": "DTMAPI_CropHarvestingQA",
+      "packageName": "DTMAPI-CropHarvestingQA",
+      "packageDll": "DTMAPI.CropHarvestingQA.dll",
+      "sourceRoot": "tests/mod-fixtures/qa/CropHarvesting",
+      "sourceManifest": "tests/mod-fixtures/qa/CropHarvesting/manifest.json",
+      "project": "CropHarvestingQaMod",
+      "sourceDll": "CropHarvestingQaMod.dll",
+      "sourceVersion": "0.1.0-dtmapi",
+      "sourceMinimumDtmApiVersion": "0.5.1-alpha",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.CropHarvestingQaMod.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "ExplicitQaInstallOnly"
+    },
+    {
+      "catalogId": "hook-probe-qa",
+      "displayName": "DTMAPI Hook Probe",
+      "role": "QaFixture",
+      "productType": "Fixture",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.HookProbeMod",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "tests/mod-fixtures/qa/HookProbe",
+      "sourceManifest": "tests/mod-fixtures/qa/HookProbe/manifest.json",
+      "project": "HookProbeMod",
+      "sourceDll": "HookProbeMod.dll",
+      "sourceVersion": "0.1.0",
+      "sourceMinimumDtmApiVersion": "0.1.0",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "legacyReleaseLane": "SmokeOnly"
+    },
+    {
+      "catalogId": "advanced-g2-synthetic",
+      "displayName": "DTMAPI Advanced G2 Synthetic Fixture",
+      "role": "QaFixture",
+      "productType": "Fixture",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.AdvancedFixture",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "tests/mod-fixtures/qa/AdvancedCodeMod",
+      "sourceManifest": "tests/mod-fixtures/qa/AdvancedCodeMod/manifest.json",
+      "project": "DTMAPI.AdvancedFixture",
+      "sourceDll": "DTMAPI.AdvancedFixture.dll",
+      "sourceVersion": "0.1.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.AdvancedFixture.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "SyntheticG2Only"
+    },
+    {
+      "catalogId": "hello-example",
+      "displayName": "Hello DTMAPI Mod",
+      "role": "Example",
+      "productType": "Fixture",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.HelloDtmMod",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "author-sdk/examples/HelloDtm",
+      "sourceManifest": "author-sdk/examples/HelloDtm/manifest.json",
+      "project": "HelloDtmMod",
+      "sourceDll": "HelloDtmMod.dll",
+      "sourceVersion": "0.1.0",
+      "sourceMinimumDtmApiVersion": "0.1.0",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "legacyReleaseLane": "ExampleOnly"
+    },
+    {
+      "catalogId": "config-menu-example",
+      "displayName": "Config Menu Example",
+      "role": "Example",
+      "productType": "Fixture",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": "DTMAPI.ConfigMenuExample",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "author-sdk/examples/ConfigMenu",
+      "sourceManifest": "author-sdk/examples/ConfigMenu/manifest.json",
+      "project": "ConfigMenuExample",
+      "sourceDll": "ConfigMenuExample.dll",
+      "sourceVersion": "0.1.0",
+      "sourceMinimumDtmApiVersion": "0.1.0",
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": "DTMAPI/config/DTMAPI.ConfigMenuExample.json",
+      "saveSidecars": [],
+      "legacyReleaseLane": "ExampleOnly"
+    },
+    {
+      "catalogId": "broken-manifest-negative",
+      "displayName": "Broken Manifest Mod",
+      "role": "NegativeFixture",
+      "productType": "Fixture",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Experimental",
+      "uniqueId": null,
+      "expectedInvalidIdentity": "MissingUniqueID",
+      "workshopId": null,
+      "officialFolder": null,
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": "tests/mod-fixtures/negative/BrokenManifest",
+      "sourceManifest": "tests/mod-fixtures/negative/BrokenManifest/manifest.json",
+      "project": "BrokenManifestMod",
+      "sourceDll": "BrokenManifestMod.dll",
+      "sourceVersion": "0.1.0",
+      "sourceMinimumDtmApiVersion": null,
+      "targetVersion": null,
+      "targetMinimumDtmApiVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "legacyReleaseLane": "NegativeTestOnly"
+    },
+    {
+      "catalogId": "animal-pack",
+      "displayName": "Unified First-Party Animal Pack",
+      "role": "PlannedProduct",
+      "productType": "OfficialJsonContent",
+      "distributionState": "None",
+      "releaseEligibility": "PrototypeBlocked",
+      "maturity": "Prototype",
+      "uniqueId": "DTMAPI.AnimalPack",
+      "identityState": "FrozenReservedNoArtifact",
+      "workshopId": null,
+      "officialFolder": "DTMAPI_AnimalPack",
+      "packageName": "DTMAPI-AnimalPack",
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "project": null,
+      "sourceDll": null,
+      "sourceVersion": null,
+      "sourceMinimumDtmApiVersion": null,
+      "targetVersion": "1.0.0",
+      "targetMinimumDtmApiVersion": "0.5.5",
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "protectedBehaviorContractId": "custom-animals-json-png-wav",
+      "releaseBlockers": ["AssetProvenance", "EconomyModel", "OldInputDuplicatePreflight", "CanonicalSourceNotCreated"]
+    },
+    {
+      "catalogId": "hatch-assets-input",
+      "displayName": "Hatch Assets Prototype Input",
+      "role": "PrototypeInput",
+      "productType": "OfficialJsonContent",
+      "currentImplementationType": "ContentPackWithDtmapiJsonPngWav",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "DTMAPI.HatchAssets",
+      "observedLocalPrototype": { "version": "1.0.0", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "workshopId": null,
+      "officialFolder": "DTMAPI_HatchAssets",
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "targetVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "protectedBehaviorContractId": "custom-animals-json-png-wav",
+      "migrationContentIds": ["hatch", "sack_hatch", "hatch_produce"]
+    },
+    {
+      "catalogId": "mole-assets-input",
+      "displayName": "Mole Assets Prototype Input",
+      "role": "PrototypeInput",
+      "productType": "OfficialJsonContent",
+      "currentImplementationType": "ContentPackWithDtmapiJsonPngWav",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "DTMAPI.MoleAssets",
+      "observedLocalPrototype": { "version": "0.5.3-alpha-oni-png-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "workshopId": null,
+      "officialFolder": "DTMAPI_MoleAssets",
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "targetVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "protectedBehaviorContractId": "custom-animals-json-png-wav",
+      "migrationContentIds": ["mole", "sack_mole", "mole_produce"]
+    },
+    {
+      "catalogId": "drecko-assets-input",
+      "displayName": "Drecko Assets Prototype Input",
+      "role": "PrototypeInput",
+      "productType": "OfficialJsonContent",
+      "currentImplementationType": "ContentPackWithDtmapiJsonPngWav",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "DTMAPI.DreckoAssets",
+      "observedLocalPrototype": { "version": "0.1.0", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "workshopId": null,
+      "officialFolder": "DTMAPI_DreckoAssets",
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "targetVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "protectedBehaviorContractId": "custom-animals-json-png-wav",
+      "migrationContentIds": ["drecko", "sack_drecko", "drecko_produce"]
+    },
+    {
+      "catalogId": "oilfloater-assets-input",
+      "displayName": "Oilfloater Assets Prototype Input",
+      "role": "PrototypeInput",
+      "productType": "OfficialJsonContent",
+      "currentImplementationType": "ContentPackWithDtmapiJsonPngWav",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "ProtectedCurrent",
+      "uniqueId": "DTMAPI.OilfloaterAssets",
+      "observedLocalPrototype": { "version": "0.5.3-alpha-oni-png-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "workshopId": null,
+      "officialFolder": "DTMAPI_OilfloaterAssets",
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "targetVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "protectedBehaviorContractId": "custom-animals-json-png-wav",
+      "migrationContentIds": ["oilfloater", "sack_oilfloater", "oilfloater_produce"]
+    },
+    {
+      "catalogId": "shell-crab",
+      "displayName": "Shell Crab",
+      "role": "Prototype",
+      "productType": "AdvancedAssetBundle",
+      "currentImplementationType": "ContentPackWithAssetBundle",
+      "distributionState": "LocalDeveloper",
+      "releaseEligibility": "PrototypeBlocked",
+      "maturity": "Prototype",
+      "uniqueId": "DTMAPI.ShellCrabMod",
+      "observedLocalPrototype": { "version": "0.5.3-alpha-shell-crab-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "workshopId": null,
+      "officialFolder": "DTMAPI_ShellCrab",
+      "packageName": null,
+      "packageDll": null,
+      "sourceRoot": null,
+      "sourceManifest": null,
+      "targetVersion": null,
+      "canonicalConfigPath": null,
+      "saveSidecars": [],
+      "note": "Separate advanced AssetBundle route; not an input to the unified AnimalPack."
+    }
+  ],
+  "compatibilityComponents": [
+    {
+      "catalogId": "fishing-automation-frozen-adapter",
+      "role": "CompatibilityComponent",
+      "productType": "InternalAdapter",
+      "distributionState": "None",
+      "releaseEligibility": "CompatibilityOnly",
+      "maturity": "Frozen",
+      "contract": "IFishingAutomationApi and related DTOs",
+      "status": "Deprecated/Frozen/CompatibilityBlocked",
+      "knownBinaryConsumer": "Yuuka.DTMAPI.AutoFishing 1.4.3-dtmapi",
+      "blocker": "Resolved for 0.5.5: FishingAutomationOptions.StopOnManualMove is retained with its historical default of true; exact-candidate ABI verification remains a release gate."
+    },
+    {
+      "catalogId": "camera-zoom-obsolete-adapter",
+      "role": "CompatibilityComponent",
+      "productType": "InternalAdapter",
+      "distributionState": "None",
+      "releaseEligibility": "CompatibilityOnly",
+      "maturity": "Obsolete",
+      "contract": "ICameraZoomApi 0.4.2",
+      "status": "Failed/ObsoleteCompatibility",
+      "replacement": "ICameraViewApi"
+    }
+  ],
+  "retiredResearch": [
+    {
+      "catalogId": "second-motor-retired",
+      "uniqueId": "DTMAPI.SecondMotorMod",
+      "officialFolder": "DTMAPI_SecondMotor",
+      "role": "RetiredResearch",
+      "productType": "RetiredResearch",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Retired",
+      "sourceArchive": "archive/second-motor-20260615/testmods/SecondMotorMod"
+    },
+    {
+      "catalogId": "lightning-chicken-retired",
+      "uniqueId": "DTMAPI.LightningChickenMod",
+      "officialFolder": "DTMAPI_LightningChicken",
+      "role": "RetiredResearch",
+      "productType": "RetiredResearch",
+      "distributionState": "None",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Retired"
+    },
+    {
+      "catalogId": "legacy-auto-harvest-retired",
+      "uniqueId": "None.AutoHarvest",
+      "workshopId": "3742771572",
+      "role": "LegacyExternal",
+      "productType": "CompatibilityArtifact",
+      "distributionState": "LegacyExternal",
+      "releaseEligibility": "NeverPublish",
+      "maturity": "Retired",
+      "identityRule": "NeverMergeWithCurrentSample"
+    }
+  ],
+  "externalCompatibilityBaseline": [
+    {
+      "workshopId": "3743621104",
+      "uniqueId": "com.user.dolocstorageexpansion",
+      "referencedAbstractionsVersion": "0.5.1.0",
+      "declaredMinimum": "0.5.1",
+      "classification": "ExternalApiConsumer",
+      "releaseGate": "ActualLoadLaneVerified",
+      "gateEvidence": "2026-07-28 slot-3 NoNativeSave Unity Mono gate binds native-verified Workshop 3743621104, exact entry SHA-256 45B552...B366, one Workshop load source, one Entry completion, provider behavior, unchanged subscription tree, title/exit cleanup, and unchanged player save/committed sidecars; final-candidate evidence is recorded by the owning prerelease Update.",
+      "legacyNativeAdmission": {
+        "scope": "NativeVerifiedWorkshopExactEntry",
+        "entryDllRelativePath": "DolocStorageExpansionMod.dll",
+        "entryDllSha256": "45B5522948770C04575E57C58CCC5F87AAD3091B680873FAB283F3C89372B366"
+      }
+    },
+    {
+      "workshopId": "3743644065",
+      "uniqueId": "com.user.dolocstorecapacity",
+      "referencedAbstractionsVersion": "0.5.1.0",
+      "declaredMinimum": "0.5.1",
+      "classification": "ExternalApiConsumer",
+      "releaseGate": "ActualLoadLaneVerified",
+      "gateEvidence": "2026-07-28 slot-3 NoNativeSave Unity Mono gate binds native-verified Workshop 3743644065, exact entry SHA-256 BC3511...3BBF, one Workshop load source, one Entry completion, provider behavior, unchanged subscription tree, title/exit cleanup, and unchanged player save/committed sidecars; final-candidate evidence is recorded by the owning prerelease Update.",
+      "legacyNativeAdmission": {
+        "scope": "NativeVerifiedWorkshopExactEntry",
+        "entryDllRelativePath": "DolocStoreCapacityMod.dll",
+        "entryDllSha256": "BC3511AA5ECF33CBF005C9F314C9625FBA6577EA10270BD77C89F71D6C2D3BBF"
+      }
+    },
+    {
+      "workshopId": "3754869009",
+      "uniqueId": "Codex.DolocTownQoL",
+      "referencedAbstractionsVersion": "0.5.2.0",
+      "declaredMinimum": "0.5.2-alpha",
+      "classification": "ExternalApiConsumer",
+      "releaseGate": "ActualLoadLaneVerified",
+      "gateEvidence": "2026-07-28 slot-3 NoNativeSave Unity Mono gate binds native-verified Workshop 3754869009, exact entry SHA-256 FAD056...4A10, one Workshop load source, one Entry completion, config-menu API behavior, unchanged subscription tree, title/exit cleanup, and unchanged player save/committed sidecars; final-candidate evidence is recorded by the owning prerelease Update.",
+      "ownershipState": "PlayerRuntimeOnlyResolvedAuthorSdkCleanupDeferred",
+      "legacyNativeAdmission": {
+        "scope": "NativeVerifiedWorkshopExactEntry",
+        "entryDllRelativePath": "Content/DTMAPI/DolocTownQoL.dll",
+        "entryDllSha256": "FAD056E44418FF3CB818F927BB59AC328CD8024EC53348A937FD5F6D28534A10"
+      }
+    },
+    {
+      "workshopId": "3759797170",
+      "uniqueId": "com.mxx.doloc.itemlimiter.installer",
+      "referencedAbstractionsVersion": "0.5.2.0",
+      "declaredMinimum": null,
+      "classification": "ExternalApiConsumer",
+      "releaseGate": "PlayerDoctorAndPluginPlacementVerified",
+      "gateEvidence": "2026-07-15 actual subscribed 3759797170 PackageArtifact scan exited 0 with com.mxx.doloc.itemlimiter.installer as DtmApiCodeMod/Expected and Mxx_DolocTownMod_Plugins.dll as ExternalBepInExPlugin/NotApplicable; the locked installed-game fixture separately proves an ordinary DtmMod under BepInEx/plugins is misplaced while external plugins remain owner-bound, and no scanned DLL is loaded or mutated."
+    }
+  ],
+  "pendingClassifications": [
+    { "observedUniqueId": "DTMAPI.ExtraVehicle", "state": "PendingFocusedReview", "releaseEligibility": "Blocked" },
+    { "observedUniqueId": "Yuuka.DTMAPI.ChickenPetBag", "state": "PendingFocusedReview", "releaseEligibility": "Blocked" },
+    { "observedName": "PuftAssets", "state": "ExplicitlyExcludedFromAnimalPack", "releaseEligibility": "Blocked" }
+  ],
+  "knownProjectionDrift": {
+    "publishedBuilderMissingPublicProducts": [],
+    "publishTextProjection": {
+      "path": "tools/release/dtmapi-mod-publish-zh.json",
+      "authority": false,
+      "knownIssues": [
+        "This text projection must mirror each product's current Catalog sourceVersion; future target versions remain Catalog-only decisions.",
+        "Only the Catalog owns Workshop ids and upload authorization; this projection owns text only."
+      ]
+    },
+    "historicalExcludedFiles": [
+      "archive/release-projections/dtmapi-mod-publish-zh-legacy-20260612.md"
+    ]
+  }
+}

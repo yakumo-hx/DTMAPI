@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/dtmapi-author.schema.json",
+  "title": "DTMAPI Author SDK project metadata",
+  "oneOf": [
+    { "$ref": "#/$defs/schema1" },
+    { "$ref": "#/$defs/schema2" }
+  ],
+  "$defs": {
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tags", "localizedName", "localizedDescription"],
+      "properties": {
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "localizedName": { "type": "object", "additionalProperties": { "type": "string" } },
+        "localizedDescription": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "advanced": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["referencePolicyId", "references"],
+      "properties": {
+        "referencePolicyId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]+$"
+        },
+        "references": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["0Harmony", "Assembly-CSharp"] }
+        }
+      }
+    },
+    "schema1": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "projectKind", "targetRuntimeVersion", "sourceDirectory", "contentDirectory", "assemblyName", "publish"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "projectKind": { "enum": ["CodeMod", "ContentPack"] },
+        "targetRuntimeVersion": { "const": "0.5.5" },
+        "sourceDirectory": { "type": "string", "minLength": 1 },
+        "contentDirectory": { "type": "string", "minLength": 1 },
+        "assemblyName": { "type": "string" },
+        "publish": { "$ref": "#/$defs/publish" }
+      }
+    },
+    "schema2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "projectKind", "targetDtmApiVersion", "sourceDirectory", "contentDirectory", "assemblyName", "publish"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "projectKind": { "enum": ["CodeMod", "ContentPack"] },
+        "targetDtmApiVersion": { "const": "0.5.5" },
+        "codeModKind": { "enum": ["Strict", "Advanced"] },
+        "sourceDirectory": { "type": "string", "minLength": 1 },
+        "contentDirectory": { "type": "string", "minLength": 1 },
+        "assemblyName": { "type": "string" },
+        "advanced": { "$ref": "#/$defs/advanced" },
+        "publish": { "$ref": "#/$defs/publish" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "projectKind": { "const": "ContentPack" } }, "required": ["projectKind"] },
+          "then": { "not": { "anyOf": [{ "required": ["codeModKind"] }, { "required": ["advanced"] }] } }
+        },
+        {
+          "if": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] },
+          "then": { "properties": { "projectKind": { "const": "CodeMod" } }, "required": ["advanced"] }
+        },
+        {
+          "if": { "not": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] } },
+          "then": { "not": { "required": ["advanced"] } }
+        }
+      ]
+    }
+  }
+}

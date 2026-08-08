@@ -8,4 +8,28 @@
     <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
     <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Compatibility\ActionCompletion\ActionCompletionService.cs" />
+    <Compile Remove="Compatibility\ActionSpeed\ActionSpeedService.cs" />
+    <Compile Remove="Compatibility\AnimalViewer\AnimalViewerService.cs" />
+    <Compile Remove="Compatibility\ChestLocatorEnhancer\ChestLocatorEnhancerCompatibilityService.cs" />
+    <Compile Remove="Compatibility\Camera\CameraCompatibilityBackend.cs" />
+    <Compile Remove="Compatibility\Camera\CameraDiagnosticsService.cs" />
+    <Compile Remove="Compatibility\Camera\CameraViewService.cs" />
+    <Compile Remove="Compatibility\Camera\CameraZoomCompatibilityService.cs" />
+    <Compile Remove="Compatibility\FishRoeTooltip\FishRoeTooltipService.cs" />
+    <Compile Remove="Compatibility\FishingAutomation\LegacyFishingAutomationService.cs" />
+    <Compile Remove="Compatibility\FishingAutomation\FishingCompatibilityAnimationController.cs" />
+    <Compile Remove="Compatibility\FishingAutomation\FishingCompatibilityInputOverride.cs" />
+    <Compile Remove="Compatibility\FishingAutomation\FishingCompatibilityLifecycle.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityService.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityHooks.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityCleanup.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityInventory.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityTransactions.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotJournalRecoveryPolicy.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotProtectedStoragePolicy.cs" />
+    <Compile Remove="Compatibility\EquipmentSlots\EquipmentSlotShieldPolicy.cs" />
+    <Compile Remove="Compatibility\SaveSlots\SaveSlotsCompatibilityService.cs" />
+  </ItemGroup>
 </Project>

@@ -4,6 +4,11 @@ Status: Partial
 Created: 2026-06-13
 Reverse baseline: `references/doloc-town/reverse/builds/23465763_workshop_38581E`
 
+The original owner table below is the historical fixed-slot baseline. The
+2026-08-06 amendment records the superseding 1.00/current dynamic passive-slot
+owner; do not use the old `passiveItem2` unlock model for current product or API
+design.
+
 ## User Semantic Target
 
 Accessories and hats: expand equipment slots and implement extra equipment.
@@ -45,3 +50,58 @@ Accessories and hats: expand equipment slots and implement extra equipment.
 
 Maps: `Items_Inventory.md`, `Recipe_Crafting.md`, `UI.md`, `Assets_Content.md`.
 Classes/symbols: `AgentEquipmentManager`, `ArchiveOperationGlobal`, `AccessoriesBar`, `UnlockDataCollection`, `ArchiveOperationUniversalUnlock`, `HatInfo`, `ItemFunctionHat*`, `AgentHatRenderer*`, `EquipmentInfo`, `EquipmentFuncCase`, `ItemPlaceConditionInfo`.
+
+## 2026-08-06 Current 1.00 Amendment
+
+### Exact current owner
+
+Read-only inspection of the locally installed build `24585411` confirms the
+same dynamic owner introduced in retained test builds `24456188` and
+`24567135`. The live `Assembly-CSharp.dll` has SHA-256
+`68AEA11BD040805712673E506D1D429BC71338DD52D2659683ADC60B62715739`.
+Only the named types/members and derived layout facts are recorded here; no
+official binary, decompiled body or extracted asset is distributed.
+
+| Semantic target | Current exact owner | Current behavior | Disposition |
+| --- | --- | --- | --- |
+| Native passive state | `AgentEquipmentManager.passiveItems[]`, `EquipPassiveItem(int,...)`, `SetPassiveSlotCount(int)` | A new save starts with one passive entry. Resizing preserves the common prefix, adds/removes native functions for native entries and reloads parameters. | Supersedes fixed `passiveItem1/passiveItem2` and the boolean second-slot model. |
+| Official progression | `FunctionDefines.add_accessory_slot` | Increments `passiveItems.Length` by one through `SetPassiveSlotCount`. | Official progression owns native count; a Mod must not pre-consume or rewrite it. |
+| Native UI | `AccessoriesBar.slotRoot`, `passiveItemPool`, `RenderPassiveItems(Sprite[])`, `allSelectablesArray`; `EquipmentBarUiState.RefreshPassiveViewer()` | The pool count follows `passiveItems.Length`; pool entries receive native indices and participate in official navigation. | Dynamic native UI owner found. |
+| Product-owned extra slots | MoreEquipmentSlots Product-v3 sidecar and product UI | Three extra records may remain product-owned, but their UI must compose after the variable native prefix and join focus/navigation. | Stable public arbitrary-slot API remains blocked; Product UI integration is currently failed. |
+
+The old enum-like translation `Hat/Drone/Active/Passive1/Passive2` is therefore
+not a complete current model. Any future read-only native snapshot would need a
+variable passive collection. This amendment does not redesign or remove the
+frozen `IEquipmentSlotsApi`; its compatibility service remains intact pending a
+separate approved API decision.
+
+### Current MoreEquipmentSlots 1.0 conflict
+
+The current product UI still probes the removed `passiveItem2` and
+`passiveItem1` fields, then falls back to cloning `positiveItem`. It places
+three fixed clones under `positiveItem.transform.parent`, not under the native
+`slotRoot` pool, and those clones are absent from `allSelectablesArray`.
+
+Read-only parsing of the live build's `uu` bundle confirms the exact current
+layout: the AccessoriesBar root is a one-row `GridLayoutGroup` with `112`-pixel
+cells and `12`-pixel horizontal spacing; hat, active item and the passive
+container are its three layout children, while the arrow ignores layout. The
+passive container is one grid cell containing a `HorizontalLayoutGroup` with
+the same `12`-pixel spacing. Product clones are appended as later root-grid
+children.
+
+With one native passive slot, the first product clone follows the native
+container. After official progression grows the native array from one to two,
+the second pool child advances `112 + 12` pixels inside that one-cell container
+and occupies the same position as the first product clone. Data ownership stays
+separate, but UI geometry overlaps and official navigation still omits all
+three product controls. This is an independent current publication blocker for
+MoreEquipmentSlots 1.0 and is recorded in manual QA Review
+`20260806-0001`.
+
+The minimum safe direction is to preserve Product-v3 storage and old recovery,
+render a variable native prefix followed by three product slots through a
+layout-safe owner after native pool rendering, and integrate product controls
+with the same focus/navigation lifecycle. Expanding the official array by three
+on the player's behalf is not an accepted shortcut because it changes official
+progression and native save ownership.

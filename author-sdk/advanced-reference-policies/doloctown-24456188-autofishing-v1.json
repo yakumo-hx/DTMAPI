@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "policyId": "doloctown-24456188-autofishing-v1",
+  "policyVersion": 1,
+  "gameBuildId": "24456188",
+  "gameAssemblyRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+  "gameAssemblySha256": "E861E07E3CB82A6A21EEFA292456452F5AD12C25EC57972A59762AD3F3530923",
+  "references": [
+    {
+      "gameRelativePath": "BepInEx/core/0Harmony.dll",
+      "assemblyName": "0Harmony",
+      "length": 204800,
+      "sha256": "1A21CC03424FC82C3DD1346905D16494536B9595AE4162228D99FB7C285C1031",
+      "copyLocal": false
+    },
+    {
+      "gameRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "assemblyName": "Assembly-CSharp",
+      "length": 6384128,
+      "sha256": "E861E07E3CB82A6A21EEFA292456452F5AD12C25EC57972A59762AD3F3530923",
+      "copyLocal": false
+    }
+  ]
+}

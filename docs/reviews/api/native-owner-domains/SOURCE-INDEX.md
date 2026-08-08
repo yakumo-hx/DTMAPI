@@ -13,10 +13,17 @@ This file records the source set used by the initial native-owner domain library
 - `docs/debug/INDEX.md`
 - `docs/debug/regressions/smoke-matrix.md`
 
-## Reverse Baselines
+## Reverse References
 
-- Primary: `references/doloc-town/reverse/builds/23465763_workshop_38581E`
-- Comparison: `references/doloc-town/reverse/builds/23249387_workshop_247ACD`
+- Current reference: `references/doloc-town/reverse/builds/24456188_test_E861E0`
+- Immediate comparison reference: `references/doloc-town/reverse/builds/24256979_test_7A1907`
+- Initial report baseline: `references/doloc-town/reverse/builds/23465763_workshop_38581E`
+- Historical comparison baseline: `references/doloc-town/reverse/builds/23249387_workshop_247ACD`
+- Latest baseline audit: `docs/reviews/code/2026/20260801-0002-current-game-vs-24256979-reverse-baseline-audit.md`
+
+The fixed domain reports were initially authored against `23465763_workshop_38581E`. Future implementation work should keep those headers as historical context, then re-open task-specific symbols and method bodies in the current reference before changing code.
+
+The 24456188 current reference contains the full snapshot, exported assets/configs/scenes, and ILSpy output. It does not by itself update the checked-in Native Function Map dataset or historical `maps/index` aggregates; those counts retain their own recorded baseline until deliberately regenerated.
 
 Primary reverse maps used:
 

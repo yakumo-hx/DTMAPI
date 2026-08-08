@@ -8,57 +8,74 @@ namespace DTMAPI.ModConfigMenu
 {
     internal sealed class ConfigMenuPage : IConfigMenuPage, IConfigMenuPendingPreview
     {
-        private readonly ConfigMenuRegistry registry;
-        private readonly Action reset;
-        private readonly Action save;
+        private ConfigMenuRegistry? registry;
+        private Action? reset;
+        private Action? save;
+        private readonly List<WeakReference<PendingPreviewScope>> previewScopes = new List<WeakReference<PendingPreviewScope>>();
+        private readonly IManifest inactiveManifest;
+        private IManifest manifest;
         private int nextItemNumber;
-        private Func<string> displayName = null!;
+        private Func<string>? displayName;
+        private bool isActive = true;
 
-        public ConfigMenuPage(ConfigMenuRegistry registry, IManifest manifest, Action reset, Action save, bool titleScreenOnly)
+        public ConfigMenuPage(ConfigMenuRegistry registry, IManifest manifest, Action reset, Action save, bool titleScreenOnly, IManifest? inactiveManifest = null)
         {
             this.registry = registry;
-            Manifest = manifest;
+            this.manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
+            this.inactiveManifest = inactiveManifest ?? ConfigMenuManifestSnapshot.Capture(manifest);
             this.reset = reset;
             this.save = save;
             TitleScreenOnly = titleScreenOnly;
             displayName = () => Manifest.Name;
         }
 
-        public IManifest Manifest { get; }
-        public string DisplayName => SafeInvoke(displayName);
+        public IManifest Manifest => manifest;
+        public string DisplayName => isActive ? SafeInvoke(displayName) : string.Empty;
         public bool TitleScreenOnly { get; }
         public bool IsEditing { get; private set; }
-        public bool HasPendingChanges => ItemsInternal.Any(i => i.HasPendingChange);
+        public bool HasPendingChanges => isActive && ItemsInternal.Any(i => i.HasPendingChange);
         public bool IsLocked { get; private set; }
         public string LockReason { get; private set; } = string.Empty;
         public List<ConfigMenuItemBase> ItemsInternal { get; } = new List<ConfigMenuItemBase>();
-        public IReadOnlyList<IConfigMenuItem> Items => ItemsInternal.Where(i => i.IsVisible).Cast<IConfigMenuItem>().ToArray();
+        public IReadOnlyList<IConfigMenuItem> Items => isActive ? ItemsInternal.Where(i => i.IsVisible).Cast<IConfigMenuItem>().ToArray() : Array.Empty<IConfigMenuItem>();
+        internal bool IsActive => isActive;
 
         public string NextItemId(string kind)
         {
+            ThrowIfInactive();
             nextItemNumber++;
             return Manifest.UniqueID + ":" + kind + ":" + nextItemNumber.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetDisplayName(Func<string> name)
         {
+            ThrowIfInactive();
             displayName = name ?? (() => Manifest.Name);
         }
 
         public void AddItem(ConfigMenuItemBase item)
         {
+            ThrowIfInactive();
             item.CaptureCommittedValue();
+            if (!isActive)
+            {
+                item.Deactivate();
+                ThrowIfInactive();
+            }
             ItemsInternal.Add(item);
         }
 
         public void SetLocked(bool locked, string reason)
         {
+            if (!isActive)
+                return;
             IsLocked = locked;
             LockReason = locked ? reason ?? string.Empty : string.Empty;
         }
 
         public void BeginEditing()
         {
+            ThrowIfInactive();
             foreach (ConfigMenuItemBase item in ItemsInternal)
                 item.CaptureCommittedValue();
             IsEditing = true;
@@ -66,28 +83,55 @@ namespace DTMAPI.ModConfigMenu
 
         public IDisposable PreviewPendingValues()
         {
+            if (!isActive)
+                return PendingPreviewScope.CreateInactive();
             if (!TryReadCurrentValues("preview", out string[] previousValues))
-                return new PendingPreviewScope(this, Array.Empty<string>());
+                return PendingPreviewScope.CreateInactive();
 
-            var scope = new PendingPreviewScope(this, previousValues);
+            var changedIndices = new List<int>();
             for (int i = 0; i < ItemsInternal.Count; i++)
             {
+                if (string.Equals(previousValues[i], ItemsInternal[i].PendingValue, StringComparison.Ordinal))
+                    continue;
+                changedIndices.Add(i);
+            }
+
+            if (changedIndices.Count == 0)
+                return PendingPreviewScope.CreateInactive();
+
+            int[] changed = changedIndices.ToArray();
+            PendingPreviewScope scope = CreatePreviewScope(previousValues, changed);
+            int appliedCount = 0;
+            for (int changeIndex = 0; changeIndex < changed.Length; changeIndex++)
+            {
+                int i = changed[changeIndex];
+                if (!isActive || i < 0 || i >= ItemsInternal.Count)
+                    return PendingPreviewScope.CreateInactive();
+                ConfigMenuItemBase item = ItemsInternal[i];
                 try
                 {
-                    ItemsInternal[i].ApplyRawValue(ItemsInternal[i].PendingValue);
+                    item.ApplyRawValue(item.PendingValue);
+                    if (!isActive)
+                        return PendingPreviewScope.CreateInactive();
+                    appliedCount++;
                 }
                 catch (Exception ex)
                 {
-                    ItemsInternal[i].SetValidationError("Preview failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                    if (!isActive)
+                        return PendingPreviewScope.CreateInactive();
+                    item.SetValidationError("Preview failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                    RecordPreviewAudit("apply-pending", false, "changed=" + changed.Length.ToString(CultureInfo.InvariantCulture) + "; applied=" + appliedCount.ToString(CultureInfo.InvariantCulture) + "; failedItem=" + item.ItemId + "; " + ConfigMenuCallbackRunner.Describe(ex));
                     scope.Dispose();
-                    return new PendingPreviewScope(this, Array.Empty<string>());
+                    return PendingPreviewScope.CreateInactive();
                 }
             }
+            RecordPreviewAudit("apply-pending", true, "changed=" + changed.Length.ToString(CultureInfo.InvariantCulture));
             return scope;
         }
 
         public void Reset()
         {
+            ThrowIfInactive();
             ThrowIfLocked();
             if (!IsEditing)
                 BeginEditing();
@@ -95,7 +139,7 @@ namespace DTMAPI.ModConfigMenu
             string[] previousPendingValues = CapturePendingValues();
             try
             {
-                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".reset", reset);
+                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".reset", reset!);
                 foreach (ConfigMenuItemBase item in ItemsInternal)
                 {
                     try
@@ -119,8 +163,9 @@ namespace DTMAPI.ModConfigMenu
 
         public void Save()
         {
+            ThrowIfInactive();
             ThrowIfLocked();
-            if (registry.HasKeybindConflict(this))
+            if (registry!.HasKeybindConflict(this))
                 throw new InvalidOperationException("存在按键冲突，无法保存配置。");
 
             string[] previousValues = ReadCurrentValues("save");
@@ -138,7 +183,9 @@ namespace DTMAPI.ModConfigMenu
                         throw;
                     }
                 }
-                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".save", save);
+                ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".save", save!);
+                if (!isActive)
+                    return;
             }
             catch (Exception ex)
             {
@@ -153,6 +200,7 @@ namespace DTMAPI.ModConfigMenu
 
         public void Cancel()
         {
+            ThrowIfInactive();
             var errors = new List<string>();
             foreach (ConfigMenuItemBase item in ItemsInternal)
             {
@@ -172,14 +220,73 @@ namespace DTMAPI.ModConfigMenu
             IsEditing = false;
         }
 
+        internal void Deactivate()
+        {
+            if (!isActive)
+                return;
+
+            // Mark inactive first so neither a stale preview scope nor a re-entrant
+            // UI call can invoke owner callbacks while roots are being detached.
+            isActive = false;
+            IsEditing = false;
+            IsLocked = false;
+            LockReason = string.Empty;
+            reset = null;
+            save = null;
+            displayName = null;
+            manifest = inactiveManifest;
+
+            foreach (WeakReference<PendingPreviewScope> reference in previewScopes)
+            {
+                if (reference.TryGetTarget(out PendingPreviewScope scope))
+                    scope.Deactivate();
+            }
+            previewScopes.Clear();
+
+            foreach (ConfigMenuItemBase item in ItemsInternal)
+                item.Deactivate();
+            ItemsInternal.Clear();
+
+            // A stale page reference must not retain the registry and every other
+            // owner's page through it.
+            registry = null;
+        }
+
+        private PendingPreviewScope CreatePreviewScope(string[] previousValues, int[] changedIndices)
+        {
+            for (int i = previewScopes.Count - 1; i >= 0; i--)
+            {
+                if (!previewScopes[i].TryGetTarget(out PendingPreviewScope existing) || existing.IsDisposed)
+                    previewScopes.RemoveAt(i);
+            }
+
+            var scope = new PendingPreviewScope(this, previousValues, changedIndices);
+            previewScopes.Add(new WeakReference<PendingPreviewScope>(scope));
+            return scope;
+        }
+
+        private void RecordPreviewAudit(string operation, bool success, string details)
+        {
+            if (isActive)
+                registry?.RecordPreviewAudit(Manifest, "scope", "ChangedItems", operation, success, details);
+        }
+
+        private void ThrowIfInactive()
+        {
+            if (!isActive)
+                throw new InvalidOperationException("This config menu page is inactive because its owner was deactivated.");
+        }
+
         private void ThrowIfLocked()
         {
             if (IsLocked)
                 throw new InvalidOperationException(string.IsNullOrWhiteSpace(LockReason) ? "此 Mod 当前由启用来源锁定，不能在 DTMAPI 中修改。" : LockReason);
         }
 
-        private static string SafeInvoke(Func<string> func)
+        private static string SafeInvoke(Func<string>? func)
         {
+            if (func == null)
+                return string.Empty;
             try
             {
                 return func() ?? string.Empty;
@@ -269,14 +376,35 @@ namespace DTMAPI.ModConfigMenu
 
         private sealed class PendingPreviewScope : IDisposable
         {
-            private readonly ConfigMenuPage page;
-            private readonly string[] previousValues;
+            private ConfigMenuPage? page;
+            private string[] previousValues;
+            private int[] changedIndices;
             private bool disposed;
 
-            public PendingPreviewScope(ConfigMenuPage page, string[] previousValues)
+            public PendingPreviewScope(ConfigMenuPage page, string[] previousValues, int[] changedIndices)
             {
                 this.page = page;
                 this.previousValues = previousValues;
+                this.changedIndices = changedIndices;
+            }
+
+            private PendingPreviewScope()
+            {
+                previousValues = Array.Empty<string>();
+                changedIndices = Array.Empty<int>();
+                disposed = true;
+            }
+
+            public bool IsDisposed => disposed;
+
+            public static PendingPreviewScope CreateInactive() => new PendingPreviewScope();
+
+            public void Deactivate()
+            {
+                disposed = true;
+                page = null;
+                previousValues = Array.Empty<string>();
+                changedIndices = Array.Empty<int>();
             }
 
             public void Dispose()
@@ -284,19 +412,101 @@ namespace DTMAPI.ModConfigMenu
                 if (disposed)
                     return;
                 disposed = true;
-                int count = Math.Min(page.ItemsInternal.Count, previousValues.Length);
-                for (int i = 0; i < count; i++)
+
+                ConfigMenuPage? currentPage = page;
+                string[] values = previousValues;
+                int[] indices = changedIndices;
+                page = null;
+                previousValues = Array.Empty<string>();
+                changedIndices = Array.Empty<int>();
+
+                if (currentPage == null || !currentPage.IsActive)
+                    return;
+
+                int restored = 0;
+                string firstFailure = string.Empty;
+                for (int changeIndex = 0; changeIndex < indices.Length; changeIndex++)
                 {
+                    int i = indices[changeIndex];
+                    if (i < 0 || i >= currentPage.ItemsInternal.Count || i >= values.Length)
+                        continue;
                     try
                     {
-                        page.ItemsInternal[i].ApplyRawValue(previousValues[i]);
+                        currentPage.ItemsInternal[i].ApplyRawValue(values[i]);
+                        restored++;
                     }
                     catch (Exception ex)
                     {
-                        page.ItemsInternal[i].SetValidationError("Preview restore failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                        currentPage.ItemsInternal[i].SetValidationError("Preview restore failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                        if (string.IsNullOrWhiteSpace(firstFailure))
+                            firstFailure = "failedItem=" + currentPage.ItemsInternal[i].ItemId + "; " + ConfigMenuCallbackRunner.Describe(ex);
                     }
                 }
+                if (indices.Length > 0)
+                    currentPage.RecordPreviewAudit("restore", string.IsNullOrWhiteSpace(firstFailure), "changed=" + indices.Length.ToString(CultureInfo.InvariantCulture) + "; restored=" + restored.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrWhiteSpace(firstFailure) ? string.Empty : "; " + firstFailure));
             }
         }
+    }
+
+    /// <summary>
+    /// Captures manifest data at registration so a stale UI page never keeps a
+    /// Mod-provided manifest implementation or its dependency collections alive.
+    /// </summary>
+    internal sealed class ConfigMenuManifestSnapshot : IManifest
+    {
+        private ConfigMenuManifestSnapshot(IManifest source)
+        {
+            Name = source.Name ?? string.Empty;
+            Author = source.Author ?? string.Empty;
+            Version = source.Version ?? string.Empty;
+            Description = source.Description ?? string.Empty;
+            UniqueID = source.UniqueID ?? string.Empty;
+            EntryDll = source.EntryDll ?? string.Empty;
+            EntryType = source.EntryType ?? string.Empty;
+            MinimumDTMApiVersion = source.MinimumDTMApiVersion ?? string.Empty;
+            MinimumGameVersion = source.MinimumGameVersion ?? string.Empty;
+            Type = source.Type ?? string.Empty;
+            Dependencies = (source.Dependencies ?? Array.Empty<IManifestDependency>())
+                .Where(dependency => dependency != null)
+                .Select(dependency => (IManifestDependency)new ConfigMenuManifestDependencySnapshot(dependency))
+                .ToArray();
+            UpdateKeys = (source.UpdateKeys ?? Array.Empty<string>())
+                .Select(key => key ?? string.Empty)
+                .ToArray();
+        }
+
+        public string Name { get; }
+        public string Author { get; }
+        public string Version { get; }
+        public string Description { get; }
+        public string UniqueID { get; }
+        public string EntryDll { get; }
+        public string EntryType { get; }
+        public string MinimumDTMApiVersion { get; }
+        public string MinimumGameVersion { get; }
+        public string Type { get; }
+        public IReadOnlyList<IManifestDependency> Dependencies { get; }
+        public IReadOnlyList<string> UpdateKeys { get; }
+
+        public static IManifest Capture(IManifest source)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            return source is ConfigMenuManifestSnapshot ? source : new ConfigMenuManifestSnapshot(source);
+        }
+    }
+
+    internal sealed class ConfigMenuManifestDependencySnapshot : IManifestDependency
+    {
+        public ConfigMenuManifestDependencySnapshot(IManifestDependency source)
+        {
+            UniqueID = source.UniqueID ?? string.Empty;
+            MinimumVersion = source.MinimumVersion ?? string.Empty;
+            Required = source.Required;
+        }
+
+        public string UniqueID { get; }
+        public string MinimumVersion { get; }
+        public bool Required { get; }
     }
 }

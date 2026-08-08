@@ -6,7 +6,9 @@ codex搭建骨架，codex进行实际游戏测试hook，codex把现有的mod进�
 骨架必须可拓展，功能齐全（界面、自带功能性菜单mod接口）。
 请你给出指导性意见。
 
-长期 API/GameBridge 重建必须先查固定 native-owner 领域资料库：`../reviews/api/native-owner-domains/INDEX.md`。这个索引用来把“新增 NPC / 动物 / 天气 / 地图 / 载具 / 远程武器”等模糊功能目标落实到 Doloc Town 原生责任函数、状态 holder、官方 Workshop 支持边界和可转稳定 API 的 DTO/adapter 概念；它不是稳定性证明，不能替代后续第三存档游戏验证。
+长期 API/GameBridge 重建必须先查固定 native-owner 领域资料库：`../reviews/api/native-owner-domains/INDEX.md`。这个索引用来把“新增 NPC / 动物 / 天气 / 地图 / 载具 / 远程武器”等模糊功能目标落实到 Doloc Town 原生责任函数、状态 holder、官方 Workshop 支持边界和可转稳定 API 的 DTO/adapter 概念；它不是稳定性证明，不能替代后续领域权威 fixture 的游戏验证（默认第三存档，当前 AutoFishing 原生行为/GC 为第五存档）。
+
+> 2026-07-21 当前边界修正：本文最初的“所有脆弱 Hook 都集中到 GameBridge”只适用于 Strict CodeMod 经稳定公共 API 使用共享原生能力的路线，不再是所有受管 Mod 的普遍物理归属规则。Strict / Advanced / ContentPack / External 身份及 Platform / SharedNative / ProductNative / ContentOwner 分类以仓库根 [PROJECT.md](../../PROJECT.md) 为唯一规范；成因与 Batch 6 门禁见 [20260719-0012](../reviews/code/2026/20260719-0012-batch6-boundary-correction-prerequisite.md)。corrected Phase 0、G2 synthetic fixture 与 AutoFishing 唯一真实产品 pilot 已分别验收；`SDK160` 继续保护 Strict，不得手工伪造 Advanced。AutoFishing 的下一步是产品内部减重，不自动准入第二产品；其他产品与 G7 仍阻断，0.5.5 发布由用户明确暂停。
 
 
 
@@ -47,7 +49,7 @@ DTMAPI/
     DTMAPI.Abstractions/          # 公开给 Mod 作者引用的稳定 API；尽量少依赖游戏内部类
     DTMAPI.Core/                  # Mod 加载、Manifest、依赖排序、日志、配置、事件总线
     DTMAPI.BepInExBootstrap/      # 唯一放进 BepInEx/plugins 的启动插件
-    DTMAPI.GameBridge.DolocTown/  # 所有 Doloc Town 反编译/Hook/Unity 适配都集中在这里
+    DTMAPI.GameBridge.DolocTown/  # 已证明 SharedNative 的 Doloc Town Hook/Unity 适配
     DTMAPI.ModConfigMenu/         # 内置配置菜单/功能性菜单接口
     DTMAPI.ContentPatcher/        # 官方 json + DTMAPI content pack 的扩展加载器
     DTMAPI.ConsoleCommands/       # 控制台命令、调试命令、dump 命令
@@ -153,9 +155,9 @@ DTMAPI 0.1 的目标不是“所有功能齐全”，而是证明生态闭环：
 
 ------
 
-# 5. Hook 策略：GameBridge 是核心资产
+# 5. Hook 策略：GameBridge 是共享原生核心资产
 
-你手头有全部反编译信息，但不要让每个 Mod 都直接依赖反编译类。正确做法是：
+你手头有全部反编译信息，但不要让 Strict CodeMod 直接依赖反编译类。稳定公共 API 路线是：
 
 ```text
 游戏内部方法
@@ -164,10 +166,12 @@ DTMAPI.GameBridge.DolocTown
    ↓ 稳定事件与服务接口
 DTMAPI.Abstractions
    ↓
-普通 DTMAPI Mod
+Strict CodeMod
 ```
 
-也就是说，**所有脆弱 hook 都集中在 `DTMAPI.GameBridge.DolocTown`**。普通 Mod 作者只面对稳定 API，例如：
+这个链只说明 `SharedNative -> 稳定公共 API -> Strict CodeMod`。单产品状态机、补丁、缓存、动画或玩法规则属于 `ProductNative`，由通过独立准入的受管 Advanced CodeMod 产品拥有；G2 synthetic PASS 本身不准入任意真实产品。JSON/PNG/WAV 等领域引擎属于可选 Content Host。不能因为一段代码使用 Harmony、需要集中测试、被标记为 `internal` 或可能将来复用，就自动把它留在 mandatory GameBridge。
+
+GameBridge 仍负责已经证明共享的 Hook、原生状态适配、冲突仲裁和生命周期恢复；公共 Mod 作者只面对稳定 API，例如：
 
 ```csharp
 public sealed class ModEntry : DtmMod

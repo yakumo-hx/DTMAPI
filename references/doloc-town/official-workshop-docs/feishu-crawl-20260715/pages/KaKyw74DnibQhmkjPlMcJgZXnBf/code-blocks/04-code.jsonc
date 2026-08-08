@@ -1,0 +1,14 @@
+[
+  {
+    "id": "pot", //配方组ID，同设备ID
+    "extra_recipes": [
+      "endyam_can" //固定配方ID
+    ]
+  },
+  {
+    "id": "large_pot", //配方组ID，同设备ID
+    "extra_recipes": [
+      "endyam_can" //固定配方ID
+    ]
+  }
+]

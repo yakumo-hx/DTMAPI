@@ -1,0 +1,11 @@
+功能类型名称	功能类型ID	使用效果	配置示例	举例	额外字段1	额外字段2
+默认	ItemFunction		01 新增道具	石头、鲑鱼
+帽子	ItemFunctionHat	穿戴帽子	02 新增帽子	焊工面罩、钢盔
+设备	ItemFunctionEquipment	放置设备	03 新增装饰设备	简易种植盆、熔炉
+作物种子	ItemFunctionSeed	种下种子	01 新增作物	末芋种子、龙舌兰种子	seed_id（对应的种子ID）
+作物果实	ItemFunctionCrop	食用（部分）	01 新增作物	末芋、龙舌兰	seed_item（对应的种子道具ID）	eating_effect（对应的食用效果ID）
+食物	ItemFunctionFood	食用	03 新增料理	罐头、葡萄酒	"
+eating_effect（对应的食用效果ID）
+"
+建筑外部墙纸	ItemFunctionBuildingExterior	改变建筑外部外观	09 综合案例四（新增墙纸）（暂未实装） 		exterior_id（对应的墙纸ID）
+建筑内部墙纸	ItemFunctionWallpaper	改变建筑室内外观	09 综合案例四（新增墙纸）（暂未实装） 		exterior_id（对应的墙纸ID）

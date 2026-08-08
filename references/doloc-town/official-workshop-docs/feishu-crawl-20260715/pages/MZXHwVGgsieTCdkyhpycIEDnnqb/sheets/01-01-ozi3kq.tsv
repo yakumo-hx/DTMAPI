@@ -1,0 +1,17 @@
+食材组名称	食材组ID	举例
+道具组
+末日作物类	endcrop_class	末芋、多肉
+除水果外所有蔬菜	vegetable_class	末芋、土豆
+水果类	fruit_class	蓝莓、蜡果
+鱼类	fish_class	草鱼、鲑鱼
+蘑菇类	mushroom_class	绯红子囊菌、香菇
+肉类	meat_fish_class	生肉、草鱼、
+任意肉、鱼、蔬菜	meat_vegetable_class	生肉、草鱼、末芋
+烹饪饭类	cooked_rice_class	咖喱饭、炒饭
+单个道具
+面粉	flour_class	面粉
+大米	rice_class	大米
+肉	meat_class	肉
+番茄	tomato_class	番茄
+茶叶	tea_leaf_class	茶叶
+鸡蛋	egg_class	鸡蛋

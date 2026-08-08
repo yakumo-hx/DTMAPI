@@ -4,7 +4,7 @@
 
 - Status: mitigated by Steam client restart; keep open for recurrence tracking
 - Last observed: 2026-05-31
-- Last clean recheck: 2026-05-31 19:04
+- Last clean recheck: 2026-07-15 19:14
 - Last external observer validation: 2026-05-31 19:14
 - Severity: high for automated game smoke verification
 - Regression risk: medium
@@ -36,6 +36,8 @@ No fatal instance popup found.
 - Later post-restart smokes stayed clean, including `GAME-SMOKE/20260531-160900` and title smoke `GAME-SMOKE/20260531-161357` with collected logs `GAME-SMOKE/20260531-160943` and `GAME-SMOKE/20260531-161545`.
 - Latest normal DTMAPI segment samples are sub-second: `Bootstrap.Awake totalMs=610` in `GAME-SMOKE/20260531-160943` and `Bootstrap.Awake totalMs=636` in `GAME-SMOKE/20260531-161545`.
 - `analyze-startup-evidence.ps1` now classifies startup evidence folders and reports whether a sample is normal DTMAPI startup, true DTMAPI slow startup, or Steam/pre-process launch blocking.
+- Batch 3 defers native Workshop capture and Core Runtime start from BepInEx `Awake` to a one-shot first native-ready PlayerLoop frame because `DolocAPI.dataPersistenceManager`/`modManager` is not ready before the game's `GameManager.Awake` completes. Current evidence therefore measures the complete DTMAPI runtime segment with `Bootstrap.StartRuntime totalMs`; `analyze-startup-evidence.ps1` prefers that metric and falls back to historical `Bootstrap.Awake totalMs` evidence. The retained `BootstrapAwakeMs` report field/column is a compatibility label for this preferred-current/fallback-historical value, not a claim that current Core startup still runs inside BepInEx `Awake`.
+- Final normal-Steam Batch 3 recheck `GAME-SMOKE/20260715-191256` was classified `NormalDtmapiStartup`: `LaunchToProcessMs=3146`, `LaunchToStartupPatternMs=26771`, `Bootstrap.StartRuntime totalMs=658`, `DiscoverMods totalMs=292`, `ModLoad elapsedMs=196`, and `Bootstrap.HarmonyInitialize elapsedMs=653`. The game reached slot 3, completed the native ReloadMods recapture and title lifecycle, then exited with no fatal popup or residual `DolocTown.exe`. The longer launch-to-startup wall clock with a sub-second DTMAPI runtime segment is not a true DTMAPI slow sample and did not reproduce the pre-process Steam blocker.
 - `collect-logs.ps1` now includes `steam-appmanifest-2285550.acf`, `steam-info.txt`, and Steam log tails so the next blocked launch has Steam-side evidence without manual digging.
 - `run-game-smoke.ps1` now writes collected logs, `startup-timeline.json`, and startup analysis into the same primary smoke evidence folder, so launch wall-clock timing, `result.json`, and startup segment evidence can be audited together.
 - Latest integrated timeline smoke `GAME-SMOKE/20260531-164214` reached `DolocTown.exe` at `LaunchToProcessMs=4141`, reached `DTMAPI runtime starting.` at `LaunchToStartupPatternMs=6167`, and was classified as `NormalDtmapiStartup` with `Bootstrap.Awake totalMs=649`.
@@ -140,6 +142,7 @@ No fatal instance popup found.
 - Startup observer timeout validation: `docs/debug/evidence/STARTUP-OBSERVE/20260531-191241`
 - Startup observer external-launch validation: `docs/debug/evidence/STARTUP-OBSERVE/20260531-191352`
 - Startup comparison validation: `docs/debug/evidence/STARTUP-COMPARE/20260531-192226`
+- Final normal-Steam Batch 3 startup/source recheck: `docs/debug/evidence/GAME-SMOKE/20260715-191256`
 - Related successful pre-blocker F6 evidence: `docs/debug/evidence/GAME-SMOKE/20260531-112959`
 
 ## Acceptance Criteria

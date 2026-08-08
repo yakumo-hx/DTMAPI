@@ -1,71 +1,40 @@
-# DTMAPI Current State Handoff
+# DTMAPI Current Truth Router
 
-Status date: 2026-06-15
+This file deliberately contains no copied version, branch, API status, issue summary, or latest-smoke prose. Those values change too often and previously made this page stale.
 
-This file is a short orientation entry for fresh Codex sessions. It is not a task ledger and does not replace `AGENTS.md`, update records, debug records, API reviews, or goal files.
+Use this page to locate the canonical owner of each current fact.
 
-## Start Here
+## Live Workspace Facts
 
-Read these first, in this order:
+| Question | Canonical source |
+| --- | --- |
+| Which branch, HEAD, and files are active? | `git status --short --branch`, `git log -1 --decorate --oneline`, and `git worktree list` |
+| Which SDK, game path, runtime lock, logs, and process are active? | `tools/scripts/status.ps1` |
+| What is the release/API, binary/file, and assembly compatibility version? | [Runtime version authority](../../tools/release/dtmapi-runtime-version.props); `Directory.Build.props` and `src/DTMAPI.Core/Runtime/DtmApiRuntime.cs` project it |
+| What changed recently? | [Update index](../updates/INDEX.md), then the matching year and month ledger |
+| Which API contracts are current? | [Public API matrix](../api/public-api-matrix.md) |
+| Which Hook boundaries are current? | [Hook Map](../hook-map/README.md) and focused domain maps |
+| Which recurring runtime issues are open? | [Issue ledger](../debug/issues/README.md) |
+| Which runtime checks are current? | [Active smoke matrix](../debug/regressions/smoke-matrix.md) |
+| Where is pre-cutoff validation history? | [Historical smoke matrix](../debug/regressions/smoke-matrix-history-through-20260711.md) |
+| Which native owner should an API start from? | [Native-owner domain library](../reviews/api/native-owner-domains/INDEX.md) |
 
-1. `AGENTS.md`
-2. `PROJECT.md`
-3. `docs/onboarding/current-state.md`
-4. `docs/api/public-api-matrix.md`
-5. `docs/debug/INDEX.md`
-6. The latest relevant `docs/updates/YYYY/...` record for the area being changed
-7. The latest relevant `docs/reviews/...` record when doing review, root-cause, API, GameBridge, hook, input, save/load, UI, or lifecycle work
+## Stable Project Boundaries
 
-For hook or GameBridge changes, also read `docs/hook-map/README.md`, `docs/debug/regressions/smoke-matrix.md`, and the task-specific reverse/reference notes named by the review or goal.
+- Read `AGENTS.md` and `PROJECT.md` before design or implementation.
+- The canonical Strict/Advanced/ContentPack/External identities and Platform/SharedNative/ProductNative/ContentOwner ownership rules live in [`PROJECT.md`](../../PROJECT.md); this router does not duplicate them.
+- `BepInEx/plugins/DTMAPI` contains one DTMAPI BepInEx plugin entry (Bootstrap) plus four co-located Runtime dependencies. DTMAPI-managed Mods do not belong there; third-party External BepInEx Plugins remain outside DTMAPI ownership.
+- Native work starts from the native owner and is classified before implementation. Platform stays with its responsible platform component; GameBridge is for proven SharedNative adapters, not every single-product Hook.
+- Build success alone does not prove runtime, Hook, lifecycle, or player-visible behavior.
+- Historical Goal handoffs, long indexes, and old smoke successes are audit material, not current task authority.
 
-## Active Branch Discipline
+## Task-Specific Reading
 
-`Refactor` is the current first-level integration branch. Larger cleanup or refactor work should happen on a second-level `codex/...` branch and should not be merged back to `Refactor` without the user's explicit decision.
+- Runtime or repeated bug: relevant issue, protocol, latest Update, and active smoke rows.
+- API/GameBridge/Advanced CodeMod/Content Host: task-specific review, physical-owner classification, public API row when applicable, native-owner report, focused Hook map, and current reverse reference.
+- Manual QA: preserve issue order, transcribe screenshots, and keep user facts separate from inference.
+- Installer/Workshop: [Runtime Workshop Installer Boundary](../architecture/runtime-workshop-installer-boundary.md), [package/subscription test matrix](../workflows/workshop-package-subscription-test-matrix.md), then the latest linked Review, Debug issue and Update. Dated phase summaries are historical context only.
 
-Keep each meaningful cleanup/refactor round in its own commit so the branch can be rolled back by round.
+## Maintenance Rule
 
-## Current Product Shape
-
-DTMAPI is a Doloc Town modding API built as:
-
-```text
-BepInEx bootstrap -> DTMAPI Core -> DolocTown GameBridge -> stable public API -> DTMAPI mods
-```
-
-Only the bootstrap belongs in `BepInEx/plugins`. Ordinary DTMAPI mods belong in DTMAPI/local or Workshop mod folders and must be loaded through DTMAPI manifest/runtime paths.
-
-## Current API Reality
-
-The project has many smoke-verified paths, but most gameplay-facing GameBridge APIs are still Experimental. Do not promote an API to Stable from UI success, registry success, hook fire, or smoke helper success alone.
-
-Important current boundaries:
-
-- `ICameraZoomApi` 0.4.2 is failed/obsolete compatibility. Use `ICameraViewApi` for playable zoom work, and do not claim background/panorama/fog sync is solved from orthographic-size evidence.
-- `IMotorVehicleApi` and MotorVehicle DTOs are retired/removed after the active `SecondMotorMod` sample was archived on 2026-06-15. Archived SecondMotor smoke evidence is research history only, not current completion proof.
-- Custom entity runtime creation remains blocked unless a family-specific native adapter is reviewed and verified.
-- Manager/title UI is internal product UI. It does not promote diagnostics or GameBridge surfaces to public stable API.
-
-## Archived Or Historical Areas
-
-`testmods/SecondMotorMod` is archived under `archive/second-motor-20260615`. Active build, release, and smoke scripts must not reinstall or validate `DTMAPI_SecondMotor` as a current player-facing package.
-
-Vehicle research may continue later, but it must start from a smaller native-owner slice, fresh public contract, and fresh manual QA. Do not restore old SecondMotor code, MotorVehicle API code, or local packages as a release candidate.
-
-## Evidence Space Policy
-
-`docs/debug/evidence` is intentionally ignored by Git. It can become huge locally and should be treated as local artifact storage, not project source.
-
-Default evidence collection should keep compact logs, result files, process/fatal-window checks, startup analysis, and explicit pointers to heavy runtime evidence. Full screenshot/runtime evidence directories should be copied only when the report or review truly needs the payload.
-
-## Current Cleanup Priorities
-
-Near-term cleanup should stay round-based:
-
-1. Low-risk workspace cleanup: stale solution references, dead UI routes, evidence collection policy, and onboarding docs.
-2. SecondMotor/MotorVehicle cleanup: keep the archived sample and historical reviews as research, but do not reintroduce the retired public API, GameBridge hooks, or smoke path.
-3. Maintainability refactor: split runtime loader/service/diagnostics responsibilities, split GameBridge hook installers and smoke/status ownership, and reduce monolithic config UI behavior.
-4. Semantic fixes: make content helper enabled-state boundaries explicit, correct or rename misleading input suppression, and warn clearly on duplicate `UniqueID` resolution.
-
-## Validation Reminder
-
-Build success is not enough for runtime/hook/API changes. Follow the evidence rules in `AGENTS.md`: startup log, HookProbe or feature log line, third-save evidence when relevant, clean exit, no fatal instance window, and updated debug/update records.
+Do not add volatile project summaries to this page. Add or change a route only when the canonical source itself moves. `tools/scripts/check-doc-governance.ps1` enforces this page's no-date/no-version boundary.

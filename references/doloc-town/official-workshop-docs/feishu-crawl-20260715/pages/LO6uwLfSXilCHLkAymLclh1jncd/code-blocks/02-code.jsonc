@@ -1,0 +1,56 @@
+[
+  {
+    "id": "seed_crop0", //种子ID
+    "seed_type": "fungus", //作物类型（universal一般作物，fungus真菌作物，vine藤蔓作物，shrub灌木作物）
+    "nature_genes": [], //初始基因组
+    "health_value": 7.5, //血量
+    "damage_rate": 1, //承伤转化率
+    "growth_months": [ //（生长月份，为空表示没有限制）
+      2
+    ],
+    "tech_point": 2, //收获增长科技点数
+    "crop_outputs": [
+      {
+        "item_name": "crop0", //收获道具ID
+        "min_count": 2, //最小收获数量
+        "max_count": 2 //最大收获数量
+      }
+    ],
+    "lifespan": 1, //最大收获次数
+    "repeat_level": 2, //收获后重复的阶段
+    "level_datas": [
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_0" //场景贴图ID，格式为sprite_[种子ID]_阶段，下同。
+          }
+        ]
+      },
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_1" //场景贴图ID
+          }
+        ]
+      },
+      {
+        "growth_value": 96, //阶段成长值（一天=288）
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_2" //场景贴图ID
+          }
+        ]
+      },
+      {
+        "growth_value": 0, //阶段成长值（一天=288），最后一阶段为0
+        "skins": [
+          {
+            "url": "sprite_seed_crop0_3" //场景贴图ID
+          }
+        ]
+      }
+    ]
+  }
+]

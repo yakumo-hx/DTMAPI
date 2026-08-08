@@ -1,0 +1,29 @@
+名称	ID	帧数	命名格式
+斧头
+老旧斧头	old_axe	6	anim_tool_old_axe_[0~5]
+铜斧头	copper_axe	6	anim_tool_copper_axe_[0~5]
+铁斧头	iron_axe	6	anim_tool_iron_axe_[0~5]
+钢斧头	steel_axe	6	anim_tool_steel_axe_[0~5]
+矿镐
+老旧镐	old_pickaxe	6	anim_tool_old_pickaxe_[0~5]
+铜镐	copper_pickaxe	6	anim_tool_copper_pickaxe_[0~5]
+铁镐	iron_pickaxe	6	anim_tool_iron_pickaxe_[0~5]
+钢镐	steel_pickaxe	6	anim_tool_steel_pickaxe_[0~5]
+特别的矿镐	lank_pickaxe	6	anim_tool_lank_pickaxe_[0~5]
+仿制的特别矿镐	lank_pickaxe_copy	6	anim_tool_lank_pickaxe_copy_[0~5]
+镰刀
+老旧镰刀	old_sickle	7	anim_tool_old_sickle_[0~6]
+铜镰刀	copper_sickle	7	anim_tool_copper_sickle_[0~6]
+铁镰刀	iron_sickle	7	anim_tool_iron_sickle_[0~6]
+钢镰刀	steel_sickle	7	anim_tool_steel_sickle_[0~6]
+水壶
+老旧水壶	old_watercan	10	anim_tool_old_watercan_[0~9]
+铜水壶	copper_watercan	10	anim_tool_copper_watercan_[0~9]
+铁水壶	iron_watercan	10	anim_tool_iron_watercan_[0~9]
+钢水壶	steel_watercan	10	anim_tool_steel_watercan_[0~9]
+鱼竿
+简易鱼竿	simple_fishrod	6	anim_tool_simple_fishrod_[0~5]
+老旧鱼竿	old_fishrod	6	anim_tool_old_fishrod_[0~5]
+竹鱼竿	bamboo_fishrod	6	anim_tool_bamboo_fishrod_[0~5]
+玻璃纤维鱼竿	glass_fishrod	6	anim_tool_glass_fishrod_[0~5]
+碳纤维鱼竿	carbon_fishrod	6	anim_tool_carbon_fishrod_[0~5]

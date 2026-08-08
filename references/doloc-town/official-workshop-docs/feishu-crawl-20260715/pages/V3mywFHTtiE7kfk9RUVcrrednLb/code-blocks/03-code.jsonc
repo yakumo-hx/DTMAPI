@@ -1,0 +1,74 @@
+[
+//以下为添加种子压缩配方
+  {
+    "id": "seed_crop0", //配方ID
+    "default_unlock": true, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 24, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "seed_crop0", //输出道具的道具ID
+      "min_count": 1, //最小输出数量
+      "max_count": 3 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "crop0", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "seed", //配方小类（none，seed, ......）
+    "tech_point": 1, //完成配方增加的科技点数
+    "show_in_handbook": true //配方是否显示在图鉴
+  },
+  //以下为添加基因提取配方
+  {
+    "id": "gene_seed_crop0", //配方ID
+    "default_unlock": true, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 48, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "gene_capsule", //输出道具的道具ID
+      "min_count": 1, //最小输出数量
+      "max_count": 1 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "seed_crop0", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "seed", //配方小类（none，seed, ......）
+    "tech_point": 1, //完成配方增加的科技点数
+    "show_in_handbook": false//配方是否显示在图鉴
+  },
+    //以下为添加植物分析配方
+  {
+    "id": "crop0", //配方ID
+    "default_unlock": true, //是否默认解锁
+    "title": {
+      "key": "", //配方标题（为空则根据输出道具自动生成）
+      "text": "" //配方文本（为空则根据输出道具自动生成）
+    },
+    "cost_time": 2, //制作时间（单位为TU，即游戏内5min）
+    "output_item": {
+      "item_name": "plant_research_report", //输出道具的道具ID
+      "min_count": 1, //最小输出数量
+      "max_count": 1 //最大输出数量
+    },
+    "input_items": [
+      {
+        "item_name": "crop0", //消耗道具的道具ID
+        "item_count": 1 //消耗道具数量
+      }
+    ],
+    "recipe_sub_type": "seed", //配方小类（none，seed, ......）
+    "tech_point": 0, //完成配方增加的科技点数
+    "show_in_handbook": false//配方是否显示在图鉴
+  }
+]

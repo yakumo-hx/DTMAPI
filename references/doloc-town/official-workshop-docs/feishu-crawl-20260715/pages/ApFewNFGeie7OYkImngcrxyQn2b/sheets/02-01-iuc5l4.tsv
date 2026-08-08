@@ -1,0 +1,4 @@
+名称	ID	示例载具的锚点(x,y)
+载具图标	icon_vehicle_motor
+载具场景贴图	sprite_vehicle_motor	32,12
+载具场景贴图-车灯遮罩	sprite_vehicle_motor_light_mask	32,12

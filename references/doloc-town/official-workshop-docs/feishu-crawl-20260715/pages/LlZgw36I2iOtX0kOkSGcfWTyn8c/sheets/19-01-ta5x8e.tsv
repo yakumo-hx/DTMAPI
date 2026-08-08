@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	pike	anim_npc_pike_idle_[0~5]
+帧动画（对话）	6	talk	pike	anim_npc_pike_talk_[0~5]
+帧动画（移动）	6	walk	pike	anim_npc_pike_walk_[0~5]
+图标（日历）	1		pike	icon_calendar_pike
+图标（图鉴）	1		pike	icon_document_pike
+详情图（图鉴）	1		pike	preview_document_pike

@@ -1,0 +1,2 @@
+设备类型	设备ID	场景贴图-命名格式	场景贴图（翻转）-命名格式
+装饰设备	[设备ID]	sprite_equipment_[设备ID]	sprite_equipment_[设备ID]_flip

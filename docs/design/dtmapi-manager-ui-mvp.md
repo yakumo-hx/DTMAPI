@@ -1,8 +1,35 @@
 # DTMAPI Manager UI MVP
 
-Status: Phase 1 title-page UI wiring implemented over the internal view-model skeleton.
+Status: player-centred paged Manager/GMCM information architecture implemented over internal platform models.
 
 Date: 2026-06-10
+
+## 2026-07-26 Player-Centred Information Architecture
+
+The title-page surface now treats paging as a shared platform concern. Config
+keeps its existing separate Mod-list and item-list pages; Manager uses a tested
+page-window model that clamps empty, stale and final partial pages.
+
+The Mods tab is a compact selectable list rather than a truncated technical
+dump. Its detail region shows structured state, managed identity/placement,
+authoritative declared dependency results from the internal Content/Manifest
+Registry, and an actionable current restart hint. Manager does not resolve,
+install, enable or disable dependencies and does not write official state.
+
+Errors and warnings use one category at a time so their two retained windows
+cannot overflow each other. The former Features tab is presented as Advanced
+diagnostics and keeps the existing public `DtmOverlayPage.Features` route for
+compatibility. It exposes internal registry/compatibility samples and counters,
+with a separate feature-evidence view. Hooks remain a dedicated platform
+health page.
+
+No public API changed. The Content/Manifest Registry remains the dependency
+authority; Manager only projects it. Product state machines, patches, commands,
+gameplay settings and acceptance rules remain in their owning products.
+
+## 2026-07-20 Managed identity projection
+
+The Managed identity projection is frozen by the [Batch 6 managed Mod identity contract](../architecture/batch6-managed-mod-identity-contract.md). G2 added the manifest, Loader, SDK, Doctor, Manager, package and UI projection atomically and verified it only with the SDK-generated `DTMAPI.AdvancedFixture` under tracked policy `doloctown-23762374-g2-v1`. Player rows distinguish managed identity, provenance, source, placement, game/reference compatibility, native risk and restart policy; External BepInEx Plugins remain read-only diagnostics. The Manager must never infer Advanced status from `EntryDll`, source, path, product type or capabilities. AutoFishing is admitted-not-migrated, so no real-product Manager row is G2 proof; its proof remains pending G3/G4 and the relevant G5/G6 gates.
 
 ## Purpose
 
@@ -73,9 +100,9 @@ The release-hygiene slice adds internal install-state visibility to the Manager 
 - Do not parse raw logs as the primary data source when a runtime API already exposes the same information.
 - Do not manage Steam Workshop subscriptions or write official enablement state in MVP.
 - Do not provide native save repair, mod dependency resolution, or gameplay feature toggles beyond existing config registry writes.
-- Do not implement row selection/detail panels in Phase 1+; selected-row copy remains future work.
+- Do not turn selected-row details into mutation authority; they remain a read-only projection.
 - Do not treat Copy Summary as a public mod API. It is internal product UI behavior over existing diagnostics/runtime data.
-- Do not start a full visual redesign before manual UI overflow checks and Developer Preview feedback identify the highest-value layout changes.
+- Do not absorb product-specific controls or logic into the platform UI.
 
 ## Data Sources
 
@@ -97,6 +124,8 @@ The MVP should be backed by current runtime-owned data sources:
   - `IDiagnosticsHelper.GetLatestLogPath()`
 - Config runtime/registry already used by DTMAPI config pages.
 - Runtime API registry for API ownership/status labels when already available.
+- Internal Content/Manifest Registry for dependency, compatibility, provenance
+  and registry-diff evidence; this does not add a public snapshot member.
 - Existing report export side effects, including `latest-report.txt` and report zip path.
 
 If a row is missing from the snapshot, the UI should show an explicit unavailable state instead of silently falling back to log parsing.
@@ -108,7 +137,7 @@ Use a simple tabbed manager surface:
 - Mods
 - Errors / Warnings
 - Hooks
-- Features
+- Advanced diagnostics (registry/compatibility plus feature evidence)
 - Config
 - Export Report
 

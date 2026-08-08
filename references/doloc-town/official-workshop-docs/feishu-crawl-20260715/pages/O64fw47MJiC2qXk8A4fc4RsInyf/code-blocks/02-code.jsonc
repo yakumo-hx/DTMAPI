@@ -1,0 +1,46 @@
+[
+  {
+    "id": "fish0", //鱼ID
+    "default_unlock": true, //是否默认解锁
+    "is_fish": true, //是否会触发钓鱼小游戏
+    "is_garbage": false, //是否是垃圾
+    "rarity": 0, //稀有度（0 ~ 4）
+    "size": 0,  //体型（0 ~ 2）
+    "exp_fishing": 1, //增加科技点数
+    "month": [], //出现月份，可选填1~4（为空表示没有限制）
+    "weather_types": [], //出现天气（可选填：1(晴天)、2(多云)、3(雨天)、4(雷雨)、5(大风)、6(酸雨)、7(烈日)，为空表示没有限制）
+    "time_range": {
+      "start_time": 0, //出现时间-起点（0~24，为0则没有限制）
+      "end_time": 0 //出现时间-终点（0~24，为0则没有限制）
+    },
+    "fish_bait": [], //暂时无用
+    "fishing_rod_lv": 0, //渔具等级
+    "fishing_lv": 0, //暂时无用
+    //以下是钓鱼小游戏的相关参数
+    "max_stamina": {
+      "min_count": 40, //总耐力-最小值
+      "max_count": 40 //总耐力-最大值
+    },
+    "stable_duration": {
+      "min_count": 5, //平稳期时长-最小值
+      "max_count": 10 //平稳期时长-最大值
+    },
+    "struggle_duration": {
+      "min_count": 3, //挣扎期时长-最小值
+      "max_count": 5 //挣扎期时长-最大值
+    },
+    "note_speed_multiplier": 1.5, //滚动速度倍率
+    "initial_stable_probability": 1, //初始平稳
+    "catch_multiplier": 1, //被捕倍率
+    "escape_speed": 3, //逃逸速度
+    "struggle_multiplier": 3, //挣扎倍率
+    "bonus_probability": 0.2, //奖励点概率
+    "bonus_duration": {
+      "min_count": 2, //奖励期时长-最小值
+      "max_count": 2 //奖励期时长-最大值
+    },
+    "bonus_base_score": 5, //基础奖励分
+    "bonus_extra_score": 0, //额外奖励分
+    "bonus_multiplier": 1.2 //奖励倍率
+  }
+]

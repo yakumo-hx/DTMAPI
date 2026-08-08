@@ -1,28 +1,29 @@
 {
   "schemaVersion": 1,
   "language": "schinese",
-  "updated": "2026-06-16",
-  "source": "DTMAPI 运行前置包 + testmods/*/manifest.json + testmods/*/official-info.json",
-  "notes": "包含 DTMAPI 运行前置/安装器工坊条目，以及带有 manifest.json 和 official-info.json 的本地 DTMAPI 功能 Mod。样例、损坏夹具或缺少 official-info.json 的目录不纳入这份发布描述素材。",
+  "updated": "2026-08-06",
+  "source": "DTMAPI 运行前置包 + Catalog 已分类产品、样例与 QA 源根的 manifest.json / official-info.json",
+  "notes": "发布描述素材投影，不是身份、版本或上传授权。产品分类与 WorkshopID 以 tools/release/dtmapi-product-catalog.json 为准；published 行的 modName、作者、版本与 gameDescription 镜像当前 official-info.json，manifestName 镜像当前 manifest.json；steamName/steamDescription 是独立、非空的上传审阅文案。样例、损坏夹具或缺少 official-info.json 的目录不纳入这份素材。",
   "scopes": {
     "runtime": "DTMAPI 运行前置/安装器工坊条目，是功能性 DTMAPI Mod 的必需前置包。",
-    "published": "当前选中的公开发布功能 Mod。",
+    "published": "已有公开 Workshop 分发身份的功能 Mod；这不表示本轮已选择上传或更新。",
     "developerOfficial": "本地官方/开发者功能包，默认不作为当前公开发布条目。",
     "localOfficial": "本地有 official-info 描述，但当前未列入 release-common.ps1 发布定义的功能包。",
+    "apiDemandSample": "API 需求样例，NeverPublish，不得作为公开产品或上传条目。",
     "qaFixture": "开发者手测夹具，除非明确发布 QA 包，否则不要用于公开工坊描述。"
   },
   "mods": [
     {
       "modName": "DTMAPI",
       "author": "Yuuka",
-      "version": "0.5.2-alpha",
-      "gameDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。",
+      "version": "0.6.1",
+      "gameDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。\n\nupdate 0617\n优化离线安装。",
       "steamName": "DTMAPI",
-      "steamDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。",
+      "steamDescription": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。\n\nupdate 0617\n优化离线安装。",
       "localizedDescription": {
-        "schinese": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。",
-        "tchinese": "DTMAPI 是玩家自製的多洛可小鎮功能性 Mod 的執行前置，作為官方提供功能性mod介面前的中間態產品。\n提供配置選單、日誌診斷、Manager 狀態頁、報告匯出和功能性 Mod 執行支援。\n\n訂閱後請雙擊執行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安裝 DTMAPI 前置。\n如果雙擊執行1_install_dtmapi.bat出現黑色視窗但無反應，請嘗試切換網路後再執行。\n\n安裝後雙擊執行同目錄下3_check_dtmapi_status.bat即可檢查狀態，顯示[OK]即可，[MISSING]請再執行1_install_dtmapi.bat嘗試。\n同目錄下2_xxxx是解除安裝。\n如果遊戲閃退或打不開，請執行同目錄下4_collect_dtmapi_logs.bat，並把桌面產生的DTMAPI-logs資料夾一起發給我。\n\n點擊主選單左上角圖示開啟mod配置選單。別忘記在官方mod介面啟用模組。如果啟用mod但DTMAPI選單內沒有載入出來，請嘗試重啟遊戲。\n近期更新頻率較高，如果您發現有mod無法使用或報錯，請先嘗試執行1_install_dtmapi.bat更新DTMAPI。\n有問題請至少帶著3_check截圖、問題描述加steam好友/QQ好友3033654263聯絡。留言的一句話描述問題我實在沒法幫您判斷。\n\n安裝前請務必先解除安裝舊版本SMAPI，雙擊執行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安裝前請務必先解除安裝舊版本SMAPI，兩者資料夾不同，同時啟用會衝突。\n安裝前請務必先解除安裝舊版本SMAPI，舊版本SMAPI已經不提供更新。\n\nupdate 0616\n日誌檔案僅保留最近十次遊戲啟動日誌。",
-        "english": "DTMAPI is a player-made runtime prerequisite for functional Doloc Town mods, used as an intermediate product before official functional mod APIs exist.\nIt provides the config menu, log diagnostics, Manager status pages, report export, and runtime support for functional mods.\n\nAfter subscribing, double-click \\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat to install the DTMAPI prerequisite.\nIf double-clicking 1_install_dtmapi.bat opens a black window but nothing happens, try switching networks and run it again.\n\nAfter installation, double-click 3_check_dtmapi_status.bat in the same folder to check status. [OK] means ready; if it shows [MISSING], run 1_install_dtmapi.bat again.\n2_xxxx in the same folder is the uninstaller.\nIf the game crashes or cannot open, run 4_collect_dtmapi_logs.bat in the same folder and send me the DTMAPI-logs folder created on your Desktop.\n\nClick the icon in the upper-left corner of the main menu to open the mod configuration menu. Do not forget to enable mods in the official mod screen. If a mod is enabled but does not appear in the DTMAPI menu, try restarting the game.\nUpdates are frequent right now. If a mod stops working or reports errors, first try running 1_install_dtmapi.bat to update DTMAPI.\nFor help, please include at least a screenshot of 3_check, a description of the issue, and contact me by Steam friend request or QQ 3033654263. One-line comments are not enough for me to diagnose.\n\nBefore installing, make sure to uninstall the old SMAPI first by double-clicking \\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat.\nBefore installing, make sure to uninstall the old SMAPI first; the two use different folders and will conflict if enabled together.\nBefore installing, make sure to uninstall the old SMAPI first; the old SMAPI no longer receives updates.\n\nupdate 0616\nLog files only keep the most recent ten game startup logs."
+        "schinese": "DTMAPI 是玩家自制的多洛可小镇功能性 Mod 的运行前置，作为官方提供功能性mod接口前的中间态产品。\n提供配置菜单、日志诊断、Manager 状态页、报告导出和功能性 Mod 运行支持。\n\n订阅后请双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安装 DTMAPI 前置。\n如果双击运行1_install_dtmapi.bat出现黑色窗口但无反应，请尝试切换网络后再运行。\n\n安装后双击运行同目录下3_check_dtmapi_status.bat即可检查状态，显示[OK]即可，[MISSING]请再运行1_install_dtmapi.bat尝试。\n同目录下2_xxxx是卸载。\n如果游戏闪退或打不开，请运行同目录下4_collect_dtmapi_logs.bat，并把桌面生成的DTMAPI-logs文件夹一起发给我。\n\n点击主菜单左上角图标打开mod配置菜单。别忘记在官方mod界面启用模组。如果启用mod但DTMAPI菜单内没有加载出来，尝试重启游戏。\n近期更新频率较高，如果您发现有mod使用不了或报错，请先尝试运行1_install_dtmapi.bat更新DTMAPI。\n有问题请至少带着3_check截图、问题描述加steam好友/QQ好友3033654263联系。留言的一句话描述的问题我实在没法帮您判断。\n\n安装前请务必先卸载旧版本SMAPI，双击运行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安装前请务必先卸载旧版本SMAPI，两者文件夹不同，同时启用会冲突。\n安装前请务必先卸载旧版本SMAPI，旧版本SMAPI已经不提供更新。\n\nupdate 0616\n日志文件仅保留近十次游戏启动日志。\n\nupdate 0617\n优化离线安装。",
+        "tchinese": "DTMAPI 是玩家自製的多洛可小鎮功能性 Mod 的執行前置，作為官方提供功能性mod介面前的中間態產品。\n提供配置選單、日誌診斷、Manager 狀態頁、報告匯出和功能性 Mod 執行支援。\n\n訂閱後請雙擊執行\\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat 安裝 DTMAPI 前置。\n如果雙擊執行1_install_dtmapi.bat出現黑色視窗但無反應，請嘗試切換網路後再執行。\n\n安裝後雙擊執行同目錄下3_check_dtmapi_status.bat即可檢查狀態，顯示[OK]即可，[MISSING]請再執行1_install_dtmapi.bat嘗試。\n同目錄下2_xxxx是解除安裝。\n如果遊戲閃退或打不開，請執行同目錄下4_collect_dtmapi_logs.bat，並把桌面產生的DTMAPI-logs資料夾一起發給我。\n\n點擊主選單左上角圖示開啟mod配置選單。別忘記在官方mod介面啟用模組。如果啟用mod但DTMAPI選單內沒有載入出來，請嘗試重啟遊戲。\n近期更新頻率較高，如果您發現有mod無法使用或報錯，請先嘗試執行1_install_dtmapi.bat更新DTMAPI。\n有問題請至少帶著3_check截圖、問題描述加steam好友/QQ好友3033654263聯絡。留言的一句話描述問題我實在沒法幫您判斷。\n\n安裝前請務必先解除安裝舊版本SMAPI，雙擊執行\\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat。\n安裝前請務必先解除安裝舊版本SMAPI，兩者資料夾不同，同時啟用會衝突。\n安裝前請務必先解除安裝舊版本SMAPI，舊版本SMAPI已經不提供更新。\n\nupdate 0616\n日誌檔案僅保留最近十次遊戲啟動日誌。\n\nupdate 0617\n優化離線安裝。",
+        "english": "DTMAPI is a player-made runtime prerequisite for functional Doloc Town mods, used as an intermediate product before official functional mod APIs exist.\nIt provides the config menu, log diagnostics, Manager status pages, report export, and runtime support for functional mods.\n\nAfter subscribing, double-click \\Steam\\steamapps\\workshop\\content\\2285550\\3743016467\\1_install_dtmapi.bat to install the DTMAPI prerequisite.\nIf double-clicking 1_install_dtmapi.bat opens a black window but nothing happens, try switching networks and run it again.\n\nAfter installation, double-click 3_check_dtmapi_status.bat in the same folder to check status. [OK] means ready; if it shows [MISSING], run 1_install_dtmapi.bat again.\n2_xxxx in the same folder is the uninstaller.\nIf the game crashes or cannot open, run 4_collect_dtmapi_logs.bat in the same folder and send me the DTMAPI-logs folder created on your Desktop.\n\nClick the icon in the upper-left corner of the main menu to open the mod configuration menu. Do not forget to enable mods in the official mod screen. If a mod is enabled but does not appear in the DTMAPI menu, try restarting the game.\nUpdates are frequent right now. If a mod stops working or reports errors, first try running 1_install_dtmapi.bat to update DTMAPI.\nFor help, please include at least a screenshot of 3_check, a description of the issue, and contact me by Steam friend request or QQ 3033654263. One-line comments are not enough for me to diagnose.\n\nBefore installing, make sure to uninstall the old SMAPI first by double-clicking \\Steam\\steamapps\\workshop\\content\\2285550\\3726044511\\2_uninstall_loader.bat.\nBefore installing, make sure to uninstall the old SMAPI first; the two use different folders and will conflict if enabled together.\nBefore installing, make sure to uninstall the old SMAPI first; the old SMAPI no longer receives updates.\n\nupdate 0616\nLog files only keep the most recent ten game startup logs.\n\nupdate 0617\nImproved offline installation."
       },
       "uniqueId": "DTMAPI.Runtime",
       "folder": "DTMAPI",
@@ -40,10 +41,10 @@
       "steamName": "DTMAPI 箱子定位器增强",
       "steamDescription": "依赖 DTMAPI。\n扩展官方箱子定位器的共享容器范围，让贴了定位器的箱子和储物架纸箱在不同建筑房间也能参与制作、研究等材料路径。",
       "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
-      "folder": "ChestLocatorEnhancerMod",
+      "folder": "ChestLocatorEnhancer",
       "scope": "published",
       "manifestName": "DTMAPI Chest Locator Enhancer",
-      "officialInfoPath": "testmods/ChestLocatorEnhancerMod/official-info.json"
+      "officialInfoPath": "products/first-party/ChestLocatorEnhancer/official-info.json"
     },
     {
       "modName": "作物收获手测夹具（DTMAPI）",
@@ -56,64 +57,64 @@
       "folder": "CropHarvestingQaMod",
       "scope": "qaFixture",
       "manifestName": "Crop Harvesting QA",
-      "officialInfoPath": "testmods/CropHarvestingQaMod/official-info.json"
+      "officialInfoPath": "tests/mod-fixtures/qa/CropHarvesting/official-info.json"
     },
     {
       "modName": "Y键控制台",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。",
+      "gameDescription": "依赖 DTMAPI 0.6.0。\n存档加载后按 Y 打开产品自有的诊断控制台。提供限定的物品、天气、传送、时间、移动和高级调试操作；不提供任意命令执行。关闭、返回标题或停用时恢复移速、时间倍率和创造模式临时状态。",
       "steamName": "Y键控制台",
-      "steamDescription": "依赖 DTMAPI。\n存档内按 Y 打开调试控制台，提供兼容mod的物品给予、天气修改、传送（尚在优化）、时间快进、时间倍速、移速修改等测试用功能。\n\nupdate 0616\n修复偶发的右键10倍物品给予错误情况。",
+      "steamDescription": "依赖 DTMAPI 0.6.0。\n存档加载后按 Y 打开产品自有的诊断控制台。提供限定的物品、天气、传送、时间、移动和高级调试操作；不提供任意命令执行。关闭、返回标题或停用时恢复移速、时间倍率和创造模式临时状态。",
       "uniqueId": "DTMAPI.DebugConsoleMod",
       "folder": "DebugConsoleMod",
       "scope": "published",
-      "manifestName": "Y键控制台",
-      "officialInfoPath": "testmods/DebugConsoleMod/official-info.json"
+      "manifestName": "Y-Key Console",
+      "officialInfoPath": "products/first-party/DebugConsole/official-info.json"
     },
     {
       "modName": "DTMAPI 矿井",
       "author": "DTMAPI",
       "version": "1.0.0",
-      "gameDescription": "DTMAPI 实验性矿井内容包。\n新增矿井设备、设备工作台配方，并声明纯电力/概率产矿方案。",
+      "gameDescription": "DTMAPI 本地开发阶段的矿井原型。\n新增矿井设备和工作台配方，使用固定原生电力阈值与产品自有生产周期。",
       "steamName": "DTMAPI 矿井",
-      "steamDescription": "新增矿井设备和配方，复用官方水井素材但不替换水井。\n支持纯电力消耗、生产和兼容模组矿物。",
+      "steamDescription": "未发布的矿井原型：新增矿井设备和配方，使用固定原生电力阈值和固定矿物候选。\n当前仍临时复用水井素材与 2x 缩放，不承诺兼容模组矿物自动发现。",
       "uniqueId": "DTMAPI.MineMod",
       "folder": "MineMod",
       "scope": "developerOfficial",
       "manifestName": "DTMAPI Mine",
-      "officialInfoPath": "testmods/MineMod/official-info.json"
+      "officialInfoPath": "products/first-party/Mine/official-info.json"
     },
     {
-      "modName": "DTMAPI 更多装备栏位",
+      "modName": "DTMAPI 更多装备槽",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。",
-      "steamName": "DTMAPI 更多装备栏位",
-      "steamDescription": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。",
+      "gameDescription": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
+      "steamName": "DTMAPI 更多装备槽",
+      "steamDescription": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
       "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
-      "folder": "MoreEquipmentSlotsMod",
-      "scope": "developerOfficial",
+      "folder": "MoreEquipmentSlots",
+      "scope": "published",
       "manifestName": "DTMAPI More Equipment Slots",
-      "officialInfoPath": "testmods/MoreEquipmentSlotsMod/official-info.json"
+      "officialInfoPath": "products/first-party/MoreEquipmentSlots/official-info.json"
     },
     {
       "modName": "DTMAPI 更多存档",
       "author": "Yuuka",
-      "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n将官方存档界面扩容为 12 个总槽位，禁用后不会删除额外存档文件。",
+      "version": "1.0.1",
+      "gameDescription": "需要 DTMAPI 0.6.0 或更高版本。\n将官方存档界面扩容为 12 个总槽位；升级到游戏 1.00 时自动迁移旧的额外槽位存档。禁用后不会删除额外存档文件。",
       "steamName": "DTMAPI 更多存档",
-      "steamDescription": "依赖 DTMAPI。\n将官方存档界面扩容为 12 个总槽位，禁用后不会删除额外存档文件。",
+      "steamDescription": "需要 DTMAPI 0.6.0 或更高版本。\n将官方存档界面扩容为 12 个总槽位；升级到游戏 1.00 时自动迁移旧的额外槽位存档。禁用后不会删除额外存档文件。",
       "uniqueId": "DTMAPI.MoreSavesMod",
-      "folder": "MoreSavesMod",
+      "folder": "MoreSaves",
       "scope": "published",
       "manifestName": "DTMAPI More Saves",
-      "officialInfoPath": "testmods/MoreSavesMod/official-info.json"
+      "officialInfoPath": "products/first-party/MoreSaves/official-info.json"
     },
     {
       "modName": "DTMAPI 石油",
       "author": "DTMAPI",
-      "version": "1.0.0",
+      "version": "0.3.1-dtmapi",
       "gameDescription": "DTMAPI 实验性石油内容包。\n新增高燃料值石油物品，用于矿井研究、矿井制作和燃料消耗。",
       "steamName": "DTMAPI 石油",
       "steamDescription": "新增高燃料值石油物品。\n可用于矿井研究、矿井制作和高效燃料。",
@@ -121,7 +122,7 @@
       "folder": "OilMod",
       "scope": "developerOfficial",
       "manifestName": "DTMAPI Oil",
-      "officialInfoPath": "testmods/OilMod/official-info.json"
+      "officialInfoPath": "products/first-party/Oil/official-info.json"
     },
     {
       "modName": "DTMAPI 强力种植枪",
@@ -131,10 +132,10 @@
       "steamName": "DTMAPI 强力种植枪",
       "steamDescription": "扩展官方种植枪。\n让同一把枪可携带种子、保护膜和肥料，并按官方地块规则依次处理。",
       "uniqueId": "DTMAPI.StrongPlantingGunMod",
-      "folder": "StrongPlantingGunMod",
+      "folder": "StrongPlantingGun",
       "scope": "developerOfficial",
       "manifestName": "DTMAPI Strong Planting Gun",
-      "officialInfoPath": "testmods/StrongPlantingGunMod/official-info.json"
+      "officialInfoPath": "products/first-party/StrongPlantingGun/official-info.json"
     },
     {
       "modName": "DTMAPI 大视野",
@@ -147,46 +148,59 @@
       "folder": "ZoomMod",
       "scope": "published",
       "manifestName": "DTMAPI Zoom",
-      "officialInfoPath": "testmods/ZoomMod/official-info.json"
+      "officialInfoPath": "products/first-party/Zoom/official-info.json"
     },
     {
       "modName": "DTMAPI动作加速",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。",
+      "gameDescription": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。\n\nupdate 0616\n提高稳定性",
       "steamName": "DTMAPI动作加速",
-      "steamDescription": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。",
+      "steamDescription": "依赖 DTMAPI。\n加速工具、装水、吃喝、交互和采集等动作。提供自动装水、右键持续喝水功能。\n\nupdate 0616\n提高稳定性",
       "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
       "folder": "ActionSpeedMod",
       "scope": "published",
       "manifestName": "DTMAPI Action Speed",
-      "officialInfoPath": "testmods/ActionSpeedMod/official-info.json"
+      "officialInfoPath": "products/first-party/ActionSpeed/official-info.json"
     },
     {
       "modName": "DTMAPI牧铃隐藏产物进度",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n牧铃动物查看界面显示隐藏产物进度，可以自行调整颜色。\n\nupdate 0616\n修复长时间游戏UI消失情况。",
+      "gameDescription": "依赖 DTMAPI。\n牧铃动物查看界面显示只读隐藏产物进度，可以自行调整颜色。",
       "steamName": "DTMAPI牧铃隐藏产物进度",
-      "steamDescription": "依赖 DTMAPI。\n牧铃动物查看界面显示隐藏产物进度，可以自行调整颜色。\n\nupdate 0616\n修复长时间游戏UI消失情况。",
+      "steamDescription": "依赖 DTMAPI。\n牧铃动物查看界面显示只读隐藏产物进度，可以自行调整颜色。",
       "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
-      "folder": "AnimalHusbandryProgressMod",
+      "folder": "products/first-party/AnimalHusbandryProgress",
       "scope": "published",
       "manifestName": "DTMAPI Animal Bell Hidden Produce Progress",
-      "officialInfoPath": "testmods/AnimalHusbandryProgressMod/official-info.json"
+      "officialInfoPath": "products/first-party/AnimalHusbandryProgress/official-info.json"
     },
     {
       "modName": "DTMAPI自动钓鱼",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。\n游戏内默认F6开启。",
+      "gameDescription": "需要 DTMAPI 0.6.0 或更高版本。\n进入存档后按 F6 开启或关闭；默认处于关闭状态。\n自动执行抛竿、完成小游戏、收竿循环。\n左上角配置界面提供额外的功能。\n\nupdate 0731\n降低闪退风险。",
       "steamName": "DTMAPI自动钓鱼",
-      "steamDescription": "依赖 DTMAPI。\n自动钓鱼功能 Mod，默认自动抛竿、完成小游戏、收竿循环。\n支持额外配置。\n游戏内默认F6开启。",
+      "steamDescription": "需要 DTMAPI 0.6.0 或更高版本。\n进入存档后按 F6 开启或关闭；默认处于关闭状态。\n自动执行抛竿、完成小游戏、收竿循环。\n左上角配置界面提供额外的功能。\n\nupdate 0731\n降低闪退风险。",
       "uniqueId": "Yuuka.DTMAPI.AutoFishing",
-      "folder": "AutoFishingMod",
-      "scope": "developerOfficial",
+      "folder": "products/first-party/AutoFishing",
+      "scope": "published",
       "manifestName": "DTMAPI Auto Fishing",
-      "officialInfoPath": "testmods/AutoFishingMod/official-info.json"
+      "officialInfoPath": "products/first-party/AutoFishing/official-info.json"
+    },
+    {
+      "modName": "DTMAPI 曼波音频替换开纸箱子",
+      "author": "Yuuka",
+      "version": "0.1.0-dtmapi",
+      "gameDescription": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
+      "steamName": "DTMAPI 曼波音频替换开纸箱子",
+      "steamDescription": "实验性音频替换mod实例。将野外刷新的纸箱开启音效改为曼波。比较抽象，介意勿下。",
+      "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+      "folder": "ManboCardboardAudioMod",
+      "scope": "published",
+      "manifestName": "DTMAPI 曼波音频替换开纸箱子",
+      "officialInfoPath": "products/first-party/ManboCardboardAudio/official-info.json"
     },
     {
       "modName": "自动收获（DTMAPI）",
@@ -197,22 +211,22 @@
       "steamDescription": "依赖 DTMAPI。\n扫描成熟作物并调用游戏原生收获逻辑；默认关闭，可在标题页 DTMAPI 设置里启用或使用热键触发。",
       "uniqueId": "Yuuka.DTMAPI.AutoHarvest",
       "folder": "AutoHarvestMod",
-      "scope": "localOfficial",
+      "scope": "apiDemandSample",
       "manifestName": "Auto Harvest",
-      "officialInfoPath": "testmods/AutoHarvestMod/official-info.json"
+      "officialInfoPath": "author-sdk/samples/api-demand/AutoHarvest/official-info.json"
     },
     {
       "modName": "DTMAPI鱼卵信息显示",
       "author": "Yuuka",
       "version": "1.0.0",
-      "gameDescription": "依赖 DTMAPI。\n提示鱼卵信息。",
+      "gameDescription": "依赖 DTMAPI。\n在鱼卵标题中显示亲本鱼名称。",
       "steamName": "DTMAPI鱼卵信息显示",
-      "steamDescription": "依赖 DTMAPI。\n提示鱼卵信息。",
+      "steamDescription": "依赖 DTMAPI。\n在鱼卵标题中显示亲本鱼名称。",
       "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
-      "folder": "FishBreedingAssistantMod",
+      "folder": "FishBreedingAssistant",
       "scope": "published",
       "manifestName": "DTMAPI Fish Roe Info Display",
-      "officialInfoPath": "testmods/FishBreedingAssistantMod/official-info.json"
+      "officialInfoPath": "products/first-party/FishBreedingAssistant/official-info.json"
     },
     {
       "modName": "DTMAPI一键完成",
@@ -222,10 +236,10 @@
       "steamName": "DTMAPI一键完成",
       "steamDescription": "依赖 DTMAPI。\n一次动作完成资源采集与燃料、饲料加满。",
       "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
-      "folder": "OneActionCompleteMod",
+      "folder": "products/first-party/OneActionComplete",
       "scope": "published",
       "manifestName": "DTMAPI One Action Complete",
-      "officialInfoPath": "testmods/OneActionCompleteMod/official-info.json"
+      "officialInfoPath": "products/first-party/OneActionComplete/official-info.json"
     }
   ]
 }

@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>dtmapi-author</AssemblyName>
+    <RootNamespace>DTMAPI.AuthorSdk</RootNamespace>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DTMAPI.Authoring.Contracts\DTMAPI.Authoring.Contracts.csproj" />
+    <ProjectReference Include="..\DTMAPI.InstallDoctor\DTMAPI.InstallDoctor.csproj" />
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>$(MSBuildSDKsPath)\..\Roslyn\bincore\Microsoft.CodeAnalysis.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>$(MSBuildSDKsPath)\..\Roslyn\bincore\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\author-sdk\templates\**\*">
+      <Link>templates\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\author-sdk\schemas\**\*">
+      <Link>schemas\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\author-sdk\advanced-reference-policies\**\*"
+             Exclude="..\..\author-sdk\advanced-reference-policies\history\**\*">
+      <Link>advanced-reference-policies\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\author-sdk\compatibility\0.5.5\*.props">
+      <Link>compatibility\0.5.5\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\..\author-sdk\README.md;..\..\author-sdk\THIRD-PARTY-NOTICES.md">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <EmbeddedResource Include="..\..\author-sdk\compatibility\0.5.5\compatibility.contract.json">
+      <LogicalName>DTMAPI.AuthorSdk.compatibility.contract.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json">
+      <LogicalName>DTMAPI.AuthorSdk.advanced-reference-policy-registry.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\*.json"
+                      Exclude="..\..\author-sdk\advanced-reference-policies\registry.json">
+      <LogicalName>DTMAPI.AuthorSdk.advanced-reference-policy.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\*.Assembly-CSharp.reference.cs.txt">
+      <LogicalName>DTMAPI.AuthorSdk.advanced-reference-surface.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	gabyrl	anim_npc_gabyrl_idle_[0~5]
+帧动画（对话）	6	talk	gabyrl	anim_npc_gabyrl_talk_[0~5]
+帧动画（移动）	8	walk	gabyrl	anim_npc_gabyrl_walk_[0~7]
+图标（日历）	1		gabyrl	icon_calendar_gabyrl
+图标（图鉴）	1		gabyrl	icon_document_gabyrl
+图标（势力）	1		gabyrl	icon_faction_gabyrl
+详情图（图鉴）	1		gabyrl	preview_document_gabyrl

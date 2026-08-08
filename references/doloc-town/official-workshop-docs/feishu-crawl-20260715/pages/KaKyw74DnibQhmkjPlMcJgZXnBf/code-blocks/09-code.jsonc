@@ -1,0 +1,14 @@
+[
+  {
+    "id": "pot", //配方组ID，同设备ID
+    "extra_dishes": [
+      "fish_can" //食谱配方ID
+    ]
+  },
+  {
+    "id": "large_pot", //配方组ID，同设备ID
+    "extra_dishes": [
+      "fish_can" //食谱配方ID
+    ]
+  }
+]

@@ -1,0 +1,3 @@
+垃圾桶	掉落库ID	最小掉落数量	最大掉落数量
+小垃圾桶	trash_can_small_drop	1	1
+大垃圾箱	trash_can_big_drop	4	6

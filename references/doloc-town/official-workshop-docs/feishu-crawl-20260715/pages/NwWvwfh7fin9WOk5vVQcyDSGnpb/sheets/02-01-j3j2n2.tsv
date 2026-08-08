@@ -1,0 +1,5 @@
+类型	植被ID	命名格式
+道具图标	[植被ID]	icon_item_[植被ID]
+场景贴图	[植被ID]	sprite_resource_[植被ID]_[帧数]（若有）
+图鉴（图标）	[植被ID]	icon_document_[植被ID]
+图鉴（详情）	[植被ID]	preview_document_[植被ID]

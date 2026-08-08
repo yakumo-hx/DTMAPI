@@ -1,0 +1,6 @@
+特殊前缀	备注	归一化锚点位置（x, y）
+anim_hat_	帽子动画	(0.5, 0.25)
+sprite_hat_	帽子场景贴图	(0.5, 0.25)
+anim_player_	主角本体动画	(0.5, 0.25)
+anim_tool_	主角工具动画	(0.5, 0.25)
+sprite_building_internal_	建筑室内场景贴图	(0.5, 0)

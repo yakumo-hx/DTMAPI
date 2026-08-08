@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	kel	anim_npc_kel_idle_[0~5]
+帧动画（对话）	6	talk	kel	anim_npc_kel_talk_[0~5]
+帧动画（移动）	8	walk	kel	anim_npc_kel_walk_[0~7]
+图标（日历）	1		kel	icon_calendar_kel
+图标（图鉴）	1		kel	icon_document_kel
+详情图（图鉴）	1		kel	preview_document_kel

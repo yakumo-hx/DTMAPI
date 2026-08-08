@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>DTMAPI.AuthorSdk.Tests</AssemblyName>
+    <RootNamespace>DTMAPI.AuthorSdk.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\DtmApiTestSession.cs" Link="DtmApiTestSession.cs" />
+    <ProjectReference Include="..\..\src\DTMAPI.AuthorSdk\DTMAPI.AuthorSdk.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.Authoring.Contracts\DTMAPI.Authoring.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -4,7 +4,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -12,25 +16,104 @@ namespace DTMAPI.GameBridge.DolocTown
     internal sealed class AudioReplacementService : IAudioReplacementApi
     {
         private const string ReadyStatus = "ready";
-        private static readonly HashSet<string> ReviewedNativeSoundEvents = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        private const string SimpleSfxCategory = "SimpleSfx";
+        private const string AnimalVoiceCategory = "AnimalVoice";
+        private const string ContentPackSource = "ContentPack";
+        private const string CodeModSource = "CodeMod";
+        private const string SchemaFileRelativePath = "Content/DTMAPI/audio-replacements.json";
+        private static readonly TimeSpan AnimalSoundContextMaxAge = TimeSpan.FromSeconds(2);
+        private static readonly HashSet<string> ReviewedSimpleSfxEvents = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "PLAY_RESOURCE_PAPER_BOX"
         };
+        private static readonly HashSet<string> ReviewedAnimalVoiceEvents = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "PLAY_ANIMAL_PET_CHICKEN",
+            "PLAY_ANIMAL_PET_CHICKEN_CHILD",
+            "PLAY_ANIMAL_PET_SHEEP",
+            "PLAY_ANIMAL_PET_SHEEP_CHILD",
+            "PLAY_ANIMAL_PET_SLIME",
+            "PLAY_ANIMAL_PET_PANGOLIN",
+            "PLAY_ANIMAL_PET_PANGOLIN_CHILD",
+            "PLAY_ANIMAL_PET_HONEY_AMOEBA",
+            "PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD"
+        };
 
         private readonly DtmApiRuntime runtime;
-        private readonly Dictionary<string, AudioReplacementEntry> entries = new Dictionary<string, AudioReplacementEntry>(StringComparer.OrdinalIgnoreCase);
+        private readonly Func<string, string, object?>? readyBackendFactoryForTest;
+        private Dictionary<string, AudioReplacementEntry> entries = new Dictionary<string, AudioReplacementEntry>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, AudioReplacementState> states = new Dictionary<string, AudioReplacementState>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> contentPackEntryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, long> contentPackOwnerGenerations = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private readonly Stack<AnimalSoundContext> animalSoundContexts = new Stack<AnimalSoundContext>();
+        private readonly List<AudioReplacementEntry> pendingEntries = new List<AudioReplacementEntry>();
+        private readonly HashSet<AudioReplacementEntry> pendingEntrySet = new HashSet<AudioReplacementEntry>();
+        private long nextContentPackGeneration;
+        private long pendingEntryVisitCountForTest;
+        private long retainedCallbackWorkCountForTest;
+        private long contentProjectionBuildCountForTest;
+        private long optionalFileStatusCallCount;
+        private long optionalDirectoryStatusCallCount;
         private bool hookInstalled;
+        private volatile bool enabledCallbackDemand;
+        private volatile bool animalVoiceCallbackDemand;
+        private volatile bool paperBoxDiagnosticCallbackDemand;
+        private Action<string>? preCommitFaultForTest;
+        private Action<ContentRefreshDirtyBatch>? beforeGenerationCompleteForTest;
+        private Action<string>? postCommitFaultForTest;
+        private Action<string>? publicationSideEffectFaultForTest;
 
         public AudioReplacementService(DtmApiRuntime runtime)
+            : this(runtime, null)
+        {
+        }
+
+        internal AudioReplacementService(DtmApiRuntime runtime, Func<string, string, object?>? readyBackendFactoryForTest)
         {
             this.runtime = runtime;
+            this.readyBackendFactoryForTest = readyBackendFactoryForTest;
         }
 
         internal void SetHookInstalled(bool installed)
         {
             hookInstalled = installed;
             UpdateAllOwnerStates("hook-installed=" + installed.ToString(CultureInfo.InvariantCulture));
+        }
+
+        internal string GetAudioReplacementLifecycleSummary()
+        {
+            int loadStarted = 0;
+            int readyEntries = 0;
+            int audioClips = 0;
+            int pendingRequests = 0;
+            int asyncOperations = 0;
+            int callbackOwners = 0;
+            int platformPlayers = 0;
+            foreach (AudioReplacementEntry entry in entries.Values)
+            {
+                if (entry.LoadStarted) loadStarted++;
+                if (entry.IsReady) readyEntries++;
+                if (entry.AudioClip != null) audioClips++;
+                if (entry.Request != null) pendingRequests++;
+                if (entry.AsyncOperation != null) asyncOperations++;
+                if (entry.AudioCallbackOwner != null) callbackOwners++;
+                if (entry.PlatformAudioPlayer != null) platformPlayers++;
+            }
+
+            return "entries=" + entries.Count.ToString(CultureInfo.InvariantCulture) +
+                ", states=" + states.Count.ToString(CultureInfo.InvariantCulture) +
+                ", contentPackEntries=" + contentPackEntryKeys.Count.ToString(CultureInfo.InvariantCulture) +
+                ", contentPackOwners=" + contentPackOwnerGenerations.Count.ToString(CultureInfo.InvariantCulture) +
+                ", loadStarted=" + loadStarted.ToString(CultureInfo.InvariantCulture) +
+                ", readyEntries=" + readyEntries.ToString(CultureInfo.InvariantCulture) +
+                ", audioClips=" + audioClips.ToString(CultureInfo.InvariantCulture) +
+                ", pendingRequests=" + pendingRequests.ToString(CultureInfo.InvariantCulture) +
+                ", asyncOperations=" + asyncOperations.ToString(CultureInfo.InvariantCulture) +
+                ", callbackOwners=" + callbackOwners.ToString(CultureInfo.InvariantCulture) +
+                ", platformPlayers=" + platformPlayers.ToString(CultureInfo.InvariantCulture) +
+                ", pendingUpdaterEntries=" + pendingEntries.Count.ToString(CultureInfo.InvariantCulture) +
+                ", animalContexts=" + animalSoundContexts.Count.ToString(CultureInfo.InvariantCulture) +
+                ", hookInstalled=" + hookInstalled.ToString(CultureInfo.InvariantCulture);
         }
 
         public AudioReplacementRegisterResult RegisterReplacement(IManifest owner, AudioReplacementOptions options)
@@ -42,16 +125,9 @@ namespace DTMAPI.GameBridge.DolocTown
             string replacementId = normalized.ReplacementId;
             string key = MakeKey(owner.UniqueID, replacementId);
 
-            if (!ReviewedNativeSoundEvents.Contains(normalized.NativeSoundEvent))
+            if (!ReviewedSimpleSfxEvents.Contains(normalized.NativeSoundEvent))
             {
                 string message = "Native sound event is not reviewed for audio replacement: " + normalized.NativeSoundEvent + ".";
-                states[owner.UniqueID] = new AudioReplacementState
-                {
-                    OwnerId = owner.UniqueID,
-                    HookInstalled = hookInstalled,
-                    LastMessage = message,
-                    Status = "unsupported-event"
-                };
                 runtime.RuntimeMonitor.Log("AudioReplacement register rejected owner=" + owner.UniqueID + " replacement=" + replacementId + " event=" + normalized.NativeSoundEvent + " reason=unsupported-event");
                 return new AudioReplacementRegisterResult
                 {
@@ -68,21 +144,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (normalized.Enabled && normalized.SuppressNativeWhenReady)
             {
-                AudioReplacementEntry? conflict = entries.Values.FirstOrDefault(e =>
-                    e.Options.Enabled &&
-                    e.Options.SuppressNativeWhenReady &&
-                    string.Equals(e.Options.NativeSoundEvent, normalized.NativeSoundEvent, StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(MakeKey(e.OwnerId, e.Options.ReplacementId), key, StringComparison.OrdinalIgnoreCase));
+                var candidate = new AudioReplacementEntry(owner.UniqueID, normalized, SimpleSfxCategory, string.Empty, string.Empty, CodeModSource);
+                AudioReplacementEntry? conflict = FindSuppressingConflict(candidate, entries.Values.Where(e => !string.Equals(MakeKey(e.OwnerId, e.Options.ReplacementId), key, StringComparison.OrdinalIgnoreCase)));
                 if (conflict != null)
                 {
-                    string message = "Suppressing replacement already registered for " + normalized.NativeSoundEvent + " by " + conflict.OwnerId + "/" + conflict.Options.ReplacementId + ".";
-                    states[owner.UniqueID] = new AudioReplacementState
-                    {
-                        OwnerId = owner.UniqueID,
-                        HookInstalled = hookInstalled,
-                        LastMessage = message,
-                        Status = "conflict"
-                    };
+                    string message = "Suppressing replacement already registered for " + DescribeConflictScope(candidate) + " by " + conflict.OwnerId + "/" + conflict.Options.ReplacementId + ".";
                     runtime.RuntimeMonitor.Log("AudioReplacement register rejected owner=" + owner.UniqueID + " replacement=" + replacementId + " event=" + normalized.NativeSoundEvent + " reason=conflict existingOwner=" + conflict.OwnerId + " existingReplacement=" + conflict.Options.ReplacementId);
                     return new AudioReplacementRegisterResult
                     {
@@ -101,8 +167,9 @@ namespace DTMAPI.GameBridge.DolocTown
             if (entries.TryGetValue(key, out AudioReplacementEntry? previous))
                 CleanupEntry(previous);
 
-            var entry = new AudioReplacementEntry(owner.UniqueID, normalized);
+            var entry = new AudioReplacementEntry(owner.UniqueID, normalized, SimpleSfxCategory, string.Empty, string.Empty, CodeModSource);
             entries[key] = entry;
+            RefreshCallbackDemandFlags();
 
             if (normalized.Enabled)
                 EnsureLoadStarted(entry);
@@ -131,6 +198,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 " preload=" + entry.LoadStatus +
                 " failure=" + entry.LoadFailureReason +
                 " path=" + normalized.AudioPath);
+            ReconcileCodeRegistrationDemand(owner.UniqueID, "dynamic audio registration");
+            ReconcilePendingDemand("dynamic audio registration");
             return result;
         }
 
@@ -145,31 +214,859 @@ namespace DTMAPI.GameBridge.DolocTown
             return new BridgeFeatureStatus(state.Status, state.LastMessage);
         }
 
+        internal int RemoveOwner(string ownerId, string reason)
+        {
+            ownerId ??= string.Empty;
+            KeyValuePair<string, AudioReplacementEntry>[] ownedEntries = entries
+                .Where(pair => pair.Value.OwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            foreach (KeyValuePair<string, AudioReplacementEntry> pair in ownedEntries)
+            {
+                CleanupEntry(pair.Value);
+                entries.Remove(pair.Key);
+                contentPackEntryKeys.Remove(pair.Key);
+            }
+            contentPackOwnerGenerations.Remove(ownerId);
+            bool removedState = states.Remove(ownerId);
+            if (ownedEntries.Length > 0)
+                animalSoundContexts.Clear();
+            RefreshCallbackDemandFlags();
+            ReconcileCodeRegistrationDemand(ownerId, "audio owner cleanup " + (reason ?? string.Empty));
+            ReconcilePendingDemand("audio owner cleanup " + (reason ?? string.Empty));
+            return ownedEntries.Length + (removedState ? 1 : 0);
+        }
+
+        private void ReconcileCodeRegistrationDemand(string ownerId, string reason)
+        {
+            bool enabled = entries.Values.Any(entry =>
+                entry.OwnerId.Equals(ownerId ?? string.Empty, StringComparison.OrdinalIgnoreCase) &&
+                entry.Options.Enabled);
+            bool animalVoice = entries.Values.Any(entry =>
+                entry.OwnerId.Equals(ownerId ?? string.Empty, StringComparison.OrdinalIgnoreCase) &&
+                entry.Options.Enabled &&
+                string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase));
+            GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.AudioReplacement, ownerId, RuntimeDemandSourceType.ContentDefinition, RuntimeDemandLifetime.Owner, "enabled-definitions", enabled, reason);
+            GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.AudioReplacementAnimalVoiceContext, ownerId, RuntimeDemandSourceType.ContentDefinition, RuntimeDemandLifetime.Owner, "animal-voice-definitions", animalVoice, reason);
+        }
+
+        private void ReconcilePendingDemand(string reason)
+        {
+            GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.AudioReplacementPending, GameBridgeDemandRoutes.OperationOwner, RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "pending-load-or-context", HasPendingRuntimeWork, reason);
+        }
+
+        private void RefreshCallbackDemandFlags()
+        {
+            bool enabled = false;
+            bool animalVoice = false;
+            bool paperBox = false;
+            foreach (AudioReplacementEntry entry in entries.Values)
+            {
+                if (!entry.Options.Enabled)
+                    continue;
+                enabled = true;
+                if (string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                    animalVoice = true;
+                if (string.Equals(entry.Options.NativeSoundEvent, "PLAY_RESOURCE_PAPER_BOX", StringComparison.OrdinalIgnoreCase))
+                    paperBox = true;
+            }
+
+            enabledCallbackDemand = enabled;
+            animalVoiceCallbackDemand = animalVoice;
+            paperBoxDiagnosticCallbackDemand = paperBox;
+            if (!animalVoice && animalSoundContexts.Count > 0)
+                animalSoundContexts.Clear();
+        }
+
+        private void RecordPostCommitSideEffectFailure(string ownerId, long generation, Exception exception)
+        {
+            try
+            {
+                runtime.Diagnostics.RecordError(
+                    ownerId ?? "DTMAPI.GameBridge.AudioReplacement",
+                    "Audio replacement generation committed, but a post-commit side effect failed; visible state and terminal receipt remain committed. generation=" + generation.ToString(CultureInfo.InvariantCulture) + ".",
+                    exception.ToString());
+            }
+            catch
+            {
+            }
+        }
+
+        private void ReconcilePublishedDemandBestEffort(
+            string ownerId,
+            long generation,
+            string ownerReason,
+            string pendingReason)
+        {
+            try
+            {
+                ReconcileCodeRegistrationDemand(ownerId, ownerReason);
+            }
+            catch (Exception ex)
+            {
+                RecordPostCommitSideEffectFailure(ownerId, generation, ex);
+            }
+
+            try
+            {
+                ReconcilePendingDemand(pendingReason);
+            }
+            catch (Exception ex)
+            {
+                RecordPostCommitSideEffectFailure(ownerId, generation, ex);
+            }
+        }
+
+        internal int CountOwnerResources(string ownerId)
+        {
+            ownerId ??= string.Empty;
+            return entries.Values.Count(entry => entry.OwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase)) +
+                (states.ContainsKey(ownerId) ? 1 : 0);
+        }
+
         internal void Update()
         {
-            foreach (AudioReplacementEntry entry in entries.Values.ToArray())
+            ClearStaleAnimalSoundContext();
+
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            int index = 0;
+            while (index < pendingEntries.Count)
             {
+                AudioReplacementEntry entry = pendingEntries[index];
+                pendingEntryVisitCountForTest++;
+                string key = MakeKey(entry.OwnerId, entry.Options.ReplacementId);
+                if (!entries.TryGetValue(key, out AudioReplacementEntry? current) || !ReferenceEquals(current, entry))
+                {
+                    RemovePendingEntryAt(index);
+                    continue;
+                }
+
                 if (entry.Options.Enabled &&
                     !entry.IsReady &&
                     (string.Equals(entry.LoadStatus, "pending", StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(entry.LoadStatus, "retry", StringComparison.OrdinalIgnoreCase)) &&
-                    DateTimeOffset.UtcNow - entry.LastLoadAttemptAtUtc >= TimeSpan.FromSeconds(3))
+                    now - entry.LastLoadAttemptAtUtc >= TimeSpan.FromSeconds(3))
                 {
                     EnsureLoadStarted(entry);
                 }
 
                 PollLoad(entry);
+                if (!ShouldRemainPending(entry))
+                {
+                    RemovePendingEntryAt(index);
+                    continue;
+                }
+                index++;
             }
+        }
+
+        internal int PendingEntryCountForTest => pendingEntries.Count;
+        internal long PendingEntryVisitCountForTest => pendingEntryVisitCountForTest;
+        internal long RetainedCallbackWorkCountForTest => retainedCallbackWorkCountForTest;
+        internal long ContentProjectionBuildCountForTest => contentProjectionBuildCountForTest;
+
+        internal long OptionalFileStatusCallCount => optionalFileStatusCallCount + optionalDirectoryStatusCallCount;
+        internal Action<string>? PostCommitFaultForTest
+        {
+            get => postCommitFaultForTest;
+            set => postCommitFaultForTest = value;
+        }
+        internal Action<string>? PreCommitFaultForTest
+        {
+            get => preCommitFaultForTest;
+            set => preCommitFaultForTest = value;
+        }
+        internal Action<ContentRefreshDirtyBatch>? BeforeGenerationCompleteForTest
+        {
+            get => beforeGenerationCompleteForTest;
+            set => beforeGenerationCompleteForTest = value;
+        }
+        internal Action<string>? PublicationSideEffectFaultForTest
+        {
+            get => publicationSideEffectFaultForTest;
+            set => publicationSideEffectFaultForTest = value;
+        }
+        internal long GetOwnerContentPackGenerationForTest(string ownerId)
+        {
+            return contentPackOwnerGenerations.TryGetValue(ownerId ?? string.Empty, out long generation) ? generation : 0;
+        }
+        internal bool HasPendingRuntimeWork => pendingEntries.Count > 0 || animalSoundContexts.Count > 0;
+        internal bool HasEnabledDefinitions => enabledCallbackDemand;
+
+        internal bool HasEnabledAnimalVoiceDefinitions => animalVoiceCallbackDemand;
+
+        internal bool HasEnabledPaperBoxDiagnosticDefinitions => paperBoxDiagnosticCallbackDemand;
+
+        internal void ClearSaveLifetimeState(string reason)
+        {
+            int cleared = animalSoundContexts.Count;
+            AnimalSoundContext[] contexts = animalSoundContexts.ToArray();
+            if (runtime.ResourceLifecycleCleanupEnabled && cleared > 0)
+            {
+                foreach (AnimalSoundContext context in contexts)
+                {
+                    runtime.ReleaseResourceLifecycle(
+                        "AnimalSoundContext",
+                        context.SpeciesId + ":" + context.Stage + ":" + context.ExpectedNativeSoundEvent,
+                        "DTMAPI.GameBridge.AudioReplacement",
+                        string.Empty,
+                        ResourceLifetime.SaveLifetime,
+                        ResourceOwnership.DtmapiOwned,
+                        "clear-on-save-boundary",
+                        ResourceLifecycleStatus.Cleaned);
+                }
+
+                animalSoundContexts.Clear();
+            }
+
+            runtime.ObserveResourceCleanup(
+                "AudioReplacement",
+                reason ?? string.Empty,
+                runtime.ResourceLifecycleCleanupEnabled ? cleared : 0,
+                "state=AnimalSoundContextStack; requested=" + cleared + "; cleanupEnabled=" + runtime.ResourceLifecycleCleanupEnabled.ToString(CultureInfo.InvariantCulture));
+            if (runtime.ResourceLifecycleCleanupEnabled && cleared > 0)
+                runtime.RuntimeMonitor.Log("AudioReplacement cleared SaveLifetime AnimalVoice contexts reason=" + (reason ?? string.Empty) + " count=" + cleared + ".");
+        }
+
+        internal void RefreshContentPackDefinitions(string reason, bool force)
+        {
+            if (force)
+            {
+                runtime.ContentRefreshGenerations.MarkDirty(
+                    ContentRefreshDomains.AudioReplacement,
+                    runtime.LoadedMods.Select(mod => mod.Manifest.UniqueID),
+                    reason ?? "forced audio replacement refresh");
+            }
+
+            if (!runtime.ContentRefreshGenerations.TryGetDirty(ContentRefreshDomains.AudioReplacement, out ContentRefreshDirtyBatch dirtyBatch))
+                return;
+
+            bool generationCompleted = false;
+            bool visibleSnapshotCommitted = false;
+            var stagedEntries = new List<AudioReplacementEntry>();
+            try
+            {
+                IReadOnlyList<DiscoveredMod> loadedMods = runtime.LoadedMods;
+                contentProjectionBuildCountForTest++;
+                DiscoveredMod[] enabledContentPacks = loadedMods
+                    .Where(IsEnabledContentPack)
+                    .OrderBy(mod => mod.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(mod => mod.RootPath, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var enabledByOwner = enabledContentPacks
+                    .GroupBy(mod => mod.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+                var targetOwners = new HashSet<string>(dirtyBatch.OwnerIds.Where(owner => !string.Equals(owner, "all", StringComparison.OrdinalIgnoreCase)), StringComparer.OrdinalIgnoreCase);
+                bool refreshAll = dirtyBatch.OwnerIds.Count == 0 || dirtyBatch.OwnerIds.Any(owner => string.Equals(owner, "all", StringComparison.OrdinalIgnoreCase));
+                if (refreshAll)
+                {
+                    foreach (string ownerId in enabledByOwner.Keys)
+                        targetOwners.Add(ownerId);
+                    foreach (string ownerId in contentPackOwnerGenerations.Keys)
+                        targetOwners.Add(ownerId);
+                }
+
+                var nextEntries = new Dictionary<string, AudioReplacementEntry>(entries, StringComparer.OrdinalIgnoreCase);
+                var nextContentPackKeys = new HashSet<string>(contentPackEntryKeys, StringComparer.OrdinalIgnoreCase);
+                var nextOwnerGenerations = new Dictionary<string, long>(contentPackOwnerGenerations, StringComparer.OrdinalIgnoreCase);
+                long nextGeneration = nextContentPackGeneration;
+                var completions = new ContentRefreshCompletionCollector();
+                var ownerPublications = new List<AudioReplacementOwnerPreparation>();
+                var removedPublications = new List<AudioReplacementOwnerRemoval>();
+                int committed = 0;
+                int retained = 0;
+
+                foreach (string ownerId in targetOwners.OrderBy(owner => owner, StringComparer.OrdinalIgnoreCase))
+                {
+                    nextOwnerGenerations.TryGetValue(ownerId, out long previousGeneration);
+                    if (!enabledByOwner.TryGetValue(ownerId, out DiscoveredMod? mod))
+                    {
+                        AudioReplacementOwnerRemoval removal = StageOwnerRemoval(
+                            ownerId,
+                            "content pack disabled or unloaded during " + (reason ?? string.Empty),
+                            nextEntries,
+                            nextContentPackKeys,
+                            nextOwnerGenerations);
+                        removedPublications.Add(removal);
+                        completions.Add(new ContentRefreshCompletion(ownerId, ContentRefreshCompletionStatus.Removed, previousGeneration, 0, 0, "entriesRemoved=" + removal.PreviousEntries.Count));
+                        continue;
+                    }
+
+                    string schemaPath = Path.Combine(mod.RootPath, "Content", "DTMAPI", "audio-replacements.json");
+                    optionalFileStatusCallCount++;
+                    if (!File.Exists(schemaPath) && previousGeneration == 0)
+                    {
+                        completions.Add(new ContentRefreshCompletion(ownerId, ContentRefreshCompletionStatus.Unchanged, 0, 0, 0, "No Audio replacement schema is declared."));
+                        continue;
+                    }
+
+                    long proposedGeneration = checked(nextGeneration + 1);
+                    AudioReplacementOwnerPreparation preparation = PrepareContentPackOwner(
+                        ownerId,
+                        mod.RootPath,
+                        reason ?? string.Empty,
+                        string.Empty,
+                        proposedGeneration,
+                        nextEntries,
+                        nextContentPackKeys,
+                        nextOwnerGenerations);
+                    ownerPublications.Add(preparation);
+                    if (preparation.Result.Success)
+                    {
+                        stagedEntries.AddRange(preparation.Candidates);
+                        nextGeneration = proposedGeneration;
+                        ApplyPreparedOwner(preparation, nextEntries, nextContentPackKeys, nextOwnerGenerations);
+                        committed++;
+                    }
+                    else if (preparation.Result.RetainedPreviousGeneration)
+                    {
+                        retained++;
+                    }
+
+                    completions.Add(new ContentRefreshCompletion(
+                        ownerId,
+                        preparation.Result.Success ? ContentRefreshCompletionStatus.Committed : ContentRefreshCompletionStatus.Rejected,
+                        previousGeneration,
+                        preparation.Result.Generation,
+                        preparation.Result.Generation,
+                        "status=" + preparation.Result.Status + "; entries=" + preparation.Result.ActiveEntryCount + "; retained=" + preparation.Result.RetainedPreviousGeneration));
+                }
+
+                GetCallbackDemandSnapshot(nextEntries.Values, out bool nextEnabledDemand, out bool nextAnimalVoiceDemand, out bool nextPaperBoxDemand);
+                beforeGenerationCompleteForTest?.Invoke(dirtyBatch);
+                generationCompleted = runtime.ContentRefreshGenerations.CompleteWithAtomicCommit(
+                    dirtyBatch,
+                    completions,
+                    () =>
+                    {
+                        preCommitFaultForTest?.Invoke("before-visible-snapshot-swap");
+                        entries = nextEntries;
+                        contentPackEntryKeys = nextContentPackKeys;
+                        contentPackOwnerGenerations = nextOwnerGenerations;
+                        nextContentPackGeneration = nextGeneration;
+                        enabledCallbackDemand = nextEnabledDemand;
+                        animalVoiceCallbackDemand = nextAnimalVoiceDemand;
+                        paperBoxDiagnosticCallbackDemand = nextPaperBoxDemand;
+                    });
+                if (!generationCompleted)
+                    throw new InvalidOperationException("Audio replacement content generation completion was rejected as stale.");
+                visibleSnapshotCommitted = true;
+
+                if (!nextAnimalVoiceDemand && animalSoundContexts.Count > 0)
+                    animalSoundContexts.Clear();
+                foreach (AudioReplacementOwnerRemoval removal in removedPublications)
+                    PublishOwnerRemovalSideEffects(removal);
+                foreach (AudioReplacementOwnerPreparation publication in ownerPublications)
+                {
+                    if (publication.Result.Success)
+                        PublishOwnerCommitSideEffects(publication);
+                    else
+                        PublishOwnerRejectionSideEffects(publication.Result);
+                }
+                int activeEntryCount = contentPackEntryKeys.Count;
+                try
+                {
+                    runtime.ObserveResourceRefresh("AudioReplacement", reason ?? string.Empty, ResourceLifecycleStatus.Rebuilt, activeEntryCount);
+                    runtime.RuntimeMonitor.Log(
+                        "AudioReplacement content-pack refresh reason=" + (reason ?? string.Empty) +
+                        " committedOwners=" + committed.ToString(CultureInfo.InvariantCulture) +
+                        " retainedOwners=" + retained.ToString(CultureInfo.InvariantCulture) +
+                        " activeEntries=" + activeEntryCount.ToString(CultureInfo.InvariantCulture) + ".");
+                    runtime.ObserveLifecycleResourceEvent(
+                        "AudioReplacement",
+                        "ContentPackRefresh",
+                        "all",
+                        "audio-replacements",
+                        "reason=" + (reason ?? string.Empty) + "; dirtyGeneration=" + dirtyBatch.Generation + "; committedOwners=" + committed.ToString(CultureInfo.InvariantCulture) + "; retainedOwners=" + retained.ToString(CultureInfo.InvariantCulture) + "; activeEntries=" + activeEntryCount.ToString(CultureInfo.InvariantCulture));
+                }
+                catch (Exception ex)
+                {
+                    RecordPostCommitSideEffectFailure("DTMAPI.GameBridge.AudioReplacement", nextGeneration, ex);
+                }
+                postCommitFaultForTest?.Invoke("terminal-receipt-and-visible-snapshot-committed");
+            }
+            catch (Exception ex)
+            {
+                if (!visibleSnapshotCommitted)
+                    DisposeStagedEntries(stagedEntries);
+                if (!generationCompleted)
+                {
+                    runtime.ContentRefreshGenerations.AbandonAndRequeue(
+                        dirtyBatch,
+                        "AudioReplacement consumer failed: " + ex.GetType().Name + ": " + ex.Message);
+                }
+                throw;
+            }
+        }
+
+        internal AudioReplacementOwnerReloadResult ReloadContentPackOwner(
+            string ownerId,
+            string rootPath,
+            string reason,
+            string expectedTreeSha256 = "")
+        {
+            var nextEntries = new Dictionary<string, AudioReplacementEntry>(entries, StringComparer.OrdinalIgnoreCase);
+            var nextContentPackKeys = new HashSet<string>(contentPackEntryKeys, StringComparer.OrdinalIgnoreCase);
+            var nextOwnerGenerations = new Dictionary<string, long>(contentPackOwnerGenerations, StringComparer.OrdinalIgnoreCase);
+            long proposedGeneration = checked(nextContentPackGeneration + 1);
+            AudioReplacementOwnerPreparation preparation = PrepareContentPackOwner(
+                ownerId,
+                rootPath,
+                reason,
+                expectedTreeSha256,
+                proposedGeneration,
+                nextEntries,
+                nextContentPackKeys,
+                nextOwnerGenerations);
+            if (!preparation.Result.Success)
+            {
+                PublishOwnerRejectionSideEffects(preparation.Result);
+                return preparation.Result;
+            }
+
+            bool nextEnabledDemand;
+            bool nextAnimalVoiceDemand;
+            bool nextPaperBoxDemand;
+            try
+            {
+                ApplyPreparedOwner(preparation, nextEntries, nextContentPackKeys, nextOwnerGenerations);
+                GetCallbackDemandSnapshot(nextEntries.Values, out nextEnabledDemand, out nextAnimalVoiceDemand, out nextPaperBoxDemand);
+            }
+            catch
+            {
+                DisposeStagedEntries(preparation.Candidates);
+                throw;
+            }
+            entries = nextEntries;
+            contentPackEntryKeys = nextContentPackKeys;
+            contentPackOwnerGenerations = nextOwnerGenerations;
+            nextContentPackGeneration = proposedGeneration;
+            enabledCallbackDemand = nextEnabledDemand;
+            animalVoiceCallbackDemand = nextAnimalVoiceDemand;
+            paperBoxDiagnosticCallbackDemand = nextPaperBoxDemand;
+            if (!nextAnimalVoiceDemand && animalSoundContexts.Count > 0)
+                animalSoundContexts.Clear();
+            PublishOwnerCommitSideEffects(preparation);
+            return preparation.Result;
+        }
+
+        private AudioReplacementOwnerPreparation PrepareContentPackOwner(
+            string ownerId,
+            string rootPath,
+            string reason,
+            string expectedTreeSha256,
+            long proposedGeneration,
+            IReadOnlyDictionary<string, AudioReplacementEntry> candidateEntries,
+            IReadOnlyCollection<string> candidateContentPackKeys,
+            IReadOnlyDictionary<string, long> candidateOwnerGenerations)
+        {
+            ownerId = (ownerId ?? string.Empty).Trim();
+            reason = BoundDiagnostic(reason ?? string.Empty);
+            if (ownerId.Length == 0)
+                return RejectOwnerPreparation(ownerId, "invalid-owner", "Audio replacement reload requires a non-empty UniqueID.", reason, candidateEntries, candidateOwnerGenerations);
+            if (string.IsNullOrWhiteSpace(rootPath))
+                return RejectOwnerPreparation(ownerId, "invalid-root", "Content root is empty.", reason, candidateEntries, candidateOwnerGenerations);
+
+            string canonicalRoot;
+            string schemaPath;
+            try
+            {
+                canonicalRoot = Path.GetFullPath(rootPath ?? string.Empty);
+                optionalDirectoryStatusCallCount++;
+                if (!Directory.Exists(canonicalRoot))
+                    return RejectOwnerPreparation(ownerId, "invalid-root", "Content root does not exist: " + canonicalRoot, reason, candidateEntries, candidateOwnerGenerations);
+                schemaPath = Path.Combine(canonicalRoot, "Content", "DTMAPI", "audio-replacements.json");
+            }
+            catch (Exception ex)
+            {
+                return RejectOwnerPreparation(ownerId, "invalid-root", "Content root is invalid: " + ex.GetType().Name + ": " + ex.Message, reason, candidateEntries, candidateOwnerGenerations);
+            }
+
+            AudioReplacementDefinitionModel[] definitions;
+            try
+            {
+                optionalFileStatusCallCount++;
+                if (!File.Exists(schemaPath))
+                    return RejectOwnerPreparation(ownerId, "missing-format", "Content/DTMAPI/audio-replacements.json does not exist.", reason, candidateEntries, candidateOwnerGenerations);
+
+                string json = File.ReadAllText(schemaPath, Encoding.UTF8);
+                definitions = ReadContentPackDefinitions(json);
+            }
+            catch (Exception ex)
+            {
+                return RejectOwnerPreparation(ownerId, "invalid-json", "Failed to read audio-replacements.json: " + ex.GetType().Name + ": " + ex.Message, reason, candidateEntries, candidateOwnerGenerations);
+            }
+
+            var warnings = new List<string>();
+            AudioReplacementEntry[] candidates;
+            try
+            {
+                candidates = BuildContentPackEntries(
+                    ownerId,
+                    canonicalRoot,
+                    definitions,
+                    warnings,
+                    () => optionalFileStatusCallCount++).ToArray();
+            }
+            catch (Exception ex)
+            {
+                warnings.Add("definition build failed: " + ex.GetType().Name + ": " + ex.Message);
+                candidates = Array.Empty<AudioReplacementEntry>();
+            }
+
+            string[] duplicateKeys = candidates
+                .GroupBy(entry => MakeKey(entry.OwnerId, entry.Options.ReplacementId), StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToArray();
+            if (duplicateKeys.Length > 0)
+                warnings.Add("duplicate replacement ids: " + string.Join(",", duplicateKeys));
+
+            var candidateByKey = new Dictionary<string, AudioReplacementEntry>(StringComparer.OrdinalIgnoreCase);
+            foreach (AudioReplacementEntry candidate in candidates)
+            {
+                string key = MakeKey(candidate.OwnerId, candidate.Options.ReplacementId);
+                if (!candidateByKey.ContainsKey(key))
+                    candidateByKey[key] = candidate;
+            }
+
+            AudioReplacementEntry[] otherEntries = candidateEntries.Values
+                .Where(entry => !(string.Equals(entry.Source, ContentPackSource, StringComparison.OrdinalIgnoreCase) && string.Equals(entry.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+            var acceptedCandidates = new List<AudioReplacementEntry>();
+            foreach (AudioReplacementEntry candidate in candidateByKey.Values.OrderBy(entry => entry.Options.ReplacementId, StringComparer.OrdinalIgnoreCase))
+            {
+                string candidateKey = MakeKey(candidate.OwnerId, candidate.Options.ReplacementId);
+                if (candidateEntries.TryGetValue(candidateKey, out AudioReplacementEntry? sameKeyEntry) &&
+                    !(string.Equals(sameKeyEntry.Source, ContentPackSource, StringComparison.OrdinalIgnoreCase) && string.Equals(sameKeyEntry.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    warnings.Add("replacement=" + candidate.Options.ReplacementId + " conflicts with loaded " + sameKeyEntry.Source + " replacement using the same owner/id key");
+                    continue;
+                }
+
+                AudioReplacementEntry? conflict = FindSuppressingConflict(candidate, otherEntries.Concat(acceptedCandidates));
+                if (conflict != null)
+                {
+                    warnings.Add("replacement=" + candidate.Options.ReplacementId + " conflicts scope=" + DescribeConflictScope(candidate) + " existingOwner=" + conflict.OwnerId + " existingReplacement=" + conflict.Options.ReplacementId);
+                    continue;
+                }
+
+                acceptedCandidates.Add(candidate);
+            }
+
+            if (warnings.Count > 0 || acceptedCandidates.Count != candidates.Length)
+            {
+                DisposeStagedEntries(acceptedCandidates);
+                return RejectOwnerPreparation(ownerId, "invalid-generation", FormatBoundedDiagnostics(warnings), reason, candidateEntries, candidateOwnerGenerations);
+            }
+
+            foreach (AudioReplacementEntry candidate in acceptedCandidates)
+            {
+                if (!TryPrepareEntryForAtomicSwap(candidate, out string failure))
+                {
+                    DisposeStagedEntries(acceptedCandidates);
+                    return RejectOwnerPreparation(ownerId, "wav-unavailable", "replacement=" + candidate.Options.ReplacementId + " rejected: " + failure, reason, candidateEntries, candidateOwnerGenerations);
+                }
+
+                if (candidate.Options.Enabled && !candidate.IsReady)
+                {
+                    DisposeStagedEntries(acceptedCandidates);
+                    return RejectOwnerPreparation(ownerId, "wav-unavailable", "replacement=" + candidate.Options.ReplacementId + " did not produce a ready playback backend.", reason, candidateEntries, candidateOwnerGenerations);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(expectedTreeSha256))
+            {
+                string commitTreeSha256;
+                try
+                {
+                    commitTreeSha256 = AuthorFileTreeDigest.Compute(canonicalRoot);
+                }
+                catch (Exception ex)
+                {
+                    DisposeStagedEntries(acceptedCandidates);
+                    return RejectOwnerPreparation(ownerId, "source-tree-unreadable", "The source tree could not be rehashed before commit: " + ex.GetType().Name + ": " + ex.Message, reason, candidateEntries, candidateOwnerGenerations);
+                }
+
+                if (!string.Equals(commitTreeSha256, expectedTreeSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    DisposeStagedEntries(acceptedCandidates);
+                    return RejectOwnerPreparation(
+                        ownerId,
+                        "source-tree-hash-mismatch",
+                        "The source tree changed while the Audio generation was staged; expected=" + expectedTreeSha256 + "; actual=" + commitTreeSha256 + ".",
+                        reason,
+                        candidateEntries,
+                        candidateOwnerGenerations);
+                }
+            }
+
+            KeyValuePair<string, AudioReplacementEntry>[] previous = candidateEntries
+                .Where(pair => candidateContentPackKeys.Contains(pair.Key) && string.Equals(pair.Value.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            string message = "Audio replacement owner generation committed owner=" + ownerId +
+                " generation=" + proposedGeneration.ToString(CultureInfo.InvariantCulture) +
+                " entries=" + acceptedCandidates.Count.ToString(CultureInfo.InvariantCulture) +
+                " reason=" + reason + ".";
+            return new AudioReplacementOwnerPreparation(
+                AudioReplacementOwnerReloadResult.Committed(ownerId, proposedGeneration, acceptedCandidates.Count, message),
+                previous,
+                acceptedCandidates.ToArray(),
+                reason);
+        }
+
+        private static AudioReplacementOwnerPreparation RejectOwnerPreparation(
+            string ownerId,
+            string status,
+            string failure,
+            string reason,
+            IReadOnlyDictionary<string, AudioReplacementEntry> candidateEntries,
+            IReadOnlyDictionary<string, long> candidateOwnerGenerations)
+        {
+            ownerId = ownerId ?? string.Empty;
+            failure = BoundDiagnostic(failure);
+            bool retained = candidateOwnerGenerations.TryGetValue(ownerId, out long generation);
+            int activeEntries = candidateEntries.Values.Count(entry =>
+                string.Equals(entry.Source, ContentPackSource, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase));
+            string message = "Audio replacement owner generation rejected owner=" + ownerId +
+                " status=" + status +
+                " retained=" + retained.ToString(CultureInfo.InvariantCulture) +
+                " generation=" + generation.ToString(CultureInfo.InvariantCulture) +
+                " entries=" + activeEntries.ToString(CultureInfo.InvariantCulture) +
+                " reason=" + reason +
+                " failure=" + failure + ".";
+            return new AudioReplacementOwnerPreparation(
+                AudioReplacementOwnerReloadResult.Rejected(ownerId, status, generation, activeEntries, retained, message),
+                Array.Empty<KeyValuePair<string, AudioReplacementEntry>>(),
+                Array.Empty<AudioReplacementEntry>(),
+                reason);
+        }
+
+        private static void ApplyPreparedOwner(
+            AudioReplacementOwnerPreparation preparation,
+            IDictionary<string, AudioReplacementEntry> candidateEntries,
+            ISet<string> candidateContentPackKeys,
+            IDictionary<string, long> candidateOwnerGenerations)
+        {
+            foreach (KeyValuePair<string, AudioReplacementEntry> pair in preparation.PreviousEntries)
+            {
+                candidateEntries.Remove(pair.Key);
+                candidateContentPackKeys.Remove(pair.Key);
+            }
+            foreach (AudioReplacementEntry candidate in preparation.Candidates)
+            {
+                string key = MakeKey(candidate.OwnerId, candidate.Options.ReplacementId);
+                candidateEntries[key] = candidate;
+                candidateContentPackKeys.Add(key);
+            }
+            candidateOwnerGenerations[preparation.Result.OwnerId] = preparation.Result.Generation;
+        }
+
+        private static AudioReplacementOwnerRemoval StageOwnerRemoval(
+            string ownerId,
+            string reason,
+            IDictionary<string, AudioReplacementEntry> candidateEntries,
+            ISet<string> candidateContentPackKeys,
+            IDictionary<string, long> candidateOwnerGenerations)
+        {
+            KeyValuePair<string, AudioReplacementEntry>[] previous = candidateEntries
+                .Where(pair => candidateContentPackKeys.Contains(pair.Key) && string.Equals(pair.Value.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            foreach (KeyValuePair<string, AudioReplacementEntry> pair in previous)
+            {
+                candidateEntries.Remove(pair.Key);
+                candidateContentPackKeys.Remove(pair.Key);
+            }
+            candidateOwnerGenerations.Remove(ownerId);
+            return new AudioReplacementOwnerRemoval(ownerId, previous, reason);
+        }
+
+        private static void GetCallbackDemandSnapshot(
+            IEnumerable<AudioReplacementEntry> candidateEntries,
+            out bool enabled,
+            out bool animalVoice,
+            out bool paperBox)
+        {
+            enabled = false;
+            animalVoice = false;
+            paperBox = false;
+            foreach (AudioReplacementEntry entry in candidateEntries)
+            {
+                if (!entry.Options.Enabled)
+                    continue;
+                enabled = true;
+                if (string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                    animalVoice = true;
+                if (string.Equals(entry.Options.NativeSoundEvent, "PLAY_RESOURCE_PAPER_BOX", StringComparison.OrdinalIgnoreCase))
+                    paperBox = true;
+            }
+        }
+
+        private void PublishOwnerCommitSideEffects(AudioReplacementOwnerPreparation preparation)
+        {
+            string ownerId = preparation.Result.OwnerId;
+            long generation = preparation.Result.Generation;
+            foreach (KeyValuePair<string, AudioReplacementEntry> pair in preparation.PreviousEntries)
+            {
+                try
+                {
+                    CleanupEntry(pair.Value);
+                }
+                catch (Exception ex)
+                {
+                    RecordPostCommitSideEffectFailure(ownerId, generation, ex);
+                }
+            }
+
+            foreach (AudioReplacementEntry candidate in preparation.Candidates)
+            {
+                try
+                {
+                    if (candidate.Options.Enabled)
+                        PublishReadyState(candidate);
+                    runtime.ObserveResourceLifecycle(
+                        "AudioReplacementDefinition",
+                        candidate.Options.ReplacementId,
+                        candidate.OwnerId,
+                        candidate.Options.AudioPath,
+                        ResourceLifetime.TitleLifetime,
+                        ResourceOwnership.DtmapiOwned,
+                        ResourceLifecycleStatus.Declared,
+                        "owner-generation=" + generation.ToString(CultureInfo.InvariantCulture));
+                }
+                catch (Exception ex)
+                {
+                    RecordPostCommitSideEffectFailure(ownerId, generation, ex);
+                }
+            }
+
+            try
+            {
+                publicationSideEffectFaultForTest?.Invoke("owner-commit-before-log-and-lifecycle-publication");
+                UpdateOwnerState(ownerId, preparation.Result.Message);
+                runtime.RuntimeMonitor.Log(preparation.Result.Message);
+                runtime.ObserveLifecycleResourceEvent(
+                    "AudioReplacement",
+                    "OwnerGenerationCommitted",
+                    ownerId,
+                    generation.ToString(CultureInfo.InvariantCulture),
+                    "entries=" + preparation.Candidates.Count.ToString(CultureInfo.InvariantCulture) + "; reason=" + preparation.Reason);
+            }
+            catch (Exception ex)
+            {
+                RecordPostCommitSideEffectFailure(ownerId, generation, ex);
+            }
+            finally
+            {
+                ReconcilePublishedDemandBestEffort(
+                    ownerId,
+                    generation,
+                    "audio owner generation committed",
+                    "audio owner generation committed");
+            }
+        }
+
+        private void PublishOwnerRejectionSideEffects(AudioReplacementOwnerReloadResult result)
+        {
+            try
+            {
+                publicationSideEffectFaultForTest?.Invoke("owner-rejection-before-log-and-lifecycle-publication");
+                runtime.Diagnostics.RecordWarning(result.OwnerId, "Audio replacement generation rejected; last-good generation retained.", result.Message);
+                runtime.RuntimeMonitor.Log(result.Message, LogLevel.Warn);
+                runtime.ObserveLifecycleResourceEvent(
+                    "AudioReplacement",
+                    "OwnerGenerationRejected",
+                    result.OwnerId,
+                    result.Generation.ToString(CultureInfo.InvariantCulture),
+                    "status=" + result.Status + "; retained=" + result.RetainedPreviousGeneration.ToString(CultureInfo.InvariantCulture) + "; entries=" + result.ActiveEntryCount.ToString(CultureInfo.InvariantCulture));
+            }
+            catch (Exception ex)
+            {
+                RecordPostCommitSideEffectFailure(result.OwnerId, result.Generation, ex);
+            }
+            finally
+            {
+                ReconcilePublishedDemandBestEffort(
+                    result.OwnerId,
+                    result.Generation,
+                    "audio owner generation rejected; preserve last-good demand",
+                    "audio owner generation rejected");
+            }
+        }
+
+        private void PublishOwnerRemovalSideEffects(AudioReplacementOwnerRemoval removal)
+        {
+            foreach (KeyValuePair<string, AudioReplacementEntry> pair in removal.PreviousEntries)
+            {
+                try
+                {
+                    CleanupEntry(pair.Value);
+                }
+                catch (Exception ex)
+                {
+                    RecordPostCommitSideEffectFailure(removal.OwnerId, 0, ex);
+                }
+            }
+            try
+            {
+                publicationSideEffectFaultForTest?.Invoke("owner-removal-before-log-and-lifecycle-publication");
+                UpdateOwnerState(removal.OwnerId, "content-pack audio replacement generation removed: " + removal.Reason);
+            }
+            catch (Exception ex)
+            {
+                RecordPostCommitSideEffectFailure(removal.OwnerId, 0, ex);
+            }
+            finally
+            {
+                ReconcilePublishedDemandBestEffort(
+                    removal.OwnerId,
+                    0,
+                    "audio content generation removed",
+                    "audio content generation removed");
+            }
+        }
+
+        internal void BeginAnimalSoundContext(object? animal)
+        {
+            if (!animalVoiceCallbackDemand)
+                return;
+            retainedCallbackWorkCountForTest++;
+            AnimalSoundContext context = BuildAnimalSoundContext(animal);
+            animalSoundContexts.Push(context);
+            runtime.ObserveResourceLifecycle(
+                "AnimalSoundContext",
+                context.SpeciesId + ":" + context.Stage + ":" + context.ExpectedNativeSoundEvent,
+                "DTMAPI.GameBridge.AudioReplacement",
+                string.Empty,
+                ResourceLifetime.SaveLifetime,
+                ResourceOwnership.DtmapiOwned,
+                ResourceLifecycleStatus.Acquired,
+                "clear-on-save-boundary");
+        }
+
+        internal void EndAnimalSoundContext()
+        {
+            if (!animalVoiceCallbackDemand)
+                return;
+            retainedCallbackWorkCountForTest++;
+            if (animalSoundContexts.Count > 0)
+                animalSoundContexts.Pop();
         }
 
         internal bool HandleNativeSoundEvent(string? eventName, object? emitter, object? eventCallback, bool waitEndOfFrame, ref bool nativeResult)
         {
+            if (!enabledCallbackDemand)
+                return true;
+            retainedCallbackWorkCountForTest++;
             string normalizedEvent = NormalizeEventName(eventName);
             if (normalizedEvent.Length == 0)
                 return true;
 
+            AnimalSoundContext? context = GetCurrentAnimalSoundContext();
             AudioReplacementEntry[] candidates = entries.Values
-                .Where(e => e.Options.Enabled && string.Equals(e.Options.NativeSoundEvent, normalizedEvent, StringComparison.OrdinalIgnoreCase))
+                .Where(e => e.Options.Enabled &&
+                    string.Equals(e.Options.NativeSoundEvent, normalizedEvent, StringComparison.OrdinalIgnoreCase) &&
+                    IsEntryInScope(e, context))
                 .OrderBy(e => e.OwnerId, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(e => e.Options.ReplacementId, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
@@ -179,7 +1076,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (emitter != null || eventCallback != null)
             {
                 foreach (AudioReplacementEntry entry in candidates)
-                    RecordEvent(entry, normalizedEvent, played: false, suppressed: false, "native Wwise emitter/callback semantics are not supported by this reviewed 2D replacement path; native sound allowed. emitter=" + (emitter != null) + " callback=" + (eventCallback != null) + " waitEndOfFrame=" + waitEndOfFrame.ToString(CultureInfo.InvariantCulture));
+                    RecordEvent(entry, normalizedEvent, played: false, suppressed: false, "native Wwise emitter/callback semantics are not supported by this reviewed 2D replacement path; native sound allowed. " + DescribeEventContext(entry, context) + " emitter=" + (emitter != null) + " callback=" + (eventCallback != null) + " waitEndOfFrame=" + waitEndOfFrame.ToString(CultureInfo.InvariantCulture));
                 return true;
             }
 
@@ -188,19 +1085,34 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!entry.IsReady)
                 {
                     EnsureLoadStarted(entry);
-                    RecordEvent(entry, normalizedEvent, played: false, suppressed: false, "replacement not ready; native sound allowed. loadStatus=" + entry.LoadStatus);
+                    RecordEvent(entry, normalizedEvent, played: false, suppressed: false, "replacement not ready; native sound allowed. " + DescribeEventContext(entry, context) + " loadStatus=" + entry.LoadStatus);
                     continue;
                 }
 
-                if (entry.Options.CooldownMilliseconds > 0 && DateTimeOffset.UtcNow - entry.LastPlayedAtUtc < TimeSpan.FromMilliseconds(entry.Options.CooldownMilliseconds))
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                if (IsCooldownActive(entry.Options.CooldownMilliseconds, entry.LastPlayedAtUtc, now))
                 {
-                    RecordEvent(entry, normalizedEvent, played: false, suppressed: false, "replacement cooldown active; native sound allowed.");
+                    bool suppressDuringCooldown = ShouldSuppressNativeDuringReadyCooldown(entry.IsReady, entry.Options.SuppressNativeWhenReady);
+                    RecordEvent(
+                        entry,
+                        normalizedEvent,
+                        played: false,
+                        suppressed: suppressDuringCooldown,
+                        (suppressDuringCooldown
+                            ? "replacement cooldown active; native sound suppressed because replacement is ready. "
+                            : "replacement cooldown active; native sound allowed. ") + DescribeEventContext(entry, context));
+                    if (suppressDuringCooldown)
+                    {
+                        nativeResult = true;
+                        return false;
+                    }
+
                     continue;
                 }
 
                 bool played = TryPlay(entry, out string playMessage);
                 bool suppress = played && entry.Options.SuppressNativeWhenReady;
-                RecordEvent(entry, normalizedEvent, played, suppress, playMessage);
+                RecordEvent(entry, normalizedEvent, played, suppress, DescribeEventContext(entry, context) + " " + playMessage);
                 if (!played)
                     continue;
 
@@ -218,6 +1130,9 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void RecordPaperBoxInteract(object instance)
         {
+            if (!paperBoxDiagnosticCallbackDemand)
+                return;
+            retainedCallbackWorkCountForTest++;
             runtime.RuntimeMonitor.Log("AudioReplacement paper-box OnInteract owner=DungeonResourceModelPaperBox event=PLAY_RESOURCE_PAPER_BOX instance=" + (instance?.GetType().FullName ?? "null") + ".");
             runtime.SetHookStatus(
                 "Audio.PaperBoxNativeOwner",
@@ -226,11 +1141,340 @@ namespace DTMAPI.GameBridge.DolocTown
                 "Native paper-box interaction owner ran and posts PLAY_RESOURCE_PAPER_BOX through the Wwise sound-event bridge.");
         }
 
+        private bool IsEntryInScope(AudioReplacementEntry entry, AnimalSoundContext? context)
+        {
+            return IsEntryInScopeStatic(entry, context);
+        }
+
+        private static bool IsEntryInScopeStatic(AudioReplacementEntry entry, AnimalSoundContext? context)
+        {
+            if (string.Equals(entry.Category, SimpleSfxCategory, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (!string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (context == null)
+                return false;
+            if (!string.Equals(entry.SpeciesId, context.SpeciesId, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (!string.Equals(entry.Options.NativeSoundEvent, context.ExpectedNativeSoundEvent, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (string.Equals(entry.Stage, "any", StringComparison.OrdinalIgnoreCase))
+                return true;
+            return string.Equals(entry.Stage, context.Stage, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private AnimalSoundContext? GetCurrentAnimalSoundContext()
+        {
+            ClearStaleAnimalSoundContext();
+            return animalSoundContexts.Count == 0 ? null : animalSoundContexts.Peek();
+        }
+
+        private void ClearStaleAnimalSoundContext()
+        {
+            if (animalSoundContexts.Count == 0)
+                return;
+            if (DateTimeOffset.UtcNow - animalSoundContexts.Peek().CreatedAtUtc <= AnimalSoundContextMaxAge)
+                return;
+
+            animalSoundContexts.Clear();
+            runtime.RuntimeMonitor.Log("AudioReplacement cleared stale Animal.PlayAnimalSound context.", LogLevel.Warn);
+        }
+
+        private static AnimalSoundContext BuildAnimalSoundContext(object? animal)
+        {
+            string species = ReadStringMember(animal, "protoName", "ProtoName");
+            object? data = ReadMember(animal, "data", "Data");
+            bool isChild = ReadBoolMember(data, "isChild", "IsChild");
+            string stage = isChild ? "child" : "adult";
+            object? proto = ReadMember(animal, "proto", "Proto");
+            string expectedEvent = NormalizeEventName(isChild
+                ? ReadStringMember(proto, "SoundEventChild", "soundEventChild")
+                : ReadStringMember(proto, "SoundEvent", "soundEvent"));
+
+            return new AnimalSoundContext(species, stage, expectedEvent, DateTimeOffset.UtcNow);
+        }
+
+        private static string DescribeEventContext(AudioReplacementEntry entry, AnimalSoundContext? context)
+        {
+            if (!string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                return "category=" + entry.Category + ".";
+
+            return "category=AnimalVoice species=" + (context?.SpeciesId ?? "none") +
+                " stage=" + (context?.Stage ?? "none") +
+                " expectedEvent=" + (context?.ExpectedNativeSoundEvent ?? string.Empty) + ".";
+        }
+
+        internal static IReadOnlyList<string> BuildContentPackReplacementSummariesForTest(string ownerId, string rootPath, string json)
+        {
+            var warnings = new List<string>();
+            return BuildContentPackEntries(ownerId, rootPath, ReadContentPackDefinitions(json), warnings)
+                .Select(e => e.OwnerId + "|" + e.Options.ReplacementId + "|" + e.Category + "|" + e.SpeciesId + "|" + e.Stage + "|" + e.Options.NativeSoundEvent + "|" + e.Options.AudioPath + "|" + e.Options.SuppressNativeWhenReady + "|" + e.Options.CooldownMilliseconds.ToString(CultureInfo.InvariantCulture))
+                .ToArray();
+        }
+
+        internal static IReadOnlyList<string> BuildContentPackReplacementWarningsForTest(string ownerId, string rootPath, string json)
+        {
+            var warnings = new List<string>();
+            BuildContentPackEntries(ownerId, rootPath, ReadContentPackDefinitions(json), warnings);
+            return warnings.ToArray();
+        }
+
+        internal static bool MatchesAnimalVoiceScopeForTest(string entrySpeciesId, string entryStage, string entryEvent, string contextSpeciesId, string contextStage, string contextExpectedEvent, string postedEvent)
+        {
+            var options = new AudioReplacementOptions
+            {
+                Enabled = true,
+                ReplacementId = "unit-test",
+                NativeSoundEvent = entryEvent,
+                AudioPath = Path.Combine(Path.GetTempPath(), "unit-test.wav"),
+                SuppressNativeWhenReady = true,
+                Volume = 1,
+                CooldownMilliseconds = 0
+            };
+            var entry = new AudioReplacementEntry("DTMAPI.UnitTests", NormalizeOptions(options), AnimalVoiceCategory, NormalizeId(entrySpeciesId), NormalizeStage(entryStage), ContentPackSource);
+            AnimalSoundContext? context = string.IsNullOrWhiteSpace(contextSpeciesId)
+                ? null
+                : new AnimalSoundContext(NormalizeId(contextSpeciesId), NormalizeStage(contextStage), NormalizeEventName(contextExpectedEvent), DateTimeOffset.UtcNow);
+            return string.Equals(entry.Options.NativeSoundEvent, NormalizeEventName(postedEvent), StringComparison.OrdinalIgnoreCase) &&
+                IsEntryInScopeStatic(entry, context);
+        }
+
+        private static AudioReplacementDefinitionModel[] ReadContentPackDefinitions(string json)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(json ?? string.Empty);
+            using (var stream = new MemoryStream(bytes))
+            {
+                var serializer = new DataContractJsonSerializer(typeof(AudioReplacementDefinitionModel[]));
+                object? result = serializer.ReadObject(stream);
+                if (!(result is AudioReplacementDefinitionModel[] definitions))
+                    throw new SerializationException("audio-replacements.json must contain a top-level JSON array.");
+                return definitions;
+            }
+        }
+
+        private static IReadOnlyList<AudioReplacementEntry> BuildContentPackEntries(
+            string ownerId,
+            string rootPath,
+            IEnumerable<AudioReplacementDefinitionModel> definitions,
+            List<string> warnings,
+            Action? beforeFileStatus = null)
+        {
+            var result = new List<AudioReplacementEntry>();
+            int definitionIndex = 0;
+            foreach (AudioReplacementDefinitionModel definition in definitions ?? Array.Empty<AudioReplacementDefinitionModel>())
+            {
+                int currentDefinitionIndex = definitionIndex++;
+                if (definition == null)
+                {
+                    warnings.Add("replacement definition at index " + currentDefinitionIndex.ToString(CultureInfo.InvariantCulture) + " is null");
+                    continue;
+                }
+
+                definition.Normalize();
+                string category = NormalizeCategory(definition.Category);
+                string eventName = NormalizeEventName(definition.NativeSoundEvent);
+                string replacementId = string.IsNullOrWhiteSpace(definition.Id) ? eventName : definition.Id;
+                if (string.IsNullOrWhiteSpace(replacementId))
+                {
+                    warnings.Add("replacement id/event missing owner=" + ownerId);
+                    continue;
+                }
+
+                if (!TryResolvePackPath(rootPath, definition.File, out string audioPath, out string pathFailure))
+                {
+                    warnings.Add("replacement=" + replacementId + " rejected path=" + pathFailure);
+                    continue;
+                }
+
+                if (!string.Equals(Path.GetExtension(audioPath), ".wav", StringComparison.OrdinalIgnoreCase))
+                {
+                    warnings.Add("replacement=" + replacementId + " rejected non-wav file=" + definition.File);
+                    continue;
+                }
+
+                beforeFileStatus?.Invoke();
+                if (!File.Exists(audioPath))
+                {
+                    warnings.Add("replacement=" + replacementId + " rejected missing WAV file=" + audioPath);
+                    continue;
+                }
+
+                string speciesId = NormalizeId(definition.SpeciesId);
+                string stage = NormalizeStage(definition.Stage);
+                if (string.Equals(category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrWhiteSpace(speciesId))
+                    {
+                        warnings.Add("replacement=" + replacementId + " rejected missing speciesId for AnimalVoice");
+                        continue;
+                    }
+
+                    if (!IsValidAnimalVoiceStage(stage))
+                    {
+                        warnings.Add("replacement=" + replacementId + " rejected invalid AnimalVoice stage=" + definition.Stage);
+                        continue;
+                    }
+
+                    if (!ReviewedAnimalVoiceEvents.Contains(eventName))
+                    {
+                        warnings.Add("replacement=" + replacementId + " rejected unreviewed AnimalVoice event=" + eventName);
+                        continue;
+                    }
+                }
+                else if (string.Equals(category, SimpleSfxCategory, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ReviewedSimpleSfxEvents.Contains(eventName))
+                    {
+                        warnings.Add("replacement=" + replacementId + " rejected unreviewed SimpleSfx event=" + eventName);
+                        continue;
+                    }
+
+                    speciesId = string.Empty;
+                    stage = string.Empty;
+                }
+                else
+                {
+                    warnings.Add("replacement=" + replacementId + " rejected unsupported category=" + definition.Category);
+                    continue;
+                }
+
+                var options = NormalizeOptions(new AudioReplacementOptions
+                {
+                    Enabled = definition.Enabled,
+                    ReplacementId = replacementId,
+                    NativeSoundEvent = eventName,
+                    AudioPath = audioPath,
+                    SuppressNativeWhenReady = definition.SuppressNativeWhenReady,
+                    Volume = definition.Volume <= 0 ? 1 : definition.Volume,
+                    CooldownMilliseconds = definition.CooldownMilliseconds,
+                    VerboseLogging = definition.VerboseLogging
+                });
+                result.Add(new AudioReplacementEntry(ownerId, options, category, speciesId, stage, ContentPackSource));
+            }
+
+            return result;
+        }
+
+        private bool TryPrepareEntryForAtomicSwap(AudioReplacementEntry entry, out string failure)
+        {
+            failure = string.Empty;
+            try
+            {
+                if (!TryReadPcmWav(entry.Options.AudioPath, out int sampleRate, out int channels, out float[] samples, out string validationMessage))
+                {
+                    failure = validationMessage;
+                    return false;
+                }
+
+                if (sampleRate <= 0 || channels <= 0 || samples.Length == 0 || samples.Length % channels != 0)
+                {
+                    failure = "Invalid PCM WAV metadata. sampleRate=" + sampleRate.ToString(CultureInfo.InvariantCulture) +
+                        " channels=" + channels.ToString(CultureInfo.InvariantCulture) +
+                        " samples=" + samples.Length.ToString(CultureInfo.InvariantCulture);
+                    return false;
+                }
+
+                if (!entry.Options.Enabled)
+                {
+                    entry.LoadStarted = false;
+                    entry.LoadStatus = "disabled";
+                    entry.LoadFailureReason = string.Empty;
+                    entry.LastMessage = "Disabled WAV validated for owner-generation swap: " + entry.Options.AudioPath + ". " + validationMessage;
+                    return true;
+                }
+
+                if (readyBackendFactoryForTest != null)
+                {
+                    object? testBackend = readyBackendFactoryForTest(entry.Options.AudioPath, entry.Options.ReplacementId);
+                    if (testBackend == null)
+                    {
+                        failure = "Injected test backend rejected the validated WAV.";
+                        return false;
+                    }
+
+                    SetReadyState(entry, clip: null, callbackOwner: null, platformPlayer: testBackend, "test-ready", validationMessage);
+                    return true;
+                }
+
+                if (TryCreatePcmWavClip(entry.Options.AudioPath, entry.Options.ReplacementId, out object? clip, out object? callbackOwner, out string unityMessage))
+                {
+                    SetReadyState(entry, clip, callbackOwner, platformPlayer: null, "unity-pcm", unityMessage);
+                    return true;
+                }
+
+                if (TryCreatePlatformWavPlayer(entry.Options.AudioPath, out object? platformPlayer, out string platformMessage))
+                {
+                    SetReadyState(entry, clip: null, callbackOwner: null, platformPlayer, "platform", unityMessage + "; " + platformMessage);
+                    return true;
+                }
+
+                failure = unityMessage + "; platform fallback unavailable: " + platformMessage;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                failure = ex.GetType().Name + ": " + ex.Message;
+                return false;
+            }
+        }
+
+        private static void DisposeStagedEntries(IEnumerable<AudioReplacementEntry> stagedEntries)
+        {
+            foreach (AudioReplacementEntry entry in stagedEntries ?? Array.Empty<AudioReplacementEntry>())
+            {
+                DisposeRequest(entry);
+                DestroyUnityObject(entry.AudioClip, 0f);
+                entry.AudioClip = null;
+                entry.AudioCallbackOwner = null;
+                DisposePlatformPlayer(entry.PlatformAudioPlayer);
+                entry.PlatformAudioPlayer = null;
+            }
+        }
+
+        private static bool ShouldRemainPending(AudioReplacementEntry entry)
+        {
+            if (!entry.Options.Enabled || entry.IsReady)
+                return false;
+            return string.Equals(entry.LoadStatus, "pending", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.LoadStatus, "retry", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(entry.LoadStatus, "loading", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SynchronizePendingEntry(AudioReplacementEntry entry)
+        {
+            if (ShouldRemainPending(entry) && pendingEntrySet.Add(entry))
+                pendingEntries.Add(entry);
+        }
+
+        private void RemovePendingEntry(AudioReplacementEntry entry)
+        {
+            if (!pendingEntrySet.Remove(entry))
+                return;
+            int index = pendingEntries.IndexOf(entry);
+            if (index >= 0)
+                pendingEntries.RemoveAt(index);
+        }
+
+        private void RemovePendingEntryAt(int index)
+        {
+            AudioReplacementEntry entry = pendingEntries[index];
+            pendingEntries.RemoveAt(index);
+            pendingEntrySet.Remove(entry);
+        }
+
         private void EnsureLoadStarted(AudioReplacementEntry entry)
+        {
+            EnsureLoadStartedCore(entry);
+            SynchronizePendingEntry(entry);
+        }
+
+        private void EnsureLoadStartedCore(AudioReplacementEntry entry)
         {
             if (entry.LoadStarted || entry.IsReady)
                 return;
 
+            optionalFileStatusCallCount++;
             if (!File.Exists(entry.Options.AudioPath))
             {
                 entry.LoadStatus = "failed";
@@ -253,6 +1497,21 @@ namespace DTMAPI.GameBridge.DolocTown
                         " event=" + entry.Options.NativeSoundEvent +
                         " path=" + entry.Options.AudioPath +
                         " message=" + requestMessage);
+                    runtime.ObserveLifecycleResourceEvent(
+                        "AudioReplacement",
+                        "LocalWavRequestStarted",
+                        entry.OwnerId,
+                        entry.Options.ReplacementId,
+                        "event=" + entry.Options.NativeSoundEvent);
+                    runtime.ObserveResourceLifecycle(
+                        "WavRequest",
+                        entry.Options.ReplacementId,
+                        entry.OwnerId,
+                        entry.Options.AudioPath,
+                        ResourceLifetime.TitleLifetime,
+                        ResourceOwnership.DtmapiOwned,
+                        ResourceLifecycleStatus.Acquired,
+                        "dispose-on-content-generation-replacement");
                     return;
                 }
 
@@ -261,6 +1520,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     " event=" + entry.Options.NativeSoundEvent +
                     " reason=" + requestMessage +
                     " path=" + entry.Options.AudioPath);
+                runtime.ObserveLifecycleResourceEvent(
+                    "AudioReplacement",
+                    "LocalWavRequestUnavailable",
+                    entry.OwnerId,
+                    entry.Options.ReplacementId,
+                    "event=" + entry.Options.NativeSoundEvent + "; reason=" + requestMessage);
 
                 if (!TryCreatePcmWavClip(entry.Options.AudioPath, entry.Options.ReplacementId, out object? clip, out object? callbackOwner, out string message))
                 {
@@ -295,20 +1560,63 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void MarkReady(AudioReplacementEntry entry, object? clip, object? callbackOwner, object? platformPlayer, string backend, string detail)
         {
+            SetReadyState(entry, clip, callbackOwner, platformPlayer, backend, detail);
+            PublishReadyState(entry);
+        }
+
+        private static void SetReadyState(AudioReplacementEntry entry, object? clip, object? callbackOwner, object? platformPlayer, string backend, string detail)
+        {
             entry.AudioClip = clip;
             entry.AudioCallbackOwner = callbackOwner;
             entry.PlatformAudioPlayer = platformPlayer;
+            entry.LoadStarted = true;
             entry.LoadStatus = ReadyStatus;
             entry.LoadFailureReason = string.Empty;
+            entry.ReadyBackend = backend ?? string.Empty;
+            entry.ReadyDetail = detail ?? string.Empty;
             entry.LastMessage = "Local WAV ready for " + entry.Options.NativeSoundEvent + " via " + backend + ": " + entry.Options.AudioPath + ". " + detail;
             entry.AsyncOperation = null;
+        }
+
+        private void PublishReadyState(AudioReplacementEntry entry)
+        {
             UpdateOwnerState(entry.OwnerId, entry.LastMessage);
             runtime.RuntimeMonitor.Log("AudioReplacement local WAV ready owner=" + entry.OwnerId +
                 " replacement=" + entry.Options.ReplacementId +
                 " event=" + entry.Options.NativeSoundEvent +
-                " backend=" + backend +
+                " backend=" + entry.ReadyBackend +
                 " path=" + entry.Options.AudioPath +
-                " detail=" + detail);
+                " detail=" + entry.ReadyDetail);
+            runtime.ObserveLifecycleResourceEvent(
+                "AudioReplacement",
+                "LocalWavReady",
+                entry.OwnerId,
+                entry.Options.ReplacementId,
+                "event=" + entry.Options.NativeSoundEvent + "; backend=" + entry.ReadyBackend);
+            if (entry.AudioClip != null)
+            {
+                runtime.ObserveResourceLifecycle(
+                    "WavAudioClip",
+                    entry.Options.ReplacementId,
+                    entry.OwnerId,
+                    entry.Options.AudioPath,
+                    ResourceLifetime.TitleLifetime,
+                    ResourceOwnership.DtmapiOwned,
+                    ResourceLifecycleStatus.Ready,
+                    "destroy-existing-cleanup-entry");
+            }
+            if (entry.PlatformAudioPlayer != null)
+            {
+                runtime.ObserveResourceLifecycle(
+                    "PlatformAudioPlayer",
+                    entry.Options.ReplacementId,
+                    entry.OwnerId,
+                    entry.Options.AudioPath,
+                    ResourceLifetime.TitleLifetime,
+                    ResourceOwnership.DtmapiOwned,
+                    ResourceLifecycleStatus.Ready,
+                    "dispose-existing-cleanup-entry");
+            }
         }
 
         private bool TryStartUnityAudioClipRequest(AudioReplacementEntry entry, out string message)
@@ -416,9 +1724,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
+            object? created = null;
             try
             {
-                object created = constructor.Invoke(new object[] { path });
+                created = constructor.Invoke(new object[] { path });
                 MethodInfo? load = soundPlayerType.GetMethod("Load", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
                 load?.Invoke(created, null);
                 player = created;
@@ -427,6 +1736,8 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             catch (Exception ex)
             {
+                DisposePlatformPlayer(created);
+                player = null;
                 message = "System.Media.SoundPlayer load failed: " + ex.GetType().Name + ": " + ex.Message;
                 return false;
             }
@@ -607,37 +1918,50 @@ namespace DTMAPI.GameBridge.DolocTown
                 createArguments[5] = false;
             }
 
-            object? created = create.Invoke(null, createArguments);
-            if (created == null)
+            object? created = null;
+            try
             {
-                message = "Unity AudioClip.Create returned null. overload=" + DescribeMethod(create);
-                return false;
-            }
+                created = create.Invoke(null, createArguments);
+                if (created == null)
+                {
+                    message = "Unity AudioClip.Create returned null. overload=" + DescribeMethod(create);
+                    return false;
+                }
 
-            object? setResult = setData.Invoke(created, new object[] { samples, 0 });
-            if (setResult is bool ok && !ok)
-            {
-                DestroyUnityObject(created, 0f);
-                message = "Unity AudioClip.SetData returned false. overload=" + DescribeMethod(create) +
-                    " frames=" + frameCount.ToString(CultureInfo.InvariantCulture) +
+                object? setResult = setData.Invoke(created, new object[] { samples, 0 });
+                if (setResult is bool ok && !ok)
+                {
+                    DestroyUnityObject(created, 0f);
+                    created = null;
+                    message = "Unity AudioClip.SetData returned false. overload=" + DescribeMethod(create) +
+                        " frames=" + frameCount.ToString(CultureInfo.InvariantCulture) +
+                        " channels=" + channels.ToString(CultureInfo.InvariantCulture) +
+                        " samples=" + samples.Length.ToString(CultureInfo.InvariantCulture);
+                    return false;
+                }
+
+                if (!HasAudioClipMetadata(created, out string createdMetadata))
+                {
+                    DestroyUnityObject(created, 0f);
+                    created = null;
+                    message = "Unity AudioClip metadata not initialized after SetData. " + createdMetadata +
+                        " overload=" + DescribeMethod(create);
+                    return false;
+                }
+
+                clip = created;
+                message = "PCM WAV loaded. sampleRate=" + sampleRate.ToString(CultureInfo.InvariantCulture) +
                     " channels=" + channels.ToString(CultureInfo.InvariantCulture) +
-                    " samples=" + samples.Length.ToString(CultureInfo.InvariantCulture);
-                return false;
+                    " frames=" + frameCount.ToString(CultureInfo.InvariantCulture);
+                return true;
             }
-
-            if (!HasAudioClipMetadata(created, out string createdMetadata))
+            catch (Exception ex)
             {
                 DestroyUnityObject(created, 0f);
-                message = "Unity AudioClip metadata not initialized after SetData. " + createdMetadata +
-                    " overload=" + DescribeMethod(create);
+                clip = null;
+                message = "Unity PCM WAV clip creation failed: " + ex.GetType().Name + ": " + ex.Message;
                 return false;
             }
-
-            clip = created;
-            message = "PCM WAV loaded. sampleRate=" + sampleRate.ToString(CultureInfo.InvariantCulture) +
-                " channels=" + channels.ToString(CultureInfo.InvariantCulture) +
-                " frames=" + frameCount.ToString(CultureInfo.InvariantCulture);
-            return true;
         }
 
         private static bool TryCreatePcmWavClipWithCallback(
@@ -1164,7 +2488,7 @@ namespace DTMAPI.GameBridge.DolocTown
             UpdateOwnerState(entry.OwnerId, entry.LastMessage);
             runtime.SetHookStatus(
                 "Audio.SoundEventReplacement",
-                played ? "verified" : (hookInstalled ? "experimental" : "pending"),
+                (played || suppressed) ? "verified" : (hookInstalled ? "experimental" : "pending"),
                 "Harmony Prefix: WwiseSoundManager.InternalPostSoundEvent",
                 entry.LastMessage);
         }
@@ -1177,14 +2501,21 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void UpdateOwnerState(string ownerId, string message)
         {
+            ownerId ??= string.Empty;
             AudioReplacementEntry[] ownerEntries = entries.Values.Where(e => string.Equals(e.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase)).ToArray();
             bool configured = ownerEntries.Length > 0;
+            if (!configured)
+            {
+                states.Remove(ownerId);
+                return;
+            }
+
             bool enabled = ownerEntries.Any(e => e.Options.Enabled);
             bool ready = ownerEntries.Any(e => e.IsReady);
             AudioReplacementEntry? last = ownerEntries.OrderByDescending(e => e.LastPlayedAtUtc).FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.LastNativeSoundEvent)) ?? ownerEntries.FirstOrDefault();
-            states[ownerId ?? string.Empty] = new AudioReplacementState
+            states[ownerId] = new AudioReplacementState
             {
-                OwnerId = ownerId ?? string.Empty,
+                OwnerId = ownerId,
                 IsConfigured = configured,
                 Enabled = enabled,
                 HookInstalled = hookInstalled,
@@ -1202,12 +2533,25 @@ namespace DTMAPI.GameBridge.DolocTown
         private AudioReplacementState GetOwnerState(string ownerId)
         {
             ownerId ??= string.Empty;
-            if (!states.TryGetValue(ownerId, out AudioReplacementState state))
+            if (states.TryGetValue(ownerId, out AudioReplacementState state))
+                return state;
+
+            if (entries.Values.Any(e => string.Equals(e.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase)))
             {
-                UpdateOwnerState(ownerId, entries.Values.Any(e => string.Equals(e.OwnerId, ownerId, StringComparison.OrdinalIgnoreCase)) ? "Audio replacement registered." : "No audio replacement registered.");
-                state = states.TryGetValue(ownerId, out AudioReplacementState? updated) ? updated : new AudioReplacementState { OwnerId = ownerId, Status = "not-configured", LastMessage = "No audio replacement registered." };
+                UpdateOwnerState(ownerId, "Audio replacement registered.");
+                if (states.TryGetValue(ownerId, out AudioReplacementState? updated))
+                    return updated;
             }
-            return state;
+
+            // Read-only state and health queries must not create owner-bound resources.
+            // An unconfigured owner receives a transient projection only.
+            return new AudioReplacementState
+            {
+                OwnerId = ownerId,
+                HookInstalled = hookInstalled,
+                Status = "not-configured",
+                LastMessage = "No audio replacement registered."
+            };
         }
 
         private static AudioReplacementState CloneState(AudioReplacementState state)
@@ -1279,9 +2623,163 @@ namespace DTMAPI.GameBridge.DolocTown
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
         }
 
+        private static string NormalizeCategory(string? category)
+        {
+            string value = (category ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(value))
+                return AnimalVoiceCategory;
+            if (string.Equals(value, "Sound", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "Sfx", StringComparison.OrdinalIgnoreCase))
+                return SimpleSfxCategory;
+            return string.Equals(value, SimpleSfxCategory, StringComparison.OrdinalIgnoreCase)
+                ? SimpleSfxCategory
+                : (string.Equals(value, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase) ? AnimalVoiceCategory : value);
+        }
+
+        private static string NormalizeId(string? value)
+        {
+            return (value ?? string.Empty).Trim();
+        }
+
+        private static string NormalizeStage(string? stage)
+        {
+            string value = (stage ?? string.Empty).Trim();
+            if (string.Equals(value, "young", StringComparison.OrdinalIgnoreCase))
+                return "child";
+            if (string.Equals(value, "adult", StringComparison.OrdinalIgnoreCase))
+                return "adult";
+            if (string.Equals(value, "child", StringComparison.OrdinalIgnoreCase))
+                return "child";
+            if (string.Equals(value, "any", StringComparison.OrdinalIgnoreCase))
+                return "any";
+            return value;
+        }
+
+        private static bool IsValidAnimalVoiceStage(string stage)
+        {
+            return string.Equals(stage, "child", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(stage, "adult", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(stage, "any", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool ShouldSuppressNativeDuringReadyCooldownForTest(bool isReady, bool suppressNativeWhenReady, int cooldownMilliseconds, DateTimeOffset lastPlayedAtUtc, DateTimeOffset now)
+        {
+            return IsCooldownActive(cooldownMilliseconds, lastPlayedAtUtc, now) &&
+                ShouldSuppressNativeDuringReadyCooldown(isReady, suppressNativeWhenReady);
+        }
+
+        private static bool IsCooldownActive(int cooldownMilliseconds, DateTimeOffset lastPlayedAtUtc, DateTimeOffset now)
+        {
+            return cooldownMilliseconds > 0 &&
+                now - lastPlayedAtUtc < TimeSpan.FromMilliseconds(cooldownMilliseconds);
+        }
+
+        private static bool ShouldSuppressNativeDuringReadyCooldown(bool isReady, bool suppressNativeWhenReady)
+        {
+            return isReady && suppressNativeWhenReady;
+        }
+
         private static string MakeKey(string ownerId, string replacementId)
         {
             return (ownerId ?? string.Empty).Trim() + "::" + (replacementId ?? string.Empty).Trim();
+        }
+
+        private static AudioReplacementEntry? FindSuppressingConflict(AudioReplacementEntry candidate, IEnumerable<AudioReplacementEntry> existing)
+        {
+            if (!candidate.Options.Enabled || !candidate.Options.SuppressNativeWhenReady)
+                return null;
+
+            return existing.FirstOrDefault(e =>
+                e.Options.Enabled &&
+                e.Options.SuppressNativeWhenReady &&
+                ReplacementScopesConflict(candidate, e));
+        }
+
+        private static bool ReplacementScopesConflict(AudioReplacementEntry left, AudioReplacementEntry right)
+        {
+            if (!string.Equals(left.Category, right.Category, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (!string.Equals(left.Options.NativeSoundEvent, right.Options.NativeSoundEvent, StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (string.Equals(left.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(left.SpeciesId, right.SpeciesId, StringComparison.OrdinalIgnoreCase) &&
+                    StagesOverlap(left.Stage, right.Stage);
+            }
+
+            return true;
+        }
+
+        private static bool StagesOverlap(string left, string right)
+        {
+            return string.Equals(left, "any", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(right, "any", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string DescribeConflictScope(AudioReplacementEntry entry)
+        {
+            if (string.Equals(entry.Category, AnimalVoiceCategory, StringComparison.OrdinalIgnoreCase))
+                return entry.Category + "/" + entry.SpeciesId + "/" + entry.Stage + "/" + entry.Options.NativeSoundEvent;
+            return entry.Category + "/" + entry.Options.NativeSoundEvent;
+        }
+
+        private static bool IsEnabledContentPack(DiscoveredMod mod)
+        {
+            return mod != null &&
+                mod.OfficialEnabled &&
+                mod.Manifest != null &&
+                string.Equals(mod.Manifest.Type, "ContentPack", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FormatBoundedDiagnostics(IReadOnlyList<string> diagnostics)
+        {
+            if (diagnostics == null || diagnostics.Count == 0)
+                return "generation validation failed without a specific diagnostic";
+
+            const int maximumItems = 8;
+            string value = string.Join("; ", diagnostics
+                .Take(maximumItems)
+                .Select(BoundDiagnostic)
+                .ToArray());
+            if (diagnostics.Count > maximumItems)
+                value += "; ... " + (diagnostics.Count - maximumItems).ToString(CultureInfo.InvariantCulture) + " additional diagnostics omitted";
+            return BoundDiagnostic(value);
+        }
+
+        private static string BoundDiagnostic(string value)
+        {
+            const int maximumLength = 2048;
+            string normalized = (value ?? string.Empty)
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+            return normalized.Length <= maximumLength
+                ? normalized
+                : normalized.Substring(0, maximumLength) + "...";
+        }
+
+        private static bool TryResolvePackPath(string rootPath, string relativePath, out string fullPath, out string failure)
+        {
+            fullPath = string.Empty;
+            failure = string.Empty;
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                failure = "missing file";
+                return false;
+            }
+
+            string root = Path.GetFullPath(rootPath ?? string.Empty);
+            string relative = (relativePath ?? string.Empty).Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+            fullPath = Path.GetFullPath(Path.Combine(root, relative));
+            string rootWithSeparator = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (!fullPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase) && !string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase))
+            {
+                failure = "file escapes content pack root: " + relativePath;
+                fullPath = string.Empty;
+                return false;
+            }
+
+            return true;
         }
 
         private static void DisposeRequest(AudioReplacementEntry entry)
@@ -1300,12 +2798,52 @@ namespace DTMAPI.GameBridge.DolocTown
             entry.AsyncOperation = null;
         }
 
-        private static void CleanupEntry(AudioReplacementEntry entry)
+        private void CleanupEntry(AudioReplacementEntry entry)
         {
+            RemovePendingEntry(entry);
+            if (entry.Request != null || entry.AsyncOperation != null)
+            {
+                runtime.ReleaseResourceLifecycle(
+                    "WavRequest",
+                    entry.Options.ReplacementId,
+                    entry.OwnerId,
+                    entry.Options.AudioPath,
+                    ResourceLifetime.TitleLifetime,
+                    ResourceOwnership.DtmapiOwned,
+                    "dispose-on-content-generation-replacement",
+                    ResourceLifecycleStatus.Released);
+            }
+
             DisposeRequest(entry);
+            if (entry.AudioClip != null)
+            {
+                runtime.ReleaseResourceLifecycle(
+                    "WavAudioClip",
+                    entry.Options.ReplacementId,
+                    entry.OwnerId,
+                    entry.Options.AudioPath,
+                    ResourceLifetime.TitleLifetime,
+                    ResourceOwnership.DtmapiOwned,
+                    "destroy-existing-cleanup-entry",
+                    ResourceLifecycleStatus.Released);
+            }
+
             DestroyUnityObject(entry.AudioClip, 0f);
             entry.AudioClip = null;
             entry.AudioCallbackOwner = null;
+            if (entry.PlatformAudioPlayer != null)
+            {
+                runtime.ReleaseResourceLifecycle(
+                    "PlatformAudioPlayer",
+                    entry.Options.ReplacementId,
+                    entry.OwnerId,
+                    entry.Options.AudioPath,
+                    ResourceLifetime.TitleLifetime,
+                    ResourceOwnership.DtmapiOwned,
+                    "dispose-existing-cleanup-entry",
+                    ResourceLifecycleStatus.Released);
+            }
+
             DisposePlatformPlayer(entry.PlatformAudioPlayer);
             entry.PlatformAudioPlayer = null;
         }
@@ -1388,6 +2926,60 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
+        private static object? ReadMember(object? instance, params string[] names)
+        {
+            if (instance == null)
+                return null;
+
+            foreach (string name in names)
+            {
+                for (Type? current = instance.GetType(); current != null; current = current.BaseType)
+                {
+                    PropertyInfo? property = current.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                    if (property != null)
+                    {
+                        try
+                        {
+                            return property.GetValue(instance, null);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    FieldInfo? field = current.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                    if (field != null)
+                    {
+                        try
+                        {
+                            return field.GetValue(instance);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string ReadStringMember(object? instance, params string[] names)
+        {
+            object? value = ReadMember(instance, names);
+            return value?.ToString() ?? string.Empty;
+        }
+
+        private static bool ReadBoolMember(object? instance, params string[] names)
+        {
+            object? value = ReadMember(instance, names);
+            if (value is bool result)
+                return result;
+            if (value != null && bool.TryParse(value.ToString(), out bool parsed))
+                return parsed;
+            return false;
+        }
+
         private static bool ReadBool(object target, string propertyName)
         {
             object? value = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)?.GetValue(target, null);
@@ -1435,17 +3027,111 @@ namespace DTMAPI.GameBridge.DolocTown
             return true;
         }
 
+        private sealed class AudioReplacementOwnerPreparation
+        {
+            internal AudioReplacementOwnerPreparation(
+                AudioReplacementOwnerReloadResult result,
+                IReadOnlyList<KeyValuePair<string, AudioReplacementEntry>> previousEntries,
+                IReadOnlyList<AudioReplacementEntry> candidates,
+                string reason)
+            {
+                Result = result;
+                PreviousEntries = previousEntries;
+                Candidates = candidates;
+                Reason = reason ?? string.Empty;
+            }
+
+            internal AudioReplacementOwnerReloadResult Result { get; }
+            internal IReadOnlyList<KeyValuePair<string, AudioReplacementEntry>> PreviousEntries { get; }
+            internal IReadOnlyList<AudioReplacementEntry> Candidates { get; }
+            internal string Reason { get; }
+        }
+
+        private sealed class AudioReplacementOwnerRemoval
+        {
+            internal AudioReplacementOwnerRemoval(
+                string ownerId,
+                IReadOnlyList<KeyValuePair<string, AudioReplacementEntry>> previousEntries,
+                string reason)
+            {
+                OwnerId = ownerId ?? string.Empty;
+                PreviousEntries = previousEntries;
+                Reason = reason ?? string.Empty;
+            }
+
+            internal string OwnerId { get; }
+            internal IReadOnlyList<KeyValuePair<string, AudioReplacementEntry>> PreviousEntries { get; }
+            internal string Reason { get; }
+        }
+
+        internal sealed class AudioReplacementOwnerReloadResult
+        {
+            private AudioReplacementOwnerReloadResult(
+                bool success,
+                string status,
+                string ownerId,
+                long generation,
+                int activeEntryCount,
+                bool retainedPreviousGeneration,
+                string message)
+            {
+                Success = success;
+                Status = status ?? string.Empty;
+                OwnerId = ownerId ?? string.Empty;
+                Generation = generation;
+                ActiveEntryCount = activeEntryCount;
+                RetainedPreviousGeneration = retainedPreviousGeneration;
+                Message = message ?? string.Empty;
+            }
+
+            internal bool Success { get; }
+            internal string Status { get; }
+            internal string OwnerId { get; }
+            internal long Generation { get; }
+            internal int ActiveEntryCount { get; }
+            internal bool RetainedPreviousGeneration { get; }
+            internal string Message { get; }
+
+            internal static AudioReplacementOwnerReloadResult Committed(string ownerId, long generation, int activeEntryCount, string message)
+            {
+                return new AudioReplacementOwnerReloadResult(true, "committed", ownerId, generation, activeEntryCount, false, message);
+            }
+
+            internal static AudioReplacementOwnerReloadResult Rejected(string ownerId, string status, long generation, int activeEntryCount, bool retainedPreviousGeneration, string message)
+            {
+                return new AudioReplacementOwnerReloadResult(false, status, ownerId, generation, activeEntryCount, retainedPreviousGeneration, message);
+            }
+
+            internal static AudioReplacementOwnerReloadResult Removed(string ownerId, int removedEntryCount)
+            {
+                return new AudioReplacementOwnerReloadResult(true, "removed", ownerId, 0, 0, false, "Removed " + removedEntryCount.ToString(CultureInfo.InvariantCulture) + " audio replacement entries for inactive owner.");
+            }
+        }
+
         private sealed class AudioReplacementEntry
         {
             internal AudioReplacementEntry(string ownerId, AudioReplacementOptions options)
+                : this(ownerId, options, SimpleSfxCategory, string.Empty, string.Empty, CodeModSource)
+            {
+            }
+
+            internal AudioReplacementEntry(string ownerId, AudioReplacementOptions options, string category, string speciesId, string stage, string source)
             {
                 OwnerId = ownerId;
                 Options = options;
+                Category = category;
+                SpeciesId = speciesId;
+                Stage = stage;
+                Source = source;
                 LoadStatus = options.Enabled ? "pending" : "disabled";
             }
 
             internal string OwnerId { get; }
             internal AudioReplacementOptions Options { get; }
+            internal string Category { get; }
+            internal string SpeciesId { get; }
+            internal string Stage { get; }
+            internal string Source { get; }
             internal bool LoadStarted { get; set; }
             internal object? Request { get; set; }
             internal object? AsyncOperation { get; set; }
@@ -1454,6 +3140,8 @@ namespace DTMAPI.GameBridge.DolocTown
             internal object? PlatformAudioPlayer { get; set; }
             internal string LoadStatus { get; set; }
             internal string LoadFailureReason { get; set; } = string.Empty;
+            internal string ReadyBackend { get; set; } = string.Empty;
+            internal string ReadyDetail { get; set; } = string.Empty;
             internal string LastMessage { get; set; } = string.Empty;
             internal string LastNativeSoundEvent { get; set; } = string.Empty;
             internal bool LastPlayed { get; set; }
@@ -1461,6 +3149,75 @@ namespace DTMAPI.GameBridge.DolocTown
             internal DateTimeOffset LastLoadAttemptAtUtc { get; set; } = DateTimeOffset.MinValue;
             internal DateTimeOffset LastPlayedAtUtc { get; set; } = DateTimeOffset.MinValue;
             internal bool IsReady => string.Equals(LoadStatus, ReadyStatus, StringComparison.OrdinalIgnoreCase) && (AudioClip != null || PlatformAudioPlayer != null);
+        }
+
+        private sealed class AnimalSoundContext
+        {
+            internal AnimalSoundContext(string speciesId, string stage, string expectedNativeSoundEvent, DateTimeOffset createdAtUtc)
+            {
+                SpeciesId = speciesId ?? string.Empty;
+                Stage = stage ?? string.Empty;
+                ExpectedNativeSoundEvent = expectedNativeSoundEvent ?? string.Empty;
+                CreatedAtUtc = createdAtUtc;
+            }
+
+            internal string SpeciesId { get; }
+            internal string Stage { get; }
+            internal string ExpectedNativeSoundEvent { get; }
+            internal DateTimeOffset CreatedAtUtc { get; }
+        }
+
+        [DataContract]
+        private sealed class AudioReplacementDefinitionModel
+        {
+            [DataMember(Name = "id")]
+            public string Id { get; set; } = string.Empty;
+
+            [DataMember(Name = "category")]
+            public string Category { get; set; } = string.Empty;
+
+            [DataMember(Name = "speciesId")]
+            public string SpeciesId { get; set; } = string.Empty;
+
+            [DataMember(Name = "stage")]
+            public string Stage { get; set; } = string.Empty;
+
+            [DataMember(Name = "nativeSoundEvent")]
+            public string NativeSoundEvent { get; set; } = string.Empty;
+
+            [DataMember(Name = "file")]
+            public string File { get; set; } = string.Empty;
+
+            [DataMember(Name = "enabled")]
+            public bool? EnabledValue { get; set; }
+
+            [DataMember(Name = "suppressNativeWhenReady")]
+            public bool? SuppressNativeWhenReadyValue { get; set; }
+
+            [DataMember(Name = "volume")]
+            public float? VolumeValue { get; set; }
+
+            [DataMember(Name = "cooldownMilliseconds")]
+            public int? CooldownMillisecondsValue { get; set; }
+
+            [DataMember(Name = "verboseLogging")]
+            public bool? VerboseLoggingValue { get; set; }
+
+            public bool Enabled => EnabledValue ?? true;
+            public bool SuppressNativeWhenReady => SuppressNativeWhenReadyValue ?? true;
+            public float Volume => VolumeValue ?? 1f;
+            public int CooldownMilliseconds => CooldownMillisecondsValue ?? 0;
+            public bool VerboseLogging => VerboseLoggingValue ?? false;
+
+            public void Normalize()
+            {
+                Id = Id ?? string.Empty;
+                Category = Category ?? string.Empty;
+                SpeciesId = SpeciesId ?? string.Empty;
+                Stage = Stage ?? string.Empty;
+                NativeSoundEvent = NativeSoundEvent ?? string.Empty;
+                File = File ?? string.Empty;
+            }
         }
 
         private sealed class PcmAudioReader

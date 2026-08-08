@@ -1,5 +1,6 @@
 using System;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.Core.Manager
 {
@@ -8,18 +9,25 @@ namespace DTMAPI.Core.Manager
         private readonly IDtmDiagnosticsApi diagnosticsApi;
         private readonly Func<string> exportReport;
         private readonly Func<ManagerInstallStateSummary>? installStateProvider;
+        private readonly Func<ContentManifestRegistrySnapshot?>? contentRegistryProvider;
 
-        internal DtmManagerRuntimeModelProvider(IDtmDiagnosticsApi diagnosticsApi, Func<string> exportReport, Func<ManagerInstallStateSummary>? installStateProvider = null)
+        internal DtmManagerRuntimeModelProvider(
+            IDtmDiagnosticsApi diagnosticsApi,
+            Func<string> exportReport,
+            Func<ManagerInstallStateSummary>? installStateProvider = null,
+            Func<ContentManifestRegistrySnapshot?>? contentRegistryProvider = null)
         {
             this.diagnosticsApi = diagnosticsApi ?? throw new ArgumentNullException(nameof(diagnosticsApi));
             this.exportReport = exportReport ?? throw new ArgumentNullException(nameof(exportReport));
             this.installStateProvider = installStateProvider;
+            this.contentRegistryProvider = contentRegistryProvider;
         }
 
         internal DtmManagerViewModel GetCurrentModel()
         {
             ManagerInstallStateSummary? installState = installStateProvider?.Invoke();
-            return DtmManagerViewModelFactory.FromSnapshot(diagnosticsApi.GetSnapshot(), installState);
+            ContentManifestRegistrySnapshot? contentRegistry = contentRegistryProvider?.Invoke();
+            return DtmManagerViewModelFactory.FromSnapshot(diagnosticsApi.GetSnapshot(), installState, contentRegistry);
         }
 
         internal DtmManagerReportExportResult ExportReportAndRefresh()

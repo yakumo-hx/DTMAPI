@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI Zoom",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that adjusts the playable world-camera view.",
+  "UniqueID": "DTMAPI.ZoomMod",
+  "EntryDll": "DTMAPI.Zoom.dll",
+  "EntryType": "DTMAPI.Zoom.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

@@ -1,0 +1,36 @@
+名称	ID	帧数	命名格式
+简易鱼竿	simple_fishrod
+钓鱼-蓄力	ready	6	anim_tool_simple_fishrod_ready_[0~5]
+钓鱼-抛竿	cast	5	anim_tool_simple_fishrod_cast_[0~4]
+钓鱼-待机（眨眼&哈欠）	wait	1	anim_tool_simple_fishrod_wait_0
+钓鱼-待机转对峙	wait_to_battle	1	anim_tool_simple_fishrod_wait_to_battle_0
+钓鱼-对峙	battle	6	anim_tool_simple_fishrod_battle_[0~5]
+钓鱼-收线	pull	4	anim_tool_simple_fishrod_pull_[0~3]
+老旧鱼竿	old_fishrod
+钓鱼-蓄力	ready	6	anim_tool_simple_fishrod_ready_[0~5]
+钓鱼-抛竿	cast	5	anim_tool_simple_fishrod_cast_[0~4]
+钓鱼-待机（眨眼&哈欠）	wait	1	anim_tool_simple_fishrod_wait_0
+钓鱼-待机转对峙	wait_to_battle	1	anim_tool_simple_fishrod_wait_to_battle_0
+钓鱼-对峙	battle	6	anim_tool_simple_fishrod_battle_[0~5]
+钓鱼-收线	pull	4	anim_tool_simple_fishrod_pull_[0~3]
+竹鱼竿	bamboo_fishrod
+钓鱼-蓄力	ready	6	anim_tool_simple_fishrod_ready_[0~5]
+钓鱼-抛竿	cast	5	anim_tool_simple_fishrod_cast_[0~4]
+钓鱼-待机（眨眼&哈欠）	wait	1	anim_tool_simple_fishrod_wait_0
+钓鱼-待机转对峙	wait_to_battle	1	anim_tool_simple_fishrod_wait_to_battle_0
+钓鱼-对峙	battle	6	anim_tool_simple_fishrod_battle_[0~5]
+钓鱼-收线	pull	4	anim_tool_simple_fishrod_pull_[0~3]
+玻璃纤维鱼竿	glass_fishrod
+钓鱼-蓄力	ready	6	anim_tool_simple_fishrod_ready_[0~5]
+钓鱼-抛竿	cast	5	anim_tool_simple_fishrod_cast_[0~4]
+钓鱼-待机（眨眼&哈欠）	wait	1	anim_tool_simple_fishrod_wait_0
+钓鱼-待机转对峙	wait_to_battle	1	anim_tool_simple_fishrod_wait_to_battle_0
+钓鱼-对峙	battle	6	anim_tool_simple_fishrod_battle_[0~5]
+钓鱼-收线	pull	4	anim_tool_simple_fishrod_pull_[0~3]
+碳纤维鱼竿	carbon_fishrod
+钓鱼-蓄力	ready	6	anim_tool_simple_fishrod_ready_[0~5]
+钓鱼-抛竿	cast	5	anim_tool_simple_fishrod_cast_[0~4]
+钓鱼-待机（眨眼&哈欠）	wait	1	anim_tool_simple_fishrod_wait_0
+钓鱼-待机转对峙	wait_to_battle	1	anim_tool_simple_fishrod_wait_to_battle_0
+钓鱼-对峙	battle	6	anim_tool_simple_fishrod_battle_[0~5]
+钓鱼-收线	pull	4	anim_tool_simple_fishrod_pull_[0~3]

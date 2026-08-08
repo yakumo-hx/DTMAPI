@@ -49,12 +49,13 @@ namespace DTMAPI.Core.Runtime
             IReadOnlyList<IHookStatusInfo> hookStatuses,
             IReadOnlyList<IDtmFeatureStatusInfo> featureStatuses,
             string latestLogPath,
-            string latestReportPath)
+            string latestReportPath,
+            IReadOnlyCollection<string>? restartRequiredOwners = null)
         {
             return new DtmDiagnosticsSnapshot(
                 startedAt,
                 loadedMods.Select(m => new DtmLoadedModInfo(m.Manifest)).Cast<IDtmLoadedModInfo>().ToArray(),
-                CreateModStatusSnapshot(discoveredMods, loadedMods, errors),
+                CreateModStatusSnapshot(discoveredMods, loadedMods, errors, restartRequiredOwners),
                 errors,
                 warnings,
                 hookStatuses,
@@ -66,12 +67,14 @@ namespace DTMAPI.Core.Runtime
         public static IReadOnlyList<IDtmModStatusInfo> CreateModStatusSnapshot(
             IReadOnlyList<DiscoveredMod> discoveredMods,
             IReadOnlyList<DiscoveredMod> loadedMods,
-            IReadOnlyList<IDtmErrorInfo> errors)
+            IReadOnlyList<IDtmErrorInfo> errors,
+            IReadOnlyCollection<string>? restartRequiredOwners = null)
         {
             HashSet<string> loadedIds = new HashSet<string>(loadedMods.Select(m => m.Manifest.UniqueID), StringComparer.OrdinalIgnoreCase);
+            var restartRequiredIds = new HashSet<string>(restartRequiredOwners ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
             Dictionary<string, List<IDtmErrorInfo>> errorsByOwner = errors
                 .Where(e => !string.IsNullOrWhiteSpace(e.Owner))
-                .GroupBy(e => e.Owner, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(GetErrorOwnerIdentity, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
             List<IDtmModStatusInfo> rows = new List<IDtmModStatusInfo>();
 
@@ -82,7 +85,25 @@ namespace DTMAPI.Core.Runtime
                 string statusCode;
                 string reason;
 
-                if (!mod.OfficialEnabled)
+                errorsByOwner.TryGetValue(BoundedDiagnosticScalar.StableIdentity(mod.Manifest.UniqueID), out List<IDtmErrorInfo>? modErrors);
+                if (restartRequiredIds.Contains(mod.Manifest.UniqueID))
+                {
+                    status = "inactive";
+                    statusCode = "restart-required";
+                    reason = "DTMAPI platform roots were deactivated; the loaded Mono assembly can't be safely unloaded or re-entered in this process. Restart is required.";
+                    if (modErrors != null && modErrors.Count > 0)
+                    {
+                        reason += " Prior diagnostics: " + string.Join(" | ", modErrors.Select(error =>
+                            error.Message + (string.IsNullOrWhiteSpace(error.Details) ? string.Empty : " " + error.Details)).ToArray());
+                    }
+                }
+                else if (modErrors != null && modErrors.Count > 0)
+                {
+                    status = "error";
+                    statusCode = GetModStatusCode(status, modErrors);
+                    reason = string.Join(" | ", modErrors.Select(error => error.Message + (string.IsNullOrWhiteSpace(error.Details) ? string.Empty : " " + error.Details)).ToArray());
+                }
+                else if (!mod.OfficialEnabled)
                 {
                     status = "disabled";
                     statusCode = "disabled";
@@ -91,12 +112,6 @@ namespace DTMAPI.Core.Runtime
                         : mod.EnablementReason;
                     if (loaded)
                         reason += " Already loaded in this process; restart is required for DLL unload.";
-                }
-                else if (errorsByOwner.TryGetValue(mod.Manifest.UniqueID, out List<IDtmErrorInfo>? modErrors) && modErrors.Count > 0)
-                {
-                    status = "error";
-                    statusCode = GetModStatusCode(status, modErrors);
-                    reason = string.Join(" | ", modErrors.Select(error => error.Message + (string.IsNullOrWhiteSpace(error.Details) ? string.Empty : " " + error.Details)).ToArray());
                 }
                 else if (loaded)
                 {
@@ -128,10 +143,18 @@ namespace DTMAPI.Core.Runtime
                     statusCode,
                     reason,
                     mod.ManifestPath,
-                    mod.RootPath));
+                    mod.RootPath,
+                    mod.Classification));
             }
 
             return rows;
+        }
+
+        private static string GetErrorOwnerIdentity(IDtmErrorInfo error)
+        {
+            return error is DtmErrorInfo retained
+                ? retained.OwnerIdentity
+                : BoundedDiagnosticScalar.StableIdentity(error?.Owner);
         }
 
         private static string GetModStatusCode(string status, IReadOnlyList<IDtmErrorInfo> errors)
@@ -169,6 +192,8 @@ namespace DTMAPI.Core.Runtime
                 return "entry-dll-error";
             if (combined.IndexOf("Failed to load code mod", StringComparison.OrdinalIgnoreCase) >= 0)
                 return "code-load-error";
+            if (combined.IndexOf("Mod monitor reported an error", StringComparison.OrdinalIgnoreCase) >= 0)
+                return "runtime-diagnostic";
             return "unknown-error";
         }
     }

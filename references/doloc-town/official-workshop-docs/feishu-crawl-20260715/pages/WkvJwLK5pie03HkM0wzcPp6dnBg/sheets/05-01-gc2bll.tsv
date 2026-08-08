@@ -1,0 +1,59 @@
+名称	ID	帧数	备注	命名格式
+焊工面罩	welder_helmet
+待机-眨眼	idle	3		anim_hat_welder_helmet_idle_[0~2]
+待机-哈欠	yawn	7		anim_hat_welder_helmet_yawn_[0~6]
+使用工具-斧头	chop	6		anim_hat_welder_helmet_chop_[0~5]
+使用工具-镐子	knock	6		anim_hat_welder_helmet_knock_[0~5]
+使用工具-镰刀	swing	7		anim_hat_welder_helmet_swing_[0~6]
+使用工具-水壶	water	10		anim_hat_welder_helmet_water_[0~9]
+奔跑	run	8	正常移动即奔跑	anim_hat_welder_helmet_run_[0~7]
+走路	walk	8	仅使用在交互动画	anim_hat_welder_helmet_walk_[0~7]
+交互	interact	5		anim_hat_welder_helmet_interact_[0~4]
+受击	hit	3		anim_hat_welder_helmet_hit_[0~2]
+吃东西	eat	8		anim_hat_welder_helmet_eat_[0~7]
+坐	sit	3		anim_hat_welder_helmet_sit_[0~2]
+冲刺	dash	1		anim_hat_welder_helmet_dash_0
+攀爬	climb	1		anim_hat_welder_helmet_climb_0
+攀爬跳跃	climb_jump	1		anim_hat_welder_helmet_climb_jump_0
+昏厥	faint	9		anim_hat_welder_helmet_faint_[0~8]
+昏厥后起身	stand	13		anim_hat_welder_helmet_stand_[0~12]
+跳跃-起跳	jump	2		anim_hat_welder_helmet_jump_[0~1]
+跳跃-掉落	drop	3		anim_hat_welder_helmet_drop_[0~2]
+跳跃-触地	touch_ground	4		anim_hat_welder_helmet_touch_ground_[0~3]
+钓鱼-蓄力	fishing_ready	6		anim_hat_welder_helmet_fishing_ready_[0~5]
+钓鱼-抛竿	fishing_cast	5		anim_hat_welder_helmet_fishing_cast_[0~4]
+钓鱼-待机-眨眼	fishing_wait_blink	4		anim_hat_welder_helmet_fishing_wait_blink_[0~3]
+钓鱼-待机-哈欠	fishing_wait_yawn	6		anim_hat_welder_helmet_fishing_wait_yawn_[0~5]
+钓鱼-对峙	fishing_battle	6		anim_hat_welder_helmet_fishing_battle_[0~5]
+钓鱼-收线	fishing_pull	4		anim_hat_welder_helmet_fishing_pull_[0~3]
+载具-待机	ride_idle	1		anim_hat_welder_helmet_ride_idle_0
+载具-移动	ride_run	4		anim_hat_welder_helmet_ride_run_[0~3]
+草帽	straw_hat
+待机-眨眼	idle	3		anim_hat_straw_hat_idle_[0~2]
+待机-哈欠	yawn	7		anim_hat_straw_hat_yawn_[0~6]
+使用工具-斧头	chop	6		anim_hat_straw_hat_chop_[0~5]
+使用工具-镐子	knock	6		anim_hat_straw_hat_knock_[0~5]
+使用工具-镰刀	swing	7		anim_hat_straw_hat_swing_[0~6]
+使用工具-水壶	water	10		anim_hat_straw_hat_water_[0~9]
+奔跑	run	8	正常移动即奔跑	anim_hat_straw_hat_run_[0~7]
+走路	walk	8	仅使用在交互动画	anim_hat_straw_hat_walk_[0~7]
+交互	interact	5		anim_hat_straw_hat_interact_[0~4]
+受击	hit	3		anim_hat_straw_hat_hit_[0~2]
+吃东西	eat	8		anim_hat_straw_hat_eat_[0~7]
+坐	sit	3		anim_hat_straw_hat_sit_[0~2]
+冲刺	dash	1		anim_hat_straw_hat_dash_0
+攀爬	climb	1		anim_hat_straw_hat_climb_0
+攀爬跳跃	climb_jump	1		anim_hat_straw_hat_climb_jump_0
+昏厥	faint	9		anim_hat_straw_hat_faint_[0~8]
+昏厥后起身	stand	13		anim_hat_straw_hat_stand_[0~12]
+跳跃-起跳	jump	2		anim_hat_straw_hat_jump_[0~1]
+跳跃-掉落	drop	3		anim_hat_straw_hat_drop_[0~2]
+跳跃-触地	touch_ground	4		anim_hat_straw_hat_touch_ground_[0~3]
+钓鱼-蓄力	fishing_ready	6		anim_hat_straw_hat_fishing_ready_[0~5]
+钓鱼-抛竿	fishing_cast	5		anim_hat_straw_hat_fishing_cast_[0~4]
+钓鱼-待机-眨眼	fishing_wait_blink	4		anim_hat_straw_hat_fishing_wait_blink_[0~3]
+钓鱼-待机-哈欠	fishing_wait_yawn	6		anim_hat_straw_hat_fishing_wait_yawn_[0~5]
+钓鱼-对峙	fishing_battle	6		anim_hat_straw_hat_fishing_battle_[0~5]
+钓鱼-收线	fishing_pull	4		anim_hat_straw_hat_fishing_pull_[0~3]
+载具-待机	ride_idle	1		anim_hat_straw_hat_ride_idle_0
+载具-移动	ride_run	4		anim_hat_straw_hat_ride_run_[0~3]

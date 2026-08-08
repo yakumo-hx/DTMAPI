@@ -1,0 +1,193 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+  "token": "GmfKwSHv0i5E9EkaupNcjRdIn4d",
+  "title": "查看示例模组",
+  "document_title": "查看示例模组",
+  "source_modified_label": "6月11日修改",
+  "status_code": 200,
+  "elapsed_seconds": 17.781,
+  "block_count": 27,
+  "blocks_by_type": {
+    "text": 6,
+    "heading1": 2,
+    "bullet": 11,
+    "image": 8
+  },
+  "scroll_samples": 7,
+  "scroll_height_max": 3826,
+  "links": [
+    {
+      "text": "https://steamcommunity.com/app/2285550/workshop/",
+      "url": "https://steamcommunity.com/app/2285550/workshop/",
+      "kind": "external",
+      "target_token": ""
+    },
+    {
+      "text": "https://steamcommunity.com/sharedfiles/filedetails/?id=3705665433&searchtext=",
+      "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3705665433&searchtext=",
+      "kind": "external",
+      "target_token": ""
+    }
+  ],
+  "children": [],
+  "rendered_images": [
+    {
+      "block_id": "7",
+      "image_tokens": [
+        "AmgobAwBToyzWfxuBZLcsSEgnHd"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-01-7.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "14",
+      "image_tokens": [
+        "BR9rbmDpZoIE3kxm1YScm6lOnkh"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-02-14.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "17",
+      "image_tokens": [
+        "XfvTbhEzio3KFGxciMIczq4Tn0e"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-03-17.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "19",
+      "image_tokens": [
+        "I9FVb90iEosEnrxXS0AcuJ9Enqf"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-04-19.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "22",
+      "image_tokens": [
+        "HGTObpIKboW9SNxBHvWc7Sw9nqb"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-05-22.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "23",
+      "image_tokens": [
+        "DaZCbmRKfoBlG8xJ51hcbTUcn4f"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-06-23.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "25",
+      "image_tokens": [
+        "Qtz2bkubAofXBkx5IPccctUrncb"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-07-25.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "27",
+      "image_tokens": [
+        "CFPobivYio0Dhzxuz6Qc5XRHnYd"
+      ],
+      "rendered_path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/rendered-08-27.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/AmgobAwBToyzWfxuBZLcsSEgnHd/?fallback_source=1&height=1280&mount_node_token=doxcnLTTfZ1LutBUgq3eTuYyEx2&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-01-1e5f6efd0eb94393.png",
+      "bytes": 259161,
+      "sha256": "1857b5211654251a1bffc35b1298c34e2cadb08b77bcc65aa7dbd5cef5ecadfe"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/BR9rbmDpZoIE3kxm1YScm6lOnkh/?fallback_source=1&height=1280&mount_node_token=AZJvd0ynEo0INoxf7XHcpoMgn1g&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-02-69428a17a5268bd7.png",
+      "bytes": 292300,
+      "sha256": "256e54373e727b1756930e86ad075553c27d8619fdbff865ab824c0294bec164"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/DaZCbmRKfoBlG8xJ51hcbTUcn4f/?fallback_source=1&height=1280&mount_node_token=doxcnBM7SEsXYXE9ISMGKDCjNOc&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-03-283dccc0664bf349.png",
+      "bytes": 22829,
+      "sha256": "2638ee02090937be6423a88ceacaaef063175662d99d4841fd77574e5a74bb06"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/HGTObpIKboW9SNxBHvWc7Sw9nqb/?fallback_source=1&height=1280&mount_node_token=doxcnNXPgeEWl9aFwwz2kLIO38g&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-04-9b71803af9a3bd20.png",
+      "bytes": 24604,
+      "sha256": "c7a2bf6728509ff66ddb746c87bac45f31dfe0f49a57beb73e10adc452dccb9d"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/I9FVb90iEosEnrxXS0AcuJ9Enqf/?fallback_source=1&height=1280&mount_node_token=EEI9dHcGtoWMI3xsRFbcodvQnAc&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-05-58ec4fee70795044.png",
+      "bytes": 157007,
+      "sha256": "4542b19950fb8396a1283d390476884adc66c4474e74c85136d1ebf9b4e62a8a"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/Qtz2bkubAofXBkx5IPccctUrncb/?fallback_source=1&height=1280&mount_node_token=J6indIG11oZBojxAzMYcBpNyneb&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-06-2ddf1ec121b9610e.png",
+      "bytes": 205632,
+      "sha256": "770a21158629b2be73a698b6520f98e1e01b0d17fb4fd9eb91eb9cb5102133ed"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/XfvTbhEzio3KFGxciMIczq4Tn0e/?fallback_source=1&height=1280&mount_node_token=doxcndkBk6uJehoSjhTa98BRMBc&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-07-cdb194496f43bd24.png",
+      "bytes": 36880,
+      "sha256": "53a7b4815b9d7d2fc2186c18c486fd35a29275ece97c520aaa3a4c9891d3b879"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-08-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-09-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/images/original/image-10-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/source.html",
+    "rendered_html": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/rendered.html",
+    "text": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/content.txt",
+    "markdown": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/content.md",
+    "metadata": "pages/GmfKwSHv0i5E9EkaupNcjRdIn4d/page.json"
+  }
+}

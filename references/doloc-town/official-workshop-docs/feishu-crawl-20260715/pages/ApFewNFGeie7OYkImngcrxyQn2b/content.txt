@@ -1,0 +1,43 @@
+09 载具
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b
+
+Source modified label: 5月15日修改
+
+一、格式要求
+
+[Embedded sheet: uAAtOr]
+
+类型	图片大小（像素）	作图规范
+载具图标	28*28	整体居中
+载具场景贴图	不限制	四周留1像素
+载具场景贴图-车灯遮罩	同上	同上
+
+24%38%38%
+
+24%
+
+38%
+
+38%
+
+二、命名对照表
+
+•注：摩托的贴图需要通过手动创建同名json文件指定贴图的锚点（见05 贴图锚点说明），否则会导致摩托在游戏中显示的位置不正确。车灯遮罩的锚点需要和载具的锚点保持一致。
+
+[Embedded sheet: iuC5L4]
+
+名称	ID	示例载具的锚点(x,y)
+载具图标	icon_vehicle_motor
+载具场景贴图	sprite_vehicle_motor	32,12
+载具场景贴图-车灯遮罩	sprite_vehicle_motor_light_mask	32,12
+
+三、参考案例
+
+•飞行摩托颜色调整。
+
+•注：若不改灯光位置的话，则可以省略车灯遮罩的两个文件，如下图：
+
+•示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\示例模组\Content\01 美化模组示例\09 载具

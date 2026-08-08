@@ -48,7 +48,7 @@ Rules:
 
 - Create one branch per narrow objective.
 - Do not mix runtime hardening, API redesign, feature mods, and bug fixes in one branch.
-- Keep branch goals tied to one immutable `docs/goals/YYYY/...md` file when implementation is delegated.
+- When implementation is delegated, tie the branch to one explicit review or in-progress update record instead of a mutable root task ledger.
 - Merge back only after the branch has passing build/tests and required game/manual evidence.
 - If a branch goes bad, discard the branch rather than repairing `master`.
 

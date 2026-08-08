@@ -1,0 +1,32 @@
+tutorial	token	sample_directory	sample_found	sample_json	sample_png	sample_json_failures	code_blocks	incomplete_code_blocks	invalid_code_blocks	unmatched_code_filenames	code_id_mismatches	static_status	runtime_status	player_status
+01 主角（本体&帽子&工具）	FHmFwDuySip8M6krNnxcyR91nXg	01 美化模组示例 Replacing Existing Content Assets/01 主角 Protagonist	True	0	590	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+02 NPC	HUAbwaN2hiWLsAkSwrJczQmun9e	01 美化模组示例 Replacing Existing Content Assets/02 NPC	True	0	23	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+03 小动物	POkcwjhF3iPzmikWRZ2cn8n9ncf	01 美化模组示例 Replacing Existing Content Assets/03 小动物 Animal	True	0	27	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+04 道具	CDfmwzDwHi4GJgksMfZcC2mqnTe	01 美化模组示例 Replacing Existing Content Assets/04 道具 Item	True	0	3	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+05 设备	OAMZwIqkLi7xw3k7JcIcvxAQnHg	01 美化模组示例 Replacing Existing Content Assets/05 设备 Equipment	True	0	8	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+06 资源	R8V7wQUQuiEdq8kaDRzcT1vXn5c	01 美化模组示例 Replacing Existing Content Assets/06 资源 Resource	True	0	6	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+07 建筑	SqhhwDgKAi2NLhkYRgwcdWrdnff	01 美化模组示例 Replacing Existing Content Assets/07 建筑 Building	True	3	7	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+08 平台	V8l8wVIUaitF7rkIBpQcSVLPnWe	01 美化模组示例 Replacing Existing Content Assets/08 平台 Platform	True	0	16	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+09 载具	ApFewNFGeie7OYkImngcrxyQn2b	01 美化模组示例 Replacing Existing Content Assets/09 载具 Vehicle	True	2	3	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+01 新增道具	OFS1w4gFSiDkHRkXX1Pcu4ihnNh	02 基础内容模组示例 Basic Content Creation/01 新增道具 Item	True	1	1	0	1	0	0	0	0	pass	not-run	not-run
+02 新增帽子	PxaIwKgsPiua7okPqgdcoCOZnkF	02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear	True	6	19	0	2	0	0	0	0	pass	not-run	not-run
+03 新增装饰设备	PSUjwr1GuiRixsk95HlcYTVQnPd	02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration	True	2	3	0	2	0	0	0	0	pass	not-run	not-run
+04 新增配方	VxeWw7ZDjiqFcTk0yLxcnB53n9b	02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe	True	2	0	0	2	0	0	0	1	warning	not-run	not-run
+05 新增商店道具	CKj3wewhLiTuCkk2GrqceORunUg	02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item	True	2	0	0	2	0	0	0	0	pass	not-run	not-run
+06 综合案例一（新增道具）	KWqewbBLEiRw1Pkcn6lcZpQ7nXg	02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）	True	2	1	0	2	0	0	0	0	pass	not-run	not-run
+07 综合案例二（新增帽子）	WnCwwkXA4ixLjFkx2SIcTyyIned	02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）	True	3	19	0	3	0	0	0	0	pass	not-run	not-run
+08 综合案例三（新增设备）	P57twsINsitUu6kWCDEc4vz6nNc	02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）	True	5	3	0	5	0	0	0	0	pass	not-run	not-run
+09 综合案例四（新增墙纸）	YHhawESrpidQRikIjWJczOLLnrh	02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）	True	8	9	0	6	0	0	0	0	pass	not-run	not-run
+10 综合案例五（新增平台）	OdcywZdsuiio3MkdpLdcJretnte	02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）	True	8	23	0	8	0	0	0	0	pass	not-run	not-run
+01 新增作物（种子+果实）	LO6uwLfSXilCHLkAymLclh1jncd	03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop	True	2	6	0	2	0	0	0	0	pass	not-run	not-run
+02 新增鱼	O64fw47MJiC2qXk8A4fc4RsInyf	03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish	True	3	1	0	3	0	0	0	0	pass	not-run	not-run
+03 新增料理	KaKyw74DnibQhmkjPlMcJgZXnBf	03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish	True	9	3	0	9	0	0	0	0	pass	not-run	not-run
+04 新增资源	DSwGwUzfki0gkPk1k6dcio6bnpb	03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource	True	4	4	0	4	0	0	0	0	pass	not-run	not-run
+05 新增植被	NwWvwfh7fin9WOk5vVQcyDSGnpb	03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation	True	5	6	0	4	0	0	0	0	pass	not-run	not-run
+06 综合案例一（新增作物）	V3mywFHTtiE7kfk9RUVcrrednLb	03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）	True	11	6	0	9	0	0	0	0	pass	not-run	not-run
+07 综合案例二（新增鱼)	KkZ0wpgT1iLu4Vk2P32cNxnrnCd	03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）	True	14	4	0	8	0	1	0	0	fail	not-run	not-run
+08 综合案例三（新增资源）	U75Lwhq4qi4prxkti3zcffplnhf	03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）	True	7	4	0	3	0	0	0	0	pass	not-run	not-run
+01 文本本地化	SYYLwefL8imZYXkivwecR7X2ntc	04 其他内容示例 Miscellaneous/01 文本本地化 Localization	True	3	0	0	3	0	0	0	0	pass	not-run	not-run
+02 道具数据模板	Rv1swL7JEiLHSZkaNk7cFyyXnIh	04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template	True	10	0	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+03 备用贴图	NKSJwBudUi9q89kN9GXcpQKwnRe	04 其他内容示例 Miscellaneous/03 备用贴图 Image Assets	True	0	437	0	0	0	0	0	0	visual-or-reference-only	not-run	not-run
+04 掉落上限、保底配置	RsaywZ3JdieYHDkZpCLc1vYenvg	04 其他内容示例 Miscellaneous/04 掉落上限、保底配置 Drop Limit and Pity Setup	True	1	0	0	3	0	0	0	0	pass	not-run	not-run

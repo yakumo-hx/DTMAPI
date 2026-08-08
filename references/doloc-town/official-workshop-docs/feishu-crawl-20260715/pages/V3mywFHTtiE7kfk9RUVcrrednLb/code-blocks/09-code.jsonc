@@ -1,0 +1,7 @@
+[
+  {
+    "id": "seed_crop0", //种子ID
+    "energy": 5, //饱食度
+    "contribution": 1 //特殊作物贡献值
+  }
+]

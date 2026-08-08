@@ -1,0 +1,17 @@
+类型	帧数/贴图数	动画 ID	小动物 ID	图片命名格式
+幼年
+帧动画（进食）	3	eat	goat_young	anim_animal_goat_young_eat_[0~2]
+帧动画（待机）	4	idle	goat_young	anim_animal_goat_young_idle_[0~3]
+帧动画（跳跃）	1	jump	goat_young	anim_animal_goat_young_jump_0
+帧动画（移动）	8	move	goat_young	anim_animal_goat_young_move_[0~7]
+帧动画（睡觉）	1	sleep	goat_young	anim_animal_goat_young_sleep_0
+图标（图鉴）	1		goat_young	icon_document_goat_young
+详情图（图鉴）	1		goat_young	preview_document_goat_young
+成年
+帧动画（进食）	4	eat	goat_adult	anim_animal_goat_adult_eat_[0~3]
+帧动画（待机）	4	idle	goat_adult	anim_animal_goat_adult_idle_[0~3]
+帧动画（跳跃）	2	jump	goat_adult	anim_animal_goat_adult_jump_[0~1]
+帧动画（移动）	8	move	goat_adult	anim_animal_goat_adult_move_[0~7]
+帧动画（睡觉）	1	sleep	goat_adult	anim_animal_goat_adult_sleep_0
+图标（图鉴）	1		goat_adult	icon_document_goat_adult
+详情图（图鉴）	1		goat_adult	preview_document_goat_adult

@@ -1,0 +1,2218 @@
+{
+  "schemaVersion": 1,
+  "contractId": "batch6-g2-advanced-synthetic-vertical-slice",
+  "receiptKind": "committed-runtime-matrix",
+  "architectureAuthority": "docs/architecture/batch6-managed-mod-identity-contract.md",
+  "reviewAuthority": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+  "rootCauseReviewAuthority": "docs/reviews/code/2026/20260720-0005-batch6-g2-first-runtime-matrix-root-cause.md",
+  "updateAuthority": "docs/updates/2026/20260720-0007-batch6-g2-advanced-synthetic-vertical-slice.md",
+  "implementationCommit": "c79306dfc7de0e85c74e24ece7d4c5cd47cb0822",
+  "capturedAtUtc": "2026-07-20T13:33:11.8665756+00:00",
+  "runtimeRelease": {
+    "buildCommitPrefix": "c79306dfc7de",
+    "buildTimeUtc": "2026-07-20T13:14:07.9045886+00:00",
+    "dtmApiVersion": "0.5.5",
+    "releaseManifestSha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F",
+    "assemblies": [
+      {
+        "name": "DTMAPI.BepInExBootstrap.dll",
+        "length": 215552,
+        "sha256": "DBBDD746899D41BD72B6A7015FDE989D7A543EE14124168314E865EB810B12D9"
+      },
+      {
+        "name": "DTMAPI.Abstractions.dll",
+        "length": 236544,
+        "sha256": "1773527AB8D28A904C6C185FD8BC4A1502746CB7FA228E27AB80D15370357D44"
+      },
+      {
+        "name": "DTMAPI.Core.dll",
+        "length": 797184,
+        "sha256": "1EE977895C46D6A03EE413BF546FCE642F31240B9B2F27D0BC9D7D87E64A2ED6"
+      },
+      {
+        "name": "DTMAPI.GameBridge.DolocTown.dll",
+        "length": 1162240,
+        "sha256": "C36DF6B1C71991A54F9B282F5DAE29855FBB3AA2CD9BD823F80C50ECC1D50BD4"
+      },
+      {
+        "name": "DTMAPI.ModConfigMenu.dll",
+        "length": 40448,
+        "sha256": "EB99ECC209B9CDE61FB4F6A7F5DD6F97A27ECFE44EBF98ADE0C06B9E194FC69F"
+      }
+    ]
+  },
+  "fixture": {
+    "uniqueId": "DTMAPI.AdvancedFixture",
+    "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+    "gameBuildId": "23762374",
+    "gameAssemblySha256": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404",
+    "nativeType": "DolocAPI",
+    "nativeMethod": "Has087DemoData",
+    "nativeMethodToken": "0x060000A0",
+    "saveSlot": 3,
+    "runtimeSlot": 2,
+    "strictSiblingUniqueId": "DTMAPI.HookProbeMod"
+  },
+  "environment": {
+    "gameBuildId": "23762374",
+    "gameAssemblySha256": "C416D461C2559DDE8FB34D6B279BA84330E1403D18AB2D32A0224C6760D06404",
+    "launchMode": "Steam",
+    "saveSlot": 3,
+    "runtimeSlot": 2
+  },
+  "artifacts": {
+    "authorSdkZip": {
+      "logicalName": "DTMAPI-Author-SDK-0.1.0-win-x64.zip",
+      "path": "DTMAPI-Author-SDK-0.1.0-win-x64.zip",
+      "length": 126828340,
+      "sha256": "82A4BF4970D0967116CC5946AEF3DFFD61A90FACFA11F7E02A16A701290CB434"
+    },
+    "fixturePackages": [
+      {
+        "version": "0.1.0",
+        "package": {
+          "path": "DTMAPI.AdvancedFixture-g2.zip",
+          "length": 5776,
+          "sha256": "D4BF24471D9D5962CC353970DAD5969C06636A2F5B09A043AE50FA742EDFE1B9"
+        },
+        "packageReport": {
+          "path": "DTMAPI.AdvancedFixture-g2.zip.report.json",
+          "length": 1681,
+          "sha256": "C9D7FFB39BBBA5F1EE16960F4750F0A99F149DD3F294EC118BA8AECEBFC04AF1"
+        },
+        "manifestSha256": "3E56981B2A21E0867C64ECA14961AEAE19F5564BCD424C8AAD6F1F3A819FECFA",
+        "entryAssemblySha256": "452B4DC8A87F1A42CAF9286F35FDA864D4D63643C40E22B3586A3B8A40410536",
+        "advancedReferenceReceiptSha256": "81CD99DBFE3425786F3E4706D8E7C2D10522263CFD2A7A2DE16939F9CCCA4962",
+        "fileCount": 6,
+        "bundledNativeRuntimeDependencyCount": 0
+      },
+      {
+        "version": "0.1.1",
+        "package": {
+          "path": "DTMAPI.AdvancedFixture-g2-update-0.1.1.zip",
+          "length": 5776,
+          "sha256": "BE705F7387908DD2C4662A48428C0808A3BD66CF0F123DD0EAB0680E67DBCC69"
+        },
+        "packageReport": {
+          "path": "DTMAPI.AdvancedFixture-g2-update-0.1.1.zip.report.json",
+          "length": 1694,
+          "sha256": "F15A9FF11B882C6DB7E6723ABAF39A005DD5EA590268D33EB29FDEFB8F63B050"
+        },
+        "manifestSha256": "7EAE3B4DBC410601BCEE87492DA2BB6A158ED372EC9DD598257955A83158C821",
+        "entryAssemblySha256": "7637F7637DBFC969D14F6768F80B6076DEBF0A1E9B8FB27B1F8BCC609CDE4A11",
+        "advancedReferenceReceiptSha256": "2F0D58015DE43B17E5EFF4131A1EE8903101BAA683C656BDBDAB73CC4621D7D5",
+        "fileCount": 6,
+        "bundledNativeRuntimeDependencyCount": 0
+      }
+    ]
+  },
+  "cases": [
+    {
+      "caseId": "wrong-owner-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:15:47.0733563+00:00",
+      "completedAtUtc": "2026-07-20T13:16:31.1849162+00:00",
+      "genericSmokeExitCode": 1,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "restart-required",
+        "loaded": false,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "advanced-harmony-owner-mismatch",
+        "advanced-harmony-cleanup-failed"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-211547",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/result.json",
+          "length": 28747,
+          "sha256": "13343329914DD9D83F5DB002CC9FC2F66C27924CBBFEC12A6AF325AFE97C9DE1"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/summary.txt",
+          "length": 6544,
+          "sha256": "9B95E291F619660CAF082930BAC777DD7A8CF7954F5201861EADEF79E05C0C93"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-latest.log",
+          "length": 406162,
+          "sha256": "11D4E282E14B90EAD66AD71B3B87A1A4AA529CFF27B33738536249B6ADFE5F9C"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "B08E533A72288F0B4ED1EF833D195D384ABFD018001FA633BBD2410E899B2116"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "F22C6E0AC1ADC558E2981CAE8DC975A01C56E832B9DF4FDFCCD420796984DDAA"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-report.zip",
+          "length": 903058,
+          "sha256": "AACCAADCF0354AA267D39CA245C23F46C985D1C1A1E9F454A4199588EC2763C3"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 121425,
+          "sha256": "86EB28F0F2AC65242AF89EC86436F35090E3CCC8468ABD6E2FBF52EF1130C1C2"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 361937,
+          "sha256": "1893E8C826FAA6FCFBED452195F84E25FD932EB7D249B6696985495EF93BB120"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211547/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/g2-cold-cases-runner-receipt.json",
+          "length": 20505,
+          "sha256": "98F9EDCE634360026A326F13715854FB492863B4F0492A36800511740617FACB"
+        },
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Failed",
+          "failedResultFields": [
+            "ModOwnerLifecycle",
+            "RunStatus",
+            "GameBridgeFinalHealthSnapshot",
+            "FailedModRollback"
+          ],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:15:52.6108184+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:16:25.9296126+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 0,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 0,
+          "queryAndPostfixResultEqual": null,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": "EntryFailed",
+          "participants": 2,
+          "removed": 0,
+          "remaining": 1,
+          "failures": 1,
+          "machineCode": "advanced-harmony-cleanup-failed",
+          "machineCodeRuntimeCount": 1,
+          "machineCodeReportCount": 1
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 1,
+          "cleanupFailedCount": 1,
+          "cleanupCompleteCount": 0,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 1,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "restart-required",
+          "loaded": false,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "duplicate-patch-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:16:32.9117094+00:00",
+      "completedAtUtc": "2026-07-20T13:17:11.9209019+00:00",
+      "genericSmokeExitCode": 1,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "restart-required",
+        "loaded": false,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "advanced-harmony-duplicate-patch",
+        "advanced-harmony-cleanup-complete"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-211632",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/result.json",
+          "length": 28732,
+          "sha256": "67699C392ECFC211F701C818F76FD5F1FD1F709B6FCF8AB168E3710373DCDA74"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/summary.txt",
+          "length": 6544,
+          "sha256": "C027C91BA83352BDB0C7F1D2342D39374733D1920AB9E0663950664413716081"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-latest.log",
+          "length": 405777,
+          "sha256": "3E48E403773EB3C490108AA10429D705B096D0834EED306A014D8DCD28EAB49A"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "6B7879D43F882B4C940BE320A65D320C83E36F8D5473B458ED48BA861FF116F8"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "8D83D7E7D21E17E9FB20D98D65313F32DBDFF1C1E6E3A4ECDE8B4AF9C0C0173C"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-report.zip",
+          "length": 903737,
+          "sha256": "9E0E1E51949A3B488864CD3019C7A5B932AA8B31267AA4BAAFED1FE7C9261E9D"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 120620,
+          "sha256": "97DD092B71CD5AA46317C9DB2A6363F5616953EE8B6F99B7211A0CB79B140E7A"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 361562,
+          "sha256": "3774C52954BABD138E38FCF7F6C45EAB0562FE104DAE516488F72C54744661C2"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211632/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/g2-cold-cases-runner-receipt.json",
+          "length": 20505,
+          "sha256": "98F9EDCE634360026A326F13715854FB492863B4F0492A36800511740617FACB"
+        },
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Failed",
+          "failedResultFields": [
+            "RunStatus",
+            "GameBridgeFinalHealthSnapshot"
+          ],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:16:36.6992330+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:17:07.1957402+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 0,
+          "patchPostfixCount": 0,
+          "nativeQueryCount": 0,
+          "queryAndPostfixResultEqual": null,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": "EntryFailed",
+          "participants": 2,
+          "removed": 2,
+          "remaining": 0,
+          "failures": 0,
+          "machineCode": "advanced-harmony-cleanup-complete",
+          "machineCodeRuntimeCount": 1,
+          "machineCodeReportCount": 1
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 1,
+          "duplicatePatchCount": 1,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 1,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "restart-required",
+          "loaded": false,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "entry-failure-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:17:13.4436031+00:00",
+      "completedAtUtc": "2026-07-20T13:17:53.4974434+00:00",
+      "genericSmokeExitCode": 1,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "restart-required",
+        "loaded": false,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "advanced-harmony-cleanup-complete"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-211713",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/result.json",
+          "length": 28649,
+          "sha256": "FDABAC7693A2BFD97240A132CC7D50FA9A8C8B53737A679FB3483ED719DD7A46"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/summary.txt",
+          "length": 6544,
+          "sha256": "64951F34977911DABD6E0467389569AE15A571F2A7451A1658842423207D4031"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-latest.log",
+          "length": 404860,
+          "sha256": "D82B516601C953F37F2C92D8AFFF4C2A5D8D85531B88FEF34B3A7BDC25FFF88A"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "FE264671B515A3BEC8ECEDAF0901A36EA335235A02624F8511C17CF77DDEB1B7"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "F705E80D254C981B844EA9DDC5DF917154869B9B4828906CD06DA0DAA04E2E39"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-report.zip",
+          "length": 903030,
+          "sha256": "B571DA9B51B13F46C17D9198E3BA6697E8A07BD94861B646AAAE3C6388D51F8E"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 120092,
+          "sha256": "770BCC75E8E49BA812463D82856C232DD0B7CC20B806AB6F17BD7B609B05831F"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 360733,
+          "sha256": "5DE05487DB336BC09EC0B23AE1BA4069A163BAD05FB3D3E5ECF796236BCE7D71"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211713/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/g2-cold-cases-runner-receipt.json",
+          "length": 20505,
+          "sha256": "98F9EDCE634360026A326F13715854FB492863B4F0492A36800511740617FACB"
+        },
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Failed",
+          "failedResultFields": [
+            "GameBridgeFinalHealthSnapshot",
+            "RunStatus"
+          ],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:17:17.9774083+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:17:48.4034270+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 0,
+          "patchPostfixCount": 0,
+          "nativeQueryCount": 0,
+          "queryAndPostfixResultEqual": null,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": "Synthetic AdvancedFixture EntryFailure after canonical-owner patch installation."
+        },
+        "cleanup": {
+          "reason": "EntryFailed",
+          "participants": 2,
+          "removed": 1,
+          "remaining": 0,
+          "failures": 0,
+          "machineCode": "advanced-harmony-cleanup-complete",
+          "machineCodeRuntimeCount": 1,
+          "machineCodeReportCount": 1
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 1,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 1,
+          "restartRequiredCount": 1,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "restart-required",
+          "loaded": false,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "late-owner-drift-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:17:54.7345500+00:00",
+      "completedAtUtc": "2026-07-20T13:18:33.8132351+00:00",
+      "genericSmokeExitCode": 1,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "restart-required",
+        "loaded": false,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "advanced-harmony-late-owner-drift",
+        "advanced-harmony-cleanup-complete"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-211754",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/result.json",
+          "length": 28839,
+          "sha256": "304181DA1C92552C82F952D730501E624F37DDB4C022558A0D9D7075AF025819"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/summary.txt",
+          "length": 6544,
+          "sha256": "31F932373BA35808D34BF8A69903609BC57051A6172CB5701F462129FEADC19B"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-latest.log",
+          "length": 418971,
+          "sha256": "5A83C8F98BBEDD82EB97DB2D407D3AD43623C4297E4A42B45020488D7CF82C4E"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "35F7D9B160AEB3DD7BDDCD1F11278E6847CF4643B2E1F5D57D2DF28DC6F252F1"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "812BA7F549BA025F921CCE3693BE72CB2CFBD451210609628CEA279188A50D64"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-report.zip",
+          "length": 905512,
+          "sha256": "297990C324A4C9BE974D5B7FB1987DF7FB717036A874A90CCB2D2F8DC86C5854"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 119119,
+          "sha256": "3B3D146E9D7DC4F0BDFCD984FD37249658FC0F03862F6F8942D1BA96FB7EEB22"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 374704,
+          "sha256": "32CE933312BD18F05AD71E2CC259313E075A23B1170F303C6DE208D73CF1BF2B"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211754/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/g2-cold-cases-runner-receipt.json",
+          "length": 20505,
+          "sha256": "98F9EDCE634360026A326F13715854FB492863B4F0492A36800511740617FACB"
+        },
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Failed",
+          "failedResultFields": [
+            "GameBridgeFinalHealthSnapshot",
+            "RunStatus"
+          ],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:17:58.5043379+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:18:29.0512956+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 1,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 1,
+          "queryAndPostfixResultEqual": true,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 1,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": "EntryFailed",
+          "participants": 2,
+          "removed": 1,
+          "remaining": 0,
+          "failures": 0,
+          "machineCode": "advanced-harmony-cleanup-complete",
+          "machineCodeRuntimeCount": 1,
+          "machineCodeReportCount": 1
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 1,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 1,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 1,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "restart-required",
+          "loaded": false,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "disabled-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:18:35.2893377+00:00",
+      "completedAtUtc": "2026-07-20T13:19:14.8250230+00:00",
+      "genericSmokeExitCode": 0,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "disabled",
+        "loaded": false,
+        "officialEnabled": false,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": false
+      },
+      "expectedDiagnostics": [],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-211835",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/result.json",
+          "length": 28545,
+          "sha256": "FF9ECDFCB76A3965B1E7E8A4ABA0EF53E7189A68DABE222F73E2D07D4569D710"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/summary.txt",
+          "length": 6544,
+          "sha256": "ABE9800BC1870510D43CC4C936B56F3D9127815D207D1CBCE855AB94FE0F0E91"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-latest.log",
+          "length": 399295,
+          "sha256": "60947D3DF36F0864F1331578985EED5471CCBA3921C72C75BC6DF2DC449FBB34"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "6648FBDBE9596DA3C8EB73E75A4117CED70F6FCFC03BE33CF987574F1241B06A"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "529C696A059CAB315A492B99BD07F2DB85ACDA32F0DBF191FE5FA319CBF0D8A3"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-report.zip",
+          "length": 898890,
+          "sha256": "3184921CBD9596AFE3C9EEEC3A0993E2849D5F24BA37F910D4FA7C4D19326C88"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 115548,
+          "sha256": "7777E91886B2D8C5E6C764A2C538A6C2EB852E0E71BE6F74797526A9D539F37A"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 355352,
+          "sha256": "3A79A1990F8402090E4838A29E3258458D81BB9F168075CD3CBE88D2E632E06F"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-211835/g2-cold-cases-runner-receipt.json",
+          "length": 20505,
+          "sha256": "98F9EDCE634360026A326F13715854FB492863B4F0492A36800511740617FACB"
+        },
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Passed",
+          "failedResultFields": [],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:18:40.1759521+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:19:10.4744727+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 0,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 0,
+          "completionCount": 0,
+          "patchPostfixCount": 0,
+          "nativeQueryCount": 0,
+          "queryAndPostfixResultEqual": null,
+          "disabledSkipCount": 1,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": null,
+          "participants": null,
+          "removed": null,
+          "remaining": null,
+          "failures": null,
+          "machineCode": null,
+          "machineCodeRuntimeCount": 0,
+          "machineCodeReportCount": 0
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 0,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 0,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "disabled",
+          "loaded": false,
+          "officialEnabled": false,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "normal-v1-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:20:10.0769414+00:00",
+      "completedAtUtc": "2026-07-20T13:20:51.1842654+00:00",
+      "genericSmokeExitCode": 0,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "loaded",
+        "loaded": true,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": false
+      },
+      "expectedDiagnostics": [],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-212010",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/result.json",
+          "length": 28848,
+          "sha256": "474E3946265FF8142222F7F2B150B660D646F4E958C0A63E035B653A416F5AE0"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/summary.txt",
+          "length": 6544,
+          "sha256": "2A1C301357105A9F8ED278840EE1CD2E5ACF10ECF7E07DE5D5C508DF28232A90"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-latest.log",
+          "length": 403106,
+          "sha256": "6046529F5CA89381938F9FB3F26305750D6A2B9B625F71889705AC41479067E3"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "7568C0669B7CD35B4D7BBDBA875311F514494405A5A23BD20F5EA8ECD956401A"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "64B7EFF55E913EC8F94B7B29ACE02744E5A557E61FF658DE33D7D448AF03C88C"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-report.zip",
+          "length": 897682,
+          "sha256": "BF41B20AB67C74553E5186988E1C6AEBC0C5364356D942F1B5263F8B1DBFC139"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 116932,
+          "sha256": "E608F100CB2F356C5BFA473659495B0D24516372EFFCC2E59021E3A3B478E4E6"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 358889,
+          "sha256": "6F21EEC5D3985CE1DC2BA0B469D25361CF8544254C9C095720CADDF0CAB82C76"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212010/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": null,
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Passed",
+          "failedResultFields": [],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:20:15.8175376+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:20:46.1164715+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 1,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 1,
+          "queryAndPostfixResultEqual": true,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": null,
+          "participants": null,
+          "removed": null,
+          "remaining": null,
+          "failures": null,
+          "machineCode": null,
+          "machineCodeRuntimeCount": 0,
+          "machineCodeReportCount": 0
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 0,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 0,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "loaded",
+          "loaded": true,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "postload-disable-v1",
+      "kind": "post-load-disable",
+      "startedAtUtc": "2026-07-20T13:22:34.2050275+00:00",
+      "completedAtUtc": "2026-07-20T13:23:25.6261720+00:00",
+      "genericSmokeExitCode": 1,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "restart-required",
+        "loaded": false,
+        "officialEnabled": false,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "advanced-harmony-cleanup-complete"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-212235",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/result.json",
+          "length": 29104,
+          "sha256": "4F523F77B9FC68735CFF1E5A575B965535F4771CC9F6CDFFF901D6C67F7EB675"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/summary.txt",
+          "length": 6540,
+          "sha256": "44F4E7D115BC794A78D266DE42C648EEE48A0FB1ADC7F305DC5481ED08C1E50B"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-latest.log",
+          "length": 582160,
+          "sha256": "B07EB2A8CBCCFE293DFE73FA32FB4E16DB3DF8EE86A1F2291E4926E3C7D84438"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "135F7A2D21AAAD0F50BAD1A49EC833E0FA7AD02B76D3EEA1E762C9A899422522"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "8252363B1302B7373163A6D5620281282F9D2192562423C88CEE281B95EDC09C"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-report.zip",
+          "length": 915841,
+          "sha256": "B5407F4E31672589C24E98CA332C6D166E1E2578885FE26CDBA8743597125BED"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 121818,
+          "sha256": "365AADEF0AAEDE986D728CD660068AFED60AE6CC198EE34D6F46F6ABEE040D50"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 412912,
+          "sha256": "FC6DFD5559D39BC8BAA29A79F6FE04DB65311F038C9CC6ED48DB8950F74BBE42"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": null,
+        "postLoadOrchestration": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-212235/g2-postload-disable-orchestration.json",
+          "length": 686,
+          "sha256": "4C3638D557441348C2AAE590EEE0751A837CF2B3AD339AB54B3EA51FCB4A094F"
+        },
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Failed",
+          "failedResultFields": [
+            "GameBridgeFinalHealthSnapshot",
+            "RunStatus"
+          ],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:22:40.8612965+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:23:17.5432958+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 1,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 1,
+          "queryAndPostfixResultEqual": true,
+          "disabledSkipCount": 1,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": "Unload",
+          "participants": 2,
+          "removed": 1,
+          "remaining": 0,
+          "failures": 0,
+          "machineCode": "advanced-harmony-cleanup-complete",
+          "machineCodeRuntimeCount": 1,
+          "machineCodeReportCount": 1
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 1,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 1,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "restart-required",
+          "loaded": false,
+          "officialEnabled": false,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": true,
+          "queryObservedAtUtc": "2026-07-20T13:23:01.3889049+00:00",
+          "markerCreatedAtUtc": "2026-07-20T13:23:01.3947718+00:00",
+          "markerLength": 0,
+          "reloadObservedAtUtc": "2026-07-20T13:23:08.0780000+00:00",
+          "markerAbsentAfter": true,
+          "configRestoredExact": true,
+          "processAbsentAfter": true,
+          "qaWorkshopReloadCompleted": true
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "live-update-v1-to-v2",
+      "kind": "live-update",
+      "startedAtUtc": "2026-07-20T13:31:28.2664075+00:00",
+      "completedAtUtc": "2026-07-20T13:32:09.7633418+00:00",
+      "genericSmokeExitCode": 0,
+      "fixtureVersionAtStart": "0.1.0",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "loaded",
+        "loaded": true,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.0",
+        "restartRequired": true
+      },
+      "expectedDiagnostics": [
+        "SDK602"
+      ],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-213129",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/result.json",
+          "length": 28848,
+          "sha256": "CE18A975A68FF33BD6F278EA0CCAF5593637AEEC0D49C483F7EDD06C8F789E4B"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/summary.txt",
+          "length": 6544,
+          "sha256": "084D7904771A3DCB5DAE1C5EE33F7A73875F4A1362E853408B3DA3B3A8461799"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-latest.log",
+          "length": 407432,
+          "sha256": "E30E784076249DE54E5F54E6A3DCDD6330936098A23A8EAF7722EC6B240EEB48"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "1C3AC98658ABC80B46D3567051CB45FBAF85EED0DF1F5BC0E14183FF25315A86"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "F02DCE5DF24334F6AE04EE78EA68D78A098C2AC335560B029F6FAAA92491C523"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-report.zip",
+          "length": 900555,
+          "sha256": "CF8439CAC2A764A85166B03A52BA46C843A283FB72EC501954CECEF25974CDB3"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 117612,
+          "sha256": "ADF6C5F8AD8CE8990DA191A07CACFCD46A1231D428C9CE872BE9C72504305C88"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 363215,
+          "sha256": "DD6362F31203603F0649F5738A1254650DD0202C7E03176B4A79B545382FDC10"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 14361,
+          "sha256": "5258CBB4A69489AE33DBD78192AE5A34B807403BDFFB4C43E9AB18CEAA10AE76"
+        },
+        "runnerReceipt": null,
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-live-update-orchestration.json",
+          "length": 1083,
+          "sha256": "C23C9CA8705C63AE4C0D493B3BE8BE64B50A8BEB6FC08928741DE8E49812B4B4"
+        },
+        "sessionPrepare": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-session-prepare.json",
+          "length": 1187,
+          "sha256": "6FA6B6802368799836FCBA67815B69AA8086A90E6824FA8FC04E72CE217F90CE"
+        },
+        "deploymentStatusV1": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-deployment-status-v1.json",
+          "length": 918,
+          "sha256": "16913E4A1228F0175F78943A25EE3E3AE64A24F5B43FCFC47265A525AD144F9E"
+        },
+        "sessionSnapshot": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-session-snapshot-v1.json",
+          "length": 1995,
+          "sha256": "8DA3E8FDDEF75CDD2B878EBE57D00B9E0FDF304769E77F0C4E2BEE0D61EB395E"
+        },
+        "sdkUpdate": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-sdk-update-v2.json",
+          "length": 1233,
+          "sha256": "0C32ABCEE34F76D75FD27C2F7C1A39F3F46AA382934465304065C7CA9E611357"
+        },
+        "deploymentStatusV2": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-deployment-status-v2.json",
+          "length": 918,
+          "sha256": "7C2F8292BA78617C10BC4F2CD337AA77C8D4954E2F10B2E972BB153B56D0E2E6"
+        },
+        "sessionReload": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-session-reload-v2.json",
+          "length": 1579,
+          "sha256": "513AD3536593F96A57155202BFC040F95D2682EF40D076BB18248C902C79FEAA"
+        },
+        "sessionClear": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213129/g2-session-clear.json",
+          "length": 562,
+          "sha256": "B70BC57FA48F84AAE4EEC3EDD0B9CFE0AAC0BF6FE1183BAE409A251589AD364F"
+        }
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Passed",
+          "failedResultFields": [],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:31:34.4350328+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:32:04.3636723+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 1,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 1,
+          "queryAndPostfixResultEqual": true,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": null,
+          "participants": null,
+          "removed": null,
+          "remaining": null,
+          "failures": null,
+          "machineCode": null,
+          "machineCodeRuntimeCount": 0,
+          "machineCodeReportCount": 0
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 0,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 0,
+          "sdk602Count": 1,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "loaded",
+          "loaded": true,
+          "officialEnabled": true,
+          "version": "0.1.0"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": true,
+          "sessionId": "0d26cd15e1b94cbe848accd9759dcc6e",
+          "deploymentStatusV1Success": true,
+          "deploymentStatusV1RecoveryArtifacts": 0,
+          "snapshotSuccess": true,
+          "snapshotRuntimeStatus": "ok",
+          "snapshotRuntimeCode": "source-snapshot",
+          "snapshotVersion": "0.1.0",
+          "snapshotTreeSha256": "F110B59FDD3A5507C85826AFA8963BB06A2CF24702B94D1478F24F40CA46801C",
+          "updateSuccess": true,
+          "updatedVersion": "0.1.1",
+          "deploymentStatusV2Success": true,
+          "deploymentStatusV2RecoveryArtifacts": 1,
+          "reloadSuccess": true,
+          "reloadRuntimeStatus": "restart-required",
+          "reloadRuntimeCode": "manifest-changed-restart-required",
+          "reloadDiagnosticCodes": [
+            "SDK602"
+          ],
+          "clearSuccess": true,
+          "credentialsCleared": true,
+          "clearedCredentialFileCount": 1,
+          "preUpdateTreeSha256": "7ECF1A0ED74F2C4D04009C8CFFD99C513EA7270137CE3048F61244813CB43722",
+          "postUpdateTreeSha256": "31309F9DE70FFEF135C9329F2BD27750DACD4A3A64C9E33074E9123C68DA6C70"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "caseId": "final-clean-v2-cold",
+      "kind": "cold",
+      "startedAtUtc": "2026-07-20T13:32:31.7454090+00:00",
+      "completedAtUtc": "2026-07-20T13:33:11.8665756+00:00",
+      "genericSmokeExitCode": 0,
+      "fixtureVersionAtStart": "0.1.1",
+      "expectedOutcome": {
+        "classification": "Advanced",
+        "statusCode": "loaded",
+        "loaded": true,
+        "officialEnabled": true,
+        "fixtureVersion": "0.1.1",
+        "restartRequired": false
+      },
+      "expectedDiagnostics": [],
+      "evidence": {
+        "runRootPath": "docs/debug/evidence/GAME-SMOKE/20260720-213231",
+        "result": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/result.json",
+          "length": 28848,
+          "sha256": "F73D6156D13F935BEF4F5F728F47533847926911569978A5F3ADA9A35A75BC32"
+        },
+        "summary": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/summary.txt",
+          "length": 6544,
+          "sha256": "EF813C6FC53733A50C9B2901D9B206FC52C078688802E4815E06FE7228D5FAF1"
+        },
+        "runtimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-latest.log",
+          "length": 403243,
+          "sha256": "FB70CEEBD363F4A511697C2B7EE70E4062497694F787A8CC2F658FDD9A6EDCA9"
+        },
+        "qaCleanup": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/qa-host-cleanup.json",
+          "length": 2830,
+          "sha256": "2D56BED1103035E6747B6F23341C729598B6E8B26A7796DC733A3669B7BC0E1C"
+        },
+        "profileRestore": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/official-mod-profile-restore-verification.json",
+          "length": 562,
+          "sha256": "24D26F1AEF2C2833F2CA00E6BCFA2015224DDEDE6A6CFD67AC3C4BE7F78EE380"
+        },
+        "processCheck": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/process-check.txt",
+          "length": 33,
+          "sha256": "B8A5CE5B3A15119C87E57DD6BC0DE0244EAF19A634C2F81D1CFBB593DDF064B3"
+        },
+        "reportZip": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-report.zip",
+          "length": 898417,
+          "sha256": "CA2B64A281DFBD4DB262C6DA3BFF4C79B04CC6A5DAA7DCB4FB69B817B2F7865D"
+        },
+        "reportRuntimeContext": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-report.zip!/DTMAPI-runtime-context.txt",
+          "length": 116932,
+          "sha256": "C673A1CEEA2418DEB5D901CBF5D687C3B520901A1CB151C2BB5C28E06C73C335"
+        },
+        "reportRuntimeLog": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-report.zip!/DTMAPI-latest.log",
+          "length": 359026,
+          "sha256": "418516CF7CF8AD5F63E2A16FDC40EDC953D6601CB849F35CB3961DE2F685D585"
+        },
+        "reportReleaseManifest": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-report.zip!/release-manifest.json",
+          "length": 2190,
+          "sha256": "63FC8156D7924E272799EEE22D63B715444DEA1E98EEF088FEFBEE87E7E2528F"
+        },
+        "reportPlayerDoctor": {
+          "path": "docs/debug/evidence/GAME-SMOKE/20260720-213231/DTMAPI-report.zip!/PlayerDoctor/player-doctor.json",
+          "length": 16263,
+          "sha256": "9A14553E117FD177FF560F406F7BC8B1A32B902EC373D62884EBC4753FF37FE0"
+        },
+        "runnerReceipt": null,
+        "postLoadOrchestration": null,
+        "liveUpdateOrchestration": null,
+        "sessionPrepare": null,
+        "deploymentStatusV1": null,
+        "sessionSnapshot": null,
+        "sdkUpdate": null,
+        "deploymentStatusV2": null,
+        "sessionReload": null,
+        "sessionClear": null
+      },
+      "observations": {
+        "common": {
+          "resultSchemaVersion": 2,
+          "resultRunStatus": "Passed",
+          "failedResultFields": [],
+          "saveLoaded": "Passed",
+          "hookProbe": "Passed",
+          "gameLaunched": "Passed",
+          "processExited": "Passed",
+          "noFatalInstanceWindow": "Passed",
+          "forcedClose": "Passed",
+          "qaHostCleanup": "Passed",
+          "qaSaveLoadedObservation": "Passed",
+          "officialModProfileRestored": true,
+          "localAuthorSourceStateRestored": true,
+          "local11AuthorSourceStateRestored": true,
+          "isolateAllOfficialMods": true,
+          "officialModProfileApplied": true,
+          "summarySaveSlot": 3,
+          "summaryIncludeHookProbe": true,
+          "summaryLaunchMode": "Steam",
+          "qaCleanupExactArtifacts": true,
+          "qaCleanupExactQaEvidence": true,
+          "qaCleanupExactTree": true,
+          "qaCleanupCleaned": true,
+          "qaCleanupRetained": false,
+          "profileRestoreExactLength": true,
+          "profileRestoreExactSha256": true,
+          "profileRestorePassed": true,
+          "processAbsent": true,
+          "reportRuntimeLogIsRunPrefix": true,
+          "reportStartedAtUtc": "2026-07-20T13:32:37.0235067+00:00",
+          "reportGeneratedAtUtc": "2026-07-20T13:33:07.2295816+00:00",
+          "playerDoctorRuntimeAssemblyHashMatch": true,
+          "playerDoctorErrorCount": 0,
+          "playerDoctorWarningCount": 0,
+          "playerDoctorMisplacedCount": 0
+        },
+        "strictSibling": {
+          "entryCount": 1,
+          "gameLaunchedCount": 1,
+          "oneSecondCount": 1,
+          "saveLoadedSlot": 2,
+          "saveLoadedCount": 1,
+          "reportStatusCode": "loaded",
+          "reportLoaded": true
+        },
+        "advancedIdentity": {
+          "verifiedFixtureLoadSourceCount": 1,
+          "foreignAdvancedLoadSourceCount": 0,
+          "unexpectedManagedLoadSourceCount": 0,
+          "autoFishingLoadSourceCount": 0,
+          "autoFishingEntryLogCount": 0,
+          "autoFishingReportStatusCode": "disabled",
+          "autoFishingReportLoaded": false,
+          "autoFishingReportOfficialEnabled": false,
+          "autoFishingReportVersion": "1.4.3-dtmapi",
+          "playerDoctorFixtureManagedIdentity": "AdvancedCodeMod",
+          "playerDoctorFixtureProvenanceStatus": "VerifiedReferenceReceipt",
+          "playerDoctorFixturePolicyId": "doloctown-23762374-g2-v1",
+          "playerDoctorFixtureGameBuildId": "23762374",
+          "playerDoctorFixtureHarmonyOwner": "dtmapi.mod.dtmapi.advancedfixture",
+          "playerDoctorStrictSiblingCount": 3,
+          "playerDoctorAutoFishingCount": 0
+        },
+        "fixture": {
+          "entryCount": 1,
+          "completionCount": 1,
+          "patchPostfixCount": 1,
+          "nativeQueryCount": 1,
+          "queryAndPostfixResultEqual": true,
+          "disabledSkipCount": 0,
+          "lateInstallCount": 0,
+          "entryFailureMessage": null
+        },
+        "cleanup": {
+          "reason": null,
+          "participants": null,
+          "removed": null,
+          "remaining": null,
+          "failures": null,
+          "machineCode": null,
+          "machineCodeRuntimeCount": 0,
+          "machineCodeReportCount": 0
+        },
+        "diagnostics": {
+          "ownerMismatchCount": 0,
+          "cleanupFailedCount": 0,
+          "cleanupCompleteCount": 0,
+          "duplicatePatchCount": 0,
+          "lateOwnerDriftCount": 0,
+          "entryFailureCount": 0,
+          "restartRequiredCount": 0,
+          "sdk602Count": 0,
+          "sdk603Count": 0
+        },
+        "report": {
+          "statusCode": "loaded",
+          "loaded": true,
+          "officialEnabled": true,
+          "version": "0.1.1"
+        },
+        "state": {
+          "markerAbsentBefore": null,
+          "queryObservedAtUtc": null,
+          "markerCreatedAtUtc": null,
+          "markerLength": null,
+          "reloadObservedAtUtc": null,
+          "markerAbsentAfter": null,
+          "configRestoredExact": null,
+          "processAbsentAfter": null,
+          "qaWorkshopReloadCompleted": null
+        },
+        "session": {
+          "prepareSuccess": null,
+          "sessionId": null,
+          "deploymentStatusV1Success": null,
+          "deploymentStatusV1RecoveryArtifacts": null,
+          "snapshotSuccess": null,
+          "snapshotRuntimeStatus": null,
+          "snapshotRuntimeCode": null,
+          "snapshotVersion": null,
+          "snapshotTreeSha256": null,
+          "updateSuccess": null,
+          "updatedVersion": null,
+          "deploymentStatusV2Success": null,
+          "deploymentStatusV2RecoveryArtifacts": null,
+          "reloadSuccess": null,
+          "reloadRuntimeStatus": null,
+          "reloadRuntimeCode": null,
+          "reloadDiagnosticCodes": [],
+          "clearSuccess": null,
+          "credentialsCleared": null,
+          "clearedCredentialFileCount": null,
+          "preUpdateTreeSha256": null,
+          "postUpdateTreeSha256": null
+        }
+      },
+      "accepted": true
+    }
+  ],
+  "matrixSha256": "EC26CED5E689A0839B438FC4C421BDD032AFD26FC308C17C20936812BC95BAD3"
+}

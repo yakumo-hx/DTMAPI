@@ -1,0 +1,13 @@
+[
+  {
+    "id": "doloc_town_forest", //资源生成表ID，详见对照表
+    "extra_resources": [
+      {
+        "spawn_weight": 100, //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "resource_id": "fertile_soil" //生成资源ID
+      }
+    ]
+  }
+]

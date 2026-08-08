@@ -1,0 +1,16 @@
+[
+  {
+    "id": "wall0", //内部墙纸ID
+    "wallpaper_datas": [
+      {
+        "building_id": "small_container", //建筑ID
+        "internal_sprite": {
+          "url": "sprite_building_internal_small_container_wall0"  //场景贴图，格式为：sprite_building_internal_[building_id]_[exterior_id]
+        },
+        "window_mask": {
+          "url": "sprite_building_internal_small_container_wall0_mask" //窗户遮罩贴图，格式为：sprite_building_internal_[building_id]_[exterior_id]_mask
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": 2, //保底类型（0资源采集掉落，1怪物掉落，2钓鱼掉落）
+    "spawn_id": "rubbish", // 目标道具ID
+    "global_limit": 1, // 全局数量上限（0则无上限）
+    "default_locked": false, //不生效
+    "viewable": false, //不生效
+    "active_count": 0,//不生效
+    "should_consume_guarantee": false, //不生效
+    "guarantee_threshold": 0 //不生效
+  }
+]

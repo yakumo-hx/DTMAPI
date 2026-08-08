@@ -1,13 +1,11 @@
 @echo off
-setlocal
-set SCRIPT_DIR=%~dp0
-powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%Content\DTMAPIInstaller\tools\uninstall-dtmapi.ps1"
-if errorlevel 1 (
-  echo.
-  echo DTMAPI uninstall failed. Please run 3_check_dtmapi_status.bat and include the output when asking for help.
-  pause
+setlocal EnableExtensions DisableDelayedExpansion
+set "DTMAPI_DISPATCHER=%~dp0Content\DTMAPIInstaller\tools\invoke-dtmapi-action.cmd"
+if not exist "%DTMAPI_DISPATCHER%" (
+  echo [ERROR] DTMAPI installer dispatcher is missing: "%DTMAPI_DISPATCHER%"
+  if not defined DTMAPI_NO_PAUSE pause
   exit /b 1
 )
-echo.
-echo DTMAPI uninstall finished.
-pause
+"%ComSpec%" /d /e:on /v:off /c call "%DTMAPI_DISPATCHER%" uninstall
+set "DTMAPI_EXIT=%ERRORLEVEL%"
+exit /b %DTMAPI_EXIT%

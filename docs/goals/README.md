@@ -1,12 +1,14 @@
-# DTMAPI Goal Files
+# DTMAPI Historical Goal Files
 
-This directory stores immutable implementation ledgers for individual Codex goal rounds.
+Status: retired workflow; historical files retained in place.
+
+This directory stores implementation ledgers and short prompt backups from earlier Codex goal rounds. The project no longer creates new files here as part of the normal workflow.
 
 ## Why This Exists
 
-The old mutable root task ledger was removed because it was too unstable for multi-Codex work: one Codex could replace it while another Codex was still executing an older goal.
+The old mutable root task ledger was removed because it was too unstable for multi-Codex work. Per-goal files replaced it for a period, but the short `/goal` handoff workflow is no longer needed.
 
-Future implementation handoffs must use a dedicated goal file here instead.
+All existing files remain available as historical evidence. Do not delete, move, rename, or reinterpret them as current instructions.
 
 ## File Layout
 
@@ -17,26 +19,24 @@ docs/goals/
     YYYYMMDD-NNNN-short-slug.goal.txt
 ```
 
-- The `.md` file contains the detailed task ledger, review facts, constraints, acceptance gates, blockers, and validation requirements.
-- The `.goal.txt` file stores the exact short `/goal` prompt given to an implementation Codex.
-- Do not create or use a mutable root task-ledger file.
+- The `.md` files contain historical task ledgers, review facts, constraints, acceptance gates, blockers, and validation requirements.
+- The `.goal.txt` files contain historical short prompts.
+- Their presence does not authorize restarting old work.
 
-## Rules
+## Current Rules
 
-- Create a new goal file for every implementation handoff. Do not overwrite another active goal file.
-- A `/goal` prompt must reference one exact `docs/goals/YYYY/...md` file.
-- If chat history, old active-goal metadata, or a context summary conflicts with the referenced goal file, the referenced goal file wins.
-- Use fixed target versions. Write `from X to Y` or `target version Y`; do not write only `bump once`.
-- If the workspace is already at the target version, do not bump again unless the user explicitly asks for a newer target.
-- DTMAPI `0.3.1` was produced by a Codex version-bump mistake. Do not infer future target versions from it; use only the fixed target version written in the active goal file.
-- Store the short `/goal` text beside the goal file as `.goal.txt`.
-- Completed, blocked, or superseded goal files remain in place as history. New facts go into a new goal file or a review record.
+- Do not create new goal files or `.goal.txt` files during normal work.
+- Do not treat any file in this directory as an active task unless the user explicitly names that historical file for inspection.
+- Record new implementation work in `docs/updates/YYYY/...` using `proposed` or `in-progress` while work is underway, then `implemented`, `verified`, `blocked`, or `reverted` as appropriate.
+- Use `docs/reviews` for durable pre-implementation analysis and `docs/debug` for runtime issues and evidence.
+- DTMAPI `0.3.1` remains a historical Codex version-bump mistake. Do not infer a future target version from old goal files.
+- Completed, blocked, or superseded files remain in place as history.
 
-## API Rebuild Handoffs
+## Historical API Rebuild Handoffs
 
-API rebuild goals must also follow `docs/workflows/codex-api-rebuild.md`.
+Earlier API rebuild rounds used goal files. Current API rebuild work follows `docs/workflows/codex-api-rebuild.md` and records implementation state in an update record instead.
 
-Each API rebuild goal file must state:
+The historical files may contain:
 
 - the exact API/domain being rebuilt;
 - the prior native-owner review records it relies on;
@@ -46,7 +46,7 @@ Each API rebuild goal file must state:
 - the GameBridge boundary and any public API matrix/doc changes required;
 - game smoke and lifecycle evidence required before completion.
 
-Do not use a broad "fix all APIs" implementation goal. Split high-risk domains into separate handoffs.
+These fields are historical context, not current execution requirements.
 
 ## Migrated Historical Goal
 

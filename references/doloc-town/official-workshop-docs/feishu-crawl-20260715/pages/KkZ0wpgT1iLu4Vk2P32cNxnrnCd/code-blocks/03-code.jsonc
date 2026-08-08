@@ -1,0 +1,22 @@
+[
+  {
+    "id": "fish1", //阵型ID，同养殖鱼OD
+    "weight": 6,  //阵型权重
+    "formation_output_fish": "fish1", //道具生成表ID
+    "count_range": {
+      "x": 1, //产出最小数量
+      "y": 1 //产出最大数量
+    },
+    //以下为需要满足的阵型要求
+    "formation_conditions": [
+      {
+        "fish_id": "fish0",   //鱼ID
+        "count_range": {
+          "x": 3, //最小要求数量（闭区间，-1为无限制）
+          "y": -1 //最大要求数量（闭区间，-1为无限制）
+        },
+        "index": -1 //填-1，不动
+      }
+    ]
+  }
+]

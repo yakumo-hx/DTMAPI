@@ -1,0 +1,23 @@
+{
+  "name": "Y键控制台",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "依赖 DTMAPI 0.6.0。\n存档加载后按 Y 打开产品自有的诊断控制台。提供限定的物品、天气、传送、时间、移动和高级调试操作；不提供任意命令执行。关闭、返回标题或停用时恢复移速、时间倍率和创造模式临时状态。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "Y键控制台",
+    "tchinese": "Y鍵控制台",
+    "english": "Y Key Console"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI 0.6.0。\n存档加载后按 Y 打开产品自有的诊断控制台。提供限定的物品、天气、传送、时间、移动和高级调试操作；不提供任意命令执行。关闭、返回标题或停用时恢复移速、时间倍率和创造模式临时状态。",
+    "tchinese": "依賴 DTMAPI 0.6.0。\n存檔載入後按 Y 開啟產品自有的診斷控制台。提供限定的物品、天氣、傳送、時間、移動與進階除錯操作；不提供任意命令執行。關閉、返回標題或停用時會還原移速、時間倍率與創造模式暫時狀態。",
+    "english": "Requires DTMAPI 0.6.0.\nPress Y after a save loads to open the product-owned diagnostic console. It provides a bounded set of item, weather, teleport, time, movement, and advanced debug actions; arbitrary commands are not exposed. Closing, returning to title, or disabling restores temporary movement, time-scale, and creative state."
+  }
+}

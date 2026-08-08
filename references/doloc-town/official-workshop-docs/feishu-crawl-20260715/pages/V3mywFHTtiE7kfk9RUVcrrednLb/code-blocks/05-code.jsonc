@@ -1,0 +1,18 @@
+[
+    {
+    "id": "crop0", //作物ID
+    "title": {
+      "key": "plant_document_crop0", //档案标题ID，格式为plant_document_[作物ID]
+      "text": "植物档案：艳丽红菌" //档案标题文本
+    },
+    "author": {
+      "key": "plant_document_crop0_desc", //档案简述ID，格式为plant_document_[作物ID]_desc
+      "text": "[艳丽红菌的简短描述]"  //档案简述文本
+    },
+    "content": {
+      "key": "plant_document_crop0_content", //档案详情ID，格式为plant_document_[作物ID]_desc
+      "text": "[艳丽红菌的详细介绍]"   //档案简述文本
+    },
+    "reward": 200 //提交作物的奖励（螺母）
+  }
+]

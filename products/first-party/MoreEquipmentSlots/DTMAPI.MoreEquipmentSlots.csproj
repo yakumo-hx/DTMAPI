@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>DTMAPI.MoreEquipmentSlots</AssemblyName>
+    <RootNamespace>DTMAPI.MoreEquipmentSlots</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props"
+          Condition="Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props')" />
+  <Target Name="RequireDtmApiAuthorSdk" BeforeTargets="PrepareForBuild"
+          Condition="!Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props')">
+    <Error Text="Set DTMAPI_AUTHOR_SDK_ROOT to the extracted DTMAPI Author SDK, or build with dtmapi-author build." />
+  </Target>
+</Project>

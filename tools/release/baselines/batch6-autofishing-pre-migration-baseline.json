@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "receiptKind": "batch6-autofishing-pre-migration-baseline",
+  "baselineCommit": "9fb8d87d5c03916f2ca083ffb235b293aea58d61",
+  "baselineTree": "cd7090868ef3f979bd86b81c28238da3b1114202",
+  "baselineCommittedAtUtc": "2026-07-20T15:05:34Z",
+  "capturedAtUtc": "2026-07-20T17:45:03.2156352Z",
+  "sourceState": "immutable-clean-post-g2-closure-commit",
+  "mandatoryRoots": [
+    {
+      "path": "src/DTMAPI.Abstractions",
+      "tree": "57cc8d874b662888405106ad2bae39e736e97ecb"
+    },
+    {
+      "path": "src/DTMAPI.Core",
+      "tree": "fb3fdf2f40d4a8420271327e8cf10490a4192ed1"
+    },
+    {
+      "path": "src/DTMAPI.BepInExBootstrap",
+      "tree": "c0317d903672dd64e69f37a719009daed6f540e7"
+    },
+    {
+      "path": "src/DTMAPI.GameBridge.DolocTown",
+      "tree": "3532484f9d94a87ff4b6f5c074902e686b67c386"
+    },
+    {
+      "path": "src/DTMAPI.ModConfigMenu",
+      "tree": "30d474a8a19c458eed3dac30599a6ffeeec43a4e"
+    }
+  ],
+  "reproduceCommand": "git show -s --format=%H%n%T%n%cI 9fb8d87d5c03916f2ca083ffb235b293aea58d61; git rev-parse 9fb8d87d5c03916f2ca083ffb235b293aea58d61:<mandatory-root>",
+  "notes": [
+    "This artifact captures only committed Git objects; no working-tree bytes are authoritative.",
+    "The baseline predates the AutoFishing ProductNative implementation commit and remains immutable for G4.",
+    "The G4 ownership receipt must compare this baseline commit with the exact implementation commit."
+  ]
+}

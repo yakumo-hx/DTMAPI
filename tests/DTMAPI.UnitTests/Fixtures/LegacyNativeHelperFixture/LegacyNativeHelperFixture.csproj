@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.LegacyNativeHelperFixture</AssemblyName>
+    <RootNamespace>DTMAPI.LegacyNativeHelperFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

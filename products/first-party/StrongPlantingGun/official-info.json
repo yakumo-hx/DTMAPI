@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 强力种植枪",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "依赖 DTMAPI。\n让官方种植枪固定携带种子、薄膜和肥料三个槽位。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "Functional",
+    "DTMAPI",
+    "Farming",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 强力种植枪",
+    "tchinese": "DTMAPI 強力種植槍",
+    "english": "DTMAPI Strong Planting Gun"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI。\n让官方种植枪固定携带种子、薄膜和肥料三个槽位。",
+    "tchinese": "依賴 DTMAPI。\n讓官方種植槍固定攜帶種子、薄膜和肥料三個槽位。",
+    "english": "Requires DTMAPI.\nGives the official farming gun fixed seed, film, and fertilizer slots."
+  }
+}

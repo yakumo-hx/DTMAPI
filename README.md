@@ -1,13 +1,16 @@
 # DTMAPI
 
-DTMAPI is a Doloc Town Modding API prototype for Windows. It uses a BepInEx bootstrap to start DTMAPI Core, then routes fragile Doloc Town reflection/Harmony work through `DTMAPI.GameBridge.DolocTown` so ordinary mods can target stable public abstractions.
+DTMAPI is a Doloc Town Modding API prototype for Windows. It uses a BepInEx bootstrap to start DTMAPI Core. Strict CodeMods consume public abstractions according to two per-contract axes: status/stability in the API matrix and the `Open`, `Frozen`, `Diagnostic`, `Internal`, or `Disabled` disposition; the assembly being public does not make every member stable or open to new adoption. Proven SharedNative reflection/Harmony adapters use `DTMAPI.GameBridge.DolocTown`, while managed Advanced CodeMods own separately admitted single-product ProductNative work under the canonical boundary in [`PROJECT.md`](PROJECT.md). The exact admitted-product set and evidence state are maintained only by the [Batch 6 identity contract](docs/architecture/batch6-managed-mod-identity-contract.md); those first-party policies do not open a general Advanced authoring lane or pre-authorize a future Runtime release.
 
 ## Repository Layout
 
 - `src/`: DTMAPI runtime, public abstractions, bootstrap, GameBridge, and config menu projects.
-- `testmods/`: DTMAPI mod examples and migrated feature slices used for smoke validation.
+- `first-party-mods/`: remaining ordinary Strict first-party product sources.
+- `products/first-party/`: separately admitted managed Advanced ProductNative sources; presence here is not general authoring permission.
+- `testmods/`: examples, migrated feature slices, and QA fixtures used for smoke validation.
 - `tests/`: unit tests.
 - `tools/scripts/`: build, test, install, smoke, hook-probe, and evidence collection scripts.
+- `tools/release/runtime-workshop/`: four thin player BAT source entries plus their shared CMD dispatcher; the current boundary is defined in [Runtime Workshop Installer Boundary](docs/architecture/runtime-workshop-installer-boundary.md).
 - `docs/`: public API docs, architecture notes, debug records, reviews, goals, and update records.
 - `references/`: public reference docs plus local-only ignored research folders.
 

@@ -1,6 +1,6 @@
+#pragma warning disable CS0618 // Frozen ISaveSlotsApi registration.
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
-using System.Reflection;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
@@ -16,11 +16,22 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public string Id => "SaveSlots";
 
+        public GameBridgeFeatureContract Contract { get; } = new GameBridgeFeatureContract(
+            "SaveSlots",
+            requiresSave: false,
+            allowsTitleScreen: true,
+            requiresNativeScene: false,
+            requiresUi: false,
+            environmentResetSensitive: false,
+            hasSaveLifetimeState: false,
+            hasTitleLifetimeState: false,
+            canAutoPauseAfterFailure: false);
+
         internal SaveSlotsService Service { get; }
 
         public void RegisterApis(IManifest manifest)
         {
-            runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, Service);
+            runtime.RegisterRuntimeApi<ISaveSlotsApi>(manifest, Service, OwnerBoundGameBridgeApis.ForSaveSlots(Service));
         }
 
         public void PublishHookStatuses()
@@ -28,24 +39,17 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus(
                 "Save.MoreSlotsApi",
                 "contract",
-                "DTMAPI.GameBridge.DolocTown SaveSlotsFeature",
-                "0.2.9 experimental save-slot contract adjusts DolocAPI.gameManager.archiveFileCount so official LocalSave and GameDataPanel paths own archive discovery/render/load/delete/copy behavior.");
+                "DTMAPI.GameBridge.DolocTown frozen ISaveSlotsApi proxy",
+                "Deprecated/Frozen compatibility activates the dormant Host only when an old ABI consumer calls it; the admitted MoreSaves product owns current fixed-six/twelve behavior.");
         }
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
-            bool showPatched = patcher.TryPatchPostfix(
-                "DolocTown.GameDataUiState, Assembly-CSharp",
-                "Show",
-                typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.GameDataUiStateShowPostfix), BindingFlags.Public | BindingFlags.Static),
-                0);
             runtime.SetHookStatus(
                 "Save.MoreSlotsUiPaging",
-                showPatched ? "not-required" : "pending",
-                "Harmony: GameDataUiState.Show",
-                showPatched
-                    ? "Fixed 12-slot official save UI is rendered by GameDataUiState.Show; the inherited DolocGridUI.Select hook is intentionally not installed."
-                    : "Waiting for official save panel show hook target to become patchable.");
+                "not-required",
+                "Doloc Town official save UI",
+                "MoreSaves and the frozen fixed-six/twelve compatibility executor install zero save UI Hooks; GameDataUiState and GameDataPanel remain native owners.");
         }
 
         public void Update()
@@ -60,10 +64,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void ReturnedToTitle()
         {
+            Service.RefreshSaveSlotExpansionForRuntime(force: true, reason: "ReturnedToTitle");
         }
 
         public void EnvironmentReset(string reason)
         {
+            // No product-owned save UI or native scene state exists in mandatory Runtime.
         }
     }
 }

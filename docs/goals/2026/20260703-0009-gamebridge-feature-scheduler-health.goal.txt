@@ -1,0 +1,13 @@
+/goal
+目标：实现 DTMAPI 第 7 阶段 GameBridge feature 组件调度与最终健康快照。详细需求、约束、验收标准以 docs/goals/2026/20260703-0009-gamebridge-feature-scheduler-health.md 为准。
+
+开始前必须阅读：AGENTS.md、PROJECT.md、docs/goals/README.md、docs/goals/2026/20260703-0009-gamebridge-feature-scheduler-health.md、docs/workflows/codex-api-rebuild.md、docs/debug/INDEX.md、docs/debug/regressions/smoke-matrix.md、docs/hook-map/README.md、docs/api/public-api-matrix.md。
+
+安全约束：不要做 content registry takeover；不要改 CustomAnimals、AnimalVoice、AutoFishing 运行逻辑；不要改 public API、manifest、content-pack JSON、Hook targets 或旧 fallback；低频调度只影响 Update；GameBridgeFeatureUpdateBuckets=false 必须回到旧统一 Update 广播。
+
+任务 A：新增 internal feature contract、bucket enum、flags 和诊断。
+任务 B：实现 feature Update bucket 调度与计数，核心 EveryFrame allowlist 不动。
+任务 C：实现 final health snapshot / dispose graph 诊断和 smoke result 字段。
+任务 D：补单测、更新 update/hook-map/smoke-matrix 文档并完成验证。
+
+完成标准：Release test、diff/parser checks、slot 3/7/5 短 smoke、AnimalViewer 和 SaveSlots bucket 回归 smoke 通过；阶段末只跑一次 3600 秒长标题 gate；RegistryTakesOver=false；无 Fatal GC、重复 Hook、scheduler growth warning 或 CustomAnimals/AnimalVoice/AutoFishing 回归。若任一强制目标做不到，报告 blocker 和证据。

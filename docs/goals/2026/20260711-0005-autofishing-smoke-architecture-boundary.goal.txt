@@ -1,0 +1,1 @@
+Split AutoFishing smoke into a primitive-only first-party case and a frozen legacy compatibility case, add source architecture gates for product/Core/internal primitive/legacy activation boundaries, and document the single owner-bound AutoFishing toggle as the reliable-first-edge exception. Run source validation only; do not launch the game or run any memory/fishing baseline.

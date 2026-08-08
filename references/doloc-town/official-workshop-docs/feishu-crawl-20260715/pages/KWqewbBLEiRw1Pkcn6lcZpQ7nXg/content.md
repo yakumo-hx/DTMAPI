@@ -1,0 +1,136 @@
+# 06 综合案例一（新增道具）
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg>
+
+Source modified label: 5月21日修改
+
+## 一、整体说明
+
+- 通过以下【2个】json文件的配合，实现新增并获取一般道具的全流程：
+
+- ◦道具信息item_tbitem.json
+
+- ◦掉落库信息mod_tbmoditemspawnextension.json
+
+- 游戏内操作指南：
+
+- ◦通过采集泥土资源、翻垃圾桶的行为，有概率获得新道具沃土块。
+
+- 配置示例中，标黄的字段为【需要修改的字段】。
+
+## 二、配置示例及数据结构说明
+
+### 1.item_tbitem.json
+
+- 新增道具：沃土块。
+
+_装饰设备道具信息-配置示例_
+
+```json
+[
+  {
+    "id": "fertile_soil", //道具ID
+    "sub_type": "material_nature", //子道具类型，material_nature为自然素材
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": false, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": true, //是否显示在图鉴
+    "source": ["gather"], //获取途径（显示在图鉴），"gather"为“采集”
+    "selling_price": 100, //售出价格
+    "buying_price": 500, //购买价格
+    "overlay": 99, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fertile_soil" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fertile_soil", //道具标题ID，格式为：item_道具ID
+      "text": "沃土块" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fertile_soil_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "肥沃的土壤，可以用来堆肥。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunction" //功能类型
+    }
+  }
+]
+```
+
+### 2.mod_tbmoditemspawnextension.json
+
+- 资源土堆、交互物垃圾桶的掉落库soil_drop也增加沃土块（fertile_soil）掉落。
+
+_掉落库信息-配置示例_
+
+```json
+[
+  {
+    "id": "soil_drop", //掉落库ID。详见对照表
+    "extra_items": [
+       {
+        "spawn_weight": 200,  //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "fertile_soil" //生成道具ID
+      }
+    ]
+  },
+  {
+    "id": "trash_can_small_drop", //掉落库ID。详见对照表
+    "extra_items": [
+       {
+        "spawn_weight": 200,  //生成权重
+        "min_count": 0, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "fertile_soil" //生成道具ID
+      }
+    ]
+  }
+]
+```
+
+- 掉落库ID见12 ID对照表（掉落库）。
+
+- 每个掉落库的默认权重总和都是1000
+
+- ◦以掉落库trash_can_small_drop为例，增加100权重的fertile_soil意味着有200/（200+1000）=16.7%的概率在一次翻垃圾桶行为中掉落沃土块。
+
+## 三、图片格式要求
+
+#### Embedded sheet `FiSjpe`
+
+[TSV](sheets/01-01-fisjpe.tsv) · [rendered screenshot](sheets/01-01-fisjpe.png)
+
+```tsv
+类型	图片大小（像素）	作图规范
+道具图标	28*28	整体居中
+```
+
+## 四、图片命名对照表
+
+#### Embedded sheet `m897Wo`
+
+[TSV](sheets/02-01-m897wo.tsv) · [rendered screenshot](sheets/02-01-m897wo.png)
+
+```tsv
+名称	命名格式
+[道具ID]	icon_item_[道具ID]
+```
+
+## 五、参考示例
+
+- 新增道具沃土块（fertile_soil）
+
+![Official document image](images/rendered-01-25.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\02 基础内容模组示例\06 综合案例一（新增物品）
+
+## Links
+
+- [12 ID对照表（掉落库）](https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

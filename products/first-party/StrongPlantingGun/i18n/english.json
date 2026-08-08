@@ -1,0 +1,17 @@
+{
+  "mod.name": "DTMAPI Strong Planting Gun",
+  "mod.loaded": "DTMAPI Strong Planting Gun loaded; the official farming gun has fixed seed, film, and fertilizer slots.",
+  "config.section.main": "Strong planting gun",
+  "config.contract": "Fixed contract: three slots for seed, film, and fertilizer. Water and range expansion are not supported.",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Enable the fixed three-slot farming gun policy.",
+  "config.seeds.name": "Use seeds",
+  "config.seeds.tooltip": "Plant seeds using official basin checks.",
+  "config.films.name": "Use films",
+  "config.films.tooltip": "Apply films using official basin checks.",
+  "config.fertilizers.name": "Use fertilizers",
+  "config.fertilizers.tooltip": "Apply fertilizers using official basin checks.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write bounded Strong Planting Gun observations.",
+  "config.status": "Status={0}, hooks={1}/5, expanded={2}, consumed={3}. {4}"
+}

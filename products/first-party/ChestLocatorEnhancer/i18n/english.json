@@ -1,0 +1,14 @@
+{
+  "mod.loaded": "DTMAPI Chest Locator Enhancer loaded; locator-marked containers can contribute materials across farm buildings.",
+  "mod.name": "DTMAPI Chest Locator Enhancer",
+  "config.section.main": "Chest locator",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Extends official shared-container material lookup across farm building rooms.",
+  "config.cases.name": "Shared chests",
+  "config.cases.tooltip": "Includes Case inventories marked shared by the official locator.",
+  "config.shelves.name": "Storage shelves",
+  "config.shelves.tooltip": "Includes ItemBox inventories inside shared storage shelves.",
+  "config.autoUseBox.name": "Respect auto-use boxes",
+  "config.autoUseBox.tooltip": "Keeps the game's auto-use box setting for shared storage shelves.",
+  "config.status": "Status={0}, hook={1}, appended={2}, cases={3}, shelfBoxes={4}. {5}"
+}

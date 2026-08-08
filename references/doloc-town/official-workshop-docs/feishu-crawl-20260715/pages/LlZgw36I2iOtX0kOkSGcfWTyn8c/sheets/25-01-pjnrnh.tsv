@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	6	idle	dada	anim_npc_dada_idle_[0~5]
+帧动画（对话）	6	talk	dada	anim_npc_dada_talk_[0~5]
+帧动画（移动）	8	walk	dada	anim_npc_dada_walk_[0~7]
+图标（日历）	1		dada	icon_calendar_dada
+图标（图鉴）	1		dada	icon_document_dada
+详情图（图鉴）	1		dada	preview_document_dada

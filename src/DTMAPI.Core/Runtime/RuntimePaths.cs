@@ -15,28 +15,35 @@ namespace DTMAPI.Core.Runtime
             DtmApiPath = string.IsNullOrWhiteSpace(runtimeDirectoryOverride)
                 ? Path.Combine(GamePath, "DTMAPI")
                 : Path.GetFullPath(runtimeDirectoryOverride);
-            ModsPath = Path.Combine(GamePath, "Mods");
+            LegacyDevelopmentModsPath = Path.Combine(GamePath, "Mods");
             LogsPath = Path.Combine(DtmApiPath, "logs");
             ReportsPath = Path.Combine(DtmApiPath, "reports");
             ConfigPath = Path.Combine(DtmApiPath, "config");
             EvidencePath = Path.Combine(DtmApiPath, "evidence");
-            SmokeSettingsPath = Path.Combine(DtmApiPath, "smoke-settings.json");
+            PlayerDoctorPath = Path.Combine(DtmApiPath, "tools", "player-doctor", "dtmapi-player-doctor.exe");
+            PlayerDoctorJsonReportPath = Path.Combine(ReportsPath, "player-doctor-latest.json");
+            PlayerDoctorTextReportPath = Path.Combine(ReportsPath, "player-doctor-latest.txt");
+            PlayerDoctorSummaryPath = Path.Combine(ReportsPath, "player-doctor-latest.summary.txt");
         }
 
         public string GamePath { get; }
         public string PluginPath { get; }
         public string DtmApiPath { get; }
-        public string ModsPath { get; }
+        // Test fixtures and old-deployment diagnostics may name this path, but
+        // ordinary Runtime startup neither creates nor discovers it.
+        public string LegacyDevelopmentModsPath { get; }
         public string LogsPath { get; }
         public string ReportsPath { get; }
         public string ConfigPath { get; }
         public string EvidencePath { get; }
-        public string SmokeSettingsPath { get; }
+        public string PlayerDoctorPath { get; }
+        public string PlayerDoctorJsonReportPath { get; }
+        public string PlayerDoctorTextReportPath { get; }
+        public string PlayerDoctorSummaryPath { get; }
 
         public void Ensure()
         {
             Directory.CreateDirectory(DtmApiPath);
-            Directory.CreateDirectory(ModsPath);
             Directory.CreateDirectory(LogsPath);
             Directory.CreateDirectory(ReportsPath);
             Directory.CreateDirectory(ConfigPath);

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/author-session-wire.schema.json",
+  "title": "DTMAPI Runtime 0.5.5 Author session JSONL frame",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "runtime", "gameRoot", "session", "token", "requestId", "uniqueId", "selectedRoot", "expectedTreeSha256", "operation"],
+      "properties": {
+        "protocol": { "const": "dtmapi-author-session/1" },
+        "runtime": { "const": "0.5.5" },
+        "gameRoot": { "type": "string", "minLength": 1 },
+        "session": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "token": { "type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$" },
+        "requestId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "uniqueId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "selectedRoot": { "type": "string", "minLength": 1 },
+        "expectedTreeSha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        "operation": { "enum": ["get-source-snapshot", "reload-content"] }
+      }
+    },
+    "responseValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "value"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "value": { "type": "string", "maxLength": 2048 }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "runtime", "session", "requestId", "operation", "uniqueId", "status", "code", "message", "values"],
+      "properties": {
+        "protocol": { "const": "dtmapi-author-session/1" },
+        "runtime": { "const": "0.5.5" },
+        "session": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "requestId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+        "operation": { "enum": ["get-source-snapshot", "reload-content"] },
+        "uniqueId": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "status": { "enum": ["ok", "rejected", "restart-required", "error"] },
+        "code": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "values": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/responseValue" } }
+      }
+    }
+  }
+}

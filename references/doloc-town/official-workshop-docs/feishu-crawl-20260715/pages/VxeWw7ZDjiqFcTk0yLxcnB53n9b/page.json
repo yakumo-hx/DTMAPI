@@ -1,0 +1,114 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+  "token": "VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+  "title": "04 新增配方",
+  "document_title": "04 新增配方",
+  "source_modified_label": "4月29日修改",
+  "status_code": 200,
+  "elapsed_seconds": 10.094,
+  "block_count": 19,
+  "blocks_by_type": {
+    "heading1": 3,
+    "bullet": 10,
+    "heading2": 2,
+    "text": 2,
+    "code": 2
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 2049,
+  "links": [
+    {
+      "text": "03 新增料理",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "kind": "official-wiki",
+      "target_token": "KaKyw74DnibQhmkjPlMcJgZXnBf"
+    },
+    {
+      "text": "08 ID对照表（配方）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye",
+      "kind": "official-wiki",
+      "target_token": "Vm9YwaBVMiZtvbkf5kIcASronye"
+    },
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+    "https://ka7deoo0opr.feishu.cn/wiki/KaKyw74DnibQhmkjPlMcJgZXnBf",
+    "https://ka7deoo0opr.feishu.cn/wiki/Vm9YwaBVMiZtvbkf5kIcASronye"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "12",
+      "record_id": "LZdBddXx7o1n1IxowegcYtHansb",
+      "heading": "recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/code-blocks/01-code.jsonc",
+      "bytes": 1100,
+      "sha256": "a25bdf55fe9cf13a2c35974f31c3767c84225cf37f9e23b901a1a0e48b2fe28d"
+    },
+    {
+      "index": 2,
+      "block_id": "16",
+      "record_id": "Kas1dKda8oCyKQxyfLRcGYWqnZb",
+      "heading": "mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/code-blocks/02-code.jsonc",
+      "bytes": 166,
+      "sha256": "690af65b9811513e6cb34208156c0bf5d8e965ea7b4a9f9f4cacd6cee8b186c5"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/source.html",
+    "rendered_html": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/rendered.html",
+    "text": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/content.txt",
+    "markdown": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/content.md",
+    "metadata": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/page.json"
+  }
+}

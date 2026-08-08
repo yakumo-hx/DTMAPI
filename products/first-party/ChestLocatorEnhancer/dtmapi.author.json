@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.ChestLocatorEnhancer",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "Functional",
+      "DTMAPI",
+      "Inventory",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 箱子定位器增强",
+      "tchinese": "DTMAPI 箱子定位器增強",
+      "english": "DTMAPI Chest Locator Enhancer"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n扩展官方箱子定位器共享容器范围。",
+      "tchinese": "依賴 DTMAPI。\n擴展官方箱子定位器共享容器範圍。",
+      "english": "Requires DTMAPI.\nExpands the official chest locator shared-container range."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-chestlocator-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}

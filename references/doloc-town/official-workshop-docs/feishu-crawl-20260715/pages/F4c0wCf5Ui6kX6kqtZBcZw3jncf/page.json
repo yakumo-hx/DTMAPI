@@ -1,0 +1,162 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/F4c0wCf5Ui6kX6kqtZBcZw3jncf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/F4c0wCf5Ui6kX6kqtZBcZw3jncf",
+  "token": "F4c0wCf5Ui6kX6kqtZBcZw3jncf",
+  "title": "文档更新记录",
+  "document_title": "文档更新记录",
+  "source_modified_label": "5月15日修改",
+  "status_code": 200,
+  "elapsed_seconds": 9.969,
+  "block_count": 21,
+  "blocks_by_type": {
+    "heading1": 4,
+    "bullet": 17
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1220,
+  "links": [
+    {
+      "text": "08 平台",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/V8l8wVIUaitF7rkIBpQcSVLPnWe",
+      "kind": "official-wiki",
+      "target_token": "V8l8wVIUaitF7rkIBpQcSVLPnWe"
+    },
+    {
+      "text": "09 载具",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b",
+      "kind": "official-wiki",
+      "target_token": "ApFewNFGeie7OYkImngcrxyQn2b"
+    },
+    {
+      "text": "10 综合案例五（新增平台）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/OdcywZdsuiio3MkdpLdcJretnte",
+      "kind": "official-wiki",
+      "target_token": "OdcywZdsuiio3MkdpLdcJretnte"
+    },
+    {
+      "text": "创建你的模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+      "kind": "official-wiki",
+      "target_token": "Df5cwl6u2irIogkazI5crevfnWf"
+    },
+    {
+      "text": "在创意工坊上传你的模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/CEJyw2PSpiVtx9kdWCocGxdon1f",
+      "kind": "official-wiki",
+      "target_token": "CEJyw2PSpiVtx9kdWCocGxdon1f"
+    },
+    {
+      "text": "05 贴图锚点说明",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+      "kind": "official-wiki",
+      "target_token": "Rdp1with9ih1frk7Pl8cbFD9nDc"
+    },
+    {
+      "text": "07 建筑",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/SqhhwDgKAi2NLhkYRgwcdWrdnff",
+      "kind": "official-wiki",
+      "target_token": "SqhhwDgKAi2NLhkYRgwcdWrdnff"
+    },
+    {
+      "text": "09 综合案例四（新增墙纸）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/YHhawESrpidQRikIjWJczOLLnrh",
+      "kind": "official-wiki",
+      "target_token": "YHhawESrpidQRikIjWJczOLLnrh"
+    },
+    {
+      "text": "07 ID对照表（建筑）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+      "kind": "official-wiki",
+      "target_token": "OGwfwegFXiaZNKkjr3GclYglndf"
+    },
+    {
+      "text": "05 图片锚点对照表",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+      "kind": "official-wiki",
+      "target_token": "Rdp1with9ih1frk7Pl8cbFD9nDc"
+    },
+    {
+      "text": "06 综合案例一（新增道具）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+      "kind": "official-wiki",
+      "target_token": "KWqewbBLEiRw1Pkcn6lcZpQ7nXg"
+    },
+    {
+      "text": "04 掉落上限、保底配置",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "kind": "official-wiki",
+      "target_token": "RsaywZ3JdieYHDkZpCLc1vYenvg"
+    },
+    {
+      "text": "12 ID对照表（掉落库）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd",
+      "kind": "official-wiki",
+      "target_token": "TOb9w60BJihlQgkwv87cEtzFnVd"
+    },
+    {
+      "text": "07 综合案例二（新增帽子）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/WnCwwkXA4ixLjFkx2SIcTyyIned",
+      "kind": "official-wiki",
+      "target_token": "WnCwwkXA4ixLjFkx2SIcTyyIned"
+    },
+    {
+      "text": "01 主角（本体&帽子&工具）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/FHmFwDuySip8M6krNnxcyR91nXg",
+      "kind": "official-wiki",
+      "target_token": "FHmFwDuySip8M6krNnxcyR91nXg"
+    },
+    {
+      "text": "01 美化模组（替换现有贴图）",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+      "kind": "official-wiki",
+      "target_token": "SNOywxdl5iccH8kO413czWBKnwe"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b",
+    "https://ka7deoo0opr.feishu.cn/wiki/CEJyw2PSpiVtx9kdWCocGxdon1f",
+    "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+    "https://ka7deoo0opr.feishu.cn/wiki/FHmFwDuySip8M6krNnxcyR91nXg",
+    "https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+    "https://ka7deoo0opr.feishu.cn/wiki/OGwfwegFXiaZNKkjr3GclYglndf",
+    "https://ka7deoo0opr.feishu.cn/wiki/OdcywZdsuiio3MkdpLdcJretnte",
+    "https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc",
+    "https://ka7deoo0opr.feishu.cn/wiki/RsaywZ3JdieYHDkZpCLc1vYenvg",
+    "https://ka7deoo0opr.feishu.cn/wiki/SNOywxdl5iccH8kO413czWBKnwe",
+    "https://ka7deoo0opr.feishu.cn/wiki/SqhhwDgKAi2NLhkYRgwcdWrdnff",
+    "https://ka7deoo0opr.feishu.cn/wiki/TOb9w60BJihlQgkwv87cEtzFnVd",
+    "https://ka7deoo0opr.feishu.cn/wiki/V8l8wVIUaitF7rkIBpQcSVLPnWe",
+    "https://ka7deoo0opr.feishu.cn/wiki/WnCwwkXA4ixLjFkx2SIcTyyIned",
+    "https://ka7deoo0opr.feishu.cn/wiki/YHhawESrpidQRikIjWJczOLLnrh"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/images/original/image-02-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/source.html",
+    "rendered_html": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/rendered.html",
+    "text": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/content.txt",
+    "markdown": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/content.md",
+    "metadata": "pages/F4c0wCf5Ui6kX6kqtZBcZw3jncf/page.json"
+  }
+}

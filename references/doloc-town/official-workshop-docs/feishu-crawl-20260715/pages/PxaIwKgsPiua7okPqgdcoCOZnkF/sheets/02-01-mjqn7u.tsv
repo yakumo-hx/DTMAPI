@@ -1,0 +1,5 @@
+名称	帧数/贴图数	命名格式
+帧动画（角色默认）	1	anim_hat_[帽子ID]_idle_0
+帧动画（角色攀爬）	1	anim_hat_[帽子ID]_climb_0
+图标（道具）	1	icon_item_[帽子ID]
+场景贴图（展示台）	1	preview_hat_[帽子ID]

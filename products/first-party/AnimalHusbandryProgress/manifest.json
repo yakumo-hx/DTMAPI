@@ -1,0 +1,24 @@
+{
+  "Name": "DTMAPI Animal Bell Hidden Produce Progress",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that renders read-only special-produce progress in the native animal viewer.",
+  "UniqueID": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+  "EntryDll": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+  "EntryType": "Yuuka.DTMAPI.AnimalHusbandryProgress.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    },
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

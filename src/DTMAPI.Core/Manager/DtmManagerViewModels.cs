@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
 using DTMAPI.Core.Runtime;
 
@@ -11,18 +12,32 @@ namespace DTMAPI.Core.Manager
 {
     internal static class DtmManagerViewModelFactory
     {
-        internal static DtmManagerViewModel FromSnapshot(IDtmDiagnosticsSnapshot snapshot, ManagerInstallStateSummary? installState = null)
+        internal static DtmManagerViewModel FromSnapshot(
+            IDtmDiagnosticsSnapshot snapshot,
+            ManagerInstallStateSummary? installState = null,
+            ContentManifestRegistrySnapshot? contentRegistry = null)
         {
             if (snapshot == null)
                 throw new ArgumentNullException(nameof(snapshot));
 
             installState ??= ManagerInstallStateSummary.Missing(string.Empty, string.Empty, false, string.Empty);
             ManagerReportExportStatus exportReport = new ManagerReportExportStatus(snapshot.LatestLogPath, snapshot.LatestReportPath);
-            ManagerModRow[] mods = snapshot.Mods.Select(ManagerModRow.FromMod).OrderBy(m => m.SortRank).ThenBy(m => m.Source, StringComparer.OrdinalIgnoreCase).ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase).ThenBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
+            IReadOnlyDictionary<string, ContentManifestRegistryRow> registryRows = contentRegistry?.Rows
+                .GroupBy(row => row.UniqueID, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase)
+                ?? new Dictionary<string, ContentManifestRegistryRow>(StringComparer.OrdinalIgnoreCase);
+            ManagerModRow[] mods = snapshot.Mods
+                .Select(mod => ManagerModRow.FromMod(mod, registryRows.TryGetValue(mod.UniqueID, out ContentManifestRegistryRow registryRow) ? registryRow : null))
+                .OrderBy(m => m.SortRank)
+                .ThenBy(m => m.Source, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             ManagerDiagnosticRow[] errors = snapshot.Errors.Select(e => ManagerDiagnosticRow.FromError(e)).OrderByDescending(e => e.Time).ToArray();
             ManagerDiagnosticRow[] warnings = snapshot.Warnings.Select(w => ManagerDiagnosticRow.FromWarning(w)).OrderByDescending(w => w.Time).ToArray();
             ManagerHookRow[] hooks = snapshot.HookStatuses.Select(ManagerHookRow.FromHook).OrderBy(h => h.SortRank).ThenBy(h => h.HookId, StringComparer.OrdinalIgnoreCase).ToArray();
             ManagerFeatureRow[] features = snapshot.FeatureStatuses.Select(ManagerFeatureRow.FromFeature).OrderBy(f => f.SortRank).ThenBy(f => f.FeatureId, StringComparer.OrdinalIgnoreCase).ToArray();
+            ManagerAdvancedDiagnostics advancedDiagnostics = ManagerAdvancedDiagnostics.From(contentRegistry, mods, hooks, features);
 
             return new DtmManagerViewModel(
                 mods,
@@ -32,7 +47,8 @@ namespace DTMAPI.Core.Manager
                 features,
                 exportReport,
                 installState,
-                ManagerSummary.FromRows(mods, errors, warnings, hooks, features, exportReport));
+                ManagerSummary.FromRows(mods, errors, warnings, hooks, features, exportReport),
+                advancedDiagnostics);
         }
     }
 
@@ -46,7 +62,8 @@ namespace DTMAPI.Core.Manager
             IReadOnlyList<ManagerFeatureRow> features,
             ManagerReportExportStatus exportReport,
             ManagerInstallStateSummary installState,
-            ManagerSummary summary)
+            ManagerSummary summary,
+            ManagerAdvancedDiagnostics advancedDiagnostics)
         {
             Mods = mods;
             Errors = errors;
@@ -56,6 +73,7 @@ namespace DTMAPI.Core.Manager
             ExportReport = exportReport;
             InstallState = installState ?? ManagerInstallStateSummary.Missing(string.Empty, string.Empty, false, string.Empty);
             Summary = summary;
+            AdvancedDiagnostics = advancedDiagnostics;
             LatestLogPath = exportReport.LatestLogPath;
             LatestReportPath = exportReport.LatestReportPath;
         }
@@ -70,6 +88,7 @@ namespace DTMAPI.Core.Manager
         internal ManagerReportExportStatus ExportReport { get; }
         internal ManagerInstallStateSummary InstallState { get; }
         internal ManagerSummary Summary { get; }
+        internal ManagerAdvancedDiagnostics AdvancedDiagnostics { get; }
     }
 
     internal sealed class ManagerSummary
@@ -78,6 +97,8 @@ namespace DTMAPI.Core.Manager
             int loadedModCount,
             int blockedModCount,
             int disabledModCount,
+            int dependencyIssueModCount,
+            int restartRequiredModCount,
             int errorCount,
             int warningCount,
             int failedHookCount,
@@ -89,6 +110,8 @@ namespace DTMAPI.Core.Manager
             LoadedModCount = loadedModCount;
             BlockedModCount = blockedModCount;
             DisabledModCount = disabledModCount;
+            DependencyIssueModCount = dependencyIssueModCount;
+            RestartRequiredModCount = restartRequiredModCount;
             ErrorCount = errorCount;
             WarningCount = warningCount;
             FailedHookCount = failedHookCount;
@@ -109,6 +132,8 @@ namespace DTMAPI.Core.Manager
             int loadedModCount = mods.Count(m => m.IsLoaded);
             int blockedModCount = mods.Count(m => m.IsBlocked);
             int disabledModCount = mods.Count(m => m.IsDisabled);
+            int dependencyIssueModCount = mods.Count(m => m.HasDependencyIssue);
+            int restartRequiredModCount = mods.Count(m => m.RequiresRestart);
             int errorCount = errors.Count;
             int warningCount = warnings.Count;
             int failedHookCount = hooks.Count(h => h.IsFailed);
@@ -119,17 +144,19 @@ namespace DTMAPI.Core.Manager
             string overallStatus;
             if (blockedModCount > 0 || errorCount > 0 || failedHookCount > 0 || failedFeatureCount > 0)
                 overallStatus = "failed";
-            else if (warningCount > 0 || disabledModCount > 0 || missingHookCount > 0 || degradedFeatureCount > 0 || exportReport.Status == "missing-report" || exportReport.Status == "missing-log" || exportReport.Status == "unavailable")
+            else if (warningCount > 0 || disabledModCount > 0 || dependencyIssueModCount > 0 || restartRequiredModCount > 0 || missingHookCount > 0 || degradedFeatureCount > 0 || exportReport.Status == "missing-report" || exportReport.Status == "missing-log" || exportReport.Status == "unavailable")
                 overallStatus = "warning";
             else
                 overallStatus = "ready";
 
-            return new ManagerSummary(loadedModCount, blockedModCount, disabledModCount, errorCount, warningCount, failedHookCount, missingHookCount, failedFeatureCount, degradedFeatureCount, overallStatus);
+            return new ManagerSummary(loadedModCount, blockedModCount, disabledModCount, dependencyIssueModCount, restartRequiredModCount, errorCount, warningCount, failedHookCount, missingHookCount, failedFeatureCount, degradedFeatureCount, overallStatus);
         }
 
         internal int LoadedModCount { get; }
         internal int BlockedModCount { get; }
         internal int DisabledModCount { get; }
+        internal int DependencyIssueModCount { get; }
+        internal int RestartRequiredModCount { get; }
         internal int ErrorCount { get; }
         internal int WarningCount { get; }
         internal int FailedHookCount { get; }
@@ -141,7 +168,7 @@ namespace DTMAPI.Core.Manager
 
     internal sealed class ManagerModRow
     {
-        private ManagerModRow(IDtmModStatusInfo mod)
+        private ManagerModRow(IDtmModStatusInfo mod, ContentManifestRegistryRow? registryRow)
         {
             UniqueID = mod.UniqueID;
             Name = mod.Name;
@@ -159,16 +186,38 @@ namespace DTMAPI.Core.Manager
             EnablementReason = mod.EnablementReason;
             ManifestPath = mod.ManifestPath;
             RootPath = mod.RootPath;
+            if (mod is DtmModStatusInfo classified)
+            {
+                ManagedIdentity = classified.ManagedIdentity;
+                DeclaredKind = classified.DeclaredKind;
+                EffectiveKind = classified.EffectiveKind;
+                DeclarationProvenance = classified.DeclarationProvenance;
+                ManagedPlacement = classified.ManagedPlacement;
+                NativeRisk = classified.NativeRisk;
+                GameCompatibility = classified.GameCompatibility;
+                RestartPolicy = classified.RestartPolicy;
+                ExpectedHarmonyOwner = classified.ExpectedHarmonyOwner;
+                AdvancedReferenceVerified = classified.AdvancedReferenceVerified;
+                ReferencePolicyId = classified.ReferencePolicyId;
+                ReferencePolicyVersion = classified.ReferencePolicyVersion;
+                TargetFramework = classified.TargetFramework;
+                GameBuildId = classified.GameBuildId;
+            }
+            Dependencies = registryRow?.Dependencies.Select(ManagerDependencyRow.FromRegistry).ToArray()
+                ?? Array.Empty<ManagerDependencyRow>();
             IsLoaded = Loaded || IsStatus("loaded");
             IsDisabled = IsStatus("disabled") || (OfficialEnablementManaged && !OfficialEnabled);
             IsBlocked = !IsDisabled && (IsStatus("missing-dependency") || IsStatus("dependency-cycle") || IsStatus("entry-dll-error") || IsStatus("code-load-error") || IsStatus("api-too-new") || IsStatus("unknown-error") || IsStatus("blocked") || IsStatus("error"));
             IsWarning = IsStatus("warning");
+            HasDependencyIssue = Dependencies.Any(dependency => dependency.IsIssue);
+            RequiresRestart = IsStatus("restart-required") || (Loaded && OfficialEnablementManaged && !OfficialEnabled);
+            RestartHint = GetRestartHint();
             SortRank = GetSortRank();
         }
 
-        internal static ManagerModRow FromMod(IDtmModStatusInfo mod)
+        internal static ManagerModRow FromMod(IDtmModStatusInfo mod, ContentManifestRegistryRow? registryRow = null)
         {
-            return new ManagerModRow(mod);
+            return new ManagerModRow(mod, registryRow);
         }
 
         internal string UniqueID { get; }
@@ -187,10 +236,28 @@ namespace DTMAPI.Core.Manager
         internal string EnablementReason { get; }
         internal string ManifestPath { get; }
         internal string RootPath { get; }
+        internal string ManagedIdentity { get; } = string.Empty;
+        internal string DeclaredKind { get; } = string.Empty;
+        internal string EffectiveKind { get; } = string.Empty;
+        internal string DeclarationProvenance { get; } = string.Empty;
+        internal string ManagedPlacement { get; } = string.Empty;
+        internal string NativeRisk { get; } = string.Empty;
+        internal string GameCompatibility { get; } = string.Empty;
+        internal string RestartPolicy { get; } = string.Empty;
+        internal string ExpectedHarmonyOwner { get; } = string.Empty;
+        internal bool AdvancedReferenceVerified { get; }
+        internal string ReferencePolicyId { get; } = string.Empty;
+        internal int ReferencePolicyVersion { get; }
+        internal string TargetFramework { get; } = string.Empty;
+        internal string GameBuildId { get; } = string.Empty;
+        internal IReadOnlyList<ManagerDependencyRow> Dependencies { get; }
         internal bool IsLoaded { get; }
         internal bool IsBlocked { get; }
         internal bool IsDisabled { get; }
         internal bool IsWarning { get; }
+        internal bool HasDependencyIssue { get; }
+        internal bool RequiresRestart { get; }
+        internal string RestartHint { get; }
         internal int SortRank { get; }
 
         private int GetSortRank()
@@ -215,6 +282,51 @@ namespace DTMAPI.Core.Manager
             return string.Equals(StatusCode, value, StringComparison.OrdinalIgnoreCase) || string.Equals(Status, value, StringComparison.OrdinalIgnoreCase);
         }
 
+        private string GetRestartHint()
+        {
+            if (ManagedIdentity.Equals("Third-party native compatibility CodeMod", StringComparison.Ordinal))
+                return "Restart Doloc Town after disable, unsubscribe, or update; DTMAPI does not claim hot cleanup of author-owned native hooks.";
+
+            if (IsStatus("restart-required"))
+                return "Restart Doloc Town before this Mod can run again.";
+
+            if (Loaded && OfficialEnablementManaged && !OfficialEnabled)
+                return "Restart Doloc Town to unload this disabled CodeMod.";
+
+            if (!string.IsNullOrWhiteSpace(RestartPolicy) &&
+                !RestartPolicy.Equals("in-process-owner-lifecycle", StringComparison.OrdinalIgnoreCase))
+                return "Assembly updates and disable/unload changes take effect after restart.";
+
+            return string.Empty;
+        }
+    }
+
+    internal sealed class ManagerDependencyRow
+    {
+        private ManagerDependencyRow(ContentManifestDependencyRow dependency)
+        {
+            UniqueID = dependency.UniqueID;
+            Required = dependency.Required;
+            MinimumVersion = dependency.MinimumVersion;
+            Status = dependency.Status;
+            Severity = dependency.Severity;
+            Details = dependency.Details;
+            IsIssue = Severity.Equals("error", StringComparison.OrdinalIgnoreCase) ||
+                Severity.Equals("warning", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static ManagerDependencyRow FromRegistry(ContentManifestDependencyRow dependency)
+        {
+            return new ManagerDependencyRow(dependency);
+        }
+
+        internal string UniqueID { get; }
+        internal bool Required { get; }
+        internal string MinimumVersion { get; }
+        internal string Status { get; }
+        internal string Severity { get; }
+        internal string Details { get; }
+        internal bool IsIssue { get; }
     }
 
     internal sealed class ManagerDiagnosticRow
@@ -356,6 +468,126 @@ namespace DTMAPI.Core.Manager
         }
     }
 
+    internal sealed class ManagerAdvancedDiagnostics
+    {
+        private ManagerAdvancedDiagnostics(
+            bool registryAvailable,
+            DateTimeOffset capturedAt,
+            string refreshReason,
+            int registryRowCount,
+            int manifestIssueCount,
+            int dependencyErrorCount,
+            int dependencyWarningCount,
+            int apiTooNewCount,
+            int diffCount,
+            int advancedModCount,
+            int advancedReferenceVerifiedCount,
+            int nativeRiskModCount,
+            int restartRequiredModCount,
+            int failedOrMissingHookCount,
+            int failedOrDegradedFeatureCount,
+            IReadOnlyList<ManagerAdvancedDiagnosticRow> rows)
+        {
+            RegistryAvailable = registryAvailable;
+            CapturedAt = capturedAt;
+            RefreshReason = refreshReason ?? string.Empty;
+            RegistryRowCount = registryRowCount;
+            ManifestIssueCount = manifestIssueCount;
+            DependencyErrorCount = dependencyErrorCount;
+            DependencyWarningCount = dependencyWarningCount;
+            ApiTooNewCount = apiTooNewCount;
+            DiffCount = diffCount;
+            AdvancedModCount = advancedModCount;
+            AdvancedReferenceVerifiedCount = advancedReferenceVerifiedCount;
+            NativeRiskModCount = nativeRiskModCount;
+            RestartRequiredModCount = restartRequiredModCount;
+            FailedOrMissingHookCount = failedOrMissingHookCount;
+            FailedOrDegradedFeatureCount = failedOrDegradedFeatureCount;
+            Rows = rows;
+        }
+
+        internal static ManagerAdvancedDiagnostics From(
+            ContentManifestRegistrySnapshot? registry,
+            IReadOnlyList<ManagerModRow> mods,
+            IReadOnlyList<ManagerHookRow> hooks,
+            IReadOnlyList<ManagerFeatureRow> features)
+        {
+            ManagerAdvancedDiagnosticRow[] rows = registry == null
+                ? Array.Empty<ManagerAdvancedDiagnosticRow>()
+                : registry.Diagnostics.Select(ManagerAdvancedDiagnosticRow.FromRegistry)
+                    .Concat(registry.Diffs.Select(ManagerAdvancedDiagnosticRow.FromDiff))
+                    .OrderBy(row => row.SortRank)
+                    .ThenBy(row => row.Category, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(row => row.Owner, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+            return new ManagerAdvancedDiagnostics(
+                registry != null,
+                registry?.CapturedAt ?? default,
+                registry?.Reason ?? string.Empty,
+                registry?.Rows.Count ?? 0,
+                registry?.ManifestDiagnosticCount ?? 0,
+                registry?.DependencyErrorCount ?? 0,
+                registry?.DependencyWarningCount ?? 0,
+                registry?.ApiTooNewCount ?? 0,
+                registry?.DiffCount ?? 0,
+                mods.Count(mod => mod.EffectiveKind.Equals("Advanced", StringComparison.OrdinalIgnoreCase)),
+                mods.Count(mod => mod.AdvancedReferenceVerified),
+                mods.Count(mod => mod.NativeRisk.IndexOf("native-code", StringComparison.OrdinalIgnoreCase) >= 0),
+                mods.Count(mod => mod.RequiresRestart),
+                hooks.Count(hook => hook.IsFailed || hook.IsMissing),
+                features.Count(feature => feature.IsFailed || feature.IsDegraded),
+                rows);
+        }
+
+        internal bool RegistryAvailable { get; }
+        internal DateTimeOffset CapturedAt { get; }
+        internal string RefreshReason { get; }
+        internal int RegistryRowCount { get; }
+        internal int ManifestIssueCount { get; }
+        internal int DependencyErrorCount { get; }
+        internal int DependencyWarningCount { get; }
+        internal int ApiTooNewCount { get; }
+        internal int DiffCount { get; }
+        internal int AdvancedModCount { get; }
+        internal int AdvancedReferenceVerifiedCount { get; }
+        internal int NativeRiskModCount { get; }
+        internal int RestartRequiredModCount { get; }
+        internal int FailedOrMissingHookCount { get; }
+        internal int FailedOrDegradedFeatureCount { get; }
+        internal IReadOnlyList<ManagerAdvancedDiagnosticRow> Rows { get; }
+    }
+
+    internal sealed class ManagerAdvancedDiagnosticRow
+    {
+        private ManagerAdvancedDiagnosticRow(string severity, string category, string owner, string details)
+        {
+            Severity = severity ?? string.Empty;
+            Category = category ?? string.Empty;
+            Owner = owner ?? string.Empty;
+            Details = details ?? string.Empty;
+            SortRank = Severity.Equals("error", StringComparison.OrdinalIgnoreCase)
+                ? 0
+                : Severity.Equals("warning", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
+        }
+
+        internal static ManagerAdvancedDiagnosticRow FromRegistry(ContentManifestRegistryDiagnostic diagnostic)
+        {
+            return new ManagerAdvancedDiagnosticRow(diagnostic.Severity, diagnostic.Kind, diagnostic.OwnerId, diagnostic.Details);
+        }
+
+        internal static ManagerAdvancedDiagnosticRow FromDiff(string details)
+        {
+            return new ManagerAdvancedDiagnosticRow("info", "legacy-registry-diff", "DTMAPI.ContentRegistry", details);
+        }
+
+        internal string Severity { get; }
+        internal string Category { get; }
+        internal string Owner { get; }
+        internal string Details { get; }
+        internal int SortRank { get; }
+    }
+
     internal sealed class ManagerReportExportStatus
     {
         internal ManagerReportExportStatus(string latestLogPath, string latestReportPath)
@@ -405,6 +637,8 @@ namespace DTMAPI.Core.Manager
             string installStatePath,
             int legacyMovedCount,
             int legacyDetectedCount,
+            int optionalComponentCount,
+            int availableOptionalComponentCount,
             bool uninstallScriptAvailable,
             string errorMessage)
         {
@@ -415,13 +649,15 @@ namespace DTMAPI.Core.Manager
             InstallStatePath = installStatePath ?? string.Empty;
             LegacyMovedCount = legacyMovedCount;
             LegacyDetectedCount = legacyDetectedCount;
+            OptionalComponentCount = optionalComponentCount;
+            AvailableOptionalComponentCount = availableOptionalComponentCount;
             UninstallScriptAvailable = uninstallScriptAvailable;
             ErrorMessage = errorMessage ?? string.Empty;
         }
 
         internal static ManagerInstallStateSummary Missing(string statePath, string version, bool uninstallScriptAvailable, string errorMessage)
         {
-            return new ManagerInstallStateSummary("missing", version, string.Empty, string.Empty, statePath, 0, 0, uninstallScriptAvailable, errorMessage);
+            return new ManagerInstallStateSummary("missing", version, string.Empty, string.Empty, statePath, 0, 0, 0, 0, uninstallScriptAvailable, errorMessage);
         }
 
         internal static ManagerInstallStateSummary Present(
@@ -433,7 +669,21 @@ namespace DTMAPI.Core.Manager
             int legacyDetectedCount,
             bool uninstallScriptAvailable)
         {
-            return new ManagerInstallStateSummary("present", installedVersion, binaryVersion, installedAt, statePath, legacyMovedCount, legacyDetectedCount, uninstallScriptAvailable, string.Empty);
+            return Present(installedVersion, binaryVersion, installedAt, statePath, legacyMovedCount, legacyDetectedCount, 0, 0, uninstallScriptAvailable);
+        }
+
+        internal static ManagerInstallStateSummary Present(
+            string installedVersion,
+            string binaryVersion,
+            string installedAt,
+            string statePath,
+            int legacyMovedCount,
+            int legacyDetectedCount,
+            int optionalComponentCount,
+            int availableOptionalComponentCount,
+            bool uninstallScriptAvailable)
+        {
+            return new ManagerInstallStateSummary("present", installedVersion, binaryVersion, installedAt, statePath, legacyMovedCount, legacyDetectedCount, optionalComponentCount, availableOptionalComponentCount, uninstallScriptAvailable, string.Empty);
         }
 
         internal static ManagerInstallStateSummary FromRuntimePaths(RuntimePaths paths)
@@ -457,11 +707,13 @@ namespace DTMAPI.Core.Manager
                     statePath,
                     state.LegacyModsMoved?.Length ?? 0,
                     state.LegacyDetections?.Length ?? 0,
+                    state.OptionalComponents?.Length ?? 0,
+                    state.OptionalComponents?.Count(value => value != null && !string.IsNullOrWhiteSpace(value.Path) && File.Exists(value.Path)) ?? 0,
                     uninstallAvailable);
             }
             catch (Exception ex)
             {
-                return new ManagerInstallStateSummary("read-error", string.Empty, string.Empty, string.Empty, statePath, 0, 0, uninstallAvailable, ex.GetType().Name + ": " + ex.Message);
+                return new ManagerInstallStateSummary("read-error", string.Empty, string.Empty, string.Empty, statePath, 0, 0, 0, 0, uninstallAvailable, ex.GetType().Name + ": " + ex.Message);
             }
         }
 
@@ -472,6 +724,8 @@ namespace DTMAPI.Core.Manager
         internal string InstallStatePath { get; }
         internal int LegacyMovedCount { get; }
         internal int LegacyDetectedCount { get; }
+        internal int OptionalComponentCount { get; }
+        internal int AvailableOptionalComponentCount { get; }
         internal bool UninstallScriptAvailable { get; }
         internal string ErrorMessage { get; }
     }
@@ -493,6 +747,22 @@ namespace DTMAPI.Core.Manager
 
         [DataMember(Name = "LegacyDetections")]
         public ManagerInstallStateEntry[] LegacyDetections { get; set; } = new ManagerInstallStateEntry[0];
+
+        [DataMember(Name = "OptionalComponents")]
+        public ManagerOptionalComponentEntry[] OptionalComponents { get; set; } = new ManagerOptionalComponentEntry[0];
+    }
+
+    [DataContract]
+    internal sealed class ManagerOptionalComponentEntry
+    {
+        [DataMember(Name = "ComponentId")]
+        public string ComponentId { get; set; } = string.Empty;
+
+        [DataMember(Name = "Distribution")]
+        public string Distribution { get; set; } = string.Empty;
+
+        [DataMember(Name = "Path")]
+        public string Path { get; set; } = string.Empty;
     }
 
     [DataContract]

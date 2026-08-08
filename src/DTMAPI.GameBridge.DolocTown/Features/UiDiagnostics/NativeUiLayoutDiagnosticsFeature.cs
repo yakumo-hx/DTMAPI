@@ -11,34 +11,39 @@ namespace DTMAPI.GameBridge.DolocTown
         public NativeUiLayoutDiagnosticsFeature(DtmApiRuntime runtime)
         {
             this.runtime = runtime;
-            Service = new NativeUiLayoutDiagnosticsService(runtime);
+            RepairService = new NativeUiLayoutRepairService(runtime);
         }
 
         public string Id => "NativeUiLayoutDiagnostics";
 
-        internal NativeUiLayoutDiagnosticsService Service { get; }
+        public GameBridgeFeatureContract Contract { get; } = new GameBridgeFeatureContract(
+            "NativeUiLayoutDiagnostics",
+            requiresSave: false,
+            allowsTitleScreen: true,
+            requiresNativeScene: false,
+            requiresUi: true,
+            environmentResetSensitive: false,
+            hasSaveLifetimeState: false,
+            hasTitleLifetimeState: true,
+            canAutoPauseAfterFailure: false);
 
-        internal bool GridResetPatched { get; private set; }
+        internal NativeUiLayoutRepairService RepairService { get; }
 
-        internal bool GridSetCapacityPatched { get; private set; }
+        internal bool HomePageRepairReceiptReady =>
+            RepairService != null && HomePageRenderTextMenuPatched;
+
+        internal bool MainMenuRepairReceiptReady =>
+            RepairService != null && MainMenuPanelStartShowPatched && MenuUiSetCapacityPatched;
+
+        internal bool TargetedRepairReady => HomePageRepairReceiptReady && MainMenuRepairReceiptReady;
 
         internal bool HomePageRenderTextMenuPatched { get; private set; }
 
-        internal bool HomePageTextMenuResetLayoutPatched { get; private set; }
-
         internal bool MenuUiSetCapacityPatched { get; private set; }
-
-        internal bool MenuUiResetLayoutPatched { get; private set; }
-
-        internal bool HomePageTextMenuResetLayoutPrefixPatched { get; private set; }
-
-        internal bool MenuUiResetLayoutPrefixPatched { get; private set; }
 
         internal bool MainMenuPanelStartShowPatched { get; private set; }
 
         internal bool GameDataPanelSetCapacityPatched { get; private set; }
-
-        internal bool GridLayoutConstraintCountPrefixPatched { get; private set; }
 
         public void RegisterApis(IManifest manifest)
         {
@@ -51,24 +56,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
-            if (!GridResetPatched)
-            {
-                GridResetPatched = patcher.TryPatchPostfix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    "ResetLayoutSize",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocGridUiResetLayoutSizePostfix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-            }
-
-            if (!GridSetCapacityPatched)
-            {
-                GridSetCapacityPatched = patcher.TryPatchPostfix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    "SetCapacity",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.DolocGridUiSetCapacityPostfix), BindingFlags.Public | BindingFlags.Static),
-                    2);
-            }
-
             if (!HomePageRenderTextMenuPatched)
             {
                 HomePageRenderTextMenuPatched = patcher.TryPatchPostfix(
@@ -85,50 +72,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     "SetCapacity",
                     typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MenuUiSetCapacityPostfix), BindingFlags.Public | BindingFlags.Static),
                     1);
-            }
-
-            if (!HomePageTextMenuResetLayoutPrefixPatched)
-            {
-                HomePageTextMenuResetLayoutPrefixPatched = patcher.TryPatchClosedGenericPrefix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    new[] { "DolocTown.UI.TextButton, Assembly-CSharp" },
-                    "ResetLayoutSize",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.HomePageTextMenuResetLayoutSizePrefix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-                runtime.RuntimeMonitor.Log("Native UI layout hook install HomePageTextMenu.ResetLayoutSize.Prefix=" + HomePageTextMenuResetLayoutPrefixPatched + ".");
-            }
-
-            if (!HomePageTextMenuResetLayoutPatched)
-            {
-                HomePageTextMenuResetLayoutPatched = patcher.TryPatchClosedGenericPostfix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    new[] { "DolocTown.UI.TextButton, Assembly-CSharp" },
-                    "ResetLayoutSize",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.HomePageTextMenuResetLayoutSizePostfix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-                runtime.RuntimeMonitor.Log("Native UI layout hook install HomePageTextMenu.ResetLayoutSize=" + HomePageTextMenuResetLayoutPatched + ".");
-            }
-
-            if (!MenuUiResetLayoutPrefixPatched)
-            {
-                MenuUiResetLayoutPrefixPatched = patcher.TryPatchClosedGenericPrefix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    new[] { "DolocTown.UI.MenuButton, Assembly-CSharp" },
-                    "ResetLayoutSize",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MenuUiResetLayoutSizePrefix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-                runtime.RuntimeMonitor.Log("Native UI layout hook install MenuUI.ResetLayoutSize.Prefix=" + MenuUiResetLayoutPrefixPatched + ".");
-            }
-
-            if (!MenuUiResetLayoutPatched)
-            {
-                MenuUiResetLayoutPatched = patcher.TryPatchClosedGenericPostfix(
-                    "DolocTown.UI.DolocGridUI`1, Assembly-CSharp",
-                    new[] { "DolocTown.UI.MenuButton, Assembly-CSharp" },
-                    "ResetLayoutSize",
-                    typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.MenuUiResetLayoutSizePostfix), BindingFlags.Public | BindingFlags.Static),
-                    1);
-                runtime.RuntimeMonitor.Log("Native UI layout hook install MenuUI.ResetLayoutSize=" + MenuUiResetLayoutPatched + ".");
             }
 
             if (!MainMenuPanelStartShowPatched)
@@ -154,7 +97,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void Update()
         {
-            Service.UpdateActiveMainMenuLayout();
+            RepairService.UpdateActiveMenuLayout();
         }
 
         public void SaveLoaded(bool isNewGame)
@@ -171,22 +114,14 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void PublishStatuses()
         {
-            bool targetedReady = HomePageRenderTextMenuPatched &&
-                MenuUiSetCapacityPatched &&
-                MainMenuPanelStartShowPatched;
-            string status = targetedReady ? "diagnostic" : "pending";
+            bool targetedReady = TargetedRepairReady;
+            string status = targetedReady ? "ready" : "pending";
             string details = "HomePage.RenderTextMenu=" + HomePageRenderTextMenuPatched +
-                ", HomePageTextMenu.ResetLayoutSize=" + HomePageTextMenuResetLayoutPatched +
-                ", HomePageTextMenu.ResetLayoutSize.Prefix=" + HomePageTextMenuResetLayoutPrefixPatched +
                 ", MainMenuPanel.OnStartShow=" + MainMenuPanelStartShowPatched +
                 ", MenuUI.SetCapacity=" + MenuUiSetCapacityPatched +
-                ", MenuUI.ResetLayoutSize=" + MenuUiResetLayoutPatched +
-                ", MenuUI.ResetLayoutSize.Prefix=" + MenuUiResetLayoutPrefixPatched +
                 ", GameDataPanel.SetCapacity=" + GameDataPanelSetCapacityPatched +
-                ", DolocGridUI.ResetLayoutSize=" + GridResetPatched +
-                ", DolocGridUI.SetCapacity=" + GridSetCapacityPatched +
-                ". Logs layout counts and call stacks; no global Unity GridLayoutGroup setter normalization is installed. Update samples are diagnostics only. ResetLayoutSize prefix hooks are best-effort diagnostics for the generic base.";
-            runtime.SetHookStatus("UI.NativeLayoutDiagnostics", status, "Harmony diagnostics: official menu layout methods", details);
+                ". Production repair is always active through exact menu hooks and active-menu observation; optional QA observes through a read-only fixture facade. Generic DolocGridUI<T> hooks and global Unity GridLayoutGroup setter normalization are not installed.";
+            runtime.SetHookStatus("UI.NativeLayoutRepair", status, "Harmony repair: official menu layout methods", details);
         }
     }
 }

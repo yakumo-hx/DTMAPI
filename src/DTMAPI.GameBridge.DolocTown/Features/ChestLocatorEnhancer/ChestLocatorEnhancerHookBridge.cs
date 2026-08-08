@@ -27,13 +27,29 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
         {
+            int removedForManagedProduct = service.ReconcileManagedProductOwnerBeforeHookInstall();
+            if (removedForManagedProduct > 0 ||
+                !DolocTownHookCallbacks.HasChestLocatorEnhancerRetainedCallbackDemand())
+            {
+                service.SetInventoryHookInstalled(false);
+                runtime.SetHookStatus(
+                    "Inventory.ChestLocatorEnhancer",
+                    removedForManagedProduct > 0 ? "refused-managed-product-owner" : "dormant",
+                    "ArchiveDataHandle.GetAvailableInventories exact-target ownership",
+                    removedForManagedProduct > 0
+                        ? "Frozen compatibility demand was removed before Hook installation because the managed ChestLocatorEnhancer product owns the exact native target."
+                        : "No frozen IChestLocatorEnhancerApi owner currently demands the compatibility Postfix.");
+                return;
+            }
+
             if (!AvailableInventoriesPatched)
             {
                 AvailableInventoriesPatched = patcher.TryPatchArrayResultPostfix(
                     "DolocTown.GameData.ArchiveDataHandle, Assembly-CSharp",
                     "GetAvailableInventories",
                     typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ArchiveDataHandleGetAvailableInventoriesPostfix), BindingFlags.Public | BindingFlags.Static),
-                    3);
+                    3,
+                    DolocTownHookCallbacks.HasChestLocatorEnhancerRetainedCallbackDemand);
             }
 
             service.SetInventoryHookInstalled(AvailableInventoriesPatched);

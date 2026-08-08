@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "ContentPack",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "",
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI",
+      "Content"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  }
+}

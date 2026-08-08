@@ -9,10 +9,13 @@
 # Build outputs
 **/bin/
 **/obj/
+**/__pycache__/
 TestResults/
 dist/
 tmp/
 temp/
+/output/
+*.pyc
 
 # Runtime/debug artifacts that are recorded in docs but too large/noisy for Git
 docs/debug/evidence/
@@ -32,6 +35,8 @@ logs/
 *.7z
 *.rar
 *.nupkg
+!tools/release/bootstrap/
+!tools/release/bootstrap/BepInEx_win_x64_5.4.23.5.zip
 
 # Local settings
 local.settings.json

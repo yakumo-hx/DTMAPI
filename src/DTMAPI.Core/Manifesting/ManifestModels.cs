@@ -7,6 +7,9 @@ namespace DTMAPI.Core.Manifesting
     [DataContract]
     public sealed class ManifestModel : IManifest
     {
+        private string type = "CodeMod";
+        private string codeModKind = string.Empty;
+
         [DataMember(Name = "Name")] public string Name { get; set; } = string.Empty;
         [DataMember(Name = "Author")] public string Author { get; set; } = string.Empty;
         [DataMember(Name = "Version")] public string Version { get; set; } = "0.0.0";
@@ -17,12 +20,39 @@ namespace DTMAPI.Core.Manifesting
         [DataMember(Name = "MinimumDTMApiVersion")] public string MinimumDTMApiVersion { get; set; } = string.Empty;
         [DataMember(Name = "MinimumApiVersion")] public string MinimumApiVersionAlias { get; set; } = string.Empty;
         [DataMember(Name = "MinimumGameVersion")] public string MinimumGameVersion { get; set; } = string.Empty;
-        [DataMember(Name = "Type")] public string Type { get; set; } = "CodeMod";
+        [DataMember(Name = "Type")]
+        public string Type
+        {
+            get => type;
+            set
+            {
+                TypeWasDeclared = true;
+                DeclaredTypeValue = value ?? string.Empty;
+                type = value ?? string.Empty;
+            }
+        }
+
+        [DataMember(Name = "CodeModKind")]
+        public string CodeModKind
+        {
+            get => codeModKind;
+            set
+            {
+                CodeModKindWasDeclared = true;
+                DeclaredCodeModKindValue = value ?? string.Empty;
+                codeModKind = value ?? string.Empty;
+            }
+        }
         [DataMember(Name = "Dependencies")] public List<ManifestDependencyModel> DependencyModels { get; set; } = new List<ManifestDependencyModel>();
         [DataMember(Name = "UpdateKeys")] public List<string> UpdateKeyModels { get; set; } = new List<string>();
 
         IReadOnlyList<IManifestDependency> IManifest.Dependencies => DependencyModels;
         IReadOnlyList<string> IManifest.UpdateKeys => UpdateKeyModels;
+
+        [IgnoreDataMember] internal bool TypeWasDeclared { get; private set; }
+        [IgnoreDataMember] internal string DeclaredTypeValue { get; private set; } = string.Empty;
+        [IgnoreDataMember] internal bool CodeModKindWasDeclared { get; private set; }
+        [IgnoreDataMember] internal string DeclaredCodeModKindValue { get; private set; } = string.Empty;
 
         public void Normalize()
         {
@@ -35,11 +65,20 @@ namespace DTMAPI.Core.Manifesting
             EntryType = EntryType ?? string.Empty;
             MinimumDTMApiVersion = string.IsNullOrWhiteSpace(MinimumDTMApiVersion) ? MinimumApiVersionAlias ?? string.Empty : MinimumDTMApiVersion;
             MinimumGameVersion = MinimumGameVersion ?? string.Empty;
-            Type = string.IsNullOrWhiteSpace(Type) ? "CodeMod" : Type;
+            type = string.IsNullOrWhiteSpace(type) ? "CodeMod" : type;
+            codeModKind = codeModKind ?? string.Empty;
             DependencyModels = DependencyModels ?? new List<ManifestDependencyModel>();
             UpdateKeyModels = UpdateKeyModels ?? new List<string>();
             foreach (ManifestDependencyModel dependency in DependencyModels)
+            {
                 dependency.Normalize();
+                if (dependency.HasRequiredAliasConflict)
+                {
+                    throw new SerializationException(
+                        "Dependency '" + dependency.UniqueID + "' declares conflicting Required and IsRequired values. " +
+                        "Required is the canonical field; remove IsRequired or make both values agree.");
+                }
+            }
         }
     }
 
@@ -53,6 +92,11 @@ namespace DTMAPI.Core.Manifesting
         [DataMember(Name = "MinimumVersion")] public string MinimumVersion { get; set; } = string.Empty;
         [DataMember(Name = "Required")] private bool? RequiredJson { get; set; }
         [DataMember(Name = "IsRequired")] private bool? IsRequiredJson { get; set; }
+
+        internal bool HasRequiredAliasConflict =>
+            RequiredJson.HasValue &&
+            IsRequiredJson.HasValue &&
+            RequiredJson.Value != IsRequiredJson.Value;
 
         public bool Required
         {
@@ -68,8 +112,10 @@ namespace DTMAPI.Core.Manifesting
         {
             UniqueID = UniqueID ?? string.Empty;
             MinimumVersion = MinimumVersion ?? string.Empty;
-            if (RequiredJson.HasValue || IsRequiredJson.HasValue)
-                required = (RequiredJson ?? true) && (IsRequiredJson ?? true);
+            if (RequiredJson.HasValue)
+                required = RequiredJson.Value;
+            else if (IsRequiredJson.HasValue)
+                required = IsRequiredJson.Value;
             else if (!requiredAssigned)
                 required = true;
         }
@@ -87,7 +133,11 @@ namespace DTMAPI.Core.Manifesting
             bool canDtmApiToggle,
             string officialId,
             bool officialEnablementManaged,
-            string enablementReason)
+            string enablementReason,
+            bool nativeSubscriptionVerified = false,
+            string selectionReason = "",
+            ManagedModClassification? classification = null,
+            int officialPriority = -1)
         {
             Manifest = manifest;
             RootPath = rootPath;
@@ -99,6 +149,10 @@ namespace DTMAPI.Core.Manifesting
             OfficialId = officialId ?? string.Empty;
             OfficialEnablementManaged = officialEnablementManaged;
             EnablementReason = enablementReason ?? string.Empty;
+            NativeSubscriptionVerified = nativeSubscriptionVerified;
+            SelectionReason = selectionReason ?? string.Empty;
+            Classification = classification ?? ManagedModClassifier.ClassifyDeclaredIdentity(manifest);
+            OfficialPriority = officialPriority;
         }
 
         public ManifestModel Manifest { get; }
@@ -111,5 +165,28 @@ namespace DTMAPI.Core.Manifesting
         public string OfficialId { get; }
         public bool OfficialEnablementManaged { get; }
         public string EnablementReason { get; }
+        public bool NativeSubscriptionVerified { get; }
+        public string SelectionReason { get; }
+        public ManagedModClassification Classification { get; }
+        public int OfficialPriority { get; }
+
+        internal DiscoveredMod WithSelectionReason(string selectionReason)
+        {
+            return new DiscoveredMod(
+                Manifest,
+                RootPath,
+                ManifestPath,
+                Source,
+                WorkshopId,
+                OfficialEnabled,
+                CanDtmApiToggle,
+                OfficialId,
+                OfficialEnablementManaged,
+                EnablementReason,
+                NativeSubscriptionVerified,
+                selectionReason,
+                Classification,
+                OfficialPriority);
+        }
     }
 }

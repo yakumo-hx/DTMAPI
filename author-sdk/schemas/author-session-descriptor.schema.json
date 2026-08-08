@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/author-session-descriptor.schema.json",
+  "title": "DTMAPI Runtime 0.5.5 one-shot Author session descriptor/client credential",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "gameRoot",
+    "runtimeVersion",
+    "sessionId",
+    "token",
+    "pipeName",
+    "createdAtUtc",
+    "expiresAtUtc"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "gameRoot": { "type": "string", "minLength": 1 },
+    "runtimeVersion": { "const": "0.5.5" },
+    "sessionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
+    "token": { "type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$" },
+    "pipeName": { "type": "string", "pattern": "^dtmapi-author-[a-f0-9]{32}-[a-f0-9]{32}$" },
+    "createdAtUtc": { "type": "string", "format": "date-time" },
+    "expiresAtUtc": { "type": "string", "format": "date-time" }
+  }
+}

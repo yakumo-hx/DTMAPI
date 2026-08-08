@@ -1,0 +1,20 @@
+No third-party executable or game file is bundled in this package.
+
+The capture script downloads these pinned tools only when required:
+
+1. AssetRipper 1.3.14, Windows x64
+   Source: https://github.com/AssetRipper/AssetRipper/releases/download/1.3.14/AssetRipper_win_x64.zip
+   SHA-256: 808CDDF66DD0357AD6B36B97DE3A2AEF5E3552E63AF3EE0610F9A03A0378101C
+   Project/license: https://github.com/AssetRipper/AssetRipper
+
+2. ILSpy command line 9.1.0.7988
+   Source: https://api.nuget.org/v3-flatcontainer/ilspycmd/9.1.0.7988/ilspycmd.9.1.0.7988.nupkg
+   SHA-256: 2B5058F5CCC164C33B7AABF1A5EB0CF3D3A6AF6C145AAF58EFD3ED891443AF7C
+   Project/license: https://github.com/icsharpcode/ILSpy
+
+3. Microsoft .NET Runtime 8.0.27, Windows x64 (downloaded only if no usable system .NET 8 runtime exists)
+   Source: https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.27/dotnet-runtime-8.0.27-win-x64.zip
+   SHA-512: E31528B5452AFDEC4CDF78FB073E8693ED0C24A14F5B69065E7018F89EEFC38E52FCFD4EED8255B5D58867AA850F66790FEAD5B66F0FAB13A72BEBF098E98937
+   Product/license: https://dotnet.microsoft.com/download/dotnet/8.0
+
+Review the linked upstream project licenses before redistributing any downloaded tool.

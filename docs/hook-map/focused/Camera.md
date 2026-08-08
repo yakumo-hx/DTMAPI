@@ -1,101 +1,151 @@
 # Camera Hook Map
 
-Last updated: 2026-06-11
+Last updated: 2026-08-01
 
 ## Scope
 
-This focused map covers only the ordinary playable camera view path and the obsolete CameraZoom compatibility wrapper. It does not cover future panorama/photo camera work, background compensation, depth-fog compensation, scanner refresh, or room-range ownership.
+This focused map covers the playable world-camera orthographic-size path, the
+Zoom ProductNative hook, and the frozen CameraView/CameraZoom compatibility
+boundary. It does not claim ownership of panorama/photo cameras, background or
+fog compensation, scanner refresh, UI scaling, camera follow/range rules, or
+room construction.
 
-## Implementation Owner
+## Current Ownership
 
-- `src/DTMAPI.GameBridge.DolocTown/Features/IGameBridgeFeature.cs` defines the internal feature contract, including stable feature `Id` and feature-owned hook installation.
-- `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs` owns the GameBridge feature list, safe-dispatches `RegisterApis`, `PublishHookStatuses`, `InstallHooks`, `Update`, `SaveLoaded`, `ReturnedToTitle`, and `EnvironmentReset`, and keeps the internal feature-status model with feature id, last operation, success/failure, failure count, and last error. A feature exception records `DTMAPI.GameBridge.Feature.<Id>` diagnostics, marks `Feature.<Id>` failed, updates failure count/last error, logs the exception type/message, and does not block the next feature.
-- `src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Update.cs` owns the production `public void Update()` entry and calls `RefreshUiContext()`, `UpdateRuntimeAutomation()`, and `SmokeUpdate()`.
-- `src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraFeature.cs` owns camera API registration, lifecycle entry points, and `cameraViewSetEnvCameraPatched`; its feature id is `Camera`.
-- `CameraViewService` implements `ICameraViewApi`, owns camera-view lease state and writes only `DolocAPI.mainCamera.orthographicSize`.
-- `CameraZoomCompatibilityService` implements obsolete `ICameraZoomApi` by redirecting callers to per-owner `ICameraViewApi` leases.
-- `CameraDiagnosticsService` publishes `Camera.ViewApi`, `Camera.ZoomApi`, and `Camera.ViewEnvironmentLifecycle` hook statuses.
-- `DolocTownExperimentalBridgeApi` no longer implements `ICameraViewApi` or `ICameraZoomApi`.
-- `SmokeHarness.cs` owns `SmokeUpdate()` scheduling only; it no longer owns the production GameBridge `Update` method.
-- `src/DTMAPI.GameBridge.DolocTown/Smoke/Cases/CameraPlayableSmokeCase.cs` owns the `AutoExerciseZoom` / `Smoke.CameraPlayable` case implementation.
+- `DTMAPI.ZoomMod` is the only current gameplay product consumer. Its managed
+  Advanced ProductNative assembly owns scale/config/input state and exactly
+  three Harmony patches under owner `dtmapi.mod.dtmapi.zoommod`: the
+  five-parameter `DolocAPI.SetEnvCamera` Postfix plus a Prefix and Finalizer on
+  `CameraController.RefreshResolution()`.
+- `products/first-party/Zoom/src/Native/ZoomNativeRuntime.cs` captures and
+  restores one live playable-camera baseline. Update `20260801-0001` returns
+  ownership to `orthographicSize` only: product scale changes do not invoke
+  native refresh and never write controller follow, enabled, camSize, range or
+  position fields. A genuine native refresh temporarily sees the 1x baseline;
+  the Finalizer restores the selected presentation multiplier on normal return
+  or exception without swallowing the native exception.
+- `ZoomHookInstaller` installs its three-patch set atomically. A partial install,
+  another live owner, a residual owner, or a restore failure is fail-closed;
+  exact-owner unpatch still runs.
+- `src/DTMAPI.GameBridge.DolocTown/Features/Camera/CameraFeature.cs` is now a
+  thin registration/proxy/demand coordinator. Mandatory GameBridge no longer
+  contains the CameraView/CameraZoom state executors or the deleted
+  `CameraDiagnosticsService`.
+- Frozen `ICameraViewApi` and obsolete `ICameraZoomApi` execution live only in
+  the existing dormant-shipped Compatibility Host under
+  `src/DTMAPI.GameBridge.DolocTown/Compatibility/Camera/`. The retained
+  `0.4.2-dtmapi` Zoom binary is their only real product consumer.
+- ProductNative and compatibility owners are mutually exclusive in both load
+  orders. Product-first rejects a later compatibility demand; compatibility-
+  first rejects product Hook installation. Neither path can silently become a
+  second native owner.
+- ItemDisplayName still uses the independent SharedNative
+  `EnvironmentResetHookBridge` route to invalidate its cache after
+  `SetEnvCamera`. Sharing a native callback point does not merge its lifecycle
+  or demand with Zoom ProductNative.
 
-## Hook: Feature.Camera
+## Hooks: Zoom ProductNative camera presentation
 
-- Status: ready.
-- Public surface: internal DTMAPI diagnostics/status only.
-- Implementation: `DolocTownGameBridge` publishes `Feature.Camera` around safe feature-host dispatch; `CameraFeature.Id` is `Camera`, and `InstallHooks` is now part of the feature dispatch path. The host-owned internal status model records `id=Camera`, last operation, success/failure, failure count, and last error without adding public-like members to `IGameBridgeFeature`.
-- Failure behavior: feature dispatch exceptions are isolated per feature and recorded under `DTMAPI.GameBridge.Feature.Camera`, with `Feature.Camera` marked failed and the internal failure count/last error updated.
-- Evidence: `GAME-SMOKE/20260609-141609` logs `Feature.Camera = ready` for `PublishHookStatuses`, `InstallHooks`, `Update`, `ReturnedToTitle`, `SaveLoaded`, and `EnvironmentReset`, with `Feature status: id=Camera, lastOperation=..., success=True, failureCount=0, lastError=none`; `Camera.ViewEnvironmentLifecycle = experimental` is emitted during `InstallHooks`.
+- Status: `verified` by Updates `20260801-0001` and `20260801-0002`. The
+  corrected ProductNative candidate passed the combined player test and is
+  authorized only through its frozen existing-Workshop update tree.
+- Native targets: the exact five-parameter `DolocAPI.SetEnvCamera` overload and
+  zero-argument instance `CameraController.RefreshResolution()`.
+- Patch type/count: one Postfix plus one Prefix and one Finalizer; exactly three,
+  all-or-none.
+- Product behavior: 1x through 4x orthographic scaling with configured key
+  bindings. Scale transactions only write `mainCamera.orthographicSize` and do
+  not call `RefreshResolution`. When the game itself performs a real refresh,
+  the Prefix exposes the retained 1x baseline so all native derived state stays
+  game-owned, and the Finalizer reapplies the current multiplier. It does not
+  own positioning, follow, enabled, camSize, room ranges, scanner, background,
+  fog or panorama policy.
+- Reset behavior: the reviewed native `SetEnvCamera` method does not change
+  orthographic size. If the Postfix observes the product's last applied value,
+  it reapplies from the retained true baseline without recapturing; a genuinely
+  different native value can establish a new baseline.
+- Cleanup: title, disable and real Loader owner deactivation restore the original
+  native orthographic size and remove all three exact-owner patches. No derived
+  controller field is written as part of cleanup. A failed product-owned write
+  remains failed and cannot publish a false restoration result.
 
-## Hook: Camera.ViewApi
+## Frozen Public ABI
 
-- Status: experimental.
-- Public surface: `ICameraViewApi`, `ICameraViewLease`, `CameraViewRequest`, `CameraViewResult`, `CameraViewState`, and `GetSnapshot(string uniqueId)`.
-- Game method/type: `DolocAPI.mainCamera.orthographicSize`.
-- Native lifecycle boundary: `CameraFeature.InstallHooks(...)` installs the Harmony Postfix on `DolocAPI.SetEnvCamera(...)` and records `cameraViewSetEnvCameraPatched`; the callback still notifies `DolocTownGameBridge.NotifyGameBridgeFeaturesEnvironmentReset(...)`, which dispatches to `CameraFeature.EnvironmentReset(...)` so active leases can reapply orthographic-size-only playable zoom after room/environment camera resets.
-- Patch type: GameBridge runtime reflection plus Harmony Postfix on `DolocAPI.SetEnvCamera`; no raw Unity camera or decompiled game type is exposed through the public API.
-- Behavior: highest priority active lease wins, with latest update order as tie-breaker. Releasing the active lease falls back to the next active lease or restores vanilla `1x`.
-- Boundary: playable zoom must keep native camera follow/range semantics and must not call `CameraController.RefreshResolution`, `CameraController.SetPosition`, `DolocAPI.RefreshScanner`, background compensation, fog compensation, or UI scaling.
-- Failure behavior: while the main camera is unavailable, the status is pending and runtime refresh retries the orthographic write.
-- Mods/tests depending on it: `DTMAPI.ZoomMod`, smoke harness `-AutoExerciseZoom` / `Smoke.CameraPlayable`.
-
-## Hook: Camera.ZoomApi
-
-- Status: obsolete-compatibility.
-- Public surface: `ICameraZoomApi`, `CameraZoomOptions`, `CameraZoomRegisterResult`, `CameraZoomResult`, `CameraZoomState`, and `GetSnapshot(string uniqueId)`.
-- Implementation: compatibility wrapper over `ICameraViewApi` through `CameraZoomCompatibilityService`.
-- Boundary: obsolete `CameraZoomOptions.RefreshCameraController`, `CompensateBackground`, `CompensateDepthFog`, and `RefreshScanners` are ignored for playable zoom.
-- Failure behavior: missing/disabled owners return compatibility state from the underlying CameraView lease path; new code should use `ICameraViewApi`.
+- `ICameraViewApi`, `ICameraViewLease`, `CameraViewRequest`,
+  `CameraViewResult`, and `CameraViewState` remain Frozen/Obsolete compatibility
+  surface. The exact retained Zoom DLL resolves 35 CameraView MemberRefs; that
+  complete set is locked by the retained-binary ABI gate.
+- `ICameraZoomApi`, `CameraZoomOptions`, `CameraZoomRegisterResult`,
+  `CameraZoomResult`, and `CameraZoomState` remain obsolete compatibility
+  surface.
+- The new Zoom product consumes neither public API family. Mandatory Runtime
+  can remain thin until a retained legacy consumer requests the Host.
+- The older `CameraPlayable`/`ZoomOwnerLifetime` scenario is historical frozen
+  compatibility evidence, not the current product acceptance route and not a
+  production QA seam.
 
 ## Validation
 
-- Manual QA gate:
-  - Status: pending user confirmation.
-  - Record: `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md`.
-  - Required checks: 2x true-input movement for at least 1 minute, 4x true-input movement for at least 1 minute, background flicker review, map-boundary native clamp review, enter/exit building, return to title then reload save, and ZoomMod hotkey/config interaction.
-  - Refresh: 2026-06-11 handoff keeps the gate pending, adds `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`, and updates the supporting automated evidence to final `Refactor` smoke `GAME-SMOKE/20260611-031502`.
-  - Boundary: automated `Smoke.CameraPlayable` evidence is supporting proof only; `ICameraViewApi` remains `Experimental` until manual play is confirmed.
-- Passed: `tools/scripts/build.ps1 -Configuration Release`
-  - Release build completed with 0 warnings and 0 errors.
-  - `DTMAPI.UnitTests: OK`.
-- Passed: `tools/scripts/test.ps1 -Configuration Release`
-  - Release build/test completed with 0 warnings and 0 errors.
-  - `DTMAPI.UnitTests: OK`.
-- Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -IncludeHookProbe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
-  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260609-141609` on `codex/api-feature-status-model`.
-  - `result.json`: `RunStatus=Passed`, `StartupLog=Passed`, `HookProbe=Passed`, `SaveLoaded=Passed`, `Zoom=Passed`, `GameLaunched=Passed`, `ProcessExited=Passed`, `NoFatalInstanceWindow=Passed`, `ForcedClose=Passed`.
-  - HookProbe/status log: `HookProbe GameLaunched OK`, `HookProbe SaveLoaded OK slot=2 isNewGame=False`, `Camera.ViewEnvironmentLifecycle = experimental`, `Feature.Camera = ready`, `Feature.ActionSpeed = ready`, and feature status details for both hosted features with `success=True`, `failureCount=0`, and `lastError=none`.
-  - Camera summary: `DTMAPI-evidence/CAMERA-PLAYABLE/20260609-141649/summary.txt`.
-  - 4x dynamic: 30s-class sustained movement with stable `orthographicSize=67.5-67.5`, active owner `DTMAPI.ZoomMod`, and unchanged `nativeRefresh=not-called-playable` / `uiScale=unchanged` semantics.
-  - 2x dynamic fallback: 30s-class sustained movement with stable `orthographicSize=33.75-33.75`, active owner `DTMAPI.CameraViewCompetingSmoke`, and the same room/playable-camera boundary.
-  - Reset: lower-priority lease release restored vanilla `1x`.
-  - Boundary evidence: summary and logs retain `nativeRefresh=not-called-playable` and `uiScale=unchanged`.
-  - Feature-host evidence: `InstallHooks`, `SaveLoaded`, `ReturnedToTitle`, runtime refresh, and `DolocAPI.SetEnvCamera` route through the GameBridge safe-dispatch feature host into `CameraFeature`; the host records structured status fields while preserving CameraView messages.
-  - Case-file evidence: `Smoke/Cases/CameraPlayableSmokeCase.cs` remains the CameraPlayable smoke owner; result schema and screenshot/evidence names are unchanged.
-  - Report zip: `docs/debug/evidence/GAME-SMOKE/20260609-141609.zip`.
-- Passed: `tools/scripts/run-game-smoke.ps1 -DirectExe -AutoExerciseZoom -SaveSlot 3 -TimeoutSeconds 240`
-  - Evidence: `docs/debug/evidence/GAME-SMOKE/20260611-031502` on final merged `Refactor`.
-  - `result.json`: `RunStatus=Passed`, `Zoom=Passed`, `DiagnosticsReportExport=Passed`, `ProcessExited=Passed`, and `NoFatalInstanceWindow=Passed`.
-  - Diagnostics log: `Smoke.DiagnosticsSnapshot = verified. scenario=Camera`, `Feature.Camera = ready`, and `Smoke.CameraPlayable = verified`.
-  - Report zip pointer: `D:\steam\steamapps\common\Doloc Town\DTMAPI\reports\dtmapi-report-20260611-031644.zip`.
-  - Boundary: this is still automated support evidence only; it does not close the manual play gate.
+- The 2026-08-01 focused Unit and physical Harmony-owner fixture prove exact
+  three-patch installation/rollback/cleanup, no product-initiated native refresh,
+  native refresh observation of the 1x baseline, 4x Finalizer restoration and
+  exact native-exception propagation. The final player test additionally proves
+  moving-player follow at 4x without the former fixed-center flicker, plus clean
+  1x/2x/4x transitions in the combined twelve-item profile.
+
+- Focused Unit/source gates pass for ProductNative behavior, both owner load
+  orders, exact Harmony ownership, rollback, config disable, Loader
+  deactivation, Compatibility Host activation, API metadata, and acceptance
+  routing.
+- Exact retained ABI validation passes with 35 CameraView MemberRefs, all 11
+  retained public products, mandatory GameBridge, and the dormant
+  Compatibility Host.
+- Catalog, Author SDK, Advanced reference policy, package, Manager, Doctor, and
+  zero-leftover checks pass for the exact ten-product set.
+- `GAME-SMOKE/20260724-180233` is non-acceptance. It proves current product
+  loading, ownership, Doctor, Loader cleanup and NoNativeSave preservation, but
+  also records the defect: native `16.875` became `67.5` at 4x, the real
+  no-size-change `SetEnvCamera` path compounded it to `270`, and config disable
+  restored the polluted `67.5` baseline.
+- `GAME-SMOKE/20260801-033908` is the current Z1 third-save `NoNativeSave`
+  focus. It observes 1x `16.875`, 2x `33.75`, 4x `67.5`, then
+  `4x -> native RefreshResolution -> 2x = 33.75`; two later `SetEnvCamera`
+  callbacks preserve 4x `67.5`. The exact inventory is one SetEnvCamera
+  Postfix plus the refresh Prefix/Finalizer. Title restores 1x and real Loader
+  cleanup reaches zero instance, actual/derived patch, callback and owner-root
+  counts while archives and committed sidecars remain unchanged. This numeric
+  native-owner proof does not replace the user's moving-camera visual check.
+- `GAME-SMOKE/20260724-202032` is the exact-final-candidate corrected
+  third-save acceptance. It proves direct `2x -> 1x`, maximum-to-1 and config-
+  disable restoration to native `16.875`; repeated real no-size-change
+  `SetEnvCamera` callbacks preserve 4x `67.5` instead of compounding; title and
+  Loader cleanup reach native 1x, zero Hook/callback/instance/roots, and the
+  NoNativeSave metadata gates pass.
+- `GAME-SMOKE/20260724-221902` is the final current-commit acceptance. It
+  reproduces native resolution/fullscreen refresh at 2x and 4x, then proves
+  direct 1x, maximum-to-1, configuration disable, title recovery and real
+  Loader deactivation restore the original `16.875` orthographic size and
+  exact initial `camSize`/x-range/y-range. Loader cleanup reaches zero product
+  instance, callback, Hook and roots; the NoNativeSave metadata and process
+  exit gates pass.
+- Update `20260726-0001` closes the later focused P2 source/QA coverage gap for
+  the direct `4x -> native resolution/fullscreen refresh -> 2x` sequence.
+  `GAME-SMOKE/20260726-074143` binds implementation commit `1a358ccb035a`,
+  observes `67.5 -> 33.75`, matches the complete captured 2x
+  `camSize`/x-range/y-range snapshot, and passes title plus real Loader cleanup
+  to zero instance/callback/Hook/roots with unchanged NoNativeSave evidence.
+- `GAME-SMOKE/20260724-175944` is retained non-acceptance evidence: it exposed
+  the post-`SaveLoaded` `CurrentRoom` readiness window and led to the pending-
+  before-write retry correction.
+- No complete Release, L0-L5, GC gradient, or long test was run for this
+  migration.
 
 ## Related Records
 
-- `docs/updates/2026/20260608-0020-camera-view-lease-rebuild.md`
-- `docs/updates/2026/20260608-0026-camera-playable-dynamic-smoke.md`
-- `docs/updates/2026/20260609-0004-camera-feature-split.md`
-- `docs/updates/2026/20260609-0005-camera-feature-merge-refactor.md`
-- `docs/updates/2026/20260609-0006-gamebridge-feature-host-update.md`
-- `docs/updates/2026/20260609-0008-gamebridge-feature-host-hardening.md`
-- `docs/updates/2026/20260609-0010-camera-setenvcamera-hook-owner.md`
-- `docs/updates/2026/20260609-0011-camera-playable-smoke-case-file.md`
-- `docs/updates/2026/20260609-0020-feature-status-model.md`
-- `docs/updates/2026/20260610-0006-camera-view-manual-qa-gate.md`
-- `docs/updates/2026/20260610-0057-camera-view-manual-gate-refresh.md`
-- `docs/updates/2026/20260611-0005-camera-view-manual-play-handoff.md`
-- `docs/goals/2026/20260611-0001-cameraview-manual-play-handoff.md`
-- `docs/debug/regressions/smoke-matrix.md` row `CAMERA-PLAYABLE`
-- `docs/api/public-api-matrix.md` Camera rows
-- `docs/reviews/manual-qa/2026/20260607-0003-camerazoom-042-manual-failure-review.md`
+- `docs/reviews/code/2026/20260724-0005-tenth-product-zoom-admission-review.md`
+- `docs/updates/2026/20260724-0002-zoom-tenth-advanced-product.md`
+- `docs/architecture/batch6-managed-mod-identity-contract.md`
+- `docs/api/public-api-matrix.md`
+- `docs/debug/regressions/smoke-matrix.md`
 - `docs/reviews/manual-qa/2026/20260610-0006-cameraview-manual-play-gate.md`
+- `docs/updates/2026/20260722-0004-five-product-baseline-correction.md`

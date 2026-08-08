@@ -1,0 +1,7 @@
+类型	帧数/贴图数	动作 ID	NPC ID	图片命名格式
+帧动画（待机）	8	idle	villain	anim_npc_villain_idle_[0~7]
+帧动画（对话）	6	talk	villain	anim_npc_villain_talk_[0~5]
+帧动画（移动）	8	walk	villain	anim_npc_villain_walk_[0~7]
+图标（日历）	1		villain	icon_calendar_villain
+图标（图鉴）	1		villain	icon_document_villain
+详情图（图鉴）	1		villain	preview_document_villain

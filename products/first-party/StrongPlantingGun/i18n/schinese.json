@@ -1,0 +1,17 @@
+{
+  "mod.name": "DTMAPI 强力种植枪",
+  "mod.loaded": "DTMAPI 强力种植枪已加载；官方种植枪固定提供种子、薄膜和肥料槽位。",
+  "config.section.main": "强力种植枪",
+  "config.contract": "固定契约：种子、薄膜和肥料三个槽位。不支持水瓶或范围扩张。",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "启用固定三槽种植枪策略。",
+  "config.seeds.name": "使用种子",
+  "config.seeds.tooltip": "通过官方种植盆检查播种。",
+  "config.films.name": "使用薄膜",
+  "config.films.tooltip": "通过官方种植盆检查覆盖薄膜。",
+  "config.fertilizers.name": "使用肥料",
+  "config.fertilizers.tooltip": "通过官方种植盆检查施肥。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "输出有频率限制的强力种植枪观测。",
+  "config.status": "状态={0}，Hook={1}/5，已扩展={2}，已消耗={3}。{4}"
+}

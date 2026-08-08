@@ -1,0 +1,126 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/Df5cwl6u2irIogkazI5crevfnWf",
+  "token": "Df5cwl6u2irIogkazI5crevfnWf",
+  "title": "创建你的模组",
+  "document_title": "创建你的模组",
+  "source_modified_label": "5月15日修改",
+  "status_code": 200,
+  "elapsed_seconds": 14.281,
+  "block_count": 21,
+  "blocks_by_type": {
+    "heading1": 2,
+    "bullet": 12,
+    "image": 3,
+    "code": 1,
+    "grid": 1,
+    "grid_column": 2
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 2009,
+  "links": [],
+  "children": [],
+  "rendered_images": [
+    {
+      "block_id": "5",
+      "image_tokens": [
+        "CJP7bPUj2oZD95xvOvZcX1Ecnvf"
+      ],
+      "rendered_path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/rendered-01-5.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "19",
+      "image_tokens": [
+        "UIzgbgbvqoNy9jxgpYLccbaPnSc"
+      ],
+      "rendered_path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/rendered-02-19.png",
+      "status": "captured"
+    },
+    {
+      "block_id": "21",
+      "image_tokens": [
+        "EI7bb5tFVod4wJxLAMZcaZYNndf"
+      ],
+      "rendered_path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/rendered-03-21.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/CJP7bPUj2oZD95xvOvZcX1Ecnvf/?fallback_source=1&height=1280&mount_node_token=VjMFdXbx7ohpp5xok1hcy8wWnzd&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-01-6fe6c10092dadfed.png",
+      "bytes": 71437,
+      "sha256": "e676d2571ad31f8de9ea15325b668b4c3613c2e87ae9f9d934415daa5efc02e3"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/EI7bb5tFVod4wJxLAMZcaZYNndf/?fallback_source=1&height=1280&mount_node_token=GR2UdVs7ho8hZzxAFXscYTX7nKd&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-02-a5494e880b2a5cfd.png",
+      "bytes": 124435,
+      "sha256": "82bacac9eb4d61e9f67a1613d284b6f81525b3329d728d79c11b20c371a607bc"
+    },
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/UIzgbgbvqoNy9jxgpYLccbaPnSc/?fallback_source=1&height=1280&mount_node_token=doxcnMC1E5bhnCBVrVNYy6TMrxd&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-03-7ebedfed691b6f31.png",
+      "bytes": 439770,
+      "sha256": "3277b5981c68672a07694b85be03c4d601df4d0913ac7a4e5de2ab14398a8555"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-04-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-05-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/images/original/image-06-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "10",
+      "record_id": "doxcnNZFYLjEZqYn2EnKXbK2nSg",
+      "heading": "一、创建本地模组",
+      "caption": "info.json",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "path": "pages/Df5cwl6u2irIogkazI5crevfnWf/code-blocks/01-code.jsonc",
+      "bytes": 904,
+      "sha256": "0de2e49563f7d8fa59868b701faad272ecc35af0341970544da4c84e2a752a7a"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/Df5cwl6u2irIogkazI5crevfnWf/source.html",
+    "rendered_html": "pages/Df5cwl6u2irIogkazI5crevfnWf/rendered.html",
+    "text": "pages/Df5cwl6u2irIogkazI5crevfnWf/content.txt",
+    "markdown": "pages/Df5cwl6u2irIogkazI5crevfnWf/content.md",
+    "metadata": "pages/Df5cwl6u2irIogkazI5crevfnWf/page.json"
+  }
+}

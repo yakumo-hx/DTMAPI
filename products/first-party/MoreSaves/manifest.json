@@ -1,0 +1,19 @@
+{
+  "Name": "DTMAPI More Saves",
+  "Author": "Yuuka",
+  "Version": "1.0.1",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that expands the native archive count and migrates legacy extra-slot filenames for Doloc Town 1.00.",
+  "UniqueID": "DTMAPI.MoreSavesMod",
+  "EntryDll": "DTMAPI.MoreSaves.dll",
+  "EntryType": "DTMAPI.MoreSaves.ModEntry",
+  "MinimumDTMApiVersion": "0.6.0",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

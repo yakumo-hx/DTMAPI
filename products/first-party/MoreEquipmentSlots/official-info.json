@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI 更多装备槽",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
+  "tags": [
+    "Mod",
+    "Functional",
+    "DTMAPI",
+    "Equipment",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多装备槽",
+    "tchinese": "DTMAPI 更多裝備槽",
+    "english": "DTMAPI More Equipment Slots"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
+    "tchinese": "需要 DTMAPI 0.6.0 或更高版本。\n增加三個獨立的屬性裝備槽。",
+    "english": "Requires DTMAPI 0.6.0 or later.\nAdds three independent attribute equipment slots."
+  }
+}

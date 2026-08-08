@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>EquipmentSlotsHarmonyOwnerFixture</AssemblyName>
+    <RootNamespace>DTMAPI.EquipmentSlotsHarmonyOwnerFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\products\first-party\MoreEquipmentSlots\src\ModEntry.cs"
+             Link="MoreEquipmentSlots\ModEntry.cs" />
+    <Compile Include="..\..\..\..\products\first-party\MoreEquipmentSlots\src\MoreEquipmentSlotsConfig.cs"
+             Link="MoreEquipmentSlots\MoreEquipmentSlotsConfig.cs" />
+    <Compile Include="..\..\..\..\products\first-party\MoreEquipmentSlots\src\Native\*.cs"
+             Link="MoreEquipmentSlots\%(Filename)%(Extension)" />
+    <ProjectReference Include="..\EquipmentSlotsNativeFixture\EquipmentSlotsNativeFixture.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DTMAPI.GameBridge.DolocTown.Compatibility.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.ModConfigMenu\DTMAPI.ModConfigMenu.csproj" />
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\.tools\bepinex\extract\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\HarmonyXInterop.dll"
+          Link="HarmonyXInterop.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.dll"
+          Link="Mono.Cecil.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Mdb.dll"
+          Link="Mono.Cecil.Mdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Pdb.dll"
+          Link="Mono.Cecil.Pdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Rocks.dll"
+          Link="Mono.Cecil.Rocks.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.RuntimeDetour.dll"
+          Link="MonoMod.RuntimeDetour.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.Utils.dll"
+          Link="MonoMod.Utils.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

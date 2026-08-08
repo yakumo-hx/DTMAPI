@@ -1,0 +1,7 @@
+/goal
+目标：实现 AutoFishing Hook-fed NativeStateCache、纯 GetSnapshot、强类型缓存访问器、高频 Hook 直接异常隔离、成功诊断延迟格式化，并把旧钓鱼执行器收缩为内部组件与 IFishingAutomationApi 兼容适配器。详细需求与验收以 docs/goals/2026/20260710-0006-autofishing-hot-path-native-cache.md 为准。
+
+开始前必须阅读：AGENTS.md、PROJECT.md、本 goal 与 sibling .goal.txt、docs/workflows/codex-api-rebuild.md、docs/reviews/api/2026/20260710-0001-autofishing-hot-path-native-cache-review.md、docs/reviews/manual-qa/2026/20260710-0002-autofishing-input-gc-ready-review.md、docs/api/public-api-matrix.md、docs/hook-map/README.md、docs/debug/INDEX.md、docs/debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md，以及当前 build 的 AgentStateFishing/FishingGameScrollBar/FishRodRenderer 方法体。
+
+约束：Fishing Primitives 保持 internal；不新增公开 API；保留唯一 Gameplay toggle、移动 local snapshot fallback、共享 Harmony owner 和现有玩家行为；不启动实机 0/100/500 矩阵；不把 source/unit 结果写成 runtime complete；不 reset/revert 当前未提交改动。
+

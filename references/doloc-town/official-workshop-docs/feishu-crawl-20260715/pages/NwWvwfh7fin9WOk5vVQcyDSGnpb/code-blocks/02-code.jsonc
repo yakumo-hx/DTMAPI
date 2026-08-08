@@ -1,0 +1,24 @@
+[
+  {
+    "id": "wetland_cave", //植被生成表ID，详见对照表
+    "extra_vegetations": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "vegetation_id": "toadstool" //生成植被ID
+      }
+    ]
+  },
+   {
+    "id": "wetland_cave_depths", //植被生成表ID，详见对照表
+    "extra_vegetations": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "vegetation_id": "toadstool" //生成植被ID
+      }
+    ]
+  }
+]

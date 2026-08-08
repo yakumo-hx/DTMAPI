@@ -6,6 +6,8 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         string Id { get; }
 
+        GameBridgeFeatureContract Contract { get; }
+
         void RegisterApis(IManifest manifest);
 
         void PublishHookStatuses();

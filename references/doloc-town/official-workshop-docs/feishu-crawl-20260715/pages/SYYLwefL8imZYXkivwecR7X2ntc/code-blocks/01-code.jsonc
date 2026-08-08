@@ -1,0 +1,18 @@
+[
+  {
+    "key": "item_hat0", //本地化ID
+    "text": "Paiea's headpiece" //本地化文本
+  },
+  {
+    "key": "item_hat0_desc", //本地化ID
+    "text": "Cute little flower hair clip, the same style as Paiea's." //本地化文本
+  },
+  {
+    "key": "item_hat1", //本地化ID
+    "text": "Sunglasses" //本地化文本
+  },
+  {
+    "key": "item_hat1_desc", //本地化ID
+    "text": "Looking cool!" //本地化文本
+  }
+]

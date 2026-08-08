@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 1,
+  "contractId": "batch6-g2-advanced-synthetic-vertical-slice",
+  "architectureAuthority": "docs/architecture/batch6-managed-mod-identity-contract.md",
+  "reviewAuthority": "docs/reviews/code/2026/20260720-0004-batch6-g2-advanced-synthetic-vertical-slice-prerequisite.md",
+  "targetKind": "committed-implementation",
+  "baselineCommit": "1239aa577d74e4f0c29131ba644e8a751eebbf5f",
+  "implementationCommit": "c79306dfc7de0e85c74e24ece7d4c5cd47cb0822",
+  "worktreeHeadCommit": null,
+  "sourceDiffSha256": "CF60A5BC51A49355C3A038A111092B0E5D4A16ACCA3152A2E12C3BC5D95695E6",
+  "changedFileCount": 41,
+  "addedPhysicalLines": 5991,
+  "deletedPhysicalLines": 122,
+  "mandatoryRuntimeProductNativeAddedPhysicalLines": 0,
+  "stableAbstractionsAddedPhysicalLines": 0,
+  "stableAbstractionsDeletedPhysicalLines": 0,
+  "files": [
+    {
+      "path": "src/DTMAPI.AuthorSdk/AdvancedCompilationReferences.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 141,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "a05a35123abcee87e36e28da30730d8e11683463",
+      "diffSha256": "DB5396C69098E882A1A131D0691B552AE47082F6D2F3C51615DA95D8B731E12C"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/AdvancedReferenceAssets.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 307,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "67ac69561854b1dc883fbce07a1691120629271c",
+      "diffSha256": "C9D7B2904091E79801B860A5C208D302E9783488A634060CC3F4AA9D9D5257D0"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/AuthorApplication.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 3,
+      "deletedPhysicalLines": 3,
+      "baselineBlob": "de14ee6f245e3f3cb348ad05e6bc40a430a0b2d5",
+      "targetBlob": "88be331394d545a82b1d35e8ae950c9c1a5f6a1b",
+      "diffSha256": "6FDFF501AB5F3C7709652FA9A0AD28073A830EAC346389FC6D9CE49D61DE708F"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/CodeModBuilder.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 39,
+      "deletedPhysicalLines": 9,
+      "baselineBlob": "e1b8d09e54a2a055c57452fff6184a847f0c677d",
+      "targetBlob": "e61e388e96b787fea00eac4cbc7684433ce08dda",
+      "diffSha256": "754051C47891A244E22D14116D479635B3B734FBE041C62A07038085442B4970"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/DTMAPI.AuthorSdk.csproj",
+      "ownership": "Platform",
+      "addedPhysicalLines": 12,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "07d469a823eba8e0b724505f542b8faa76ccfc71",
+      "targetBlob": "6e6b2a8ee3833c8a916953655d45c388f2e46919",
+      "diffSha256": "4F872F4B643C72CAEB7E867082A882AC20D3F5B290B1BA0CF06C90552C1656E2"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/DeploymentPackage.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 193,
+      "deletedPhysicalLines": 6,
+      "baselineBlob": "7b392d77c4e6ad1661b756d8d508a66e0556bd27",
+      "targetBlob": "d7ee63e409d6293f202a01d6e4e7c812269dadf9",
+      "diffSha256": "D7B9897BBD1B6EC74FC632097B39467CE069B803BFC9AB89DDC096843661918C"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/DeploymentService.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 126,
+      "deletedPhysicalLines": 16,
+      "baselineBlob": "f5c821a6e59790752a90795dd7a7ded8199ee6e1",
+      "targetBlob": "ae7523ea640f4d860afd96700326556b3cc69468",
+      "diffSha256": "350A81209A051C4D9E3D9A7324D586EF23F8A60B24C5BF06A9A1709402173424"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/DeterministicPackager.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 61,
+      "deletedPhysicalLines": 12,
+      "baselineBlob": "d0174c8bde53e703e0abd31d04933ff4f7acab31",
+      "targetBlob": "8daa5cb8cde2a581d01ebf88df853bd9f7706155",
+      "diffSha256": "A3A59B43992A10D34938D911211C2B58BAAB99B48E24D3584E057281D80D9891"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/JsonSupport.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 11,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "8b96e214c9e069fe6cb314e77834f79f62ffb731",
+      "targetBlob": "790f1c20492fc9c9f721774069131e917bb2f79f",
+      "diffSha256": "8B18030EE752A7D1D9FDB463EC4D0D74D5AC25AEA443E771B3ED34834262B37F"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/ManagedAssemblyInspector.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 177,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "090f6b8c9407da0500fa18fd3672062d2fcfc26f",
+      "diffSha256": "6CACFF83273117A907BF00D7E6114C7133BFC323778AAE5F389525796F9C52D5"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/ProjectValidator.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 102,
+      "deletedPhysicalLines": 6,
+      "baselineBlob": "07be00483e6b5be221124e62b3bcd3df6d58ebeb",
+      "targetBlob": "38384e030a1f7bcfdab70ad0c5d4918a40dfe7db",
+      "diffSha256": "6204F9EC4318FE93484F9FFB875FC176753DEEBCD76EDDE69AE9BF0F5A89574F"
+    },
+    {
+      "path": "src/DTMAPI.AuthorSdk/TemplateCreator.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 29,
+      "deletedPhysicalLines": 1,
+      "baselineBlob": "3b776d2ad91ebbe5e3b1d9710badf86258dfec76",
+      "targetBlob": "62679616dc7c1245b5b83d29f2c1586bbd4ec93a",
+      "diffSha256": "50426E3A9CBB541229BEE8C59F674CAB169151E7BB8A18880981873095109B17"
+    },
+    {
+      "path": "src/DTMAPI.Authoring.Contracts/AuthorContracts.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 86,
+      "deletedPhysicalLines": 2,
+      "baselineBlob": "44de7bbd6328d119c8813f8099e8e44c81ea308f",
+      "targetBlob": "e2a1d1162d639a0c67cfff3d4183eaa4996921ae",
+      "diffSha256": "33F0D4D8648F9F48ECF4CC46B36579B3055717524C2B0568A9EDF71674F3AAC8"
+    },
+    {
+      "path": "src/DTMAPI.Core/DTMAPI.Core.csproj",
+      "ownership": "Platform",
+      "addedPhysicalLines": 2,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "18bae92bd7a39e72c3f4dc897173c8ca9577883a",
+      "targetBlob": "94e42fcac3863202d1fd8547cd65a346df1296bd",
+      "diffSha256": "F971D556DF69D8C3F61272E9A26A7E512A380888B303A7E0A00BCE8FD803569C"
+    },
+    {
+      "path": "src/DTMAPI.Core/Diagnostics/DiagnosticsModels.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 95,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "8b60402fdcb12c8d490b44f116b650ab09216b47",
+      "targetBlob": "84e81c436e2ad1ab065063121aff59c57f705abc",
+      "diffSha256": "9685FFFDF5A0F881BAC6C452503E9F5DEE269C756018B23E5A3C92D601B71190"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manager/DtmManagerViewModels.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 32,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "778f2dcbbd726302193438ced954fe30186bcd1c",
+      "targetBlob": "d4dfa9d6a62480ffbe84520e291c5e7554fc5e62",
+      "diffSha256": "EB970A1941B46345016B109640D2A4848D5A1A8C9F310D28F22F30327E4FFE67"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manager/ManagerPageRowFormatter.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 18,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "f87afe4f589fc91c4fa8e50b225ccc7955bece91",
+      "targetBlob": "b6bce0ace5ae4d85541df9eff45fdac1eecfe8df",
+      "diffSha256": "A3DBF6EB7D4E2E1329A3E275D8B98A92C80786A4F92FFC000CFF3D5261E01A31"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManagedModClassification.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 1377,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "596bf991807008b8e7f9be8d4df9a8776b3c4182",
+      "diffSha256": "FF0664455294AD8230E4705D945EA2FBCD83DAC65C115BA6AAF1FB3544C6D0D6"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestModels.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 39,
+      "deletedPhysicalLines": 4,
+      "baselineBlob": "1be7c1d5ba8eaa7c99d3e6d9f24b5a9710168498",
+      "targetBlob": "be8d166d4daa4c16f47b9094688fcd48fed658fb",
+      "diffSha256": "CF4FF87F28D3B9129943194B40D4F18EBB03172ED0018768ACDB5B6FAE4FBD67"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/ManifestReader.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 22,
+      "deletedPhysicalLines": 34,
+      "baselineBlob": "091ee26f98298ac00df11528ec030f82fb168899",
+      "targetBlob": "55246f493df9cfa32f52ed1543a52c7b73545c16",
+      "diffSha256": "2D588FCB3C5F5C932C07A8BB74874971055516636D8710D50944814FF7323DFC"
+    },
+    {
+      "path": "src/DTMAPI.Core/Manifesting/PortableAssemblyReferenceInspector.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 551,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "cd88b28992f5a8648c4afc4b879629adc776a4f1",
+      "diffSha256": "487BD3DEB7C442FB5D902A30DD7DCF4389D82DC7F448449B1FB53CF4D787FA0B"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/AdvancedHarmonySupervisor.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 507,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "1f9559dcf0d0b696b38dd69813ab44849b51a77b",
+      "diffSha256": "3A8F541D54B0A177596AD5E77545642E543509A0BBB264FA71FEE0C8972D03A2"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ContentManifestRegistry.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 6,
+      "deletedPhysicalLines": 4,
+      "baselineBlob": "7c96bfadadb03934d21d2b2691ee9369bd3f1bdc",
+      "targetBlob": "98c2719a195e8f0ec47f3111f289ea2349aeb0bf",
+      "diffSha256": "2A79D720F50B225D4E7F5960D97DB70E312F96E29289F8C35D7CEED6D2EA662C"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/DtmApiRuntime.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 149,
+      "deletedPhysicalLines": 4,
+      "baselineBlob": "360b259bf81d36563b2f35a659ef6ee0d54f6aee",
+      "targetBlob": "18919b31e2252afed3e508a695d3b2c85c6af7e0",
+      "diffSha256": "5DB20B05C06DFAB2D039FE2D8F355BB62FDD0D05727CC8B93EAFEB6AA37A4C8A"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ModOwnerCleanup.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 17,
+      "deletedPhysicalLines": 1,
+      "baselineBlob": "215b27b22894a610b346ecf91b80bc5d41de7671",
+      "targetBlob": "d9dd3baebb0bf57b5ce530f164e2da2ff0a15278",
+      "diffSha256": "A76A9FBF3C5E39431B47112FD9BF6015B6C436755D16A140FDED497249D0832B"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/RuntimeSnapshotFactory.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 2,
+      "deletedPhysicalLines": 1,
+      "baselineBlob": "d64d8d7bdee1c24de936ab03f0799e5a1f8501ba",
+      "targetBlob": "47f802fc423f3aacf4e6a05a941792cb50ceab3c",
+      "diffSha256": "7D1792B0ABB46C3B8A0F95B8A7D962B1D8CF7065EBB9C4EA4F47EF57AF7C5D7F"
+    },
+    {
+      "path": "src/DTMAPI.Core/Runtime/ShadowContentRegistry.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 5,
+      "deletedPhysicalLines": 1,
+      "baselineBlob": "73d6fef13941a9f915342b76950d2674bf310fde",
+      "targetBlob": "c2c5825f77eecb159349401ba85f7db04db39639",
+      "diffSha256": "CC80287994BDDF752A7F8D2E40B4F2E111643CAC5D76C9BDCA88ECD397627AE6"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/AdvancedPackageMarkerProbe.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 147,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "1fa62489e7eb81fd10c2c5d0fe05f0999a151d5b",
+      "diffSha256": "C8B37D89F8397E85B3E349553B640F72DF9E330C102E2826BA40D4EA4034DAE4"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/AdvancedReferencePolicyAuthority.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 224,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "681b7ff5faea49e835241b5864463a954c8fb7e5",
+      "diffSha256": "27B426D9E82BF85541D40B18C7E9B55AE1BB919C9F1C31F2F9DDFFFA41623A1F"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/AdvancedReferenceReceiptProbe.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 244,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "61efbe1d359508bce6689efc0e4827f51d68a45b",
+      "diffSha256": "486DDDB7AEE16687E29EA4B7C35F96852038FC65E4FF79E833E639D46F67A7ED"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/DTMAPI.InstallDoctor.csproj",
+      "ownership": "Platform",
+      "addedPhysicalLines": 2,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "724b872727186d9f5c1da8e8f9ca26fa4de84d96",
+      "targetBlob": "84d1da820124821c8015cf56db6156eda4a9b367",
+      "diffSha256": "74E9E2B999B96530965B9851E7311CD961E508DC89D0EAA7D518FCC0AC70E1A5"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/DoctorEngine.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 813,
+      "deletedPhysicalLines": 13,
+      "baselineBlob": "9813be421daeee59bc529f3f3e9aad47ac46457f",
+      "targetBlob": "df3e06c7084a65a200b822a2bcaf8f501d5b41fd",
+      "diffSha256": "171F81B60667689FABBBAFAA7F8F31987C1E86B989EB18F0A0490FD858615489"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/DoctorIdentityProjection.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 22,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "d4d529039b51aec81ea3d56cab9fa94012a82fb2",
+      "diffSha256": "DC4176C748AE1D4D69CE3BF8049EA8FB91BD7F5FBFB04EB327E06C5628B01E0B"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/DoctorModels.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 80,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "7d82eea4aa299b931a30799f1fa16763cd75baeb",
+      "targetBlob": "bef5018707857bdbeb025bce64c543c03c4efe10",
+      "diffSha256": "5ABDE6134FA6DBA1B3148B0D7506CBEB14E4CDB795D5ACC6CB7D333197F906D6"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/DoctorReportFormatter.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 33,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "a52be5666f6ea3a24709c13586eb89b27eba5f4a",
+      "targetBlob": "35691f27a47b1f863b294746f2a238e80f7752a1",
+      "diffSha256": "3D8A2AF5621A053C9006A6BEF42CB5B73D6FB39F7CCC646F1D8CBAAB8E356C3A"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/ForbiddenNativePayload.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 11,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "e023b847148bc6f3966a167ef7e600947d4fc0ed",
+      "diffSha256": "0DF1EE1CF059DB942EFD02C9210EA78CA7A55DA6A7329BB1D3A5B60E78D98588"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/ManifestProbe.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 27,
+      "deletedPhysicalLines": 5,
+      "baselineBlob": "a01e5e127375da937b1589007cda8da0788d3abe",
+      "targetBlob": "457cce10288ea73a71c727e1d3be94295125d26f",
+      "diffSha256": "BDFB5FA2A693818D25485343CA226EB93B973CB5C502F312CC7278C18F6C4AB1"
+    },
+    {
+      "path": "src/DTMAPI.InstallDoctor/SteamGameBuildProbe.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 137,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "dc9f6ce9d627ab1adb745a4ba65088544acb94da",
+      "diffSha256": "9A2A41FB2E869F9DE7A984E8B52227B72F3911DEDDE33AB23EB9D74EB6610846"
+    },
+    {
+      "path": "src/DTMAPI.Tooling.Metadata/FileIdentityInspector.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 33,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "208c432eeb5367a8dce522b1b32aa3e2bef7ea13",
+      "diffSha256": "664FACDC13E4637836688A406433F8432B66AD4BEAF8CD6A2EBCC0BBC39548E9"
+    },
+    {
+      "path": "src/DTMAPI.Tooling.Metadata/MetadataModels.cs",
+      "ownership": "Platform",
+      "addedPhysicalLines": 10,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": "bf395436ea3cf154fce6e0eea40cddd525d94147",
+      "targetBlob": "27a4f6a9f2f4a1967630d6cea9914626b9629561",
+      "diffSha256": "5637AE6912B7EE9B1FEEABEA8D14F101863BD307893AF397A32F51C60DECC94D"
+    },
+    {
+      "path": "testmods/DTMAPI.AdvancedFixture/src/ModEntry.cs",
+      "ownership": "SyntheticProductNative",
+      "addedPhysicalLines": 99,
+      "deletedPhysicalLines": 0,
+      "baselineBlob": null,
+      "targetBlob": "b427bc8243a42ad8c593f4dd8d732542d25dde85",
+      "diffSha256": "E894985F912E9D3A53276E4C4EF49DBA59A695DF55771A520EB68596CD4CBB70"
+    }
+  ]
+}

@@ -38,6 +38,13 @@ namespace DTMAPI.GameBridge.DolocTown
             return Execute(owner, normalized, dryRun: normalized.DryRun);
         }
 
+        internal int RemoveOwner(string ownerId, string reason)
+        {
+            return statuses.Remove(ownerId ?? string.Empty) ? 1 : 0;
+        }
+
+        internal int CountOwnerResources(string ownerId) => statuses.ContainsKey(ownerId ?? string.Empty) ? 1 : 0;
+
         BridgeFeatureStatus ICropHarvestingApi.GetStatus(string uniqueId)
         {
             if (uniqueId != null && statuses.TryGetValue(uniqueId, out BridgeFeatureStatus status))
@@ -73,6 +80,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!TryEnterOperation())
                 return Finish(result, "busy", "Crop harvesting request skipped because another scan/harvest operation is already running.", "busy", owner.UniqueID);
 
+            GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.CropHarvesting, owner.UniqueID, RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "scan-or-harvest", true, dryRun ? "crop scan started" : "crop harvest started");
             try
             {
                 Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
@@ -160,6 +168,7 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             finally
             {
+                GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.CropHarvesting, owner.UniqueID, RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "scan-or-harvest", false, dryRun ? "crop scan completed" : "crop harvest completed");
                 ExitOperation();
             }
         }

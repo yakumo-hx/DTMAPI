@@ -1,0 +1,58 @@
+{
+  "owner": "DTMAPI.TestArtifactCleanup",
+  "schemaVersion": 1,
+  "startedAt": "2026-07-17T11:09:19.2114752+08:00",
+  "completedAt": "2026-07-17T11:10:16.1592118+08:00",
+  "mode": "apply",
+  "testRoot": "E:\\Python_project\\DTMAPI\\tmp\\test-runs",
+  "systemTempRoot": "C:\\Users\\Administrator\\AppData\\Local\\Temp",
+  "dumpRoot": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\DTMAPI-Dumps",
+  "includeLegacy": true,
+  "activeProcesses": [],
+  "candidateCount": 4,
+  "candidateFiles": 105046,
+  "candidateDirectories": 166244,
+  "candidateBytes": 25208281312,
+  "candidates": [
+    {
+      "Kind": "legacy-test-root",
+      "Path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\DTMAPI-tests",
+      "Reason": "explicit-pre-governance-cleanup",
+      "AgeHours": 0.0,
+      "Files": 95997,
+      "Directories": 144521,
+      "Bytes": 24827231105,
+      "Result": "deleted"
+    },
+    {
+      "Kind": "legacy-test-root",
+      "Path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\DTMAPI-tests-persistent",
+      "Reason": "explicit-pre-governance-cleanup",
+      "AgeHours": 0.0,
+      "Files": 7305,
+      "Directories": 17296,
+      "Bytes": 376411834,
+      "Result": "deleted"
+    },
+    {
+      "Kind": "legacy-test-root",
+      "Path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\DTMAPI-tests-author-state",
+      "Reason": "explicit-pre-governance-cleanup",
+      "AgeHours": 0.0,
+      "Files": 1410,
+      "Directories": 2715,
+      "Bytes": 778064,
+      "Result": "deleted"
+    },
+    {
+      "Kind": "legacy-test-root",
+      "Path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\DTMAPI-QA-Tests",
+      "Reason": "explicit-pre-governance-cleanup",
+      "AgeHours": 0.0,
+      "Files": 334,
+      "Directories": 1712,
+      "Bytes": 3860309,
+      "Result": "deleted"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "content",
+  "assemblyName": "DTMAPI.MoreSaves",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "Functional",
+      "DTMAPI",
+      "Save",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 更多存档",
+      "tchinese": "DTMAPI 更多存檔",
+      "english": "DTMAPI More Saves"
+    },
+    "localizedDescription": {
+      "schinese": "需要 DTMAPI 0.6.0 或更高版本。\n将官方存档界面扩容为 12 个总槽位；升级到游戏 1.00 时自动迁移旧的额外槽位存档。禁用后不会删除额外存档文件。",
+      "tchinese": "需要 DTMAPI 0.6.0 或更高版本。\n將官方存檔介面擴容為 12 個總槽位；升級到遊戲 1.00 時自動遷移舊的額外槽位存檔。停用後不會刪除額外存檔檔案。",
+      "english": "Requires DTMAPI 0.6.0 or later.\nExpands the official save UI to 12 total slots and migrates legacy extra-slot saves when upgrading to Doloc Town 1.00. Extra save files are not deleted when the mod is disabled."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-24456188-moresaves-v1",
+    "references": [
+      "Assembly-CSharp"
+    ]
+  }
+}

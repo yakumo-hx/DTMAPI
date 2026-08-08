@@ -1,0 +1,15 @@
+名称	命名格式
+道具ID	platform1
+道具图标	icon_item_platform1
+详情图	preview_craft_platform1
+平台左侧瓦片	tile_platform_platform1_platform_left_0
+平台中部随机瓦片	tile_platform_platform1_platform_middle_[0~1]
+平台右侧瓦片	tile_platform_platform1_platform_right_0
+左柱体底部瓦片	tile_platform_platform1_column_left_bottom_0
+右柱体底部瓦片	tile_platform_platform1_column_right_bottom_0
+平台左侧衔接瓦片（可选）	tile_platform_platform1_platform_left_1
+平台右侧衔接瓦片（可选）	tile_platform_platform1_platform_right_1
+左柱体顶部衔接瓦片（可选）	tile_platform_platform1_column_left_top_0
+左柱体中部随机瓦片（可选）	tile_platform_platform1_column_left_middle_[0~1]
+右柱体顶部衔接瓦片（可选）	tile_platform_platform1_column_right_top_0
+右柱体中部随机瓦片（可选）	tile_platform_platform1_column_right_middle_[0~1]

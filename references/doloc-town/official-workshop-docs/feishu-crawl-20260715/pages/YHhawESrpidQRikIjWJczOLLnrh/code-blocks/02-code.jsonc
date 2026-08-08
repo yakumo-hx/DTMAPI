@@ -1,0 +1,29 @@
+[
+  {
+    "id": "exterior0", //外部墙纸ID
+    "exterior_datas": [
+      {
+        "building_id": "small_container", //建筑ID
+        "override_item_icon": {
+          "url": "icon_building_small_container_exterior0" //（可以为空）道具图标覆盖（仅在建造模式出现），格式为：icon_building_[building_id]_[exterior_id]
+        },
+        "closed_sprite_group": { //场景贴图组（关门）
+          "scene_sprite": {
+            "url": "sprite_building_external_small_container_exterior0" //场景贴图，格式为：sprite_building_external_[building_id]_[exterior_id]
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_container_exterior0" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]
+          }
+        },
+        "opened_sprite_group": { //（可以为空）场景贴图组（开门）
+          "scene_sprite": {
+            "url": "sprite_building_external_small_container_exterior0_opened" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]_opened
+          },
+          "door_sprite": {
+            "url": "sprite_building_external_door_small_container_exterior0_opened" //门的贴图，格式为：sprite_building_external_door_[building_id]_[exterior_id]_opened
+          }
+        }
+      }
+    ]
+  }
+]

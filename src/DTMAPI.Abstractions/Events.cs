@@ -27,6 +27,8 @@ namespace DTMAPI.Abstractions
     {
         event EventHandler<ButtonPressedEventArgs>? ButtonPressed;
         event EventHandler<ButtonReleasedEventArgs>? ButtonReleased;
+        event EventHandler<KeybindPressedEventArgs>? KeybindPressed;
+        event EventHandler<KeybindReleasedEventArgs>? KeybindReleased;
     }
 
     [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
@@ -73,14 +75,58 @@ namespace DTMAPI.Abstractions
 
     public sealed class ButtonPressedEventArgs : EventArgs
     {
-        public ButtonPressedEventArgs(string button) => Button = button;
+        public ButtonPressedEventArgs(string button)
+        {
+            PhysicalButton = DtmButton.Parse(button);
+            Button = PhysicalButton.ToString();
+        }
+
         public string Button { get; }
+        public DtmButton PhysicalButton { get; }
     }
 
     public sealed class ButtonReleasedEventArgs : EventArgs
     {
-        public ButtonReleasedEventArgs(string button) => Button = button;
+        public ButtonReleasedEventArgs(string button)
+        {
+            PhysicalButton = DtmButton.Parse(button);
+            Button = PhysicalButton.ToString();
+        }
+
         public string Button { get; }
+        public DtmButton PhysicalButton { get; }
+    }
+
+    public sealed class KeybindPressedEventArgs : EventArgs
+    {
+        public KeybindPressedEventArgs(string ownerId, string keybindId, DtmKeybindList keybinds, string triggerButton)
+        {
+            OwnerId = ownerId ?? string.Empty;
+            KeybindId = keybindId ?? string.Empty;
+            Keybinds = keybinds ?? DtmKeybindList.None;
+            TriggerButton = DtmButton.Parse(triggerButton).ToString();
+        }
+
+        public string OwnerId { get; }
+        public string KeybindId { get; }
+        public DtmKeybindList Keybinds { get; }
+        public string TriggerButton { get; }
+    }
+
+    public sealed class KeybindReleasedEventArgs : EventArgs
+    {
+        public KeybindReleasedEventArgs(string ownerId, string keybindId, DtmKeybindList keybinds, string triggerButton)
+        {
+            OwnerId = ownerId ?? string.Empty;
+            KeybindId = keybindId ?? string.Empty;
+            Keybinds = keybinds ?? DtmKeybindList.None;
+            TriggerButton = DtmButton.Parse(triggerButton).ToString();
+        }
+
+        public string OwnerId { get; }
+        public string KeybindId { get; }
+        public DtmKeybindList Keybinds { get; }
+        public string TriggerButton { get; }
     }
 
     public sealed class SaveLoadedEventArgs : EventArgs

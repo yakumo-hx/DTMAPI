@@ -1,12 +1,30 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)tools\release\dtmapi-runtime-version.props" />
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-    <AssemblyVersion>0.5.2.0</AssemblyVersion>
-    <FileVersion>0.5.2.0</FileVersion>
-    <Version>0.5.2-alpha</Version>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <DtmApiRepositoryRoot>$([System.IO.Path]::GetDirectoryName('$(MSBuildThisFileDirectory)pathmap-root'))</DtmApiRepositoryRoot>
+    <PathMap>$(DtmApiRepositoryRoot)=/_/DTMAPI</PathMap>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.Abstractions' And '$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.Abstractions' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.BepInExBootstrap' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.Core' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.GameBridge.DolocTown' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.GameBridge.DolocTown.Compatibility' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.GameBridge.DolocTown.QA' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.ModConfigMenu'">
+    <AssemblyVersion>$(DtmApiAssemblyCompatibilityVersion)</AssemblyVersion>
+    <FileVersion>$(DtmApiBinaryFileVersion)</FileVersion>
+    <Version>$(DtmApiReleaseVersion)</Version>
+    <InformationalVersion>$(DtmApiReleaseVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 </Project>

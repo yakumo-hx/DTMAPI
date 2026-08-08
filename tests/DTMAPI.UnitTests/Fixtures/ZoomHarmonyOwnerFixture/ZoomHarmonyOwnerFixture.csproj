@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ZoomHarmonyOwnerFixture</AssemblyName>
+    <RootNamespace>DTMAPI.ZoomHarmonyOwnerFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\ZoomConfig.cs"
+             Link="ZoomConfig.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomProductContract.cs"
+             Link="ZoomProductContract.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomHookOwnership.cs"
+             Link="ZoomHookOwnership.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomHookTransaction.cs"
+             Link="ZoomHookTransaction.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomCallbacks.cs"
+             Link="ZoomCallbacks.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomNativeRuntime.cs"
+             Link="ZoomNativeRuntime.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Zoom\src\Native\ZoomHookInstaller.cs"
+             Link="ZoomHookInstaller.cs" />
+    <Compile Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown\Features\Camera\CameraCompatibilityHookOwnership.cs"
+             Link="CameraCompatibilityHookOwnership.cs" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\.tools\bepinex\extract\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\HarmonyXInterop.dll"
+          Link="HarmonyXInterop.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.dll"
+          Link="Mono.Cecil.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Mdb.dll"
+          Link="Mono.Cecil.Mdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Pdb.dll"
+          Link="Mono.Cecil.Pdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Rocks.dll"
+          Link="Mono.Cecil.Rocks.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.RuntimeDetour.dll"
+          Link="MonoMod.RuntimeDetour.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.Utils.dll"
+          Link="MonoMod.Utils.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

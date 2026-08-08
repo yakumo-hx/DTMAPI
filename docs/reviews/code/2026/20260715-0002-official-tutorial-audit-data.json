@@ -1,0 +1,4183 @@
+{
+  "schema_version": 1,
+  "tool": "audit-official-tutorials.py",
+  "tool_version": "1.0.2",
+  "generated_at": "2026-07-15T02:09:26+08:00",
+  "snapshot": {
+    "tool_version": "1.1.0",
+    "complete": true,
+    "page_count": 55,
+    "code_blocks": 86
+  },
+  "official_example": {
+    "workshop_id": 3705665433,
+    "name": "【官方】示例模组",
+    "version": "0.96.06",
+    "json_files": 113,
+    "ignored_template_json_files": 10,
+    "png_files": 1232,
+    "invalid_json_files": 0,
+    "info_sha256": "b085f3d6e4e2c4cb0a493f46777cf6dd5caabefeb6caff27ea38f2bdab8f5ae2",
+    "workshop_sha256": "5735a06258ec2d14a647b3a3728ca7f2eb7f7c66af9d5672c2469e7a73d84a9e"
+  },
+  "summary": {
+    "tutorials": 31,
+    "static_pass": 18,
+    "static_warning": 1,
+    "static_fail": 1,
+    "visual_or_reference_only": 11,
+    "tutorial_code_blocks": 81,
+    "invalid_tutorial_code_blocks": 1,
+    "placeholder_code_blocks": 0,
+    "sample_duplicate_table_ids": 35,
+    "runtime_expectations": 93
+  },
+  "tutorials": [
+    {
+      "tutorial": "01 主角（本体&帽子&工具）",
+      "token": "FHmFwDuySip8M6krNnxcyR91nXg",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/01 主角 Protagonist",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 590,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "02 NPC",
+      "token": "HUAbwaN2hiWLsAkSwrJczQmun9e",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/02 NPC",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 23,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "03 小动物",
+      "token": "POkcwjhF3iPzmikWRZ2cn8n9ncf",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/03 小动物 Animal",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 27,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "04 道具",
+      "token": "CDfmwzDwHi4GJgksMfZcC2mqnTe",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/04 道具 Item",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 3,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "05 设备",
+      "token": "OAMZwIqkLi7xw3k7JcIcvxAQnHg",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/05 设备 Equipment",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 8,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "06 资源",
+      "token": "R8V7wQUQuiEdq8kaDRzcT1vXn5c",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/06 资源 Resource",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 6,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "07 建筑",
+      "token": "SqhhwDgKAi2NLhkYRgwcdWrdnff",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/07 建筑 Building",
+      "sample_found": true,
+      "sample_json": 3,
+      "sample_png": 7,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "08 平台",
+      "token": "V8l8wVIUaitF7rkIBpQcSVLPnWe",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/08 平台 Platform",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 16,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "09 载具",
+      "token": "ApFewNFGeie7OYkImngcrxyQn2b",
+      "sample_directory": "01 美化模组示例 Replacing Existing Content Assets/09 载具 Vehicle",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 3,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "01 新增道具",
+      "token": "OFS1w4gFSiDkHRkXX1Pcu4ihnNh",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/01 新增道具 Item",
+      "sample_found": true,
+      "sample_json": 1,
+      "sample_png": 1,
+      "sample_json_failures": 0,
+      "code_blocks": 1,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "02 新增帽子",
+      "token": "PxaIwKgsPiua7okPqgdcoCOZnkF",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear",
+      "sample_found": true,
+      "sample_json": 6,
+      "sample_png": 19,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "03 新增装饰设备",
+      "token": "PSUjwr1GuiRixsk95HlcYTVQnPd",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 3,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "04 新增配方",
+      "token": "VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 0,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 1,
+      "static_status": "warning",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "05 新增商店道具",
+      "token": "CKj3wewhLiTuCkk2GrqceORunUg",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 0,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "06 综合案例一（新增道具）",
+      "token": "KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 1,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "07 综合案例二（新增帽子）",
+      "token": "WnCwwkXA4ixLjFkx2SIcTyyIned",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）",
+      "sample_found": true,
+      "sample_json": 3,
+      "sample_png": 19,
+      "sample_json_failures": 0,
+      "code_blocks": 3,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）",
+      "sample_found": true,
+      "sample_json": 5,
+      "sample_png": 3,
+      "sample_json_failures": 0,
+      "code_blocks": 5,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）",
+      "sample_found": true,
+      "sample_json": 8,
+      "sample_png": 9,
+      "sample_json_failures": 0,
+      "code_blocks": 6,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "sample_directory": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）",
+      "sample_found": true,
+      "sample_json": 8,
+      "sample_png": 23,
+      "sample_json_failures": 0,
+      "code_blocks": 8,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "01 新增作物（种子+果实）",
+      "token": "LO6uwLfSXilCHLkAymLclh1jncd",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop",
+      "sample_found": true,
+      "sample_json": 2,
+      "sample_png": 6,
+      "sample_json_failures": 0,
+      "code_blocks": 2,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "02 新增鱼",
+      "token": "O64fw47MJiC2qXk8A4fc4RsInyf",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish",
+      "sample_found": true,
+      "sample_json": 3,
+      "sample_png": 1,
+      "sample_json_failures": 0,
+      "code_blocks": 3,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish",
+      "sample_found": true,
+      "sample_json": 9,
+      "sample_png": 3,
+      "sample_json_failures": 0,
+      "code_blocks": 9,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "04 新增资源",
+      "token": "DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource",
+      "sample_found": true,
+      "sample_json": 4,
+      "sample_png": 4,
+      "sample_json_failures": 0,
+      "code_blocks": 4,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "05 新增植被",
+      "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation",
+      "sample_found": true,
+      "sample_json": 5,
+      "sample_png": 6,
+      "sample_json_failures": 0,
+      "code_blocks": 4,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）",
+      "sample_found": true,
+      "sample_json": 11,
+      "sample_png": 6,
+      "sample_json_failures": 0,
+      "code_blocks": 9,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）",
+      "sample_found": true,
+      "sample_json": 14,
+      "sample_png": 4,
+      "sample_json_failures": 0,
+      "code_blocks": 8,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 1,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "fail",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "08 综合案例三（新增资源）",
+      "token": "U75Lwhq4qi4prxkti3zcffplnhf",
+      "sample_directory": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）",
+      "sample_found": true,
+      "sample_json": 7,
+      "sample_png": 4,
+      "sample_json_failures": 0,
+      "code_blocks": 3,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "01 文本本地化",
+      "token": "SYYLwefL8imZYXkivwecR7X2ntc",
+      "sample_directory": "04 其他内容示例 Miscellaneous/01 文本本地化 Localization",
+      "sample_found": true,
+      "sample_json": 3,
+      "sample_png": 0,
+      "sample_json_failures": 0,
+      "code_blocks": 3,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "02 道具数据模板",
+      "token": "Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+      "sample_directory": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template",
+      "sample_found": true,
+      "sample_json": 10,
+      "sample_png": 0,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "03 备用贴图",
+      "token": "NKSJwBudUi9q89kN9GXcpQKwnRe",
+      "sample_directory": "04 其他内容示例 Miscellaneous/03 备用贴图 Image Assets",
+      "sample_found": true,
+      "sample_json": 0,
+      "sample_png": 437,
+      "sample_json_failures": 0,
+      "code_blocks": 0,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "visual-or-reference-only",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    },
+    {
+      "tutorial": "04 掉落上限、保底配置",
+      "token": "RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "sample_directory": "04 其他内容示例 Miscellaneous/04 掉落上限、保底配置 Drop Limit and Pity Setup",
+      "sample_found": true,
+      "sample_json": 1,
+      "sample_png": 0,
+      "sample_json_failures": 0,
+      "code_blocks": 3,
+      "incomplete_code_blocks": 0,
+      "invalid_code_blocks": 0,
+      "unmatched_code_filenames": 0,
+      "code_id_mismatches": 0,
+      "static_status": "pass",
+      "runtime_status": "not-run",
+      "player_status": "not-run"
+    }
+  ],
+  "code_blocks": [
+    {
+      "tutorial": "01 新增道具",
+      "token": "OFS1w4gFSiDkHRkXX1Pcu4ihnNh",
+      "index": 1,
+      "heading": "item_tbitem.json",
+      "caption": "装饰设备道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OFS1w4gFSiDkHRkXX1Pcu4ihnNh/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/01 新增道具 Item/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fertile_soil"
+      ],
+      "sample_ids": [
+        "fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "02 新增帽子",
+      "token": "PxaIwKgsPiua7okPqgdcoCOZnkF",
+      "index": 1,
+      "heading": "item_tbitem.json",
+      "caption": "帽子道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/PxaIwKgsPiua7okPqgdcoCOZnkF/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 29,
+      "line_count": 29,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "hat0"
+      ],
+      "sample_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "02 新增帽子",
+      "token": "PxaIwKgsPiua7okPqgdcoCOZnkF",
+      "index": 2,
+      "heading": "player_tbhat.json",
+      "caption": "帽子信息-配置示例",
+      "language": "JSON",
+      "path": "pages/PxaIwKgsPiua7okPqgdcoCOZnkF/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "player_tbhat.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/player_tbhat.json",
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/player_tbhat.json",
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/player_tbhat.json"
+      ],
+      "documented_ids": [
+        "hat0"
+      ],
+      "sample_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增装饰设备",
+      "token": "PSUjwr1GuiRixsk95HlcYTVQnPd",
+      "index": 1,
+      "heading": "item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/PSUjwr1GuiRixsk95HlcYTVQnPd/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "decoration0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增装饰设备",
+      "token": "PSUjwr1GuiRixsk95HlcYTVQnPd",
+      "index": 2,
+      "heading": "equipment_tbequipment.json",
+      "caption": "设备信息-配置示例",
+      "language": "JSON",
+      "path": "pages/PSUjwr1GuiRixsk95HlcYTVQnPd/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "equipment_tbequipment.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/equipment_tbequipment.json"
+      ],
+      "documented_ids": [
+        "decoration0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 新增配方",
+      "token": "VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+      "index": 1,
+      "heading": "recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "equipment0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": [
+        "equipment0"
+      ]
+    },
+    {
+      "tutorial": "04 新增配方",
+      "token": "VxeWw7ZDjiqFcTk0yLxcnB53n9b",
+      "index": 2,
+      "heading": "mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/VxeWw7ZDjiqFcTk0yLxcnB53n9b/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "equipment_workbench"
+      ],
+      "sample_ids": [
+        "equipment_workbench"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增商店道具",
+      "token": "CKj3wewhLiTuCkk2GrqceORunUg",
+      "index": 1,
+      "heading": "mod_tbmodstoreextension.json",
+      "caption": "一般商店商品信息-配置示例",
+      "language": "JSON",
+      "path": "pages/CKj3wewhLiTuCkk2GrqceORunUg/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 42,
+      "line_count": 42,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodstoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/01 一般商店 Trade Shop/mod_tbmodstoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增商店道具",
+      "token": "CKj3wewhLiTuCkk2GrqceORunUg",
+      "index": 2,
+      "heading": "mod_tbmodexchangestoreextension.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/CKj3wewhLiTuCkk2GrqceORunUg/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 31,
+      "line_count": 31,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodexchangestoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/02 兑换商店 Exchange Shop/mod_tbmodexchangestoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增道具）",
+      "token": "KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+      "index": 1,
+      "heading": "1.item_tbitem.json",
+      "caption": "装饰设备道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fertile_soil"
+      ],
+      "sample_ids": [
+        "fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增道具）",
+      "token": "KWqewbBLEiRw1Pkcn6lcZpQ7nXg",
+      "index": 2,
+      "heading": "2.mod_tbmoditemspawnextension.json",
+      "caption": "掉落库信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KWqewbBLEiRw1Pkcn6lcZpQ7nXg/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmoditemspawnextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）/mod_tbmoditemspawnextension.json"
+      ],
+      "documented_ids": [
+        "soil_drop",
+        "trash_can_small_drop"
+      ],
+      "sample_ids": [
+        "soil_drop",
+        "trash_can_small_drop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增帽子）",
+      "token": "WnCwwkXA4ixLjFkx2SIcTyyIned",
+      "index": 1,
+      "heading": "item_tbitem.json",
+      "caption": "道具信息-配置示例（添加单个道具）",
+      "language": "JSON",
+      "path": "pages/WnCwwkXA4ixLjFkx2SIcTyyIned/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 92,
+      "line_count": 92,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "sample_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增帽子）",
+      "token": "WnCwwkXA4ixLjFkx2SIcTyyIned",
+      "index": 2,
+      "heading": "player_tbhat.json",
+      "caption": "帽子信息-配置示例",
+      "language": "JSON",
+      "path": "pages/WnCwwkXA4ixLjFkx2SIcTyyIned/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 80,
+      "line_count": 80,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "player_tbhat.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/player_tbhat.json"
+      ],
+      "documented_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "sample_ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增帽子）",
+      "token": "WnCwwkXA4ixLjFkx2SIcTyyIned",
+      "index": 3,
+      "heading": "mod_tbmodexchangestoreextension.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/WnCwwkXA4ixLjFkx2SIcTyyIned/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 62,
+      "line_count": 62,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodexchangestoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/mod_tbmodexchangestoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "index": 1,
+      "heading": "item_tbitem.json",
+      "caption": "道具信息-配置示例（添加单个道具）",
+      "language": "JSON",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "decoration0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "index": 2,
+      "heading": "equipment_tbequipment.json",
+      "caption": "设备信息-配置示例",
+      "language": "JSON",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "equipment_tbequipment.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/equipment_tbequipment.json"
+      ],
+      "documented_ids": [
+        "decoration0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "index": 3,
+      "heading": "recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "decoration0"
+      ],
+      "sample_ids": [
+        "decoration0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "index": 4,
+      "heading": "mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "equipment_workbench"
+      ],
+      "sample_ids": [
+        "equipment_workbench"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增设备）",
+      "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+      "index": 5,
+      "heading": "mod_tbmodstoreextension.json",
+      "caption": "一般商店商品信息-配置示例",
+      "language": "JSON",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 43,
+      "line_count": 43,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodstoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodstoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 1,
+      "heading": "1.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 31,
+      "line_count": 31,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "exterior0"
+      ],
+      "sample_ids": [
+        "exterior0",
+        "wall0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 2,
+      "heading": "1.2building_tbbuildingexterior.json",
+      "caption": "墙纸信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 29,
+      "line_count": 29,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "building_tbbuildingexterior.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/building_tbbuildingexterior.json"
+      ],
+      "documented_ids": [
+        "exterior0"
+      ],
+      "sample_ids": [
+        "exterior0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 3,
+      "heading": "1.3mod_tbmodstoreextension.json",
+      "caption": "一般商店商品信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 42,
+      "line_count": 42,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodstoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/mod_tbmodstoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/mod_tbmodstoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 4,
+      "heading": "2.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 31,
+      "line_count": 31,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "wall0"
+      ],
+      "sample_ids": [
+        "exterior0",
+        "wall0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 5,
+      "heading": "2.2building_tbbuildingwallpaper.json",
+      "caption": "墙纸信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 16,
+      "line_count": 16,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "building_tbbuildingwallpaper.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/building_tbbuildingwallpaper.json"
+      ],
+      "documented_ids": [
+        "wall0"
+      ],
+      "sample_ids": [
+        "wall0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "09 综合案例四（新增墙纸）",
+      "token": "YHhawESrpidQRikIjWJczOLLnrh",
+      "index": 6,
+      "heading": "2.3mod_tbmodstoreextension.json",
+      "caption": "一般商店商品信息-配置示例",
+      "language": "JSON",
+      "path": "pages/YHhawESrpidQRikIjWJczOLLnrh/code-blocks/06-code.jsonc",
+      "line_first": 1,
+      "line_last": 42,
+      "line_count": 42,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodstoreextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/mod_tbmodstoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/mod_tbmodstoreextension.json"
+      ],
+      "documented_ids": [
+        "phone_booth_shop"
+      ],
+      "sample_ids": [
+        "phone_booth_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 1,
+      "heading": "1.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "platform0"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 2,
+      "heading": "1.2 platform_tbplatform.json",
+      "caption": "平台信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 40,
+      "line_count": 40,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "platform_tbplatform.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/platform_tbplatform.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/platform_tbplatform.json"
+      ],
+      "documented_ids": [
+        "platform0"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 3,
+      "heading": "1.3recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 25,
+      "line_count": 25,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/recipe_tbrecipe.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "platform0"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 4,
+      "heading": "1.4mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/mod_tbmodrecipegroupextension.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "manual_workbench"
+      ],
+      "sample_ids": [
+        "manual_workbench"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 5,
+      "heading": "2.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "platform1"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 6,
+      "heading": "2.2platform_tbplatform.json",
+      "caption": "平台信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/06-code.jsonc",
+      "line_first": 1,
+      "line_last": 88,
+      "line_count": 88,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "platform_tbplatform.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/platform_tbplatform.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/platform_tbplatform.json"
+      ],
+      "documented_ids": [
+        "platform1"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 7,
+      "heading": "2.3recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/07-code.jsonc",
+      "line_first": 1,
+      "line_last": 25,
+      "line_count": 25,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/recipe_tbrecipe.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "platform1"
+      ],
+      "sample_ids": [
+        "platform0",
+        "platform1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "10 综合案例五（新增平台）",
+      "token": "OdcywZdsuiio3MkdpLdcJretnte",
+      "index": 8,
+      "heading": "2.4mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/OdcywZdsuiio3MkdpLdcJretnte/code-blocks/08-code.jsonc",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/mod_tbmodrecipegroupextension.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "manual_workbench"
+      ],
+      "sample_ids": [
+        "manual_workbench"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "01 新增作物（种子+果实）",
+      "token": "LO6uwLfSXilCHLkAymLclh1jncd",
+      "index": 1,
+      "heading": "1.item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/LO6uwLfSXilCHLkAymLclh1jncd/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 68,
+      "line_count": 68,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "crop0",
+        "seed_crop0"
+      ],
+      "sample_ids": [
+        "crop0",
+        "seed_crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "01 新增作物（种子+果实）",
+      "token": "LO6uwLfSXilCHLkAymLclh1jncd",
+      "index": 2,
+      "heading": "2.plant_tbseed.json",
+      "caption": "作物信息-配置示例",
+      "language": "JSON",
+      "path": "pages/LO6uwLfSXilCHLkAymLclh1jncd/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 56,
+      "line_count": 56,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "plant_tbseed.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/plant_tbseed.json"
+      ],
+      "documented_ids": [
+        "seed_crop0"
+      ],
+      "sample_ids": [
+        "seed_crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "02 新增鱼",
+      "token": "O64fw47MJiC2qXk8A4fc4RsInyf",
+      "index": 1,
+      "heading": "1.item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/O64fw47MJiC2qXk8A4fc4RsInyf/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 32,
+      "line_count": 32,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fish0"
+      ],
+      "sample_ids": [
+        "fish0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "02 新增鱼",
+      "token": "O64fw47MJiC2qXk8A4fc4RsInyf",
+      "index": 2,
+      "heading": "2.fishing_tbfish.json",
+      "caption": "鱼信息-配置示例",
+      "language": "JSON",
+      "path": "pages/O64fw47MJiC2qXk8A4fc4RsInyf/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 46,
+      "line_count": 46,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "fishing_tbfish.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/fishing_tbfish.json"
+      ],
+      "documented_ids": [
+        "fish0"
+      ],
+      "sample_ids": [
+        "fish0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "02 新增鱼",
+      "token": "O64fw47MJiC2qXk8A4fc4RsInyf",
+      "index": 3,
+      "heading": "3.mod_tbmodfishingpoolextension.json",
+      "caption": "池塘信息-配置示例",
+      "language": "JSON",
+      "path": "pages/O64fw47MJiC2qXk8A4fc4RsInyf/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodfishingpoolextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/mod_tbmodfishingpoolextension.json"
+      ],
+      "documented_ids": [
+        "freshwater_default",
+        "freshwater_forest",
+        "wetland_lotus"
+      ],
+      "sample_ids": [
+        "freshwater_default",
+        "freshwater_forest",
+        "wetland_lotus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 1,
+      "heading": "1.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "endyam_can"
+      ],
+      "sample_ids": [
+        "endyam_can",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 2,
+      "heading": "1.2item_tbeatingeffect.json",
+      "caption": "食用效果信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 17,
+      "line_count": 17,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbeatingeffect.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbeatingeffect.json",
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbeatingeffect.json"
+      ],
+      "documented_ids": [
+        "endyam_can"
+      ],
+      "sample_ids": [
+        "endyam_can",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 3,
+      "heading": "1.3recipe_tbrecipe.json",
+      "caption": "固定配方食谱信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 29,
+      "line_count": 29,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "endyam_can"
+      ],
+      "sample_ids": [
+        "endyam_can"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 4,
+      "heading": "1.4mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 14,
+      "line_count": 14,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "large_pot",
+        "pot"
+      ],
+      "sample_ids": [
+        "large_pot",
+        "pot"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 5,
+      "heading": "2.1item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 66,
+      "line_count": 66,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sample_ids": [
+        "endyam_can",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 6,
+      "heading": "2.2item_tbeatingeffect.json",
+      "caption": "食用效果信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/06-code.jsonc",
+      "line_first": 1,
+      "line_last": 34,
+      "line_count": 34,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbeatingeffect.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbeatingeffect.json",
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbeatingeffect.json"
+      ],
+      "documented_ids": [
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sample_ids": [
+        "endyam_can",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 7,
+      "heading": "2.3recipe_tbingredientgroup.json",
+      "caption": "食材类信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/07-code.jsonc",
+      "line_first": 1,
+      "line_last": 39,
+      "line_count": 39,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbingredientgroup.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbingredientgroup.json"
+      ],
+      "documented_ids": [
+        "can_class",
+        "canned_fish_class"
+      ],
+      "sample_ids": [
+        "can_class",
+        "canned_fish_class"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 8,
+      "heading": "2.4recipe_tbdish.json",
+      "caption": "自由烹饪食谱信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/08-code.jsonc",
+      "line_first": 1,
+      "line_last": 57,
+      "line_count": 57,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbdish.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbdish.json"
+      ],
+      "documented_ids": [
+        "fish_can"
+      ],
+      "sample_ids": [
+        "fish_can"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "03 新增料理",
+      "token": "KaKyw74DnibQhmkjPlMcJgZXnBf",
+      "index": 9,
+      "heading": "2.5mod_tbmoddishgroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KaKyw74DnibQhmkjPlMcJgZXnBf/code-blocks/09-code.jsonc",
+      "line_first": 1,
+      "line_last": 14,
+      "line_count": 14,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmoddishgroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/mod_tbmoddishgroupextension.json"
+      ],
+      "documented_ids": [
+        "large_pot",
+        "pot"
+      ],
+      "sample_ids": [
+        "large_pot",
+        "pot"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 新增资源",
+      "token": "DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "index": 1,
+      "heading": "1.resource_tbresource.json",
+      "caption": "资源信息-配置示例",
+      "language": "JSON",
+      "path": "pages/DSwGwUzfki0gkPk1k6dcio6bnpb/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 58,
+      "line_count": 58,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "resource_tbresource.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/resource_tbresource.json"
+      ],
+      "documented_ids": [
+        "fertile_soil"
+      ],
+      "sample_ids": [
+        "fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 新增资源",
+      "token": "DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "index": 2,
+      "heading": "2.mod_tbmodresourcespawnextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/DSwGwUzfki0gkPk1k6dcio6bnpb/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 13,
+      "line_count": 13,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodresourcespawnextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/mod_tbmodresourcespawnextension.json"
+      ],
+      "documented_ids": [
+        "doloc_town_forest"
+      ],
+      "sample_ids": [
+        "doloc_town_forest"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 新增资源",
+      "token": "DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "index": 3,
+      "heading": "3.item_tbitem.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/DSwGwUzfki0gkPk1k6dcio6bnpb/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fertile_soil"
+      ],
+      "sample_ids": [
+        "fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 新增资源",
+      "token": "DSwGwUzfki0gkPk1k6dcio6bnpb",
+      "index": 4,
+      "heading": "4.item_tbitemspawn.json",
+      "caption": "追加掉落库信息-配置示例",
+      "language": "JSON",
+      "path": "pages/DSwGwUzfki0gkPk1k6dcio6bnpb/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 13,
+      "line_count": 13,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitemspawn.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitemspawn.json"
+      ],
+      "documented_ids": [
+        "fertile_soil_drop"
+      ],
+      "sample_ids": [
+        "fertile_soil_drop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增植被",
+      "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "index": 1,
+      "heading": "1.resource_tbvegetation.json",
+      "caption": "植被信息-配置示例",
+      "language": "JSON",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 44,
+      "line_count": 44,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "resource_tbvegetation.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/resource_tbvegetation.json"
+      ],
+      "documented_ids": [
+        "toadstool"
+      ],
+      "sample_ids": [
+        "toadstool"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增植被",
+      "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "index": 2,
+      "heading": "2.mod_tbmodvegetationspawnextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodvegetationspawnextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/mod_tbmodvegetationspawnextension.json"
+      ],
+      "documented_ids": [
+        "wetland_cave",
+        "wetland_cave_depths"
+      ],
+      "sample_ids": [
+        "wetland_cave",
+        "wetland_cave_depths"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增植被",
+      "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "index": 3,
+      "heading": "4.item_tbitemspawn.json",
+      "caption": "追加掉落库信息-配置示例",
+      "language": "JSON",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 13,
+      "line_count": 13,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitemspawn.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/item_tbitemspawn.json"
+      ],
+      "documented_ids": [
+        "toadstool_drop"
+      ],
+      "sample_ids": [
+        "toadstool_drop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "05 新增植被",
+      "token": "NwWvwfh7fin9WOk5vVQcyDSGnpb",
+      "index": 4,
+      "heading": "5.resource_tbresourcedocument.json（可选）",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "path": "pages/NwWvwfh7fin9WOk5vVQcyDSGnpb/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 45,
+      "line_count": 45,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "resource_tbresourcedocument.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/resource_tbresourcedocument.json"
+      ],
+      "documented_ids": [
+        "toadstool"
+      ],
+      "sample_ids": [
+        "toadstool"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 1,
+      "heading": "3.mod_tbmodstoreextension.json",
+      "caption": "道具信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 85,
+      "line_count": 85,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodstoreextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodstoreextension.json"
+      ],
+      "documented_ids": [
+        "seasonseed_villain_shop",
+        "villain_shop"
+      ],
+      "sample_ids": [
+        "seasonseed_villain_shop",
+        "villain_shop"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 2,
+      "heading": "4.plant_tbcropgenematrix.json",
+      "caption": "作物基因信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 91,
+      "line_count": 91,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "plant_tbcropgenematrix.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/plant_tbcropgenematrix.json"
+      ],
+      "documented_ids": [
+        "seed_crop0"
+      ],
+      "sample_ids": [
+        "seed_crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 3,
+      "heading": "5.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 74,
+      "line_count": 74,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "crop0",
+        "gene_seed_crop0",
+        "seed_crop0"
+      ],
+      "sample_ids": [
+        "crop0",
+        "gene_seed_crop0",
+        "seed_crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 4,
+      "heading": "6.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "gene_extractor",
+        "plant_data_analyzer",
+        "seed_compacting_machine"
+      ],
+      "sample_ids": [
+        "gene_extractor",
+        "plant_data_analyzer",
+        "seed_compacting_machine"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 5,
+      "heading": "7.archives_tbplantdocument.json",
+      "caption": "档案信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "archives_tbplantdocument.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/archives_tbplantdocument.json"
+      ],
+      "documented_ids": [
+        "crop0"
+      ],
+      "sample_ids": [
+        "crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 6,
+      "heading": "8.mod_tbmodingredientgroupextension.json",
+      "caption": "食材信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/06-code.jsonc",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodingredientgroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodingredientgroupextension.json"
+      ],
+      "documented_ids": [
+        "meat_vegetable_class",
+        "mushroom_class",
+        "vegetable_class"
+      ],
+      "sample_ids": [
+        "meat_vegetable_class",
+        "mushroom_class",
+        "vegetable_class"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 7,
+      "heading": "9.fishing_tbfishfeed.json",
+      "caption": "渔业喂食信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/07-code.jsonc",
+      "line_first": 1,
+      "line_last": 6,
+      "line_count": 6,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "fishing_tbfishfeed.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/fishing_tbfishfeed.json"
+      ],
+      "documented_ids": [
+        "crop0"
+      ],
+      "sample_ids": [
+        "crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 8,
+      "heading": "10.animal_tbfeed.json",
+      "caption": "畜牧喂食信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/08-code.jsonc",
+      "line_first": 1,
+      "line_last": 6,
+      "line_count": 6,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "animal_tbfeed.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/animal_tbfeed.json"
+      ],
+      "documented_ids": [
+        "crop0"
+      ],
+      "sample_ids": [
+        "crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "06 综合案例一（新增作物）",
+      "token": "V3mywFHTtiE7kfk9RUVcrrednLb",
+      "index": 9,
+      "heading": "11.animal_tbhusbandryenergy.json",
+      "caption": "放牧喂食信息-配置示例",
+      "language": "JSON",
+      "path": "pages/V3mywFHTtiE7kfk9RUVcrrednLb/code-blocks/09-code.jsonc",
+      "line_first": 1,
+      "line_last": 7,
+      "line_count": 7,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "animal_tbhusbandryenergy.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/animal_tbhusbandryenergy.json"
+      ],
+      "documented_ids": [
+        "seed_crop0"
+      ],
+      "sample_ids": [
+        "seed_crop0"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 1,
+      "heading": "1.item_tbitem.json",
+      "caption": "鱼信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 126,
+      "line_count": 126,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitem.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitem.json"
+      ],
+      "documented_ids": [
+        "fish0",
+        "fish1",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sample_ids": [
+        "fish0",
+        "fish1",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 2,
+      "heading": "8.fishing_tbfarmfish.json",
+      "caption": "养殖鱼-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 34,
+      "line_count": 34,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "fishing_tbfarmfish.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfarmfish.json"
+      ],
+      "documented_ids": [
+        "fish0",
+        "fish1"
+      ],
+      "sample_ids": [
+        "fish0",
+        "fish1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 3,
+      "heading": "9.fishing_tbfarmfishformation.json",
+      "caption": "杂交阵型信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 22,
+      "line_count": 22,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "fishing_tbfarmfishformation.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfarmfishformation.json"
+      ],
+      "documented_ids": [
+        "fish1"
+      ],
+      "sample_ids": [
+        "fish1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 4,
+      "heading": "10.item_tbitemspawn.json",
+      "caption": "道具生成表-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/04-code.jsonc",
+      "line_first": 1,
+      "line_last": 24,
+      "line_count": 24,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "item_tbitemspawn.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitemspawn.json"
+      ],
+      "documented_ids": [
+        "fish0_produce",
+        "fish1_produce"
+      ],
+      "sample_ids": [
+        "fish0_produce",
+        "fish1_produce"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 5,
+      "heading": "11.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/05-code.jsonc",
+      "line_first": 1,
+      "line_last": 49,
+      "line_count": 49,
+      "line_complete": true,
+      "parse_status": "invalid",
+      "parse_error": "Expecting ',' delimiter: line 20 column 5 (char 351)",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [],
+      "sample_ids": [
+        "dried_fish_fish0",
+        "dried_fish_fish1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 6,
+      "heading": "12.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/06-code.jsonc",
+      "line_first": 1,
+      "line_last": 16,
+      "line_count": 16,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "air_drying_box",
+        "air_drying_box_big"
+      ],
+      "sample_ids": [
+        "air_drying_box",
+        "air_drying_box_big"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 7,
+      "heading": "13.mod_tbmodingredientgroupextension.json",
+      "caption": "食材组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/07-code.jsonc",
+      "line_first": 1,
+      "line_last": 23,
+      "line_count": 23,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodingredientgroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodingredientgroupextension.json"
+      ],
+      "documented_ids": [
+        "fish_class",
+        "meat_fish_class",
+        "meat_vegetable_class"
+      ],
+      "sample_ids": [
+        "fish_class",
+        "meat_fish_class",
+        "meat_vegetable_class"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "07 综合案例二（新增鱼)",
+      "token": "KkZ0wpgT1iLu4Vk2P32cNxnrnCd",
+      "index": 8,
+      "heading": "14.fishing_tbfishdocument.json",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "path": "pages/KkZ0wpgT1iLu4Vk2P32cNxnrnCd/code-blocks/08-code.jsonc",
+      "line_first": 1,
+      "line_last": 40,
+      "line_count": 40,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "fishing_tbfishdocument.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfishdocument.json"
+      ],
+      "documented_ids": [
+        "fish0",
+        "fish1"
+      ],
+      "sample_ids": [
+        "fish0",
+        "fish1"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增资源）",
+      "token": "U75Lwhq4qi4prxkti3zcffplnhf",
+      "index": 1,
+      "heading": "5.recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 48,
+      "line_count": 48,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "recipe_tbrecipe.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/recipe_tbrecipe.json"
+      ],
+      "documented_ids": [
+        "fertilizer_fertile_soil",
+        "fertilizer_tree_fertile_soil"
+      ],
+      "sample_ids": [
+        "fertilizer_fertile_soil",
+        "fertilizer_tree_fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增资源）",
+      "token": "U75Lwhq4qi4prxkti3zcffplnhf",
+      "index": 2,
+      "heading": "6.mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 20,
+      "line_count": 20,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "mod_tbmodrecipegroupextension.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/mod_tbmodrecipegroupextension.json"
+      ],
+      "documented_ids": [
+        "compost_barrel",
+        "compost_grinder",
+        "tree_compost_barrel"
+      ],
+      "sample_ids": [
+        "compost_barrel",
+        "compost_grinder",
+        "tree_compost_barrel"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "08 综合案例三（新增资源）",
+      "token": "U75Lwhq4qi4prxkti3zcffplnhf",
+      "index": 3,
+      "heading": "7.resource_tbresourcedocument.json",
+      "caption": "图鉴信息-配置示例",
+      "language": "JSON",
+      "path": "pages/U75Lwhq4qi4prxkti3zcffplnhf/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 45,
+      "line_count": 45,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "resource_tbresourcedocument.json",
+      "sample_matches": [
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/resource_tbresourcedocument.json"
+      ],
+      "documented_ids": [
+        "fertile_soil"
+      ],
+      "sample_ids": [
+        "fertile_soil"
+      ],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "01 文本本地化",
+      "token": "SYYLwefL8imZYXkivwecR7X2ntc",
+      "index": 1,
+      "heading": "1.localization_tbtextmapperen.json",
+      "caption": "英文本地化-配置示例",
+      "language": "JSON",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "localization_tbtextmapperen.json",
+      "sample_matches": [
+        "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperen.json"
+      ],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "01 文本本地化",
+      "token": "SYYLwefL8imZYXkivwecR7X2ntc",
+      "index": 2,
+      "heading": "2.localization_tbtextmapperzh_cn.json",
+      "caption": "简体中文本地化-配置示例",
+      "language": "JSON",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "localization_tbtextmapperzh_cn.json",
+      "sample_matches": [
+        "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperzh_cn.json"
+      ],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "01 文本本地化",
+      "token": "SYYLwefL8imZYXkivwecR7X2ntc",
+      "index": 3,
+      "heading": "3.localization_tbtextmapperzh_tw.json",
+      "caption": "繁体中文本地化-配置示例",
+      "language": "JSON",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "localization_tbtextmapperzh_tw.json",
+      "sample_matches": [
+        "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperzh_tw.json"
+      ],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 掉落上限、保底配置",
+      "token": "RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "index": 1,
+      "heading": "1.资源采集掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/01-code.jsonc",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "",
+      "sample_matches": [],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 掉落上限、保底配置",
+      "token": "RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "index": 2,
+      "heading": "2.怪物掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/02-code.jsonc",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "",
+      "sample_matches": [],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    },
+    {
+      "tutorial": "04 掉落上限、保底配置",
+      "token": "RsaywZ3JdieYHDkZpCLc1vYenvg",
+      "index": 3,
+      "heading": "3.钓鱼掉落",
+      "caption": "上限/保底信息-配置示例",
+      "language": "JSON",
+      "path": "pages/RsaywZ3JdieYHDkZpCLc1vYenvg/code-blocks/03-code.jsonc",
+      "line_first": 1,
+      "line_last": 12,
+      "line_count": 12,
+      "line_complete": true,
+      "parse_status": "valid",
+      "parse_error": "",
+      "filename": "",
+      "sample_matches": [],
+      "documented_ids": [],
+      "sample_ids": [],
+      "missing_ids_in_sample": []
+    }
+  ],
+  "sample_json": [
+    {
+      "path": "01 美化模组示例 Replacing Existing Content Assets/07 建筑 Building/02 内部 Internal/sprite_building_internal_small_container.json",
+      "table": "sprite_building_internal_small_container.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "1811e3b2fc20fd7c0e1fb6c84ff7ea9ad0ce04c36d8a6a1c0b792115e8658be4"
+    },
+    {
+      "path": "01 美化模组示例 Replacing Existing Content Assets/07 建筑 Building/02 内部 Internal/sprite_building_internal_small_container_wall_window.json",
+      "table": "sprite_building_internal_small_container_wall_window.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "1811e3b2fc20fd7c0e1fb6c84ff7ea9ad0ce04c36d8a6a1c0b792115e8658be4"
+    },
+    {
+      "path": "01 美化模组示例 Replacing Existing Content Assets/07 建筑 Building/02 内部 Internal/sprite_building_internal_small_container_wall_window_mask.json",
+      "table": "sprite_building_internal_small_container_wall_window_mask.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "1811e3b2fc20fd7c0e1fb6c84ff7ea9ad0ce04c36d8a6a1c0b792115e8658be4"
+    },
+    {
+      "path": "01 美化模组示例 Replacing Existing Content Assets/09 载具 Vehicle/sprite_vehicle_motor.json",
+      "table": "sprite_vehicle_motor.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "658370cc6f84f96fbbf1958edc65b07a0f4fa7de3b1384034f9b7ddfa5b9ae12"
+    },
+    {
+      "path": "01 美化模组示例 Replacing Existing Content Assets/09 载具 Vehicle/sprite_vehicle_motor_light_mask.json",
+      "table": "sprite_vehicle_motor_light_mask.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "658370cc6f84f96fbbf1958edc65b07a0f4fa7de3b1384034f9b7ddfa5b9ae12"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/01 新增道具 Item/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "7ce5bc592a9d6d5df18d7a3e4b55a29fbb0985a910089f7bfed7bf8326dcfd2a"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat0"
+      ],
+      "sha256": "3d055861aed76f807b0c73d5b81d883e5c332d8e2977eb222cce301c71b1ba79"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/player_tbhat.json",
+      "table": "player_tbhat.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat0"
+      ],
+      "sha256": "07f126149c5750c6cbb49e21980b401e95f6b5ff82ead05f38cb89aa57de56a3"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat1"
+      ],
+      "sha256": "81050cf77b2b90cd804ccc119347164c30fe07b66502f3c32d8b5940a31c6ae1"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/player_tbhat.json",
+      "table": "player_tbhat.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat1"
+      ],
+      "sha256": "57b03917820dcafb42e4c61299e2064fea9fa29b8aadd1e0268cf36c182dc838"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat2"
+      ],
+      "sha256": "9a4539732c50ecf1fa89bab956fca6ef61719a2223588727ed790255e597c223"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/player_tbhat.json",
+      "table": "player_tbhat.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat2"
+      ],
+      "sha256": "2ca98dabca448e40c1b22aade2ba218781fea1f6ad60c443973bc86e6c30acf2"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/equipment_tbequipment.json",
+      "table": "equipment_tbequipment.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "53cf2f851930c19ec34a7f999b35713e9b37b9663f4a8494f5b6766722b7c509"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "45ebca69922a363911e73ef5f7641134e9e5b6631d7b2aaa96314dcc602f0474"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "equipment_workbench"
+      ],
+      "sha256": "60340e3deb19f1386ea0564414c2485070e97d39bd21ef4659d9e82215f3f051"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "cdb12a31e4d23311c2e2b8de7d097bc8d69c2d46ccf942868419028867e43adc"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/01 一般商店 Trade Shop/mod_tbmodstoreextension.json",
+      "table": "mod_tbmodstoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_shop"
+      ],
+      "sha256": "953011118248c567c5d392fa5418941cabff067021e578a1c40ce6050349db3d"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/02 兑换商店 Exchange Shop/mod_tbmodexchangestoreextension.json",
+      "table": "mod_tbmodexchangestoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "sha256": "39aadd851889a1e5476939853b04841307b8aa667e26ac3691826fa25d3c038b"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "7ce5bc592a9d6d5df18d7a3e4b55a29fbb0985a910089f7bfed7bf8326dcfd2a"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）/mod_tbmoditemspawnextension.json",
+      "table": "mod_tbmoditemspawnextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "soil_drop",
+        "trash_can_small_drop"
+      ],
+      "sha256": "cff3ff96b0ad0578f3758d30448e960c2448d48a882b176a04fb12e13a14b979"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "sha256": "1d42a0f86e63cfa8aa273200e575fb8aace3a8007609ffb7e536b838252b377b"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/mod_tbmodexchangestoreextension.json",
+      "table": "mod_tbmodexchangestoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_exchange_shop"
+      ],
+      "sha256": "ad9008ca84ff782f12e8288c69e631b9c179d0147d04f9e2c65338ddea53f34c"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/player_tbhat.json",
+      "table": "player_tbhat.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "hat0",
+        "hat1",
+        "hat2"
+      ],
+      "sha256": "93248977b7857367e4755d4810419078260113eaa5c72601a45efdb2f5404504"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/equipment_tbequipment.json",
+      "table": "equipment_tbequipment.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "53cf2f851930c19ec34a7f999b35713e9b37b9663f4a8494f5b6766722b7c509"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "45ebca69922a363911e73ef5f7641134e9e5b6631d7b2aaa96314dcc602f0474"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "equipment_workbench"
+      ],
+      "sha256": "60340e3deb19f1386ea0564414c2485070e97d39bd21ef4659d9e82215f3f051"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodstoreextension.json",
+      "table": "mod_tbmodstoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_shop"
+      ],
+      "sha256": "2b33326d7f19cf6979848379553c29df274f27cb78368a20f51dbf9feb25493f"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "decoration0"
+      ],
+      "sha256": "cdb12a31e4d23311c2e2b8de7d097bc8d69c2d46ccf942868419028867e43adc"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/building_tbbuildingexterior.json",
+      "table": "building_tbbuildingexterior.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "exterior0"
+      ],
+      "sha256": "873b382c413266d8002334525f0eacf2fb110fbb0ac99acbf81b9366c5ceb17e"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "exterior0"
+      ],
+      "sha256": "252315167e9340a4f640827493c5176df3fa6f87ba2e61ddcb3ad5bff2c87d8f"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/mod_tbmodstoreextension.json",
+      "table": "mod_tbmodstoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_shop"
+      ],
+      "sha256": "00d16a4e51004f8fa52ec3e019a153dc5de59ffc8a5ff4ee089a1bfaf7245bc5"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/building_tbbuildingwallpaper.json",
+      "table": "building_tbbuildingwallpaper.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "wall0"
+      ],
+      "sha256": "e03a958eec8c4d73efcaa2e41cfee58f2021200468435f11e3159bc145e4dbe5"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "wall0"
+      ],
+      "sha256": "6737639f218b5330425180dcd379064dcb758f602622d428fb7700749c7ec95e"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/mod_tbmodstoreextension.json",
+      "table": "mod_tbmodstoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "phone_booth_shop"
+      ],
+      "sha256": "aec1d9f9069995957c6b88f2464d7b59463c0ff6757f991a7f6839042d7b7fbd"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/贴图 Texture/sprite_building_internal_small_container_wall0.json",
+      "table": "sprite_building_internal_small_container_wall0.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "1811e3b2fc20fd7c0e1fb6c84ff7ea9ad0ce04c36d8a6a1c0b792115e8658be4"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/贴图 Texture/sprite_building_internal_small_container_wall0_mask.json",
+      "table": "sprite_building_internal_small_container_wall0_mask.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "1811e3b2fc20fd7c0e1fb6c84ff7ea9ad0ce04c36d8a6a1c0b792115e8658be4"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform0"
+      ],
+      "sha256": "7be1e1da8950f1e023c940ea8ea76b7fc4dc4daddb3ebed8fcf5921fc8ebb026"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "manual_workbench"
+      ],
+      "sha256": "f56ef6b8ef8316ffe54d4e5cf7e810fc3b6e2acb32cd3c2d1878dd3c261b90ab"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/platform_tbplatform.json",
+      "table": "platform_tbplatform.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform0"
+      ],
+      "sha256": "68418312a4d0350bba0f1f30e37eb2642fd9917ab4faa7bca91829dcaf619b3c"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform0"
+      ],
+      "sha256": "bd627a5e0532c78dc921a903c74f62f7b64779eab804dec92367fe7a410a11e0"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform1"
+      ],
+      "sha256": "d7099065bac0d03ac1582e091fd1ba16a3ad0ace4ae3c1cd4ef3c26f1094cead"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "manual_workbench"
+      ],
+      "sha256": "5de6ef180efad283be82c6b0fd7a9f711d7953c598e3d1f961aac6bdf4da3456"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/platform_tbplatform.json",
+      "table": "platform_tbplatform.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform1"
+      ],
+      "sha256": "08f9f7c1382d538d7bc508c8ef73e08f4ea747f202c51675a2431220332fbc07"
+    },
+    {
+      "path": "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "platform1"
+      ],
+      "sha256": "db57e38d1bbc876b333cd959b49718ef25d7caf0bfb6f0c98af858b809313f44"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0",
+        "seed_crop0"
+      ],
+      "sha256": "8ab84662362959e6ac98a9fbc0e4c4843bc9194204653c38fd04755c1e45bb56"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/plant_tbseed.json",
+      "table": "plant_tbseed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_crop0"
+      ],
+      "sha256": "3201431c89ec0fb8a8533b6734ff96c90428b0ece7a3060eb08629f8835a327b"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/fishing_tbfish.json",
+      "table": "fishing_tbfish.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0"
+      ],
+      "sha256": "50a0b52d1986f7e3e950c8eba8630f3134e09805c4a9fde11eafa1f1213a54b7"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0"
+      ],
+      "sha256": "4887411991b813ba9434de30d31ab0ef8ad4fff92a279a488d397e277a24be30"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/mod_tbmodfishingpoolextension.json",
+      "table": "mod_tbmodfishingpoolextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "freshwater_default",
+        "freshwater_forest",
+        "wetland_lotus"
+      ],
+      "sha256": "b0fa122cde0355df4ea0a73d2578c010a554436ed775ed2d9edca16004b7ffc5"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbeatingeffect.json",
+      "table": "item_tbeatingeffect.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "endyam_can"
+      ],
+      "sha256": "1e76179b1e312c7a85048632c0a541ab7ce22ad376f69a909c5f6f908e323eda"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "endyam_can"
+      ],
+      "sha256": "924e1469cbf3095512856c6c74c4ac87df46af4df8777d302bf9b1d5d9ded883"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "large_pot",
+        "pot"
+      ],
+      "sha256": "c257f93a6f3e724b3b8ef17df10597933cd12f70f2f91b5bf44ab011bb861fab"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/01 固定配方 Set Recipe/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "endyam_can"
+      ],
+      "sha256": "2e0586e7c4031b930ad1fd85faae171e8373cad94ecf1aca82329c3d5d570315"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbeatingeffect.json",
+      "table": "item_tbeatingeffect.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sha256": "7ad91a27752349db7572f712c6e2b4569cee5388c111367287b4c41af272978f"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sha256": "c1bdefdba22dfb1f1924f52d558561791a7ae6907ba3be37f6beb2e868a3f02d"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/mod_tbmoddishgroupextension.json",
+      "table": "mod_tbmoddishgroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "large_pot",
+        "pot"
+      ],
+      "sha256": "3134bf732beb5002ff29715f0047ee1de8613085a95a41157e06b6de89d57c0e"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbdish.json",
+      "table": "recipe_tbdish.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_can"
+      ],
+      "sha256": "dce8b7255c10c2d35e5f936c4008041b6f803acf99f48966da478732d0780c42"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbingredientgroup.json",
+      "table": "recipe_tbingredientgroup.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "can_class",
+        "canned_fish_class"
+      ],
+      "sha256": "5627b87de53df16a9ec4dbee79cf845a90fbb50f776a4e523f6f57f4d27e2157"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "7ce5bc592a9d6d5df18d7a3e4b55a29fbb0985a910089f7bfed7bf8326dcfd2a"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitemspawn.json",
+      "table": "item_tbitemspawn.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil_drop"
+      ],
+      "sha256": "27ffc4ccc7e88cf8e83fc0847e8e2fbe7a23601ffff583434ff4f867cf5bc1a1"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/mod_tbmodresourcespawnextension.json",
+      "table": "mod_tbmodresourcespawnextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "doloc_town_forest"
+      ],
+      "sha256": "cbc5508bfa6f5b4a52cfb38338fd018880651d91a70984ae550fa7a22c265fd0"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/resource_tbresource.json",
+      "table": "resource_tbresource.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "ccf331adc8ee1beda4866b2a601b89a82359a9fcb530d13c6957b3cb3fc2c886"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "vivid_toadstool"
+      ],
+      "sha256": "5424140261b400420c8ce7599d150470f6e67fc0ca01873c7557f0b2fb0a36ef"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/item_tbitemspawn.json",
+      "table": "item_tbitemspawn.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "toadstool_drop"
+      ],
+      "sha256": "eafd7bf9c4b2fc2684502f5867bfd874afde1d19180f20a70f59952343b79d17"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/mod_tbmodvegetationspawnextension.json",
+      "table": "mod_tbmodvegetationspawnextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "wetland_cave",
+        "wetland_cave_depths"
+      ],
+      "sha256": "af7490017b0b6eacaeab893dbe006c4524f80b907d7c2bac26f89c0d1aa46264"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/resource_tbresourcedocument.json",
+      "table": "resource_tbresourcedocument.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "toadstool"
+      ],
+      "sha256": "d16e1fcfa5fb6c92d380a04f46b3e67d604b67b6d6e2a9d2150fcbc06204c1ef"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/05 新增植被 Vegetation/resource_tbvegetation.json",
+      "table": "resource_tbvegetation.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "toadstool"
+      ],
+      "sha256": "ae6c77068ac0941c9f5df91b7ec5a955dd607bd99dded80a4ae0983fafcc3754"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/animal_tbfeed.json",
+      "table": "animal_tbfeed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0"
+      ],
+      "sha256": "eb18956634bea81f28e08d1f41f7cabccb864888a9fc74e57d6ec275c20adb0f"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/animal_tbhusbandryenergy.json",
+      "table": "animal_tbhusbandryenergy.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_crop0"
+      ],
+      "sha256": "18127e7b9b0fc74d2995629bd5e6ab030aebf9ae05a60f30948a5bf2ed0c36c4"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/archives_tbplantdocument.json",
+      "table": "archives_tbplantdocument.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0"
+      ],
+      "sha256": "e0d92c0779c1268cbea66355ebad24a4f759a36b9bfe589e3837309698a1f651"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/fishing_tbfishfeed.json",
+      "table": "fishing_tbfishfeed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0"
+      ],
+      "sha256": "ae0733d0b2009bfe8746ee633aebec9e79f8ddb8519133f410797433955a4e12"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0",
+        "seed_crop0"
+      ],
+      "sha256": "0bd49a2ded7c13ea846a56bc1784ee9fb743ca263fc21e4e999f4f1955d1dede"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodingredientgroupextension.json",
+      "table": "mod_tbmodingredientgroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "meat_vegetable_class",
+        "mushroom_class",
+        "vegetable_class"
+      ],
+      "sha256": "255953b633a49727b1c0a3cb43855b324db0da5547189ba450689e1714e96b96"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "gene_extractor",
+        "plant_data_analyzer",
+        "seed_compacting_machine"
+      ],
+      "sha256": "ef8ccbe34c658d13ebc70283b990f569107e6e98b7d8361c43b02a96333ae399"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodstoreextension.json",
+      "table": "mod_tbmodstoreextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seasonseed_villain_shop",
+        "villain_shop"
+      ],
+      "sha256": "f5183223ab97914f6daf30d8d3b12fc363e39682c299adaec648ad00e998aece"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/plant_tbcropgenematrix.json",
+      "table": "plant_tbcropgenematrix.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_crop0"
+      ],
+      "sha256": "f62a72c2bf468463e4dc917b147823cb7f4db80e3c29b6e0308833eb9425f247"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/plant_tbseed.json",
+      "table": "plant_tbseed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_crop0"
+      ],
+      "sha256": "3201431c89ec0fb8a8533b6734ff96c90428b0ece7a3060eb08629f8835a327b"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "crop0",
+        "gene_seed_crop0",
+        "seed_crop0"
+      ],
+      "sha256": "127de7fb96510df3b32d86cb5143114f3002f07907776ab3acf7dbe5fb4998bb"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfarmfish.json",
+      "table": "fishing_tbfarmfish.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0",
+        "fish1"
+      ],
+      "sha256": "ac0375b745ca6c34e54c13102c99073c4b10cfc3ea7acb5ba32ddae54db8506b"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfarmfishformation.json",
+      "table": "fishing_tbfarmfishformation.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish1"
+      ],
+      "sha256": "911ff88aae063d46ebd76356bc113c8305817b1548fdbd63e3c991a842a0afd2"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfish.json",
+      "table": "fishing_tbfish.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0"
+      ],
+      "sha256": "50a0b52d1986f7e3e950c8eba8630f3134e09805c4a9fde11eafa1f1213a54b7"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfishdocument.json",
+      "table": "fishing_tbfishdocument.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0",
+        "fish1"
+      ],
+      "sha256": "ca8c0424865e23ce74117b36e53888d4165ab59b9ffd15514b19db02fe9db478"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbeatingeffect.json",
+      "table": "item_tbeatingeffect.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sha256": "7ad91a27752349db7572f712c6e2b4569cee5388c111367287b4c41af272978f"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0",
+        "fish1",
+        "fish_can",
+        "fish_can_plus"
+      ],
+      "sha256": "0ba4391e92984ef0d9ee3e19b999ac95c6bcfa7bd0352bd754ad638a1db7468e"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitemspawn.json",
+      "table": "item_tbitemspawn.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish0_produce",
+        "fish1_produce"
+      ],
+      "sha256": "aae9a32584bf0eb825d8f9034b22620ebe7c46ffb88c7eda247f68ddd5d4d51f"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmoddishgroupextension.json",
+      "table": "mod_tbmoddishgroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "large_pot",
+        "pot"
+      ],
+      "sha256": "3134bf732beb5002ff29715f0047ee1de8613085a95a41157e06b6de89d57c0e"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodfishingpoolextension.json",
+      "table": "mod_tbmodfishingpoolextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "freshwater_default",
+        "freshwater_forest",
+        "wetland_lotus"
+      ],
+      "sha256": "b0fa122cde0355df4ea0a73d2578c010a554436ed775ed2d9edca16004b7ffc5"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodingredientgroupextension.json",
+      "table": "mod_tbmodingredientgroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_class",
+        "meat_fish_class",
+        "meat_vegetable_class"
+      ],
+      "sha256": "80f22a2b120c0cd0c5329ca3cd885c9052b4721e4da83b5e43d6759a8d6f1ebe"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "air_drying_box",
+        "air_drying_box_big"
+      ],
+      "sha256": "5e666c3c3c60263aaff9d42f7f7cd9cbb32afba7eaf236e55f9da354a703d114"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbdish.json",
+      "table": "recipe_tbdish.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fish_can"
+      ],
+      "sha256": "dce8b7255c10c2d35e5f936c4008041b6f803acf99f48966da478732d0780c42"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbingredientgroup.json",
+      "table": "recipe_tbingredientgroup.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "can_class",
+        "canned_fish_class"
+      ],
+      "sha256": "5627b87de53df16a9ec4dbee79cf845a90fbb50f776a4e523f6f57f4d27e2157"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "dried_fish_fish0",
+        "dried_fish_fish1"
+      ],
+      "sha256": "4aba9233e4130798f35e0009f3310d4975395ef082009e8d3b08d78305ca1639"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "7ce5bc592a9d6d5df18d7a3e4b55a29fbb0985a910089f7bfed7bf8326dcfd2a"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/item_tbitemspawn.json",
+      "table": "item_tbitemspawn.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil_drop"
+      ],
+      "sha256": "27ffc4ccc7e88cf8e83fc0847e8e2fbe7a23601ffff583434ff4f867cf5bc1a1"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/mod_tbmodrecipegroupextension.json",
+      "table": "mod_tbmodrecipegroupextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "compost_barrel",
+        "compost_grinder",
+        "tree_compost_barrel"
+      ],
+      "sha256": "806451b74a8a1182b41e8c551fb07069641348866b0560da5e21d090b0bd71a2"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/mod_tbmodresourcespawnextension.json",
+      "table": "mod_tbmodresourcespawnextension.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "doloc_town_forest"
+      ],
+      "sha256": "cbc5508bfa6f5b4a52cfb38338fd018880651d91a70984ae550fa7a22c265fd0"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/recipe_tbrecipe.json",
+      "table": "recipe_tbrecipe.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertilizer_fertile_soil",
+        "fertilizer_tree_fertile_soil"
+      ],
+      "sha256": "ac038510897344fa615714e0bb6bcbd8db8359c7ddf7232e49402bf2c4b4c97c"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/resource_tbresource.json",
+      "table": "resource_tbresource.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "ccf331adc8ee1beda4866b2a601b89a82359a9fcb530d13c6957b3cb3fc2c886"
+    },
+    {
+      "path": "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/resource_tbresourcedocument.json",
+      "table": "resource_tbresourcedocument.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "fertile_soil"
+      ],
+      "sha256": "1614aa36fa9cad33cf1772ed9e3a4a7d450a9aa0221f7c36b64ed21a3151b3f3"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperen.json",
+      "table": "localization_tbtextmapperen.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "de974d003fc159ae85fae3dcd8a66d7ad55fb6e084b7ef2d783ce805e1e068a8"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperzh_cn.json",
+      "table": "localization_tbtextmapperzh_cn.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "579ae1676878e6773809d0d057d13cdbfe7d496d0def17c552f26559234c9c01"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/01 文本本地化 Localization/localization_tbtextmapperzh_tw.json",
+      "table": "localization_tbtextmapperzh_tw.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "5e2132b13fd345538ee7387ac674f78d9523cb7b15578613219530e27a506a07"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/01 无功能道具 Item Without Effect/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "8c58540ecdc7cda5912487682d7dc91c5bb7443ea8643df33da9c1e36e5c3f2a"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/02 帽子道具&帽子信息 Hat & Effect Info/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "3e21f310f1d14e88e30e48626a290094008bfa31268ad07618a336bd0f6c11b7"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/02 帽子道具&帽子信息 Hat & Effect Info/player_tbhat.json",
+      "table": "player_tbhat.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "49cc19ecb2456615285e9e481632c9abd01a740ef29888c03b3664103cedff3c"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/03 设备道具&装饰设备信息 Equipment & Decoration Info/equipment_tbequipment.json",
+      "table": "equipment_tbequipment.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "aa42ce6c68903148a9465a44b3bba4c84bcf7c86decea534ad592bb0242a075a"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/03 设备道具&装饰设备信息 Equipment & Decoration Info/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "2fa13841565505130fd50363f7a785d60eeee7d89503badec6765621a8158e28"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/04 作物道具（种子&果实）Crop (Seed & Produce)/01 作物种子道具&种子数据 Seed & Seed Info/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_[ID]"
+      ],
+      "sha256": "da385918ac0fea27369fae3d527ef3c96e8c9d5381650151669e715f45a04a26"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/04 作物道具（种子&果实）Crop (Seed & Produce)/01 作物种子道具&种子数据 Seed & Seed Info/plant_tbseed.json",
+      "table": "plant_tbseed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "seed_[ID]"
+      ],
+      "sha256": "83897b5eb273374a2ce3d5ead3f4b131190fdd44cd9844bcf2bdbb9aef8a4d94"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/04 作物道具（种子&果实）Crop (Seed & Produce)/02 作物果实道具 Produce/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "ba84c9be3391bd6fd785358c1c0f058ff41aa67f8885bea7f741de1808947c17"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/05 食物道具&食用效果 Dish & Effect Info/item_tbeatingeffect.json",
+      "table": "item_tbeatingeffect.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "6636042ab2bd6877ccafae51d68b3b651d6b97ab48613deb59994689c8412c35"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/02 道具数据模板 JSON File Template/_IGNORE/05 食物道具&食用效果 Dish & Effect Info/item_tbitem.json",
+      "table": "item_tbitem.json",
+      "status": "valid",
+      "error": "",
+      "ids": [
+        "[ID]"
+      ],
+      "sha256": "c2985055916d7a79404a07353a9662a97953d2015f8607a66fd145f7d0d56f81"
+    },
+    {
+      "path": "04 其他内容示例 Miscellaneous/04 掉落上限、保底配置 Drop Limit and Pity Setup/resource_tbglobalguaranteed.json",
+      "table": "resource_tbglobalguaranteed.json",
+      "status": "valid",
+      "error": "",
+      "ids": [],
+      "sha256": "204920252174476e3359a9de1bf494f8bd0fa4519bc10d5045222fae8ac07af1"
+    }
+  ],
+  "duplicate_table_ids": [
+    {
+      "table": "equipment_tbequipment.json",
+      "id": "decoration0",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/equipment_tbequipment.json",
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/equipment_tbequipment.json"
+      ]
+    },
+    {
+      "table": "fishing_tbfish.json",
+      "id": "fish0",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/fishing_tbfish.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/fishing_tbfish.json"
+      ]
+    },
+    {
+      "table": "item_tbeatingeffect.json",
+      "id": "fish_can",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbeatingeffect.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbeatingeffect.json"
+      ]
+    },
+    {
+      "table": "item_tbeatingeffect.json",
+      "id": "fish_can_plus",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbeatingeffect.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbeatingeffect.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "crop0",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "decoration0",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/03 新增设备 Farm Decoration/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "fertile_soil",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/01 新增道具 Item/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/06 综合案例一（新增道具） Example（New Item）/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "fish0",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "fish_can",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "fish_can_plus",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "hat0",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "hat1",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "hat2",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/item_tbitem.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitem.json",
+      "id": "seed_crop0",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/item_tbitem.json",
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/item_tbitem.json"
+      ]
+    },
+    {
+      "table": "item_tbitemspawn.json",
+      "id": "fertile_soil_drop",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/item_tbitemspawn.json",
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/item_tbitemspawn.json"
+      ]
+    },
+    {
+      "table": "mod_tbmoddishgroupextension.json",
+      "id": "large_pot",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/mod_tbmoddishgroupextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmoddishgroupextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmoddishgroupextension.json",
+      "id": "pot",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/mod_tbmoddishgroupextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmoddishgroupextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodexchangestoreextension.json",
+      "id": "phone_booth_exchange_shop",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/02 兑换商店 Exchange Shop/mod_tbmodexchangestoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/mod_tbmodexchangestoreextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodfishingpoolextension.json",
+      "id": "freshwater_default",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/mod_tbmodfishingpoolextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodfishingpoolextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodfishingpoolextension.json",
+      "id": "freshwater_forest",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/mod_tbmodfishingpoolextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodfishingpoolextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodfishingpoolextension.json",
+      "id": "wetland_lotus",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/02 新增鱼 Fish/mod_tbmodfishingpoolextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodfishingpoolextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodingredientgroupextension.json",
+      "id": "meat_vegetable_class",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/mod_tbmodingredientgroupextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/mod_tbmodingredientgroupextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodrecipegroupextension.json",
+      "id": "equipment_workbench",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/mod_tbmodrecipegroupextension.json",
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodrecipegroupextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodrecipegroupextension.json",
+      "id": "manual_workbench",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/01 简易纹理平台 Basic Texture Platform/mod_tbmodrecipegroupextension.json",
+        "02 基础内容模组示例 Basic Content Creation/10 综合案例五（新增平台）Example（New Platform）/02 随机纹理平台 Random Texture Platform/mod_tbmodrecipegroupextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodresourcespawnextension.json",
+      "id": "doloc_town_forest",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/mod_tbmodresourcespawnextension.json",
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/mod_tbmodresourcespawnextension.json"
+      ]
+    },
+    {
+      "table": "mod_tbmodstoreextension.json",
+      "id": "phone_booth_shop",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/05 新增商店道具 Store Item/01 一般商店 Trade Shop/mod_tbmodstoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/mod_tbmodstoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/01 外部墙纸 Exterior Wallpaper/mod_tbmodstoreextension.json",
+        "02 基础内容模组示例 Basic Content Creation/09 综合案例四（新增墙纸）Example（New Wallpaper）/02 内部墙纸 Interior Wallpaper/mod_tbmodstoreextension.json"
+      ]
+    },
+    {
+      "table": "plant_tbseed.json",
+      "id": "seed_crop0",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/01 新增作物  Crop/plant_tbseed.json",
+        "03 进阶内容模组示例 Advanced Content Creation/06 综合案例一（新增作物） Example（Crop）/plant_tbseed.json"
+      ]
+    },
+    {
+      "table": "player_tbhat.json",
+      "id": "hat0",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/01 静态帽子 Static Hat/player_tbhat.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/player_tbhat.json"
+      ]
+    },
+    {
+      "table": "player_tbhat.json",
+      "id": "hat1",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/02 动态帽子 Animated Hat/player_tbhat.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/player_tbhat.json"
+      ]
+    },
+    {
+      "table": "player_tbhat.json",
+      "id": "hat2",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/02 新增帽子 Headgear/03 造型帽子 Hairstyle Hat/player_tbhat.json",
+        "02 基础内容模组示例 Basic Content Creation/07 综合案例二（新增帽子）Example（New Hat）/player_tbhat.json"
+      ]
+    },
+    {
+      "table": "recipe_tbdish.json",
+      "id": "fish_can",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbdish.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbdish.json"
+      ]
+    },
+    {
+      "table": "recipe_tbingredientgroup.json",
+      "id": "can_class",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbingredientgroup.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbingredientgroup.json"
+      ]
+    },
+    {
+      "table": "recipe_tbingredientgroup.json",
+      "id": "canned_fish_class",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/03 新增料理 Dish/02 自由烹饪 Flexible Recipe/recipe_tbingredientgroup.json",
+        "03 进阶内容模组示例 Advanced Content Creation/07 综合案例二（新增鱼） Example（Fish）/recipe_tbingredientgroup.json"
+      ]
+    },
+    {
+      "table": "recipe_tbrecipe.json",
+      "id": "decoration0",
+      "origins": [
+        "02 基础内容模组示例 Basic Content Creation/04 新增配方 Recipe/recipe_tbrecipe.json",
+        "02 基础内容模组示例 Basic Content Creation/08 综合案例三（新增设备）Example（New Decor）/recipe_tbrecipe.json"
+      ]
+    },
+    {
+      "table": "resource_tbresource.json",
+      "id": "fertile_soil",
+      "origins": [
+        "03 进阶内容模组示例 Advanced Content Creation/04 新增资源 Resource/resource_tbresource.json",
+        "03 进阶内容模组示例 Advanced Content Creation/08 综合案例三（新增资源） Example（Resource）/resource_tbresource.json"
+      ]
+    }
+  ]
+}

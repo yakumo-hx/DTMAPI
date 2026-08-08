@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI 更多存档",
+  "author": "Yuuka",
+  "version": "0.3.1-dtmapi",
+  "description": "依赖 DTMAPI。\n将官方存档界面扩容为 12 个总槽位，禁用后不会删除额外存档文件。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "DTMAPI",
+    "Save",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多存档",
+    "tchinese": "DTMAPI 更多存檔",
+    "english": "DTMAPI More Saves"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI。\n将官方存档界面扩容为 12 个总槽位，禁用后不会删除额外存档文件。",
+    "tchinese": "依賴 DTMAPI。\n將官方存檔介面擴容為 12 個總槽位，停用後不會刪除額外存檔檔案。",
+    "english": "Requires DTMAPI.\nExpands the official save UI to 12 total slots. Extra save files are not deleted when the mod is disabled."
+  }
+}

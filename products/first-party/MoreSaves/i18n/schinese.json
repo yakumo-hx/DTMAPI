@@ -1,0 +1,10 @@
+{
+  "mod.name": "DTMAPI 更多存档",
+  "mod.loaded": "DTMAPI 更多存档 ProductNative 运行时已加载。",
+  "config.section.slots": "存档槽位",
+  "config.enabled.name": "启用",
+  "config.enabled.tooltip": "将官方存档/读档界面扩展为 12 个总槽位。",
+  "config.status": "状态：{0}",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "记录低频的原生存档数量生命周期诊断。"
+}

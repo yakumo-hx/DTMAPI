@@ -1,0 +1,10 @@
+{
+  "mod.name": "DTMAPI More Saves",
+  "mod.loaded": "DTMAPI More Saves ProductNative runtime loaded.",
+  "config.section.slots": "Save slots",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Expands the official save/load UI to 12 total slots.",
+  "config.status": "Status: {0}",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency archive-count lifecycle diagnostics."
+}

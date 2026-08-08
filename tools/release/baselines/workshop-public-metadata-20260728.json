@@ -1,0 +1,578 @@
+{
+  "schemaVersion": 2,
+  "snapshotId": "workshop-public-metadata-20260728",
+  "steamAppId": "2285550",
+  "metadataCapturedAtUtc": "2026-07-27T19:18:30Z",
+  "searchCapturedAtUtc": "2026-07-27T19:18:18Z",
+  "metadataDigest": {
+    "normalization": "Items sorted by PublishedFileID. Format CreatedUTC and UpdatedUTC as yyyy-MM-ddTHH:mm:ssZ. Join PublishedFileID|AppID|Result|Visibility|Title|CreatorID|CreatedUTC|UpdatedUTC|FileSize|comma-joined Tags|Classification|CatalogID-or-empty|KnownUniqueID-or-empty with LF; UTF-8; SHA-256.",
+    "rowCount": 22,
+    "sha256": "e74aa6449e00d6ddc83004078a74a03a7e3d25820c9f8a8ccf7e13e535d28ce0"
+  },
+  "sources": {
+    "metadataEndpoint": "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
+    "metadataMethod": "POST",
+    "browseEndpoint": "https://steamcommunity.com/workshop/browse/?appid=2285550",
+    "browseQueries": [
+      {
+        "text": "DTMAPI",
+        "resultCount": 19,
+        "pagesFetched": 2,
+        "terminalReason": "EmptyPage",
+        "publishedFileIds": [
+          "3742714442",
+          "3742717440",
+          "3742763050",
+          "3742763309",
+          "3742763540",
+          "3742763706",
+          "3742763843",
+          "3742765514",
+          "3743016467",
+          "3743621104",
+          "3743644065",
+          "3743790125",
+          "3743799721",
+          "3744059735",
+          "3746319981",
+          "3754866797",
+          "3754869009",
+          "3759797170",
+          "3772057085"
+        ]
+      },
+      {
+        "text": "DTM API",
+        "resultCount": 11,
+        "pagesFetched": 2,
+        "terminalReason": "EmptyPage",
+        "publishedFileIds": [
+          "3742717440",
+          "3742763050",
+          "3742763309",
+          "3742763540",
+          "3742763706",
+          "3742763843",
+          "3742765514",
+          "3743016467",
+          "3743799721",
+          "3744059735",
+          "3746319981"
+        ]
+      },
+      {
+        "text": "Doloc Town Modding API",
+        "resultCount": 31,
+        "pagesFetched": 3,
+        "terminalReason": "EmptyPage",
+        "publishedFileIds": [
+          "3705665433",
+          "3709176726",
+          "3716431651",
+          "3722791728",
+          "3742618545",
+          "3742714442",
+          "3742763050",
+          "3742771572",
+          "3743016467",
+          "3743621104",
+          "3743644065",
+          "3743790125",
+          "3743799721",
+          "3744059735",
+          "3744793227",
+          "3746319981",
+          "3746326554",
+          "3748254247",
+          "3748990546",
+          "3749039274",
+          "3749143385",
+          "3750891996",
+          "3753181253",
+          "3754866797",
+          "3754869009",
+          "3756310473",
+          "3758209174",
+          "3759797170",
+          "3760912100",
+          "3763389470",
+          "3772057085"
+        ]
+      },
+      {
+        "text": "DolocTown SMAPI",
+        "resultCount": 11,
+        "pagesFetched": 2,
+        "terminalReason": "EmptyPage",
+        "publishedFileIds": [
+          "3722791728",
+          "3742618545",
+          "3742771572",
+          "3743016467",
+          "3743621104",
+          "3743644065",
+          "3743790125",
+          "3746326554",
+          "3754869009",
+          "3763389470",
+          "3772057085"
+        ]
+      }
+    ],
+    "broadQueryUnionCount": 37,
+    "authoritativeSelection": "Exact DTMAPI query union preserved compatibility IDs 3726044511, 3742618545 and 3742771572; broad query counts are discovery-only because Steam text relevance currently returns unrelated Mods.",
+    "queryUnionCount": 22
+  },
+  "verificationBoundary": {
+    "publicMetadata": "Verified for the captured response: result, app id, visibility, title, creator id, timestamps, file size, and tags.",
+    "semanticVersion": "The public API response does not expose each DTMAPI manifest version. First-party semantic versions come only from the retained read-only subscription cutoff.",
+    "accountControl": "PendingAccountControlVerification",
+    "creatorIdInference": "All Runtime and eleven first-party items share creator 76561198946111933. This is public metadata evidence, not proof that the currently authenticated account controls the items.",
+    "releaseCutoff": "This is the 0.5.5 RC public-metadata cutoff. Exact downloadable consumer bytes remain governed by the retained read-only subscription inventory and ABI gate."
+  },
+  "firstPartyPublicCreatorId": "76561198946111933",
+  "activeDtmapiPublicItemCount": 12,
+  "sameCreatorQueryResultCount": 13,
+  "firstPartyPublishedProductCount": 11,
+  "items": [
+    {
+      "publishedFileId": "3726044511",
+      "appId": "2285550",
+      "result": 9,
+      "visibility": 0,
+      "title": "DolocTown SMAPI",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "05/14/2026 20:56:12",
+      "timeUpdatedUtc": "05/21/2026 04:12:02",
+      "fileSize": 2088865,
+      "tags": [
+        "Mod",
+        "Loader",
+        "Functional",
+        "Chinese"
+      ],
+      "classification": "LegacyRuntimeRetiredCompatibility",
+      "catalogId": null,
+      "knownUniqueId": null,
+      "metadataState": "CurrentResult9WithLastKnownDetailsFrom20260713"
+    },
+    {
+      "publishedFileId": "3742618545",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Developer Mode",
+      "creatorId": "76561199204051082",
+      "timeCreatedUtc": "2026-06-11T11:29:03Z",
+      "timeUpdatedUtc": "2026-06-12T00:49:50Z",
+      "fileSize": 42247,
+      "tags": [
+        "Mod",
+        "Test"
+      ],
+      "classification": "LegacyExternalSmapiClaimant",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742714442",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Y Key Console",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T15:02:27Z",
+      "timeUpdatedUtc": "2026-06-16T17:28:24Z",
+      "fileSize": 303759,
+      "tags": [
+        "Mod",
+        "Chinese",
+        "Gameplay",
+        "Functional",
+        "DTMAPI"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "y-console",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742717440",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Zoom",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T15:08:21Z",
+      "timeUpdatedUtc": "2026-06-13T12:40:16Z",
+      "fileSize": 463988,
+      "tags": [
+        "Camera",
+        "Mod",
+        "Chinese",
+        "DTMAPI",
+        "Utility"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "zoom",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742763050",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI More Saves",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:34:24Z",
+      "timeUpdatedUtc": "2026-06-13T13:02:11Z",
+      "fileSize": 140622,
+      "tags": [
+        "Mod",
+        "Utility",
+        "DTMAPI",
+        "Save",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "more-saves",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742763309",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Action Speed",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:34:48Z",
+      "timeUpdatedUtc": "2026-06-16T16:22:53Z",
+      "fileSize": 325618,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "action-speed",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742763540",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI One Action Complete",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:35:19Z",
+      "timeUpdatedUtc": "2026-06-13T13:01:36Z",
+      "fileSize": 214265,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "one-action-complete",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742763706",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Fish Roe Info Display",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:35:38Z",
+      "timeUpdatedUtc": "2026-06-13T12:39:51Z",
+      "fileSize": 99872,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "fish-roe-info",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742763843",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Animal Bell Hidden Produce Progress",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:35:56Z",
+      "timeUpdatedUtc": "2026-06-16T08:58:28Z",
+      "fileSize": 71627,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "animal-husbandry-progress",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742765514",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Chest Locator Enhancer",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-11T16:38:59Z",
+      "timeUpdatedUtc": "2026-06-13T10:32:37Z",
+      "fileSize": 39848,
+      "tags": [
+        "Mod",
+        "Utility",
+        "DTMAPI",
+        "Inventory",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "chest-locator-enhancer",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3742771572",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Auto Harvest",
+      "creatorId": "76561199476189487",
+      "timeCreatedUtc": "2026-06-11T16:51:15Z",
+      "timeUpdatedUtc": "2026-06-11T16:51:15Z",
+      "fileSize": 10279,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "Chinese"
+      ],
+      "classification": "LegacyAutoHarvestMustNotMerge",
+      "catalogId": null,
+      "knownUniqueId": "None.AutoHarvest"
+    },
+    {
+      "publishedFileId": "3743016467",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-12T01:57:12Z",
+      "timeUpdatedUtc": "2026-06-18T16:28:45Z",
+      "fileSize": 2524685,
+      "tags": [
+        "Mod",
+        "Chinese",
+        "DTMAPI",
+        "Framework"
+      ],
+      "classification": "FirstPartyRuntime",
+      "catalogId": "runtime",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3743621104",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Double Storage Capacity",
+      "creatorId": "76561199204051082",
+      "timeCreatedUtc": "2026-06-13T02:14:57Z",
+      "timeUpdatedUtc": "2026-06-15T08:32:19Z",
+      "fileSize": 677282,
+      "tags": [
+        "Mod",
+        "Storage"
+      ],
+      "classification": "ExternalApiConsumerRetained",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3743644065",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Double Store Capacity",
+      "creatorId": "76561199204051082",
+      "timeCreatedUtc": "2026-06-13T03:21:11Z",
+      "timeUpdatedUtc": "2026-06-15T08:31:51Z",
+      "fileSize": 667493,
+      "tags": [
+        "Mod",
+        "Shopping"
+      ],
+      "classification": "ExternalApiConsumerRetained",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3743790125",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "No Weeds & Trash in Farm",
+      "creatorId": "76561199204051082",
+      "timeCreatedUtc": "2026-06-13T10:08:22Z",
+      "timeUpdatedUtc": "2026-06-15T08:32:33Z",
+      "fileSize": 855542,
+      "tags": [
+        "Mod",
+        "Functional"
+      ],
+      "classification": "ExternalPrerequisiteClaimantPendingPackageInspection",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3743799721",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Auto Fishing",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-13T10:29:31Z",
+      "timeUpdatedUtc": "2026-06-13T16:12:50Z",
+      "fileSize": 217099,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "auto-fishing",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3744059735",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI More Equipment Slots",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-13T17:59:52Z",
+      "timeUpdatedUtc": "2026-06-14T23:03:28Z",
+      "fileSize": 539565,
+      "tags": [
+        "Mod",
+        "Gameplay",
+        "Functional",
+        "DTMAPI",
+        "Equipment",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "more-equipment-slots",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3746319981",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DTMAPI Manbo Cardboard Audio",
+      "creatorId": "76561198946111933",
+      "timeCreatedUtc": "2026-06-17T00:36:49Z",
+      "timeUpdatedUtc": "2026-06-17T00:36:49Z",
+      "fileSize": 229384,
+      "tags": [
+        "Mod",
+        "Audio",
+        "Functional",
+        "DTMAPI",
+        "Chinese"
+      ],
+      "classification": "FirstPartyPublishedProduct",
+      "catalogId": "manbo-cardboard-audio",
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3754866797",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Price Helper",
+      "creatorId": "76561199020900841",
+      "timeCreatedUtc": "2026-06-30T10:58:31Z",
+      "timeUpdatedUtc": "2026-06-30T11:54:53Z",
+      "fileSize": 523409,
+      "tags": [
+        "QoL",
+        "UI",
+        "Price"
+      ],
+      "classification": "SearchFalsePositiveExplicitNoDtmapiRequired",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3754869009",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "Doloc Town QoL",
+      "creatorId": "76561199020900841",
+      "timeCreatedUtc": "2026-06-30T11:04:30Z",
+      "timeUpdatedUtc": "2026-07-03T12:36:53Z",
+      "fileSize": 127879,
+      "tags": [
+        "QoL",
+        "DTMAPI",
+        "Cooking"
+      ],
+      "classification": "ExternalApiConsumerRetained",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3759797170",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "泰拉瑞亚物品包",
+      "creatorId": "76561198429176122",
+      "timeCreatedUtc": "2026-07-07T16:04:16Z",
+      "timeUpdatedUtc": "2026-07-16T11:33:57Z",
+      "fileSize": 696149,
+      "tags": [
+        "Mod",
+        "Chinese"
+      ],
+      "classification": "ExternalApiConsumerRetainedInstallerPlacementPending",
+      "catalogId": null,
+      "knownUniqueId": null
+    },
+    {
+      "publishedFileId": "3772057085",
+      "appId": "2285550",
+      "result": 1,
+      "visibility": 0,
+      "title": "DolocTownHungerSystem",
+      "creatorId": "76561198814633331",
+      "timeCreatedUtc": "2026-07-26T12:25:42Z",
+      "timeUpdatedUtc": "2026-07-26T12:25:42Z",
+      "fileSize": 40679,
+      "tags": [
+        "Mod",
+        "..."
+      ],
+      "classification": "SearchFalsePositiveExternalBepInExPluginExplicitNoDtmapiUse",
+      "catalogId": null,
+      "knownUniqueId": null
+    }
+  ]
+}

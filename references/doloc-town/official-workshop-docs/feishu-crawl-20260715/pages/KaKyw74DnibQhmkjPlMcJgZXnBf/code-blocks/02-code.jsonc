@@ -1,0 +1,17 @@
+[
+  {
+    "id": "endyam_can",
+    "sound_event": "PLAY_CHARACTER_EAT", //音效事件ID，不动
+    "output_items": [], //使用后生成道具，一般留空
+    "effects": [
+      {
+        "buff": "energy_increase_fixed", //BUFF ID
+        "scale": 80 //BUFF数值（若有）
+      },
+      {
+        "buff": "health_increase_fixed", //BUFF ID
+        "scale": 80 //BUFF数值（若有）
+      }
+    ]
+  }
+]

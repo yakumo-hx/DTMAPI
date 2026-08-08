@@ -1,0 +1,85 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+  "token": "Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+  "title": "02 道具数据模板",
+  "document_title": "02 道具数据模板",
+  "source_modified_label": "4月15日修改",
+  "status_code": 200,
+  "elapsed_seconds": 10.547,
+  "block_count": 7,
+  "blocks_by_type": {
+    "heading1": 1,
+    "bullet": 3,
+    "image": 1,
+    "text": 2
+  },
+  "scroll_samples": 5,
+  "scroll_height_max": 1220,
+  "links": [
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "4",
+      "image_tokens": [
+        "EGnobvYlAolRTQx4WGQc32fMn8d"
+      ],
+      "rendered_path": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/images/rendered-01-4.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/EGnobvYlAolRTQx4WGQc32fMn8d/?fallback_source=1&height=1280&mount_node_token=RZmydq9nZo26vnxwKy9cR4OenI8&mount_point=docx_image&policy=equal&width=1280",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/images/original/image-01-ac653cd2f288bc49.png",
+      "bytes": 11947,
+      "sha256": "0c34c7c3f1afa80d453d8685586803810a6887d488b085280ed903f17218dd5c"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/images/original/image-02-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/images/original/image-03-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/images/original/image-04-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/source.html",
+    "rendered_html": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/rendered.html",
+    "text": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/content.txt",
+    "markdown": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/content.md",
+    "metadata": "pages/Rv1swL7JEiLHSZkaNk7cFyyXnIh/page.json"
+  }
+}

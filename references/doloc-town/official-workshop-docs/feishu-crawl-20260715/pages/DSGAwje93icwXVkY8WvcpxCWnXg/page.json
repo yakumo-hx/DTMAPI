@@ -1,0 +1,78 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/DSGAwje93icwXVkY8WvcpxCWnXg",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/DSGAwje93icwXVkY8WvcpxCWnXg",
+  "token": "DSGAwje93icwXVkY8WvcpxCWnXg",
+  "title": "05 ID对照表（设备）",
+  "document_title": "05 ID对照表（设备）",
+  "source_modified_label": "4月14日修改",
+  "status_code": 200,
+  "elapsed_seconds": 12.282,
+  "block_count": 4,
+  "blocks_by_type": {
+    "heading1": 1,
+    "bullet": 1,
+    "sheet": 1,
+    "text": 1
+  },
+  "scroll_samples": 8,
+  "scroll_height_max": 5671,
+  "links": [],
+  "children": [],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/images/original/image-01-ce24e25c0763d89d.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/images/original/image-02-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "4",
+      "sheet_id": "ijyIhK",
+      "tsv_path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/sheets/01-01-ijyihk.tsv",
+      "screenshot_path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/sheets/01-01-ijyihk.png",
+      "status": "captured",
+      "rows": 187,
+      "columns_max": 8
+    }
+  ],
+  "code_blocks": [],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/raw-api/sheet-api-01-dd3e7570f506d83b.json",
+      "bytes": 12213,
+      "sha256": "3d7a9219a6a9a181d592b7f8ebcdfcff8fcc91faf8f8ae33a092b860f04f9aee"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/raw-api/sheet-api-02-ce1dec7422411980.json",
+      "bytes": 79,
+      "sha256": "729d6ae42bb545c94c3e198f170930ea0ea374a4b9e858767210684531d479e1"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/source.html",
+    "rendered_html": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/rendered.html",
+    "text": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/content.txt",
+    "markdown": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/content.md",
+    "metadata": "pages/DSGAwje93icwXVkY8WvcpxCWnXg/page.json"
+  }
+}

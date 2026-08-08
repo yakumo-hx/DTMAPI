@@ -1,0 +1,20 @@
+[
+  {
+    "id": "seed_compacting_machine", //配方所属的设备ID
+    "extra_recipes": [
+      "seed_crop0" //配方ID（多个配方则用","隔开）
+    ]
+  },
+  {
+    "id": "gene_extractor", //配方所属的设备ID
+    "extra_recipes": [
+      "gene_seed_crop0" //配方ID（多个配方则用","隔开）
+    ]
+  },
+    {
+    "id": "plant_data_analyzer", //配方所属的设备ID
+    "extra_recipes": [
+      "crop0" //配方ID（多个配方则用","隔开）
+    ]
+  }
+]

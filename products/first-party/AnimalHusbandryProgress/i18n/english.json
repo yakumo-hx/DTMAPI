@@ -1,0 +1,12 @@
+{
+  "mod.name": "DTMAPI Animal Bell Hidden Produce Progress",
+  "config.section.main": "Animal viewer",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Show special-produce progress in the animal bell viewer.",
+  "config.colorPreset.name": "Color preset",
+  "config.colorPreset.tooltip": "Pick the progress bar color directly.",
+  "config.fillColor.name": "Fill color",
+  "config.fillColor.tooltip": "Custom hex RGB color, for example FF942E.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency viewer diagnostics."
+}

@@ -1,0 +1,24 @@
+{
+  "Name": "DTMAPI Fish Roe Info Display",
+  "Author": "Yuuka",
+  "Version": "1.0.0",
+  "Description": "A self-contained DTMAPI Advanced CodeMod that labels fish roe with the native parent-fish title.",
+  "UniqueID": "Yuuka.DTMAPI.FishBreedingAssistant",
+  "EntryDll": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+  "EntryType": "Yuuka.DTMAPI.FishBreedingAssistant.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    },
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.5.5",
+      "Required": true
+    }
+  ],
+  "CodeModKind": "Advanced"
+}

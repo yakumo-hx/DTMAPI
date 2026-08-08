@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.AdvancedRuntimeFailureFixture</AssemblyName>
+    <RootNamespace>DTMAPI.AdvancedRuntimeFailureFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\DTMAPI.InstallDoctor.Tests\Fixtures\HarmonyReferenceFixture\HarmonyReferenceFixture.csproj" Private="false" />
+    <ProjectReference Include="..\..\..\DTMAPI.InstallDoctor.Tests\Fixtures\GameReferenceFixture\GameReferenceFixture.csproj" Private="false" />
+  </ItemGroup>
+</Project>

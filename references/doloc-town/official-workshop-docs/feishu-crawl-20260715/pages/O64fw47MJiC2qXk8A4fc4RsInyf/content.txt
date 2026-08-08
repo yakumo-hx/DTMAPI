@@ -1,0 +1,162 @@
+02 新增鱼
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/O64fw47MJiC2qXk8A4fc4RsInyf
+
+Source modified label: 5月22日修改
+
+一、整体说明
+
+•鱼模组由【3个】json文件组成，分别是：
+
+◦道具信息item_tbitem.json
+
+◦鱼信息fishing_tbfish.json
+
+◦鱼对应的池塘（决定鱼刷新在哪些水域）mod_tbmodfishingpoolextension.json
+
+•Content文件夹内必须包含上述【3个】文件。
+
+•配置示例中，标黄的字段为【需要修改的字段】。
+
+•鱼的档案、养殖、加工途径等【配套设施】需要通过【其他模组】实现。详见07 综合案例二（新增鱼)。
+
+二、配置示例及数据结构说明
+
+1.item_tbitem.json
+
+•新增道具：鲮鱼。
+
+[
+  {
+    "id": "fish0", //道具ID
+    "sub_type": "husbandry_fish", //子道具类型，husbandry_fish为鱼类
+    "salable": true, //是否允许出售
+    "disposable": true, //是否允许丢失
+    "consumable": false, //是否为消耗品
+    "cookable": true, //是否允许烹饪
+    "electric_energy": 0, //提供发电量(0则不发电)
+    "viewable": false, //是否显示在图鉴
+    "source": [
+      "fresh_water"  //获取途径（显示在图鉴）
+    ],
+    "selling_price": 30, //售出价格
+    "buying_price": 60, //购买价格
+    "overlay": 999, //堆叠上限
+    "ui_sprite_asset": {
+      "url": "icon_item_fish0" //道具图标，格式为：icon_item_道具ID
+    },
+    "title": {
+      "key": "item_fish0", //道具标题ID，格式为：item_道具ID
+      "text": "鲮鱼" //道具标题文本
+    },
+    "description_basic": {
+      "key": "item_fish0_desc", //道具描述ID，格式为：item_道具ID_desc
+      "text": "普通的鲮鱼。" //道具描述文本
+    },
+    "function": {
+      "$type": "ItemFunction"  //功能类型，ItemFunction为无功能道具
+    }
+  }
+]
+
+2.fishing_tbfish.json
+
+•新增鱼：鲮鱼。
+
+[
+  {
+    "id": "fish0", //鱼ID
+    "default_unlock": true, //是否默认解锁
+    "is_fish": true, //是否会触发钓鱼小游戏
+    "is_garbage": false, //是否是垃圾
+    "rarity": 0, //稀有度（0 ~ 4）
+    "size": 0,  //体型（0 ~ 2）
+    "exp_fishing": 1, //增加科技点数
+    "month": [], //出现月份，可选填1~4（为空表示没有限制）
+    "weather_types": [], //出现天气（可选填：1(晴天)、2(多云)、3(雨天)、4(雷雨)、5(大风)、6(酸雨)、7(烈日)，为空表示没有限制）
+    "time_range": {
+      "start_time": 0, //出现时间-起点（0~24，为0则没有限制）
+      "end_time": 0 //出现时间-终点（0~24，为0则没有限制）
+    },
+    "fish_bait": [], //暂时无用
+    "fishing_rod_lv": 0, //渔具等级
+    "fishing_lv": 0, //暂时无用
+    //以下是钓鱼小游戏的相关参数
+    "max_stamina": {
+      "min_count": 40, //总耐力-最小值
+      "max_count": 40 //总耐力-最大值
+    },
+    "stable_duration": {
+      "min_count": 5, //平稳期时长-最小值
+      "max_count": 10 //平稳期时长-最大值
+    },
+    "struggle_duration": {
+      "min_count": 3, //挣扎期时长-最小值
+      "max_count": 5 //挣扎期时长-最大值
+    },
+    "note_speed_multiplier": 1.5, //滚动速度倍率
+    "initial_stable_probability": 1, //初始平稳
+    "catch_multiplier": 1, //被捕倍率
+    "escape_speed": 3, //逃逸速度
+    "struggle_multiplier": 3, //挣扎倍率
+    "bonus_probability": 0.2, //奖励点概率
+    "bonus_duration": {
+      "min_count": 2, //奖励期时长-最小值
+      "max_count": 2 //奖励期时长-最大值
+    },
+    "bonus_base_score": 5, //基础奖励分
+    "bonus_extra_score": 0, //额外奖励分
+    "bonus_multiplier": 1.2 //奖励倍率
+  }
+]
+
+•钓鱼小游戏参数逻辑
+
+3.mod_tbmodfishingpoolextension.json
+
+•将鲮鱼加入池塘 (基础淡水池、林地深处池、湿地睡莲地)。
+
+[
+  {
+    "id": "freshwater_default", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  },
+  {
+    "id": "freshwater_forest", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  },
+  {
+    "id": "wetland_lotus", //池塘ID
+    "extra_fishes": [
+      "fish0" //鱼ID
+    ]
+  }
+]
+
+•池塘ID见 10 ID对照表（鱼）
+
+三、图片格式要求
+
+[Embedded sheet: vjp9YV]
+
+类型	图片大小（像素）	作图规范
+道具图标	28*28	整体居中
+
+四、图片命名对照表
+
+[Embedded sheet: W5CpQH]
+
+名称	命名格式
+[道具ID]	icon_item_[道具ID]
+
+五、参考示例
+
+•新增鱼鲮鱼（fish0）
+
+•示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\03 进阶内容模组示例\02 新增鱼

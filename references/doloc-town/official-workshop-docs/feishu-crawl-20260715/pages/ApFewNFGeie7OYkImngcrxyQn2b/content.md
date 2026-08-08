@@ -1,0 +1,70 @@
+# 09 载具
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/ApFewNFGeie7OYkImngcrxyQn2b>
+
+Source modified label: 5月15日修改
+
+## 一、格式要求
+
+#### Embedded sheet `uAAtOr`
+
+[TSV](sheets/01-01-uaator.tsv) · [rendered screenshot](sheets/01-01-uaator.png)
+
+```tsv
+类型	图片大小（像素）	作图规范
+载具图标	28*28	整体居中
+载具场景贴图	不限制	四周留1像素
+载具场景贴图-车灯遮罩	同上	同上
+```
+
+24%38%38%
+
+24%
+
+![Official document image](images/rendered-01-6.png)
+
+38%
+
+![Official document image](images/rendered-02-8.png)
+
+38%
+
+![Official document image](images/rendered-03-10.png)
+
+## 二、命名对照表
+
+- 注：摩托的贴图需要通过手动创建同名json文件指定贴图的锚点（见05 贴图锚点说明），否则会导致摩托在游戏中显示的位置不正确。车灯遮罩的锚点需要和载具的锚点保持一致。
+
+#### Embedded sheet `iuC5L4`
+
+[TSV](sheets/02-01-iuc5l4.tsv) · [rendered screenshot](sheets/02-01-iuc5l4.png)
+
+```tsv
+名称	ID	示例载具的锚点(x,y)
+载具图标	icon_vehicle_motor
+载具场景贴图	sprite_vehicle_motor	32,12
+载具场景贴图-车灯遮罩	sprite_vehicle_motor_light_mask	32,12
+```
+
+## 三、参考案例
+
+- 飞行摩托颜色调整。
+
+![Official document image](images/rendered-04-16.png)
+
+![Official document image](images/rendered-05-17.png)
+
+- 注：若不改灯光位置的话，则可以省略车灯遮罩的两个文件，如下图：
+
+![Official document image](images/rendered-06-20.png)
+
+![Official document image](images/rendered-07-21.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\示例模组\Content\01 美化模组示例\09 载具
+
+## Links
+
+- [05 贴图锚点说明](https://ka7deoo0opr.feishu.cn/wiki/Rdp1with9ih1frk7Pl8cbFD9nDc)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

@@ -1,0 +1,122 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/QaKDwjPdvi2GtEk7GKPcQEoenyf",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/QaKDwjPdvi2GtEk7GKPcQEoenyf",
+  "token": "QaKDwjPdvi2GtEk7GKPcQEoenyf",
+  "title": "04 ID对照表（道具）",
+  "document_title": "04 ID对照表（道具）",
+  "source_modified_label": "5月18日修改",
+  "status_code": 200,
+  "elapsed_seconds": 28.188,
+  "block_count": 10,
+  "blocks_by_type": {
+    "heading1": 4,
+    "sheet": 4,
+    "bullet": 1,
+    "text": 1
+  },
+  "scroll_samples": 32,
+  "scroll_height_max": 26678,
+  "links": [
+    {
+      "text": "02 道具数据模板",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh",
+      "kind": "official-wiki",
+      "target_token": "Rv1swL7JEiLHSZkaNk7cFyyXnIh"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/images/original/image-02-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "3",
+      "sheet_id": "bgGHOw",
+      "tsv_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/01-01-bgghow.tsv",
+      "screenshot_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/01-01-bgghow.png",
+      "status": "captured",
+      "rows": 34,
+      "columns_max": 5
+    },
+    {
+      "block_id": "5",
+      "sheet_id": "rwtLS5",
+      "tsv_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/02-01-rwtls5.tsv",
+      "screenshot_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/02-01-rwtls5.png",
+      "status": "captured",
+      "rows": 55,
+      "columns_max": 2
+    },
+    {
+      "block_id": "7",
+      "sheet_id": "p6NjlQ",
+      "tsv_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/03-01-p6njlq.tsv",
+      "screenshot_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/03-01-p6njlq.png",
+      "status": "captured",
+      "rows": 11,
+      "columns_max": 2
+    },
+    {
+      "block_id": "9",
+      "sheet_id": "nl8E3B",
+      "tsv_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/04-01-nl8e3b.tsv",
+      "screenshot_path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/sheets/04-01-nl8e3b.png",
+      "status": "captured",
+      "rows": 11,
+      "columns_max": 7
+    }
+  ],
+  "code_blocks": [],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=UzIisBg9KhnpNrtIwNDcgGxpnKf&block_token=block_7628506502726437820_1336268706_19%2Cblock_7628506502726437820_4273478344_50%2Cblock_7628506502726437820_1250852714_33&schema_version=9&blockIds=block_7628506502726437820_1336268706_19&blockIds=block_7628506502726437820_4273478344_50&blockIds=block_7628506502726437820_1250852714_33",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/raw-api/sheet-api-01-e88499d09d918edd.json",
+      "bytes": 34298,
+      "sha256": "155f5e0cb7d6dc6a8e10db1dd5ee24732408c8e03869f20968dae5c36d8894b7"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 3807,
+      "sha256": "c16dae56343b2a5e81423ea1f0151f3ff1ddf9991795d7feff75cd2383243fec"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 155,
+      "sha256": "0f00c4991fe83e5f2105ecd55ad9b683ba2ee878f3c52aa07c88b7d6c39464b9"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/source.html",
+    "rendered_html": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/rendered.html",
+    "text": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/content.txt",
+    "markdown": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/content.md",
+    "metadata": "pages/QaKDwjPdvi2GtEk7GKPcQEoenyf/page.json"
+  }
+}

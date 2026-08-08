@@ -1,0 +1,44 @@
+ [
+     {
+        "id": "toadstool", //资源ID
+        "type": 2, //植被类型，详见对照表
+        "default_unlock": true, //是否默认解锁
+        "size": {
+          "x": 2, //占地格子数：宽
+          "y": 3 //占地格子数：高
+        },
+        "spawn_months": [], //出现月份（为空表示没有限制）
+        "growing_months": [],  //生长月份（为空表示没有限制）
+        "tool_constraints": [], //可采集工具信息，一般为空
+        "drop_spawn_entry": {
+          "spawn_lut": "toadstool_drop", //掉落库ID
+          "count_range": {
+            "min_count": 1, //最小掉落数量
+            "max_count": 1 //最大掉落数量
+          }
+        },
+        "function": {
+          "$type": "VegetationFuncCrop",  //功能类型为作物植被，不修改
+          "growth_value": {
+            "x": 288, //每阶段最小生长值（1天=288）
+            "y": 288 //每阶段最小生长值（1天=288）
+          },
+          "level_sprites": {
+            "array": [
+              {
+                "url": "sprite_resource_toadstool_0" //阶段0贴图，格式为：sprite_resource_[植被ID]_[阶段数]，下同
+              },
+              {
+                "url": "sprite_resource_toadstool_1" //阶段1贴图
+              },
+              {
+                "url": "sprite_resource_toadstool_2" //阶段2贴图
+              },
+              {
+                "url": "sprite_resource_toadstool_3" //阶段3贴图
+              }
+            ]
+          }
+        }
+      }
+ ]

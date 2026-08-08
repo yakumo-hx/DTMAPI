@@ -6,5 +6,27 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json"
+                      LogicalName="DTMAPI.Core.AdvancedReferencePolicyRegistry.json" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\*.json"
+                      Exclude="..\..\author-sdk\advanced-reference-policies\registry.json"
+                      LogicalName="DTMAPI.Core.AdvancedReferencePolicy.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\history\runtime-registry.json"
+                      LogicalName="DTMAPI.Core.HistoricalAdvancedReferencePolicyRegistry.json" />
+    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\history\*.json"
+                      Exclude="..\..\author-sdk\advanced-reference-policies\history\runtime-registry.json"
+                      LogicalName="DTMAPI.Core.HistoricalAdvancedReferencePolicy.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tools\release\dtmapi-product-catalog.json"
+                      LogicalName="DTMAPI.Core.ProductCatalog.json" />
   </ItemGroup>
+  <Target Name="GenerateDtmApiVersionConstants" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <DtmApiGeneratedVersionFile>$(IntermediateOutputPath)DtmApiBuildVersion.g.cs</DtmApiGeneratedVersionFile>
+      <DtmApiGeneratedVersionSource>namespace DTMAPI.Core.Runtime { internal static class DtmApiBuildVersion { public const string ReleaseVersion = &quot;$(DtmApiReleaseVersion)&quot;%3B public const string BinaryFileVersion = &quot;$(DtmApiBinaryFileVersion)&quot;%3B } }</DtmApiGeneratedVersionSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(DtmApiGeneratedVersionFile)" Lines="$(DtmApiGeneratedVersionSource)" Overwrite="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(DtmApiGeneratedVersionFile)" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -1,7 +1,0 @@
-{
-  "mod.loaded": "DTMAPI Oil loaded; official content JSON supplies the oil item.",
-  "mod.name": "DTMAPI Oil",
-  "config.section.content": "Official JSON content",
-  "config.item": "Item={0}, fuel={1}.",
-  "config.note": "The item is defined by official item_tbitem.json; runtime mining/machine drops are handled by DTMAPI APIs. The old test id dtmapi_oil is no longer generated as active content."
-}

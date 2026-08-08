@@ -1,0 +1,217 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/P57twsINsitUu6kWCDEc4vz6nNc",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/P57twsINsitUu6kWCDEc4vz6nNc",
+  "token": "P57twsINsitUu6kWCDEc4vz6nNc",
+  "title": "08 综合案例三（新增设备）",
+  "document_title": "08 综合案例三（新增设备）",
+  "source_modified_label": "5月21日修改",
+  "status_code": 200,
+  "elapsed_seconds": 21.328,
+  "block_count": 39,
+  "blocks_by_type": {
+    "heading1": 5,
+    "bullet": 18,
+    "heading2": 5,
+    "code": 5,
+    "text": 2,
+    "sheet": 3,
+    "image": 1
+  },
+  "scroll_samples": 8,
+  "scroll_height_max": 5661,
+  "links": [
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d"
+  ],
+  "rendered_images": [
+    {
+      "block_id": "38",
+      "image_tokens": [
+        "KJy6b3jHpossLnxoz1dcmQiznEf"
+      ],
+      "rendered_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/images/rendered-01-38.png",
+      "status": "captured"
+    }
+  ],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/images/original/image-01-ce24e25c0763d89d.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/images/original/image-02-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/images/original/image-03-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/images/original/image-04-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [
+    {
+      "block_id": "32",
+      "sheet_id": "6gP4fO",
+      "tsv_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/01-01-6gp4fo.tsv",
+      "screenshot_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/01-01-6gp4fo.png",
+      "status": "captured",
+      "rows": 3,
+      "columns_max": 3
+    },
+    {
+      "block_id": "34",
+      "sheet_id": "ZgcNgu",
+      "tsv_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/02-01-zgcngu.tsv",
+      "screenshot_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/02-01-zgcngu.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 3
+    },
+    {
+      "block_id": "35",
+      "sheet_id": "0fJGmh",
+      "tsv_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/03-01-0fjgmh.tsv",
+      "screenshot_path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/sheets/03-01-0fjgmh.png",
+      "status": "captured",
+      "rows": 2,
+      "columns_max": 2
+    }
+  ],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "18",
+      "record_id": "Kupzd2IskoX2ZFxEoXxcqwrgnaf",
+      "heading": "item_tbitem.json",
+      "caption": "道具信息-配置示例（添加单个道具）",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/01-code.jsonc",
+      "bytes": 1299,
+      "sha256": "757a06b54c3df590cddf158eba3f94a39f4baba18df95fbe1d8c32790745df5d"
+    },
+    {
+      "index": 2,
+      "block_id": "21",
+      "record_id": "J8wddZIOgoDYTpx5e5JcC4jenle",
+      "heading": "equipment_tbequipment.json",
+      "caption": "设备信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 30,
+      "line_count": 30,
+      "line_complete": true,
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/02-code.jsonc",
+      "bytes": 1302,
+      "sha256": "1e533a32fc2ec670eff4ed0057b015e094fca69f9e503d20ea8579e57aa11a2d"
+    },
+    {
+      "index": 3,
+      "block_id": "24",
+      "record_id": "doxcnJnhcew20ImaiqCgXkCXvmf",
+      "heading": "recipe_tbrecipe.json",
+      "caption": "配方信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 33,
+      "line_count": 33,
+      "line_complete": true,
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/03-code.jsonc",
+      "bytes": 1112,
+      "sha256": "de70b2222bdb94ff6246700ab76f3396ac3bf5ad615dd2ea922931288cd8b510"
+    },
+    {
+      "index": 4,
+      "block_id": "27",
+      "record_id": "doxcnmcSrAqC2oMDomuUyTflcUc",
+      "heading": "mod_tbmodrecipegroupextension.json",
+      "caption": "配方组信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 8,
+      "line_count": 8,
+      "line_complete": true,
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/04-code.jsonc",
+      "bytes": 166,
+      "sha256": "690af65b9811513e6cb34208156c0bf5d8e965ea7b4a9f9f4cacd6cee8b186c5"
+    },
+    {
+      "index": 5,
+      "block_id": "30",
+      "record_id": "doxcnlQ4S2YMKPbmhrJJKAqiVnd",
+      "heading": "mod_tbmodstoreextension.json",
+      "caption": "一般商店商品信息-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 43,
+      "line_count": 43,
+      "line_complete": true,
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/code-blocks/05-code.jsonc",
+      "bytes": 1583,
+      "sha256": "25d24eea240855544e5df7f82a8c2787b4b9f3158767e2e9e76d09cb02bc1988"
+    }
+  ],
+  "raw_sheet_apis": [
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/block?token=UogVswnjdhqim1te4jScYH2lnHb&block_token=block_7626999228484701142_572284523_48%2Cblock_7626999228484701142_3293579349_48%2Cblock_7626999228484701142_3526065629_48&schema_version=9&blockIds=block_7626999228484701142_572284523_48&blockIds=block_7626999228484701142_3293579349_48&blockIds=block_7626999228484701142_3526065629_48",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/raw-api/sheet-api-01-8200dd5804fa7369.json",
+      "bytes": 1221,
+      "sha256": "8fc7f17f7662dc17137d1de82ef2b133fff540c8d6b28126bfac0669aafc702d"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/client_vars",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/raw-api/sheet-api-02-dd3e7570f506d83b.json",
+      "bytes": 1851,
+      "sha256": "e925787ba46c7ed4cd98b7eca8a7937771d91c1977b6862d9887ae4247c6c5a5"
+    },
+    {
+      "url": "https://ka7deoo0opr.feishu.cn/space/api/v3/sheet/resource/",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "path": "pages/P57twsINsitUu6kWCDEc4vz6nNc/raw-api/sheet-api-03-ce1dec7422411980.json",
+      "bytes": 155,
+      "sha256": "b035bc0ec9128a508020a2036c49ae67e5b9a05daf45340b2c8190f9bfd4309a"
+    }
+  ],
+  "paths": {
+    "source_html": "pages/P57twsINsitUu6kWCDEc4vz6nNc/source.html",
+    "rendered_html": "pages/P57twsINsitUu6kWCDEc4vz6nNc/rendered.html",
+    "text": "pages/P57twsINsitUu6kWCDEc4vz6nNc/content.txt",
+    "markdown": "pages/P57twsINsitUu6kWCDEc4vz6nNc/content.md",
+    "metadata": "pages/P57twsINsitUu6kWCDEc4vz6nNc/page.json"
+  }
+}

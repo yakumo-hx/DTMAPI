@@ -1,0 +1,169 @@
+02 新增帽子
+
+Source: https://ka7deoo0opr.feishu.cn/wiki/PxaIwKgsPiua7okPqgdcoCOZnkF
+
+Source modified label: 6月11日修改
+
+一、整体说明
+
+•帽子模组由【2个】json文件组成，分别是：
+
+◦道具信息item_tbitem.json
+
+◦帽子信息player_tbhat.json
+
+•Content文件夹内必须包含上述【2个】文件。
+
+•配置示例中，标黄的字段为【需要修改的字段】。
+
+•新增帽子的【获取途径】需要通过【其他内容模组】实现。详见07 综合案例二（新增帽子）。
+
+二、json文件数据结构说明
+
+item_tbitem.json
+
+•新增道具：帕伊雅的头饰。
+
+{
+  "id": "hat0", //道具ID
+  "sub_type": "kit_hat", //子道具类型，kit_hat为帽子道具
+  "salable": true, //是否允许出售
+  "disposable": true, //是否允许丢失
+  "consumable": false, //是否为消耗品
+  "cookable": false, //是否允许烹饪
+  "electric_energy": 0, //提供发电量(0则不发电)
+  "viewable": false, //是否显示在图鉴
+  "source": [], //获取途径（显示在图鉴）
+  "selling_price": 250,  //售出价格
+  "buying_price": 500, //购买价格
+  "overlay": 1, //堆叠上限
+  "ui_sprite_asset": {
+    "url": "icon_item_hat0" //道具图标，格式为：icon_item_道具ID
+  },
+  "title": {
+    "key": "item_hat0", //道具标题ID，格式为：item_道具ID
+    "text": "帕伊雅的头饰" //道具标题文本
+  },
+  "description_basic": {
+    "key": "item_hat0_desc", //道具描述ID，格式为：item_道具ID_desc
+    "text": "可爱的小花发卡，帕伊雅同款。" //道具描述文本
+  },
+  "function": {
+    "$type": "ItemFunctionHat", //功能类型，ItemFunctionHat为帽子道具
+    "hat_id": "hat0"//帽子ID，同道具ID
+  }
+}
+
+player_tbhat.json
+
+•新增帽子：帕伊雅的头饰。
+
+{
+  "id": "hat0", //帽子ID，同道具ID
+  "skill": "",  //技能ID，无特殊情况为空
+  "defense": 0, //提供防御力
+  "idle_sprite": {
+    "url": "anim_hat_hat0_idle_0" //帽子贴图-正面，格式为：anim_hat_[帽子ID]_idle_0
+  },
+  "climb_sprite": {
+    "url": "anim_hat_hat0_climb_0" //帽子贴图-翻转，格式为：anim_hat_[帽子ID]_climb_0
+  },
+  "preview": {
+    "url": "preview_hat_hat0" //帽子贴图-展示台，格式为：preview_hat_[帽子ID]
+  },
+  "animator": {
+    "url": "" //帽子动画机，留空
+  },
+  "material": {
+    "url": "" //帽子材质，留空
+  },
+  "prefab": {
+    "url": "" //帽子预制体，留空
+  },
+    "hide_hair": false // 是否需要隐藏原本的发型(false: 不需要，true: 需要)
+}
+
+二、图片格式要求
+
+[Embedded sheet: 7fYxHT]
+
+类型	图片大小（像素）	作图规范
+帧动画	64*64	同对应主角帧动画
+图标（道具）	28*28	整体居中
+场景贴图（展示台）	64*64	整体居中
+
+•帧动画（角色默认）的锚点同anim_player_idle_[0~2]
+
+33%33%33%
+
+33%
+
+33%
+
+33%
+
+•帧动画（角色攀爬）的锚点同anim_player_climb_0
+
+33%33%33%
+
+33%
+
+33%
+
+33%
+
+三、图片命名对照表
+
+静态帽子
+
+[Embedded sheet: mJqN7U]
+
+名称	帧数/贴图数	命名格式
+帧动画（角色默认）	1	anim_hat_[帽子ID]_idle_0
+帧动画（角色攀爬）	1	anim_hat_[帽子ID]_climb_0
+图标（道具）	1	icon_item_[帽子ID]
+场景贴图（展示台）	1	preview_hat_[帽子ID]
+
+动态帽子
+
+[Embedded sheet: 2BfJSz]
+
+名称	ID	帧数	备注	命名格式
+待机-眨眼	idle	1		anim_hat_[帽子ID]_idle_0
+待机-哈欠	yawn	7		anim_hat_[帽子ID]_yawn_[0~6]
+使用工具-斧头	chop	6		anim_hat_[帽子ID]_chop_[0~5]
+使用工具-镐子	knock	6		anim_hat_[帽子ID]_knock_[0~5]
+使用工具-镰刀	swing	7		anim_hat_[帽子ID]_swing_[0~6]
+使用工具-水壶	water	10		anim_hat_[帽子ID]_water_[0~9]
+奔跑	run	8	正常移动即奔跑	anim_hat_[帽子ID]_run_[0~7]
+走路	walk	8	仅使用在交互动画	anim_hat_[帽子ID]_walk_[0~7]
+交互	interact	5		anim_hat_[帽子ID]_interact_[0~4]
+受击	hit	3		anim_hat_[帽子ID]_hit_[0~2]
+吃东西	eat	8		anim_hat_[帽子ID]_eat_[0~7]
+坐	sit	1		anim_hat_[帽子ID]_sit_0
+冲刺	dash	1		anim_hat_[帽子ID]_dash_0
+攀爬	climb	1		anim_hat_[帽子ID]_climb_0
+攀爬跳跃	climb_jump	1		anim_hat_[帽子ID]_climb_jump_0
+昏厥	faint	9		anim_hat_[帽子ID]_faint_[0~8]
+昏厥后起身	stand	13		anim_hat_[帽子ID]_stand_[0~12]
+跳跃-起跳	jump	2		anim_hat_[帽子ID]_jump_[0~1]
+跳跃-掉落	drop	3		anim_hat_[帽子ID]_drop_[0~2]
+跳跃-触地	touch_ground	4		anim_hat_[帽子ID]_touch_ground_[0~3]
+钓鱼-蓄力	fishing_ready	6		anim_hat_[帽子ID]_fishing_ready_[0~5]
+钓鱼-抛竿	fishing_cast	5		anim_hat_[帽子ID]_fishing_cast_[0~4]
+钓鱼-待机-眨眼	fishing_wait_blink	1		anim_hat_[帽子ID]_fishing_wait_blink_0
+钓鱼-待机-哈欠	fishing_wait_yawn	6		anim_hat_[帽子ID]_fishing_wait_yawn_[0~5]
+钓鱼-对峙	fishing_battle	6		anim_hat_[帽子ID]_fishing_battle_[0~5]
+钓鱼-收线	fishing_pull	4		anim_hat_[帽子ID]_fishing_pull_[0~3]
+载具-待机	ride_idle	1		anim_hat_[帽子ID]_ride_idle_0
+载具-移动	ride_run	4		anim_hat_[帽子ID]_ride_run_[0~3]
+图标（道具）		1		icon_item_[帽子ID]
+场景贴图（展示台）		1		preview_hat_[帽子ID]
+
+四、参考示例
+
+•新增静态帽子帕伊雅的头饰（hat0）
+
+•示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\02 基础内容模组示例\02 新增帽子

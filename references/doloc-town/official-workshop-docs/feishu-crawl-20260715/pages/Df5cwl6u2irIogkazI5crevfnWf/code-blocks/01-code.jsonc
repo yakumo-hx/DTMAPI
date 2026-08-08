@@ -1,0 +1,20 @@
+{
+  "name": "示例模组",    // 模组名（没有指定翻译文本时会显示的默认名字）
+  "author": "xxx",    // 作者名
+  "version": "1.0.0",    // 版本号
+  "description": "包含了一些示例模组。",    // 模组描述（没有指定翻译文本时会显示的默认描述）
+  "tags": [    // 模组标签
+    "Mod",
+    "..."
+  ],
+  "localized_name": {
+    "schinese": "",    // 模组名的中文翻译（默认名为中文时可以留空）
+    "tchinese": "範例模組",    // 模组名的繁体中文翻译
+    "english": "Example Mod"    // 模组名的英文翻译
+  },
+  "localized_description": {
+    "schinese": "",    // 模组简介的中文翻译（默认简介为中文时可以留空）
+    "tchinese": "包含了一些範例模組。",    // 模组简介的繁体中文翻译
+    "english": "Includes some example mods."    // 模组简介的英文翻译
+  }
+}

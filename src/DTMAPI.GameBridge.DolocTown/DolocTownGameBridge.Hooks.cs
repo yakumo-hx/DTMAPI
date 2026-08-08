@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -30,6 +31,27 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Save.LoadGameRequested", loadRequestedPatched ? "experimental" : "pending", "Harmony Prefix: LoadGame", loadRequestedPatched ? "Patched for save slot/index evidence." : "Waiting for Assembly-CSharp LoadGame target to become patchable.");
                 }
 
+                if (loadRequestedPatched && !loadReturnedPatched)
+                {
+                    MethodInfo? loadGamePostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.LoadGamePostfix), BindingFlags.Public | BindingFlags.Static);
+                    var loadGameSignature = new HarmonyTargetSignature(returnType: typeof(bool), parameterTypes: new[] { typeof(int) });
+                    loadReturnedPatched =
+                        patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "LoadGame", loadGamePostfix, loadGameSignature) ||
+                        patcher.TryPatchPostfix("DolocTown.GameData.DataPersistenceManager, Assembly-CSharp", "LoadGame", loadGamePostfix, loadGameSignature);
+                    runtime.SetHookStatus("Save.LoadGameReturned", loadReturnedPatched ? "experimental" : "pending", "Harmony Postfix: LoadGame", loadReturnedPatched ? "Patched for save-load request return diagnostics." : "Waiting for Assembly-CSharp LoadGame target to become patchable.");
+                }
+
+                if (!nativeGameFramePatched)
+                {
+                    MethodInfo? nativeFramePostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.NormalGameFramePostfix), BindingFlags.Public | BindingFlags.Static);
+                    nativeGameFramePatched = patcher.TryPatchPostfix(
+                        "DolocTown.NormalGameState, Assembly-CSharp",
+                        "OnUpdate",
+                        nativeFramePostfix,
+                        new HarmonyTargetSignature(returnType: typeof(void), parameterTypes: new[] { typeof(float) }));
+                    runtime.SetHookStatus("GameLoop.NativeFrameDrain", nativeGameFramePatched ? "experimental" : "pending", "Harmony Postfix: NormalGameState.OnUpdate(float)", nativeGameFramePatched ? "Gameplay frame drain installed; Bootstrap keeps title PlayerLoop and owns shared input/Core/UI dispatch." : "Waiting for NormalGameState.OnUpdate(float) to become patchable.");
+                }
+
                 if (!saveSavingPatched)
                 {
                     MethodInfo? saveGamePrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SaveGamePrefix), BindingFlags.Public | BindingFlags.Static);
@@ -50,6 +72,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("Save.SaveSaved", saveSavedPatched ? "experimental" : "pending", "Harmony Postfix: SaveGame", saveSavedPatched ? "Patched. Requires save evidence before verified." : "Waiting for Assembly-CSharp SaveGame target to become patchable.");
                 }
 
+                if (!returnHomeRequestedPatched)
+                {
+                    returnHomeRequestedPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "ReturnHome", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReturnHomePrefix), BindingFlags.Public | BindingFlags.Static), 1);
+                    runtime.SetHookStatus("GameLoop.ReturnHomeRequested", returnHomeRequestedPatched ? "experimental" : "pending", "Harmony Prefix: DolocAPI.ReturnHome", returnHomeRequestedPatched ? "Patched ReturnHome request boundary for title-return object graph diagnostics." : "Waiting for DolocAPI.ReturnHome to become patchable.");
+                }
+
                 if (!returnHomePatched)
                 {
                     returnHomePatched = patcher.TryPatchPostfix("DolocAPI, Assembly-CSharp", "ReturnHome", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReturnHomePostfix), BindingFlags.Public | BindingFlags.Static), 1);
@@ -60,140 +88,73 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 if (!workshopReloadPatched)
                 {
-                    workshopReloadPatched = patcher.TryPatchPostfix("DolocTown.Config.ModManager, Assembly-CSharp", "ReloadMods", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReloadModsPostfix), BindingFlags.Public | BindingFlags.Static));
-                    runtime.SetHookStatus("Workshop.ReloadMods", workshopReloadPatched ? "experimental" : "pending", "Harmony Postfix: ModManager.ReloadMods", workshopReloadPatched ? "Patched to refresh DTMAPI diagnostics after official reload." : "Waiting for Assembly-CSharp/ModManager to become patchable.");
+                    workshopReloadPatched = patcher.TryPatchPostfix(
+                        "DolocTown.Config.ModManager, Assembly-CSharp",
+                        "ReloadMods",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ReloadModsPostfix), BindingFlags.Public | BindingFlags.Static),
+                        HarmonyTargetSignature.Exact("DolocTown.Config.ModManager", "System.Void"));
                 }
+                if (!workshopModUiRegisterPatched)
+                {
+                    workshopModUiRegisterPatched = patcher.TryPatchPrefix(
+                        "DolocTown.ModUiState, Assembly-CSharp",
+                        "Register",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ModUiStateRegisterPrefix), BindingFlags.Public | BindingFlags.Static),
+                        HarmonyTargetSignature.Exact("DolocTown.ModUiState", "System.Void"));
+                }
+                if (!workshopModUiHidePatched)
+                {
+                    workshopModUiHidePatched = patcher.TryPatchPrefix(
+                        "DolocTown.ModUiState, Assembly-CSharp",
+                        "Hide",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ModUiStateHidePrefix), BindingFlags.Public | BindingFlags.Static),
+                        HarmonyTargetSignature.Exact("DolocTown.ModUiState", "System.Void"));
+                }
+                if (!workshopModManagerSavePatched)
+                {
+                    workshopModManagerSavePatched = patcher.TryPatchPostfix(
+                        "DolocTown.GameData.DataPersistenceManager, Assembly-CSharp",
+                        "SaveModManager",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SaveModManagerPostfix), BindingFlags.Public | BindingFlags.Static),
+                        HarmonyTargetSignature.Exact(
+                            "DolocTown.GameData.DataPersistenceManager",
+                            "System.Boolean",
+                            "DolocTown.Config.ModManager"));
+                }
+                if (!workshopModUiCloseTransactionPatched)
+                {
+                    workshopModUiCloseTransactionPatched = patcher.TryPatchPostfix(
+                        "DolocTown.ModUiState, Assembly-CSharp",
+                        "<Hide>b__27_1",
+                        typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ModUiStateCloseTransactionPostfix), BindingFlags.Public | BindingFlags.Static),
+                        HarmonyTargetSignature.Exact("DolocTown.ModUiState", "System.Void"));
+                }
+                bool workshopCommitReady = IsWorkshopCommitHookReady;
+                runtime.SetHookStatus(
+                    "Workshop.ModUiCommit",
+                    workshopCommitReady ? "experimental" : "pending",
+                    "Harmony: ModUiState Register/Hide/close, ModManager.ReloadMods, DataPersistenceManager.SaveModManager",
+                    workshopCommitReady
+                        ? "Opening reload is preview-only; a successful native close save commits one deferred DTMAPI refresh."
+                        : "Waiting for the complete official Mod UI source transaction boundary to become patchable.");
 
-                if (!workshopLocalUploadDisplayPatched)
+                if (HasGameBridgeDemand(GameBridgeDemandRoutes.WorkshopAuthoring) && !workshopLocalUploadDisplayPatched)
                 {
                     workshopLocalUploadDisplayPatched = patcher.TryPatchConstructorPostfix("DolocTown.UI.ModData, Assembly-CSharp", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.ModDataConstructorPostfix), BindingFlags.Public | BindingFlags.Static), 2);
                     runtime.SetHookStatus("Workshop.LocalUploadPlan", workshopLocalUploadDisplayPatched ? "experimental" : "pending", "Harmony Postfix: ModData..ctor", workshopLocalUploadDisplayPatched ? "Display-only patch keeps DTMAPI-generated local packages on Update when workshop.json is present; native Steam ResolveLocalModUploadPlan still owns upload execution." : "Waiting for Assembly-CSharp/ModData to become patchable.");
                 }
 
-                if (!workshopUploadPlanBusyFallbackPatched)
+                if (HasGameBridgeDemand(GameBridgeDemandRoutes.WorkshopAuthoring) && !workshopUploadPlanBusyFallbackPatched)
                 {
                     workshopUploadPlanBusyFallbackPatched = patcher.TryPatchPrefix("DolocTown.Config.SteamWorkshopUploader, Assembly-CSharp", "ResolveUploadPlan", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SteamWorkshopUploaderResolveUploadPlanPrefix), BindingFlags.Public | BindingFlags.Static), 2);
                     runtime.SetHookStatus("Workshop.LocalUploadPlanBusyFallback", workshopUploadPlanBusyFallbackPatched ? "experimental" : "pending", "Harmony Prefix: SteamWorkshopUploader.ResolveUploadPlan", workshopUploadPlanBusyFallbackPatched ? "Prevents DTMAPI-generated local package upload-plan resolve requests from stalling ModManager when the native uploader is already busy; upload execution remains native-owned." : "Waiting for Assembly-CSharp/SteamWorkshopUploader.ResolveUploadPlan to become patchable.");
                 }
 
-                if (!workshopUploadPlanKnownIdFallbackPatched)
+                if (HasGameBridgeDemand(GameBridgeDemandRoutes.WorkshopAuthoring) && !workshopUploadPlanKnownIdFallbackPatched)
                 {
                     workshopUploadPlanKnownIdFallbackPatched = patcher.TryPatchPostfix("DolocTown.Config.SteamWorkshopUploader, Assembly-CSharp", "ResolveUploadPlan", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.SteamWorkshopUploaderResolveUploadPlanPostfix), BindingFlags.Public | BindingFlags.Static), 2);
                     runtime.SetHookStatus("Workshop.LocalUploadPlanKnownIdFallback", workshopUploadPlanKnownIdFallbackPatched ? "experimental" : "pending", "Harmony Postfix + Update watchdog: SteamWorkshopUploader.ResolveUploadPlan", workshopUploadPlanKnownIdFallbackPatched ? "Allows native Steam details resolution first, then releases DTMAPI-generated local package upload-plan requests with the known workshop.json id only if the same callback remains unresolved after a short delay." : "Waiting for Assembly-CSharp/SteamWorkshopUploader.ResolveUploadPlan to become patchable.");
                 }
-
-                if (!debugConsoleUseToolPatched)
-                {
-                    debugConsoleUseToolPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseTool", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseToolPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!debugConsoleUseItemPatched)
-                {
-                    debugConsoleUseItemPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "UseItem", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateUseItemPrefix), BindingFlags.Public | BindingFlags.Static), 1);
-                }
-
-                if (!debugConsoleEnterUiCheckPatched)
-                {
-                    debugConsoleEnterUiCheckPatched = patcher.TryPatchPrefix("DolocTown.AgentControllerState, Assembly-CSharp", "EnterUICheck", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentControllerStateEnterUiCheckPrefix), BindingFlags.Public | BindingFlags.Static), 2);
-                }
-
-                bool debugConsoleInputHooksReady = debugConsoleUseToolPatched && debugConsoleUseItemPatched && debugConsoleEnterUiCheckPatched;
-                runtime.SetHookStatus("UI.DebugConsoleInputIsolation", debugConsoleInputHooksReady ? "experimental" : "pending", "Harmony Prefix: AgentControllerState.EnterUICheck/UseTool/UseItem", debugConsoleInputHooksReady ? "Patched native UI toggles and tool/item entry points; active only while the DTMAPI Y console is open." : "Waiting for AgentControllerState input methods to become patchable.");
-
-                MethodInfo? creativeBoolTruePrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeBoolTruePrefix), BindingFlags.Public | BindingFlags.Static);
-                MethodInfo? creativeVoidSkipPrefix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeVoidSkipPrefix), BindingFlags.Public | BindingFlags.Static);
-                MethodInfo? creativeRecipeTimePostfix = typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AdvancedCreativeRecipeTimePostfix), BindingFlags.Public | BindingFlags.Static);
-                if (!advancedCreativeCostEnergyPatched)
-                    advancedCreativeCostEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostEnergy", creativeBoolTruePrefix, 1);
-                if (!advancedCreativeCostToolEnergyPatched)
-                    advancedCreativeCostToolEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostToolEnergy", creativeBoolTruePrefix, 0);
-                if (!advancedCreativeHasEnoughEnergyPatched)
-                    advancedCreativeHasEnoughEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "HasEnoughEnergy", creativeBoolTruePrefix, 1);
-                if (!advancedCreativeHasEnoughToolEnergyPatched)
-                    advancedCreativeHasEnoughToolEnergyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "HasEnoughEnergyForUsingTool", creativeBoolTruePrefix, 0);
-                if (!advancedCreativeCostItemStringPatched)
-                    advancedCreativeCostItemStringPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItem", creativeBoolTruePrefix, 3);
-                if (!advancedCreativeCostItemObjectPatched)
-                    advancedCreativeCostItemObjectPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItem", creativeBoolTruePrefix, 4);
-                if (!advancedCreativeCostItemNoCheckListPatched)
-                    advancedCreativeCostItemNoCheckListPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemNoCheck", creativeVoidSkipPrefix, 2);
-                if (!advancedCreativeCostItemNoCheckStringPatched)
-                    advancedCreativeCostItemNoCheckStringPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemNoCheck", creativeVoidSkipPrefix, 3);
-                if (!advancedCreativeCostSelectedItemDefaultPatched)
-                    advancedCreativeCostSelectedItemDefaultPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostSelectedItem", creativeBoolTruePrefix, 2);
-                if (!advancedCreativeCostSelectedItemAtPatched)
-                    advancedCreativeCostSelectedItemAtPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostSelectedItem", creativeBoolTruePrefix, 3);
-                if (!advancedCreativeCostItemAtPatched)
-                    advancedCreativeCostItemAtPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CostItemAt", creativeBoolTruePrefix, 2);
-                if (!advancedCreativeCanAffordDefaultPatched)
-                    advancedCreativeCanAffordDefaultPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAfford", creativeBoolTruePrefix, 2);
-                if (!advancedCreativeCanAffordScaledPatched)
-                    advancedCreativeCanAffordScaledPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAfford", creativeBoolTruePrefix, 3);
-                if (!advancedCreativeCanAffordMoneyPatched)
-                    advancedCreativeCanAffordMoneyPatched = patcher.TryPatchPrefix("DolocAPI, Assembly-CSharp", "CanAffordMoney", creativeBoolTruePrefix, 1);
-                if (!advancedCreativeRecipeTimePatched)
-                    advancedCreativeRecipeTimePatched = patcher.TryPatchPostfix("DolocTown.Synthesizer, Assembly-CSharp", "GetRecipeTime", creativeRecipeTimePostfix, 2);
-
-                bool advancedCreativeCostHooksReady =
-                    advancedCreativeCostEnergyPatched &&
-                    advancedCreativeCostToolEnergyPatched &&
-                    advancedCreativeHasEnoughEnergyPatched &&
-                    advancedCreativeHasEnoughToolEnergyPatched &&
-                    advancedCreativeCostItemStringPatched &&
-                    advancedCreativeCostItemObjectPatched &&
-                    advancedCreativeCostItemNoCheckListPatched &&
-                    advancedCreativeCostItemNoCheckStringPatched &&
-                    advancedCreativeCostSelectedItemDefaultPatched &&
-                    advancedCreativeCostSelectedItemAtPatched &&
-                    advancedCreativeCostItemAtPatched &&
-                    advancedCreativeCanAffordDefaultPatched &&
-                    advancedCreativeCanAffordScaledPatched &&
-                    advancedCreativeCanAffordMoneyPatched;
-                experimentalApi?.SetAdvancedCreativeHooksInstalled(advancedCreativeCostHooksReady, advancedCreativeRecipeTimePatched);
-                runtime.SetHookStatus("Debug.CreativeModeHooks", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "experimental" : "pending", "Harmony Prefix/Postfix: DolocAPI cost/afford APIs + Synthesizer.GetRecipeTime", (advancedCreativeCostHooksReady && advancedCreativeRecipeTimePatched) ? "Patched no-cost/no-energy checks and synthesizer recipe time for the Y-console creative toggle; GameInitConfig material/shop/spirit flags are applied only while creative mode is enabled." : "Waiting for all advanced creative cost/time targets to become patchable.");
-
-                if (!equipmentRendererReusePatched)
-                {
-                    equipmentRendererReusePatched = patcher.TryPatchPostfix("DolocTown.EquipmentRenderer, Assembly-CSharp", "OnReuse", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentRendererOnReusePostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!equipmentBuilderCreateIndicatorPatched)
-                {
-                    equipmentBuilderCreateIndicatorPatched = patcher.TryPatchPostfix("DolocTown.EquipmentBuilder, Assembly-CSharp", "CreateIndicator", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentBuilderCreateIndicatorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!equipmentBuilderTurnIndicatorPatched)
-                {
-                    equipmentBuilderTurnIndicatorPatched = patcher.TryPatchPostfix("DolocTown.EquipmentBuilder, Assembly-CSharp", "TurnIndicator", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.EquipmentBuilderTurnIndicatorPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                bool mineVisualHooksReady = equipmentRendererReusePatched && equipmentBuilderCreateIndicatorPatched && equipmentBuilderTurnIndicatorPatched;
-                runtime.SetHookStatus("Machine.MineVisualContainment", mineVisualHooksReady ? "experimental" : "pending", "Harmony: EquipmentRenderer.OnReuse + EquipmentBuilder.CreateIndicator/TurnIndicator", mineVisualHooksReady ? "Equipment renderer pool scale is reset on reuse and Mine placement preview receives Mine-only visual scale." : "Waiting for equipment renderer/builder hook targets to become patchable.");
-
-                if (!equipmentSlotsReloadParamsPatched)
-                {
-                    equipmentSlotsReloadParamsPatched = patcher.TryPatchPostfix("DolocTown.GameData.AgentEquipmentManager, Assembly-CSharp", "ReloadParams", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AgentEquipmentReloadParamsPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!equipmentSlotsShieldAttackPatched)
-                {
-                    equipmentSlotsShieldAttackPatched = patcher.TryPatchPrefix("DolocTown.BodyController, Assembly-CSharp", "OnAttacked", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.BodyControllerOnAttackedPrefix), BindingFlags.Public | BindingFlags.Static), 4);
-                }
-
-                if (!equipmentSlotsAccessoriesInitPatched)
-                {
-                    equipmentSlotsAccessoriesInitPatched = patcher.TryPatchPostfix("DolocTown.UI.AccessoriesBar, Assembly-CSharp", "__Init", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AccessoriesBarInitPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                if (!equipmentSlotsAccessoriesStartShowPatched)
-                {
-                    equipmentSlotsAccessoriesStartShowPatched = patcher.TryPatchPostfix("DolocTown.UI.AccessoriesBar, Assembly-CSharp", "OnStartShow", typeof(DolocTownHookCallbacks).GetMethod(nameof(DolocTownHookCallbacks.AccessoriesBarOnStartShowPostfix), BindingFlags.Public | BindingFlags.Static), 0);
-                }
-
-                experimentalApi?.SetEquipmentSlotsRuntimeHooksInstalled(equipmentSlotsReloadParamsPatched);
-                experimentalApi?.SetEquipmentSlotsUiHooksInstalled(equipmentSlotsAccessoriesInitPatched || equipmentSlotsAccessoriesStartShowPatched);
-                runtime.SetHookStatus("Player.EquipmentSlotsApi", equipmentSlotsReloadParamsPatched ? "experimental" : "pending", "Harmony Postfix: AgentEquipmentManager.ReloadParams + AccessoriesBar", equipmentSlotsReloadParamsPatched ? "Patched native equipment stat refresh and AccessoriesBar lifecycle so DTMAPI extra-slot state can participate as attribute-only stats and render an interactive player equipment strip without exposing raw game types." : "Waiting for AgentEquipmentManager.ReloadParams and AccessoriesBar UI hooks to become patchable.");
-                runtime.SetHookStatus("Player.EquipmentSlotsShield", equipmentSlotsShieldAttackPatched ? "experimental" : "pending", "Harmony Prefix: BodyController.OnAttacked", equipmentSlotsShieldAttackPatched ? "Patched native player hit path so DTMAPI managed extra-slot shield hats participate only when vanilla hat shields are absent; vanilla visual hat slot stays native-owned." : "Waiting for BodyController.OnAttacked to become patchable.");
 
                 if (!hookResolutionDiagnosticLogged && !AllHookTargetsReady && (DateTimeOffset.Now - initializedAt).TotalSeconds >= 4)
                 {
@@ -224,24 +185,389 @@ namespace DTMAPI.GameBridge.DolocTown
                         "DolocTown.UI.AnimalViewer, Assembly-CSharp",
                         "DolocTown.UI.AnimalPanel, Assembly-CSharp",
                         "DolocTown.Animal, Assembly-CSharp",
-                        "DolocTown.ItemFarmingGun, Assembly-CSharp",
-                        "DolocTown.FarmingGunUiState, Assembly-CSharp",
                         "HarmonyLib.Harmony, 0Harmony"));
                 }
 
                 if (AllHookTargetsReady)
                 {
-                    hookRetryTimer?.Dispose();
-                    hookRetryTimer = null;
-                    AppDomain.CurrentDomain.AssemblyLoad -= OnAssemblyLoad;
+                    if (!runtime.RefactorOptions.HookReadinessLayers)
+                        StopHookRetrySources("LegacyAllHookTargetsReady");
                 }
             }
         }
 
         private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
         {
-            if (args.LoadedAssembly.GetName().Name == "Assembly-CSharp" || args.LoadedAssembly.GetName().Name == "0Harmony")
+            string? assemblyName = args.LoadedAssembly.GetName().Name;
+            if (assemblyName == "Assembly-CSharp")
+            {
+                uiContextDolocApiType = null;
+                uiContextDolocApiResolutionAttempted = false;
+                uiContextIsNormalStateGetter = null;
+                uiContextUserInputGetter = null;
+                uiContextCurrentStateGetter = null;
+                uiContextUserInputType = null;
+                uiContextBlockingStateTypes = Array.Empty<Type>();
+            }
+            if (assemblyName == "Assembly-CSharp" || assemblyName == "0Harmony")
+                RequestHookInstall("AssemblyLoad:" + assemblyName);
+        }
+
+        private void RequestHookInstall(string reason)
+        {
+            if (!runtime.RefactorOptions.HookInstallScheduler)
+            {
                 InstallHarmonyHooks();
+                PublishHookReadinessStatuses("LegacyDirectInstall:" + (reason ?? string.Empty));
+                return;
+            }
+
+            if ((reason ?? string.Empty).StartsWith("DemandActivated", StringComparison.OrdinalIgnoreCase))
+                EnsureHookRetrySources(reason ?? string.Empty);
+
+            hookInstallScheduler.Request(
+                reason ?? string.Empty,
+                runtime.CurrentRuntimePhase,
+                System.Threading.Thread.CurrentThread.ManagedThreadId,
+                runtime.RuntimeThreadId);
+            PublishHookSchedulerStatus("Request:" + (reason ?? string.Empty));
+        }
+
+        private void EnsureHookRetrySources(string reason)
+        {
+            if (shutdownCleanupRan)
+                return;
+            if (!assemblyLoadSubscribed)
+            {
+                AppDomain.CurrentDomain.AssemblyLoad += OnAssemblyLoad;
+                assemblyLoadSubscribed = true;
+            }
+            if (hookRetryTimer == null)
+                hookRetryTimer = new System.Threading.Timer(_ => RequestHookInstall("RetryTimer"), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+        }
+
+        private bool ProcessPendingHookInstallRequests(string reason)
+        {
+            if (!runtime.RefactorOptions.HookInstallScheduler)
+                return false;
+            if (!runtime.IsRuntimeThread)
+                return false;
+            if (!hookInstallScheduler.HasPending)
+            {
+                hookSchedulerIdleFrameFastPathCount++;
+                return false;
+            }
+
+            if (!hookInstallScheduler.TryConsumePending(out HookInstallRequest[] requests))
+                return false;
+
+            hookInstallProcessedBatchCount++;
+            InstallHarmonyHooks();
+            PublishHookSchedulerStatus("Process:" + (reason ?? string.Empty) + " requests=" + requests.Length);
+            PublishHookReadinessStatuses(reason ?? string.Empty);
+            if (CoreHookTargetsReady)
+                StopHookRetrySources("CoreHookReadinessReady");
+            return true;
+        }
+
+        private void StopHookRetrySources(string reason, bool force = false)
+        {
+            if (!force && (!CoreHookTargetsReady || HasUnreadyDemandedHookRoutes()))
+                return;
+            hookRetryTimer?.Dispose();
+            hookRetryTimer = null;
+            if (assemblyLoadSubscribed)
+            {
+                AppDomain.CurrentDomain.AssemblyLoad -= OnAssemblyLoad;
+                assemblyLoadSubscribed = false;
+            }
+
+            PublishHookSchedulerStatus(reason ?? string.Empty);
+        }
+
+        private bool HasUnreadyDemandedHookRoutes()
+        {
+            GetDemandedHookRouteCounts(out int ready, out int total);
+            return ready < total;
+        }
+
+        public void Shutdown(string reason)
+        {
+            if (shutdownCleanupRan)
+                return;
+            shutdownCleanupRan = true;
+
+            CloseQaHostParticipant("shutdown:" + (reason ?? string.Empty));
+            debugActionApi.ShutdownIfLoaded(
+                "GameBridge shutdown " + (reason ?? string.Empty));
+
+            lock (hookGate)
+            {
+                StopHookRetrySources("Shutdown:" + (reason ?? string.Empty), force: true);
+                TryUnsubscribeSaveLoadedUnityEvent(reason ?? string.Empty);
+            }
+
+            // Classify the route only after removable UnityEvent listeners have gone.
+            // Harmony patches have no proven independent rollback and therefore remain
+            // authoritative ProcessPinnedDormant physical roots at shutdown.
+            ReleaseGameBridgeDemandRouting("shutdown:" + (reason ?? string.Empty));
+
+            if (ReferenceEquals(DolocTownHookCallbacks.Bridge, this))
+                DolocTownHookCallbacks.Bridge = null;
+            if (ReferenceEquals(DolocTownHookCallbacks.Runtime, runtime))
+                DolocTownHookCallbacks.Runtime = null;
+            HarmonyReflectionPatcher.ClearStaticCallbacks();
+            runtime.SetHookStatus(
+                "GameBridge.ShutdownCleanup",
+                "verified",
+                "Unity OnApplicationQuit",
+                "Stopped hook retry sources, released DTMAPI static hook roots, and removed DTMAPI-owned UnityEvent listeners. QA scenario cleanup is owned by the optional participant. reason=" + (reason ?? string.Empty));
+        }
+
+        private void PublishHookSchedulerStatus(string operation)
+        {
+            HookInstallSchedulerSnapshot snapshot = BuildHookInstallSchedulerSnapshot();
+            runtime.Diagnostics.SetFeatureStatus(
+                "Refactor.HookInstallScheduler",
+                runtime.RefactorOptions.HookInstallScheduler ? "scheduled-main-thread" : "disabled",
+                operation ?? string.Empty,
+                success: true,
+                failureCount: 0,
+                lastError: string.Empty,
+                details: runtime.RefactorOptions.HookInstallScheduler ? snapshot.FormatSummary() : "Hook install scheduler disabled; legacy direct install path is active.");
+            runtime.SetHookStatus(
+                "Refactor.HookInstallScheduler",
+                runtime.RefactorOptions.HookInstallScheduler ? "observed" : "disabled",
+                "DTMAPI.GameBridge.DolocTown HookInstallScheduler",
+                runtime.RefactorOptions.HookInstallScheduler ? snapshot.FormatSummary() : "Hook install scheduler disabled; legacy direct install path is active.");
+            runtime.SetHookStatus(
+                "Refactor.OffThreadHookRequests",
+                snapshot.OffThreadRequests == 0 ? "ok" : "observed",
+                "DTMAPI.GameBridge.DolocTown HookInstallScheduler",
+                snapshot.FormatOffThreadSummary());
+            runtime.SetHookStatus(
+                "Refactor.AssemblyLoadSubscription",
+                assemblyLoadSubscribed ? "active" : "released",
+                "AppDomain.AssemblyLoad",
+                snapshot.AssemblySummary);
+            runtime.SetHookStatus(
+                "Refactor.RetryTimerAlive",
+                hookRetryTimer != null ? "active" : "released",
+                "System.Threading.Timer hook retry",
+                snapshot.RetrySummary);
+        }
+
+        private void PublishHookReadinessStatuses(string operation)
+        {
+            if (!runtime.RefactorOptions.HookReadinessLayers)
+                return;
+
+            hookReadinessPublishCount++;
+            HookInstallSchedulerSnapshot snapshot = BuildHookInstallSchedulerSnapshot();
+            runtime.Diagnostics.SetFeatureStatus(
+                "Refactor.HookReadinessLayers",
+                snapshot.CoreReady ? "core-ready" : "core-pending",
+                operation ?? string.Empty,
+                success: snapshot.CoreReady,
+                failureCount: snapshot.CoreReady ? 0 : 1,
+                lastError: snapshot.CoreReady ? string.Empty : "Core hook targets are not all ready.",
+                details: "core={" + snapshot.CoreSummary + "}; feature={" + snapshot.FeatureSummary + "}; smokeDiagnostics={" + snapshot.SmokeDiagnosticsSummary + "}; legacyAllReady=" + (snapshot.LegacyAllReady ? "true" : "false"));
+            runtime.SetHookStatus(
+                "Refactor.CoreHookReadiness",
+                snapshot.CoreReady ? "ready" : "pending",
+                "DTMAPI.GameBridge.DolocTown layered hook readiness",
+                snapshot.CoreSummary);
+            runtime.SetHookStatus(
+                "Refactor.FeatureHookReadiness",
+                FeatureHookTargetsReady ? "ready" : "partial",
+                "DTMAPI.GameBridge.DolocTown legacy 25/34 physical hook subset",
+                snapshot.FeatureSummary);
+            GetCatalogPhysicalHookRouteCounts(out int catalogPhysicalReady, out int catalogPhysicalTotal);
+            runtime.SetHookStatus(
+                "Refactor.CatalogPhysicalHookReadiness",
+                catalogPhysicalReady == catalogPhysicalTotal ? "ready" : "partial",
+                "DTMAPI.GameBridge.DolocTown fixed demand catalog physical routes",
+                "ready=" + (catalogPhysicalReady == catalogPhysicalTotal ? "true" : "false") + "; readyCount=" + catalogPhysicalReady + "; total=" + catalogPhysicalTotal + "; policy=all-catalog-hook-routes-independent-of-demand");
+            runtime.SetHookStatus(
+                "Refactor.DemandedFeatureHookReadiness",
+                DemandedFeatureHookTargetsReady ? "ready" : "partial",
+                "DTMAPI.GameBridge.DolocTown demand-routed hook readiness",
+                BuildDemandedFeatureHookReadinessSummary());
+            runtime.SetHookStatus(
+                "Refactor.SmokeDiagnosticsHookReadiness",
+                SmokeDiagnosticsHookTargetsReady ? "ready" : "partial",
+                "DTMAPI.GameBridge.DolocTown layered hook readiness",
+                snapshot.SmokeDiagnosticsSummary);
+            runtime.SetHookStatus(
+                "Refactor.LegacyAllHookTargetsReady",
+                snapshot.LegacyAllReady ? "ready" : "mixed",
+                "DTMAPI.GameBridge.DolocTown legacy compatibility diagnostic",
+                "Legacy mixed readiness remains diagnostic-only in stage 4; it no longer controls global ready. legacyAllReady=" + (snapshot.LegacyAllReady ? "true" : "false"));
+        }
+
+        private HookInstallSchedulerSnapshot BuildHookInstallSchedulerSnapshot()
+        {
+            return hookInstallScheduler.GetSnapshot(
+                CoreHookTargetsReady,
+                BuildCoreHookReadinessSummary(),
+                BuildFeatureHookReadinessSummary(),
+                BuildSmokeDiagnosticsHookReadinessSummary(),
+                "assemblyLoadSubscribed=" + (assemblyLoadSubscribed ? "true" : "false") + "; policy=" + (CoreHookTargetsReady ? "released-after-core-ready" : "active-until-core-ready"),
+                "retryTimerAlive=" + (hookRetryTimer != null ? "true" : "false") + "; policy=" + (CoreHookTargetsReady ? "released-after-core-ready" : "active-until-core-ready"),
+                AllHookTargetsReady,
+                assemblyLoadSubscribed,
+                hookRetryTimer != null);
+        }
+
+        private bool CoreHookTargetsReady => coreHookTargetsReadyOverrideForTests ??
+            (IsSaveLoadedHookReady &&
+             loadRequestedPatched &&
+             loadReturnedPatched &&
+             nativeGameFramePatched &&
+             saveSavingPatched &&
+             saveSavedPatched &&
+             returnHomeRequestedPatched &&
+             returnHomePatched &&
+             IsWorkshopCommitHookReady);
+
+        private bool IsSaveLoadedHookReady => saveLoadedPatched || saveLoadedEventSubscribed;
+
+        private bool IsWorkshopCommitHookReady =>
+            workshopReloadPatched &&
+            workshopModUiRegisterPatched &&
+            workshopModUiHidePatched &&
+            workshopModManagerSavePatched &&
+            workshopModUiCloseTransactionPatched;
+
+        private bool AllHookTargetsReady => CoreHookTargetsReady && FeatureHookTargetsReady && SmokeDiagnosticsHookTargetsReady;
+
+        internal bool AllHookTargetsReadyForQa => AllHookTargetsReady;
+
+        internal void SetCoreHookReadinessOverrideForTests(bool? value) => coreHookTargetsReadyOverrideForTests = value;
+
+        internal bool HookRetrySourcesAliveForTests => hookRetryTimer != null || assemblyLoadSubscribed;
+
+        internal void RequestHookInstallForTests(string reason) => RequestHookInstall(reason);
+
+        private bool FeatureHookTargetsReady
+        {
+            get
+            {
+                bool[] states =
+                {
+                    environmentResetHookBridge?.SetEnvCameraPatched == true,
+                    audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true,
+                    actionSpeedToolEnterPatched,
+                    actionSpeedToolExitPatched,
+                    actionSpeedInteractEnterPatched,
+                    actionSpeedInteractExitPatched,
+                    actionSpeedEatEnterPatched,
+                    actionSpeedUseItemContinuesPatched,
+                    actionSpeedInteractContinuesPatched,
+                    actionSpeedAnimalRendererInteractPatched,
+                    actionSpeedBaseExitPatched,
+                    toolColliderHitPostfixPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityReadyEnterPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityCastEnterPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityWaitEnterPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityWaitPlayPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameStartPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameUpdatePatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameStopPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityPullEnterPatched,
+                    !fishingCompatibilityHooksRequired || fishingCompatibilityPullExitPatched,
+                    fishRoeTitlePatched,
+                    fishRoeDescriptionPatched,
+                    fishRoeDetailPatched,
+                    animalFullInfoDataPatched,
+                    animalViewerShowPrefixPatched,
+                    animalViewerShowPatched,
+                    animalPanelUnregisterPatched
+                };
+                return states.All(state => state);
+            }
+        }
+
+        private bool DemandedFeatureHookTargetsReady
+        {
+            get
+            {
+                GetDemandedHookRouteCounts(out int ready, out int total);
+                return ready == total;
+            }
+        }
+
+        private bool SmokeDiagnosticsHookTargetsReady => true;
+
+        private string BuildCoreHookReadinessSummary()
+        {
+            return "ready=" + (CoreHookTargetsReady ? "true" : "false") +
+                "; SaveLoaded=" + (IsSaveLoadedHookReady ? "ready" : "pending") +
+                "; LoadGameRequested=" + (loadRequestedPatched ? "ready" : "pending") +
+                "; LoadGameReturned=" + (loadReturnedPatched ? "ready" : "pending") +
+                "; NativeGameFrame=" + (nativeGameFramePatched ? "ready" : "pending") +
+                "; SaveSaving=" + (saveSavingPatched ? "ready" : "pending") +
+                "; SaveSaved=" + (saveSavedPatched ? "ready" : "pending") +
+                "; ReturnHomeRequested=" + (returnHomeRequestedPatched ? "ready" : "pending") +
+                "; ReturnedToTitle=" + (returnHomePatched ? "ready" : "pending") +
+                "; WorkshopModUiCommit=" + (IsWorkshopCommitHookReady ? "ready" : "pending");
+        }
+
+        private string BuildFeatureHookReadinessSummary()
+        {
+            int ready = 0;
+            int total = fishingCompatibilityHooksRequired ? 31 : 22;
+            if (environmentResetHookBridge?.SetEnvCameraPatched == true) ready++;
+            if (audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true) ready++;
+            if (actionSpeedToolEnterPatched) ready++;
+            if (actionSpeedToolExitPatched) ready++;
+            if (actionSpeedInteractEnterPatched) ready++;
+            if (actionSpeedInteractExitPatched) ready++;
+            if (actionSpeedEatEnterPatched) ready++;
+            if (actionSpeedUseItemContinuesPatched) ready++;
+            if (actionSpeedInteractContinuesPatched) ready++;
+            if (actionSpeedAnimalRendererInteractPatched) ready++;
+            if (actionSpeedBaseExitPatched) ready++;
+            if (toolColliderHitPostfixPatched) ready++;
+            if (fishingCompatibilityHooksRequired)
+            {
+                if (fishingCompatibilityReadyEnterPatched) ready++;
+                if (fishingCompatibilityCastEnterPatched) ready++;
+                if (fishingCompatibilityWaitEnterPatched) ready++;
+                if (fishingCompatibilityWaitPlayPatched) ready++;
+                if (fishingCompatibilityMiniGameStartPatched) ready++;
+                if (fishingCompatibilityMiniGameUpdatePatched) ready++;
+                if (fishingCompatibilityMiniGameStopPatched) ready++;
+                if (fishingCompatibilityPullEnterPatched) ready++;
+                if (fishingCompatibilityPullExitPatched) ready++;
+            }
+            if (fishRoeTitlePatched) ready++;
+            if (fishRoeDescriptionPatched) ready++;
+            if (fishRoeDetailPatched) ready++;
+            if (animalFullInfoDataPatched) ready++;
+            if (animalViewerShowPrefixPatched) ready++;
+            if (animalViewerShowPatched) ready++;
+            if (animalPanelUnregisterPatched) ready++;
+            return "ready=" + (ready == total ? "true" : "false") +
+                "; readyCount=" + ready +
+                "; total=" + total +
+                "; fishing=" + (fishingCompatibilityHooksRequired ? "active-hooks-required" : "inactive/no-consumer") +
+                "; policy=legacy-22-or-31-physical-subset" +
+                "; optional-does-not-block-core=true";
+        }
+
+        private string BuildDemandedFeatureHookReadinessSummary()
+        {
+            GetDemandedHookRouteCounts(out int ready, out int total);
+            return "ready=" + (ready == total ? "true" : "false") +
+                "; readyCount=" + ready +
+                "; total=" + total +
+                "; policy=demanded-routes-only";
+        }
+
+        private string BuildSmokeDiagnosticsHookReadinessSummary()
+        {
+            return "ready=true; readyCount=0; total=0; owner=ProductNative-or-optional-Compatibility; mandatoryGameBridgeTargets=none";
         }
     }
 }

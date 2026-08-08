@@ -21,7 +21,7 @@ namespace DTMAPI.Abstractions
         void WriteConfig<TConfig>(TConfig config);
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.12")]
+    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.1.12")]
     public interface ITranslationHelper
     {
         string Language { get; }
@@ -37,7 +37,7 @@ namespace DTMAPI.Abstractions
         void RegisterMigration<TConfig>(IManifest manifest, Action<TConfig> migrate) where TConfig : new();
     }
 
-    [DtmApiStatus(DtmApiStatus.Stable, Since = "0.1.0")]
+    [DtmApiStatus(DtmApiStatus.StableCandidate, Since = "0.1.0")]
     public interface IModRegistry
     {
         bool IsLoaded(string uniqueId);
@@ -47,7 +47,7 @@ namespace DTMAPI.Abstractions
         void RegisterApi<TApi>(TApi api) where TApi : class;
     }
 
-    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0")]
+    [DtmApiStatus(DtmApiStatus.Experimental, Since = "0.1.0", Notes = "Read-only enabled official/Workshop source index. Disabled or unknown package status remains available through Mod diagnostics; its gameplay item files are not parsed.")]
     public interface IWorkshopHelper
     {
         IReadOnlyList<IWorkshopModInfo> GetOfficialMods();
@@ -231,9 +231,18 @@ namespace DTMAPI.Abstractions
     {
         void RegisterButton(string button);
         void UnregisterButton(string button);
+        IInputRegistration RegisterKeybind(string id, string keybindText, DtmInputScope scope = DtmInputScope.Gameplay);
+        IInputRegistration RegisterKeybind(string id, DtmKeybindList keybinds, DtmInputScope scope = DtmInputScope.Gameplay);
         IReadOnlyList<string> GetRegisteredButtons();
+        DtmButtonState GetState(DtmButton button);
         bool IsDown(string button);
+        bool IsDown(DtmButton button);
         bool WasPressed(string button);
+        bool WasPressed(DtmButton button);
+        bool WasReleased(string button);
+        bool WasReleased(DtmButton button);
+        bool IsKeybindDown(string id);
+        bool WasKeybindPressed(string id);
         void Suppress(string button);
         IReadOnlyList<string> GetSuppressedButtons();
     }

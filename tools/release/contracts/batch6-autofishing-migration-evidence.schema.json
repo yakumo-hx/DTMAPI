@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/release/batch6-autofishing-migration-evidence.schema.json",
+  "title": "DTMAPI Batch 6 consolidated AutoFishing migration evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptKind",
+    "status",
+    "capturedAtUtc",
+    "baselineCommit",
+    "implementationCommit",
+    "implementationCommittedAtUtc",
+    "ownershipAlgorithm",
+    "migrationDelta",
+    "authorityReferences",
+    "consumerState",
+    "mandatoryRoots",
+    "mandatoryBaseline",
+    "mandatoryTarget",
+    "changedMandatoryFileCount",
+    "changedMandatoryDiffSha256",
+    "changedMandatoryFiles",
+    "mandatoryPlatformAddedLines",
+    "mandatoryPlatformDeletedLines",
+    "mandatoryCompatibilityAddedLines",
+    "mandatoryCompatibilityDeletedLines",
+    "mandatoryProductNativeAddedLines",
+    "mandatoryProductNativeDeletedLines",
+    "mandatoryFirstPartyFishingTokenCount",
+    "mandatoryTargetProductNativeResidue",
+    "productBaseline",
+    "productTarget",
+    "qaBaseline",
+    "qaTarget",
+    "compatibilityBaseline",
+    "compatibilityTarget",
+    "playerAssemblyModel",
+    "lifecycleModel"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 3 },
+    "receiptKind": { "const": "DTMAPI.Batch6.AutoFishingMigrationEvidence" },
+    "status": { "const": "Passed" },
+    "capturedAtUtc": { "type": "string", "format": "date-time" },
+    "baselineCommit": { "const": "9fb8d87d5c03916f2ca083ffb235b293aea58d61" },
+    "implementationCommit": { "$ref": "#/$defs/objectId" },
+    "implementationCommittedAtUtc": { "type": "string", "format": "date-time" },
+    "ownershipAlgorithm": { "$ref": "#/$defs/ownershipAlgorithm" },
+    "migrationDelta": { "$ref": "#/$defs/migrationDelta" },
+    "authorityReferences": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/sourceBinding" },
+      "uniqueItems": true
+    },
+    "consumerState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "productLegacyFishingApiTokenCount",
+        "productFirstPartyFishingTokenCount",
+        "mandatoryCanonicalHarmonyOwnerTokenCount",
+        "mandatoryFirstPartyFishingTokenCount",
+        "compatibilityLegacyFishingApiTokenCount",
+        "compatibilityProductIdentityTokenCount"
+      ],
+      "properties": {
+        "productLegacyFishingApiTokenCount": { "const": 0 },
+        "productFirstPartyFishingTokenCount": { "const": 0 },
+        "mandatoryCanonicalHarmonyOwnerTokenCount": { "const": 0 },
+        "mandatoryFirstPartyFishingTokenCount": { "const": 0 },
+        "compatibilityLegacyFishingApiTokenCount": { "type": "integer", "minimum": 1 },
+        "compatibilityProductIdentityTokenCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "mandatoryRoots": {
+      "const": [
+        "src/DTMAPI.Abstractions",
+        "src/DTMAPI.Core",
+        "src/DTMAPI.BepInExBootstrap",
+        "src/DTMAPI.GameBridge.DolocTown",
+        "src/DTMAPI.ModConfigMenu"
+      ]
+    },
+    "mandatoryBaseline": { "$ref": "#/$defs/tree" },
+    "mandatoryTarget": { "$ref": "#/$defs/tree" },
+    "changedMandatoryFileCount": { "type": "integer", "minimum": 1 },
+    "changedMandatoryDiffSha256": { "$ref": "#/$defs/sha256" },
+    "changedMandatoryFiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/file" },
+      "uniqueItems": true
+    },
+    "mandatoryPlatformAddedLines": { "type": "integer", "minimum": 0 },
+    "mandatoryPlatformDeletedLines": { "type": "integer", "minimum": 0 },
+    "mandatoryCompatibilityAddedLines": { "type": "integer", "minimum": 0 },
+    "mandatoryCompatibilityDeletedLines": { "type": "integer", "minimum": 0 },
+    "mandatoryProductNativeAddedLines": { "const": 0 },
+    "mandatoryProductNativeDeletedLines": { "type": "integer", "minimum": 1 },
+    "mandatoryFirstPartyFishingTokenCount": { "const": 0 },
+    "mandatoryTargetProductNativeResidue": { "const": [] },
+    "productBaseline": { "$ref": "#/$defs/tree" },
+    "productTarget": { "$ref": "#/$defs/tree" },
+    "qaBaseline": { "$ref": "#/$defs/tree" },
+    "qaTarget": { "$ref": "#/$defs/tree" },
+    "compatibilityBaseline": { "$ref": "#/$defs/tree" },
+    "compatibilityTarget": { "$ref": "#/$defs/nonEmptyTree" },
+    "playerAssemblyModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandatoryRuntimeDlls", "optionalProductDlls", "qaDlls"],
+      "properties": {
+        "mandatoryRuntimeDlls": {
+          "const": [
+            "DTMAPI.BepInExBootstrap.dll",
+            "DTMAPI.Abstractions.dll",
+            "DTMAPI.Core.dll",
+            "DTMAPI.GameBridge.DolocTown.dll",
+            "DTMAPI.ModConfigMenu.dll"
+          ]
+        },
+        "optionalProductDlls": { "const": ["Yuuka.DTMAPI.AutoFishing.dll"] },
+        "qaDlls": { "const": [] }
+      }
+    },
+    "lifecycleModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coldDisabled", "loadedF6Off", "postLoadDisabled"],
+      "properties": {
+        "coldDisabled": { "const": "zero product assembly load and zero canonical Harmony owner" },
+        "loadedF6Off": { "const": "canonical process-lifetime patches may remain; zero recurring updater and zero active transaction/input/animation override" },
+        "postLoadDisabled": { "const": "restart-required; clean next restart has zero product assembly and patch owner" }
+      }
+    }
+  },
+  "$defs": {
+    "objectId": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+    "nullableObjectId": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/objectId" }
+      ]
+    },
+    "sha256": { "type": "string", "pattern": "^[A-F0-9]{64}$" },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "blob"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "blob": { "$ref": "#/$defs/objectId" }
+      }
+    },
+    "ownershipAlgorithm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "baselineProductNativeSources",
+        "baselineProductNativeSourceCount",
+        "baselineProductNativeSourceSha256",
+        "baselineProductNativeSymbols",
+        "unknownAddedLineCount",
+        "hunkCount"
+      ],
+      "properties": {
+        "id": { "const": "DTMAPI.Batch6.AutoFishingMigration.SourceDeltaOwnership.v3" },
+        "baselineProductNativeSources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceBinding" },
+          "uniqueItems": true
+        },
+        "baselineProductNativeSourceCount": { "type": "integer", "minimum": 1 },
+        "baselineProductNativeSourceSha256": { "$ref": "#/$defs/sha256" },
+        "baselineProductNativeSymbols": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "unknownAddedLineCount": { "const": 0 },
+        "hunkCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "migrationDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changedPathCount", "changedPathsSha256", "classifications"],
+      "properties": {
+        "changedPathCount": { "type": "integer", "minimum": 1 },
+        "changedPathsSha256": { "$ref": "#/$defs/sha256" },
+        "classifications": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["classification", "pathCount", "pathsSha256"],
+            "properties": {
+              "classification": {
+                "enum": ["MandatoryRuntime", "AutoFishingProduct", "QualityAssurance", "PlatformTooling", "Documentation"]
+              },
+              "pathCount": { "type": "integer", "minimum": 1 },
+              "pathsSha256": { "$ref": "#/$defs/sha256" }
+            }
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileCount", "physicalLines", "treeSha256"],
+      "properties": {
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "physicalLines": { "type": "integer", "minimum": 0 },
+        "treeSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "nonEmptyTree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileCount", "physicalLines", "treeSha256"],
+      "properties": {
+        "fileCount": { "type": "integer", "minimum": 1 },
+        "physicalLines": { "type": "integer", "minimum": 1 },
+        "treeSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "symbolOwnership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hunkOrdinal", "side", "symbol", "ownership"],
+      "properties": {
+        "hunkOrdinal": { "type": "integer", "minimum": 1 },
+        "side": { "enum": ["Baseline", "Target"] },
+        "symbol": { "type": "string", "minLength": 1 },
+        "ownership": { "enum": ["Platform", "Compatibility", "ProductNativeRemoval", "ProductNative"] }
+      }
+    },
+    "hunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "header",
+        "baselineStart",
+        "baselineCount",
+        "targetStart",
+        "targetCount",
+        "addedPhysicalLines",
+        "deletedPhysicalLines",
+        "addedOwnership",
+        "deletedOwnership",
+        "ownership",
+        "platformAddedLines",
+        "platformDeletedLines",
+        "compatibilityAddedLines",
+        "compatibilityDeletedLines",
+        "productNativeAddedLines",
+        "productNativeDeletedLines",
+        "baselineSymbols",
+        "targetSymbols",
+        "semanticEvidence",
+        "hunkSha256"
+      ],
+      "properties": {
+        "ordinal": { "type": "integer", "minimum": 1 },
+        "header": { "type": "string", "pattern": "^@@ -[0-9]+(?:,[0-9]+)? \\+[0-9]+(?:,[0-9]+)? @@" },
+        "baselineStart": { "type": "integer", "minimum": 0 },
+        "baselineCount": { "type": "integer", "minimum": 0 },
+        "targetStart": { "type": "integer", "minimum": 0 },
+        "targetCount": { "type": "integer", "minimum": 0 },
+        "addedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "deletedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "addedOwnership": { "$ref": "#/$defs/sideOwner" },
+        "deletedOwnership": { "$ref": "#/$defs/sideOwner" },
+        "ownership": { "$ref": "#/$defs/fileOwner" },
+        "platformAddedLines": { "type": "integer", "minimum": 0 },
+        "platformDeletedLines": { "type": "integer", "minimum": 0 },
+        "compatibilityAddedLines": { "type": "integer", "minimum": 0 },
+        "compatibilityDeletedLines": { "type": "integer", "minimum": 0 },
+        "productNativeAddedLines": { "const": 0 },
+        "productNativeDeletedLines": { "type": "integer", "minimum": 0 },
+        "baselineSymbols": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "targetSymbols": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "semanticEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "hunkSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sideOwner": { "enum": ["None", "Platform", "Compatibility", "ProductNativeRemoval", "ProductNative"] },
+    "fileOwner": { "enum": ["Platform", "Compatibility", "ProductNativeRemoval", "ProductNative", "Mixed"] },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "changeType",
+        "ownership",
+        "addedPhysicalLines",
+        "deletedPhysicalLines",
+        "baselineBlob",
+        "targetBlob",
+        "diffSha256",
+        "hunks",
+        "symbolOwnership"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "changeType": { "enum": ["Added", "Modified", "Deleted"] },
+        "ownership": { "$ref": "#/$defs/fileOwner" },
+        "addedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "deletedPhysicalLines": { "type": "integer", "minimum": 0 },
+        "baselineBlob": { "$ref": "#/$defs/nullableObjectId" },
+        "targetBlob": { "$ref": "#/$defs/nullableObjectId" },
+        "diffSha256": { "$ref": "#/$defs/sha256" },
+        "hunks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/hunk" },
+          "uniqueItems": true
+        },
+        "symbolOwnership": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/symbolOwnership" },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

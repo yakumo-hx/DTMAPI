@@ -1,0 +1,241 @@
+# 05 新增植被
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/NwWvwfh7fin9WOk5vVQcyDSGnpb>
+
+Source modified label: 4月21日修改
+
+## 一、整体说明
+
+- 植被模组由【4个】json文件组成，分别是：
+
+- ◦植被信息resource_tbvegetation.json
+
+- ◦植被生成信息（决定植被在哪些场景生成）mod_tbmodvegetationspawnextension.json
+
+- ◦掉落物道具信息item_tbitemspawn.json
+
+- ◦掉落库信息（决定资源掉落什么道具）item_tbitemspawn.json
+
+- Content文件夹内必须包含上述【4个】文件
+
+- ◦（若掉落物并非新增物品，则无需包含item_tbitemspawn.json）
+
+- 配置示例中，标黄的字段为【需要修改的字段】。
+
+- 植被掉落物的加工方式、植被图鉴等等【配套设施】需要通过【其他模组】实现。详见08 综合案例三（新增资源）。
+
+## 二、配置示例及数据结构说明
+
+#### 1.resource_tbvegetation.json
+
+- 添加多阶段植被 硫化菌（toadstool）的相关信息。
+
+_植被信息-配置示例_
+
+```json
+ [
+     {
+        "id": "toadstool", //资源ID
+        "type": 2, //植被类型，详见对照表
+        "default_unlock": true, //是否默认解锁
+        "size": {
+          "x": 2, //占地格子数：宽
+          "y": 3 //占地格子数：高
+        },
+        "spawn_months": [], //出现月份（为空表示没有限制）
+        "growing_months": [],  //生长月份（为空表示没有限制）
+        "tool_constraints": [], //可采集工具信息，一般为空
+        "drop_spawn_entry": {
+          "spawn_lut": "toadstool_drop", //掉落库ID
+          "count_range": {
+            "min_count": 1, //最小掉落数量
+            "max_count": 1 //最大掉落数量
+          }
+        },
+        "function": {
+          "$type": "VegetationFuncCrop",  //功能类型为作物植被，不修改
+          "growth_value": {
+            "x": 288, //每阶段最小生长值（1天=288）
+            "y": 288 //每阶段最小生长值（1天=288）
+          },
+          "level_sprites": {
+            "array": [
+              {
+                "url": "sprite_resource_toadstool_0" //阶段0贴图，格式为：sprite_resource_[植被ID]_[阶段数]，下同
+              },
+              {
+                "url": "sprite_resource_toadstool_1" //阶段1贴图
+              },
+              {
+                "url": "sprite_resource_toadstool_2" //阶段2贴图
+              },
+              {
+                "url": "sprite_resource_toadstool_3" //阶段3贴图
+              }
+            ]
+          }
+        }
+      }
+ ]
+```
+
+- 植被类型见06 ID对照表（资源&植被）。
+
+#### 2.mod_tbmodvegetationspawnextension.json
+
+- 在湿地-苔光洞穴的各场景（wetland_cave、wetland_cave_depths）有概率生成硫化菌（toadstool）。
+
+_配方组信息-配置示例_
+
+```json
+[
+  {
+    "id": "wetland_cave", //植被生成表ID，详见对照表
+    "extra_vegetations": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "vegetation_id": "toadstool" //生成植被ID
+      }
+    ]
+  },
+   {
+    "id": "wetland_cave_depths", //植被生成表ID，详见对照表
+    "extra_vegetations": [
+      {
+        "spawn_weight": 10, //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "vegetation_id": "toadstool" //生成植被ID
+      }
+    ]
+  }
+]
+```
+
+- 植被生成表见06 ID对照表（资源&植被）。
+
+#### 3.item_tbitem.json
+
+- 由于掉落物硫化菌（toadstool）是已有道具，所以无需添加道具信息。
+
+#### 4.item_tbitemspawn.json
+
+- 采集植被硫化菌，会根据掉落库toadstool_drop的权重，掉落道具硫化菌（toadstool）
+
+_追加掉落库信息-配置示例_
+
+```json
+[
+  {
+    "id": "toadstool_drop", //掉落库ID，详见对照表
+    "spawn_datas": [
+      {
+        "spawn_weight": 100,  //生成权重
+        "min_count": 1, //生成下限
+        "max_count": 0, //生成上限（0则无上限）
+        "item_name": "toadstool" //生成道具ID
+      }
+    ]
+  }
+]
+```
+
+#### 5.resource_tbresourcedocument.json（可选）
+
+- 添加植被硫化菌的图鉴信息。
+
+_图鉴信息-配置示例_
+
+```json
+[
+  {
+    "id": "toadstool", //资源ID
+    "title": {
+      "key": "resource_title_toadstool", //图鉴标题ID，格式为：resource_title_[资源ID]
+      "text": "硫化菌" //图鉴标题文本
+    },
+    "resource_type": 1, //资源类型(0资源，1植被)
+    "ui_sprite_asset": {
+      "url": "icon_document_toadstool" //资源图标，格式为：icon_document_[资源ID]
+    },
+    "scene_sprite_asset": {
+      "url": "preview_document_toadstool" //资源详情贴图，格式为：preview_document_[资源ID]
+    },
+    "is_plant": true, //是否为植物(是的话显示生长时期)
+    "habitat": {
+      "key": "resource_toadstool_habitat", //分布地ID，格式为：resource_[资源ID]_habitat
+      "text": "湿地-苔光洞穴" //分布地文本
+    },
+    "document_infos": [
+      {
+        "id": "toadstool_collect_1", //文档ID，格式为：[资源ID]_collect_[数字]
+        "document_type": 1, //文档类型(1默认，8采集)
+        "value": 0, //解锁文档需要采集资源的数量
+        "env_optimizer_point": 1, //解锁文档获取的环境改造点数
+        "description_append": {
+          "key": "document_resource_toadstool_collect_1", //文档文本ID，格式为：document_resource_[文档ID]
+          "text": "它在最不宜居的地方活着——黑暗、无氧、充满硫化物。" //文档文本
+        }
+      },
+      {
+        "id": "toadstool_collect_2", //文档ID，格式为：[资源ID]_collect_[数字]
+        "document_type": 8, //文档类型(1默认，8采集)
+        "value": 10, //解锁文档需要采集资源的数量
+        "env_optimizer_point": 2, //解锁文档获取的环境改造点数
+        "description_append": {
+          "key": "document_resource_toadstool_collect_2", //文档文本ID
+          "text": "我喜欢这个可爱的小家伙，只要加一点点，我的药剂就会变得十分迷人。\n<align=right>——女巫</align>" //文档文本
+        }
+      }
+    ],
+    "left_right_layout": false, //是否使用左右布局
+    "display": true //是否显示详细信息
+  }
+]
+```
+
+## 三、图片格式要求
+
+#### Embedded sheet `ZKonXZ`
+
+[TSV](sheets/01-01-zkonxz.tsv) · [rendered screenshot](sheets/01-01-zkonxz.png)
+
+```tsv
+类型	图片大小（像素）	作图规范
+道具图标	28*28	整体居中
+场景贴图	不限制	四周留1像素
+图鉴（图标）	36*27	不限制
+图鉴（详情）	不限制	四周留2像素
+```
+
+## 四、图片命名对照表
+
+#### Embedded sheet `j3J2n2`
+
+[TSV](sheets/02-01-j3j2n2.tsv) · [rendered screenshot](sheets/02-01-j3j2n2.png)
+
+```tsv
+类型	植被ID	命名格式
+道具图标	[植被ID]	icon_item_[植被ID]
+场景贴图	[植被ID]	sprite_resource_[植被ID]_[帧数]（若有）
+图鉴（图标）	[植被ID]	icon_document_[植被ID]
+图鉴（详情）	[植被ID]	preview_document_[植被ID]
+```
+
+## 四、参考案例
+
+- 新增植被硫化菌（toadstool）及其图鉴。
+
+![Official document image](images/rendered-01-35.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\03 进阶内容模组示例\05 新增植被
+
+## Links
+
+- [08 综合案例三（新增资源）](https://ka7deoo0opr.feishu.cn/wiki/U75Lwhq4qi4prxkti3zcffplnhf)
+- [06 ID对照表（资源&植被）](https://ka7deoo0opr.feishu.cn/wiki/UTmLwGzpAijYjvkhvE9czGyenud)
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

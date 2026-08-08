@@ -1,0 +1,11 @@
+{
+  "mod.name": "DTMAPI Fish Roe Info Display",
+  "config.section.main": "Fish roe tooltip",
+  "config.enabled.name": "Enabled",
+  "config.enabled.tooltip": "Master switch for fish roe display.",
+  "config.scope": "Shows the parent fish name in the roe title only; incubation/growth details stay hidden.",
+  "config.cacheSeconds.name": "Cache seconds",
+  "config.cacheSeconds.tooltip": "Cache native fish-name lookup results for tooltip hooks.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write low-frequency cache diagnostics."
+}

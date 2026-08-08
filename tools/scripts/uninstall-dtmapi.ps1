@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string] $GameDir = '',
     [switch] $DryRun,
     [switch] $RemoveBepInEx,
@@ -11,6 +11,15 @@ param(
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\release-common.ps1"
 $ErrorActionPreference = 'Stop'
+$script:DtmUninstallMutationLock = $null
+
+trap {
+    if ($null -ne $script:DtmUninstallMutationLock) {
+        Exit-DtmApiInstallerMutationLock -Lock $script:DtmUninstallMutationLock
+        $script:DtmUninstallMutationLock = $null
+    }
+    break
+}
 
 $repo = Get-RepoRoot
 if ([string]::IsNullOrWhiteSpace($GameDir)) {
@@ -18,23 +27,29 @@ if ([string]::IsNullOrWhiteSpace($GameDir)) {
 }
 else {
     $GameDir = [System.IO.Path]::GetFullPath($GameDir)
+    Assert-DtmApiDolocTownGamePath -Path $GameDir -Source '-GameDir'
 }
 
+Assert-DtmApiGameDirectoryMutationRoot -GameDir $GameDir
 $stateDir = Resolve-DtmApiStateDir -GameDir $GameDir
-$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$stamp = (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $backupRoot = Join-Path $stateDir "backups\uninstall-$stamp"
 $installStatePath = Join-Path $stateDir 'install-state.json'
 $removed = New-Object 'System.Collections.Generic.List[object]'
 $backups = New-Object 'System.Collections.Generic.List[object]'
 $skipped = New-Object 'System.Collections.Generic.List[object]'
-$errors = New-Object 'System.Collections.Generic.List[object]'
-$officialLocalPackagesRemoved = New-Object 'System.Collections.Generic.List[object]'
-$modInfosEntriesRemoved = New-Object 'System.Collections.Generic.List[string]'
-$modInfosBackupPath = ''
+
+if ($RemoveOfficialLocalPackages) {
+    Write-Warning '-RemoveOfficialLocalPackages is retired and ignored. The player uninstaller is Runtime-only; official-local packages and mod_infos.json will not be inspected or changed.'
+    $skipped.Add([ordered]@{
+        Kind = 'official-local-package-removal-request'
+        Reason = 'refused by Runtime-only player uninstall policy; no package scan or enablement change was performed'
+    }) | Out-Null
+}
 
 function Read-InstallState {
     param([string] $Path)
-    if (-not (Test-Path $Path)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
         return $null
     }
 
@@ -54,11 +69,12 @@ function Convert-ToBackupPath {
 
     $full = [System.IO.Path]::GetFullPath($Path)
     $gameFull = [System.IO.Path]::GetFullPath($GameDir).TrimEnd('\') + '\'
-    if ($full.StartsWith($gameFull, [System.StringComparison]::OrdinalIgnoreCase)) {
-        $relative = $full.Substring($gameFull.Length).TrimStart('\')
+    if (-not $full.StartsWith($gameFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to back up or remove a path outside the game directory: $full"
     }
-    else {
-        $relative = [System.IO.Path]::GetFileName($full)
+    $relative = $full.Substring($gameFull.Length).TrimStart('\')
+    if ([string]::IsNullOrWhiteSpace($relative)) {
+        throw "Refusing to back up or remove the game directory itself: $full"
     }
 
     return Join-Path $backupRoot $relative
@@ -71,7 +87,7 @@ function Backup-And-Remove {
         [string] $Reason = ''
     )
 
-    if (-not (Test-Path $Path)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
         $skipped.Add([ordered]@{ Kind = $Kind; Path = $Path; Reason = 'missing' }) | Out-Null
         return
     }
@@ -89,140 +105,28 @@ function Backup-And-Remove {
     $backups.Add($record) | Out-Null
 }
 
-function Write-JsonObjectAtomic {
-    param(
-        [Parameter(Mandatory = $true)] [string] $Path,
-        [Parameter(Mandatory = $true)] $Value
-    )
-
-    $parent = Split-Path -Parent $Path
-    if ($parent) {
-        New-Item -ItemType Directory -Force -Path $parent | Out-Null
-    }
-
-    $tempPath = $Path + ".tmp"
-    Write-Utf8NoBomJson -Path $tempPath -Value $Value
-    Move-Item -LiteralPath $tempPath -Destination $Path -Force
-}
-
-function Backup-ModInfosForUninstall {
-    param([Parameter(Mandatory = $true)] [string] $EnablementPath)
-
-    if (-not (Test-Path -LiteralPath $EnablementPath -PathType Leaf)) {
-        return ''
-    }
-
-    $dest = Join-Path $backupRoot 'official-local-packages\mod_infos.before-uninstall.json'
-    if ($DryRun) {
-        return [System.IO.Path]::GetFullPath($dest)
-    }
-
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dest) | Out-Null
-    Copy-Item -LiteralPath $EnablementPath -Destination $dest -Force
-    $record = [ordered]@{
-        Kind = 'mod-infos-before-official-local-removal'
-        Path = [System.IO.Path]::GetFullPath($EnablementPath)
-        BackupPath = [System.IO.Path]::GetFullPath($dest)
-        Reason = 'Before removing DTMAPI official-local enablement entries'
-    }
-    $backups.Add($record) | Out-Null
-    return [System.IO.Path]::GetFullPath($dest)
-}
-
-function Remove-OfficialLocalPackages {
-    param([object[]]$Packages)
-
-    if ($Packages.Count -eq 0) {
-        return
-    }
-
-    $persistentRoot = Get-DtmApiPersistentRoot
-    $modsRoot = [System.IO.Path]::GetFullPath((Join-Path $persistentRoot 'MODS')).TrimEnd('\') + '\'
-    foreach ($package in $Packages) {
-        $source = [System.IO.Path]::GetFullPath([string]$package.Path)
-        if (-not $source.StartsWith($modsRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Refusing to remove official-local package outside MODS root: $source"
-        }
-
-        $marker = Join-Path $source 'Content\DTMAPI\dtmapi-package.json'
-        if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
-            $skipped.Add([ordered]@{ Kind = 'official-local-package'; Path = $source; Reason = 'missing DTMAPI marker' }) | Out-Null
-            continue
-        }
-
-        $dest = Join-Path $backupRoot ('official-local-packages\' + [System.IO.Path]::GetFileName($source))
-        $record = [ordered]@{
-            Kind = 'official-local-package'
-            OfficialFolder = [string]$package.OfficialFolder
-            ModInfoId = [string]$package.ModInfoId
-            UniqueID = [string]$package.UniqueID
-            Version = [string]$package.Version
-            Path = $source
-            BackupPath = [System.IO.Path]::GetFullPath($dest)
-            Reason = 'RemoveOfficialLocalPackages requested and DTMAPI package marker exists'
-            DryRun = [bool]$DryRun
-        }
-
-        if (-not $DryRun) {
-            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dest) | Out-Null
-            Move-Item -LiteralPath $source -Destination $dest -Force
-            $backups.Add($record) | Out-Null
-        }
-
-        $removed.Add($record) | Out-Null
-        $officialLocalPackagesRemoved.Add($record) | Out-Null
-    }
-}
-
-function Remove-ModInfosEntries {
-    param([object[]]$Packages)
-
-    if ($Packages.Count -eq 0) {
-        return
-    }
-
-    $persistentRoot = Get-DtmApiPersistentRoot
-    $enablementPath = Join-Path $persistentRoot 'SAVE\mod_infos.json'
-    if (-not (Test-Path -LiteralPath $enablementPath -PathType Leaf)) {
-        $skipped.Add([ordered]@{ Kind = 'mod-infos'; Path = $enablementPath; Reason = 'missing' }) | Out-Null
-        return
-    }
-
-    $ids = @($Packages | ForEach-Object { [string]$_.ModInfoId } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
-    if ($ids.Count -eq 0) {
-        return
-    }
-
-    $data = Get-Content -Raw -Encoding UTF8 -LiteralPath $enablementPath | ConvertFrom-Json
-    if ($null -eq $data.modInfos) {
-        return
-    }
-
-    $removedAny = $false
-    foreach ($id in $ids) {
-        if ($data.modInfos.PSObject.Properties[$id]) {
-            $modInfosEntriesRemoved.Add($id) | Out-Null
-            $removedAny = $true
-            if (-not $DryRun) {
-                $data.modInfos.PSObject.Properties.Remove($id)
-            }
-        }
-    }
-
-    if (-not $removedAny) {
-        return
-    }
-
-    $script:modInfosBackupPath = Backup-ModInfosForUninstall -EnablementPath $enablementPath
-    if (-not $DryRun) {
-        Write-JsonObjectAtomic -Path $enablementPath -Value $data
-    }
-}
-
 $installState = Read-InstallState -Path $installStatePath
-$officialLocalPackages = @(Get-DtmApiOwnedOfficialLocalPackages)
+if (-not $DryRun) {
+    Assert-DtmApiGameNotRunning -GameDir $GameDir -Operation 'uninstall'
+    $script:DtmUninstallMutationLock = Enter-DtmApiInstallerMutationLock -GameDir $GameDir -Operation 'uninstall'
+}
+
+$pendingRuntimeTransactions = @(Get-ChildItem -LiteralPath $GameDir -Directory -Force -Filter '.dtmapi-runtime-install-*' -ErrorAction SilentlyContinue)
+$pendingStateTransactions = if (Test-Path -LiteralPath $stateDir -PathType Container) {
+    @(Get-ChildItem -LiteralPath $stateDir -Directory -Force -Filter '.runtime-install-transaction-*' -ErrorAction SilentlyContinue)
+}
+else {
+    @()
+}
+$pendingTransactions = @($pendingRuntimeTransactions) + @($pendingStateTransactions)
+if ($pendingTransactions.Count -gt 0) {
+    $pendingText = @($pendingTransactions | ForEach-Object { $_.FullName }) -join '; '
+    throw "DTMAPI uninstall stopped before changing files because a Runtime install transaction is pending. Run 1_install_dtmapi.bat once to recover it, then uninstall again. Pending=$pendingText"
+}
+
 $pluginDir = Join-Path $GameDir 'BepInEx\plugins\DTMAPI'
 Backup-And-Remove -Path $pluginDir -Kind 'runtime-plugin' -Reason 'DTMAPI runtime plugin directory'
+Backup-And-Remove -Path (Join-Path $stateDir 'components') -Kind 'optional-framework-components' -Reason 'DTMAPI dormant-shipped optional framework components'
 Backup-And-Remove -Path (Join-Path $stateDir 'tools') -Kind 'installer-tools' -Reason 'DTMAPI installed helper scripts'
 Backup-And-Remove -Path (Join-Path $stateDir 'release-manifest.json') -Kind 'release-manifest' -Reason 'DTMAPI release metadata'
 Backup-And-Remove -Path $installStatePath -Kind 'install-state' -Reason 'DTMAPI install metadata'
@@ -237,18 +141,6 @@ if (-not $KeepBackups) {
     $skipped.Add([ordered]@{ Kind = 'backups'; Path = (Join-Path $stateDir 'backups'); Reason = 'kept by default; uninstall does not delete backups' }) | Out-Null
 }
 
-if ($RemoveOfficialLocalPackages) {
-    Remove-ModInfosEntries -Packages $officialLocalPackages
-    Remove-OfficialLocalPackages -Packages $officialLocalPackages
-}
-elseif ($officialLocalPackages.Count -gt 0) {
-    $skipped.Add([ordered]@{
-        Kind = 'official-local-packages'
-        Count = $officialLocalPackages.Count
-        Reason = 'kept by default; pass -RemoveOfficialLocalPackages to back up and remove DTMAPI-owned official-local packages'
-    }) | Out-Null
-}
-
 $bepInExInstalledByDTMAPI = $false
 if ($installState -and $installState.PSObject.Properties['BepInExInstalledByDTMAPI']) {
     $bepInExInstalledByDTMAPI = [bool]$installState.BepInExInstalledByDTMAPI
@@ -258,6 +150,8 @@ if ($RemoveBepInEx) {
         foreach ($path in @(
             (Join-Path $GameDir 'BepInEx\core'),
             (Join-Path $GameDir 'BepInEx\patchers'),
+            (Join-Path $GameDir '.doorstop_version'),
+            (Join-Path $GameDir 'changelog.txt'),
             (Join-Path $GameDir 'doorstop_config.ini'),
             (Join-Path $GameDir 'winhttp.dll')
         )) {
@@ -281,16 +175,19 @@ $state = [ordered]@{
     SourceRepoCommit = $sourceCommit
     GameDir = [System.IO.Path]::GetFullPath($GameDir)
     DryRun = [bool]$DryRun
+    PlayerUninstallPolicy = 'RuntimeOnly'
+    OfficialLocalPackageScanPerformed = $false
+    OfficialLocalPackageRemovalPerformed = $false
     RemoveBepInExRequested = [bool]$RemoveBepInEx
     RemoveOfficialLocalPackagesRequested = [bool]$RemoveOfficialLocalPackages
     Removed = $removedItems
     BackupsCreated = $backupItems
     Skipped = $skippedItems
-    OfficialLocalPackagesDetected = @($officialLocalPackages)
-    OfficialLocalPackagesRemoved = @($officialLocalPackagesRemoved.ToArray())
-    ModInfosBackupPath = $modInfosBackupPath
-    ModInfosEntriesRemoved = @($modInfosEntriesRemoved.ToArray())
-    Errors = @($errors.ToArray())
+    OfficialLocalPackagesDetected = @()
+    OfficialLocalPackagesRemoved = @()
+    ModInfosBackupPath = ''
+    ModInfosEntriesRemoved = @()
+    Errors = @()
     ReportsKept = $true
     ConfigsKept = $true
     BackupsKept = $true
@@ -305,5 +202,12 @@ if ($DryRun) {
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 $statePath = Join-Path $stateDir "uninstall-state-$stamp.json"
 Write-Utf8NoBomJson -Path $statePath -Value $state
-Write-Host "Uninstalled DTMAPI-owned runtime files. State written to $statePath"
-Write-Host "Backups written under $backupRoot"
+if ($removedItems.Count -eq 0) {
+    Write-Host "No installed DTMAPI-owned Runtime files were found; no files were removed. State written to $statePath"
+}
+else {
+    Write-Host "Uninstalled $($removedItems.Count) DTMAPI-owned Runtime target(s). State written to $statePath"
+    Write-Host "Backups written under $backupRoot"
+}
+Exit-DtmApiInstallerMutationLock -Lock $script:DtmUninstallMutationLock
+$script:DtmUninstallMutationLock = $null

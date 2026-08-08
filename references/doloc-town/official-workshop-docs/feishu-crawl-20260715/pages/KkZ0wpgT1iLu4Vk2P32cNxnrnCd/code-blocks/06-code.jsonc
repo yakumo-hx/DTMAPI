@@ -1,0 +1,16 @@
+[
+  {
+    "id": "air_drying_box", //配方组ID，同设备ID
+    "extra_recipes": [
+      "dried_fish_fish0", //配方ID
+      "dried_fish_fish1" //配方ID
+    ]
+  },
+  {
+    "id": "air_drying_box_big", //配方组ID，同设备ID
+    "extra_recipes": [
+      "dried_fish_fish0", //配方ID
+      "dried_fish_fish1" //配方ID
+    ]
+  }
+]

@@ -1,0 +1,1 @@
+/goal 实现 DTMAPI 0.5.3-alpha 闪电鸡 MVP：基于原生鸡模板新增 dtmapi_lightning_chicken 和 DTMAPI.LightningChickenMod，通过电话亭宠物袋购买，成年售价 2000，移动速度 2 倍，代谢产蛋速度 2 倍，玩家/鸡窝交互保持鸡行为，普通鸡不得被污染。必须证明该物种拥有独立 native RuntimeAnimatorController/clip 路径；若非 Unity Editor 无法做到，或需要手测/深度研究，停止并写研究报告。测试使用第十一存档并遵守 runtime lock。

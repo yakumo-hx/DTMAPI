@@ -1,0 +1,1319 @@
+{
+  "schemaVersion": 5,
+  "auditId": "DTMAPI.Batch4.G9",
+  "baselineCommit": "8bf01850",
+  "approvalReview": "docs/reviews/code/2026/20260717-0002-batch4-post-closure-source-boundary-review.md",
+  "classification": {
+    "movedScenarioPolicy": {
+      "destinationRoot": "src/DTMAPI.GameBridge.DolocTown.QA",
+      "rule": "Case routing, mutation and assertion plus DebugConsole, AnimalViewer and EquipmentSlots screenshot, evidence-directory, evidence-summary and Smoke.* scenario-verdict policy belongs only to the optional QA assembly. Player assemblies expose neutral state and operations; neutral non-scenario feature telemetry remains product-owned."
+    },
+    "retainedNeutralHost": {
+      "paths": [
+        "src/DTMAPI.GameBridge.DolocTown/QaHost/DolocTownGameBridge.FixtureLifecycle.cs",
+        "src/DTMAPI.GameBridge.DolocTown/QaHost/DolocTownGameBridge.QaHost.cs",
+        "src/DTMAPI.GameBridge.DolocTown/QaHost/GameBridgeFixtureAccess.cs",
+        "src/DTMAPI.GameBridge.DolocTown/QaHost/QaHostContracts.cs"
+      ],
+      "rule": "The player assembly may validate and attach an optional owner-bound QA participant, expose opaque run/evidence roots and relay lifecycle receipts. It may not compose evidence paths, select cases, mutate product state for a fixture, capture evidence or publish DebugConsole, AnimalViewer or EquipmentSlots Smoke.* scenario verdicts."
+    },
+    "removedCoreScenarioMembers": [
+      "ApplySmokeOwnerRootIsolationProfile",
+      "PrepareOwnerLifetimeSmokeForFixture",
+      "ExerciseOwnerLifetimeAfterSaveForFixture",
+      "ExerciseCameraLeaseOwnerDeactivationForFixture",
+      "RegisterOwnerLifetimeSmokeOwner",
+      "RecordSyntheticInputFrameForFixture",
+      "RecordSyntheticInputTapForFixture"
+    ]
+  },
+  "sourceGate": {
+    "productionRoots": [
+      "src/DTMAPI.Abstractions",
+      "src/DTMAPI.Core",
+      "src/DTMAPI.ModConfigMenu",
+      "src/DTMAPI.GameBridge.DolocTown",
+      "src/DTMAPI.GameBridge.DolocTown.Compatibility",
+      "src/DTMAPI.BepInExBootstrap",
+      "products/first-party/Zoom/src",
+      "products/first-party/DebugConsole/src",
+      "products/first-party/MoreSaves/src",
+      "products/first-party/ActionSpeed/src",
+      "products/first-party/OneActionComplete/src",
+      "products/first-party/FishBreedingAssistant/src",
+      "products/first-party/AnimalHusbandryProgress/src",
+      "products/first-party/ChestLocatorEnhancer/src",
+      "products/first-party/AutoFishing/src",
+      "products/first-party/MoreEquipmentSlots/src",
+      "products/first-party/ManboCardboardAudio"
+    ],
+    "consumerSearchRoots": [
+      "src",
+      "tests",
+      "products/first-party/Zoom",
+      "products/first-party/DebugConsole",
+      "products/first-party/MoreSaves",
+      "products/first-party/ActionSpeed",
+      "products/first-party/OneActionComplete",
+      "products/first-party/FishBreedingAssistant",
+      "products/first-party/AnimalHusbandryProgress",
+      "products/first-party/ChestLocatorEnhancer",
+      "products/first-party/AutoFishing",
+      "products/first-party/MoreEquipmentSlots",
+      "products/first-party/ManboCardboardAudio"
+    ],
+    "publishedProductSourceProjection": {
+      "catalogPath": "tools/release/dtmapi-product-catalog.json",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "expectedCount": 11,
+      "behaviorContractId": "published-product-player-evidence-policy"
+    },
+    "metaNegativeCaseNames": [
+      "stale-schema",
+      "contract-and-negative-sample-coverage",
+      "duplicate-contract-id",
+      "renamed-helper-new-file-scope-regression",
+      "lifecycle-negative-order-and-readback-regression",
+      "canonical-selector-redirection-rejected",
+      "production-root-closure-rejected",
+      "consumer-root-closure-rejected",
+      "published-symbol-scan-unconditional",
+      "public-root-consumer-whitelist-rejected",
+      "neutral-input-alias-bypass-rejected",
+      "actual-source-scanners"
+    ],
+    "catalogProjectionNegativeCaseNames": [
+      "stale-catalog-semantic-projection"
+    ],
+    "productionQaHostMaxFiles": 4,
+    "productionQaHostMaxPhysicalLines": 700,
+    "qaHostForbiddenPatterns": [
+      "Smoke\\.",
+      "G4FixtureStepResult",
+      "G6Fixture(State|Options)",
+      "GC\\.Collect",
+      "TryExercise",
+      "Screenshot",
+      "caseId",
+      "UiRuntime",
+      "VersionPatcher",
+      "NativeContinuation",
+      "Probe",
+      "Breadcrumb",
+      "Unpatch",
+      "HookCleanup"
+    ],
+    "forbiddenBehaviorContracts": [
+      {
+        "id": "debug-console-player-evidence-policy",
+        "scopePaths": [
+          "src/DTMAPI.BepInExBootstrap"
+        ],
+        "forbiddenPatterns": [
+          "DEBUG-CONSOLE-UI",
+          "Smoke\\.DebugConsole",
+          "PrepareScreenshotHoverEvidence",
+          "CaptureUiEvidenceScreenshot",
+          "screenshot(Pending|Recorded|HoverPrepared|HoverStatusActive)",
+          "screenshotHover(Item|SourceKind|SourceId|SourceTitle|WorkshopId)",
+          "screenshotSearchText",
+          "runtime\\.Paths\\.EvidencePath",
+          "UnityEngine\\.ScreenCapture",
+          "summary\\.txt"
+        ]
+      },
+      {
+        "id": "animal-viewer-player-evidence-policy",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer",
+          "src/DTMAPI.GameBridge.DolocTown/Hooking"
+        ],
+        "forbiddenPatterns": [
+          "ANIMAL-001",
+          "Smoke\\.Animal",
+          "RecordAnimal(Viewer|Panel)UiEvidence",
+          "CaptureDelayedAnimalViewerUiEvidenceScreenshot",
+          "animalViewerUi(EvidenceRecorded|DelayedScreenshotRecorded)",
+          "animalPanelUiProbeLogged",
+          "latestAnimalViewerEvidenceDir",
+          "runtime\\.Paths\\.EvidencePath",
+          "UnityEngine\\.ScreenCapture",
+          "summary\\.txt"
+        ]
+      },
+      {
+        "id": "equipment-slots-player-evidence-policy",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots"
+        ],
+        "forbiddenPatterns": [
+          "EQUIPMENT-SLOTS-UI",
+          "Smoke\\.NewContentEquipmentSlots",
+          "CaptureEquipmentSlotsUiEvidenceForFixture",
+          "equipmentSlotsUiEvidenceRecorded",
+          "runtime\\.Paths\\.EvidencePath",
+          "UnityEngine\\.ScreenCapture",
+          "summary\\.txt"
+        ]
+      },
+      {
+        "id": "gamebridge-player-screenshot-adapter",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenPatterns": [
+          "equipmentSlotsUiEvidenceRecorded",
+          "TryCaptureScreenshot",
+          "UnityEngine\\.ScreenCapture",
+          "CaptureScreenshotAsTexture",
+          "EncodeToPNG"
+        ]
+      },
+      {
+        "id": "published-product-player-evidence-policy",
+        "scopePaths": [
+          "products/first-party/Zoom/src",
+          "products/first-party/DebugConsole/src",
+          "products/first-party/MoreSaves/src",
+          "products/first-party/ActionSpeed/src",
+          "products/first-party/OneActionComplete/src",
+          "products/first-party/FishBreedingAssistant/src",
+          "products/first-party/AnimalHusbandryProgress/src",
+          "products/first-party/ChestLocatorEnhancer/src",
+          "products/first-party/AutoFishing/src",
+          "products/first-party/MoreEquipmentSlots/src",
+          "products/first-party/ManboCardboardAudio"
+        ],
+        "forbiddenPatterns": [
+          "Smoke\\.",
+          "\\.Paths\\.EvidencePath",
+          "(?:UnityEngine\\.ScreenCapture|\\bCaptureScreenshot\\b|\\bScreenshotPath\\b)",
+          "summary\\.txt",
+          "\\b[A-Za-z0-9_]*ForFixture\\b"
+        ]
+      },
+      {
+        "id": "orphan-player-fixture-mutations",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "forbiddenPatterns": [
+          "SuppressActionSpeedAutoFillForFixture",
+          "ForceMachineProductionDueForFixture",
+          "SuppressFishingAutoCastForFixture",
+          "ForceFishingNoWaterForFixture",
+          "ForceFishingNoRodForFixture",
+          "FishingPoolOverrideForFixture",
+          "ForceFishingFishForFixture",
+          "ForceFishingNativeBiteForFixture",
+          "ResetFishingFeedbackCooldownForFixture",
+          "HasAnimalProgressRowsForFixture"
+        ]
+      },
+      {
+        "id": "core-synthetic-input-fixture-policy",
+        "scopePaths": [
+          "src/DTMAPI.Core"
+        ],
+        "forbiddenPatterns": [
+          "RecordSyntheticInputFrameForFixture",
+          "RecordSyntheticInputTapForFixture"
+        ]
+      },
+      {
+        "id": "qa-evidence-path-policy-not-owned-by-player-facade",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/QaHost/GameBridgeFixtureAccess.cs"
+        ],
+        "forbiddenPatterns": [
+          "GetEvidenceDirectory",
+          "GetEvidencePath",
+          "Directory\\.CreateDirectory",
+          "Path\\.Combine\\s*\\(\\s*EvidenceRoot",
+          "[\"']qa-host[\"']"
+        ]
+      },
+      {
+        "id": "qa-config-mutation-not-owned-by-player-facade",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/QaHost/GameBridgeFixtureAccess.cs"
+        ],
+        "forbiddenPatterns": [
+          "EditAndSaveConfigPage",
+          "ConfigMenuRuntime",
+          "BeginEditing",
+          "configMenuRuntime\\.Save"
+        ]
+      },
+      {
+        "id": "qa-title-driver-not-owned-by-player",
+        "scopePaths": [
+          "src/DTMAPI.BepInExBootstrap/BootstrapPlugin.cs",
+          "src/DTMAPI.BepInExBootstrap/ReflectedTitleMenuSettingsUi.cs",
+          "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs"
+        ],
+        "forbiddenPatterns": [
+          "ClickTitleButtonForFixture",
+          "TryOpenTitleSettingsForQa",
+          "clickTitleSettingsButton"
+        ]
+      },
+      {
+        "id": "qa-creative-mutation-probe-not-owned-by-player",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs"
+        ],
+        "forbiddenPatterns": [
+          "VerifyAdvancedCreativeHooksForFixture",
+          "CanAffordMoney",
+          "CostEnergy\\s*\\(",
+          "ReadAgentEnergyForFixture"
+        ]
+      },
+      {
+        "id": "qa-forced-machine-poll-not-owned-by-player",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs",
+          "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs"
+        ],
+        "forbiddenPatterns": [
+          "ForceMachineProductionDueForFixture",
+          "forceMachineProductionPoll",
+          "forcePoll",
+          "forceDue"
+        ]
+      },
+      {
+        "id": "qa-frame-driver-blocking-wait",
+        "scopePaths": [
+          "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs",
+          "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs"
+        ],
+        "forbiddenPatterns": [
+          "Thread\\.Sleep\\s*\\("
+        ]
+      },
+      {
+        "id": "staged-debug-console-direct-postmessage",
+        "scopePaths": [
+          "tools/scripts/run-game-smoke.ps1"
+        ],
+        "forbiddenPatterns": [
+          "function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"
+        ]
+      }
+    ],
+    "symbolOwnershipContracts": [
+      {
+        "id": "qa-evidence-symbols-not-owned-by-player",
+        "forbiddenRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.Core",
+          "src/DTMAPI.ModConfigMenu",
+          "src/DTMAPI.GameBridge.DolocTown",
+          "src/DTMAPI.BepInExBootstrap"
+        ],
+        "patterns": [
+          "CaptureUiEvidenceScreenshot",
+          "PrepareScreenshotHoverEvidence",
+          "RecordAnimal(Viewer|Panel)UiEvidence",
+          "CaptureDelayedAnimalViewerUiEvidenceScreenshot",
+          "CaptureEquipmentSlotsUiEvidenceForFixture",
+          "TryCaptureScreenshot",
+          "GetEvidenceDirectory",
+          "GetEvidencePath"
+        ]
+      },
+      {
+        "id": "fixture-mutation-symbols-not-owned-by-player",
+        "forbiddenRoots": [
+          "src/DTMAPI.GameBridge.DolocTown"
+        ],
+        "patterns": [
+          "SuppressActionSpeedAutoFillForFixture",
+          "ForceMachineProductionDueForFixture",
+          "SuppressFishingAutoCastForFixture",
+          "ForceFishingNoWaterForFixture",
+          "ForceFishingNoRodForFixture",
+          "FishingPoolOverrideForFixture",
+          "ForceFishingFishForFixture",
+          "ForceFishingNativeBiteForFixture",
+          "ResetFishingFeedbackCooldownForFixture",
+          "HasAnimalProgressRowsForFixture"
+        ]
+      },
+      {
+        "id": "qa-cross-frame-transaction-symbols-not-owned-by-player",
+        "forbiddenRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.Core",
+          "src/DTMAPI.ModConfigMenu",
+          "src/DTMAPI.GameBridge.DolocTown",
+          "src/DTMAPI.BepInExBootstrap"
+        ],
+        "patterns": [
+          "actionSpeedAutoFillFixtureActive",
+          "actionSpeedAutoFillQuickSlotReceiptPublished",
+          "newContentPendingMine",
+          "TryExerciseActionSpeedAutoFillBottleForFixture",
+          "BeginPendingMineProductionForFixture",
+          "CleanupActionSpeedAutoFillFixtureState",
+          "CleanupPendingMineProductionForFixture",
+          "publishRestoreReceipt",
+          "RestoreSmokeQuickSlot",
+          "TryRemoveTransientEquipmentForFixture"
+        ]
+      },
+      {
+        "id": "synthetic-input-symbols-not-owned-by-core",
+        "forbiddenRoots": [
+          "src/DTMAPI.Core"
+        ],
+        "patterns": [
+          "RecordSyntheticInputFrameForFixture",
+          "RecordSyntheticInputTapForFixture"
+        ]
+      },
+      {
+        "id": "qa-driver-and-mutator-symbols-not-owned-by-player",
+        "forbiddenRoots": [
+          "src/DTMAPI.Abstractions",
+          "src/DTMAPI.Core",
+          "src/DTMAPI.ModConfigMenu",
+          "src/DTMAPI.GameBridge.DolocTown",
+          "src/DTMAPI.BepInExBootstrap"
+        ],
+        "patterns": [
+          "EditAndSaveConfigPage",
+          "ClickTitleButtonForFixture",
+          "TryOpenTitleSettingsForQa",
+          "clickTitleSettingsButton",
+          "VerifyAdvancedCreativeHooksForFixture",
+          "ForceMachineProductionDueForFixture",
+          "forceMachineProductionPoll"
+        ]
+      }
+    ],
+    "consumerContracts": [
+      {
+        "id": "qa-evidence-helper-consumers",
+        "patterns": [
+          "CaptureUiEvidenceScreenshot",
+          "PrepareScreenshotHoverEvidence",
+          "RecordAnimal(Viewer|Panel)UiEvidence",
+          "CaptureDelayedAnimalViewerUiEvidenceScreenshot",
+          "CaptureEquipmentSlotsUiEvidenceForFixture",
+          "TryCaptureScreenshot",
+          "GetEvidenceDirectory",
+          "GetEvidencePath"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      },
+      {
+        "id": "fixture-mutation-consumers",
+        "patterns": [
+          "SuppressActionSpeedAutoFillForFixture",
+          "ForceMachineProductionDueForFixture",
+          "SuppressFishingAutoCastForFixture",
+          "ForceFishingNoWaterForFixture",
+          "ForceFishingNoRodForFixture",
+          "FishingPoolOverrideForFixture",
+          "ForceFishingFishForFixture",
+          "ForceFishingNativeBiteForFixture",
+          "ResetFishingFeedbackCooldownForFixture",
+          "HasAnimalProgressRowsForFixture",
+          "EditAndSaveConfigPage",
+          "ClickTitleButtonForFixture",
+          "TryOpenTitleSettingsForQa",
+          "clickTitleSettingsButton",
+          "VerifyAdvancedCreativeHooksForFixture",
+          "forceMachineProductionPoll"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      },
+      {
+        "id": "qa-cross-frame-transaction-consumers",
+        "patterns": [
+          "actionSpeedAutoFillFixtureActive",
+          "actionSpeedAutoFillQuickSlotReceiptPublished",
+          "newContentPendingMine",
+          "TryExerciseActionSpeedAutoFillBottleForFixture",
+          "BeginPendingMineProductionForFixture",
+          "CleanupActionSpeedAutoFillFixtureState",
+          "CleanupPendingMineProductionForFixture",
+          "publishRestoreReceipt",
+          "RestoreSmokeQuickSlot",
+          "TryRemoveTransientEquipmentForFixture"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      },
+      {
+        "id": "synthetic-input-consumers",
+        "patterns": [
+          "RecordSyntheticInputFrameForFixture",
+          "RecordSyntheticInputTapForFixture"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      },
+      {
+        "id": "neutral-input-injection-consumers",
+        "patterns": [
+          "\\.(?:(?>\\s+)|(?>/\\*[\\s\\S]*?\\*/)|(?>//[^\\r\\n]*(?:\\r\\n|\\r|\\n)))*RecordInputFrame\\b",
+          "\\.(?:(?>\\s+)|(?>/\\*[\\s\\S]*?\\*/)|(?>//[^\\r\\n]*(?:\\r\\n|\\r|\\n)))*ClearFrame\\b"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.Core",
+          "src/DTMAPI.BepInExBootstrap",
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "products/first-party/AutoFishing/qa",
+          "tests/DTMAPI.UnitTests",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      },
+      {
+        "id": "ui-smoke-policy-consumers",
+        "patterns": [
+          "Smoke\\.DebugConsole",
+          "Smoke\\.Animal",
+          "Smoke\\.NewContentEquipmentSlots"
+        ],
+        "allowedRoots": [
+          "src/DTMAPI.GameBridge.DolocTown.QA",
+          "tests/DTMAPI.QaUnitTests"
+        ]
+      }
+    ],
+    "lifecycleContracts": [
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown/Hooking/HarmonyReflectionPatcher.cs",
+        "requiredPatterns": [
+          { "pattern": "ProductionHarmonyOwnerId", "minimumOccurrences": 2 },
+          { "pattern": "HarmonyReflectionPatcher\\(DtmApiRuntime runtime, string ownerId\\)", "minimumOccurrences": 1 },
+          { "pattern": "parameters\\.Length == 1 && parameters\\[0\\]\\.ParameterType == typeof\\(string\\)", "minimumOccurrences": 1 },
+          { "pattern": "unpatchAll\\.Invoke\\(unpatchAll\\.IsStatic \\? null : harmony, new object\\[\\] \\{ ownerId \\}\\)", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [ "UnpatchAll\\s*\\(\\s*\\)" ],
+        "orderedTokens": [ "TryUnpatchAllOwnedPatches()", "new object[] { ownerId }", "harmony = null;" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/NativeLoadContinuationProbe.cs",
+        "requiredPatterns": [
+          { "pattern": "QaHarmonyOwnerPrefix \\+ access\\.RunId", "minimumOccurrences": 1 },
+          { "pattern": "internal bool Close\\(string reason\\)", "minimumOccurrences": 1 },
+          { "pattern": "patcher\\.TryUnpatchAllOwnedPatches\\(\\)", "minimumOccurrences": 1 },
+          { "pattern": "Smoke\\.NativeLoadContinuationProbe", "minimumOccurrences": 3 }
+        ],
+        "orderedTokens": [ "patcher.TryUnpatchAllOwnedPatches()", "closed = true;", "\"closed\"" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/QaHostParticipant.cs",
+        "requiredPatterns": [
+          { "pattern": "nativeLoadContinuationProbe\\?\\.Close\\(closeReason\\)", "minimumOccurrences": 1 },
+          { "pattern": "The optional QA native continuation probe did not release its Harmony owner", "minimumOccurrences": 1 },
+          { "pattern": "if \\(closeFailures\\.Count > 1\\)", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [ "nativeLoadContinuationProbe?.Close(closeReason)", "if (closeFailures.Count == 1)", "closed = true;" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G6Fixtures.cs",
+        "requiredPatterns": [
+          { "pattern": "CleanupOwnerLifetimeOnClose", "minimumOccurrences": 2 },
+          { "pattern": "DisposeOwnerLifetimeLease\\(ref ownerLifetimeControlCameraLease", "minimumOccurrences": 1 },
+          { "pattern": "DisposeOwnerLifetimeLease\\(ref ownerLifetimeCleanupCameraLease", "minimumOccurrences": 1 },
+          { "pattern": "TryDeactivateOwnerLifetimeOwner\\(OwnerLifetimeControlId", "minimumOccurrences": 1 },
+          { "pattern": "TryDeactivateOwnerLifetimeOwner\\(OwnerLifetimeCleanupId", "minimumOccurrences": 1 },
+          { "pattern": "Smoke\\.OwnerLifetimeCleanup", "minimumOccurrences": 1 }
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/QaScenarioController.cs",
+        "requiredPatterns": [
+          { "pattern": "RunScenarioCloseStep\\(failures, \"ActionSpeedAutoFillFixtureCleanup\"", "minimumOccurrences": 1 },
+          { "pattern": "RunScenarioCloseStep\\(failures, \"PendingMineProductionCleanup\"", "minimumOccurrences": 1 },
+          { "pattern": "RunScenarioCloseStep\\(failures, \"OwnerLifetimeCleanup\"", "minimumOccurrences": 1 },
+          { "pattern": "throw new AggregateException\\(\"QA scenario close did not complete", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [ "ActionSpeedAutoFillFixtureCleanup", "PendingMineProductionCleanup", "OwnerLifetimeCleanup", "throw new AggregateException" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs",
+        "requiredPatterns": [
+          { "pattern": "private bool actionSpeedAutoFillFixtureActive", "minimumOccurrences": 1 },
+          { "pattern": "private bool actionSpeedAutoFillQuickSlotReceiptPublished", "minimumOccurrences": 1 },
+          { "pattern": "private FixtureAttemptResult TryExerciseActionSpeedAutoFillBottleForFixture", "minimumOccurrences": 1 },
+          { "pattern": "actionSpeedAutoFillFixtureActive = true;", "minimumOccurrences": 1 },
+          { "pattern": "actionSpeedAutoFillQuickSlotReceiptPublished = true;", "minimumOccurrences": 1 },
+          { "pattern": "DateTimeOffset\\.UtcNow < actionSpeedAutoFillDeadline", "minimumOccurrences": 1 },
+          { "pattern": "return FixtureAttemptResult\\.Pending;", "minimumOccurrences": 1 },
+          { "pattern": "!RestoreSmokeQuickSlot\\(dolocApi, actionSpeedAutoFillInventory", "minimumOccurrences": 1 },
+          { "pattern": "actionSpeedAutoFillFixtureActive = false;", "minimumOccurrences": 1 },
+          { "pattern": "CleanupActionSpeedAutoFillFixtureState\\(\"completed\"\\)", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [ "Thread\\.Sleep\\s*\\(" ],
+        "orderedTokens": [ "actionSpeedAutoFillFixtureActive = true;", "TryPlaceSmokeItemInQuickSlot(", "actionSpeedAutoFillQuickSlotReceiptPublished = true;", "return FixtureAttemptResult.Pending;", "!RestoreSmokeQuickSlot(", "actionSpeedAutoFillFixtureActive = false;" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/DolocTownGameBridge.FixtureSupport.cs",
+        "requiredPatterns": [
+          { "pattern": "Action<object, object\\?>\\? publishRestoreReceipt = null", "minimumOccurrences": 1 },
+          { "pattern": "originalSlotItem = read\\.Invoke", "minimumOccurrences": 1 },
+          { "pattern": "publishRestoreReceipt\\?\\.Invoke\\(inventory, originalSlotItem\\);", "minimumOccurrences": 1 },
+          { "pattern": "private bool RestoreSmokeQuickSlot", "minimumOccurrences": 1 },
+          { "pattern": "object\\? restored = read\\.Invoke", "minimumOccurrences": 1 },
+          { "pattern": "ReferenceEquals\\(restored, originalSlotItem\\)", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [ "private void RestoreSmokeQuickSlot" ],
+        "orderedTokens": [ "originalSlotItem = read.Invoke", "publishRestoreReceipt?.Invoke(inventory, originalSlotItem);", "take.Invoke", "private bool RestoreSmokeQuickSlot", "take.Invoke", "object? restored = read.Invoke", "ReferenceEquals(restored, originalSlotItem)" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+        "requiredPatterns": [
+          { "pattern": "private object\\? newContentPendingMine", "minimumOccurrences": 1 },
+          { "pattern": "BeginPendingMineProductionForFixture\\(dolocApi, room, mineOnly\\)", "minimumOccurrences": 1 },
+          { "pattern": "DateTimeOffset\\.UtcNow < newContentPendingMineDeadline", "minimumOccurrences": 1 },
+          { "pattern": "return FixtureAttemptResult\\.Pending;", "minimumOccurrences": 1 },
+          { "pattern": "CleanupPendingMineProductionForFixture\\(\"completed\"\\)", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [ "Thread\\.Sleep\\s*\\(" ],
+        "orderedTokens": [ "if (newContentPendingMine == null)", "return FixtureAttemptResult.Pending;", "CleanupPendingMineProductionForFixture(\"completed\")" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+        "requiredPatterns": [
+          { "pattern": "RestorePendingMineIndicesForFixture\\(\\);", "minimumOccurrences": 1 },
+          { "pattern": "!TryRemoveTransientEquipmentForFixture\\(room, replacement\\)", "minimumOccurrences": 1 },
+          { "pattern": "!newContentPendingMineSecondRemoved", "minimumOccurrences": 1 },
+          { "pattern": "!TryRemoveTransientEquipmentForFixture\\(room, second\\)", "minimumOccurrences": 1 },
+          { "pattern": "!TryRemoveTransientEquipmentForFixture\\(room, first\\)", "minimumOccurrences": 1 },
+          { "pattern": "if \\(failures\\.Count > 0\\)", "minimumOccurrences": 1 },
+          { "pattern": "newContentPendingMine = null;", "minimumOccurrences": 1 },
+          { "pattern": "newContentPendingMineSecond = null;", "minimumOccurrences": 1 },
+          { "pattern": "newContentPendingMineReplacement = null;", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [
+          "RestorePendingMineIndicesForFixture();",
+          "!TryRemoveTransientEquipmentForFixture(room, replacement)",
+          "!TryRemoveTransientEquipmentForFixture(room, second)",
+          "!TryRemoveTransientEquipmentForFixture(room, first)",
+          "if (failures.Count > 0)",
+          "newContentPendingMine = null;",
+          "newContentPendingMineSecond = null;",
+          "newContentPendingMineReplacement = null;"
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ContentFixture.cs",
+        "requiredPatterns": [
+          { "pattern": "private bool TryRemoveTransientEquipmentForFixture", "minimumOccurrences": 1 },
+          { "pattern": "m\\.Name != \"GetEquipment\"", "minimumOccurrences": 1 },
+          { "pattern": "removeEquipment\\.Invoke", "minimumOccurrences": 1 },
+          { "pattern": "object\\? remaining = getEquipment\\.Invoke", "minimumOccurrences": 1 },
+          { "pattern": "ReferenceEquals\\(remaining, equipment\\)", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [ "private bool TryRemoveTransientEquipmentForFixture", "m.Name != \"GetEquipment\"", "removeEquipment.Invoke", "object? remaining = getEquipment.Invoke", "ReferenceEquals(remaining, equipment)" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G4Fixtures.cs",
+        "requiredPatterns": [
+          { "pattern": "bool productConsoleOpen = runtime\\.UI\\.IsOwnerBoundCustomMenuOpen", "minimumOccurrences": 1 },
+          { "pattern": "if \\(g4DebugEvidenceCaptured\\)", "minimumOccurrences": 1 },
+          { "pattern": "if \\(productConsoleOpen\\)", "minimumOccurrences": 1 },
+          { "pattern": "G4FixtureStepResult\\.Pending\\(\"EVIDENCE_CAPTURED_WAITING_ESCAPE", "minimumOccurrences": 2 },
+          { "pattern": "closeReceipt=product-owner-modal-closed", "minimumOccurrences": 1 },
+          { "pattern": "g4DebugEvidenceCaptured = true;", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [
+          "debugConsoleApi\\.Open",
+          "debugConsoleApi\\.Close"
+        ],
+        "orderedTokens": [
+          "bool productConsoleOpen = runtime.UI.IsOwnerBoundCustomMenuOpen",
+          "if (g4DebugEvidenceCaptured)",
+          "if (productConsoleOpen)",
+          "return G4FixtureStepResult.Pending(\"EVIDENCE_CAPTURED_WAITING_ESCAPE",
+          "return G4FixtureStepResult.Verified(g4DebugEvidenceSummary + \"; closeReceipt=product-owner-modal-closed",
+          "G4FixtureStepResult screenshot = ObserveScreenshotForFixture",
+          "g4DebugEvidenceCaptured = true;",
+          "return G4FixtureStepResult.Pending(\"EVIDENCE_CAPTURED_WAITING_ESCAPE"
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/DolocTownGameBridge.G4Fixtures.cs",
+        "requiredPatterns": [
+          { "pattern": "if \\(g4AnimalProgressRowCount == 0\\)", "minimumOccurrences": 1 },
+          { "pattern": "native panel alone cannot satisfy the staged-QA positive gate", "minimumOccurrences": 1 },
+          { "pattern": "ReadAnimalProductObservationSummary\\(\\)", "minimumOccurrences": 1 },
+          { "pattern": "renderSummary\\.IndexOf\\(\"state=visible\"", "minimumOccurrences": 1 },
+          { "pattern": "ObserveScreenshotForFixture\\(", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [ "if (g4AnimalProgressRowCount == 0)", "ReadAnimalProductObservationSummary()", "renderSummary.IndexOf(\"state=visible\"", "ObserveScreenshotForFixture(" ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.cs",
+        "requiredPatterns": [
+          { "pattern": "private bool animalPanelUnregisterPatched => animalViewerFeature\\?\\.HookBridge\\.PanelUnregisterPatched == true", "minimumOccurrences": 1 }
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Hooks.cs",
+        "requiredPatterns": [
+          { "pattern": "animalViewerShowPrefixPatched", "minimumOccurrences": 2 },
+          { "pattern": "animalPanelUnregisterPatched", "minimumOccurrences": 2 },
+          { "pattern": "fishingCompatibilityHooksRequired \\? 31 : 22", "minimumOccurrences": 1 },
+          { "pattern": "if \\(animalViewerShowPrefixPatched\\) ready\\+\\+", "minimumOccurrences": 1 },
+          { "pattern": "if \\(animalPanelUnregisterPatched\\) ready\\+\\+", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [
+          "fishingCompatibilityHooksRequired \\? 34 : 25"
+        ],
+        "orderedTokens": [
+          "animalFullInfoDataPatched,",
+          "animalViewerShowPrefixPatched,",
+          "animalViewerShowPatched,",
+          "animalPanelUnregisterPatched"
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer/AnimalViewerHookBridge.cs",
+        "requiredPatterns": [
+          { "pattern": "internal bool PanelUnregisterPatched", "minimumOccurrences": 1 },
+          { "pattern": "HooksReady => FullInfoDataPatched && ViewerShowPrefixPatched && ViewerShowPatched && PanelUnregisterPatched", "minimumOccurrences": 1 },
+          { "pattern": "DolocTown\\.AnimalPanelUiState, Assembly-CSharp", "minimumOccurrences": 1 },
+          { "pattern": "nameof\\(DolocTownHookCallbacks\\.AnimalPanelUiStateUnregisterPostfix\\)", "minimumOccurrences": 1 },
+          { "pattern": "PanelUnregisterPatched = patcher\\.TryPatchPostfix", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [
+          "if (!PanelUnregisterPatched)",
+          "PanelUnregisterPatched = patcher.TryPatchPostfix",
+          "DolocTown.AnimalPanelUiState, Assembly-CSharp",
+          "Unregister",
+          "AnimalPanelUiStateUnregisterPostfix"
+        ]
+      },
+      {
+        "path": "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer/AnimalViewerService.cs",
+        "requiredPatterns": [
+          { "pattern": "internal void NotifyAnimalPanelUnregistered\\(\\)", "minimumOccurrences": 1 },
+          { "pattern": "Animal viewer native lifecycle closed reason=", "minimumOccurrences": 1 },
+          { "pattern": "Animals\\.ViewerNativeLifecycle", "minimumOccurrences": 1 },
+          { "pattern": "ClearAnimalProgressOverlaySession\\(reason\\)", "minimumOccurrences": 1 },
+          { "pattern": "animalProgressRowsByData\\.Clear\\(\\)", "minimumOccurrences": 2 },
+          { "pattern": "Animals\\.ViewerProgressUi", "minimumOccurrences": 3 },
+          { "pattern": "!ReferenceEquals\\(lastAnimalProgressVisibleReceiptData, data\\)", "minimumOccurrences": 1 },
+          { "pattern": "receiptSequence=", "minimumOccurrences": 1 },
+          { "pattern": "if \\(publishVisibleReceipt\\)", "minimumOccurrences": 2 },
+          { "pattern": "!key\\.Equals\\(\"session-cleared\"", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [
+          "internal void NotifyAnimalPanelUnregistered()",
+          "Animal viewer native lifecycle closed reason=",
+          "Animals.ViewerNativeLifecycle",
+          "ClearAnimalProgressOverlaySession(reason)",
+          "animalProgressRowsByData.Clear()",
+          "Animals.ViewerProgressUi",
+          "!key.Equals(\"session-cleared\""
+        ]
+      },
+      {
+        "path": "tools/scripts/run-game-smoke.ps1",
+        "requiredPatterns": [
+          { "pattern": "Hook status: Animals\\.ViewerProgressUi = visible\\.", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerCloseOrderOk = \\$nativeCloseIndex -ge 0 -and \\$overlayClearIndex -gt \\$nativeCloseIndex", "minimumOccurrences": 1 },
+          { "pattern": "NoQaAnimalViewerNativeClose", "minimumOccurrences": 1 },
+          { "pattern": "NoQaAnimalViewerOverlayClear", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [
+          "Hook status: Animals.ViewerProgressUi = visible.",
+          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
+          "$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
+          "$nativeCloseIndex =",
+          "$overlayClearIndex =",
+          "$noQaAnimalViewerCloseOrderOk ="
+        ]
+      },
+      {
+        "path": "tools/scripts/run-game-smoke.ps1",
+        "requiredPatterns": [
+          { "pattern": "NativeLoadContinuationProbe = closed", "minimumOccurrences": 1 },
+          { "pattern": "unpatchSucceeded=True;", "minimumOccurrences": 1 },
+          { "pattern": "OwnerLifetimeCleanup = verified", "minimumOccurrences": 1 },
+          { "pattern": "controlCameraLeases=0;", "minimumOccurrences": 1 },
+          { "pattern": "cleanupCameraLeases=0;", "minimumOccurrences": 1 },
+          { "pattern": "runFailed = \\$runFailed -or -not \\$ownerLifetimeCloseCleanupOk", "minimumOccurrences": 1 }
+        ]
+      },
+      {
+        "path": "tools/scripts/run-game-smoke.ps1",
+        "requiredPatterns": [
+          { "pattern": "\\[DtmApiSmokeInput\\]::SendKeyboardKey\\(", "minimumOccurrences": 1 },
+          { "pattern": "\\$postMessageFallbackRequested = -not \\(\\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled -or \\[bool\\]\\$qaG4EquipmentSlotsObservationEnabled -or \\[bool\\]\\$moreEquipmentSlotsTransitionRequested -or \\[bool\\]\\$Batch6AutoFishingPilot -or \\[bool\\]\\$Batch6AutoFishingManagerLifecycle -or \\[bool\\]\\$AutoPressOneActionMenuKey\\)", "minimumOccurrences": 1 },
+          { "pattern": "\\$postMessageFallbackUsed = \\$false", "minimumOccurrences": 1 },
+          { "pattern": "if \\(\\$sentInput -and \\$postMessageFallbackRequested\\)", "minimumOccurrences": 1 },
+          { "pattern": "\\$postMessageFallbackUsed = \\[bool\\]\\$postReceipt\\.Accepted", "minimumOccurrences": 1 },
+          { "pattern": "\\$strictPlayerInputGate = \\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled", "minimumOccurrences": 1 },
+          { "pattern": "if \\(\\$strictPlayerInputGate -and \\$Attempts -ne 1\\)", "minimumOccurrences": 1 },
+          { "pattern": "\\$sent = Send-DolocTownKey .* -InputLogPath \\$logPath", "minimumOccurrences": 1 },
+          { "pattern": "\\$externalPlayerInputAttempts\\.Add\\(\\[ordered\\]@\\{", "minimumOccurrences": 1 },
+          { "pattern": "ForegroundMatched = \\[bool\\]\\$sendEvidence\\.ForegroundMatchedAtSend", "minimumOccurrences": 1 },
+          { "pattern": "SendInputSucceeded = \\[bool\\]\\$sendEvidence\\.SendInputSucceeded", "minimumOccurrences": 1 },
+          { "pattern": "PostMessageFallbackUsed = \\[bool\\]\\$sendEvidence\\.PostMessageFallbackUsed", "minimumOccurrences": 1 },
+          { "pattern": "\\$y1Attempt = @\\(\\$externalPlayerInputAttempts\\.ToArray\\(\\)", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath \\$logPath -Offset \\(\\[int64\\]\\$y1Attempt\\[0\\]\\.LogOffset\\)", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLineAfterOffset -LogPath \\$logPath -Offset \\(\\[int64\\]\\$holdAttempt\\[0\\]\\.LogOffset\\) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", "minimumOccurrences": 1 },
+          { "pattern": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLine -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'", "minimumOccurrences": 1 }
+        ],
+        "forbiddenPatterns": [
+          "function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"
+        ],
+        "orderedTokens": [
+          "[DtmApiSmokeInput]::SendKeyboardKey",
+          "$postMessageFallbackRequested = -not ([bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4DebugConsoleEnabled -or [bool]$qaG4EquipmentSlotsObservationEnabled -or [bool]$moreEquipmentSlotsTransitionRequested -or [bool]$Batch6AutoFishingPilot -or [bool]$Batch6AutoFishingManagerLifecycle -or [bool]$AutoPressOneActionMenuKey)",
+          "$postMessageFallbackUsed = $false",
+          "if ($sentInput -and $postMessageFallbackRequested)",
+          "$postMessageFallbackUsed = [bool]$postReceipt.Accepted",
+          "$strictPlayerInputGate = [bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4DebugConsoleEnabled",
+          "if ($strictPlayerInputGate -and $Attempts -ne 1)",
+          "$sent = Send-DolocTownKey",
+          "$externalPlayerInputAttempts.Add",
+          "ForegroundMatched = [bool]$sendEvidence.ForegroundMatchedAtSend",
+          "SendInputSucceeded = [bool]$sendEvidence.SendInputSucceeded",
+          "PostMessageFallbackUsed = [bool]$sendEvidence.PostMessageFallbackUsed",
+          "$y1Attempt = @($externalPlayerInputAttempts",
+          "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath $logPath -Offset ([int64]$y1Attempt[0].LogOffset",
+          "Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
+          "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
+          "Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
+        ]
+      },
+      {
+        "path": "tests/DTMAPI.QaUnitTests/Program.cs",
+        "requiredPatterns": [
+          { "pattern": "G6FailureCloseReleasesSyntheticOwnersAndCameraLeases", "minimumOccurrences": 2 },
+          { "pattern": "LeaseCount == 1", "minimumOccurrences": 2 },
+          { "pattern": "LeaseCount == 0", "minimumOccurrences": 2 },
+          { "pattern": "failure:unit-owner-lifetime-retry", "minimumOccurrences": 1 }
+        ]
+      }
+    ],
+    "lifecycleNegativeSamples": [
+      {
+        "name": "former-native-probe-with-production-owner-and-no-close",
+        "sample": "patcher = new HarmonyReflectionPatcher(access.Runtime); EnsurePatchPair(); PublishStatus(operation);",
+        "requiredPatterns": [ "QaHarmonyOwnerPrefix \\+ access\\.RunId", "TryUnpatchAllOwnedPatches", "Close\\(string reason\\)" ]
+      },
+      {
+        "name": "former-g6-close-without-owner-cleanup",
+        "sample": "RestoreEnabledNoRodSelectionIfNeeded(reason); FinalizeAutoFishingPerformanceTitleCleanup(); FinalizeAutoFishingMonoGateTitleCleanup();",
+        "requiredPatterns": [ "CleanupOwnerLifetimeOnClose", "OwnerLifetimeControlId", "OwnerLifetimeCleanupId" ]
+      },
+      {
+        "name": "former-action-speed-blocking-loop-without-retryable-close",
+        "sample": "for (int attempt = 0; attempt < 8; attempt++) { Thread.Sleep(80); UpdateRuntimeAutomation(); }",
+        "requiredPatterns": [ "actionSpeedAutoFillFixtureActive", "FixtureAttemptResult\\.Pending", "CleanupActionSpeedAutoFillFixtureState" ]
+      },
+      {
+        "name": "former-mine-blocking-loop-without-retryable-close",
+        "sample": "for (int attempt = 0; attempt < 8; attempt++) { Thread.Sleep(80); UpdateRuntimeAutomation(); }",
+        "requiredPatterns": [ "newContentPendingMine", "FixtureAttemptResult\\.Pending", "CleanupPendingMineProductionForFixture" ]
+      },
+      {
+        "name": "former-action-speed-receipt-published-after-first-mutation",
+        "sample": "originalSlotItem = read.Invoke(inventory, new object[] { slot }); take.Invoke(inventory, new object[] { slot }); publishRestoreReceipt?.Invoke(inventory, originalSlotItem);",
+        "requiredPatterns": [ "originalSlotItem = read\\.Invoke", "publishRestoreReceipt\\?\\.Invoke", "take\\.Invoke" ],
+        "orderedTokens": [ "originalSlotItem = read.Invoke", "publishRestoreReceipt?.Invoke", "take.Invoke" ]
+      },
+      {
+        "name": "former-action-speed-void-restore-assumed-success",
+        "sample": "private void RestoreSmokeQuickSlot(Type dolocApi, object inventory, int slot, object originalSlotItem) { take.Invoke(inventory, new object[] { slot }); } RestoreSmokeQuickSlot(dolocApi, inventory, slot, originalSlotItem); actionSpeedAutoFillFixtureActive = false;",
+        "requiredPatterns": [ "private bool RestoreSmokeQuickSlot", "object\\? restored = read\\.Invoke", "!RestoreSmokeQuickSlot" ],
+        "forbiddenPatterns": [ "private void RestoreSmokeQuickSlot" ]
+      },
+      {
+        "name": "former-action-speed-active-receipt-cleared-before-restore-readback",
+        "sample": "actionSpeedAutoFillFixtureActive = false; if (!RestoreSmokeQuickSlot(dolocApi, inventory, slot, originalSlotItem)) throw cleanupError;",
+        "requiredPatterns": [ "actionSpeedAutoFillFixtureActive = false;", "!RestoreSmokeQuickSlot" ],
+        "orderedTokens": [ "!RestoreSmokeQuickSlot", "actionSpeedAutoFillFixtureActive = false;" ]
+      },
+      {
+        "name": "former-animal-native-panel-only-positive-gate",
+        "sample": "if (g4AnimalProgressRowCount == 0) return G4FixtureStepResult.Verified(\"native panel only\"); return ObserveScreenshotForFixture(screenshotPath, ref g4AnimalScreenshotPath, ref requestedAt);",
+        "requiredPatterns": [ "native panel alone cannot satisfy the staged-QA positive gate", "ReadAnimalProductObservationSummary\\(\\)", "renderSummary\\.IndexOf\\(\"state=visible\"" ]
+      },
+      {
+        "name": "former-animal-screenshot-before-visible-receipt",
+        "sample": "if (g4AnimalProgressRowCount == 0) return G4FixtureStepResult.Failed(\"native panel alone cannot satisfy the staged-QA positive gate\"); ReadAnimalProductObservationSummary(); ObserveScreenshotForFixture(screenshotPath, ref g4AnimalScreenshotPath, ref requestedAt); renderSummary.IndexOf(\"state=visible\", StringComparison.OrdinalIgnoreCase);",
+        "requiredPatterns": [ "if \\(g4AnimalProgressRowCount == 0\\)", "native panel alone cannot satisfy the staged-QA positive gate", "ReadAnimalProductObservationSummary\\(\\)", "renderSummary\\.IndexOf\\(\"state=visible\"", "ObserveScreenshotForFixture" ],
+        "orderedTokens": [ "if (g4AnimalProgressRowCount == 0)", "ReadAnimalProductObservationSummary()", "renderSummary.IndexOf(\"state=visible\"", "ObserveScreenshotForFixture" ]
+      },
+      {
+        "name": "former-mine-remove-without-world-readback",
+        "sample": "private bool TryRemoveTransientEquipmentForFixture(object room, object equipment) { removeEquipment.Invoke(room, args); return true; }",
+        "requiredPatterns": [ "GetEquipment", "object\\? remaining = getEquipment\\.Invoke", "ReferenceEquals\\(remaining, equipment\\)" ]
+      },
+      {
+        "name": "former-mine-world-readback-before-remove",
+        "sample": "private bool TryRemoveTransientEquipmentForFixture(object room, object equipment) { if (m.Name != \"GetEquipment\") return false; object? remaining = getEquipment.Invoke(room, new[] { cell }); if (ReferenceEquals(remaining, equipment)) return false; removeEquipment.Invoke(room, args); return true; }",
+        "requiredPatterns": [ "private bool TryRemoveTransientEquipmentForFixture", "m\\.Name != \"GetEquipment\"", "removeEquipment\\.Invoke", "object\\? remaining = getEquipment\\.Invoke", "ReferenceEquals\\(remaining, equipment\\)" ],
+        "orderedTokens": [ "private bool TryRemoveTransientEquipmentForFixture", "m.Name != \"GetEquipment\"", "removeEquipment.Invoke", "object? remaining = getEquipment.Invoke", "ReferenceEquals(remaining, equipment)" ]
+      },
+      {
+        "name": "former-mine-receipt-cleared-before-removal-confirmed",
+        "sample": "newContentPendingMine = null; removed = TryRemoveTransientEquipmentForFixture(room, mine); if (!removed) throw cleanupError;",
+        "requiredPatterns": [ "removed = TryRemoveTransientEquipmentForFixture", "if \\(!removed\\)", "newContentPendingMine = null;" ],
+        "orderedTokens": [ "removed = TryRemoveTransientEquipmentForFixture", "if (!removed)", "newContentPendingMine = null;" ]
+      },
+      {
+        "name": "former-staged-debug-console-omitted-from-strict-gate",
+        "sample": "$strictPlayerInputGate = [bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence; if ($strictPlayerInputGate -and $Attempts -ne 1) { throw 'exactly one'; } $y1Attempt = @($externalPlayerInputAttempts.ToArray());",
+        "requiredPatterns": [
+          "\\$strictPlayerInputGate = \\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled",
+          "\\$externalPlayerInputAttempts\\.Add",
+          "\\$y1Attempt = @\\(\\$externalPlayerInputAttempts\\.ToArray"
+        ]
+      },
+      {
+        "name": "former-staged-debug-console-postmessage-fallback",
+        "sample": "$sentInput = [DtmApiSmokeInput]::SendKeyboardKey($VirtualKey, $HoldMilliseconds); $postMessageFallbackRequested = -not ([bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4EquipmentSlotsObservationEnabled); $postMessageFallbackUsed = $false; if ($sentInput -and $postMessageFallbackRequested) { [DtmApiSmokeInput]::PostMessage($hWnd, 0x0100, $key, [UIntPtr]::Zero); $postMessageFallbackUsed = $true; } SendInputSucceeded = [bool]$sentInput; PostMessageFallbackUsed = [bool]$postMessageFallbackUsed;",
+        "requiredPatterns": [
+          "\\[DtmApiSmokeInput\\]::SendKeyboardKey\\(",
+          "\\$postMessageFallbackRequested = -not \\(\\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled -or \\[bool\\]\\$qaG4EquipmentSlotsObservationEnabled -or \\[bool\\]\\$moreEquipmentSlotsTransitionRequested -or \\[bool\\]\\$Batch6AutoFishingPilot -or \\[bool\\]\\$Batch6AutoFishingManagerLifecycle -or \\[bool\\]\\$AutoPressOneActionMenuKey\\)",
+          "SendInputSucceeded = \\[bool\\]\\$sentInput",
+          "PostMessageFallbackUsed = \\[bool\\]\\$postMessageFallbackUsed"
+        ],
+        "forbiddenPatterns": [ "\\[DtmApiSmokeInput\\]::PostMessage" ]
+      },
+      {
+        "name": "former-debug-console-screenshot-immediately-verified",
+        "sample": "if (!debugConsoleApi.IsOpen) return G4FixtureStepResult.Pending(\"waiting\"); G4FixtureStepResult screenshot = ObserveScreenshotForFixture(screenshotPath, ref path, ref requestedAt); if (!screenshot.Completed) return screenshot; return G4FixtureStepResult.Verified(screenshot.Details);",
+        "requiredPatterns": [
+          "if \\(g4DebugEvidenceCaptured\\)",
+          "if \\(debugConsoleApi\\.IsOpen\\)",
+          "EVIDENCE_CAPTURED_WAITING_ESCAPE",
+          "closeReceipt=product-api-closed",
+          "g4DebugEvidenceCaptured = true;"
+        ],
+        "forbiddenPatterns": [
+          "debugConsoleApi\\.Open",
+          "debugConsoleApi\\.Close"
+        ],
+        "orderedTokens": [
+          "if (g4DebugEvidenceCaptured)",
+          "if (debugConsoleApi.IsOpen)",
+          "EVIDENCE_CAPTURED_WAITING_ESCAPE",
+          "closeReceipt=product-api-closed",
+          "g4DebugEvidenceCaptured = true;",
+          "EVIDENCE_CAPTURED_WAITING_ESCAPE"
+        ]
+      },
+      {
+        "name": "former-animal-viewer-without-native-close-boundary",
+        "sample": "internal bool HooksReady => FullInfoDataPatched && ViewerShowPrefixPatched && ViewerShowPatched; ViewerShowPatched = patcher.TryPatchPostfix(\"DolocTown.UI.AnimalViewer, Assembly-CSharp\", \"Show\", callback, 1);",
+        "requiredPatterns": [
+          "internal bool PanelUnregisterPatched",
+          "DolocTown\\.AnimalPanelUiState, Assembly-CSharp",
+          "AnimalPanelUiStateUnregisterPostfix",
+          "PanelUnregisterPatched = patcher\\.TryPatchPostfix"
+        ]
+      },
+      {
+        "name": "former-animal-global-readiness-omitted-prefix-and-close",
+        "sample": "bool[] states = { animalFullInfoDataPatched, animalViewerShowPatched }; int total = fishingCompatibilityHooksRequired ? 32 : 23; if (animalFullInfoDataPatched) ready++; if (animalViewerShowPatched) ready++;",
+        "requiredPatterns": [
+          "animalViewerShowPrefixPatched",
+          "animalPanelUnregisterPatched",
+          "fishingCompatibilityHooksRequired \\? 34 : 25"
+        ],
+        "orderedTokens": [
+          "animalFullInfoDataPatched,",
+          "animalViewerShowPrefixPatched,",
+          "animalViewerShowPatched,",
+          "animalPanelUnregisterPatched,"
+        ]
+      },
+      {
+        "name": "former-animal-runner-counted-duplicate-render-lines-and-assumed-close",
+        "sample": "$noQaAnimalViewerRenderReceiptCount = [regex]::Matches($animalTail, [regex]::Escape('Animal viewer progress independent row active')).Count; $noQaAnimalViewerCloseOk = Wait-ForLogLineAfterOffset -Pattern 'Animal viewer progress overlay lifecycle session-cleared';",
+        "requiredPatterns": [
+          "Hook status: Animals\\.ViewerProgressUi = visible\\.",
+          "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
+          "\\$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
+          "\\$noQaAnimalViewerCloseOrderOk ="
+        ],
+        "orderedTokens": [
+          "Hook status: Animals.ViewerProgressUi = visible.",
+          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
+          "$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
+          "$noQaAnimalViewerCloseOrderOk ="
+        ]
+      },
+      {
+        "name": "former-animal-product-published-same-data-twice-and-throttled-close",
+        "sample": "animalProgressOverlayGeneration++; latestAnimalProgressOverlaySummary = \"generation=\" + animalProgressOverlayGeneration; runtime.SetHookStatus(\"Animals.ViewerProgressUi\", \"visible\", \"Show\", summary); if (lastAnimalProgressOverlayLifecycleLogKey.Equals(key) && age < 30) return;",
+        "requiredPatterns": [
+          "!ReferenceEquals\\(lastAnimalProgressVisibleReceiptData, data\\)",
+          "receiptSequence=",
+          "if \\(publishVisibleReceipt\\)",
+          "!key\\.Equals\\(\"session-cleared\""
+        ],
+        "orderedTokens": [
+          "!ReferenceEquals(lastAnimalProgressVisibleReceiptData, data)",
+          "receiptSequence=",
+          "if (publishVisibleReceipt)",
+          "!key.Equals(\"session-cleared\""
+        ]
+      },
+      {
+        "name": "former-runner-escape-before-debug-console-evidence-marker",
+        "sample": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'; Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'; Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified';",
+        "requiredPatterns": [
+          "Wait-ForLogLineAfterOffset -LogPath \\$logPath -Offset \\(\\[int64\\]\\$holdAttempt\\[0\\]\\.LogOffset\\) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
+          "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
+          "Wait-ForLogLine -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'"
+        ],
+        "orderedTokens": [
+          "Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
+          "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
+          "Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
+        ]
+      }
+    ],
+    "g9NegativeSamples": [
+      {
+        "name": "debug-console-player-evidence-policy-regression",
+        "gate": "behavior",
+        "contractId": "debug-console-player-evidence-policy",
+        "samplePath": "src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs",
+        "sample": "DEBUG-CONSOLE-UI Smoke.DebugConsole PrepareScreenshotHoverEvidence CaptureUiEvidenceScreenshot screenshotPending screenshotHoverItem screenshotSearchText runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["DEBUG-CONSOLE-UI", "Smoke\\.DebugConsole", "PrepareScreenshotHoverEvidence", "CaptureUiEvidenceScreenshot", "screenshot(Pending|Recorded|HoverPrepared|HoverStatusActive)", "screenshotHover(Item|SourceKind|SourceId|SourceTitle|WorkshopId)", "screenshotSearchText", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "debug-console-renamed-helper-in-new-player-file-regression",
+        "gate": "behavior",
+        "contractId": "debug-console-player-evidence-policy",
+        "samplePath": "src/DTMAPI.BepInExBootstrap/DebugConsoleCapturePolicy.cs",
+        "sample": "RenamedConsoleCapturePolicy Smoke.DebugConsole runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["Smoke\\.DebugConsole", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "animal-viewer-player-evidence-policy-regression",
+        "gate": "behavior",
+        "contractId": "animal-viewer-player-evidence-policy",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer/AnimalViewerService.cs",
+        "sample": "ANIMAL-001 Smoke.Animal RecordAnimalViewerUiEvidence CaptureDelayedAnimalViewerUiEvidenceScreenshot animalViewerUiEvidenceRecorded animalPanelUiProbeLogged latestAnimalViewerEvidenceDir runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["ANIMAL-001", "Smoke\\.Animal", "RecordAnimal(Viewer|Panel)UiEvidence", "CaptureDelayedAnimalViewerUiEvidenceScreenshot", "animalViewerUi(EvidenceRecorded|DelayedScreenshotRecorded)", "animalPanelUiProbeLogged", "latestAnimalViewerEvidenceDir", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "animal-viewer-renamed-helper-in-new-player-file-regression",
+        "gate": "behavior",
+        "contractId": "animal-viewer-player-evidence-policy",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Compatibility/AnimalViewer/AnimalViewerCapturePolicy.cs",
+        "sample": "RenamedAnimalCapturePolicy ANIMAL-001 Smoke.Animal runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["ANIMAL-001", "Smoke\\.Animal", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "equipment-slots-player-evidence-policy-regression",
+        "gate": "behavior",
+        "contractId": "equipment-slots-player-evidence-policy",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/DolocTownExperimentalBridgeApi.EquipmentSlots.cs",
+        "sample": "EQUIPMENT-SLOTS-UI Smoke.NewContentEquipmentSlots CaptureEquipmentSlotsUiEvidenceForFixture equipmentSlotsUiEvidenceRecorded runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["EQUIPMENT-SLOTS-UI", "Smoke\\.NewContentEquipmentSlots", "CaptureEquipmentSlotsUiEvidenceForFixture", "equipmentSlotsUiEvidenceRecorded", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "equipment-slots-renamed-helper-in-new-player-file-regression",
+        "gate": "behavior",
+        "contractId": "equipment-slots-player-evidence-policy",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Features/EquipmentSlots/EquipmentSlotsCapturePolicy.cs",
+        "sample": "RenamedEquipmentCapturePolicy EQUIPMENT-SLOTS-UI Smoke.NewContentEquipmentSlots runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt",
+        "expectedPatterns": ["EQUIPMENT-SLOTS-UI", "Smoke\\.NewContentEquipmentSlots", "runtime\\.Paths\\.EvidencePath", "UnityEngine\\.ScreenCapture", "summary\\.txt"]
+      },
+      {
+        "name": "gamebridge-player-screenshot-adapter-regression",
+        "gate": "behavior",
+        "contractId": "gamebridge-player-screenshot-adapter",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs",
+        "sample": "equipmentSlotsUiEvidenceRecorded TryCaptureScreenshot UnityEngine.ScreenCapture CaptureScreenshotAsTexture EncodeToPNG",
+        "expectedPatterns": ["equipmentSlotsUiEvidenceRecorded", "TryCaptureScreenshot", "UnityEngine\\.ScreenCapture", "CaptureScreenshotAsTexture", "EncodeToPNG"]
+      },
+      {
+        "name": "gamebridge-renamed-screenshot-helper-in-new-player-file-regression",
+        "gate": "behavior",
+        "contractId": "gamebridge-player-screenshot-adapter",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/PlayerScreenshotAdapter.cs",
+        "sample": "RenamedPlayerCapture UnityEngine.ScreenCapture CaptureScreenshotAsTexture EncodeToPNG",
+        "expectedPatterns": ["UnityEngine\\.ScreenCapture", "CaptureScreenshotAsTexture", "EncodeToPNG"]
+      },
+      {
+        "name": "published-product-player-evidence-policy-regression",
+        "gate": "behavior",
+        "contractId": "published-product-player-evidence-policy",
+        "samplePath": "products/first-party/DebugConsole/src/PublicProductCapturePolicy.cs",
+        "sample": "Smoke.DebugConsole runtime.Paths.EvidencePath UnityEngine.ScreenCapture summary.txt TryOpenForFixture",
+        "expectedPatterns": ["Smoke\\.", "\\.Paths\\.EvidencePath", "(?:UnityEngine\\.ScreenCapture|\\bCaptureScreenshot\\b|\\bScreenshotPath\\b)", "summary\\.txt", "\\b[A-Za-z0-9_]*ForFixture\\b"]
+      },
+      {
+        "name": "orphan-player-fixture-mutations-regression",
+        "gate": "behavior",
+        "contractId": "orphan-player-fixture-mutations",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/LegacyFishingAutomationService.cs",
+        "sample": "SuppressActionSpeedAutoFillForFixture ForceMachineProductionDueForFixture SuppressFishingAutoCastForFixture ForceFishingNoWaterForFixture ForceFishingNoRodForFixture FishingPoolOverrideForFixture ForceFishingFishForFixture ForceFishingNativeBiteForFixture ResetFishingFeedbackCooldownForFixture HasAnimalProgressRowsForFixture",
+        "expectedPatterns": ["SuppressActionSpeedAutoFillForFixture", "ForceMachineProductionDueForFixture", "SuppressFishingAutoCastForFixture", "ForceFishingNoWaterForFixture", "ForceFishingNoRodForFixture", "FishingPoolOverrideForFixture", "ForceFishingFishForFixture", "ForceFishingNativeBiteForFixture", "ResetFishingFeedbackCooldownForFixture", "HasAnimalProgressRowsForFixture"]
+      },
+      {
+        "name": "core-synthetic-input-fixture-policy-regression",
+        "gate": "behavior",
+        "contractId": "core-synthetic-input-fixture-policy",
+        "samplePath": "src/DTMAPI.Core/Runtime/DtmApiRuntime.cs",
+        "sample": "RecordSyntheticInputFrameForFixture RecordSyntheticInputTapForFixture",
+        "expectedPatterns": ["RecordSyntheticInputFrameForFixture", "RecordSyntheticInputTapForFixture"]
+      },
+      {
+        "name": "player-facade-evidence-path-policy-regression",
+        "gate": "behavior",
+        "contractId": "qa-evidence-path-policy-not-owned-by-player-facade",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/QaHost/GameBridgeFixtureAccess.cs",
+        "sample": "GetEvidenceDirectory GetEvidencePath Directory.CreateDirectory Path.Combine(EvidenceRoot, \"qa-host\")",
+        "expectedPatterns": ["GetEvidenceDirectory", "GetEvidencePath", "Directory\\.CreateDirectory", "Path\\.Combine\\s*\\(\\s*EvidenceRoot", "[\"']qa-host[\"']"]
+      },
+      {
+        "name": "player-facade-config-mutation-regression",
+        "gate": "behavior",
+        "contractId": "qa-config-mutation-not-owned-by-player-facade",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/QaHost/GameBridgeFixtureAccess.cs",
+        "sample": "EditAndSaveConfigPage ConfigMenuRuntime BeginEditing configMenuRuntime.Save",
+        "expectedPatterns": ["EditAndSaveConfigPage", "ConfigMenuRuntime", "BeginEditing", "configMenuRuntime\\.Save"]
+      },
+      {
+        "name": "player-title-qa-driver-regression",
+        "gate": "behavior",
+        "contractId": "qa-title-driver-not-owned-by-player",
+        "samplePath": "src/DTMAPI.BepInExBootstrap/BootstrapPlugin.cs",
+        "sample": "ClickTitleButtonForFixture TryOpenTitleSettingsForQa clickTitleSettingsButton",
+        "expectedPatterns": ["ClickTitleButtonForFixture", "TryOpenTitleSettingsForQa", "clickTitleSettingsButton"]
+      },
+      {
+        "name": "player-creative-mutation-probe-regression",
+        "gate": "behavior",
+        "contractId": "qa-creative-mutation-probe-not-owned-by-player",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs",
+        "sample": "VerifyAdvancedCreativeHooksForFixture CanAffordMoney CostEnergy( ReadAgentEnergyForFixture",
+        "expectedPatterns": ["VerifyAdvancedCreativeHooksForFixture", "CanAffordMoney", "CostEnergy\\s*\\(", "ReadAgentEnergyForFixture"]
+      },
+      {
+        "name": "player-forced-machine-poll-regression",
+        "gate": "behavior",
+        "contractId": "qa-forced-machine-poll-not-owned-by-player",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs",
+        "sample": "ForceMachineProductionDueForFixture forceMachineProductionPoll forcePoll forceDue",
+        "expectedPatterns": ["ForceMachineProductionDueForFixture", "forceMachineProductionPoll", "forcePoll", "forceDue"]
+      },
+      {
+        "name": "qa-frame-driver-blocking-sleep-regression",
+        "gate": "behavior",
+        "contractId": "qa-frame-driver-blocking-wait",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown.QA/Scenarios/Fixtures/ActionSpeedFixtureCase.cs",
+        "sample": "for (int attempt = 0; attempt < 8; attempt++) { Thread.Sleep(80); UpdateRuntimeAutomation(); }",
+        "expectedPatterns": ["Thread\\.Sleep\\s*\\("]
+      },
+      {
+        "name": "staged-debug-console-direct-postmessage-regression",
+        "gate": "behavior",
+        "contractId": "staged-debug-console-direct-postmessage",
+        "samplePath": "tools/scripts/run-game-smoke.ps1",
+        "sample": "function Invoke-DebugConsoleSmokeKey { [DtmApiSmokeInput]::PostMessage($hWnd, 0x0100, $key, [UIntPtr]::Zero) }",
+        "expectedPatterns": ["function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"]
+      },
+      {
+        "name": "player-evidence-symbol-ownership-regression",
+        "gate": "symbol",
+        "contractId": "qa-evidence-symbols-not-owned-by-player",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/DolocTownExperimentalBridgeApi.cs",
+        "sample": "CaptureUiEvidenceScreenshot PrepareScreenshotHoverEvidence RecordAnimalViewerUiEvidence CaptureDelayedAnimalViewerUiEvidenceScreenshot CaptureEquipmentSlotsUiEvidenceForFixture TryCaptureScreenshot GetEvidenceDirectory GetEvidencePath",
+        "expectedPatterns": ["CaptureUiEvidenceScreenshot", "PrepareScreenshotHoverEvidence", "RecordAnimal(Viewer|Panel)UiEvidence", "CaptureDelayedAnimalViewerUiEvidenceScreenshot", "CaptureEquipmentSlotsUiEvidenceForFixture", "TryCaptureScreenshot", "GetEvidenceDirectory", "GetEvidencePath"]
+      },
+      {
+        "name": "player-fixture-mutation-symbol-ownership-regression",
+        "gate": "symbol",
+        "contractId": "fixture-mutation-symbols-not-owned-by-player",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Compatibility/FishingAutomation/LegacyFishingAutomationService.cs",
+        "sample": "SuppressActionSpeedAutoFillForFixture ForceMachineProductionDueForFixture SuppressFishingAutoCastForFixture ForceFishingNoWaterForFixture ForceFishingNoRodForFixture FishingPoolOverrideForFixture ForceFishingFishForFixture ForceFishingNativeBiteForFixture ResetFishingFeedbackCooldownForFixture HasAnimalProgressRowsForFixture",
+        "expectedPatterns": ["SuppressActionSpeedAutoFillForFixture", "ForceMachineProductionDueForFixture", "SuppressFishingAutoCastForFixture", "ForceFishingNoWaterForFixture", "ForceFishingNoRodForFixture", "FishingPoolOverrideForFixture", "ForceFishingFishForFixture", "ForceFishingNativeBiteForFixture", "ResetFishingFeedbackCooldownForFixture", "HasAnimalProgressRowsForFixture"]
+      },
+      {
+        "name": "player-cross-frame-transaction-symbol-ownership-regression",
+        "gate": "symbol",
+        "contractId": "qa-cross-frame-transaction-symbols-not-owned-by-player",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/Features/ActionSpeed/ActionSpeedService.cs",
+        "sample": "actionSpeedAutoFillFixtureActive actionSpeedAutoFillQuickSlotReceiptPublished newContentPendingMine TryExerciseActionSpeedAutoFillBottleForFixture BeginPendingMineProductionForFixture CleanupActionSpeedAutoFillFixtureState CleanupPendingMineProductionForFixture publishRestoreReceipt RestoreSmokeQuickSlot TryRemoveTransientEquipmentForFixture",
+        "expectedPatterns": ["actionSpeedAutoFillFixtureActive", "actionSpeedAutoFillQuickSlotReceiptPublished", "newContentPendingMine", "TryExerciseActionSpeedAutoFillBottleForFixture", "BeginPendingMineProductionForFixture", "CleanupActionSpeedAutoFillFixtureState", "CleanupPendingMineProductionForFixture", "publishRestoreReceipt", "RestoreSmokeQuickSlot", "TryRemoveTransientEquipmentForFixture"]
+      },
+      {
+        "name": "core-synthetic-input-symbol-ownership-regression",
+        "gate": "symbol",
+        "contractId": "synthetic-input-symbols-not-owned-by-core",
+        "samplePath": "src/DTMAPI.Core/Runtime/DtmApiRuntime.cs",
+        "sample": "RecordSyntheticInputFrameForFixture RecordSyntheticInputTapForFixture",
+        "expectedPatterns": ["RecordSyntheticInputFrameForFixture", "RecordSyntheticInputTapForFixture"]
+      },
+      {
+        "name": "player-driver-mutator-symbol-ownership-regression",
+        "gate": "symbol",
+        "contractId": "qa-driver-and-mutator-symbols-not-owned-by-player",
+        "samplePath": "src/DTMAPI.BepInExBootstrap/BootstrapPlugin.cs",
+        "sample": "EditAndSaveConfigPage ClickTitleButtonForFixture TryOpenTitleSettingsForQa clickTitleSettingsButton VerifyAdvancedCreativeHooksForFixture ForceMachineProductionDueForFixture forceMachineProductionPoll",
+        "expectedPatterns": ["EditAndSaveConfigPage", "ClickTitleButtonForFixture", "TryOpenTitleSettingsForQa", "clickTitleSettingsButton", "VerifyAdvancedCreativeHooksForFixture", "ForceMachineProductionDueForFixture", "forceMachineProductionPoll"]
+      },
+      {
+        "name": "disallowed-evidence-helper-consumer-regression",
+        "gate": "consumer",
+        "contractId": "qa-evidence-helper-consumers",
+        "samplePath": "tests/DTMAPI.UnitTests/Program.cs",
+        "sample": "CaptureUiEvidenceScreenshot PrepareScreenshotHoverEvidence RecordAnimalViewerUiEvidence CaptureDelayedAnimalViewerUiEvidenceScreenshot CaptureEquipmentSlotsUiEvidenceForFixture TryCaptureScreenshot GetEvidenceDirectory GetEvidencePath",
+        "expectedPatterns": ["CaptureUiEvidenceScreenshot", "PrepareScreenshotHoverEvidence", "RecordAnimal(Viewer|Panel)UiEvidence", "CaptureDelayedAnimalViewerUiEvidenceScreenshot", "CaptureEquipmentSlotsUiEvidenceForFixture", "TryCaptureScreenshot", "GetEvidenceDirectory", "GetEvidencePath"]
+      },
+      {
+        "name": "disallowed-fixture-mutation-consumer-regression",
+        "gate": "consumer",
+        "contractId": "fixture-mutation-consumers",
+        "samplePath": "tests/DTMAPI.UnitTests/Program.cs",
+        "sample": "SuppressActionSpeedAutoFillForFixture ForceMachineProductionDueForFixture SuppressFishingAutoCastForFixture ForceFishingNoWaterForFixture ForceFishingNoRodForFixture FishingPoolOverrideForFixture ForceFishingFishForFixture ForceFishingNativeBiteForFixture ResetFishingFeedbackCooldownForFixture HasAnimalProgressRowsForFixture EditAndSaveConfigPage ClickTitleButtonForFixture TryOpenTitleSettingsForQa clickTitleSettingsButton VerifyAdvancedCreativeHooksForFixture forceMachineProductionPoll",
+        "expectedPatterns": ["SuppressActionSpeedAutoFillForFixture", "ForceMachineProductionDueForFixture", "SuppressFishingAutoCastForFixture", "ForceFishingNoWaterForFixture", "ForceFishingNoRodForFixture", "FishingPoolOverrideForFixture", "ForceFishingFishForFixture", "ForceFishingNativeBiteForFixture", "ResetFishingFeedbackCooldownForFixture", "HasAnimalProgressRowsForFixture", "EditAndSaveConfigPage", "ClickTitleButtonForFixture", "TryOpenTitleSettingsForQa", "clickTitleSettingsButton", "VerifyAdvancedCreativeHooksForFixture", "forceMachineProductionPoll"]
+      },
+      {
+        "name": "disallowed-cross-frame-transaction-consumer-regression",
+        "gate": "consumer",
+        "contractId": "qa-cross-frame-transaction-consumers",
+        "samplePath": "tests/DTMAPI.UnitTests/Program.cs",
+        "sample": "actionSpeedAutoFillFixtureActive actionSpeedAutoFillQuickSlotReceiptPublished newContentPendingMine TryExerciseActionSpeedAutoFillBottleForFixture BeginPendingMineProductionForFixture CleanupActionSpeedAutoFillFixtureState CleanupPendingMineProductionForFixture publishRestoreReceipt RestoreSmokeQuickSlot TryRemoveTransientEquipmentForFixture",
+        "expectedPatterns": ["actionSpeedAutoFillFixtureActive", "actionSpeedAutoFillQuickSlotReceiptPublished", "newContentPendingMine", "TryExerciseActionSpeedAutoFillBottleForFixture", "BeginPendingMineProductionForFixture", "CleanupActionSpeedAutoFillFixtureState", "CleanupPendingMineProductionForFixture", "publishRestoreReceipt", "RestoreSmokeQuickSlot", "TryRemoveTransientEquipmentForFixture"]
+      },
+      {
+        "name": "disallowed-synthetic-input-consumer-regression",
+        "gate": "consumer",
+        "contractId": "synthetic-input-consumers",
+        "samplePath": "tests/DTMAPI.UnitTests/Program.cs",
+        "sample": "RecordSyntheticInputFrameForFixture RecordSyntheticInputTapForFixture",
+        "expectedPatterns": ["RecordSyntheticInputFrameForFixture", "RecordSyntheticInputTapForFixture"]
+      },
+      {
+        "name": "disallowed-neutral-input-injection-consumer-regression",
+        "gate": "consumer",
+        "contractId": "neutral-input-injection-consumers",
+        "samplePath": "src/DTMAPI.GameBridge.DolocTown/DolocTownGameBridge.Update.cs",
+        "sample": "var direct = runtime.RecordInputFrame; var spaced = runtime . RecordInputFrame; var commented = runtime./*alias*/RecordInputFrame; var input = runtime.Input; input . ClearFrame(); input./*alias*/ClearFrame();",
+        "expectedPatterns": ["\\.(?:(?>\\s+)|(?>/\\*[\\s\\S]*?\\*/)|(?>//[^\\r\\n]*(?:\\r\\n|\\r|\\n)))*RecordInputFrame\\b", "\\.(?:(?>\\s+)|(?>/\\*[\\s\\S]*?\\*/)|(?>//[^\\r\\n]*(?:\\r\\n|\\r|\\n)))*ClearFrame\\b"]
+      },
+      {
+        "name": "disallowed-ui-smoke-policy-consumer-regression",
+        "gate": "consumer",
+        "contractId": "ui-smoke-policy-consumers",
+        "samplePath": "src/DTMAPI.BepInExBootstrap/ReflectedDebugConsoleUi.cs",
+        "sample": "Smoke.DebugConsole Smoke.Animal Smoke.NewContentEquipmentSlots",
+        "expectedPatterns": ["Smoke\\.DebugConsole", "Smoke\\.Animal", "Smoke\\.NewContentEquipmentSlots"]
+      }
+    ]
+  },
+  "builtArtifactGate": {
+    "bootstrapForbiddenMetadata": [
+      "DEBUG-CONSOLE-UI",
+      "Smoke.DebugConsoleOpen",
+      "Smoke.DebugConsoleClose",
+      "Smoke.DebugConsoleHoverTooltip",
+      "Smoke.DebugConsoleScreenshot",
+      "Smoke.DebugConsoleModItemUi",
+      "PrepareScreenshotHoverEvidence",
+      "CaptureUiEvidenceScreenshot",
+      "ClickTitleButtonForFixture"
+    ],
+    "gameBridgeForbiddenMetadata": [
+      "QaScenarioController",
+      "G4FixtureStepResult",
+      "G6FixtureState",
+      "SmokeRootIsolationProfile=UiRuntime",
+      "Smoke.NativeLoadContinuationProbe",
+      "YConsoleZoomNoInput",
+      "DTMAPI.Smoke.OwnerLifetime.Control",
+      "ExerciseCameraLeaseOwnerDeactivation",
+      "dtmapi.gamebridge.doloctown.qa.native-continuation.",
+      "ANIMAL-001",
+      "EQUIPMENT-SLOTS-UI",
+      "RecordAnimalViewerUiEvidence",
+      "RecordAnimalPanelUiEvidence",
+      "CaptureDelayedAnimalViewerUiEvidenceScreenshot",
+      "CaptureEquipmentSlotsUiEvidenceForFixture",
+      "TryCaptureScreenshot",
+      "Smoke.AnimalViewerUi",
+      "Smoke.AnimalPanelUi",
+      "Smoke.NewContentEquipmentSlots",
+      "SuppressActionSpeedAutoFillForFixture",
+      "ForceMachineProductionDueForFixture",
+      "actionSpeedAutoFillFixtureActive",
+      "actionSpeedAutoFillQuickSlotReceiptPublished",
+      "newContentPendingMine",
+      "TryExerciseActionSpeedAutoFillBottleForFixture",
+      "BeginPendingMineProductionForFixture",
+      "CleanupActionSpeedAutoFillFixtureState",
+      "CleanupPendingMineProductionForFixture",
+      "publishRestoreReceipt",
+      "RestoreSmokeQuickSlot",
+      "TryRemoveTransientEquipmentForFixture",
+      "SuppressFishingAutoCastForFixture",
+      "ForceFishingNoWaterForFixture",
+      "ForceFishingNoRodForFixture",
+      "FishingPoolOverrideForFixture",
+      "ForceFishingFishForFixture",
+      "ForceFishingNativeBiteForFixture",
+      "ResetFishingFeedbackCooldownForFixture",
+      "HasAnimalProgressRowsForFixture",
+      "GetEvidenceDirectory",
+      "GetEvidencePath",
+      "EditAndSaveConfigPage",
+      "TryOpenTitleSettingsForQa",
+      "clickTitleSettingsButton",
+      "VerifyAdvancedCreativeHooksForFixture",
+      "forceMachineProductionPoll"
+    ],
+    "coreForbiddenMetadata": [
+      "DTMAPI.Smoke.OwnerLifetime.Control",
+      "Smoke.OwnerLifetime",
+      "YConsoleZoomNoInput",
+      "PrepareOwnerLifetimeSmokeForFixture",
+      "ExerciseCameraLeaseOwnerDeactivationForFixture",
+      "RecordSyntheticInputFrameForFixture",
+      "RecordSyntheticInputTapForFixture"
+    ],
+    "optionalQaRequiredMetadata": [
+      "QaScenarioController",
+      "G4FixtureStepResult",
+      "Smoke.QaG5WorldMutation",
+      "Smoke.QaG6Lifecycle",
+      "SmokeRootIsolationProfile=UiRuntime",
+      "Smoke.NativeLoadContinuationProbe",
+      "DTMAPI.Smoke.OwnerLifetime.Control",
+      "Smoke.OwnerLifetimeCleanup",
+      "dtmapi.gamebridge.doloctown.qa.native-continuation.",
+      "GetEvidenceDirectory",
+      "GetEvidencePath",
+      "EditAndSaveConfigPage",
+      "VerifyAdvancedCreativeHooksForFixture",
+      "Smoke.DebugConsoleUiEvidence",
+      "Smoke.AnimalViewerRendering",
+      "Smoke.EquipmentSlotsUiObservation"
+    ]
+  }
+}

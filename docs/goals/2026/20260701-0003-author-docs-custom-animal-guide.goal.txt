@@ -1,0 +1,26 @@
+/goal
+目标：新增独立 `author-docs/` 作者文档区，并写完整的 JSON + PNG + WAV 自定义小动物指南。详细要求以 `docs/goals/2026/20260701-0003-author-docs-custom-animal-guide.md` 为准。
+
+开始前必须阅读：
+AGENTS.md
+PROJECT.md
+docs/goals/README.md
+docs/goals/2026/20260701-0003-author-docs-custom-animal-guide.md
+docs/updates/INDEX.md
+docs/debug/INDEX.md
+references/README.md
+相关官方小动物说明、哈奇和抛壳蟹 2026-06-28 到 2026-07-01 的更新记录
+
+安全约束：
+只做文档，不改 runtime 代码，不触碰本地游戏运行目录、官方本地 MODS 或 Workshop 上传 staging；不要复制官方二进制、反编译方法体或第三方模组代码；普通作者路线必须保持 JSON + PNG + WAV，不要求 DLL。
+
+版本要求：
+本轮为 docs-only，不修改 DTMAPI runtime/API 版本。
+
+任务 A：建立独立 `author-docs/` 文档目录和索引。
+任务 B：写可复制的自定义小动物内容包指南，覆盖文件树、模板选择、帧数、JSON、WAV、手测和排错。
+任务 C：新增 update 记录，验证打包边界和文档静态检查。
+
+完成标准：
+`author-docs/` 下有可独立发布的作者文档；指南足够让用户照着尝试新动物；`docs/updates/INDEX.md` 已链接本轮更新；`git diff --check` 通过或仅有既有行尾警告；如未运行 build/game smoke，必须明确说明这是 docs-only。
+

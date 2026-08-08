@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
@@ -13,7 +14,7 @@ namespace DTMAPI.Core.Services
     {
         private readonly RuntimePaths paths;
         private readonly DiagnosticsService diagnostics;
-        private readonly Dictionary<string, Delegate> migrations = new Dictionary<string, Delegate>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<MigrationKey, Delegate> migrations = new Dictionary<MigrationKey, Delegate>();
 
         public ConfigService(RuntimePaths paths, DiagnosticsService diagnostics)
         {
@@ -48,7 +49,7 @@ namespace DTMAPI.Core.Services
                 return defaultConfig;
             }
 
-            string key = GetMigrationKey(manifest, typeof(TConfig));
+            MigrationKey key = GetMigrationKey(manifest, typeof(TConfig));
             if (migrations.TryGetValue(key, out Delegate migration) && migration is Action<TConfig> action)
             {
                 action(config);
@@ -85,10 +86,70 @@ namespace DTMAPI.Core.Services
 
         public void RegisterMigration<TConfig>(IManifest manifest, Action<TConfig> migrate) where TConfig : new()
         {
-            migrations[GetMigrationKey(manifest, typeof(TConfig))] = migrate;
+            if (manifest == null)
+                throw new ArgumentNullException(nameof(manifest));
+            if (migrate == null)
+                throw new ArgumentNullException(nameof(migrate));
+            MigrationKey key = GetMigrationKey(manifest, typeof(TConfig));
+            if (migrations.ContainsKey(key))
+                throw new InvalidOperationException("Owner '" + manifest.UniqueID + "' already registered a config migration for '" + (typeof(TConfig).FullName ?? typeof(TConfig).Name) + "'.");
+            migrations.Add(key, migrate);
         }
 
-        private static string GetMigrationKey(IManifest manifest, Type type) => manifest.UniqueID + "|" + type.FullName;
+        internal IConfigHelper CreateOwnerBound(IManifest owner, Action ensureOwnerActive)
+        {
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+            if (ensureOwnerActive == null)
+                throw new ArgumentNullException(nameof(ensureOwnerActive));
+            return new OwnerBoundConfigHelper(this, owner, ensureOwnerActive);
+        }
+
+        internal int RemoveOwner(string uniqueId)
+        {
+            int removed = 0;
+            foreach (MigrationKey key in migrations.Keys.Where(k => k.OwnerId.Equals(uniqueId ?? string.Empty, StringComparison.OrdinalIgnoreCase)).ToArray())
+            {
+                if (migrations.Remove(key))
+                    removed++;
+            }
+            return removed;
+        }
+
+        internal int CountOwner(string uniqueId)
+        {
+            return migrations.Keys.Count(k => k.OwnerId.Equals(uniqueId ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+        }
+
+        internal int TotalMigrationCount => migrations.Count;
+
+        private static MigrationKey GetMigrationKey(IManifest manifest, Type type) => new MigrationKey(manifest.UniqueID, type);
+
+        private readonly struct MigrationKey : IEquatable<MigrationKey>
+        {
+            public MigrationKey(string ownerId, Type configType)
+            {
+                OwnerId = ownerId ?? string.Empty;
+                ConfigType = configType ?? throw new ArgumentNullException(nameof(configType));
+            }
+
+            public string OwnerId { get; }
+
+            public Type ConfigType { get; }
+
+            public bool Equals(MigrationKey other) =>
+                StringComparer.OrdinalIgnoreCase.Equals(OwnerId, other.OwnerId) && ConfigType == other.ConfigType;
+
+            public override bool Equals(object? obj) => obj is MigrationKey other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (StringComparer.OrdinalIgnoreCase.GetHashCode(OwnerId) * 397) ^ ConfigType.GetHashCode();
+                }
+            }
+        }
 
         private string BackupInvalidConfig(string path, IManifest manifest, Exception ex)
         {
@@ -116,15 +177,11 @@ namespace DTMAPI.Core.Services
                 return;
             }
 
-            try
-            {
-                File.Replace(tempPath, path, null);
-            }
-            catch
-            {
-                File.Delete(path);
-                File.Move(tempPath, path);
-            }
+            // Never trade atomic replacement for a delete-then-move fallback. If the
+            // platform can't replace the destination atomically, leave the last-good
+            // config in place and let the caller observe the write failure. The
+            // temporary candidate is removed by WriteConfig's finally block.
+            File.Replace(tempPath, path, null);
         }
 
         private static string MakeSafeFileName(string value)
@@ -132,6 +189,54 @@ namespace DTMAPI.Core.Services
             foreach (char c in Path.GetInvalidFileNameChars())
                 value = value.Replace(c, '_');
             return string.IsNullOrWhiteSpace(value) ? "Unknown.Mod" : value;
+        }
+
+        private sealed class OwnerBoundConfigHelper : IConfigHelper
+        {
+            private readonly ConfigService inner;
+            private readonly IManifest owner;
+            private readonly Action ensureOwnerActive;
+
+            public OwnerBoundConfigHelper(ConfigService inner, IManifest owner, Action ensureOwnerActive)
+            {
+                this.inner = inner;
+                this.owner = owner;
+                this.ensureOwnerActive = ensureOwnerActive;
+            }
+
+            public TConfig ReadConfig<TConfig>(IManifest manifest) where TConfig : new()
+            {
+                EnsureOwner(manifest);
+                ensureOwnerActive();
+                return inner.ReadConfig<TConfig>(owner);
+            }
+
+            public void WriteConfig<TConfig>(IManifest manifest, TConfig config)
+            {
+                EnsureOwner(manifest);
+                ensureOwnerActive();
+                inner.WriteConfig(owner, config);
+            }
+
+            public string GetConfigPath(IManifest manifest)
+            {
+                EnsureOwner(manifest);
+                ensureOwnerActive();
+                return inner.GetConfigPath(owner);
+            }
+
+            public void RegisterMigration<TConfig>(IManifest manifest, Action<TConfig> migrate) where TConfig : new()
+            {
+                EnsureOwner(manifest);
+                ensureOwnerActive();
+                inner.RegisterMigration(owner, migrate);
+            }
+
+            private void EnsureOwner(IManifest manifest)
+            {
+                if (manifest == null || !string.Equals(manifest.UniqueID, owner.UniqueID, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Config helper for owner '" + owner.UniqueID + "' can't access another owner manifest.");
+            }
         }
     }
 }

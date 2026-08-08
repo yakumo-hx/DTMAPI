@@ -1,0 +1,115 @@
+{
+  "export_schema_version": 2,
+  "url": "https://ka7deoo0opr.feishu.cn/wiki/SYYLwefL8imZYXkivwecR7X2ntc",
+  "final_url": "https://ka7deoo0opr.feishu.cn/wiki/SYYLwefL8imZYXkivwecR7X2ntc",
+  "token": "SYYLwefL8imZYXkivwecR7X2ntc",
+  "title": "01 文本本地化",
+  "document_title": "01 文本本地化",
+  "source_modified_label": "4月17日修改",
+  "status_code": 200,
+  "elapsed_seconds": 10.625,
+  "block_count": 22,
+  "blocks_by_type": {
+    "heading1": 3,
+    "bullet": 11,
+    "heading2": 3,
+    "code": 3,
+    "text": 2
+  },
+  "scroll_samples": 6,
+  "scroll_height_max": 2517,
+  "links": [
+    {
+      "text": "查看示例模组",
+      "url": "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d",
+      "kind": "official-wiki",
+      "target_token": "GmfKwSHv0i5E9EkaupNcjRdIn4d"
+    }
+  ],
+  "children": [
+    "https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d"
+  ],
+  "rendered_images": [],
+  "original_images": [
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/d8853c01-f8e5-44ce-b17c-1c748cb277de~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/images/original/image-01-ccb316fe480f207b.png",
+      "bytes": 132007,
+      "sha256": "9f3a653c938cc9259b8e8f457998a55094c811c77cc4f70fb95a818cd62db4ad"
+    },
+    {
+      "url": "https://s1-imfile.feishucdn.com/static-resource/v1/e6f5a9e2-91f0-4b42-9c06-c702a7925879~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/images/original/image-02-23aa14a10b7ff4df.png",
+      "bytes": 132010,
+      "sha256": "b086cc36c3626ce6e239e7030efb038d7b4df6e8f3b201353a6113e20a145661"
+    },
+    {
+      "url": "https://s3-imfile.feishucdn.com/static-resource/v1/704482df-384d-48fa-8cf7-79433efc79bf~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+      "status": 200,
+      "content_type": "image/png",
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/images/original/image-03-b738158ca09f2a8a.png",
+      "bytes": 144750,
+      "sha256": "8dab400688c2b1bc7a558d427b350a4e2a97f3f58823def6c74b15c04ba412e1"
+    }
+  ],
+  "sheets": [],
+  "code_blocks": [
+    {
+      "index": 1,
+      "block_id": "12",
+      "record_id": "Ony0dpsswolCGIxZuGdcY1S7nDg",
+      "heading": "1.localization_tbtextmapperen.json",
+      "caption": "英文本地化-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/01-code.jsonc",
+      "bytes": 429,
+      "sha256": "296fb09a5d78304d99f4e61a7cd7a3af49808f6882950d1d41a8d5b87f0cfbd7"
+    },
+    {
+      "index": 2,
+      "block_id": "15",
+      "record_id": "GarAdmfLgoelRxxEslAczNgXnZc",
+      "heading": "2.localization_tbtextmapperzh_cn.json",
+      "caption": "简体中文本地化-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/02-code.jsonc",
+      "bytes": 417,
+      "sha256": "de4ae1eb55a18a145f5714227e91630369c441054601fd8349075766005b5c5c"
+    },
+    {
+      "index": 3,
+      "block_id": "18",
+      "record_id": "EAomdUYO4oTvPoxCs21cVwgBnWe",
+      "heading": "3.localization_tbtextmapperzh_tw.json",
+      "caption": "繁体中文本地化-配置示例",
+      "language": "JSON",
+      "line_first": 1,
+      "line_last": 18,
+      "line_count": 18,
+      "line_complete": true,
+      "path": "pages/SYYLwefL8imZYXkivwecR7X2ntc/code-blocks/03-code.jsonc",
+      "bytes": 417,
+      "sha256": "1f90980683663dee3cdd0acc9559126e2d741a6849f3f9bb8b1a69c7acb126e5"
+    }
+  ],
+  "raw_sheet_apis": [],
+  "paths": {
+    "source_html": "pages/SYYLwefL8imZYXkivwecR7X2ntc/source.html",
+    "rendered_html": "pages/SYYLwefL8imZYXkivwecR7X2ntc/rendered.html",
+    "text": "pages/SYYLwefL8imZYXkivwecR7X2ntc/content.txt",
+    "markdown": "pages/SYYLwefL8imZYXkivwecR7X2ntc/content.md",
+    "metadata": "pages/SYYLwefL8imZYXkivwecR7X2ntc/page.json"
+  }
+}

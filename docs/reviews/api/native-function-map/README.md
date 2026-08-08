@@ -2,7 +2,11 @@
 
 Status: active, docs-only/tooling-only
 Created: 2026-06-13
-Primary reverse baseline: `references/doloc-town/reverse/builds/23465763_workshop_38581E`
+Generated data baseline: `references/doloc-town/reverse/builds/23465763_workshop_38581E`
+Current reverse reference: `references/doloc-town/reverse/builds/23762374_public_C416D4`
+Latest baseline audit: [20260617-0003 Reverse Baseline 23762374 Audit](../2026/20260617-0003-reverse-baseline-23762374-audit.md)
+
+The checked-in generated JSON under `data/` still reflects the generated data baseline above. Use it as historical coverage data until it is deliberately regenerated for the current reverse reference.
 
 This directory contains a generated symbol/call-graph data layer and a static browser workbench for Doloc Town native function-map review.
 
@@ -32,6 +36,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/scripts/build-native-f
 ```
 
 The generator reads only local reverse metadata, map indexes, and DTMAPI-authored review reports. It does not copy decompiled method bodies or official binaries.
+
+To regenerate the workbench for the current reverse reference:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/scripts/build-native-function-map-data.ps1 -BuildRoot references/doloc-town/reverse/builds/23762374_public_C416D4
+```
 
 ## Open Workbench
 

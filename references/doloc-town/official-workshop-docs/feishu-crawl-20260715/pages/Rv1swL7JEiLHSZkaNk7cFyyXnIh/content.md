@@ -1,0 +1,21 @@
+# 02 道具数据模板
+
+Source: <https://ka7deoo0opr.feishu.cn/wiki/Rv1swL7JEiLHSZkaNk7cFyyXnIh>
+
+Source modified label: 4月15日修改
+
+## 道具数据模板
+
+- 示例模组提供了不同功能类型道具的模板。
+
+![Official document image](images/rendered-01-4.png)
+
+- 示例路径（官方示例模组，获取方式见查看示例模组）
+
+【创意工坊文件根目录】\Content\04 其他内容示例\01 道具数据模板\_IGNORE
+
+- 注意：_IGNORE文件夹下的文件不会被加载到模组，正式使用时请避开此命名。
+
+## Links
+
+- [查看示例模组](https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d)

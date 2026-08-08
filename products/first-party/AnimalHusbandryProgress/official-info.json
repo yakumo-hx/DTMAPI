@@ -1,0 +1,17 @@
+{
+  "name": "DTMAPI牧铃隐藏产物进度",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "依赖 DTMAPI。\n牧铃动物查看界面显示只读隐藏产物进度，可以自行调整颜色。",
+  "tags": ["Mod", "Gameplay", "Functional", "DTMAPI", "Chinese"],
+  "localized_name": {
+    "schinese": "DTMAPI牧铃隐藏产物进度",
+    "tchinese": "DTMAPI牧鈴隱藏產物進度",
+    "english": "DTMAPI Animal Bell Hidden Produce Progress"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI。\n牧铃动物查看界面显示只读隐藏产物进度，可以自行调整颜色。",
+    "tchinese": "依賴 DTMAPI。\n牧鈴動物查看介面顯示唯讀隱藏產物進度，可以自行調整顏色。",
+    "english": "Requires DTMAPI. Shows read-only hidden produce progress in the animal bell viewer and lets you customize the color."
+  }
+}

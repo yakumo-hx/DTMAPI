@@ -1,0 +1,20 @@
+[
+  {
+    "id": "vegetable_class", //食材组ID
+    "extra_items": [
+      "crop0" //道具ID
+    ]
+  },
+  {
+    "id": "mushroom_class", //食材组ID
+    "extra_items": [
+      "crop0" //道具ID
+    ]
+  },
+  {
+    "id": "meat_vegetable_class", //食材组ID
+    "extra_items": [
+      "crop0" //道具ID
+    ]
+  }
+]

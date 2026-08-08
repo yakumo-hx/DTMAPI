@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "sourceDirectory": "src",
+  "contentDirectory": "Content",
+  "assemblyName": "DTMAPI.Mine",
+  "publish": {
+    "tags": [
+      "Mod",
+      "Utility",
+      "Functional",
+      "DTMAPI",
+      "Machine",
+      "Chinese"
+    ],
+    "localizedName": {
+      "schinese": "DTMAPI 矿井",
+      "tchinese": "DTMAPI 礦井",
+      "english": "DTMAPI Mine"
+    },
+    "localizedDescription": {
+      "schinese": "依赖 DTMAPI。\n新增纯电力矿井，按会话内游戏时间生产矿物到自有储物格。",
+      "tchinese": "依賴 DTMAPI。\n新增純電力礦井，按工作階段內遊戲時間生產礦物到自有儲物格。",
+      "english": "Requires DTMAPI.\nAdds a pure-electric Mine that produces minerals into its own native storage on a session-derived cycle."
+    }
+  },
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-mine-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  }
+}
