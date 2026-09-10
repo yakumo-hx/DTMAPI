@@ -19,6 +19,7 @@ namespace DTMAPI.Core.Runtime
             LogsPath = Path.Combine(DtmApiPath, "logs");
             ReportsPath = Path.Combine(DtmApiPath, "reports");
             ConfigPath = Path.Combine(DtmApiPath, "config");
+            GlobalDataPath = Path.Combine(DtmApiPath, "global-data");
             EvidencePath = Path.Combine(DtmApiPath, "evidence");
             PlayerDoctorPath = Path.Combine(DtmApiPath, "tools", "player-doctor", "dtmapi-player-doctor.exe");
             PlayerDoctorJsonReportPath = Path.Combine(ReportsPath, "player-doctor-latest.json");
@@ -35,6 +36,7 @@ namespace DTMAPI.Core.Runtime
         public string LogsPath { get; }
         public string ReportsPath { get; }
         public string ConfigPath { get; }
+        public string GlobalDataPath { get; }
         public string EvidencePath { get; }
         public string PlayerDoctorPath { get; }
         public string PlayerDoctorJsonReportPath { get; }

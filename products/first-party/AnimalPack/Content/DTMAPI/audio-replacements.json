@@ -1,0 +1,82 @@
+[
+  {
+    "id": "hatch-pet-child",
+    "category": "AnimalVoice",
+    "speciesId": "hatch",
+    "stage": "child",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_CHICKEN_CHILD",
+    "file": "Content/Audio/hatch_pet_young.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "hatch-pet-adult",
+    "category": "AnimalVoice",
+    "speciesId": "hatch",
+    "stage": "adult",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_CHICKEN",
+    "file": "Content/Audio/hatch_pet_adult.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "drecko-pet-child",
+    "category": "AnimalVoice",
+    "speciesId": "drecko",
+    "stage": "child",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_SHEEP_CHILD",
+    "file": "Content/Audio/drecko_pet_young.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "drecko-pet-adult",
+    "category": "AnimalVoice",
+    "speciesId": "drecko",
+    "stage": "adult",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_SHEEP",
+    "file": "Content/Audio/drecko_pet_adult.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "mole-pet-child",
+    "category": "AnimalVoice",
+    "speciesId": "mole",
+    "stage": "child",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_PANGOLIN",
+    "file": "Content/Audio/mole_pet_young.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "mole-pet-adult",
+    "category": "AnimalVoice",
+    "speciesId": "mole",
+    "stage": "adult",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_PANGOLIN",
+    "file": "Content/Audio/mole_pet_adult.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "oilfloater-pet-child",
+    "category": "AnimalVoice",
+    "speciesId": "oilfloater",
+    "stage": "child",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD",
+    "file": "Content/Audio/oilfloater_pet_young.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  },
+  {
+    "id": "oilfloater-pet-adult",
+    "category": "AnimalVoice",
+    "speciesId": "oilfloater",
+    "stage": "adult",
+    "nativeSoundEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA",
+    "file": "Content/Audio/oilfloater_pet_adult.wav",
+    "suppressNativeWhenReady": true,
+    "cooldownMilliseconds": 80
+  }
+]

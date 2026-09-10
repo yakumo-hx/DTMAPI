@@ -1,8 +1,10 @@
-# ISSUE-017: Official Mod UI Source Transaction
+﻿# ISSUE-017: Official Mod UI Source Transaction
+
+- State: `verified`
+- Current boundary: Official Mod-page opening is preview-only; final player QA proves one successful completed native close queues one next-frame source refresh with zero new warning.
 
 ## State
 
-`verified`
 
 The source authority boundary is covered by Unit tests and the rebuilt player
 candidate. A real official Mod-page open/close produced one preview, one close

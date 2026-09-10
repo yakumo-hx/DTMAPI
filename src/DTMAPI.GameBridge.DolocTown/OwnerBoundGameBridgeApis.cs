@@ -241,7 +241,6 @@ namespace DTMAPI.GameBridge.DolocTown
             public IReadOnlyList<TeleportDestination> GetDestinations() { EnsureActive(); return inner.GetDestinations(); }
             public TeleportSnapshot GetCurrentSnapshot() { EnsureActive(); return inner.GetCurrentSnapshot(); }
             public TeleportResult Teleport(IManifest owner, string destinationId) { EnsureOwner(owner); return inner.Teleport(Owner, destinationId); }
-            public TeleportCsvExportResult ExportDestinationsCsv(IManifest owner) { EnsureOwner(owner); return inner.ExportDestinationsCsv(Owner); }
             public BridgeFeatureStatus GetStatus() { EnsureActive(); return inner.GetStatus(); }
         }
 

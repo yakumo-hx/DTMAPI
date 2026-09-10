@@ -28,14 +28,33 @@ Assert-SourceContains -Path $sessionSource -Patterns @(
     'Environment.SetEnvironmentVariable("TEMP", RootPath)',
     'DeleteDirectoryWithRetries(RootPath)'
 )
-foreach ($project in @('DTMAPI.UnitTests', 'DTMAPI.QaUnitTests')) {
-    Assert-SourceContains -Path (Join-Path $repo "tests\$project\$project.csproj") -Patterns @('..\Shared\DtmApiTestSession.cs')
-    Assert-SourceContains -Path (Join-Path $repo "tests\$project\Program.cs") -Patterns @(
-        'DtmApiTestSession.Start(',
-        'testSession.MarkSucceeded()',
-        'testSession.MarkFailed(ex)'
-    )
+$unitSuiteProps = Join-Path $repo 'tests\DTMAPI.UnitTests\Suite.props'
+Assert-SourceContains -Path $unitSuiteProps -Patterns @(
+    '$(MSBuildThisFileDirectory)SuiteEntry.cs',
+    '$(MSBuildThisFileDirectory)../Shared/DtmApiTestSession.cs'
+)
+Assert-SourceContains -Path (Join-Path $repo 'tests\DTMAPI.UnitTests\SuiteEntry.cs') -Patterns @(
+    'using DtmApiTestSession session = DtmApiTestSession.Start("Unit-" + suite)',
+    'session.MarkSucceeded()',
+    'session.MarkFailed(exception)'
+)
+$unitSuiteMap = Get-Content -Raw -LiteralPath (Join-Path $repo 'tests\DTMAPI.UnitTests\suites.json') | ConvertFrom-Json
+if (@($unitSuiteMap.suites).Count -eq 0) { throw 'Test artifact governance requires registered Unit suites.' }
+foreach ($suite in $unitSuiteMap.suites) {
+    $suiteProjectPath = Join-Path $repo ([string]$suite.project)
+    [xml]$suiteProject = Get-Content -Raw -LiteralPath $suiteProjectPath
+    $sessionImports = @($suiteProject.Project.Import | Where-Object {
+        [string]::Equals([IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $suiteProjectPath) ([string]$_.Project))),
+            [IO.Path]::GetFullPath($unitSuiteProps), [StringComparison]::OrdinalIgnoreCase)
+    })
+    if ($sessionImports.Count -ne 1) { throw "Unit suite '$($suite.id)' must import the shared session-owning Suite.props exactly once." }
 }
+Assert-SourceContains -Path (Join-Path $repo 'tests\DTMAPI.QaUnitTests\DTMAPI.QaUnitTests.csproj') -Patterns @('..\Shared\DtmApiTestSession.cs')
+Assert-SourceContains -Path (Join-Path $repo 'tests\DTMAPI.QaUnitTests\Program.cs') -Patterns @(
+    'DtmApiTestSession.Start(',
+    'testSession.MarkSucceeded()',
+    'testSession.MarkFailed(ex)'
+)
 Assert-SourceContains -Path (Join-Path $repo 'tools\scripts\test.ps1') -Patterns @(
     "Join-Path `$repo 'tmp\test-runs'",
     'DTMAPI_TEST_TEMP_ROOT',
@@ -59,7 +78,10 @@ Assert-SourceContains -Path (Join-Path $repo 'tools\scripts\test-batch6-autofish
     'Batch 6 AutoFishing Manager lifecycle retirement tests passed.'
 )
 Assert-SourceContains -Path (Join-Path $repo 'tools\scripts\run-game-smoke.ps1') -Patterns @(
-    "[string] `$FatalWindowProcessDumpMode = 'None'",
+    "[string] `$FatalWindowProcessDumpMode = 'None'"
+)
+$smokeDiagnosticsPath = Join-Path $PSScriptRoot 'game-smoke\core\diagnostics.ps1'
+Assert-SourceContains -Path $smokeDiagnosticsPath -Patterns @(
     "'DTMAPI.DumpCapture'",
     "'DTMAPI.ProcessDumpEvidence'",
     'Copy-DtmApiVerifiedFile',
@@ -156,20 +178,20 @@ if ($RunCleanupFixture) {
 
         $tokens = $null
         $parseErrors = $null
-        $smokeAst = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Join-Path $repo 'tools\scripts\run-game-smoke.ps1'),
+        $diagnosticsAst = [System.Management.Automation.Language.Parser]::ParseFile(
+            $smokeDiagnosticsPath,
             [ref]$tokens,
             [ref]$parseErrors)
         if ($parseErrors.Count -gt 0) {
-            throw 'Could not parse run-game-smoke.ps1 for the no-capture dump lifecycle fixture.'
+            throw 'Could not parse game-smoke/core/diagnostics.ps1 for the no-capture dump lifecycle fixture.'
         }
         foreach ($functionName in @('Invoke-DtmApiDumpTempScavenge', 'Invoke-SmokeFatalProcessDump')) {
-            $definition = $smokeAst.Find({
+            $definition = $diagnosticsAst.Find({
                 param($node)
                 $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName
             }, $true)
             if (-not $definition) {
-                throw "Could not find $functionName in run-game-smoke.ps1."
+                throw "Could not find $functionName in game-smoke/core/diagnostics.ps1."
             }
             . ([ScriptBlock]::Create($definition.Extent.Text))
         }

@@ -1,116 +1,59 @@
 # DTMAPI Update Records
 
-This folder is the durable implementation lifecycle ledger for DTMAPI. Use one Update record to trace a change from scope through files, validation, evidence, rollback, and final state.
+Each non-trivial implementation owns one `YYYY/YYYYMMDD-NNNN-short-slug.md` and one monthly row, maintained through corrections and acceptance. Pure discussion creates no file; typo-only edits may skip a record. Detailed lifecycle exceptions are in [governance](../workflows/document-governance.md).
 
-## Rule
+## Start and finish
 
-Every non-trivial update must add one record under this folder and link it from the matching monthly ledger `INDEX-YYYY-MM.md`. The root `INDEX.md` and year `INDEX-YYYY.md` files are navigation only.
+Copy the template below, assign an unused daily ID, and record scope plus acceptance before implementation. Keep required headings exactly as shown; write `not-run` for missing tests. Logs/hashes live in their evidence owner and are linked, not pasted repeatedly.
 
-Create a record when a change touches:
+Create the monthly row with the sync script (area/summary required only for a new row), then omit them when updating status:
 
-- runtime, bootstrap, GameBridge, config menu, input, mod loading, Workshop loading, installer, packaging, public API, migrated mods, docs that change project direction, or project assets used by runtime/package output;
-- any bug fix or regression investigation;
-- any user-visible behavior, mod naming convention, or install layout.
-
-Small typo-only documentation edits may skip a record if they do not change project state.
-
-## File Naming
-
-Use:
-
-```text
-docs/updates/YYYY/YYYYMMDD-NNNN-short-slug.md
+```powershell
+tools/scripts/sync-update-ledger.ps1 -UpdatePath docs/updates/YYYY/YYYYMMDD-NNNN-short-slug.md -Area "product/domain" -Summary "Concrete change."
+tools/scripts/sync-update-ledger.ps1 -UpdatePath docs/updates/YYYY/YYYYMMDD-NNNN-short-slug.md
+tools/scripts/check-doc-governance.ps1
 ```
 
-Example:
-
-```text
-docs/updates/2026/20260530-0001-main-menu-config-entry.md
-```
-
-`NNNN` is per-day sequence order. Keep slugs short and factual.
-
-## Required Fields For New Records
-
-Each record should include:
-
-- Update ID
-- Date
-- Lifecycle Status: proposed / in-progress / implemented / verified / blocked / reverted / superseded
-- Validation Level: not-run / docs / source / unit / runtime / player; comma-separated when needed
-- Runtime Validation: not-required / not-run / passed / failed / blocked / partial
-- Related Issue State: none / open / monitoring / mitigated / verified / closed / deferred
-- Source request and relevant review
-- Summary
-- User-visible impact
-- Changed files
-- Validation
-- Evidence links
-- Related debug issues, hook-map rows, smoke-matrix rows, or API matrix rows
-- Rollback notes
-- Follow-up
-
-Historical records and their slash-separated status strings remain unchanged. New records follow `docs/workflows/document-governance.md`.
-
-## Evidence Policy
-
-Do not paste large logs into update records. Link to:
-
-- `docs/debug/evidence/...`
-- `docs/debug/regressions/smoke-matrix.md`
-- `docs/hook-map/README.md`
-- `docs/api/public-api-matrix.md`
-- local package/report paths when relevant
-
-If validation was not run, say so explicitly.
+The script derives ID/date and four status columns from the Update, preserves the existing human summary/area and other rows, and never changes root/year indexes. `-Check` verifies the projection without writing. Do not create parallel status lists.
 
 ## Template
 
 ```md
-# YYYYMMDD-NNNN: Short Title
+# YYYYMMDD-NNNN: Short title
 
 ## Metadata
 
-- Update ID:
-- Date:
-- Lifecycle Status:
-- Validation Level:
-- Runtime Validation:
-- Related Issue State:
-- Source:
+- Update ID: `YYYYMMDD-NNNN`
+- Date: `YYYY-MM-DD`
+- Lifecycle Status: `in-progress`
+- Validation Level: `not-run`
+- Runtime Validation: `not-run`
+- Related Issue State: `none`
+- Source: Request and relevant Review link, or why no new Review is needed.
 
 ## Summary
 
-- 
-
-## User-Visible Impact
-
-- 
+Expected user-visible change and scope.
 
 ## Changed Files
 
-- 
+Affected files, grouped by purpose.
 
 ## Validation
 
-- 
+Required checks; actual passed/failed/not-run results and remaining gaps.
 
 ## Evidence
 
-- 
-
-## Related Records
-
-- Debug:
-- Hook map:
-- Smoke matrix:
-- API matrix:
+Relevant logs/reports/package or smoke links. No game run means no smoke row.
 
 ## Rollback Notes
 
-- 
+How to reverse this change and any data limitations.
 
 ## Follow-Up
 
-- 
+Remaining work, or none.
 ```
+
+Allowed field values and historical/monthly policy are in [governance](../workflows/document-governance.md#metadata-and-history). A verified Update does not automatically close an Issue or prove publication/user acceptance.

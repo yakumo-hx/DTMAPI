@@ -4,12 +4,14 @@ namespace DTMAPI.Authoring.Contracts;
 
 public static class AuthorSdkContract
 {
-    public const string SdkVersion = "0.1.0";
-    // The SDK compiles against the frozen 0.5.5 public API surface, while a
-    // package may truthfully require a newer Runtime for its admission policy.
+    public const string SdkVersion = "0.7.0";
+    // Legacy target/default values retained for existing contracts. Current
+    // project selection and supported package combinations come from target-catalog.json.
+    // The frozen payload's SDK version is independent of the running tool version.
     public const string TargetRuntimeVersion = "0.5.5";
-    public const string HighestSupportedRuntimeVersion = "0.6.1";
+    public const string HighestSupportedRuntimeVersion = "0.7.0";
     public const int AuthorProjectSchemaVersion = 2;
+    public const int DependencyAuthorProjectSchemaVersion = 3;
     public const int LegacyAuthorProjectSchemaVersion = 1;
     public const int CompatibilitySchemaVersion = 1;
     public const int PackageReportSchemaVersion = 2;
@@ -18,9 +20,23 @@ public static class AuthorSdkContract
     public const int AdvancedReferenceReceiptSchemaVersion = 1;
     public const int DeploymentSchemaVersion = 2;
     public const int DeploymentJournalSchemaVersion = 3;
+    public const int OfficialDeploymentJournalSchemaVersion = 4;
     public const string AdvancedReferenceReceiptKind = "DTMAPI.AdvancedCodeMod.ReferenceReceipt";
     public const string AdvancedReferenceReceiptPath = "Content/DTMAPI/dtmapi-advanced-references.json";
     public const string PackageManifestPath = "Content/DTMAPI/manifest.json";
+}
+
+public static class AuthorSessionContract
+{
+    public const int SchemaVersion = 2;
+    public const int ProtocolMajor = 1;
+    public const int MinimumMinor = 0;
+    public const int MaximumMinor = 0;
+    public const string MinimumRuntimeVersion = "0.6.1";
+    public const string LegacyWireVersion = "0.5.5";
+    public const string SnapshotCapability = "get-source-snapshot/1";
+    public const string ReloadCapability = "reload-content/1";
+    public const string CommandCapability = "execute-command/1";
 }
 
 public enum AuthorProjectKind
@@ -67,6 +83,10 @@ public sealed class CommandReport
 
 public sealed class RuntimeManifest
 {
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? NativeContractVersion { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? DependencyContractVersion { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Author { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
@@ -87,6 +107,27 @@ public sealed class RuntimeManifestDependency
     public string UniqueID { get; set; } = string.Empty;
     public string MinimumVersion { get; set; } = string.Empty;
     public bool Required { get; set; } = true;
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public DependencyVersionRange? VersionRange { get; set; }
+}
+
+public sealed class DependencyVersionRange
+{
+    [System.Text.Json.Serialization.JsonPropertyName("minimumInclusive")]
+    public string MinimumInclusive { get; set; } = string.Empty;
+    [System.Text.Json.Serialization.JsonPropertyName("maximumExclusive")]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? MaximumExclusive { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("includePrerelease")]
+    public bool IncludePrerelease { get; set; }
+}
+
+public sealed class ManagedAuthorReference
+{
+    public string Path { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string Distribution { get; set; } = string.Empty;
+    public List<string> LicenseFiles { get; set; } = new();
 }
 
 public sealed class AuthorProject
@@ -100,13 +141,95 @@ public sealed class AuthorProject
     public string ContentDirectory { get; set; } = "content";
     public string AssemblyName { get; set; } = string.Empty;
     public AdvancedAuthorProject? Advanced { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public NativeAuthorReferences? NativeReferences { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<ManagedAuthorReference>? ManagedReferences { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AuthorBuildSettings? Build { get; set; }
     public AuthorPublishMetadata Publish { get; set; } = new();
+}
+
+public sealed class AuthorBuildSettings
+{
+    public string WorkspaceRoot { get; set; } = ".";
+    public List<string> ProjectReferences { get; set; } = new();
+    public SortedDictionary<string, AuthorProjectReferenceMetadata> ProjectReferenceMetadata { get; set; } = new(StringComparer.Ordinal);
+    public List<AuthorEmbeddedResource> EmbeddedResources { get; set; } = new();
+    public List<AuthorContentFile> ContentFiles { get; set; } = new();
+    public List<string> GeneratedSourceFiles { get; set; } = new();
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AuthorRestoreSettings? Restore { get; set; }
+}
+
+public sealed class AuthorProjectReferenceMetadata
+{
+    public string Role { get; set; } = "private-managed";
+    public string Distribution { get; set; } = "self-authored";
+    public List<string> LicenseFiles { get; set; } = new();
+}
+
+public sealed class AuthorRestoreSettings
+{
+    public string LockFile { get; set; } = "packages.lock.json";
+    public string CacheDirectory { get; set; } = "obj/dtmapi-author/packages";
+    public List<string> Sources { get; set; } = new();
+    public SortedDictionary<string, string> Packages { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    // Explicit local license material, keyed by every package ID in the lock.
+    public SortedDictionary<string, List<string>> LicenseFiles { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class AuthorEmbeddedResource
+{
+    public string Path { get; set; } = "";
+    public string LogicalName { get; set; } = "";
+}
+
+public sealed class AuthorContentFile
+{
+    public string Path { get; set; } = "";
+    public string TargetPath { get; set; } = "";
+}
+
+public sealed class AuthorLibraryProject
+{
+    public int SchemaVersion { get; set; } = 1;
+    public string AssemblyName { get; set; } = "";
+    public string Version { get; set; } = "0.1.0";
+    public string ApiTarget { get; set; } = "0.7.0";
+    public string TargetFramework { get; set; } = "netstandard2.0";
+    public string Role { get; set; } = "private-managed";
+    public string SourceDirectory { get; set; } = "src";
+    public List<ManagedAuthorReference> ManagedReferences { get; set; } = new();
+    public AuthorBuildSettings Build { get; set; } = new();
 }
 
 public sealed class AdvancedAuthorProject
 {
     public string ReferencePolicyId { get; set; } = string.Empty;
     public List<string> References { get; set; } = new();
+}
+
+public sealed class NativeAuthorReferences
+{
+    public string GameRoot { get; set; } = "";
+    public List<string> References { get; set; } = new();
+    public string HarmonyOwner { get; set; } = "";
+    public List<NativeAuthorMember> RequiredMembers { get; set; } = new();
+}
+
+public sealed class NativeAuthorMember
+{
+    // The shared reader strictly validates structured V2 rows and rejects mixed fields.
+    [JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? StructuredFields { get; set; }
+    public string AssemblyIdentity { get; set; } = "";
+    public string DeclaringType { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public string Name { get; set; } = "";
+    public bool IsStatic { get; set; }
+    public string ReturnType { get; set; } = "";
+    public string[] ParameterTypes { get; set; } = System.Array.Empty<string>();
 }
 
 public sealed class AuthorPublishMetadata

@@ -104,7 +104,7 @@ function Assert-ReleaseContractTrue {
 function Assert-ReleaseContractExactArtifactRoot {
     param(
         [Parameter(Mandatory = $true)] [string] $Label,
-        [Parameter(Mandatory = $true)] [string] $Root,
+        [Parameter(Mandatory = $true)] [AllowEmptyString()] [string] $Root,
         [Parameter(Mandatory = $true)] [string[]] $ExpectedCatalogIds
     )
 
@@ -128,10 +128,10 @@ function Assert-ReleaseContractExactArtifactRoot {
     $expectedSorted = @($ExpectedCatalogIds | Sort-Object)
     $difference = @(Compare-Object -ReferenceObject $expectedSorted -DifferenceObject $actualCatalogIds)
     Assert-ReleaseContractTrue `
-        -Label ("{0} must contain exactly the nine current public ProductNative artifact directories. Expected=[{1}] Actual=[{2}]" -f
+        -Label ("{0} must contain exactly the Catalog-selected current public ProductNative artifact directories. Expected=[{1}] Actual=[{2}]" -f
             $Label, ($expectedSorted -join ', '), ($actualCatalogIds -join ', ')) `
-        -Condition ($difference.Count -eq 0 -and $actualCatalogIds.Count -eq 9)
-    foreach ($forbiddenCatalogId in @('more-equipment-slots', 'strong-planting-gun', 'mine')) {
+        -Condition ($difference.Count -eq 0 -and $actualCatalogIds.Count -eq $expectedSorted.Count)
+    foreach ($forbiddenCatalogId in @('strong-planting-gun', 'mine')) {
         Assert-ReleaseContractTrue `
             -Label "$Label must not contain excluded builder output '$forbiddenCatalogId'." `
             -Condition (-not ($actualCatalogIds -ccontains $forbiddenCatalogId))
@@ -435,7 +435,7 @@ function Assert-ReleaseContractNoWarningOrErrorDiagnostics {
 function Test-ReleaseContractAuthorSdkArtifact {
     param(
         [Parameter(Mandatory = $true)] [string] $Label,
-        [Parameter(Mandatory = $true)] [string] $ArtifactRoot,
+        [Parameter(Mandatory = $true)] [AllowEmptyString()] [string] $ArtifactRoot,
         [Parameter(Mandatory = $true)] [string] $ProjectRoot,
         [Parameter(Mandatory = $true)] [string] $UniqueId,
         [Parameter(Mandatory = $true)] [string] $AssemblyName,
@@ -465,19 +465,29 @@ function Test-ReleaseContractAuthorSdkArtifact {
         return $null
     }
 
-    $buildReport = Read-ReleaseContractJson -Path (Join-Path $root 'build-report.json')
     $packReport = Read-ReleaseContractJson -Path (Join-Path $root 'pack-report.json')
     $summary = Read-ReleaseContractJson -Path (Join-Path $root 'summary.json')
     $validateReport = Read-ReleaseContractJson -Path (Join-Path $root 'validate-report.json')
-    if ($null -eq $buildReport -or $null -eq $packReport -or $null -eq $summary -or $null -eq $validateReport) {
+    if ($null -eq $packReport -or $null -eq $summary -or $null -eq $validateReport) {
         return $null
     }
-
-    foreach ($reportCase in @(
+    $summaryVersion = [int](Get-ReleaseContractValue $summary 'schemaVersion')
+    if ($summaryVersion -notin @(1, 2)) {
+        Add-ReleaseContractFailure "$Label has an unsupported product summary schema: $summaryVersion"
+        return $null
+    }
+    $buildReport = $null
+    $reportCases = @(
         [pscustomobject]@{ Name = 'validate'; Report = $validateReport },
-        [pscustomobject]@{ Name = 'build'; Report = $buildReport },
         [pscustomobject]@{ Name = 'pack'; Report = $packReport }
-    )) {
+    )
+    if ($summaryVersion -eq 1) {
+        $buildReport = Read-ReleaseContractJson -Path (Join-Path $root 'build-report.json')
+        if ($null -eq $buildReport) { return $null }
+        $reportCases += [pscustomobject]@{ Name = 'build'; Report = $buildReport }
+    }
+
+    foreach ($reportCase in $reportCases) {
         Assert-ReleaseContractEqual -Label "$Label $($reportCase.Name) command" -Actual (Get-ReleaseContractValue $reportCase.Report 'command') -Expected $reportCase.Name
         Assert-ReleaseContractEqual -Label "$Label $($reportCase.Name) success" -Actual (Get-ReleaseContractValue $reportCase.Report 'success') -Expected 'True'
         Assert-ReleaseContractEqual -Label "$Label $($reportCase.Name) SDK public-API target" -Actual (Get-ReleaseContractValue $reportCase.Report 'targetRuntimeVersion') -Expected '0.5.5'
@@ -485,8 +495,16 @@ function Test-ReleaseContractAuthorSdkArtifact {
         Assert-ReleaseContractNoWarningOrErrorDiagnostics -Report $reportCase.Report -Label "$Label $($reportCase.Name) report"
     }
 
-    $buildValues = Get-ReleaseContractValue $buildReport 'values'
     $packValues = Get-ReleaseContractValue $packReport 'values'
+    $buildValues = if ($summaryVersion -eq 2) { $packValues } else { Get-ReleaseContractValue $buildReport 'values' }
+    $reportedBuildPath = if ($summaryVersion -eq 2) { Get-ReleaseContractValue $packValues 'buildOutputPath' } else { Get-ReleaseContractValue $buildReport 'outputPath' }
+    $reportedBuildHash = if ($summaryVersion -eq 2) { Get-ReleaseContractValue $packValues 'buildOutputSha256' } else { Get-ReleaseContractValue $buildReport 'sha256' }
+    if ($summaryVersion -eq 2) {
+        $inputHash = [string](Get-ReleaseContractValue $packValues 'buildInputSha256')
+        if ($inputHash -cnotmatch '^[a-f0-9]{64}$') { Add-ReleaseContractFailure "$Label pack report has no valid build input identity." }
+        Assert-ReleaseContractEqual -Label "$Label summary build identity" -Actual (Get-ReleaseContractValue $summary 'buildInputSha256') -Expected $inputHash
+        Assert-ReleaseContractEqual -Label "$Label summary build report" -Actual (Get-ReleaseContractValue $summary 'buildReport') -Expected 'pack-report.json'
+    }
     $currentSourceTreeSha256 = Get-ReleaseContractSourceTreeSha256 -SourceRoot (Join-Path $ProjectRoot 'src')
     Assert-ReleaseContractEqual -Label "$Label SDK build/current source-tree SHA-256" `
         -Actual ([string](Get-ReleaseContractValue $buildValues 'sourceTreeSha256')).ToLowerInvariant() `
@@ -502,7 +520,7 @@ function Test-ReleaseContractAuthorSdkArtifact {
 
     $buildArtifact = Join-Path $root ("build\{0}" -f $EntryDll)
     $packagePath = Join-Path $root $PackageFile
-    Assert-ReleaseContractEqual -Label "$Label build report output" -Actual ([System.IO.Path]::GetFullPath([string](Get-ReleaseContractValue $buildReport 'outputPath'))) -Expected ([System.IO.Path]::GetFullPath($buildArtifact))
+    Assert-ReleaseContractEqual -Label "$Label build report output" -Actual ([System.IO.Path]::GetFullPath([string]$reportedBuildPath)) -Expected ([System.IO.Path]::GetFullPath($buildArtifact))
     Assert-ReleaseContractEqual -Label "$Label pack report output" -Actual ([System.IO.Path]::GetFullPath([string](Get-ReleaseContractValue $packReport 'outputPath'))) -Expected ([System.IO.Path]::GetFullPath($packagePath))
     Assert-ReleaseContractEqual -Label "$Label summary status" -Actual (Get-ReleaseContractValue $summary 'status') -Expected 'Passed'
     Assert-ReleaseContractEqual -Label "$Label summary UniqueID" -Actual (Get-ReleaseContractValue $summary 'uniqueId') -Expected $UniqueId
@@ -517,7 +535,7 @@ function Test-ReleaseContractAuthorSdkArtifact {
 
     $buildHash = Get-ReleaseContractSha256 -Label "$Label SDK build artifact" -Path $buildArtifact
     $packageHash = Get-ReleaseContractSha256 -Label "$Label SDK package" -Path $packagePath
-    Assert-ReleaseContractEqual -Label "$Label build report SHA-256" -Actual (Get-ReleaseContractValue $buildReport 'sha256') -Expected $buildHash
+    Assert-ReleaseContractEqual -Label "$Label build report SHA-256" -Actual $reportedBuildHash -Expected $buildHash
     Assert-ReleaseContractEqual -Label "$Label summary entry SHA-256" -Actual (Get-ReleaseContractValue $summary 'entryDllSha256') -Expected $buildHash
     Assert-ReleaseContractEqual -Label "$Label package report SHA-256" -Actual (Get-ReleaseContractValue $packReport 'sha256') -Expected $packageHash
     Assert-ReleaseContractEqual -Label "$Label summary package SHA-256" -Actual ([string](Get-ReleaseContractValue $summary 'packageSha256')).ToLowerInvariant() -Expected $packageHash
@@ -606,7 +624,8 @@ function Test-ReleaseContractAuthorSdkArtifact {
 }
 
 $catalog = Read-ReleaseContractJson -Path $catalogPath
-$publish = Read-ReleaseContractJson -Path $publishPath
+. "$PSScriptRoot/product-projections.ps1"
+$publish = Get-DtmApiPublishProjection -RepoRoot $repo
 if ($null -eq $catalog -or $null -eq $publish) {
     foreach ($failure in @($failures.ToArray())) {
         Write-Host "[FAIL] $failure" -ForegroundColor Red
@@ -637,8 +656,8 @@ if ($null -ne $versionAuthority) {
     $binaryVersion = [string](Get-ReleaseContractXmlValue -Document $versionAuthority -XPath '/Project/PropertyGroup/DtmApiBinaryFileVersion' -Label 'Runtime binary version')
     $assemblyCompatibilityVersion = [string](Get-ReleaseContractXmlValue -Document $versionAuthority -XPath '/Project/PropertyGroup/DtmApiAssemblyCompatibilityVersion' -Label 'Runtime assembly compatibility version')
     Assert-ReleaseContractEqual -Label 'Runtime authority schema' -Actual $authoritySchema -Expected '1'
-    Assert-ReleaseContractEqual -Label 'Runtime authority release version' -Actual $releaseVersion -Expected '0.6.1'
-    Assert-ReleaseContractEqual -Label 'Runtime authority binary version' -Actual $binaryVersion -Expected '0.6.1.0'
+    Assert-ReleaseContractEqual -Label 'Runtime authority release version' -Actual $releaseVersion -Expected '0.7.0'
+    Assert-ReleaseContractEqual -Label 'Runtime authority binary version' -Actual $binaryVersion -Expected '0.7.0.0'
     Assert-ReleaseContractEqual -Label 'Runtime authority assembly compatibility version' -Actual $assemblyCompatibilityVersion -Expected '0.5.3.0'
 }
 
@@ -648,10 +667,11 @@ $futureRuntime = Get-ReleaseContractValue $runtime 'futureTarget'
 Assert-ReleaseContractEqual -Label 'Catalog current Runtime release version' -Actual (Get-ReleaseContractValue $currentRuntime 'releaseVersion') -Expected $releaseVersion
 Assert-ReleaseContractEqual -Label 'Catalog current Runtime binary version' -Actual (Get-ReleaseContractValue $currentRuntime 'binaryFileVersion') -Expected $binaryVersion
 Assert-ReleaseContractEqual -Label 'Catalog current Runtime assembly identity' -Actual (Get-ReleaseContractValue $currentRuntime 'assemblyCompatibilityIdentity') -Expected $assemblyCompatibilityVersion
-Assert-ReleaseContractEqual -Label 'Catalog current Runtime source state' -Actual (Get-ReleaseContractValue $currentRuntime 'state') -Expected 'ReleaseCandidateSourceAuthority'
-Assert-ReleaseContractEqual -Label 'Catalog blocked Runtime target release version' -Actual (Get-ReleaseContractValue $futureRuntime 'releaseVersion') -Expected $releaseVersion
-Assert-ReleaseContractEqual -Label 'Catalog blocked Runtime target binary version' -Actual (Get-ReleaseContractValue $futureRuntime 'binaryFileVersion') -Expected $binaryVersion
-Assert-ReleaseContractEqual -Label 'Catalog blocked Runtime target assembly identity' -Actual (Get-ReleaseContractValue $futureRuntime 'assemblyCompatibilityIdentity') -Expected $assemblyCompatibilityVersion
+Assert-ReleaseContractEqual -Label 'Catalog current Runtime source state' -Actual (Get-ReleaseContractValue $currentRuntime 'state') -Expected 'CurrentSourceAuthority'
+Assert-ReleaseContractEqual -Label 'Catalog future Runtime target state' -Actual (Get-ReleaseContractValue $futureRuntime 'state') -Expected 'Unscheduled'
+Assert-ReleaseContractEqual -Label 'Catalog unscheduled Runtime target release version' -Actual (Get-ReleaseContractValue $futureRuntime 'releaseVersion') -Expected ''
+Assert-ReleaseContractEqual -Label 'Catalog unscheduled Runtime target binary version' -Actual (Get-ReleaseContractValue $futureRuntime 'binaryFileVersion') -Expected ''
+Assert-ReleaseContractEqual -Label 'Catalog unscheduled Runtime target assembly identity' -Actual (Get-ReleaseContractValue $futureRuntime 'assemblyCompatibilityIdentity') -Expected ''
 
 $runtimeAssemblyRoots = [ordered]@{
     'DTMAPI.BepInExBootstrap.dll' = 'src\DTMAPI.BepInExBootstrap'
@@ -745,8 +765,8 @@ $releaseArtifactIdSet = @{}
 foreach ($releaseArtifactCatalogId in $releaseArtifactCatalogIds) {
     $releaseArtifactIdSet[$releaseArtifactCatalogId] = $true
 }
-Assert-ReleaseContractEqual -Label '0.6 exact Advanced release artifact count' -Actual $releaseArtifactCatalogIds.Count -Expected 9
-if ($releaseArtifactCatalogIds.Count -eq 9) {
+Assert-ReleaseContractTrue -Label 'Current-published Advanced release artifact selection must not be empty.' -Condition ($releaseArtifactCatalogIds.Count -gt 0)
+if ($releaseArtifactCatalogIds.Count -gt 0) {
     Assert-ReleaseContractExactArtifactRoot -Label 'Primary Author SDK artifact root' -Root $AuthorSdkArtifactRoot -ExpectedCatalogIds $releaseArtifactCatalogIds
     Assert-ReleaseContractExactArtifactRoot -Label 'Repeat Author SDK artifact root' -Root $AuthorSdkRepeatArtifactRoot -ExpectedCatalogIds $releaseArtifactCatalogIds
 }
@@ -811,9 +831,9 @@ foreach ($product in $publicProducts) {
     Assert-ReleaseContractTrue -Label "$catalogId current minimum DTMAPI version is present." -Condition (-not [string]::IsNullOrWhiteSpace($sourceMinimum))
     Assert-ReleaseContractTrue -Label "$catalogId retained publishedVersion is recorded independently from current sourceVersion." -Condition (-not [string]::IsNullOrWhiteSpace([string](Get-ReleaseContractValue $product 'publishedVersion')))
     Assert-ReleaseContractTrue -Label "$catalogId retained published minimum remains recorded independently from the current source minimum." -Condition (-not [string]::IsNullOrWhiteSpace([string](Get-ReleaseContractValue $product 'publishedMinimumDtmApiVersion')))
-    $expectedMigrationTargetVersion = if ($catalogId -eq 'more-saves') { '1.0.1' } else { '1.0.0' }
+    $expectedMigrationTargetVersion = if ($catalogId -eq 'y-console') { '1.1.2' } elseif ($catalogId -in @('more-saves', 'more-equipment-slots')) { '1.0.1' } else { '1.0.0' }
     Assert-ReleaseContractEqual -Label "$catalogId migration target version" -Actual (Get-ReleaseContractValue $product 'targetVersion') -Expected $expectedMigrationTargetVersion
-    $expectedMigrationTargetMinimum = if ($catalogId -in @('auto-fishing', 'y-console', 'more-equipment-slots', 'more-saves')) { '0.6.0' } else { $productMigrationTargetMinimum }
+    $expectedMigrationTargetMinimum = if ($catalogId -eq 'y-console') { '0.6.1' } elseif ($catalogId -in @('auto-fishing', 'more-equipment-slots', 'more-saves')) { '0.6.0' } else { $productMigrationTargetMinimum }
     Assert-ReleaseContractEqual -Label "$catalogId migration target minimum" -Actual (Get-ReleaseContractValue $product 'targetMinimumDtmApiVersion') -Expected $expectedMigrationTargetMinimum
 
     $manifestPath = Join-Path $repo $sourceManifest.Replace('/', '\')

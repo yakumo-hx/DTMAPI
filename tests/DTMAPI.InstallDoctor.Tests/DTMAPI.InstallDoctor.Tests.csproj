@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net" Version="9.2.2" />
     <Compile Remove="Fixtures\**\*.cs" />
+    <Compile Include="..\Shared\PlatformPackageTargetMatrix.cs" Link="PlatformPackageTargetMatrix.cs" />
     <ProjectReference Include="..\..\src\DTMAPI.InstallDoctor\DTMAPI.InstallDoctor.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.PlayerDoctor\DTMAPI.PlayerDoctor.csproj" />
     <ProjectReference Include="Fixtures\CodeModFixture\CodeModFixture.csproj" />

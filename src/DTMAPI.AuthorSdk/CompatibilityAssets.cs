@@ -1,4 +1,5 @@
 using DTMAPI.Authoring.Contracts;
+using DTMAPI.Internal.Authoring;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -25,48 +26,52 @@ internal sealed class CompatibilityAssets
     public string AbstractionsPath { get; }
     public IReadOnlyList<string> ReferencePaths { get; }
 
-    public static CompatibilityAssets Resolve(string requestedRoot)
+    public static CompatibilityAssets Resolve(string requestedRoot) => Resolve(requestedRoot, AuthorApiTargetCatalog.Current.DefaultTarget);
+
+    public static CompatibilityAssets Resolve(string requestedRoot, string apiTarget)
     {
+        AuthorApiTarget target = AuthorApiTargetCatalog.Current.GetAvailable(apiTarget);
         var candidates = new List<string>();
         if (!string.IsNullOrWhiteSpace(requestedRoot))
             candidates.Add(requestedRoot);
         string environmentRoot = Environment.GetEnvironmentVariable("DTMAPI_AUTHOR_COMPAT_ROOT") ?? string.Empty;
-        if (environmentRoot.Length > 0)
+        if (candidates.Count == 0 && environmentRoot.Length > 0)
             candidates.Add(environmentRoot);
-        candidates.Add(Path.Combine(AppContext.BaseDirectory, "compatibility", AuthorSdkContract.TargetRuntimeVersion));
+        if (candidates.Count == 0)
+            candidates.Add(Path.Combine(AppContext.BaseDirectory, target.PayloadPath));
 
         foreach (string candidate in candidates.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            foreach (string expanded in Expand(candidate))
+            foreach (string expanded in Expand(candidate, target))
             {
                 if (File.Exists(Path.Combine(expanded, "compatibility.json")))
-                    return Load(expanded);
+                    return Load(expanded, target);
             }
         }
 
         throw new InvalidDataException(
-            "The fixed Runtime 0.5.5 compatibility payload was not found. " +
+            "The frozen API target " + target.ApiTarget + " compatibility payload was not found. " +
             "Use the self-contained SDK distribution or pass --compatibility-root. The SDK never reads DTMAPI.Abstractions.dll from a player game install.");
     }
 
-    private static IEnumerable<string> Expand(string path)
+    private static IEnumerable<string> Expand(string path, AuthorApiTarget target)
     {
         yield return path;
-        yield return Path.Combine(path, AuthorSdkContract.TargetRuntimeVersion);
-        yield return Path.Combine(path, "compatibility", AuthorSdkContract.TargetRuntimeVersion);
+        yield return Path.Combine(path, target.ApiTarget);
+        yield return Path.Combine(path, target.PayloadPath);
     }
 
-    private static CompatibilityAssets Load(string root)
+    private static CompatibilityAssets Load(string root, AuthorApiTarget target)
     {
-        CompatibilityPayloadContract contract = LoadEmbeddedContract();
+        CompatibilityPayloadContract contract = LoadEmbeddedContract(target);
         string fullRoot = Path.GetFullPath(root);
         string manifestPath = Path.Combine(fullRoot, contract.ReleaseManifestName);
         CompatibilityManifest manifest = JsonSerializer.Deserialize<CompatibilityManifest>(File.ReadAllText(manifestPath, Encoding.UTF8), JsonSupport.Tool)
             ?? throw new InvalidDataException("compatibility.json must contain one object.");
         if (manifest.SchemaVersion != AuthorSdkContract.CompatibilitySchemaVersion)
             throw new InvalidDataException("Unsupported compatibility schemaVersion.");
-        if (!manifest.SdkVersion.Equals(AuthorSdkContract.SdkVersion, StringComparison.Ordinal) || !manifest.TargetRuntimeVersion.Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal))
-            throw new InvalidDataException("Compatibility payload version mismatch; expected SDK 0.1.0 and Runtime 0.5.5.");
+        if (!manifest.SdkVersion.Equals(contract.SdkVersion, StringComparison.Ordinal) || !manifest.TargetRuntimeVersion.Equals(target.ApiTarget, StringComparison.Ordinal))
+            throw new InvalidDataException("Compatibility payload version mismatch for API target " + target.ApiTarget + ".");
         if (!manifest.AbstractionsAssemblyVersion.Equals(contract.AbstractionsAssemblyVersion, StringComparison.Ordinal)
             || !manifest.AbstractionsFileVersion.Equals(contract.AbstractionsFileVersion, StringComparison.Ordinal))
             throw new InvalidDataException("Compatibility payload abstraction versions do not match the SDK-embedded contract.");
@@ -155,22 +160,27 @@ internal sealed class CompatibilityAssets
         return new CompatibilityAssets(fullRoot, manifestPath, manifest, abstractions, references.OrderBy(path => path, StringComparer.Ordinal).ToArray());
     }
 
-    private static CompatibilityPayloadContract LoadEmbeddedContract()
+    private static CompatibilityPayloadContract LoadEmbeddedContract(AuthorApiTarget target)
     {
-        using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("DTMAPI.AuthorSdk.compatibility.contract.json")
+        using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(target.ContractResourceName)
             ?? throw new InvalidDataException("The SDK-embedded compatibility contract is missing.");
-        CompatibilityPayloadContract contract = JsonSerializer.Deserialize<CompatibilityPayloadContract>(stream, JsonSupport.Tool)
+        using var bytes = new MemoryStream();
+        stream.CopyTo(bytes);
+        byte[] contractBytes = bytes.ToArray();
+        if (!PathSafety.Sha256Bytes(contractBytes).Equals(target.ContractSha256, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("The SDK-embedded compatibility contract is not bound to API target " + target.ApiTarget + ".");
+        CompatibilityPayloadContract contract = JsonSerializer.Deserialize<CompatibilityPayloadContract>(contractBytes, JsonSupport.Tool)
             ?? throw new InvalidDataException("The SDK-embedded compatibility contract is invalid.");
         string[] exactKinds = { "abstractions", "license", "notice", "props", "reference" };
         if (contract.SchemaVersion != AuthorSdkContract.CompatibilitySchemaVersion
-            || !contract.SdkVersion.Equals(AuthorSdkContract.SdkVersion, StringComparison.Ordinal)
-            || !contract.TargetRuntimeVersion.Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
+            || !contract.SdkVersion.Equals(target.PayloadSdkVersion, StringComparison.Ordinal)
+            || !contract.TargetRuntimeVersion.Equals(target.ApiTarget, StringComparison.Ordinal)
             || !contract.NetstandardReferencePackage.Equals("NETStandard.Library", StringComparison.Ordinal)
             || !contract.NetstandardReferencePackageVersion.Equals("2.0.3", StringComparison.Ordinal)
             || !contract.NetstandardReferenceInventoryAlgorithm.Equals(AuthorFileTreeDigest.AlgorithmId, StringComparison.Ordinal)
             || !contract.ReleaseManifestName.Equals("compatibility.json", StringComparison.Ordinal)
             || !contract.RequiredKinds.OrderBy(value => value, StringComparer.Ordinal).SequenceEqual(exactKinds, StringComparer.Ordinal))
-            throw new InvalidDataException("The SDK-embedded compatibility contract is inconsistent with SDK 0.1.0 / Runtime 0.5.5.");
+            throw new InvalidDataException("The SDK-embedded compatibility contract is inconsistent with API target " + target.ApiTarget + ".");
         return contract;
     }
 

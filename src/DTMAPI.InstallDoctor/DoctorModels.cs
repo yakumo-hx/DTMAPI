@@ -82,7 +82,8 @@ public enum DoctorProvenanceStatus
     MissingPackageBinding,
     InvalidPackageBinding,
     ReferenceReceiptMismatch,
-    ExternalUnmanaged
+    ExternalUnmanaged,
+    VerifiedNativeContract
 }
 
 public enum DoctorNativeRisk

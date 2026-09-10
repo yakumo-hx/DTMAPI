@@ -1,0 +1,229 @@
+{
+  "fixtureKind": "Candidate11.FrozenNineSourceTwoRetained",
+  "sourceCommit": "4547fd7313365a63ae0b0fa67d3b1abb6b844f6b",
+  "sourcePath": "tools/release/dtmapi-product-catalog.json",
+  "purpose": "Synthetic replay input only; minimal identity fields from the reviewed 2026-08-05 boundary, not current release authority.",
+  "products": [
+    {
+      "catalogId": "zoom",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "DTMAPI.ZoomMod",
+      "officialFolder": "DTMAPI_Zoom",
+      "packageName": "DTMAPI-Zoom",
+      "packageDll": "DTMAPI.Zoom.dll",
+      "workshopId": "3742717440",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "0.4.2-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-zoom-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.zoommod",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "y-console",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "DTMAPI.DebugConsoleMod",
+      "officialFolder": "DTMAPI_YKeyConsole",
+      "packageName": "DTMAPI-YKeyConsole",
+      "packageDll": "DTMAPI.DebugConsole.dll",
+      "workshopId": "3742714442",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-24456188-debugconsole-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.debugconsolemod",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "more-saves",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "DTMAPI.MoreSavesMod",
+      "officialFolder": "DTMAPI_MoreSaves",
+      "packageName": "DTMAPI-MoreSaves",
+      "packageDll": "DTMAPI.MoreSaves.dll",
+      "workshopId": "3742763050",
+      "sourceVersion": "1.0.1",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-24456188-moresaves-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.moresavesmod",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "action-speed",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+      "officialFolder": "Yuuka_DTMAPI_ActionSpeed",
+      "packageName": "DTMAPI-ActionSpeed",
+      "packageDll": "Yuuka.DTMAPI.ActionSpeed.dll",
+      "workshopId": "3742763309",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "1.3.4-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-actionspeed-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.actionspeed",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "one-action-complete",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+      "officialFolder": "Yuuka_DTMAPI_OneActionComplete",
+      "packageName": "DTMAPI-OneActionComplete",
+      "packageDll": "Yuuka.DTMAPI.OneActionComplete.dll",
+      "workshopId": "3742763540",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "1.1.2-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-oneactioncomplete-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.oneactioncomplete",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "fish-roe-info",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+      "officialFolder": "Yuuka_DTMAPI_FishBreedingAssistant",
+      "packageName": "DTMAPI-FishBreedingAssistant",
+      "packageDll": "Yuuka.DTMAPI.FishBreedingAssistant.dll",
+      "workshopId": "3742763706",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "1.1.3-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-fishbreedingassistant-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.fishbreedingassistant",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "animal-husbandry-progress",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+      "officialFolder": "Yuuka_DTMAPI_AnimalHusbandryProgress",
+      "packageName": "DTMAPI-AnimalHusbandryProgress",
+      "packageDll": "Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+      "workshopId": "3742763843",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "1.0.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-animalhusbandryprogress-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.animalhusbandryprogress",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "chest-locator-enhancer",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+      "officialFolder": "DTMAPI_ChestLocatorEnhancer",
+      "packageName": "DTMAPI-ChestLocatorEnhancer",
+      "packageDll": "DTMAPI.ChestLocatorEnhancer.dll",
+      "workshopId": "3742765514",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-chestlocator-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.chestlocatorenhancermod",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "auto-fishing",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+      "officialFolder": "Yuuka_DTMAPI_AutoFishing",
+      "packageName": "DTMAPI-AutoFishing",
+      "packageDll": "Yuuka.DTMAPI.AutoFishing.dll",
+      "workshopId": "3743799721",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
+      "publishedVersion": "1.4.3-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-24456188-autofishing-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.yuuka.dtmapi.autofishing",
+      "currentPublishedArtifact": {
+        "state": "SteamPublishedObservedExact"
+      }
+    },
+    {
+      "catalogId": "more-equipment-slots",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+      "officialFolder": "DTMAPI_MoreEquipmentSlots",
+      "packageName": "DTMAPI-MoreEquipmentSlots",
+      "packageDll": "DTMAPI.MoreEquipmentSlots.dll",
+      "workshopId": "3744059735",
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.5.5",
+      "publishedVersion": "0.3.1-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.1-alpha",
+      "codeModKind": "Advanced",
+      "nativeOwnership": "ProductNative",
+      "referencePolicyId": "doloctown-23762374-moreequipmentslots-v1",
+      "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.moreequipmentslotsmod"
+    },
+    {
+      "catalogId": "manbo-cardboard-audio",
+      "role": "PublishedProduct",
+      "distributionState": "PublicWorkshop",
+      "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+      "officialFolder": "Yuuka_DTMAPI_ManboCardboardAudio",
+      "packageName": "DTMAPI-ManboCardboardAudio",
+      "packageDll": "Yuuka.DTMAPI.ManboCardboardAudio.dll",
+      "workshopId": "3746319981",
+      "sourceVersion": "0.1.0-dtmapi",
+      "sourceMinimumDtmApiVersion": "0.5.2-alpha",
+      "publishedVersion": "0.1.0-dtmapi",
+      "publishedMinimumDtmApiVersion": "0.5.2-alpha"
+    }
+  ]
+}

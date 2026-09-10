@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>debugconsole</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeShapeFixture.cs" Link="Shared/NativeShapeFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeConfigurationFixture.cs" Link="Shared/NativeConfigurationFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CodeModPackageFixture.cs" Link="Shared/CodeModPackageFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RuntimeHostFixture.cs" Link="Shared/RuntimeHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CompatibilityHostFixture.cs" Link="Shared/CompatibilityHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/PersistentRootFixture.cs" Link="Shared/PersistentRootFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/ReflectionAssertions.cs" Link="Shared/ReflectionAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/InputModuleFixture.cs" Link="Shared/InputModuleFixture.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleUi.cs" Link="DebugConsole/DebugConsoleUi.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleUi.Layout.cs" Link="DebugConsole/DebugConsoleUi.Layout.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleUi.Catalog.cs" Link="DebugConsole/DebugConsoleUi.Catalog.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleUi.Actions.cs" Link="DebugConsole/DebugConsoleUi.Actions.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleUi.Reflection.cs" Link="DebugConsole/DebugConsoleUi.Reflection.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleCatalogModels.cs" Link="DebugConsole/DebugConsoleCatalogModels.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleLayout.cs" Link="DebugConsole/DebugConsoleLayout.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/IDebugConsoleActions.cs" Link="DebugConsole/IDebugConsoleActions.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/IDebugConsoleRuntime.cs" Link="DebugConsole/IDebugConsoleRuntime.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleText.cs" Link="DebugConsole/DebugConsoleText.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Ui/DebugConsoleRawInput.cs" Link="DebugConsole/DebugConsoleRawInput.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/DebugConsoleSaveSessionGate.cs" Link="DebugConsole/DebugConsoleSaveSessionGate.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleNativeAccess.cs" Link="DebugConsole/DebugConsoleNativeAccess.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleNativeActions.Core.cs" Link="DebugConsole/DebugConsoleNativeActions.Core.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleNativeActions.Advanced.cs" Link="DebugConsole/DebugConsoleNativeActions.Advanced.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleNativeActions.Helpers.cs" Link="DebugConsole/DebugConsoleNativeActions.Helpers.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleNativeActions.Spawn.cs" Link="DebugConsole/DebugConsoleNativeActions.Spawn.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleCreativeHooks.cs" Link="DebugConsole/DebugConsoleCreativeHooks.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleMovementHooks.cs" Link="DebugConsole/DebugConsoleMovementHooks.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DebugConsole/CompatibilityDebugConsoleRuntimeAdapter.cs" Link="DebugConsole/CompatibilityDebugConsoleRuntimeAdapter.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DebugConsole/CompatibilityDebugConsoleInputHooks.cs" Link="DebugConsole/CompatibilityDebugConsoleInputHooks.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown/DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/DebugConsoleHarmonyOwnerFixture/DebugConsoleHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="StageCompatibilityHost" AfterTargets="Build">
+    <Copy SourceFiles="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/bin/$(Configuration)/netstandard2.0/DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostFixture" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

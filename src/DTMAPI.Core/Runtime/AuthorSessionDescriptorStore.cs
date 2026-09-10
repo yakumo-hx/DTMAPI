@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization.Json;
+using System.Linq;
+using DTMAPI.Internal;
 
 namespace DTMAPI.Core.Runtime
 {
@@ -84,8 +86,17 @@ namespace DTMAPI.Core.Runtime
                                 AuthorSessionProtocol.MaximumDescriptorBytes.ToString(CultureInfo.InvariantCulture) + " bytes.");
                     }
 
-                    var serializer = new DataContractJsonSerializer(typeof(AuthorSessionDescriptor));
-                    descriptor = serializer.ReadObject(stream) as AuthorSessionDescriptor ?? new AuthorSessionDescriptor();
+                    byte[] bytes = new byte[checked((int)stream.Length)];
+                    int offset = 0;
+                    while (offset < bytes.Length)
+                    {
+                        int read = stream.Read(bytes, offset, bytes.Length - offset);
+                        if (read == 0) throw new EndOfStreamException();
+                        offset += read;
+                    }
+                    AuthorSessionJson.Validate(bytes, "descriptor");
+                    using (var json = new MemoryStream(bytes, writable: false))
+                        descriptor = (AuthorSessionDescriptor)new DataContractJsonSerializer(typeof(AuthorSessionDescriptor)).ReadObject(json);
                 }
 
                 AuthorSessionValidationResult validation = ValidateDescriptor(descriptor, canonicalRoot, runtimeVersion, utcNow());
@@ -98,7 +109,7 @@ namespace DTMAPI.Core.Runtime
                 return AuthorSessionDescriptorLoadResult.Rejected(
                     descriptorPath,
                     "descriptor-json-invalid",
-                    "The startup descriptor is not valid schemaVersion 1 JSON: " + ex.GetType().Name + ".");
+                    "The startup descriptor is not valid session JSON: " + ex.GetType().Name + ".");
             }
             finally
             {
@@ -123,7 +134,7 @@ namespace DTMAPI.Core.Runtime
         {
             if (descriptor == null)
                 return AuthorSessionValidationResult.Reject("descriptor-null", "The startup descriptor is empty.");
-            if (descriptor.SchemaVersion != AuthorSessionProtocol.DescriptorSchemaVersion)
+            if (descriptor.SchemaVersion != AuthorSessionProtocol.DescriptorSchemaVersion && descriptor.SchemaVersion != AuthorSessionProtocol.LegacySchemaVersion)
             {
                 return AuthorSessionValidationResult.Reject(
                     "descriptor-schema-unsupported",
@@ -133,9 +144,10 @@ namespace DTMAPI.Core.Runtime
             if (!AuthorSessionProtocol.PathsEqual(descriptor.GameRoot, expectedGameRoot))
                 return AuthorSessionValidationResult.Reject("descriptor-root-mismatch", "The descriptor gameRoot does not match this Runtime installation.");
             if (string.IsNullOrWhiteSpace(expectedRuntimeVersion) ||
-                !string.Equals(descriptor.RuntimeVersion, expectedRuntimeVersion, StringComparison.Ordinal))
+                (descriptor.SchemaVersion == AuthorSessionProtocol.LegacySchemaVersion &&
+                 !string.Equals(descriptor.RuntimeVersion, AuthorSessionProtocol.LegacyWireVersion, StringComparison.Ordinal)))
             {
-                return AuthorSessionValidationResult.Reject("descriptor-runtime-mismatch", "The descriptor runtimeVersion does not match the running Runtime.");
+                return AuthorSessionValidationResult.Reject("descriptor-runtime-mismatch", "The descriptor legacy wire version is unsupported.");
             }
 
             Guid sessionId;
@@ -187,12 +199,51 @@ namespace DTMAPI.Core.Runtime
             if (expiresAt <= utcNow)
                 return AuthorSessionValidationResult.Reject("descriptor-expired", "The descriptor has expired.");
 
+            if (descriptor.SchemaVersion == AuthorSessionProtocol.DescriptorSchemaVersion)
+            {
+                AuthorSessionValidationResult negotiation = Negotiate(descriptor, expectedRuntimeVersion);
+                if (!negotiation.Accepted) return negotiation;
+            }
+
             descriptor.GameRoot = AuthorSessionProtocol.NormalizePath(descriptor.GameRoot);
             descriptor.SessionId = sessionId.ToString("N");
             descriptor.CreatedAt = createdAt;
             descriptor.ExpiresAt = expiresAt;
             return AuthorSessionValidationResult.Accept("descriptor-accepted", "The startup descriptor was consumed and validated.");
         }
+
+        private static AuthorSessionValidationResult Negotiate(AuthorSessionDescriptor descriptor, string hostVersion)
+        {
+            if (!string.IsNullOrEmpty(descriptor.RuntimeVersion))
+                return AuthorSessionValidationResult.Reject("descriptor-wire-identity-invalid", "Schema 2 cannot declare a legacy Runtime wire identity.");
+            if (descriptor.ProtocolMajor != AuthorSessionProtocol.Major)
+                return AuthorSessionValidationResult.Reject("protocol-major-unsupported", "The requested author-session protocol major is unsupported.");
+            int minor = Math.Min(descriptor.MaximumMinor, AuthorSessionProtocol.MaximumMinor);
+            if (descriptor.MinimumMinor < 0 || descriptor.MaximumMinor < descriptor.MinimumMinor ||
+                minor < Math.Max(descriptor.MinimumMinor, AuthorSessionProtocol.MinimumMinor))
+                return AuthorSessionValidationResult.Reject("protocol-minor-incompatible", "The author-session protocol minor ranges do not overlap.");
+            if (!Version.TryParse(descriptor.ApiTarget, out _) ||
+                !Version.TryParse(descriptor.MinimumRuntimeVersion, out Version minimum) ||
+                !Version.TryParse(hostVersion, out Version host))
+                return AuthorSessionValidationResult.Reject("descriptor-version-invalid", "API target and minimum/actual Runtime versions must be numeric versions.");
+            if (host < minimum)
+                return AuthorSessionValidationResult.Reject("upgrade-required", "The running Runtime does not meet the requested minimum version.");
+            string[]? required = descriptor.RequiredCapabilities;
+            string[]? optional = descriptor.OptionalCapabilities;
+            if (!ValidCapabilities(required) || !ValidCapabilities(optional) || required!.Intersect(optional!, StringComparer.Ordinal).Any())
+                return AuthorSessionValidationResult.Reject("capabilities-invalid", "Capabilities must be bounded, unique and disjoint names.");
+            string[] supported = { "get-source-snapshot/1", "reload-content/1", "execute-command/1" };
+            if (required.Except(supported, StringComparer.Ordinal).Any())
+                return AuthorSessionValidationResult.Reject("required-capability-unsupported", "A required author-session capability is unsupported.");
+            descriptor.SelectedMinor = minor;
+            descriptor.AcceptedCapabilities = required.Concat(optional!).Intersect(supported, StringComparer.Ordinal).OrderBy(s => s, StringComparer.Ordinal).ToArray();
+            descriptor.UnsupportedOptionalCapabilities = optional!.Except(supported, StringComparer.Ordinal).OrderBy(s => s, StringComparer.Ordinal).ToArray();
+            return AuthorSessionValidationResult.Accept("protocol-compatible", "The protocol offer is compatible; authenticated hello is required.");
+        }
+
+        private static bool ValidCapabilities(string[]? values) => values != null && values.Length <= 32 &&
+            values.Distinct(StringComparer.Ordinal).Count() == values.Length && values.All(value => !string.IsNullOrEmpty(value) && value.Length <= 96 &&
+                value.All(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '/' || c == '.'));
     }
 
     internal sealed class AuthorSessionDescriptorLoadResult

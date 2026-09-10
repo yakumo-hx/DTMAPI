@@ -282,6 +282,11 @@ namespace DTMAPI.GameBridge.DolocTown
             return TryPatch(targetTypeName, methodName, prefix: null, postfix: postfix, signature: signature);
         }
 
+        public bool TryPatchFinalizer(string targetTypeName, string methodName, MethodInfo? finalizer, HarmonyTargetSignature signature)
+        {
+            return TryPatch(targetTypeName, methodName, prefix: null, postfix: null, signature: signature, finalizer: finalizer);
+        }
+
         public bool TryPatchArrayResultPostfix(
             string targetTypeName,
             string methodName,
@@ -618,11 +623,11 @@ namespace DTMAPI.GameBridge.DolocTown
             return TryPatch(targetTypeName, methodName, prefix, postfix, HarmonyTargetSignature.FromParameterCount(parameterCount));
         }
 
-        private bool TryPatch(string targetTypeName, string methodName, MethodInfo? prefix, MethodInfo? postfix, HarmonyTargetSignature signature)
+        private bool TryPatch(string targetTypeName, string methodName, MethodInfo? prefix, MethodInfo? postfix, HarmonyTargetSignature signature, MethodInfo? finalizer = null)
         {
             try
             {
-                if ((prefix == null && postfix == null) || !EnsureHarmony())
+                if ((prefix == null && postfix == null && finalizer == null) || !EnsureHarmony())
                     return false;
 
                 Type? targetType = FindType(targetTypeName);
@@ -630,7 +635,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (target == null)
                     return false;
 
-                return ApplyPatch(target, prefix, postfix);
+                return ApplyPatch(target, prefix, postfix, finalizer);
             }
             catch (Exception ex)
             {
@@ -639,10 +644,11 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private bool ApplyPatch(MethodBase target, MethodInfo? prefix, MethodInfo? postfix)
+        private bool ApplyPatch(MethodBase target, MethodInfo? prefix, MethodInfo? postfix, MethodInfo? finalizer = null)
         {
             object? prefixMethod = prefix == null ? null : Activator.CreateInstance(harmonyMethodType!, prefix);
             object? postfixMethod = postfix == null ? null : Activator.CreateInstance(harmonyMethodType!, postfix);
+            object? finalizerMethod = finalizer == null ? null : Activator.CreateInstance(harmonyMethodType!, finalizer);
             MethodInfo? patch = harmonyType!.GetMethods()
                 .FirstOrDefault(m => m.Name == "Patch" &&
                     m.GetParameters().Length == 5 &&
@@ -650,7 +656,7 @@ namespace DTMAPI.GameBridge.DolocTown
             if (patch == null)
                 return false;
 
-            object?[] args = new object?[] { target, prefixMethod, postfixMethod, null, null };
+            object?[] args = new object?[] { target, prefixMethod, postfixMethod, null, finalizerMethod };
             patch.Invoke(harmony, args);
             return true;
         }

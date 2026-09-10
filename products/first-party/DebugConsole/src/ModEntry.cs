@@ -9,7 +9,6 @@ namespace DTMAPI.DebugConsole
         private const string ToggleId = "debug-console.toggle";
         private const string CloseId = "debug-console.close";
         private IDtmHelper helper = null!;
-        private DebugConsoleConfig config = new DebugConsoleConfig();
         private ProductRuntimeAdapter runtime = null!;
         private DebugConsoleNativeActions actions = null!;
         private DebugConsoleUi ui = null!;
@@ -34,9 +33,6 @@ namespace DTMAPI.DebugConsole
             var failures = new List<Exception>();
             try
             {
-                config = helper.ReadConfig<DebugConsoleConfig>() ??
-                    new DebugConsoleConfig();
-                config.Normalize();
                 runtime = new ProductRuntimeAdapter(helper);
                 actions = new DebugConsoleNativeActions(runtime);
                 ui = new DebugConsoleUi(runtime);
@@ -51,7 +47,6 @@ namespace DTMAPI.DebugConsole
                     actions,
                     actions);
                 ui.BindAdvanced(helper.ModManifest, actions);
-                ui.SetLanguage(helper.ModManifest, config.Language);
                 toggle = helper.Input.RegisterKeybind(
                     ToggleId,
                     "Y",
@@ -66,9 +61,6 @@ namespace DTMAPI.DebugConsole
                 titleSubscribed = true;
                 helper.Events.Input.KeybindPressed += OnKeybindPressed;
                 inputSubscribed = true;
-                helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
-                updateSubscribed = true;
-                RegisterConfigMenu();
                 helper.Monitor.Log(
                     T(
                         "mod.loaded",
@@ -121,6 +113,8 @@ namespace DTMAPI.DebugConsole
                     ui.ResetForSaveBoundary(
                         e.SaveSlot,
                         e.IsNewGame));
+            actions.InvalidateCatalogs();
+            RefreshUpdateSubscription();
             helper.Monitor.Log(
                 "DebugConsole SaveLoaded slot=" +
                 (e.SaveSlot?.ToString() ?? "unknown") +
@@ -135,6 +129,8 @@ namespace DTMAPI.DebugConsole
             saveSession.Leave();
             ui.ResetForTitleBoundary();
             actions.RestoreTransientState("ReturnedToTitle");
+            actions.InvalidateCatalogs();
+            RefreshUpdateSubscription();
             helper.Monitor.Log(
                 "DebugConsole ReturnedToTitle cleanup UI={" +
                 ui.GetOwnerObjectGraphSummary() +
@@ -154,9 +150,12 @@ namespace DTMAPI.DebugConsole
             {
                 if (saveSession.IsActive)
                 {
+                    if (ui.TryConsumeFocusedTextInputY())
+                        return;
                     bool wasOpen = ui.IsOpen;
                     ui.Toggle(helper.ModManifest, "hotkey Y");
                     RestoreAfterConsoleClose(wasOpen, "hotkey Y");
+                    RefreshUpdateSubscription();
                 }
                 return;
             }
@@ -165,6 +164,7 @@ namespace DTMAPI.DebugConsole
             {
                 ui.Close(helper.ModManifest, "Escape");
                 RestoreAfterConsoleClose(true, "Escape");
+                RefreshUpdateSubscription();
             }
         }
 
@@ -173,11 +173,17 @@ namespace DTMAPI.DebugConsole
             UpdateTickedEventArgs e)
         {
             if (!saveSession.IsActive)
+            {
+                RefreshUpdateSubscription();
                 return;
-            actions.Update();
+            }
+            if (actions.NeedsUpdate)
+                actions.Update();
             bool wasOpen = ui.IsOpen;
-            ui.Update();
+            if (ui.NeedsUpdate)
+                ui.Update();
             RestoreAfterConsoleClose(wasOpen, "console UI close");
+            RefreshUpdateSubscription();
         }
 
         private void RestoreAfterConsoleClose(
@@ -188,45 +194,12 @@ namespace DTMAPI.DebugConsole
                 actions.RestoreModalScopedState(reason);
         }
 
-        private void RegisterConfigMenu()
+        private void RefreshUpdateSubscription()
         {
-            IDtmConfigMenuApi? menu =
-                helper.ModRegistry.GetApi<IDtmConfigMenuApi>(
-                    "DTMAPI.ModConfigMenu");
-            if (menu == null)
-                return;
-            menu.Register(
-                helper.ModManifest,
-                ResetConfig,
-                SaveConfig);
-            menu.SetDisplayName(
-                helper.ModManifest,
-                () => T("mod.name", "Y-Key Console"));
-            menu.AddSectionTitle(
-                helper.ModManifest,
-                () => T("config.section.main", "Console"));
-            menu.AddChoiceOption(
-                helper.ModManifest,
-                () => T("config.language.name", "Display language"),
-                () => T(
-                    "config.language.tooltip",
-                    "Auto follows the DTMAPI language; Chinese and English may be selected explicitly."),
-                () => config.Language,
-                value => config.Language = value,
-                new[] { "Auto", "schinese", "english" });
-        }
-
-        private void ResetConfig()
-        {
-            config = new DebugConsoleConfig();
-            config.Normalize();
-        }
-
-        private void SaveConfig()
-        {
-            config.Normalize();
-            helper.WriteConfig(config);
-            ui.SetLanguage(helper.ModManifest, config.Language);
+            bool needed = saveSession.IsActive &&
+                ((ui != null && ui.NeedsUpdate) ||
+                 (actions != null && actions.NeedsUpdate));
+            SetUpdateSubscription(needed);
         }
 
         private void SetUpdateSubscription(bool enabled)

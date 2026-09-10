@@ -1,3 +1,5 @@
+using System;
+
 namespace DTMAPI.MoreEquipmentSlots
 {
     public static class MoreEquipmentSlotsCallbacks
@@ -49,16 +51,28 @@ namespace DTMAPI.MoreEquipmentSlots
             __result = true;
         }
 
-        public static void AccessoriesBarInitPostfix(
-            object __instance) =>
+        public static void AccessoriesBarRenderPassiveItemsPostfix(
+            object __instance,
+            object __0) =>
             runtime?.RenderAccessoriesBar(
                 __instance,
-                "AccessoriesBar.__Init");
+                (__0 as Array)?.Length ?? 0,
+                "AccessoriesBar.RenderPassiveItems");
 
-        public static void AccessoriesBarStartShowPostfix(
-            object __instance) =>
-            runtime?.RenderAccessoriesBar(
+        public static void AccessoriesBarAllSelectablesPostfix(
+            object __instance,
+            ref Array __result)
+        {
+            MoreEquipmentSlotsNativeRuntime? current = runtime;
+            if (current == null)
+                return;
+            __result = current.ComposeAccessoriesSelectables(
                 __instance,
-                "AccessoriesBar.OnStartShow");
+                __result);
+        }
+
+        public static void AccessoriesBarClearCallBackPostfix(
+            object __instance) =>
+            runtime?.OnAccessoriesBarClear(__instance);
     }
 }

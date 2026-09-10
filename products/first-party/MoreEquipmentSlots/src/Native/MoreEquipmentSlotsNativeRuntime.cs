@@ -24,6 +24,13 @@ namespace DTMAPI.MoreEquipmentSlots
 
         public int RootCount { get; internal set; }
 
+        public bool UiVisible { get; internal set; }
+
+        public bool UiLayoutBlocked { get; internal set; }
+
+        public string UiLayoutMessage { get; internal set; } =
+            string.Empty;
+
         public string JournalPhase { get; internal set; } =
             "None";
 
@@ -58,6 +65,9 @@ namespace DTMAPI.MoreEquipmentSlots
             new List<NativeFunctionLease>();
         private readonly List<UiLease> uiLeases =
             new List<UiLease>();
+        private UiSession? uiSession;
+        private string slotUiText =
+            "Extra equipment slot {0}";
         private readonly HashSet<int> invalidTraitSlots =
             new HashSet<int>();
         private readonly Dictionary<
@@ -75,10 +85,13 @@ namespace DTMAPI.MoreEquipmentSlots
         private string sidecarPath = string.Empty;
         private int archiveIndex = -1;
         private bool pendingNativeSave;
+        private bool newGamePending;
         private bool journalRecoveryBlocked;
         private bool workingDirty;
         private PendingGameplayPlacement?
             pendingGameplayPlacement;
+        private EquipmentSlotNativeMutationOutcomeUnknownException?
+            pendingGameplayIncomingWithdrawal;
         private bool deactivated;
         private bool suppressNativeReloadReapply;
         private NativePlacementKind lastPlacement =
@@ -106,6 +119,13 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal int InstalledPatchCount =>
             hooks.InstalledPatchCount;
+
+        internal void ConfigureUiText(string slot)
+        {
+            slotUiText = FirstText(
+                slot,
+                slotUiText);
+        }
 
         internal string StatusSummary =>
             "enabled=" +
@@ -204,15 +224,22 @@ namespace DTMAPI.MoreEquipmentSlots
             }
         }
 
-        internal void OnSaveLoaded(int? slot)
+        internal void OnSaveLoaded(int? slot) =>
+            OnSaveLoaded(slot, isNewGame: false);
+
+        internal void OnSaveLoaded(
+            int? slot,
+            bool isNewGame)
         {
             ResetTransientRoots("SaveLoaded");
+            ClearLoadedSaveState();
+            if (isNewGame)
+            {
+                InitializeNewGame(slot);
+                return;
+            }
             if (!slot.HasValue || slot.Value < 0)
             {
-                archiveIndex = -1;
-                document = null;
-                scope = null;
-                sidecarPath = string.Empty;
                 lastMessage = "SaveLoaded without archive.";
                 return;
             }
@@ -261,10 +288,6 @@ namespace DTMAPI.MoreEquipmentSlots
                     "MoreEquipmentSlots storage migration: " +
                     migrationMessage);
             }
-            invalidTraitSlots.Clear();
-            pendingGameplayPlacement = null;
-            pendingJournalPlacements.Clear();
-            journalRecoveryBlocked = false;
             RecoverDurableJournal("SaveLoaded");
             RecoverGameplayCandidate("SaveLoaded");
             workingSlots =
@@ -279,6 +302,113 @@ namespace DTMAPI.MoreEquipmentSlots
             PublishLifecycle();
         }
 
+        private void InitializeNewGame(int? eventSlot)
+        {
+            int currentArchiveIndex =
+                DolocTownItemPlacementGateway
+                    .ReadCurrentArchiveIndex();
+            if (eventSlot.HasValue &&
+                eventSlot.Value != currentArchiveIndex)
+            {
+                throw new InvalidDataException(
+                    "MoreEquipmentSlots refused NewGame initialization because the event slot did not match the initialized native archive index.");
+            }
+
+            DolocTownItemPlacementGateway
+                .RequireNativeCurrentSaveMissing(
+                    currentArchiveIndex);
+            EquipmentSlotSaveScope currentScope =
+                DolocTownItemPlacementGateway.ReadCurrentScope(
+                    currentArchiveIndex);
+            EquipmentSlotStorageDocument emptyDocument =
+                EquipmentSlotDocumentStore.CreateEmpty(
+                    currentScope);
+            string currentSidecarPath =
+                BuildSidecarPath(currentArchiveIndex);
+            bool deleted =
+                store.DeleteSlotDirectoryForNewGame(
+                    currentSidecarPath,
+                    currentArchiveIndex);
+
+            archiveIndex = currentArchiveIndex;
+            scope = currentScope;
+            sidecarPath = currentSidecarPath;
+            document = emptyDocument;
+            workingSlots =
+                EquipmentSlotGameplayCandidateCoordinator
+                    .CloneSlots(document.Slots);
+            workingDirty = false;
+            newGamePending = true;
+            RehydrateWorkingTraits("NewGame");
+            if (config.Enabled)
+                ApplyStoredFunctions("NewGame");
+            lastMessage =
+                "NewGame initialized archive=" +
+                archiveIndex.ToString(
+                    CultureInfo.InvariantCulture) +
+                "; previousProductDirectoryDeleted=" +
+                deleted.ToString() +
+                ".";
+            monitor.Log(
+                "MoreEquipmentSlots NewGame reset established " +
+                "archive=" +
+                archiveIndex.ToString(
+                    CultureInfo.InvariantCulture) +
+                "; previousProductDirectoryDeleted=" +
+                deleted.ToString() +
+                "; sidecar=" +
+                sidecarPath +
+                ".");
+            PublishLifecycle();
+        }
+
+        private void RefreshNewGameScopeBeforeFirstSave()
+        {
+            if (document == null || !newGamePending)
+            {
+                throw new InvalidOperationException(
+                    "A pending NewGame document is required before first-save scope binding.");
+            }
+            int currentArchiveIndex =
+                DolocTownItemPlacementGateway
+                    .ReadCurrentArchiveIndex();
+            if (currentArchiveIndex != archiveIndex)
+            {
+                throw new InvalidDataException(
+                    "MoreEquipmentSlots refused first NewGame save because the initialized native archive index changed.");
+            }
+            DolocTownItemPlacementGateway
+                .RequireNativeCurrentSaveMissing(archiveIndex);
+            EquipmentSlotSaveScope currentScope =
+                DolocTownItemPlacementGateway.ReadCurrentScope(
+                    archiveIndex);
+            document.Scope = currentScope.Clone();
+            scope = currentScope;
+        }
+
+        private string CapturePreSaveFingerprint() =>
+            DolocTownItemPlacementGateway
+                .GetNativeSaveFingerprint(
+                    archiveIndex,
+                    allowMissingCurrent: newGamePending);
+
+        private void ClearLoadedSaveState()
+        {
+            archiveIndex = -1;
+            document = null;
+            workingSlots = null;
+            scope = null;
+            sidecarPath = string.Empty;
+            pendingNativeSave = false;
+            newGamePending = false;
+            journalRecoveryBlocked = false;
+            workingDirty = false;
+            pendingGameplayPlacement = null;
+            pendingGameplayIncomingWithdrawal = null;
+            pendingJournalPlacements.Clear();
+            invalidTraitSlots.Clear();
+        }
+
         internal void OnSaveSaving(int? slot)
         {
             if (!MatchesLoadedSlot(slot) ||
@@ -286,7 +416,12 @@ namespace DTMAPI.MoreEquipmentSlots
             {
                 return;
             }
+            bool recoveringNewGameCandidate =
+                newGamePending &&
+                document.GameplayCandidate != null;
             ReconcilePendingGameplayPlacement(
+                "SaveSaving");
+            ReconcilePendingGameplayIncomingWithdrawal(
                 "SaveSaving");
             ReconcilePendingJournalPlacements(
                 "SaveSaving");
@@ -300,13 +435,23 @@ namespace DTMAPI.MoreEquipmentSlots
                         "MoreEquipmentSlots refused native SaveGame because an ambiguous gameplay candidate remains fail-closed.");
                 }
             }
-            if (workingDirty &&
+            if (recoveringNewGameCandidate &&
+                document.GameplayCandidate == null &&
+                DolocTownItemPlacementGateway
+                    .NativeCurrentSaveExists(archiveIndex))
+            {
+                newGamePending = false;
+                lastMessage =
+                    "Recovered the first native NewGame commit before a repeated SaveSaving boundary.";
+            }
+            if (newGamePending)
+                RefreshNewGameScopeBeforeFirstSave();
+            if ((workingDirty || newGamePending) &&
                 document.GameplayCandidate == null &&
                 document.Journal == null)
             {
                 string gameplayPreFingerprint =
-                    DolocTownItemPlacementGateway
-                        .GetNativeSaveFingerprint(archiveIndex);
+                    CapturePreSaveFingerprint();
                 EquipmentSlotGameplayCandidateCoordinator
                     .Prepare(
                         document,
@@ -336,8 +481,7 @@ namespace DTMAPI.MoreEquipmentSlots
             EquipmentSlotTransactionJournal journal =
                 document.Journal;
             string preFingerprint =
-                DolocTownItemPlacementGateway
-                    .GetNativeSaveFingerprint(archiveIndex);
+                CapturePreSaveFingerprint();
             if (!journal.AttemptStarted)
             {
                 EquipmentSlotTransactionCoordinator.StartAttempt(
@@ -412,16 +556,36 @@ namespace DTMAPI.MoreEquipmentSlots
                 if (EquipmentSlotTransactionCoordinator
                     .CanWithdrawIncoming(journal))
                 {
-                    bool bufferAttempted =
-                        TryTakeMatchingNativeBuffer(
-                            incomingItemId,
-                            out bool bufferSucceeded);
-                    fromNativeBuffer = bufferAttempted;
-                    withdrawn =
-                        bufferAttempted
-                            ? bufferSucceeded
-                            : placement.TryWithdrawOne(
-                                incomingItemId);
+                    try
+                    {
+                        bool bufferAttempted =
+                            TryTakeMatchingNativeBuffer(
+                                incomingItemId,
+                                out bool bufferSucceeded);
+                        fromNativeBuffer = bufferAttempted;
+                        withdrawn =
+                            bufferAttempted
+                                ? bufferSucceeded
+                                : placement.TryWithdrawOne(
+                                    incomingItemId);
+                    }
+                    catch (
+                        EquipmentSlotNativeMutationOutcomeUnknownException
+                            ex)
+                    {
+                        pendingJournalPlacements[-1] = ex;
+                        journalRecoveryBlocked = true;
+                        pendingNativeSave = false;
+                        monitor.Log(
+                            "MoreEquipmentSlots retained the durable replacement journal after incoming withdrawal became outcome-unknown; this process will not replay it item=" +
+                            incomingItemId +
+                            " transaction=" +
+                            journal.TransactionId +
+                            ".",
+                            LogLevel.Error);
+                        PublishLifecycle();
+                        throw;
+                    }
                 }
                 NativeRecoveryObservation afterIncoming =
                     Observe(incomingItemId, preFingerprint);
@@ -494,6 +658,7 @@ namespace DTMAPI.MoreEquipmentSlots
                         .CloneSlots(document.Slots);
                 workingDirty = false;
                 pendingNativeSave = false;
+                newGamePending = false;
                 journalRecoveryBlocked = false;
                 if (config.Enabled)
                     ApplyStoredFunctions("SaveSaved");
@@ -524,6 +689,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     .CloneSlots(document.Slots);
             workingDirty = false;
             pendingNativeSave = false;
+            newGamePending = false;
             journalRecoveryBlocked = false;
             if (config.Enabled)
                 ApplyStoredFunctions("SaveSaved");
@@ -578,6 +744,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 document.Journal != null ||
                 document.GameplayCandidate != null ||
                 pendingJournalPlacements.Count > 0 ||
+                pendingGameplayIncomingWithdrawal != null ||
                 string.IsNullOrWhiteSpace(itemId))
             {
                 return false;
@@ -597,8 +764,7 @@ namespace DTMAPI.MoreEquipmentSlots
             if (slot.IsOccupied)
             {
                 string fingerprint =
-                    DolocTownItemPlacementGateway
-                        .GetNativeSaveFingerprint(archiveIndex);
+                    CapturePreSaveFingerprint();
                 NativePlacementResult outgoing;
                 try
                 {
@@ -653,15 +819,44 @@ namespace DTMAPI.MoreEquipmentSlots
                 slot.Clear();
             }
 
-            bool bufferAttempted =
-                TryTakeMatchingNativeBuffer(
-                    replacement.ItemId,
-                    out bool bufferSucceeded);
-            bool withdrawn =
-                bufferAttempted
-                    ? bufferSucceeded
-                    : placement.TryWithdrawOne(
-                        replacement.ItemId);
+            bool withdrawn;
+            try
+            {
+                bool bufferAttempted =
+                    TryTakeMatchingNativeBuffer(
+                        replacement.ItemId,
+                        out bool bufferSucceeded);
+                withdrawn =
+                    bufferAttempted
+                        ? bufferSucceeded
+                        : placement.TryWithdrawOne(
+                            replacement.ItemId);
+            }
+            catch (
+                EquipmentSlotNativeMutationOutcomeUnknownException
+                    ex)
+            {
+                pendingGameplayIncomingWithdrawal = ex;
+                if (outgoingReleased)
+                {
+                    MarkWorkingDirty(
+                        "replacement incoming withdrawal became outcome-unknown");
+                    ClearFunctions(
+                        "EquipFromBackpack incoming outcome unknown");
+                    ApplyStoredFunctions(
+                        "EquipFromBackpack incoming outcome unknown");
+                }
+                lastMessage =
+                    "Incoming withdrawal became outcome-unknown; all Product slot operations and SaveSaving are blocked until title/restart discards the unsaved native transaction.";
+                monitor.Log(
+                    "MoreEquipmentSlots gameplay incoming withdrawal became outcome-unknown item=" +
+                    replacement.ItemId +
+                    " slot=" +
+                    slotIndex +
+                    ".",
+                    LogLevel.Error);
+                return false;
+            }
             if (!withdrawn)
             {
                 if (outgoingReleased)
@@ -693,7 +888,8 @@ namespace DTMAPI.MoreEquipmentSlots
             if (document == null ||
                 document.Journal != null ||
                 document.GameplayCandidate != null ||
-                pendingJournalPlacements.Count > 0)
+                pendingJournalPlacements.Count > 0 ||
+                pendingGameplayIncomingWithdrawal != null)
             {
                 return false;
             }
@@ -709,8 +905,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 return true;
 
             string fingerprint =
-                DolocTownItemPlacementGateway
-                    .GetNativeSaveFingerprint(archiveIndex);
+                CapturePreSaveFingerprint();
             NativePlacementResult result;
             try
             {
@@ -801,7 +996,14 @@ namespace DTMAPI.MoreEquipmentSlots
                     FunctionCount = functionLeases.Count,
                     CallbackCount =
                         hooks.IsInstalled ? 1 : 0,
-                    RootCount = uiLeases.Count > 0 ? 1 : 0,
+                    RootCount = uiSession != null ? 1 : 0,
+                    UiVisible =
+                        uiSession?.Visible == true &&
+                        uiSession?.LayoutBlocked != true,
+                    UiLayoutBlocked =
+                        uiSession?.LayoutBlocked == true,
+                    UiLayoutMessage =
+                        uiSession?.LayoutMessage ?? string.Empty,
                     JournalPhase = GetJournalPhase(),
                     LastPlacement = lastPlacement.ToString()
                 };
@@ -831,9 +1033,11 @@ namespace DTMAPI.MoreEquipmentSlots
                 scope = null;
                 sidecarPath = string.Empty;
                 pendingNativeSave = false;
+                newGamePending = false;
                 journalRecoveryBlocked = false;
                 workingDirty = false;
                 pendingGameplayPlacement = null;
+                pendingGameplayIncomingWithdrawal = null;
                 pendingJournalPlacements.Clear();
                 invalidTraitSlots.Clear();
             }
@@ -884,9 +1088,11 @@ namespace DTMAPI.MoreEquipmentSlots
             scope = null;
             sidecarPath = string.Empty;
             pendingNativeSave = false;
+            newGamePending = false;
             journalRecoveryBlocked = false;
             workingDirty = false;
             pendingGameplayPlacement = null;
+            pendingGameplayIncomingWithdrawal = null;
             pendingJournalPlacements.Clear();
             invalidTraitSlots.Clear();
             deactivated = true;
@@ -1015,6 +1221,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal void RenderAccessoriesBar(
             object accessoriesBar,
+            int officialPassiveCount,
             string reason)
         {
             if (!config.Enabled ||
@@ -1023,47 +1230,110 @@ namespace DTMAPI.MoreEquipmentSlots
             {
                 return;
             }
-            ClearUi("rebuild " + reason);
-            object? sourceSlot =
-                Read(accessoriesBar, "passiveItem2") ??
-                Read(accessoriesBar, "passiveItem1") ??
-                Read(accessoriesBar, "positiveItem");
-            object? sourceTransform =
-                Read(Read(sourceSlot, "gameObject"), "transform");
-            object? parent = Read(sourceTransform, "parent");
-            if (sourceSlot == null || parent == null)
-                return;
-
-            for (int index = 0;
-                 index <
-                    MoreEquipmentSlotsProductContract
-                        .FixedSlotCount;
-                 index++)
+            try
             {
-                object? clone = CloneUnityObject(
-                    sourceSlot,
-                    parent);
-                if (clone == null)
-                    break;
-                SetMember(
-                    Read(clone, "gameObject"),
-                    "name",
-                    "DTMAPI.MoreEquipmentSlots." + index);
-                var lease = new UiLease(clone);
-                BindUiLease(lease, index);
-                RenderSlot(clone, RequireSlot(index));
-                uiLeases.Add(lease);
+                if (uiSession == null ||
+                    !ReferenceEquals(
+                        uiSession.AccessoriesBar,
+                        accessoriesBar))
+                {
+                    ClearUi("native AccessoriesBar generation changed");
+                    uiSession = new UiSession(accessoriesBar);
+                    InitializeUiSession(
+                        uiSession,
+                        officialPassiveCount);
+                }
+                else
+                {
+                    uiSession.OfficialPassiveCount =
+                        officialPassiveCount;
+                    RefreshUiLayout(uiSession);
+                }
+                uiSession.Visible = !uiSession.LayoutBlocked;
+                RenderCurrentUi(reason);
+                ApplyUiVisibility(uiSession);
+                monitor.Log(
+                    "MoreEquipmentSlots UI rendered reason=" +
+                    reason +
+                    " clones=" +
+                    uiLeases.Count +
+                    " visible=" +
+                    uiSession.Visible +
+                    " layoutBlocked=" +
+                    uiSession.LayoutBlocked +
+                    " listeners=" +
+                    CountUiListeners() +
+                    ".");
+            }
+            catch (Exception ex)
+            {
+                BlockUiLayout(
+                    uiSession,
+                    "Product UI construction failed closed: " +
+                    ex.GetBaseException().Message);
+            }
+            PublishLifecycle();
+        }
+
+        internal Array ComposeAccessoriesSelectables(
+            object accessoriesBar,
+            Array nativeSelectables)
+        {
+            if (nativeSelectables == null)
+                throw new ArgumentNullException(
+                    nameof(nativeSelectables));
+            UiSession? session = uiSession;
+            if (session == null ||
+                session.LayoutBlocked ||
+                !session.Visible ||
+                !ReferenceEquals(
+                    session.AccessoriesBar,
+                    accessoriesBar))
+            {
+                return nativeSelectables;
             }
 
-            monitor.Log(
-                "MoreEquipmentSlots UI rendered reason=" +
-                reason +
-                " clones=" +
-                uiLeases.Count +
-                " listeners=" +
-                CountUiListeners() +
-                ".");
-            PublishLifecycle();
+            var productButtons = new List<object>(
+                MoreEquipmentSlotsProductContract.FixedSlotCount);
+            foreach (UiLease lease in uiLeases)
+                productButtons.Add(RequireUiButton(lease.Slot));
+            Type elementType =
+                nativeSelectables.GetType().GetElementType() ??
+                throw new InvalidOperationException(
+                    "Native AccessoriesBar selectable array has no element type.");
+            Array result = Array.CreateInstance(
+                elementType,
+                nativeSelectables.Length +
+                    productButtons.Count);
+            Array.Copy(
+                nativeSelectables,
+                result,
+                nativeSelectables.Length);
+            for (int index = 0;
+                 index < productButtons.Count;
+                 index++)
+            {
+                result.SetValue(
+                    productButtons[index],
+                    nativeSelectables.Length + index);
+            }
+            return result;
+        }
+
+        internal void OnAccessoriesBarClear(
+            object accessoriesBar)
+        {
+            UiSession? session = uiSession;
+            if (session == null ||
+                !ReferenceEquals(
+                    session.AccessoriesBar,
+                    accessoriesBar))
+            {
+                return;
+            }
+            session.Visible = false;
+            HideHover();
+            ApplyUiVisibility(session);
         }
 
         internal string BuildLifecycleSummary(
@@ -1081,7 +1351,7 @@ namespace DTMAPI.MoreEquipmentSlots
             ";hooks=" +
             (hooksOverride ?? InstalledPatchCount) +
             ";roots=" +
-            (uiLeases.Count > 0 ? 1 : 0);
+            (uiSession != null ? 1 : 0);
 
         private void StageAllOccupiedForRecovery(string reason)
         {
@@ -1148,6 +1418,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 document?.GameplayCandidate != null ||
                 journalRecoveryBlocked ||
                 pendingGameplayPlacement != null ||
+                pendingGameplayIncomingWithdrawal != null ||
                 pendingJournalPlacements.Count > 0)
             {
                 throw new InvalidOperationException(
@@ -1187,8 +1458,7 @@ namespace DTMAPI.MoreEquipmentSlots
             if (document?.Journal == null)
                 return;
             string fingerprint =
-                DolocTownItemPlacementGateway
-                    .GetNativeSaveFingerprint(archiveIndex);
+                CapturePreSaveFingerprint();
             EquipmentSlotRecoveryDecision decision =
                 EquipmentSlotTransactionCoordinator
                     .DecideRecovery(
@@ -1256,6 +1526,17 @@ namespace DTMAPI.MoreEquipmentSlots
                 ": pending gameplay placement was not resolved by the one immediate same-call observation; reload without native save to restore the committed projection.");
         }
 
+        private void ReconcilePendingGameplayIncomingWithdrawal(
+            string reason)
+        {
+            if (pendingGameplayIncomingWithdrawal == null)
+                return;
+            throw new InvalidOperationException(
+                reason +
+                ": an incoming native withdrawal has an unknown outcome; this process forbids every Product slot operation and native SaveGame. Return to title or restart without saving to restore the committed projection.",
+                pendingGameplayIncomingWithdrawal);
+        }
+
         private void ReconcilePendingJournalPlacements(
             string reason)
         {
@@ -1287,8 +1568,7 @@ namespace DTMAPI.MoreEquipmentSlots
             if (document?.GameplayCandidate == null)
                 return;
             string fingerprint =
-                DolocTownItemPlacementGateway
-                    .GetNativeSaveFingerprint(archiveIndex);
+                CapturePreSaveFingerprint();
             EquipmentSlotGameplayRecoveryDecision decision =
                 EquipmentSlotGameplayCandidateCoordinator
                     .DecideRecovery(
@@ -1503,11 +1783,6 @@ namespace DTMAPI.MoreEquipmentSlots
                 IsTypeOrBase(itemType, "DolocTown.ItemPassive");
             bool isHat =
                 IsTypeOrBase(itemType, "DolocTown.ItemHat");
-            if (!isPassive && !isHat)
-            {
-                throw new InvalidOperationException(
-                    "Only native passive equipment or hats may enter product slots.");
-            }
 
             object? proto = Read(item, "proto");
             object? itemFunction = Read(proto, "Function");
@@ -1556,10 +1831,18 @@ namespace DTMAPI.MoreEquipmentSlots
                             skillFunction,
                             "Defend"))
                     : 0;
-            if (shield && shieldMax <= 0)
+            MoreEquipmentSlotsItemAdmission admission =
+                MoreEquipmentSlotsItemAdmissionPolicy.Decide(
+                    isPassive,
+                    isHat,
+                    itemFunctionType,
+                    skillId,
+                    shield,
+                    shieldMax);
+            if (!admission.Accepted)
             {
                 throw new InvalidOperationException(
-                    "A native shield item must expose a positive maximum shield value before it can enter a ProductNative slot.");
+                    admission.Reason);
             }
             return new EquipmentSlotStorageEntry
             {
@@ -1862,16 +2145,307 @@ namespace DTMAPI.MoreEquipmentSlots
                 Outcome { get; }
         }
 
-        private void ClearUi(string reason)
+        private void InitializeUiSession(
+            UiSession session,
+            int officialPassiveCount)
         {
+            session.OfficialPassiveCount = officialPassiveCount;
+            object accessoriesTransform = RequireMember(
+                session.AccessoriesBar,
+                "transform",
+                "AccessoriesBar.transform");
+            session.CharacterPanel = RequireMember(
+                accessoriesTransform,
+                "parent",
+                "AccessoriesBar character-panel parent");
+            session.WidgetRoot = RequireMember(
+                session.CharacterPanel,
+                "parent",
+                "EquipmentBarWidget root");
+            session.NativeDronePanel = FindChildByName(
+                session.WidgetRoot,
+                "drone_panel") ??
+                throw new InvalidOperationException(
+                    "Native EquipmentBarWidget has no drone_panel authority.");
+
+            object sourceSlot = ResolveSourceSlot(
+                session.AccessoriesBar,
+                officialPassiveCount);
+            session.ProductRowRoot = CreateProductRowRoot(
+                session.CharacterPanel);
+            SetIgnoreLayout(session.ProductRowRoot);
+            object rowTransform = RequireMember(
+                session.ProductRowRoot,
+                "transform",
+                "Product row transform");
+            for (int index = 0;
+                 index < MoreEquipmentSlotsProductContract
+                    .FixedSlotCount;
+                 index++)
+            {
+                object? clone = CloneUnityObject(
+                    sourceSlot,
+                    rowTransform);
+                if (clone == null)
+                {
+                    throw new InvalidOperationException(
+                        "Product slot " +
+                        index +
+                        " could not clone the native AccessorySlot.");
+                }
+                SetMember(
+                    Read(clone, "gameObject"),
+                    "name",
+                    "DTMAPI.MoreEquipmentSlots.Slot." +
+                    index);
+                var lease = new UiLease(clone)
+                {
+                    Index = index
+                };
+                InitializeClonedSlotRuntimeMembers(clone);
+                SanitizeClonedSlot(lease);
+                int capturedIndex = index;
+                BindProductButton(
+                    lease,
+                    () => OnUiClick(capturedIndex),
+                    () => OnUiHover(capturedIndex),
+                    HideHover);
+                uiLeases.Add(lease);
+            }
+
+            RefreshUiLayout(session);
+        }
+
+        private MoreEquipmentSlotsUiLayout CalculateUiLayout(
+            UiSession session,
+            out UiBounds lastOfficialBounds)
+        {
+            lastOfficialBounds = default;
+            object characterPanel =
+                session.CharacterPanel ??
+                throw new InvalidOperationException(
+                    "Character equipment panel is unavailable.");
+            var officialSlots = new List<object>();
+            foreach (object slot in GetOfficialSlots(
+                session.AccessoriesBar,
+                session.OfficialPassiveCount))
+            {
+                officialSlots.Add(slot);
+            }
+            if (officialSlots.Count !=
+                2 + session.OfficialPassiveCount)
+            {
+                return MoreEquipmentSlotsUiLayoutPolicy.Calculate(
+                    0f,
+                    0f,
+                    0f,
+                    session.OfficialPassiveCount);
+            }
+
+            UiBounds previousBounds = ReadRelativeBounds(
+                officialSlots[officialSlots.Count - 2],
+                characterPanel);
+            lastOfficialBounds = ReadRelativeBounds(
+                officialSlots[officialSlots.Count - 1],
+                characterPanel);
+            if (lastOfficialBounds.MinX <= previousBounds.MinX)
+            {
+                return MoreEquipmentSlotsUiLayoutPolicy.Calculate(
+                    0f,
+                    0f,
+                    0f,
+                    session.OfficialPassiveCount);
+            }
+            return MoreEquipmentSlotsUiLayoutPolicy.Calculate(
+                lastOfficialBounds.MaxX -
+                    lastOfficialBounds.MinX,
+                lastOfficialBounds.MaxY -
+                    lastOfficialBounds.MinY,
+                lastOfficialBounds.MinX -
+                    previousBounds.MaxX,
+                session.OfficialPassiveCount);
+        }
+
+        private void RefreshUiLayout(UiSession session)
+        {
+            ForceCanvasLayout();
+            MoreEquipmentSlotsUiLayout layout =
+                CalculateUiLayout(
+                    session,
+                    out UiBounds lastOfficialBounds);
+            if (!layout.Valid)
+            {
+                BlockUiLayout(session, layout.Reason);
+                return;
+            }
+            if (session.ProductRowRoot == null)
+            {
+                BlockUiLayout(
+                    session,
+                    "The Product equipment-row root is incomplete.");
+                return;
+            }
+            if (uiLeases.Count !=
+                MoreEquipmentSlotsProductContract.FixedSlotCount)
+            {
+                BlockUiLayout(
+                    session,
+                    "The Product equipment row does not own exactly three slot clones.");
+                return;
+            }
+
+            object characterPanel =
+                session.CharacterPanel ??
+                throw new InvalidOperationException(
+                    "Character equipment panel is unavailable.");
+            object characterRect =
+                RequireRectTransform(characterPanel);
+            GetRectSize(
+                characterRect,
+                out float characterWidth,
+                out float characterHeight);
+            object pivot = RequireMember(
+                characterRect,
+                "pivot",
+                "Character equipment panel pivot");
+            float parentMinX =
+                -ReadFloat(pivot, "x") * characterWidth;
+            float parentMinY =
+                -ReadFloat(pivot, "y") * characterHeight;
+            SetRectTransform(
+                RequireRectTransform(session.ProductRowRoot),
+                anchorX: 0f,
+                anchorY: 0f,
+                pivotX: 0f,
+                pivotY: 0f,
+                width: layout.ContentWidth,
+                height: layout.ContentHeight,
+                positionX:
+                    lastOfficialBounds.MaxX +
+                    MoreEquipmentSlotsUiLayoutPolicy
+                        .SlotSpacing -
+                    parentMinX,
+                positionY:
+                    lastOfficialBounds.MinY -
+                    parentMinY);
+            for (int index = 0;
+                 index < uiLeases.Count;
+                 index++)
+            {
+                SetRectTransform(
+                    RequireRectTransform(
+                        uiLeases[index].Slot),
+                    anchorX: 0f,
+                    anchorY: 0f,
+                    pivotX: 0.5f,
+                    pivotY: 0.5f,
+                    width:
+                        MoreEquipmentSlotsUiLayoutPolicy
+                            .SlotSize,
+                    height:
+                        MoreEquipmentSlotsUiLayoutPolicy
+                            .SlotSize,
+                    positionX:
+                        MoreEquipmentSlotsUiLayoutPolicy
+                            .ProductSlotX(layout, index),
+                    positionY: layout.SlotY);
+            }
+            ForceCanvasLayout();
+            string? invalid = ValidateProductRow(session);
+            if (invalid != null)
+            {
+                BlockUiLayout(session, invalid);
+                return;
+            }
+
+            session.LayoutBlocked = false;
+            session.LayoutMessage = layout.Reason;
+            session.Visible = true;
+            ApplyUiVisibility(session);
+            RebuildEquipmentNavigation(session);
+        }
+
+        private string? ValidateProductRow(UiSession session)
+        {
+            object nativeDrone =
+                session.NativeDronePanel ??
+                throw new InvalidOperationException(
+                    "The native drone panel is unavailable.");
+            var officialSlots = new List<object>();
+            foreach (object slot in GetOfficialSlots(
+                session.AccessoriesBar,
+                session.OfficialPassiveCount))
+            {
+                officialSlots.Add(slot);
+            }
+
             foreach (UiLease lease in uiLeases)
             {
-                lease.ClearListeners();
-                DestroyUnityObject(
-                    Read(lease.Slot, "gameObject") ??
-                    lease.Slot);
+                object productSlot = lease.Slot;
+                if (WorldRectsIntersect(
+                    productSlot,
+                    nativeDrone))
+                {
+                    return
+                        "A Product equipment slot intersects the native drone panel; Product UI is hidden and release acceptance must stop.";
+                }
+                foreach (object officialSlot in officialSlots)
+                {
+                    if (WorldRectsIntersect(
+                        productSlot,
+                        officialSlot))
+                    {
+                        return
+                            "A Product equipment slot intersects a native equipment slot; Product UI is hidden and release acceptance must stop.";
+                    }
+                }
             }
+            return null;
+        }
+
+        private void ApplyUiVisibility(UiSession session)
+        {
+            SetUnityActive(
+                session.ProductRowRoot,
+                !session.LayoutBlocked && session.Visible);
+        }
+
+        private void BlockUiLayout(
+            UiSession? session,
+            string reason)
+        {
+            if (session != null)
+            {
+                bool changed =
+                    !session.LayoutBlocked ||
+                    !string.Equals(
+                        session.LayoutMessage,
+                        reason,
+                        StringComparison.Ordinal);
+                session.LayoutBlocked = true;
+                session.Visible = false;
+                session.LayoutMessage = reason ?? string.Empty;
+                ApplyUiVisibility(session);
+                if (!changed)
+                    return;
+            }
+            lastMessage =
+                "Product UI layout blocked: " +
+                (reason ?? string.Empty);
+            monitor.Log(
+                "MoreEquipmentSlots Product UI failed closed: " +
+                reason,
+                LogLevel.Error);
+        }
+
+        private void ClearUi(string reason)
+        {
+            UiSession? session = uiSession;
+            foreach (UiLease lease in uiLeases)
+                lease.ClearListeners();
             uiLeases.Clear();
+            DestroyUnityObject(session?.ProductRowRoot);
+            uiSession = null;
             monitor.Log(
                 "MoreEquipmentSlots UI lifecycle cleared reason=" +
                 reason +
@@ -1892,68 +2466,115 @@ namespace DTMAPI.MoreEquipmentSlots
                 ".");
         }
 
-        private void BindUiLease(UiLease lease, int slotIndex)
+        private static void SanitizeClonedSlot(UiLease lease)
         {
-            lease.Index = slotIndex;
-            MethodInfo? setClick = FindMethod(
-                lease.Slot.GetType(),
-                "SetClickCallbacks",
-                8);
-            if (setClick != null)
+            string[] eventNames =
             {
-                ParameterInfo[] parameters =
-                    setClick.GetParameters();
-                var clickBinder =
-                    new IntCallbackBinder(
-                        _ => OnUiClick(slotIndex));
-                Delegate click = Delegate.CreateDelegate(
-                    parameters[0].ParameterType,
-                    clickBinder,
-                    typeof(IntCallbackBinder).GetMethod(
-                        nameof(IntCallbackBinder.Invoke))!);
-                object?[] args =
-                    new object?[parameters.Length];
-                args[0] = click;
-                if (args.Length > 4)
-                    args[4] = click;
-                setClick.Invoke(lease.Slot, args);
-                lease.ListenerRoots.Add(clickBinder);
-                lease.ListenerRoots.Add(click);
+                "onClick",
+                "onSelect",
+                "onDeselect",
+                "onPointerEnter",
+                "onPointerExit",
+                "onPointerDown",
+                "onPointerUp",
+                "onLeftClick",
+                "onLeftLongClick",
+                "onRightClick",
+                "onRightLongClick",
+                "onAssistLeftClick",
+                "onAssistRightClick",
+                "onMove"
+            };
+            InvokeNoArg(lease.Slot, "ClearAllClickCallbacks");
+            foreach (string eventName in eventNames)
+                RemoveAllListeners(Read(lease.Slot, eventName));
+            object? button = Read(lease.Slot, "button");
+            InvokeNoArg(button, "ClearAllClickCallbacks");
+            foreach (string eventName in eventNames)
+                RemoveAllListeners(Read(button, eventName));
+            SetMember(button, "onLeftContinuesClick", null);
+            SetMember(button, "onRightContinuesClick", null);
+        }
+
+        private static void InitializeClonedSlotRuntimeMembers(
+            object slot)
+        {
+            object? ownedTransform = Read(slot, "transform") ??
+                Read(Read(slot, "gameObject"), "transform");
+            if (ownedTransform == null)
+            {
+                throw new InvalidOperationException(
+                    "The cloned Product AccessorySlot has no owned transform.");
+            }
+            object rectTransform = RequireRectTransform(
+                ownedTransform);
+            _ = SetMember(
+                slot,
+                "rectTransform",
+                rectTransform);
+            object? confirmed = Read(slot, "rectTransform");
+            if (confirmed == null ||
+                !ReferenceEquals(confirmed, rectTransform))
+            {
+                throw new InvalidOperationException(
+                    "The cloned Product AccessorySlot could not bind its runtime RectTransform.");
             }
 
-            BindIntEvent(
-                Read(lease.Slot, "onPointerEnter"),
-                new IntCallbackBinder(
-                    _ => OnUiHover(slotIndex)),
+            object? parent = Read(rectTransform, "parent");
+            if (parent != null)
+                SetMember(slot, "parentRect", parent);
+        }
+
+        private static void BindProductButton(
+            UiLease lease,
+            Action click,
+            Action hover,
+            Action exit)
+        {
+            object button = RequireUiButton(lease.Slot);
+            BindVoidEvent(
+                Read(button, "onLeftClick"),
+                click,
                 lease);
-            BindIntEvent(
-                Read(lease.Slot, "onPointerExit"),
-                new IntCallbackBinder(
-                    _ => HideHover()),
+            BindVoidEvent(
+                Read(button, "onSelect"),
+                hover,
+                lease);
+            BindVoidEvent(
+                Read(button, "onPointerEnter"),
+                hover,
+                lease);
+            BindVoidEvent(
+                Read(button, "onDeselect"),
+                exit,
+                lease);
+            BindVoidEvent(
+                Read(button, "onPointerExit"),
+                exit,
                 lease);
         }
 
-        private void BindIntEvent(
+        private static void BindVoidEvent(
             object? unityEvent,
-            IntCallbackBinder binder,
+            Action action,
             UiLease lease)
         {
             if (unityEvent == null)
                 return;
-            InvokeNoArg(unityEvent, "RemoveAllListeners");
             MethodInfo? add = FindMethod(
                 unityEvent.GetType(),
                 "AddListener",
                 1);
             if (add == null)
                 return;
+            var binder = new VoidCallbackBinder(action);
             Type delegateType =
                 add.GetParameters()[0].ParameterType;
             Delegate callback = Delegate.CreateDelegate(
                 delegateType,
                 binder,
-                typeof(IntCallbackBinder).GetMethod(
-                    nameof(IntCallbackBinder.Invoke))!);
+                typeof(VoidCallbackBinder).GetMethod(
+                    nameof(VoidCallbackBinder.Invoke))!);
             add.Invoke(
                 unityEvent,
                 new object[] { callback });
@@ -2006,17 +2627,63 @@ namespace DTMAPI.MoreEquipmentSlots
                 return false;
             }
 
-            object? taken =
-                FindMethod(
+            object? taken;
+            try
+            {
+                MethodInfo? take = FindMethod(
                     buffer.GetType(),
                     "Take",
-                    0)?.Invoke(buffer, null);
+                    0);
+                if (take == null)
+                {
+                    throw new MissingMethodException(
+                        buffer.GetType().FullName,
+                        "Take()");
+                }
+                taken = take.Invoke(buffer, null);
+            }
+            catch (Exception ex)
+            {
+                throw EquipmentSlotNativeMutationEvidence.Unknown(
+                    itemId,
+                    1,
+                    0,
+                    0,
+                    "Native held-item buffer Take threw after mutation may have begun.",
+                    ex);
+            }
+
+            object? after;
+            try
+            {
+                after = Read(buffer, "CurrentItem");
+            }
+            catch (Exception ex)
+            {
+                throw EquipmentSlotNativeMutationEvidence.Unknown(
+                    itemId,
+                    1,
+                    0,
+                    0,
+                    "Native held-item buffer post-state is unreadable.",
+                    ex);
+            }
             succeeded =
                 taken != null &&
                 string.Equals(
                     ReadString(taken, "name"),
                     itemId,
-                    StringComparison.Ordinal);
+                    StringComparison.Ordinal) &&
+                after == null;
+            if (!succeeded)
+            {
+                throw EquipmentSlotNativeMutationEvidence.Unknown(
+                    itemId,
+                    1,
+                    0,
+                    0,
+                    "Native held-item buffer returned contradictory withdrawal evidence; the matching item was not both returned and removed from the buffer.");
+            }
             return true;
         }
 
@@ -2042,19 +2709,16 @@ namespace DTMAPI.MoreEquipmentSlots
                 ? GenerateNativeItem(slot.ItemId)
                 : null;
             UiLease? lease = FindUiLease(slotIndex);
-            MethodInfo? show = lease == null
-                ? null
-                : FindMethod(
-                    lease.Slot.GetType(),
-                    "ShowEquipmentItemViewer",
-                    2);
-            show?.Invoke(
-                lease!.Slot,
-                new object?[]
-                {
+            if (lease != null)
+            {
+                ShowSlotHint(
+                    lease.Slot,
                     nativeItem,
-                    "DTMAPI extra attribute slot"
-                });
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        slotUiText,
+                        slotIndex + 1));
+            }
             monitor.Log(
                 "MoreEquipmentSlots UI hover slot=" +
                 slotIndex +
@@ -2079,8 +2743,561 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             MethodInfo? method = typeof(DolocAPI).GetMethod(
                 "HideHoverBox",
-                BindingFlags.Public | BindingFlags.Static);
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: Type.EmptyTypes,
+                modifiers: null);
             method?.Invoke(null, null);
+        }
+
+        private static void ShowSlotHint(
+            object slot,
+            object? nativeItem,
+            string text)
+        {
+            FindMethod(
+                slot.GetType(),
+                "ShowEquipmentItemViewer",
+                2)?.Invoke(
+                    slot,
+                    new object?[]
+                    {
+                        nativeItem,
+                        text ?? string.Empty
+                    });
+        }
+
+        private static object RequireMember(
+            object target,
+            string name,
+            string authority) =>
+            Read(target, name) ??
+            throw new InvalidOperationException(
+                authority + " is unavailable.");
+
+        private static object ResolveSourceSlot(
+            object accessoriesBar,
+            int officialPassiveCount)
+        {
+            if (officialPassiveCount > 0)
+            {
+                MethodInfo? getPassive = FindMethod(
+                    accessoriesBar.GetType(),
+                    "GetPassiveSlotByIndex",
+                    1);
+                object? passive = getPassive?.Invoke(
+                    accessoriesBar,
+                    new object[] { 0 });
+                if (passive != null)
+                    return passive;
+            }
+            return Read(accessoriesBar, "positiveItem") ??
+                throw new InvalidOperationException(
+                    "Native AccessoriesBar exposes no cloneable slot.");
+        }
+
+        private static IEnumerable<object> GetOfficialSlots(
+            object accessoriesBar,
+            int officialPassiveCount)
+        {
+            object? hat = Read(accessoriesBar, "hatItem");
+            if (hat != null)
+                yield return hat;
+            object? positive =
+                Read(accessoriesBar, "positiveItem");
+            if (positive != null)
+                yield return positive;
+            MethodInfo? getPassive = FindMethod(
+                accessoriesBar.GetType(),
+                "GetPassiveSlotByIndex",
+                1);
+            if (getPassive == null)
+                yield break;
+            for (int index = 0;
+                 index < officialPassiveCount;
+                 index++)
+            {
+                object? passive = getPassive.Invoke(
+                    accessoriesBar,
+                    new object[] { index });
+                if (passive != null)
+                    yield return passive;
+            }
+        }
+
+        private static object? FindChildByName(
+            object parentTransform,
+            string name)
+        {
+            int childCount = ReadInt(
+                parentTransform,
+                "childCount");
+            MethodInfo? getChild = FindMethod(
+                parentTransform.GetType(),
+                "GetChild",
+                1);
+            if (getChild == null)
+                return null;
+            for (int index = 0; index < childCount; index++)
+            {
+                object? child = getChild.Invoke(
+                    parentTransform,
+                    new object[] { index });
+                if (child == null)
+                    continue;
+                string childName =
+                    ReadString(
+                        Read(child, "gameObject"),
+                        "name");
+                if (string.Equals(
+                    childName,
+                    name,
+                    StringComparison.Ordinal))
+                {
+                    return child;
+                }
+            }
+            for (int index = 0; index < childCount; index++)
+            {
+                object? child = getChild.Invoke(
+                    parentTransform,
+                    new object[] { index });
+                if (child == null)
+                    continue;
+                object? found = FindChildByName(
+                    child,
+                    name);
+                if (found != null)
+                    return found;
+            }
+            return null;
+        }
+
+        private static object CreateProductRowRoot(
+            object characterPanel)
+        {
+            Type gameObjectType = RequireRuntimeType(
+                "UnityEngine.GameObject");
+            Type rectTransformType = RequireRuntimeType(
+                "UnityEngine.RectTransform");
+            object root = Activator.CreateInstance(
+                gameObjectType,
+                new object[]
+                {
+                    "DTMAPI.MoreEquipmentSlots.Row",
+                    new[]
+                    {
+                        rectTransformType
+                    }
+                }) ??
+                throw new InvalidOperationException(
+                    "Unity could not create the Product equipment-row root.");
+            object transform = RequireMember(
+                root,
+                "transform",
+                "Product equipment-row transform");
+            SetTransformParent(
+                transform,
+                characterPanel);
+            InvokeNoArg(transform, "SetAsLastSibling");
+            return root;
+        }
+
+        private static void SetIgnoreLayout(
+            object target,
+            float? preferredWidth = null,
+            float? preferredHeight = null)
+        {
+            object gameObject =
+                Read(target, "gameObject") ?? target;
+            Type layoutElementType = RequireRuntimeType(
+                "UnityEngine.UI.LayoutElement");
+            object layout = GetComponent(
+                gameObject,
+                layoutElementType) ??
+                AddComponent(
+                    gameObject,
+                    layoutElementType) ??
+                throw new InvalidOperationException(
+                    "Product UI root could not acquire LayoutElement.");
+            SetMember(layout, "ignoreLayout", true);
+            if (preferredWidth.HasValue)
+            {
+                SetMember(
+                    layout,
+                    "preferredWidth",
+                    preferredWidth.Value);
+            }
+            if (preferredHeight.HasValue)
+            {
+                SetMember(
+                    layout,
+                    "preferredHeight",
+                    preferredHeight.Value);
+            }
+        }
+
+        private static object RequireRectTransform(object target)
+        {
+            if (string.Equals(
+                target.GetType().FullName,
+                "UnityEngine.RectTransform",
+                StringComparison.Ordinal))
+            {
+                return target;
+            }
+            object? rect = Read(target, "rectTransform");
+            if (rect != null)
+                return rect;
+            object? transform = Read(target, "transform");
+            if (transform != null &&
+                string.Equals(
+                    transform.GetType().FullName,
+                    "UnityEngine.RectTransform",
+                    StringComparison.Ordinal))
+            {
+                return transform;
+            }
+            object? gameObject = Read(target, "gameObject");
+            transform = Read(gameObject, "transform");
+            if (transform != null)
+                return transform;
+            throw new InvalidOperationException(
+                "Product UI target has no RectTransform.");
+        }
+
+        private static void GetRectSize(
+            object target,
+            out float width,
+            out float height)
+        {
+            object rectTransform = RequireRectTransform(target);
+            object rect = RequireMember(
+                rectTransform,
+                "rect",
+                "RectTransform.rect");
+            width = ReadFloat(rect, "width");
+            height = ReadFloat(rect, "height");
+            if (width <= 0f || height <= 0f)
+            {
+                throw new InvalidOperationException(
+                    "Product UI target has an unreadable or empty Rect.");
+            }
+        }
+
+        private static void SetRectTransform(
+            object rectTransform,
+            float anchorX,
+            float anchorY,
+            float pivotX,
+            float pivotY,
+            float width,
+            float height,
+            float positionX,
+            float positionY)
+        {
+            object anchor = CreateUnityValue(
+                "UnityEngine.Vector2",
+                anchorX,
+                anchorY);
+            SetMember(rectTransform, "anchorMin", anchor);
+            SetMember(rectTransform, "anchorMax", anchor);
+            SetMember(
+                rectTransform,
+                "pivot",
+                CreateUnityValue(
+                    "UnityEngine.Vector2",
+                    pivotX,
+                    pivotY));
+            SetMember(
+                rectTransform,
+                "sizeDelta",
+                CreateUnityValue(
+                    "UnityEngine.Vector2",
+                    width,
+                    height));
+            SetMember(
+                rectTransform,
+                "anchoredPosition",
+                CreateUnityValue(
+                    "UnityEngine.Vector2",
+                    positionX,
+                    positionY));
+        }
+
+        private static void ForceCanvasLayout()
+        {
+            Type? canvas = ResolveRuntimeType(
+                "UnityEngine.Canvas");
+            canvas?.GetMethod(
+                "ForceUpdateCanvases",
+                BindingFlags.Public |
+                BindingFlags.Static,
+                binder: null,
+                types: Type.EmptyTypes,
+                modifiers: null)?.Invoke(null, null);
+        }
+
+        private static bool WorldRectsIntersect(
+            object left,
+            object right)
+        {
+            UiBounds a = ReadWorldBounds(left);
+            UiBounds b = ReadWorldBounds(right);
+            const float epsilon = 0.5f;
+            return a.MinX < b.MaxX - epsilon &&
+                a.MaxX > b.MinX + epsilon &&
+                a.MinY < b.MaxY - epsilon &&
+                a.MaxY > b.MinY + epsilon;
+        }
+
+        private static UiBounds ReadRelativeBounds(
+            object target,
+            object relativeTo)
+        {
+            object targetRect = RequireRectTransform(target);
+            object relativeRect = RequireRectTransform(relativeTo);
+            Type vector3Type = RequireRuntimeType(
+                "UnityEngine.Vector3");
+            Array corners = Array.CreateInstance(vector3Type, 4);
+            MethodInfo? getWorldCorners = FindMethod(
+                targetRect.GetType(),
+                "GetWorldCorners",
+                1);
+            MethodInfo? inverseTransformPoint = FindMethod(
+                relativeRect.GetType(),
+                "InverseTransformPoint",
+                1);
+            if (getWorldCorners == null ||
+                inverseTransformPoint == null)
+            {
+                throw new MissingMethodException(
+                    "RectTransform.GetWorldCorners/Transform.InverseTransformPoint");
+            }
+            getWorldCorners.Invoke(
+                targetRect,
+                new object[] { corners });
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+            foreach (object corner in corners)
+            {
+                object local = inverseTransformPoint.Invoke(
+                    relativeRect,
+                    new[] { corner }) ??
+                    throw new InvalidOperationException(
+                        "RectTransform.InverseTransformPoint returned no coordinate.");
+                float x = ReadFloat(local, "x");
+                float y = ReadFloat(local, "y");
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x);
+                maxY = Math.Max(maxY, y);
+            }
+            return new UiBounds(minX, minY, maxX, maxY);
+        }
+
+        private static UiBounds ReadWorldBounds(object target)
+        {
+            object rectTransform = RequireRectTransform(target);
+            Type vector3Type = RequireRuntimeType(
+                "UnityEngine.Vector3");
+            Array corners = Array.CreateInstance(
+                vector3Type,
+                4);
+            MethodInfo? getWorldCorners = FindMethod(
+                rectTransform.GetType(),
+                "GetWorldCorners",
+                1);
+            if (getWorldCorners == null)
+            {
+                throw new MissingMethodException(
+                    rectTransform.GetType().FullName,
+                    "GetWorldCorners(Vector3[])");
+            }
+            getWorldCorners.Invoke(
+                rectTransform,
+                new object[] { corners });
+            float minX = float.MaxValue;
+            float minY = float.MaxValue;
+            float maxX = float.MinValue;
+            float maxY = float.MinValue;
+            foreach (object corner in corners)
+            {
+                float x = ReadFloat(corner, "x");
+                float y = ReadFloat(corner, "y");
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x);
+                maxY = Math.Max(maxY, y);
+            }
+            return new UiBounds(minX, minY, maxX, maxY);
+        }
+
+        private static void RebuildEquipmentNavigation(
+            UiSession session)
+        {
+            Type? panelType = typeof(DolocAPI).Assembly.GetType(
+                "DolocTown.UI.EquipmentBarPanel",
+                throwOnError: false);
+            if (panelType == null)
+                return;
+            object? current =
+                Read(session.AccessoriesBar, "transform");
+            while (current != null)
+            {
+                object? gameObject = Read(
+                    current,
+                    "gameObject");
+                object? panel = gameObject == null
+                    ? null
+                    : GetComponent(
+                        gameObject,
+                        panelType);
+                if (panel != null)
+                {
+                    InvokeNoArg(panel, "RebuildNavigation");
+                    return;
+                }
+                current = Read(current, "parent");
+            }
+        }
+
+        private static object RequireUiButton(object slot) =>
+            Read(slot, "button") ??
+            throw new InvalidOperationException(
+                "Product AccessorySlot exposes no native Selectable button.");
+
+        private static void SetUnityActive(
+            object? gameObject,
+            bool active)
+        {
+            if (gameObject == null)
+                return;
+            MethodInfo? setActive = FindMethod(
+                gameObject.GetType(),
+                "SetActive",
+                1);
+            setActive?.Invoke(
+                gameObject,
+                new object[] { active });
+        }
+
+        private static void RemoveAllListeners(
+            object? unityEvent)
+        {
+            if (unityEvent != null)
+                InvokeNoArg(unityEvent, "RemoveAllListeners");
+        }
+
+        private static Type RequireRuntimeType(string fullName) =>
+            ResolveRuntimeType(fullName) ??
+            throw new TypeLoadException(fullName);
+
+        private static Type? ResolveRuntimeType(string fullName)
+        {
+            string[] assemblies =
+            {
+                "UnityEngine.CoreModule",
+                "UnityEngine.UI",
+                "UnityEngine"
+            };
+            foreach (string assembly in assemblies)
+            {
+                Type? type = Type.GetType(
+                    fullName + ", " + assembly,
+                    throwOnError: false);
+                if (type != null)
+                    return type;
+            }
+            foreach (Assembly assembly in
+                AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type? type = assembly.GetType(
+                    fullName,
+                    throwOnError: false);
+                if (type != null)
+                    return type;
+            }
+            return null;
+        }
+
+        private static object CreateUnityValue(
+            string typeName,
+            params object[] values) =>
+            Activator.CreateInstance(
+                RequireRuntimeType(typeName),
+                values) ??
+            throw new InvalidOperationException(
+                "Could not construct " + typeName + ".");
+
+        private static object? GetComponent(
+            object gameObject,
+            Type componentType) =>
+            InvokeTypeComponentMethod(
+                gameObject,
+                "GetComponent",
+                componentType);
+
+        private static object? AddComponent(
+            object gameObject,
+            Type componentType) =>
+            InvokeTypeComponentMethod(
+                gameObject,
+                "AddComponent",
+                componentType);
+
+        private static object? InvokeTypeComponentMethod(
+            object gameObject,
+            string methodName,
+            Type componentType)
+        {
+            foreach (MethodInfo method in gameObject.GetType()
+                .GetMethods(AllMembers))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name == methodName &&
+                    !method.IsGenericMethod &&
+                    parameters.Length == 1 &&
+                    parameters[0].ParameterType == typeof(Type))
+                {
+                    return method.Invoke(
+                        gameObject,
+                        new object[] { componentType });
+                }
+            }
+            return null;
+        }
+
+        private static void SetTransformParent(
+            object transform,
+            object parent)
+        {
+            MethodInfo? setParent = FindMethod(
+                transform.GetType(),
+                "SetParent",
+                2);
+            if (setParent != null)
+            {
+                setParent.Invoke(
+                    transform,
+                    new object[] { parent, false });
+                return;
+            }
+            setParent = FindMethod(
+                transform.GetType(),
+                "SetParent",
+                1);
+            if (setParent == null)
+            {
+                throw new MissingMethodException(
+                    transform.GetType().FullName,
+                    "SetParent(Transform,bool)");
+            }
+            setParent.Invoke(
+                transform,
+                new[] { parent });
         }
 
         private static void RenderSlot(
@@ -2290,13 +3507,8 @@ namespace DTMAPI.MoreEquipmentSlots
             object source,
             object parent)
         {
-            Type? unityObject =
-                Type.GetType(
-                    "UnityEngine.Object, UnityEngine.CoreModule",
-                    throwOnError: false) ??
-                Type.GetType(
-                    "UnityEngine.Object, UnityEngine",
-                    throwOnError: false);
+            Type? unityObject = ResolveRuntimeType(
+                "UnityEngine.Object");
             if (unityObject == null)
                 return null;
             foreach (MethodInfo method in unityObject.GetMethods(
@@ -2324,13 +3536,8 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             if (value == null)
                 return;
-            Type? unityObject =
-                Type.GetType(
-                    "UnityEngine.Object, UnityEngine.CoreModule",
-                    throwOnError: false) ??
-                Type.GetType(
-                    "UnityEngine.Object, UnityEngine",
-                    throwOnError: false);
+            Type? unityObject = ResolveRuntimeType(
+                "UnityEngine.Object");
             MethodInfo? destroy = unityObject?.GetMethod(
                 "Destroy",
                 BindingFlags.Public | BindingFlags.Static,
@@ -2516,16 +3723,66 @@ namespace DTMAPI.MoreEquipmentSlots
             }
         }
 
-        private sealed class IntCallbackBinder
+        private sealed class UiSession
         {
-            private readonly Action<int> callback;
+            internal UiSession(object accessoriesBar) =>
+                AccessoriesBar = accessoriesBar ??
+                    throw new ArgumentNullException(
+                        nameof(accessoriesBar));
 
-            internal IntCallbackBinder(
-                Action<int> callback) =>
+            internal object AccessoriesBar { get; }
+
+            internal object? CharacterPanel { get; set; }
+
+            internal object? WidgetRoot { get; set; }
+
+            internal object? NativeDronePanel { get; set; }
+
+            internal object? ProductRowRoot { get; set; }
+
+            internal int OfficialPassiveCount { get; set; }
+
+            internal bool Visible { get; set; }
+
+            internal bool LayoutBlocked { get; set; }
+
+            internal string LayoutMessage { get; set; } =
+                string.Empty;
+
+        }
+
+        private readonly struct UiBounds
+        {
+            internal UiBounds(
+                float minX,
+                float minY,
+                float maxX,
+                float maxY)
+            {
+                MinX = minX;
+                MinY = minY;
+                MaxX = maxX;
+                MaxY = maxY;
+            }
+
+            internal float MinX { get; }
+
+            internal float MinY { get; }
+
+            internal float MaxX { get; }
+
+            internal float MaxY { get; }
+        }
+
+        private sealed class VoidCallbackBinder
+        {
+            private readonly Action callback;
+
+            internal VoidCallbackBinder(
+                Action callback) =>
                 this.callback = callback;
 
-            public void Invoke(int value) =>
-                callback(value);
+            public void Invoke() => callback();
         }
     }
 }

@@ -34,7 +34,9 @@ Those local-only folders may exist in a developer workspace, but they must not b
 
 The reverse build folders may include `input/Assembly-CSharp.dll`, full official player snapshots, decompiled game code, and extracted Unity assets for local research. Do not publish or package those files.
 
-DTMAPI's tracked clean-room capture/index entry point is `../tools/scripts/capture-doloctown-reverse-baseline.ps1`. It writes official bytes and extracted output only under the ignored reverse tree; tracked documentation may record counts, hashes, limitations, and derived behavior conclusions, but not copied official content.
+Use [the capture workflow](../tools/portable-reverse-capture/README.zh-CN.md): `Status` reads existing stage summaries, `CodeOnly` omits resource export, and full capture runs only the missing or invalid stages. `Resume` binds the retained snapshot, tools and outputs before reuse. A symbol lookup uses existing matching knowledge; [baseline comparison](../tools/reverse-capture/README.md) reads the selected captures without starting unpacking tools.
+
+Official bytes and extracted output stay in the ignored reverse tree. Tracked documentation may record hashes, limitations and derived conclusions, not copied official content. Build-policy reference identity, latest research observation and actual test-game identity are separate facts.
 
 DTMAPI-authored native-owner summaries derived from these local references belong in `../docs/reviews/api/native-owner-domains/INDEX.md`. That library may name classes, members, maps, and official docs, but it must not copy decompiled method bodies or distribute official binaries.
 

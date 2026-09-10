@@ -4,14 +4,17 @@
     <OutputType>Library</OutputType>
     <AssemblyName>DTMAPI.InstallDoctor</AssemblyName>
     <RootNamespace>DTMAPI.InstallDoctor</RootNamespace>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0</InformationalVersion>
+    <Version>0.7.0</Version>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
+    <FileVersion>0.7.0.0</FileVersion>
+    <InformationalVersion>0.7.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\AuthorApiTargetCatalog.cs" Link="AuthorApiTargetCatalog.cs" />
+    <Compile Include="..\Shared\AuthorPackageMarker.cs" Link="AuthorPackageMarker.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\target-catalog.json" LogicalName="DTMAPI.Authoring.target-catalog.json" />
     <ProjectReference Include="..\DTMAPI.Tooling.Metadata\DTMAPI.Tooling.Metadata.csproj" />
     <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json"
                       LogicalName="DTMAPI.InstallDoctor.AdvancedReferencePolicyRegistry.json" />
@@ -24,4 +27,25 @@
                       Exclude="..\..\author-sdk\advanced-reference-policies\history\runtime-registry.json"
                       LogicalName="DTMAPI.InstallDoctor.HistoricalAdvancedReferencePolicy.%(Filename)%(Extension)" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageSemanticVersion.cs" Link="Authoring\PackageSemanticVersion.cs" />
+    <Compile Include="..\Shared\PackageDependencyContract.cs" Link="Authoring\PackageDependencyContract.cs" />
+    <Compile Include="..\Shared\PackageDependencyPlanner.cs" Link="Authoring\PackageDependencyPlanner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyVerifier.cs" Link="Authoring\PackageDependencyVerifier.cs" />
+    <Compile Include="..\Shared\PackagePortableMetadata.net.cs" Link="Authoring\PackagePortableMetadata.net.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageHostReferences.cs" Link="Authoring\PackageHostReferences.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\bcl-reference-identities.json" LogicalName="DTMAPI.Authoring.bcl-reference-identities.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyBundle.cs" Link="Authoring\PackageDependencyBundle.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/NativeSignature.cs" Link="Authoring/NativeSignature.cs" />
+    <Compile Include="../Shared/NativePackageContract.cs" Link="Authoring/NativePackageContract.cs" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/NativeGenericSignature.cs" Link="Authoring/NativeGenericSignature.cs" /></ItemGroup>
 </Project>

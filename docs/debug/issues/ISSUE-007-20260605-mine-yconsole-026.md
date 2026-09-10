@@ -1,8 +1,10 @@
-# ISSUE-007: 2026-06-05 0.2.6 Mine scale/research and Y-console reload/UI regressions
+﻿# ISSUE-007: 2026-06-05 0.2.6 Mine scale/research and Y-console reload/UI regressions
+
+- State: `verified`
+- Current boundary: Current record is smoke-verified.
 
 ## Current Status
 
-- Status: smoke-verified
 - Opened: 2026-06-05 +08:00
 - Target: DTMAPI 0.2.6
 - Source: user manual QA feedback summarized in `readme.md`

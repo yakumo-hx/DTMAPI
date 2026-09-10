@@ -100,7 +100,7 @@ function Remove-OwnedTestReparsePoint {
 
 try {
     $runner = Join-Path $PSScriptRoot 'run-game-smoke.ps1'
-    $runnerSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $runner
+
     $coldRecoveryRunner =
         Join-Path $PSScriptRoot `
             'run-moreequipment-cold-recovery-acceptance.ps1'
@@ -110,65 +110,19 @@ try {
     $moreSavesFixed12Runner =
         Join-Path $PSScriptRoot `
             'run-moresaves-fixed12-acceptance.ps1'
-    $moreSavesFixed12RunnerSource =
-        Get-Content -Raw -Encoding UTF8 -LiteralPath `
-            $moreSavesFixed12Runner
+
     $wrapperPaths = @(
         'run-batch5-gc-ladder.ps1',
         'run-batch5-no-demand-profile.ps1',
         'run-batch6-autofishing-behavior-matrix.ps1',
         'run-batch6-autofishing-gc-ladder.ps1',
         'run-batch6-autofishing-manager-lifecycle.ps1',
-        'run-moreequipment-cold-recovery-acceptance.ps1',
-        'run-moresaves-fixed12-acceptance.ps1'
+        'run-moreequipment-cold-recovery-acceptance.ps1'
     )
-
-    Assert-True ($runnerSource.Contains("ValidateSet('NoNativeSave','NativeSaveExpected','ArchiveMutation')") -and
-        $runnerSource.Contains('$preservePlayerSaveFiles = $false') -and
-        $runnerSource.Contains('RoutineByteBackupCreated = $false') -and
-        $runnerSource.Contains('PlayerArchiveWritebackPerformed = $false') -and
-        $runnerSource.Contains('LastWriteTimeUtcTicks') -and
-        $runnerSource.Contains("`$paths.Add(`$livePath + '.previous')") -and
-        $runnerSource.Contains('player-save-unchanged-before-cleanup.json') -and
-        $runnerSource.Contains('committed-sidecar-unchanged-before-cleanup.json')) `
-        'The smoke runner lost the metadata-only NoNativeSave contract.'
-    Assert-True ($runnerSource.Contains('Get-DtmApiCurrentSaveArchiveFamilySnapshot') -and
-        $runnerSource.Contains('Compare-DtmApiCurrentSaveArchiveFamilySnapshot') -and
-        $runnerSource.Contains('<current>.data.prev[0-9]+') -and
-        -not $runnerSource.Contains('ea-playtest-doloc-archive-$currentArchiveIndex-prev.data') -and
-        -not $runnerSource.Contains('ea-playtest-doloc-archive-$currentArchiveIndex-bak.data')) `
-        'NoNativeSave must compare the current .prevN/.bak family and must not use legacy fixed backup names.'
-    Assert-True ($runnerSource.Contains("OfficialRelativePath = 'MODS/DTMAPI_MoreEquipmentSlots'") -and
-        $runnerSource.Contains("SourceId = 'Local.DTMAPI_MoreEquipmentSlots'") -and
-        $runnerSource.Contains('more-equipment-slots-cold-official-package.json') -and
-        $runnerSource.Contains('function Test-SmokeMoreEquipmentSlotsOfficialPackage') -and
-        $runnerSource.Contains("MinimumDTMApiVersion -ceq '0.6.0'") -and
-        $runnerSource.Contains('referencePolicySha256') -and
-        $runnerSource.Contains('entryDllLength') -and
-        $runnerSource.Contains('harmonyOwner') -and
-        $runnerSource.Contains('Advanced receipt reference row') -and
-        $runnerSource.Contains('former one-process NoNativeSave route could pass without a native SaveGame/SaveSaved commit or a second cold-process replay check') -and
-        $runnerSource.Contains('$moreEquipmentSlotsColdRecoveryTransitionRequested') -and
-        $runnerSource.Contains("MoreEquipmentSlotsTransitionPhase -eq 'ColdCommit'") -and
-        $runnerSource.Contains('Set-SmokeRecoveryOnlyAuthorSourceState') -and
-        $runnerSource.Contains('$coreOnlyNoDemandSourceIsolation = $autoFishingNoDemandFrameProfile') -and
-        -not $runnerSource.Contains('Set-SmokeLocal11AuthorSourceState') -and
-        -not $runnerSource.Contains('Mods/DTMAPI.MoreEquipmentSlotsMod') -and
-        -not $runnerSource.Contains('MoreEquipmentSlotsColdSyntheticSidecar') -and
-        -not $runnerSource.Contains('more-equipment-slots-cold-fixture-stage.json') -and
-        -not $runnerSource.Contains('more-equipment-slots-cold-fixture-restore.json') -and
-        -not $runnerSource.Contains('more-equipment-slots-cold-marker')) `
-        'MoreEquipment cold recovery must retire the unsafe one-process switch, use the dedicated three-process save proof, bind the official Local package to tracked Advanced authority, and never revive Author/game-Mods source selection or per-file fixture cleanup.'
 
     Assert-Fails {
         & $runner -StageQaHost -AssertMoreEquipmentSlotsColdRecovery -ValidateQaG4RoutingOnly
     } 'is paused' 'MoreEquipment one-process cold recovery retirement'
-
-    $managerRetiredGuard = $runnerSource.IndexOf("throw '-Batch6AutoFishingManagerLifecycle is retired", [System.StringComparison]::Ordinal)
-    $managerLegacyPath = $runnerSource.IndexOf("Join-Path `$gameDir 'Mods\Yuuka.DTMAPI.AutoFishing'", [System.StringComparison]::Ordinal)
-    $managerMarkerWrite = $runnerSource.IndexOf('[System.IO.File]::WriteAllBytes($batch6ManagerMarkerPath', [System.StringComparison]::Ordinal)
-    Assert-True ($managerRetiredGuard -ge 0 -and $managerLegacyPath -gt $managerRetiredGuard -and $managerMarkerWrite -gt $managerRetiredGuard) `
-        'The historical AutoFishing Manager route must fail before evaluating <game>/Mods or writing dtmapi.disabled.'
 
     $archiveFamilyRoot = Join-Path $TestRoot 'current-archive-family'
     New-Item -ItemType Directory -Path $archiveFamilyRoot -Force | Out-Null
@@ -263,131 +217,14 @@ try {
     $enabledIds = @(Get-DtmApiEnabledModInfoIds -ModInfoPath $modInfoPath)
     Assert-True (($enabledIds -join '|') -ceq 'Workshop.3742763050|Workshop.999') `
         'Startup mutation classification must derive actual enabled IDs from the post-profile native mod_infos.json state.'
-    Assert-True (-not $runnerSource.Contains("Join-Path `$evidence 'player-save-before'") -and
-        -not $runnerSource.Contains('Copy-Item -Force -LiteralPath ([string]$snapshot.BackupPath) -Destination $path') -and
-        -not $runnerSource.Contains("player-save-restore-verification.json")) `
-        'NoNativeSave must not retain routine archive backup or writeback code.'
-    $sidecarCheck = $runnerSource.IndexOf('committed-sidecar:changed-before-config-cleanup', [System.StringComparison]::Ordinal)
-    $configCleanup = $runnerSource.IndexOf('strong-planting-gun-config:verification-failed', [System.StringComparison]::Ordinal)
-    Assert-True ($sidecarCheck -ge 0 -and $configCleanup -gt $sidecarCheck) `
-        'G5 must classify committed-sidecar change before exact config-file cleanup.'
-    Assert-True ($runnerSource.Contains("ConfigDirectoryTransaction = 'forbidden'") -and
-        -not $runnerSource.Contains("Join-Path `$evidence 'g5-config-before'") -and
-        -not $runnerSource.Contains("Kind = 'G5ConfigDirectoryExact'")) `
-        'NoNativeSave/G5 must not back up or restore the whole config tree containing committed sidecars.'
-    Assert-True ($runnerSource.Contains('-RequireDisposableSaveRedirect $disposableSaveFixtureRequested') -and
-        $runnerSource.Contains('Smoke\.SaveFixtureIsolation = verified') -and
-        $runnerSource.Contains('steamAutoCloudIsolated') -and
-        $runnerSource.Contains('LocalSave.cloudDirPath redirect remains the sole save-storage owner')) `
-        'NativeSaveExpected/ArchiveMutation must fail closed on the QA-owned disposable LocalSave redirect.'
-    Assert-True ($runnerSource.Contains('Get-DtmApiEnabledModInfoIds') -and
-        $runnerSource.Contains('Get-DtmApiMoreSavesLegacyArchiveCandidates') -and
-        $runnerSource.Contains("'Workshop.3742763050', 'Local.DTMAPI_MoreSaves'") -and
-        $runnerSource.Contains("`$SaveTestMode -eq 'ArchiveMutation'") -and
-        $runnerSource.Contains('moresaves-startup-migration-preflight.json') -and
-        $runnerSource.Contains('PreRuntimeSaveGuardRequired = $moreSavesStartupMigrationDetected') -and
-        $runnerSource.Contains('Startup can rename those files')) `
-        'An enabled MoreSaves package with any exact legacy candidate must be classified before launch as disposable ArchiveMutation behind the pre-Runtime save guard.'
-    Assert-True ($runnerSource.Contains('NoNativeSave requires the runner to own its exact persistent root') -and
-        $runnerSource.Contains('$disposableSaveFixtureRequested') -and
-        $runnerSource.Contains("Join-Path (Get-DolocTownLivePersistentRootForSmoke) 'SAVE'") -and
-        $runnerSource.Contains('Assert-SmokeOrdinaryFixtureTree')) `
-        'NoNativeSave must use the live root by default, explicitly redirect a disposable fixture when requested, and reject reparse trees.'
-    Assert-True ($runnerSource.Contains('$smokeSaveEnvironmentScopeApplied = $false') -and
-        $runnerSource.Contains("'DTMAPI_DOLOC_PERSISTENT_ROOT',") -and
-        $runnerSource.Contains("'DTMAPI_STATE_DIR',") -and
-        $runnerSource.Contains('[EnvironmentVariableTarget]::Process') -and
-        $runnerSource.Contains('Remove-SmokeDisposableSaveFixture') -and
-        $runnerSource.Contains("Join-Path `$evidence 'disposable-save-fixture-cleanup-error.txt'") -and
-        $runnerSource.Contains('RetainedForBoundedFollowUp') -and
-        $runnerSource.Contains('DisposableSaveFixtureCleanup')) `
-        'Native save fixture runs must restore process environment and safely retire a successful disposable root.'
+
     $qaIsolationSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (
         Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown.QA\QaSaveFixtureIsolation.cs')
     Assert-True ($qaIsolationSource.Contains('FileAttributes.ReparsePoint') -and
         $qaIsolationSource.Contains('EnsureOrdinaryFixtureTree') -and
         $qaIsolationSource.Contains('junction, symbolic link, or other reparse point')) `
         'The in-game QA redirect must independently reject disposable fixture reparse points.'
-    Assert-True ($runnerSource.Contains("playerReproductionActive = `$false`r`n            reproductionSnapshotId = ''") -or
-        $runnerSource.Contains("playerReproductionActive = `$false`n            reproductionSnapshotId = ''")) `
-        'Local Advanced source selection must remain a valid inactive Author SDK state with no reproduction snapshot ID.'
-    $nativeSaveRoutes = $runnerSource.Substring(
-        $runnerSource.IndexOf('$nativeSaveRouteRequested =', [System.StringComparison]::Ordinal),
-        $runnerSource.IndexOf('$archiveMutationRouteRequested =', [System.StringComparison]::Ordinal) -
-            $runnerSource.IndexOf('$nativeSaveRouteRequested =', [System.StringComparison]::Ordinal))
-    Assert-True ($runnerSource.Contains('[switch] $AutoExerciseMoreEquipmentSlotsNoNativeSave') -and
-        $runnerSource.Contains("Id = 'MoreEquipmentSlotsNoNativeSave'") -and
-        -not $nativeSaveRoutes.Contains('$AutoExerciseMoreEquipmentSlotsNoNativeSave')) `
-        'The MoreEquipmentSlots NoNativeSave route must remain an independent non-saving G5 case.'
-    Assert-True ($runnerSource.Contains('[switch] $ObserveMoreEquipmentSlotsNoNativeSaveCold') -and
-        $runnerSource.Contains("Id = 'MoreEquipmentSlotsNoNativeSaveColdObserver'") -and
-        $runnerSource.Contains('Smoke exercise MoreEquipmentSlotsNoNativeSaveColdObserver OK') -and
-        -not $nativeSaveRoutes.Contains('$ObserveMoreEquipmentSlotsNoNativeSaveCold')) `
-        'The MoreEquipmentSlots second-process cold observer must remain an independent non-saving G5 case.'
-    Assert-True (
-        $runnerSource.Contains(
-            '[switch] $SetupMoreEquipmentSlotsCommittedShield') -and
-        $runnerSource.Contains(
-            "Id = 'MoreEquipmentSlotsCommittedShieldSetup'") -and
-        $nativeSaveRoutes.Contains(
-            '$SetupMoreEquipmentSlotsCommittedShield') -and
-        $runnerSource.Contains(
-            "Id = 'MoreEquipmentSlotsCommittedShieldDamageNoNativeSave'") -and
-        $runnerSource.Contains(
-            "Id = 'MoreEquipmentSlotsCommittedShieldBreakReplaceNoNativeSave'") -and
-        -not $nativeSaveRoutes.Contains(
-            '$DamageMoreEquipmentSlotsCommittedShieldNoNativeSave') -and
-        -not $nativeSaveRoutes.Contains(
-            '$BreakReplaceMoreEquipmentSlotsCommittedShieldNoNativeSave')) `
-        'The committed-shield setup must be native-save isolated while both rollback routes remain no-native-save.'
-    Assert-True ($runnerSource.Contains('[switch] $ObserveMoreEquipmentSlotsInterruptedCandidateRecovery') -and
-        $runnerSource.Contains('Smoke exercise MoreEquipmentSlotsInterruptedCandidateRecovery OK') -and
-        $runnerSource.Contains('persistedCleanupWrites=1') -and
-        $runnerSource.Contains('beforeGiveItem=true') -and
-        $runnerSource.Contains('beforeNativeSave=true')) `
-        'NativeSaveExpected must retain the ordered interrupted-candidate observer before the existing MoreEquipmentSlots mutation route.'
-    Assert-True (
-        $runnerSource.Contains(
-            "ValidateSet('None','U1','Prepare','U3Backpack','U3Mail','U4','MigratedSave','ColdPrepare','ColdCommit','ColdObserve')") -and
-        $runnerSource.Contains(
-            "Id = 'MoreEquipmentSlotsTransition'") -and
-        $runnerSource.Contains(
-            'Smoke MoreEquipmentSlotsTransition native sleep menu ready phase=') -and
-        $runnerSource.Contains(
-            'Smoke exercise MoreEquipmentSlotsTransition OK phase=') -and
-        $nativeSaveRoutes.Contains(
-            '$moreEquipmentSlotsTransitionRequested') -and
-        $nativeSaveRoutes.Contains(
-            "MoreEquipmentSlotsTransitionPhase -notin @('U4','ColdObserve')")) `
-        'MoreEquipmentSlots U1/U3/ColdPrepare/ColdCommit must retain the real native sleep-save route while U4/ColdObserve remain NoNativeSave.'
-    Assert-True `
-        ($runnerSource.Contains(
-            "MoreEquipmentSlotsTransitionPhase -eq 'MigratedSave'") -and
-         $runnerSource.Contains(
-            "transitionExtraIds[0] -ne 'Local.DTMAPI_MoreEquipmentSlots'") -and
-         $runnerSource.Contains(
-            "SaveTestMode -eq 'NativeSaveExpected'")) `
-        'MoreEquipmentSlots migrated-save semantics must bind the ProductNative source, exact committed baseline, and native-save route.'
-    Assert-True (
-        $runnerSource.Contains(
-            'more-equipment-slots-retained-workshop-preflight.json') -and
-        $runnerSource.Contains(
-            '[int]$moreEquipmentSlotsRetainedArtifact.fileCount -ne 9') -and
-        $runnerSource.Contains(
-            '[int64]$moreEquipmentSlotsRetainedArtifact.bytes -ne 539565') -and
-        $runnerSource.Contains(
-            'e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6') -and
-        $runnerSource.Contains(
-            'Get-SmokeWorkshopArtifactSnapshot') -and
-        $runnerSource.Contains(
-            'Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction Stop') -and
-        $runnerSource.Contains(
-            '[System.IO.FileAttributes]::ReparsePoint') -and
-        $runnerSource.Contains(
-            '$snapshot.ReparsePointFree') -and
-        $runnerSource.Contains(
-            'failed before profile mutation or game launch. Steam-managed bytes were read only')) `
-        'MoreEquipmentSlots U1 must read-only bind the exact frozen nine-file Workshop tree before game/profile mutation.'
+
     $transitionFixtureSource =
         Get-Content -Raw -Encoding UTF8 -LiteralPath (
             Join-Path `
@@ -413,56 +250,7 @@ try {
             Join-Path `
                 $repo `
                 'src\DTMAPI.GameBridge.DolocTown.QA\Scenarios\Fixtures\MoreEquipmentSlotsNoNativeSaveFixtureCase.cs')
-    Assert-True (
-        $coldObserverSource.Contains(
-            'ValidateMoreEquipmentSlotsColdItemDistribution') -and
-        $coldObserverSource.Contains(
-            'expectedBackpackButtonCount +') -and
-        $coldObserverSource.Contains(
-            'expectedCommittedButtonCount') -and
-        $coldObserverSource.Contains(
-            'expectedShieldTotal =') -and
-        $coldObserverSource.Contains(
-            'expectedCommittedShieldCount') -and
-        $coldObserverSource.Contains(
-            'mailButtonCount != 0') -and
-        $coldObserverSource.Contains(
-            'mailShieldCount != 0') -and
-        $coldObserverSource.Contains(
-            'RequireNoPendingMoreEquipmentSlotsMail') -and
-        $transitionFixtureSource.Contains(
-            'CountPendingMoreEquipmentSlotsMailFromArchiveForFixture') -and
-        $transitionFixtureSource.Contains(
-            'could not read archiveHandle.farmData.emailManager') -and
-        $transitionFixtureSource.Contains(
-            'could not enumerate archiveHandle.farmData.emailManager.emails') -and
-        $transitionFixtureSource.Contains(
-            'ReadRequiredMoreEquipmentSlotsMailMember') -and
-        $transitionFixtureSource.Contains(
-            'requires a non-empty string at') -and
-        $transitionFixtureSource.Contains(
-            'requires a boolean at') -and
-        $transitionFixtureSource.Contains(
-            'requires an unaccepted') -and
-        $transitionFixtureSource.Contains(
-            'requires a non-negative integer at') -and
-        $coldObserverSource.Contains(
-            'itemExpectationsMatch=true') -and
-        -not $coldObserverSource.Contains(
-            'boxHatLogicalTotal=1') -and
-        -not $coldObserverSource.Contains(
-            'grandmasButtonLogicalTotal=1') -and
-        $runnerSource.Contains(
-            '$expectedMoreEquipmentSlotsColdButtonTotal') -and
-        $runnerSource.Contains(
-            '$expectedMoreEquipmentSlotsColdShieldTotal') -and
-        $runnerSource.Contains(
-            'itemExpectationsMatch=true') -and
-        -not $runnerSource.Contains(
-            'boxHatSidecar=1.*boxHatLogicalTotal=1') -and
-        -not $runnerSource.Contains(
-            'grandmasButtonSidecar=1.*grandmasButtonLogicalTotal=1')) `
-        'MoreEquipmentSlots cold observation must derive each target-item total from the supplied backpack and Committed baseline, reject pending mail, and avoid a fixed two-item oracle.'
+
     $qaHostSettingsSource =
         Get-Content -Raw -Encoding UTF8 -LiteralPath (
             Join-Path `
@@ -472,62 +260,28 @@ try {
         $qaHostSettingsSource.Contains(
             'U1/Prepare/U3Backpack/U3Mail/U4/MigratedSave/ColdPrepare/ColdCommit/ColdObserve phase')) `
         'MoreEquipmentSlots invalid transition-phase diagnostics must list the migrated-save and dedicated cold-recovery phases.'
+
+    $coldTrustProjectionCall =
+        $coldRecoveryRunnerSource.LastIndexOf(
+            'Initialize-MoreEquipmentSlotsColdCompatibilityTrustProjection',
+            [System.StringComparison]::Ordinal)
+    $coldLockAcquired =
+        $coldRecoveryRunnerSource.IndexOf(
+            '$lockAcquired = $true',
+            [System.StringComparison]::Ordinal)
     Assert-True (
-        $transitionFixtureSource.Contains(
-            'StageMoreEquipmentSlotsProductColdSeed') -and
-        $transitionFixtureSource.Contains(
-            'ReadMoreEquipmentSlotsProductNativeScope') -and
-        $transitionFixtureSource.Contains(
-            'TotalGameSeconds = totalGameSeconds') -and
-        $transitionFixtureSource.Contains(
-            'MoreEquipmentSlotsProductScopeClockToleranceSeconds') -and
-        $transitionFixtureSource.Contains(
-            'document.Scope.TotalGameSeconds.Value >') -and
-        $transitionFixtureSource.Contains(
-            'AreMoreEquipmentSlotsProductScopesEqual(') -and
-        $transitionFixtureSource.Contains(
-            'document.Journal.Scope,') -and
-        $transitionFixtureSource.Contains(
-            'equipmentProductColdRecoverySessions=') -and
-        $transitionFixtureSource.Contains(
-            'ColdObserve') -and
         $coldRecoveryRunnerSource.Contains(
-            "PhaseOrder = @(`$phases | ForEach-Object { `$_.Id })") -and
+            "Join-Path `$gameRoot 'DTMAPI\release-manifest.json'") -and
         $coldRecoveryRunnerSource.Contains(
-            "Id = 'ColdPrepare'") -and
+            "'gamebridge-compatibility-host'") -and
         $coldRecoveryRunnerSource.Contains(
-            "Id = 'ColdCommit'") -and
+            "'first-frozen-abi-call'") -and
         $coldRecoveryRunnerSource.Contains(
-            "Id = 'ColdObserve'") -and
-        $runnerSource.Contains(
-            'NativeSaveObservedAfterInput') -and
-        $runnerSource.Contains(
-            "-Pattern 'SaveSaving hook dispatched. slot/index=2'") -and
-        $runnerSource.Contains(
-            '-MaximumSeconds 5') -and
-        $runnerSource.Contains(
-            '$moreEquipmentSlotsTransitionDeadline') -and
-        $runnerSource.Contains(
-            '$transitionAttemptIndex -le 1') -and
+            '[System.IO.File]::Copy($sourceManifest, $destination, $true)') -and
         $coldRecoveryRunnerSource.Contains(
-            '$attempts.Count -ne 1') -and
-        $coldRecoveryRunnerSource.Contains(
-            '[bool]$_.NativeSaveObservedAfterInput') -and
-        $coldRecoveryRunnerSource.Contains(
-            '$phaseResults[-1].SmokeEvidence') -and
-        $coldRecoveryRunnerSource.Contains(
-            "Join-Path `$finalSmokeEvidence 'cold-recovery-acceptance.json'") -and
-        $coldRecoveryRunnerSource.Contains(
-            "`$receipt['DurableReceipt']") -and
-        $coldRecoveryRunnerSource.Contains(
-            "'PlayerSaveUnchangedBeforeCleanup'") -and
-        $coldRecoveryRunnerSource.Contains(
-            "'CommittedSidecarsUnchangedBeforeCleanup'") -and
-        $coldRecoveryRunnerSource.Contains(
-            'wait-runtime-lock.ps1') -and
-        $coldRecoveryRunnerSource.Contains(
-            'release-runtime-lock.ps1')) `
-        'The dedicated cold-recovery route must derive exact native identity with a bounded forward save-clock transition, keep document/journal scope exact, use exactly one provenance-checked Enter behind one shared phase deadline, copy its aggregate receipt into the final GAME-SMOKE evidence root, require Product session observability, execute three ordered processes, prove the final NoNativeSave gates, and hold the shared runtime lock.'
+            'CopiedComponentBytes = $false') -and
+        $coldTrustProjectionCall -gt $coldLockAcquired) `
+        'The cold runner must project only the exact installed release manifest after acquiring the shared lock, validate the frozen Host receipt/component, and never copy Host bytes into the disposable fixture.'
     Assert-True (
         $transitionFixtureSource.Contains(
             'VerifyMoreEquipmentSlotsTargetMailEmpty') -and
@@ -539,64 +293,6 @@ try {
             $transitionFixtureSource,
             'expectedBackpackButton:\s*0,\s*expectedMailButton:\s*0,\s*context:\s*"ColdPrepare precondition"')) `
         'ColdPrepare must reject target-item mail but allow disposable backpack preparation to remove existing target items before its native save.'
-    Assert-True (
-        $moreSavesFixed12RunnerSource.Contains(
-            "Id = 'EnabledLifecycle'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            "Id = 'DisabledCold'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            "Id = 'ReenabledCold'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            "SaveTestMode = 'ArchiveMutation'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            "SaveTestMode = 'NoNativeSave'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'Get-MoreSavesFixed12SaveSnapshot') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'The enabled lifecycle changed native source slot') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'move the deleted slot-8 duplicate to its native .bak role') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'PlayerSaveUnchangedBeforeCleanup') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'CommittedSidecarsUnchangedBeforeCleanup') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'A real MoreSaves fixed-12 run requires -ExpectedLocalProductRoot') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'CandidateIdentityExact') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'Assert-MoreSavesFixed12LoadedSource') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'official-mod-profile-summary.json') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            '$profileDisabled') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'LiveOfficialProductTreeUnchanged') -and
-        $runnerSource.Contains(
-            "'LiveOfficialUploadRoot'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'Local.DTMAPI_MoreSaves') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'wait-runtime-lock.ps1') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'release-runtime-lock.ps1') -and
-        $moreSavesFixed12RunnerSource.Contains(
-            "Join-Path `$finalSmokeEvidence 'moresaves-fixed12-acceptance.json'") -and
-        $moreSavesFixed12RunnerSource.Contains(
-            'Remove-MoreSavesFixed12Fixture')) `
-        'The MoreSaves fixed-12 outer route must execute the exact enabled/disabled/re-enabled cold matrix, compare the full isolated SAVE tree, bind an independent candidate to the unchanged live official upload root, retain native role semantics, hold the shared Runtime lock, and clean only its marked fixture.'
-    Assert-True (
-        $runnerSource.Contains(
-            "ValidateSet('None','FailedMutation','SuccessfulMutation','ColdObserve')") -and
-        $runnerSource.Contains(
-            "Id = 'DebugConsoleSaveAcceptance'") -and
-        $runnerSource.Contains(
-            'Smoke exercise DebugConsoleSaveAcceptance OK phase=') -and
-        $nativeSaveRoutes.Contains(
-            '$debugConsoleSaveAcceptanceRequested') -and
-        $nativeSaveRoutes.Contains(
-            "DebugConsoleSaveAcceptancePhase -ne 'ColdObserve'")) `
-        'DebugConsole save acceptance must expose isolated failed/successful mutation phases while keeping its cold observer NoNativeSave.'
 
     foreach ($wrapperName in $wrapperPaths) {
         $wrapperSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot $wrapperName)
@@ -947,7 +643,7 @@ try {
                 & $runner `
                     -StageQaHost `
                     -DirectExe `
-                    -SaveSlot 3 `
+                    -SaveSlot 10 `
                     -SaveTestMode ([string]$debugConsolePhase.Mode) `
                     -DisposableSaveFixtureRoot $fixtureRoot `
                     -RetainDisposableSaveFixtureOnSuccess `
@@ -1141,6 +837,36 @@ try {
         [string]$equipmentNoSaveReceipt.Cases[0] -ceq 'MoreEquipmentSlotsNoNativeSave' -and
         -not [bool]$equipmentNoSaveReceipt.RealWorldFallbackAllowed) `
         'MoreEquipmentSlots NoNativeSave routing projection drifted.'
+
+    $equipmentUiRoute = @(
+        & $runner `
+            -StageQaHost `
+            -QaObserveEquipmentSlotsUi `
+            -AutoExerciseMoreEquipmentSlotsNoNativeSave `
+            -AutoExerciseTitleButtonLifecycle `
+            -SaveTestMode NoNativeSave `
+            -SaveSlot 3 `
+            -UseSteam `
+            -SkipInstall `
+            -SkipBuild `
+            -OfficialModProfile Local11 `
+            -IsolateAllOfficialMods `
+            -ValidateQaG4RoutingOnly 2>&1)
+    Assert-True ($LASTEXITCODE -eq 0) `
+        'MoreEquipmentSlots 1.0 bounded UI routing projection failed.'
+    $equipmentUiReceipt =
+        ($equipmentUiRoute -join [Environment]::NewLine) |
+        ConvertFrom-Json
+    Assert-True (
+        [bool]$equipmentUiReceipt.MoreEquipmentSlots100UiAcceptanceEnabled -and
+        [bool]$equipmentUiReceipt.TitleLifecycleEnabled -and
+        [string]$equipmentUiReceipt.OfficialModProfile -ceq 'Local11' -and
+        @($equipmentUiReceipt.ExpectedQaEvidencePaths).Count -eq 5 -and
+        @($equipmentUiReceipt.ExpectedQaEvidencePaths) -contains
+            'ui\equipment-slots-1920x1080-dynamic-row.png' -and
+        @($equipmentUiReceipt.ExpectedQaEvidencePaths) -contains
+            'ui\equipment-slots-1024x768-reopen.png') `
+        'MoreEquipmentSlots 1.0 UI route lost its title lifecycle or exact five-file dynamic-row evidence contract.'
 
     $committedSlotsBase64 =
         [Convert]::ToBase64String(

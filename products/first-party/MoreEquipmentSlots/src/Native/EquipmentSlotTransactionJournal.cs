@@ -12,7 +12,24 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal static string Compute(
             string? currentPath,
-            int backupCount)
+            int backupCount) =>
+            Compute(
+                currentPath,
+                backupCount,
+                requireCurrent: true);
+
+        internal static string ComputeAllowingMissingCurrent(
+            string? currentPath,
+            int backupCount) =>
+            Compute(
+                currentPath,
+                backupCount,
+                requireCurrent: false);
+
+        private static string Compute(
+            string? currentPath,
+            int backupCount,
+            bool requireCurrent)
         {
             if (string.IsNullOrWhiteSpace(currentPath))
             {
@@ -29,7 +46,9 @@ namespace DTMAPI.MoreEquipmentSlots
             }
 
             string path = Path.GetFullPath(currentPath);
-            string current = Capture(path, required: true);
+            string current = Capture(
+                path,
+                required: requireCurrent);
             var previous = new string[backupCount];
             for (int index = 0; index < backupCount; index++)
             {

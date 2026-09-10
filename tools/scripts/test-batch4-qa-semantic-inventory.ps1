@@ -270,7 +270,7 @@ try {
         @($inventory.sourceGate.lifecycleNegativeSamples | Where-Object { $_.name -eq 'former-debug-console-screenshot-immediately-verified' })[0].sample =
             'if (g4DebugEvidenceCaptured) { if (debugConsoleApi.IsOpen) return G4FixtureStepResult.Pending("EVIDENCE_CAPTURED_WAITING_ESCAPE"); return G4FixtureStepResult.Verified("closeReceipt=product-api-closed"); } G4FixtureStepResult screenshot = ObserveScreenshotForFixture(screenshotPath, ref path, ref requestedAt); g4DebugEvidenceCaptured = true; return G4FixtureStepResult.Pending("EVIDENCE_CAPTURED_WAITING_ESCAPE");'
         @($inventory.sourceGate.lifecycleNegativeSamples | Where-Object { $_.name -eq 'former-runner-escape-before-debug-console-evidence-marker' })[0].sample =
-            'Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern ''EVIDENCE_CAPTURED_WAITING_ESCAPE''; Invoke-DebugConsoleSmokeKey -Label ''YHoldCleanupEscape''; Wait-ForLogLine -LogPath $logPath -Pattern ''Smoke.DebugConsoleHotkey = verified'';'
+            'Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern ''EVIDENCE_CAPTURED_WAITING_ESCAPE''; Invoke-DebugConsoleSmokeKey -Label ''YHoldCleanupEscape''; Wait-SmokeLogLine -Deadline $SmokeRunnerScenarioDeadline -LogPath $logPath -Pattern ''Smoke.DebugConsoleHotkey = verified'';'
     } @(
         'former-action-speed-receipt-published-after-first-mutation',
         'former-action-speed-void-restore-assumed-success',

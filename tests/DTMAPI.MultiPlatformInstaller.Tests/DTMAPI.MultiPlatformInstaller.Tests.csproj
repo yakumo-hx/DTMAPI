@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DTMAPI.MultiPlatformInstaller.Tests</AssemblyName>
+    <RootNamespace>DTMAPI.MultiPlatformInstaller.Tests</RootNamespace>
+    <!-- SDK test-project semantics allow reflection tests of a self-contained executable. -->
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DTMAPI.MultiPlatformInstaller\DTMAPI.MultiPlatformInstaller.csproj" />
+  </ItemGroup>
+</Project>

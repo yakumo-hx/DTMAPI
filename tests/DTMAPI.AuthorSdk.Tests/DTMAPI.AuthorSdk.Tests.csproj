@@ -7,6 +7,8 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(MSBuildSDKsPath)\..\Roslyn\bincore\Microsoft.CodeAnalysis.dll" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(MSBuildSDKsPath)\..\Roslyn\bincore\Microsoft.CodeAnalysis.CSharp.dll" />
     <Compile Include="..\Shared\DtmApiTestSession.cs" Link="DtmApiTestSession.cs" />
     <ProjectReference Include="..\..\src\DTMAPI.AuthorSdk\DTMAPI.AuthorSdk.csproj" />
     <ProjectReference Include="..\..\src\DTMAPI.Authoring.Contracts\DTMAPI.Authoring.Contracts.csproj" />

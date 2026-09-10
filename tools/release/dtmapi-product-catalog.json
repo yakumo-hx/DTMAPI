@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "DTMAPI.Batch0",
-  "statusDate": "2026-08-04",
+  "statusDate": "2026-08-30",
   "authority": {
     "purpose": "Authoritative multi-axis identity and release-boundary catalog. It records facts and blocks drift; exact upload authorization must originate in a linked Update and is only enforced here through bounded mutation entrypoints.",
     "constructionMap": "docs/reviews/code/2026/20260712-0003-dtmapi-full-boundary-audit.md",
@@ -11,10 +11,12 @@
     "animalPackReview": "docs/reviews/code/2026/20260713-0009-first-party-animal-pack-product-boundary-review.md",
     "publicApiMatrix": "docs/api/public-api-matrix.md",
     "protectedBehaviorContracts": "tools/release/contracts/protected-behavior-contracts.json",
-    "publicWorkshopSnapshot": "tools/release/baselines/workshop-public-metadata-20260728.json"
+    "publicWorkshopSnapshot": "tools/release/baselines/workshop-public-metadata-20260728.json",
+    "managedProductAdmissionRegistry": "docs/architecture/managed-product-admission-registry.md",
+    "currentSubscriptionManifest": "tools/release/current-subscription-manifest.json"
   },
   "releaseStop": {
-    "state": "ActiveWithExactExistingWorkshopUpdateExceptions",
+    "state": "ActiveNoUploadAuthorization",
     "blockedActions": [
       "NewWorkshopUpload",
       "ExistingWorkshopUpdate",
@@ -23,109 +25,13 @@
       "WorkshopIdReassignment",
       "OfficialFolderMove"
     ],
-    "releaseTarget": "DTMAPI 0.5.5",
-    "releaseTargetExists": true,
-    "authorizationUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md",
+    "releaseTarget": "",
+    "releaseTargetExists": false,
+    "authorizationUpdate": "",
     "treeDigestAlgorithm": "DTMAPI-Retained-SHA256SUMS-v1",
-    "publicMutationEntrypoints": [
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "runtime",
-        "workshopId": "3743016467",
-        "version": "0.5.5",
-        "officialFolder": "DTMAPI",
-        "treeSha256": "9e25425ed4eade8682981301c7a473c4fcc846a8d571efbba2d9bdaef249c1bd"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "auto-fishing",
-        "workshopId": "3743799721",
-        "version": "1.0.0",
-        "officialFolder": "Yuuka_DTMAPI_AutoFishing",
-        "treeSha256": "48d8bc81272dfd94daf5b8c90ee7035ec581a2dcaffc7071a75291909483585d"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "action-speed",
-        "workshopId": "3742763309",
-        "version": "1.0.0",
-        "officialFolder": "Yuuka_DTMAPI_ActionSpeed",
-        "treeSha256": "9189ec93b3bb32a8d952b2c4995ceec6475a7a3a8115604794739fb08e68e9c1"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "manbo-cardboard-audio",
-        "workshopId": "3746319981",
-        "version": "0.1.0-dtmapi",
-        "officialFolder": "Yuuka_DTMAPI_ManboCardboardAudio",
-        "treeSha256": "5468fe3abb7d89cfe6dcc86ddd033f1f3826a2a52cafce80fe78809140151de0"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "fish-roe-info",
-        "workshopId": "3742763706",
-        "version": "1.0.0",
-        "officialFolder": "Yuuka_DTMAPI_FishBreedingAssistant",
-        "treeSha256": "718f665ed3ad4aa055803c5e8172f4355337092301bbf6494fab498da6c823d6"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "animal-husbandry-progress",
-        "workshopId": "3742763843",
-        "version": "1.0.0",
-        "officialFolder": "Yuuka_DTMAPI_AnimalHusbandryProgress",
-        "treeSha256": "797ffffab3f373f38b2241014f5cbf9664192e62d81ed5d68920d985c8dfc5fd"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "zoom",
-        "workshopId": "3742717440",
-        "version": "1.0.0",
-        "officialFolder": "DTMAPI_Zoom",
-        "treeSha256": "b2c8ec6356dd83407141fcf288a36100f09518ce22406d71b08f96fbe2b98933"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "y-console",
-        "workshopId": "3742714442",
-        "version": "1.0.0",
-        "officialFolder": "DTMAPI_YKeyConsole",
-        "treeSha256": "a45557882add7682c014599fd7bfd2ead4c9d53e1ec1980de4ce98deacb09125"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "more-saves",
-        "workshopId": "3742763050",
-        "version": "1.0.0",
-        "officialFolder": "DTMAPI_MoreSaves",
-        "treeSha256": "90287664730918ec408ac22108445c0a49d86b0f7c89309634bd71cf6ef7cf9d"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "one-action-complete",
-        "workshopId": "3742763540",
-        "version": "1.0.0",
-        "officialFolder": "Yuuka_DTMAPI_OneActionComplete",
-        "treeSha256": "cbdf887206740ff51e86110d30ecdc3cfc6ba6f6679033e7bf7d859fed8e2cb1"
-      },
-      {
-        "action": "ExistingWorkshopUpdate",
-        "catalogId": "chest-locator-enhancer",
-        "workshopId": "3742765514",
-        "version": "1.0.0",
-        "officialFolder": "DTMAPI_ChestLocatorEnhancer",
-        "treeSha256": "470530ddd55e2561220c8d59808eec6c8ce3fe6330b33d806a97646f8464022a"
-      }
-    ],
-    "explicitlyExcludedExistingWorkshopUpdates": [
-      {
-        "catalogId": "more-equipment-slots",
-        "workshopId": "3744059735",
-        "retainedVersion": "0.3.1-dtmapi",
-        "reason": "The ProductNative 1.0.0 migration remains publication-deferred; keep the exact retained Workshop package."
-      }
-    ],
-    "note": "The global stop remains active for new items, identity moves, mass edits and every non-listed Workshop update. Update 20260801-0002 authorizes only the eleven exact existing-item trees above."
+    "publicMutationEntrypoints": [],
+    "explicitlyExcludedExistingWorkshopUpdates": [],
+    "note": "The global stop remains active with zero future upload authorization. The user-submitted Y-console 1.1.1 update is observed at Steam manifest 6693520158465470410 with the exact 27-file delivered tree. The user-created DTMAPI multi-platform item 3792681186 is observed at Steam manifest 5128092030483852458 with the exact 36-file delivered tree. The user-submitted MoreEquipmentSlots 1.0.1 update is observed at Steam manifest 3792342317410441560 with the exact eight-file delivered tree. These observations do not authorize another upload."
   },
   "runtime": {
     "catalogId": "runtime",
@@ -133,6 +39,100 @@
     "workshopId": "3743016467",
     "steamAppId": "2285550",
     "publicTitle": "DTMAPI",
+    "distributions": [
+      {
+        "distributionId": "dtmapi-windows",
+        "displayName": "DTMAPI",
+        "audience": "Windows x64",
+        "releaseVersion": "0.6.1",
+        "workshopId": "3743016467",
+        "workshopManifestId": "918505309011394484",
+        "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI",
+        "artifactState": "SteamPublishedObservedExact",
+        "playerPayloadFileCount": 28,
+        "playerPayloadBytes": 3866857,
+        "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+        "peHostCount": 0,
+        "elfHostCount": 0,
+        "owningUpdate": "docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md",
+        "publishMetadata": {
+          "metadataSource": "inline",
+          "sourcePath": "tools/scripts/build-release-workshop-packages.ps1 runtime package"
+        }
+      },
+      {
+        "distributionId": "dtmapi-multiplatform",
+        "displayName": "DTMAPI-多平台",
+        "audience": "Steam Deck / SteamOS / Linux x64 first; Windows x64; macOS CrossOver",
+        "releaseVersion": "0.6.1",
+        "installerVersion": "0.1.0-experimental",
+        "workshopId": "3792681186",
+        "workshopManifestId": "5128092030483852458",
+        "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI_MultiPlatform",
+        "candidatePackageRoot": "dist/DTMAPI-MultiPlatform",
+        "artifactState": "SteamPublishedObservedExact",
+        "candidateState": "LocalMetadataSuccessorPendingUpload",
+        "uploadAuthorization": "None",
+        "workshopControlFileState": "PresentValidatedLocalUploadOnly",
+        "workshopControlFileBytes": 33,
+        "workshopControlFileSha256": "5e1ec4ac349bcd1031d5112b1a2608992d620d0098845d26e5c35a28558a9f26",
+        "steamDeliveredFileCount": 36,
+        "steamDeliveredBytes": 29770736,
+        "steamDeliveredTreeSha256": "e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4",
+        "steamTimeUpdatedUtc": "2026-08-30T09:50:49Z",
+        "observedAtUtc": "2026-08-30T09:57:14Z",
+        "sourceDistributionId": "dtmapi-windows",
+        "sourceWorkshopId": "3743016467",
+        "sourceWorkshopManifestId": "918505309011394484",
+        "sourcePlayerPayloadFileCount": 28,
+        "sourcePlayerPayloadBytes": 3866857,
+        "sourcePlayerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+        "sharedPayloadFileCount": 20,
+        "sharedPayloadBytes": 3826337,
+        "sharedPayloadTreeSha256": "ae80f6661390b82824af424b2006fb28267ec7181b2f98d75df9975c6a1d20c5",
+        "candidateFileCount": 36,
+        "candidateBytes": 29770715,
+        "candidateTreeSha256": "f7671fd07dae7664855be37bbd82f29ce23b003f56f4d0818717fa4f2aa2605a",
+        "peHostCount": 1,
+        "elfHostCount": 1,
+        "installedHostArtifactCount": 0,
+        "requiredLinuxLaunchOption": "WINEDLLOVERRIDES=\"winhttp=n,b\" %command%",
+        "crossOverDllOverride": "winhttp=n,b",
+        "codeSigning": "unsigned-experimental",
+        "hostArtifacts": [
+          {
+            "rid": "win-x64",
+            "format": "PE32+",
+            "relativePath": "DTMAPI-MultiPlatform-Installer.exe",
+            "length": 11818211,
+            "sha256": "da929a41ab46e2da3a405408fe5f4110b02246862189a8a4becd4cb35e5af09a"
+          },
+          {
+            "rid": "linux-x64",
+            "format": "ELF64",
+            "relativePath": "Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer",
+            "length": 13211388,
+            "sha256": "4210d9f2f22b2358b56a14aa5b0a99a5042f7cb6d956611bbe642f268a7e9dfb"
+          }
+        ],
+        "validation": {
+          "windowsFakeGame": "Passed",
+          "wslLinuxFakeGame": "Passed",
+          "subscriptionContentParity": "PassedForManifest5128092030483852458BeforeLocalMetadataSuccessor",
+          "realGame": "NotRun",
+          "steamDeckPlayerAcceptance": "Pending",
+          "crossOverPlayerAcceptance": "Pending"
+        },
+        "owningUpdate": "docs/updates/2026/20260829-0003-dtmapi-multiplatform-runtime-installer.md",
+        "publishMetadata": {
+          "metadataSource": "tools/release/dtmapi-multiplatform/info.json",
+          "infoPath": "tools/release/dtmapi-multiplatform/info.json",
+          "iconPath": "assets/branding/dtmapi-multiplatform-icon.png",
+          "previewPath": "assets/branding/dtmapi-multiplatform-preview.png",
+          "sourcePath": "tools/scripts/build-dtmapi-multiplatform-package.ps1"
+        }
+      }
+    ],
     "publishedBaseline": {
       "releaseVersion": "0.5.2-alpha",
       "binaryFileVersion": "0.5.2.0",
@@ -153,41 +153,44 @@
       "immutableArchiveRetention": "Retain outside the source/distribution tree through the 0.5.5 rollback window; remove only through an explicit post-release retention decision."
     },
     "currentSourceBaseline": {
+      "releaseVersion": "0.7.0",
+      "binaryFileVersion": "0.7.0.0",
+      "assemblyCompatibilityIdentity": "0.5.3.0",
+      "infoJsonBytes": 9192,
+      "infoJsonSha256": "ecbc00dccc4ed4834dcfe4e2f374ad786c27f184a70d1c655d794b59f13428cc",
+      "infoJsonState": "DeterministicUnpublishedSourceProjection",
+      "state": "CurrentSourceAuthority"
+    },
+    "currentPublishedArtifact": {
       "releaseVersion": "0.6.1",
       "binaryFileVersion": "0.6.1.0",
       "assemblyCompatibilityIdentity": "0.5.3.0",
-      "candidateInfoJsonBytes": 9192,
-      "candidateInfoJsonSha256": "5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171",
-      "candidateInfoJsonState": "DeterministicSourceProjectionNotPublishedArtifact",
-      "state": "ReleaseCandidateSourceAuthority"
-    },
-    "currentPublishedArtifact": {
-      "releaseVersion": "0.5.5",
-      "binaryFileVersion": "0.5.5.0",
-      "assemblyCompatibilityIdentity": "0.5.3.0",
-      "workshopManifestId": "1475234683223104244",
+      "workshopManifestId": "918505309011394484",
       "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
       "treeDigestNormalization": "Exclude subscription-generated Content/.tools/bepinex/extract/**. Sort files by forward-slash relative path using StringComparer.Ordinal. Each row is lowercase file SHA-256, two spaces, then relative path. Join rows with LF and no final LF; hash UTF-8 without BOM using SHA-256.",
-      "steamDeliveredFileCount": 31,
-      "steamDeliveredBytes": 71593719,
-      "steamDeliveredTreeSha256": "d7275bccc06207929de4ea62c8976bf20723ed33dd81666149a35289d29d5ebf",
+      "steamDeliveredFileCount": 29,
+      "steamDeliveredBytes": 3866890,
+      "steamDeliveredTreeSha256": "846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88",
       "playerPayloadExclusion": "workshop.json",
-      "playerPayloadFileCount": 30,
-      "playerPayloadBytes": 71593686,
-      "playerPayloadTreeSha256": "571793091b47d5d2db909059b17c478bdebd60cc53a262bf88ff00e9e4becd63",
+      "playerPayloadFileCount": 28,
+      "playerPayloadBytes": 3866857,
+      "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
       "infoJsonBytes": 9192,
-      "infoJsonSha256": "4ab3d471747a7e2ec37bda01884a604dcc63b0b74b764c6d34412b4dae905144",
+      "infoJsonSha256": "5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171",
       "workshopControlFileBytes": 33,
       "workshopControlFileSha256": "d6d9206a4a58b88cc985ee72832d57f226ff58767ef6e606a2731b0d604ef98d",
-      "nativeNormalizationOwner": "DolocTown.Config.ModManager.TryMigrateData/EnsureLocalizedManifestField",
-      "owningUpdate": "docs/updates/2026/20260801-0003-runtime-published-metadata-authority.md",
+      "releaseManifestBuildCommit": "db5e518a6d7f",
+      "steamTimeUpdatedUtc": "2026-08-20T00:23:14Z",
+      "observedAtUtc": "2026-08-20T00:28:08Z",
+      "nativeNormalizationOwner": "SourceBuilderStableLocalizedManifestProjection",
+      "owningUpdate": "docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md",
       "state": "SteamPublishedObservedExact"
     },
     "futureTarget": {
-      "releaseVersion": "0.6.1",
-      "binaryFileVersion": "0.6.1.0",
-      "assemblyCompatibilityIdentity": "0.5.3.0",
-      "state": "NoArtifact"
+      "releaseVersion": "",
+      "binaryFileVersion": "",
+      "assemblyCompatibilityIdentity": "",
+      "state": "Unscheduled"
     }
   },
   "publishedProductRollbackArchives": {
@@ -220,9 +223,9 @@
     "sha256": "2b5d9974a7e3d321c70442fd25457da9d1a91b548360e0f1cd7ffa2dd1c937ff"
   },
   "publicIdentityPathFreeze": {
-    "normalization": "Runtime row freezes runtime identity, public artifact facts, frozen-record state, mutable-source state, immutable-archive state/location/override/bytes/SHA/payload/manifest/verification/retention. PublishedProduct rows sort by CatalogID and freeze all role/type/distribution/eligibility/maturity, UniqueID, WorkshopID, official folder, package/DLL, source/project/manifest/version, published version/minimum, config/save/content/legacy paths, extra legacy lanes, release lane, protected contract, and retained artifact fields. String arrays sort ordinal and join with comma; extra lanes use lane~path~enabledBy~state. Join rows with LF; UTF-8; SHA-256.",
+    "normalization": "Runtime row freezes runtime identity, public artifact facts, frozen-record state, mutable-source state, immutable-archive state/location/override/bytes/SHA/payload/manifest/verification/retention. PublishedProduct rows sort by CatalogID and freeze all role/type/distribution/eligibility/maturity, UniqueID, WorkshopID, official folder, package/DLL, source/project/manifest paths, published version/minimum, config/save/content/legacy paths, extra legacy lanes, release lane, protected contract, and retained artifact fields. Mutable source/target versions and minimums are excluded and checked against current source separately. String arrays sort ordinal and join with comma; extra lanes use lane~path~enabledBy~state. Join rows with LF; UTF-8; SHA-256.",
     "rowCount": 12,
-    "sha256": "129476ff88a2cc3b408c8a8a7ca7d2927a7cf224686af3bc41dee1c3cd9e21d7"
+    "sha256": "018b0bc0ee0b5182ecdfce9e12a0c66cc9419ed985c83166113802e73facf631"
   },
   "protectedBehaviorContractFreeze": {
     "path": "tools/release/contracts/protected-behavior-contracts.json",
@@ -231,11 +234,11 @@
   },
   "publicApiFreeze": {
     "matrixPath": "docs/api/public-api-matrix.md",
-      "statusDate": "2026-07-27",
+    "statusDate": "2026-09-10",
     "normalization": "For each Stability Matrix data row: Area|API / Contract|Status; preserve Markdown cell text, trim cells, join rows with LF, encode UTF-8, SHA-256.",
-    "rowCount": 48,
-    "sha256": "c5e652f2b1d023cc0f4c158355ba14d3fe2e31aa825bd5285d47c0311655845d",
-    "abiPolicy": "DTMAPI 0.6.1 removes no existing public ABI.",
+    "rowCount": 53,
+    "sha256": "0c3f867ef79e01312e3d8cd35a9afc8f5457987e66ccd60d090307fc33b8a521",
+    "abiPolicy": "DTMAPI 0.7.0 candidate source adds open native provenance, package dependencies and optional Experimental services and removes no existing public ABI; unpublished.",
     "knownBlocker": "The exact retained AutoFishing DLL historically loaded without recompilation under Unity Mono, resolved the restored StopOnManualMove setter, and reached Entry, warning, Configure, enable/disable, and clean exit in GAME-SMOKE/20260721-161256; the new Advanced product does not consume this compatibility API, and neither that historical pass nor the current retained-consumer Release gate authorizes ABI removal or substitutes for 0.6 final runtime/game acceptance.",
     "knownBlockerState": "RetainedBinaryCompatibilityPassed",
     "retainedConsumerCount": 15,
@@ -395,10 +398,10 @@
         "forcedGc": false
       }
     },
-    "currentDebt": "No Batch 4 admission debt remains after G9. Schema-5 ownership enforcement covers 287 production source files, 4 neutral QA-host files totaling 687 physical lines, 25 contracts split as 14 forbidden-behavior plus 5 symbol-ownership plus 6 consumer contracts, 149 forbidden-pattern negative checks, 20 lifecycle contracts, 49 negative samples, 4 built IL artifacts and 12 meta-negative inventory cases. The selector is the canonical Catalog PublishedProduct/PublicWorkshop set of exactly 11 products under published-product-player-evidence-policy; production roots close over 5 default-loaded Runtime roots, 1 dormant-shipped optional Runtime component root, and 11 product roots, consumer roots over src/tests plus the same 11 product roots, all symbol contracts scan public roots unconditionally, and public roots are forbidden from consumer allowedRoots. The twelve named semantic cases, one Catalog-projection case and six receipt-set rejection cases execute and exact-set match their declarations. IL remains limited to four Runtime/optional-QA boundary artifacts rather than claiming all product DLLs. Ordinary no-QA Y-console, AnimalViewer and EquipmentSlots behavior has a historical Batch 4 exact-tree pass in retained receipt 20260718-005546. The current Batch 5 Local11 exact-tree route passed receipt 20260719-214048 with the authoritative NoQaBehaviorCompletedBeforeDeadline gate, two causal AnimalViewer renders, input provenance, native close, exact candidate Runtime binding, restoration and clean exit; superseded passing receipt 20260719-034102 remains historical. Failed product receipts 20260718-190150 and 20260718-192244 remain superseded negative evidence and are not deleted. Receipts 20260719-130406 and 20260719-212913 are classified separately as infrastructure timeout/operator-handshake timeout before SaveLoaded and are not product failures. Published11 enabled and disabled cold-run gates passed in 20260719-212635 and 20260719-212758. The exact candidate passed the receipt-bound Workshop package audit, a warmed real-Unity 10,000-frame no-optional-demand gate, the preserved 24-stage ActionSpeed formal ladder, the six-stage fifth-save AutoFishing formal ladder, and the Candidate11 byte-bound source transaction. Batch 5 refactor implementation is verified at its defined acceptance boundary only as bounded structural, lifecycle, and observed-trend acceptance. Quantified memory/GC and runtime per-unit allocation budgets are not established because the formal allocation counter was nonfunctional. ISSUE-010/ISSUE-011 remain open for the broader Unity/Mono native crash class; the bounded Batch 5 evidence does not claim that every long-session crash is solved.",
+    "currentDebt": "No Batch 4 admission debt remains after G9. Schema-5 ownership enforcement covers 328 production source files, 4 neutral QA-host files totaling 687 physical lines, 25 contracts split as 14 forbidden-behavior plus 5 symbol-ownership plus 6 consumer contracts, 149 forbidden-pattern negative checks, 24 lifecycle contracts, 49 negative samples, 4 built IL artifacts and 12 meta-negative inventory cases. The selector is the canonical Catalog PublishedProduct/PublicWorkshop set of exactly 11 products under published-product-player-evidence-policy; production roots close over 5 default-loaded Runtime roots, 1 dormant-shipped optional Runtime component root, and 11 product roots, consumer roots over src/tests plus the same 11 product roots, all symbol contracts scan public roots unconditionally, and public roots are forbidden from consumer allowedRoots. The twelve named semantic cases, one Catalog-projection case and six receipt-set rejection cases execute and exact-set match their declarations. IL remains limited to four Runtime/optional-QA boundary artifacts rather than claiming all product DLLs. Ordinary no-QA Y-console, AnimalViewer and EquipmentSlots behavior has a historical Batch 4 exact-tree pass in retained receipt 20260718-005546. The current Batch 5 Local11 exact-tree route passed receipt 20260719-214048 with the authoritative NoQaBehaviorCompletedBeforeDeadline gate, two causal AnimalViewer renders, input provenance, native close, exact candidate Runtime binding, restoration and clean exit; superseded passing receipt 20260719-034102 remains historical. Failed product receipts 20260718-190150 and 20260718-192244 remain superseded negative evidence and are not deleted. Receipts 20260719-130406 and 20260719-212913 are classified separately as infrastructure timeout/operator-handshake timeout before SaveLoaded and are not product failures. Published11 enabled and disabled cold-run gates passed in 20260719-212635 and 20260719-212758. The exact candidate passed the receipt-bound Workshop package audit, a warmed real-Unity 10,000-frame no-optional-demand gate, the preserved 24-stage ActionSpeed formal ladder, the six-stage fifth-save AutoFishing formal ladder, and the Candidate11 byte-bound source transaction. Batch 5 refactor implementation is verified at its defined acceptance boundary only as bounded structural, lifecycle, and observed-trend acceptance. Quantified memory/GC and runtime per-unit allocation budgets are not established because the formal allocation counter was nonfunctional. ISSUE-010/ISSUE-011 remain open for the broader Unity/Mono native crash class; the bounded Batch 5 evidence does not claim that every long-session crash is solved.",
     "semanticBoundary": {
       "schemaVersion": 5,
-      "productionSourceFiles": 287,
+      "productionSourceFiles": 328,
       "neutralQaHostFiles": 4,
       "neutralQaHostPhysicalLines": 687,
       "contractCount": 25,
@@ -406,7 +409,7 @@
       "symbolOwnershipContracts": 5,
       "consumerContracts": 6,
       "forbiddenPatternNegativeCoverage": 149,
-      "lifecycleContracts": 20,
+      "lifecycleContracts": 24,
       "negativeSamples": 49,
       "builtIlArtifacts": 4,
       "metaNegativeCases": 12
@@ -568,7 +571,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:12:33Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 463988, "treeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef", "archiveSubdirectory": "zoom-0.4.2-dtmapi-workshop-3742717440" }
     },
@@ -590,8 +593,8 @@
       "sourceManifest": "products/first-party/DebugConsole/manifest.json",
       "project": "DTMAPI.DebugConsole",
       "sourceDll": "DTMAPI.DebugConsole.dll",
-      "sourceVersion": "1.0.0",
-      "sourceMinimumDtmApiVersion": "0.6.0",
+      "sourceVersion": "1.1.2",
+      "sourceMinimumDtmApiVersion": "0.6.1",
       "codeModKind": "Advanced",
       "referencePolicyId": "doloctown-24456188-debugconsole-v1",
       "canonicalHarmonyOwner": "dtmapi.mod.dtmapi.debugconsolemod",
@@ -634,10 +637,21 @@
       },
       "publishedVersion": "0.3.1-dtmapi",
       "publishedMinimumDtmApiVersion": "0.5.2-alpha",
-      "targetVersion": "1.0.0",
-      "targetMinimumDtmApiVersion": "0.6.0",
-      "canonicalConfigPath": "DTMAPI/config/DTMAPI.DebugConsoleMod.json",
-      "contentSidecars": ["Content/item_tbitem.json"],
+      "targetVersion": "1.1.2",
+      "targetMinimumDtmApiVersion": "0.6.1",
+      "canonicalConfigPath": null,
+      "contentSidecars": [
+        "Content/item_tbitem.json",
+        "Content/localization_tbtextmapperde.json",
+        "Content/localization_tbtextmapperen.json",
+        "Content/localization_tbtextmapperfr.json",
+        "Content/localization_tbtextmapperja.json",
+        "Content/localization_tbtextmapperko.json",
+        "Content/localization_tbtextmapperpt_br.json",
+        "Content/localization_tbtextmapperru.json",
+        "Content/localization_tbtextmapperzh_cn.json",
+        "Content/localization_tbtextmapperzh_tw.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "additionalLegacyInstallLanes": [
@@ -649,20 +663,20 @@
         }
       ],
       "currentPublishedArtifact": {
-        "releaseVersion": "1.0.0",
-        "minimumDtmApiVersion": "0.5.5",
-        "gameBuildId": "23762374",
-        "workshopManifestId": "4587382938519822005",
+        "releaseVersion": "1.1.1",
+        "minimumDtmApiVersion": "0.6.1",
+        "gameBuildId": "24788406",
+        "workshopManifestId": "6693520158465470410",
         "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
-        "steamDeliveredFileCount": 11,
-        "steamDeliveredBytes": 478488,
-        "steamDeliveredTreeSha256": "a45557882add7682c014599fd7bfd2ead4c9d53e1ec1980de4ce98deacb09125",
-        "entryDllBytes": 175616,
-        "entryDllSha256": "102e616c598bd4576c37014e7974c6934ad552cf2208b1b7d3b49d24fc6180ff",
-        "steamTimeUpdatedUtc": "2026-08-01T12:12:20Z",
-        "observedAtUtc": "2026-08-04T15:52:40Z",
+        "steamDeliveredFileCount": 27,
+        "steamDeliveredBytes": 610335,
+        "steamDeliveredTreeSha256": "050c8e33f267d3d16b5c847c721c9220a3031ec7c54d9a11f2c39a1fb4f0d172",
+        "entryDllBytes": 221696,
+        "entryDllSha256": "784fd83e3174f80773926de937171b1294d8f3e8d21240762492ec5e93b0e050",
+        "steamTimeUpdatedUtc": "2026-08-22T23:22:03Z",
+        "observedAtUtc": "2026-08-22T23:43:44Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260823-0003-y-console-text-input-hotkey-guard.md"
       },
       "retainedArtifact": { "fileCount": 10, "bytes": 303759, "treeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60", "entryDll": "DTMAPI.YKeyConsole.dll", "entryDllSha256": "e5a34963c0b66d6168104af27db849d707ee644f07917d8274868f8b8299b41e", "archiveSubdirectory": "y-console-0.3.1-dtmapi-workshop-3742714442" }
     },
@@ -738,7 +752,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:12:07Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 140622, "treeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad", "archiveSubdirectory": "more-saves-0.3.1-dtmapi-workshop-3742763050" }
     },
@@ -813,7 +827,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:12:42Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 325618, "treeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c", "archiveSubdirectory": "action-speed-1.3.4-dtmapi-workshop-3742763309" }
     },
@@ -889,7 +903,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:13:28Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 214265, "treeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895", "archiveSubdirectory": "one-action-complete-1.1.2-dtmapi-workshop-3742763540" }
     },
@@ -963,7 +977,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:13:18Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 99872, "treeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba", "archiveSubdirectory": "fish-roe-info-1.1.3-dtmapi-workshop-3742763706" }
     },
@@ -1037,7 +1051,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:12:58Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 71627, "treeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536", "archiveSubdirectory": "animal-husbandry-progress-1.0.1-dtmapi-workshop-3742763843" }
     },
@@ -1110,7 +1124,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:11:51Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 39848, "treeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3", "archiveSubdirectory": "chest-locator-enhancer-0.3.1-dtmapi-workshop-3742765514" }
     },
@@ -1190,7 +1204,7 @@
         "steamTimeUpdatedUtc": "2026-08-01T12:13:08Z",
         "observedAtUtc": "2026-08-04T15:52:40Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md"
+        "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
       "retainedArtifact": { "fileCount": 9, "bytes": 217099, "treeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6", "archiveSubdirectory": "auto-fishing-1.4.3-dtmapi-workshop-3743799721" }
     },
@@ -1212,7 +1226,7 @@
       "sourceManifest": "products/first-party/MoreEquipmentSlots/manifest.json",
       "project": "DTMAPI.MoreEquipmentSlots",
       "sourceDll": "DTMAPI.MoreEquipmentSlots.dll",
-      "sourceVersion": "1.0.0",
+      "sourceVersion": "1.0.1",
       "sourceMinimumDtmApiVersion": "0.6.0",
       "codeModKind": "Advanced",
       "referencePolicyId": "doloctown-24456188-moreequipmentslots-v1",
@@ -1263,7 +1277,7 @@
       },
       "publishedVersion": "0.3.1-dtmapi",
       "publishedMinimumDtmApiVersion": "0.5.1-alpha",
-      "targetVersion": "1.0.0",
+      "targetVersion": "1.0.1",
       "targetMinimumDtmApiVersion": "0.6.0",
       "canonicalConfigPath": "DTMAPI/config/DTMAPI.MoreEquipmentSlotsMod.json",
       "saveSidecars": [
@@ -1282,6 +1296,22 @@
         "DTMAPI/config/protected-items/equipment-slots/slot-<archiveIndex>/.legacy-migrations/<SHA256>.flat.json"
       ],
       "legacyReleaseLane": "PublishedBuilder",
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.0.1",
+        "minimumDtmApiVersion": "0.6.0",
+        "gameBuildId": "24788406",
+        "workshopManifestId": "3792342317410441560",
+        "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+        "steamDeliveredFileCount": 8,
+        "steamDeliveredBytes": 210913,
+        "steamDeliveredTreeSha256": "31042e6e2017255185c974a94cfd2749c84bb4bc9e68e12963b07afb1f9d532d",
+        "entryDllBytes": 206336,
+        "entryDllSha256": "3dd62441e3352671aa0ecdcdf5d93ff18bf74cc4109f8b7a1a738287b2f88749",
+        "steamTimeUpdatedUtc": "2026-08-30T10:50:16Z",
+        "observedAtUtc": "2026-08-30T11:00:19Z",
+        "state": "SteamPublishedObservedExact",
+        "owningUpdate": "docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md"
+      },
       "retainedArtifact": { "fileCount": 9, "bytes": 539565, "treeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6", "archiveSubdirectory": "more-equipment-slots-0.3.1-dtmapi-workshop-3744059735" }
     },
     {
@@ -1661,27 +1691,28 @@
       "displayName": "Unified First-Party Animal Pack",
       "role": "PlannedProduct",
       "productType": "OfficialJsonContent",
-      "distributionState": "None",
+      "currentImplementationType": "OfficialJsonContentPack",
+      "distributionState": "LocalDeveloper",
       "releaseEligibility": "PrototypeBlocked",
       "maturity": "Prototype",
       "uniqueId": "DTMAPI.AnimalPack",
-      "identityState": "FrozenReservedNoArtifact",
+      "identityState": "CanonicalLocalPrototypeImplemented",
       "workshopId": null,
       "officialFolder": "DTMAPI_AnimalPack",
       "packageName": "DTMAPI-AnimalPack",
       "packageDll": null,
-      "sourceRoot": null,
-      "sourceManifest": null,
+      "sourceRoot": "products/first-party/AnimalPack",
+      "sourceManifest": "products/first-party/AnimalPack/manifest.json",
       "project": null,
       "sourceDll": null,
-      "sourceVersion": null,
-      "sourceMinimumDtmApiVersion": null,
+      "sourceVersion": "1.0.0",
+      "sourceMinimumDtmApiVersion": "0.6.0",
       "targetVersion": "1.0.0",
-      "targetMinimumDtmApiVersion": "0.5.5",
+      "targetMinimumDtmApiVersion": "0.6.0",
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "releaseBlockers": ["AssetProvenance", "EconomyModel", "OldInputDuplicatePreflight", "CanonicalSourceNotCreated"]
+      "releaseBlockers": ["AssetProvenance", "OldInputDuplicatePreflight", "GameAcceptancePending"]
     },
     {
       "catalogId": "hatch-assets-input",

@@ -33,8 +33,18 @@ function Invoke-Installer061Bat {
         [Parameter(Mandatory = $true)] [string] $OutputPath
     )
     $commandLine = 'call "{0}" < nul' -f $Path.Replace('"', '""')
-    $lines = @(& $env:ComSpec /d /e:off /v:off /s /c $commandLine 2>&1)
-    $exitCode = $LASTEXITCODE
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        # Several fixtures intentionally exercise a non-zero BAT result. PowerShell 7
+        # projects native stderr as an ErrorRecord, so capture it without allowing the
+        # script-wide Stop policy to abort before the fixture can assert the exit code.
+        $ErrorActionPreference = 'Continue'
+        $lines = @(& $env:ComSpec /d /e:off /v:off /s /c $commandLine 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     @($lines | ForEach-Object { [string]$_ }) | Set-Content -Encoding UTF8 -LiteralPath $OutputPath
     return [pscustomobject]@{
         ExitCode = $exitCode
@@ -113,6 +123,8 @@ function Assert-Installer061NoParserFailure {
 $repo = Get-RepoRoot
 $sourcePackage = [System.IO.Path]::GetFullPath($PackageRoot)
 Assert-Installer061 -Condition (Test-Path -LiteralPath $sourcePackage -PathType Container) -Message "Package is missing: $sourcePackage"
+$candidateManifest = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $sourcePackage 'Content\DTMAPI\release-manifest.json') | ConvertFrom-Json
+$expectedVersionSummary = 'Runtime={0}; Binary={1}' -f $candidateManifest.DTMAPIVersion, $candidateManifest.BinaryVersion
 
 $testBase = if (-not [string]::IsNullOrWhiteSpace($env:DTMAPI_TEST_TEMP_ROOT)) {
     [System.IO.Path]::GetFullPath($env:DTMAPI_TEST_TEMP_ROOT)
@@ -142,6 +154,9 @@ foreach ($name in $environmentNames) {
 }
 
 try {
+    # The inference fixture must not inherit a maintainer's explicit game override.
+    # Restore the captured value in the existing environment cleanup below.
+    $env:DTMAPI_GAME_DIR = $null
     New-Item -ItemType Directory -Force -Path $testRoot, $processTemp, $fakeProfile | Out-Null
     Copy-Installer061Tree -Source $sourcePackage -Destination $package
 
@@ -165,6 +180,9 @@ try {
             Assert-Installer061 -Condition ($commandName -notin @('Get-FileHash', 'Expand-Archive', 'Invoke-WebRequest')) -Message "Packaged script directly requires optional command '$commandName': $scriptPath"
         }
     }
+    $commonSource = Get-Content -Raw -LiteralPath (Join-Path $toolsRoot 'common.ps1')
+    Assert-Installer061 -Condition ($commonSource -notmatch '(?i)libraryfolders\.vdf|Microsoft\.Win32\.Registry|Registry::|HKCU:|HKLM:') -Message 'Packaged resolver still contains global Steam-library or Registry scanning.'
+    Assert-Installer061 -Condition ($commonSource -match 'appmanifest_2285550\.acf') -Message 'Packaged resolver no longer contains the current-library appmanifest path.'
 
     New-Item -ItemType Directory -Force -Path (Join-Path $game 'DolocTown_Data') | Out-Null
     [System.IO.File]::WriteAllBytes((Join-Path $game 'DolocTown.exe'), [System.Text.Encoding]::ASCII.GetBytes('fake-game'))
@@ -195,6 +213,22 @@ try {
 
     $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     Assert-Installer061 -Condition (Test-Path -LiteralPath $windowsPowerShell -PathType Leaf) -Message 'Windows PowerShell 5.1 is unavailable.'
+    $explicitPathHosts = New-Object 'System.Collections.Generic.List[string]'
+    $explicitPathHosts.Add($windowsPowerShell) | Out-Null
+    $pwsh = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+    if ($pwsh -and (Test-Path -LiteralPath $pwsh.Source -PathType Leaf)) { $explicitPathHosts.Add($pwsh.Source) | Out-Null }
+    foreach ($hostExe in @($explicitPathHosts.ToArray() | Sort-Object -Unique)) {
+        $previousPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            $invalidPathOutput = @(& $hostExe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $toolsRoot 'check-dtmapi-status.ps1') -GameDir 'C:\invalid|game:path' 2>&1 | ForEach-Object { [string]$_ })
+            $invalidPathExit = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousPreference
+        }
+        Assert-Installer061 -Condition ($invalidPathExit -eq 1 -and ($invalidPathOutput -join "`n") -match 'DTM-E1002') -Message "Invalid explicit game path was not converted to DTM-E1002 under $hostExe. Output=$($invalidPathOutput -join ' | ')"
+    }
     $env:DTMAPI_GAME_DIR = $game
     $env:DTMAPI_RUNTIME_DIR = $null
     $env:DTMAPI_STATE_DIR = $null
@@ -251,18 +285,18 @@ try {
     finally {
         Exit-DtmApiInstallerMutationLock -Lock $heldMutationLock
     }
-    Assert-Installer061 -Condition ($blockedInstall.ExitCode -ne 0 -and $blockedInstall.Text -match 'Another DTMAPI install or uninstall is already running for this game directory') -Message "Per-game mutation lock did not block a concurrent install. See $($blockedInstall.OutputPath)"
+    Assert-Installer061 -Condition ($blockedInstall.ExitCode -ne 0 -and $blockedInstall.Text -match 'DTM-E1302' -and $blockedInstall.Text -match 'Another DTMAPI install or uninstall is already running for this game directory') -Message "Per-game mutation lock did not block a concurrent install with DTM-E1302. See $($blockedInstall.OutputPath)"
     Assert-Installer061 -Condition (@(Get-ChildItem -LiteralPath (Join-Path $game 'DTMAPI') -Filter 'install-state.failed-*.json' -File -ErrorAction SilentlyContinue).Count -eq 0) -Message 'Lock contention wrote a competing failure-state file.'
 
     $rollbackInstall = Invoke-Installer061Bat -Path (Join-Path $package '1_install_dtmapi.bat') -OutputPath (Join-Path $testRoot 'install-rollback.txt')
-    Assert-Installer061 -Condition ($rollbackInstall.ExitCode -ne 0 -and $rollbackInstall.Text -match 'BepInEx file target is occupied by a directory') -Message "BepInEx rollback fixture did not fail at its controlled target. See $($rollbackInstall.OutputPath)"
+    Assert-Installer061 -Condition ($rollbackInstall.ExitCode -ne 0 -and $rollbackInstall.Text -match 'DTM-E1102' -and $rollbackInstall.Text -match 'BepInEx file target is occupied by a directory') -Message "BepInEx rollback fixture did not report its controlled local-file failure as DTM-E1102. See $($rollbackInstall.OutputPath)"
     Assert-Installer061 -Condition ((Get-DtmApiFileSha256 -Path $partialCore) -eq $partialCoreHash) -Message 'BepInEx rollback did not restore the overwritten partial core.'
     Assert-Installer061 -Condition ((Get-DtmApiFileSha256 -Path $externalPlugin) -eq $externalPluginHash -and (Get-DtmApiFileSha256 -Path $externalConfig) -eq $externalConfigHash) -Message 'BepInEx rollback changed external plugin/config files.'
     Remove-Item -LiteralPath $blockingTarget -Force
 
     $install = Invoke-Installer061Bat -Path (Join-Path $package '1_install_dtmapi.bat') -OutputPath (Join-Path $testRoot 'install.txt')
     Assert-Installer061NoParserFailure -Label 'install' -Text $install.Text
-    Assert-Installer061 -Condition ($install.ExitCode -eq 0 -and $install.Text -match 'Version: 5\.1' -and $install.Text -match 'Portable ZIP extraction capability: OK') -Message "Windows PowerShell 5.1 install failed. See $($install.OutputPath)"
+    Assert-Installer061 -Condition ($install.ExitCode -eq 0 -and $install.Text -match 'Version: 5\.1' -and $install.Text -match 'Portable ZIP extraction capability: OK' -and $install.Text -match 'DTM-S1001' -and $install.Text.Contains($expectedVersionSummary) -and $install.Text.Contains("DTMAPI $($candidateManifest.DTMAPIVersion) Runtime installed successfully.")) -Message "Windows PowerShell 5.1 install or final summary failed. Expected $expectedVersionSummary. See $($install.OutputPath)"
     Assert-Installer061 -Condition ((Get-DtmApiFileSha256 -Path $externalPlugin) -eq $externalPluginHash -and (Get-DtmApiFileSha256 -Path $externalConfig) -eq $externalConfigHash) -Message 'Successful BepInEx repair changed external plugin/config files.'
     Assert-Installer061 -Condition ((Get-Item -LiteralPath $partialCore).Length -gt 'partial-core-sentinel'.Length) -Message 'Successful BepInEx install did not repair the partial core.'
     $bepSummary = @(Get-ChildItem -LiteralPath (Join-Path $game 'DTMAPI\backups') -Filter 'install-summary.txt' -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1)
@@ -273,7 +307,7 @@ try {
 
     $status = Invoke-Installer061Bat -Path (Join-Path $package '3_check_dtmapi_status.bat') -OutputPath (Join-Path $testRoot 'status.txt')
     Assert-Installer061NoParserFailure -Label 'status' -Text $status.Text
-    Assert-Installer061 -Condition ($status.ExitCode -eq 0 -and $status.Text -match 'normal Runtime package intentionally contains no EXE') -Message "Clean no-EXE status failed. See $($status.OutputPath)"
+    Assert-Installer061 -Condition ($status.ExitCode -eq 0 -and $status.Text -match 'normal Runtime package intentionally contains no EXE' -and $status.Text -match 'DTM-S3001' -and $status.Text -match 'INSTALLED_HEALTHY') -Message "Clean no-EXE status or final summary failed. See $($status.OutputPath)"
 
     $logRoot = Join-Path $game 'DTMAPI\logs'
     New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
@@ -333,20 +367,57 @@ try {
         Assert-Installer061 -Condition (@(Get-ChildItem -LiteralPath $createdCollectDirectory -Filter '*.dmp' -File -Recurse).Count -eq 0) -Message 'Default collection included a crash dump without opt-in.'
     }
 
-    $pendingTransaction = Join-Path $game '.dtmapi-runtime-install-controlled-test'
+    $pendingStamp = '20260820-030301-001-99999999'
+    $pendingTransaction = Join-Path $game ('.dtmapi-runtime-install-' + $pendingStamp)
+    $pendingStateTransaction = Join-Path (Join-Path $game 'DTMAPI') ('.runtime-install-transaction-' + $pendingStamp)
     New-Item -ItemType Directory -Force -Path $pendingTransaction | Out-Null
+    $pendingCandidateRoot = Join-Path $pendingStateTransaction 'candidate'
+    Write-Utf8NoBomJson -Path (Join-Path $pendingTransaction 'transaction.json') -Value ([ordered]@{
+        SchemaVersion = 1
+        GameDir = [System.IO.Path]::GetFullPath($game)
+        StateDir = [System.IO.Path]::GetFullPath((Join-Path $game 'DTMAPI'))
+        PluginDir = [System.IO.Path]::GetFullPath((Join-Path $game 'BepInEx\plugins\DTMAPI'))
+        Phase = 'Created'
+        FailedPhase = ''
+        RuntimeTransactionRoot = [System.IO.Path]::GetFullPath($pendingTransaction)
+        TransactionRoot = [System.IO.Path]::GetFullPath($pendingStateTransaction)
+        CandidatePlugin = [System.IO.Path]::GetFullPath((Join-Path $pendingTransaction 'candidate-plugin'))
+        RecoveryPlugin = [System.IO.Path]::GetFullPath((Join-Path $pendingTransaction 'recovery-plugin'))
+        CandidateTools = [System.IO.Path]::GetFullPath((Join-Path $pendingCandidateRoot 'tools'))
+        CandidateComponents = [System.IO.Path]::GetFullPath((Join-Path $pendingCandidateRoot 'components'))
+        CandidateReleaseManifest = [System.IO.Path]::GetFullPath((Join-Path $pendingCandidateRoot 'release-manifest.json'))
+        CandidateInstallState = [System.IO.Path]::GetFullPath((Join-Path $pendingCandidateRoot 'install-state.json'))
+        RecoveryState = [System.IO.Path]::GetFullPath((Join-Path $pendingStateTransaction 'recovery'))
+        LiveTools = [System.IO.Path]::GetFullPath((Join-Path $game 'DTMAPI\tools'))
+        LiveComponents = [System.IO.Path]::GetFullPath((Join-Path $game 'DTMAPI\components'))
+        LiveReleaseManifest = [System.IO.Path]::GetFullPath((Join-Path $game 'DTMAPI\release-manifest.json'))
+        LiveInstallState = [System.IO.Path]::GetFullPath((Join-Path $game 'DTMAPI\install-state.json'))
+        OldPluginExisted = $false; OldPluginMoved = $false; CandidatePluginPlaced = $false
+        OldToolsExisted = $false; OldToolsMoved = $false; CandidateToolsPlaced = $false
+        OldComponentsExisted = $false; OldComponentsMoved = $false; CandidateComponentsPlaced = $false
+        OldReleaseManifestExisted = $false; OldReleaseManifestMoved = $false; CandidateReleaseManifestPlaced = $false
+        OldInstallStateExisted = $false; OldInstallStateMoved = $false; CandidateInstallStatePlaced = $false
+        CommitSucceeded = $false; RollbackSucceeded = $null
+    })
+    $pendingStatus = Invoke-Installer061Bat -Path (Join-Path $package '3_check_dtmapi_status.bat') -OutputPath (Join-Path $testRoot 'status-recovery-pending.txt')
+    Assert-Installer061 -Condition ($pendingStatus.ExitCode -eq 1 -and $pendingStatus.Text -match 'DTM-E1302' -and $pendingStatus.Text -match 'RECOVERY_PENDING' -and (Test-Path -LiteralPath $pendingTransaction -PathType Container)) -Message "Status did not report a recoverable transaction read-only. See $($pendingStatus.OutputPath)"
     $pendingUninstall = Invoke-Installer061Bat -Path (Join-Path $package '2_uninstall_dtmapi.bat') -OutputPath (Join-Path $testRoot 'uninstall-pending.txt')
-    Assert-Installer061 -Condition ($pendingUninstall.ExitCode -ne 0 -and $pendingUninstall.Text -match 'stopped before changing files because a Runtime install transaction is pending') -Message "Uninstall did not fail closed on a pending transaction. See $($pendingUninstall.OutputPath)"
+    Assert-Installer061 -Condition ($pendingUninstall.ExitCode -ne 0 -and $pendingUninstall.Text -match 'DTM-E1302' -and $pendingUninstall.Text -match 'recoverable Runtime install transaction is pending') -Message "Uninstall did not fail closed on a validated pending transaction. See $($pendingUninstall.OutputPath)"
     Assert-Installer061 -Condition (Test-Path -LiteralPath (Join-Path $game 'BepInEx\plugins\DTMAPI') -PathType Container) -Message 'Pending-transaction uninstall changed the installed Runtime.'
     Remove-Item -LiteralPath $pendingTransaction -Recurse -Force
 
+    $sterileTransaction = Join-Path $game '.dtmapi-runtime-install-20260820-030302-002-aaaaaaaa'
+    New-Item -ItemType Directory -Force -Path $sterileTransaction | Out-Null
+    $sterileStatus = Invoke-Installer061Bat -Path (Join-Path $package '3_check_dtmapi_status.bat') -OutputPath (Join-Path $testRoot 'status-repairable-stale.txt')
+    Assert-Installer061 -Condition ($sterileStatus.ExitCode -eq 1 -and $sterileStatus.Text -match 'DTM-W1301' -and $sterileStatus.Text -match 'REPAIRABLE_STALE' -and (Test-Path -LiteralPath $sterileTransaction -PathType Container)) -Message "Status did not report a sterile root read-only. See $($sterileStatus.OutputPath)"
+
     $uninstall = Invoke-Installer061Bat -Path (Join-Path $package '2_uninstall_dtmapi.bat') -OutputPath (Join-Path $testRoot 'uninstall.txt')
     Assert-Installer061NoParserFailure -Label 'uninstall' -Text $uninstall.Text
-    Assert-Installer061 -Condition ($uninstall.ExitCode -eq 0) -Message "Runtime uninstall failed. See $($uninstall.OutputPath)"
+    Assert-Installer061 -Condition ($uninstall.ExitCode -eq 0 -and $uninstall.Text -match 'DTM-W1301' -and $uninstall.Text -match 'DTM-S2001' -and -not (Test-Path -LiteralPath $sterileTransaction)) -Message "Runtime uninstall did not repair the sterile root and report success. See $($uninstall.OutputPath)"
     Assert-Installer061 -Condition ((Get-DtmApiFileSha256 -Path $externalPlugin) -eq $externalPluginHash -and (Get-DtmApiFileSha256 -Path $externalConfig) -eq $externalConfigHash) -Message 'Runtime uninstall changed external BepInEx files.'
     $uninstallReceiptCount = @(Get-ChildItem -LiteralPath (Join-Path $game 'DTMAPI') -Filter 'uninstall-state-*.json' -File -ErrorAction SilentlyContinue).Count
     $noOpUninstall = Invoke-Installer061Bat -Path (Join-Path $package '2_uninstall_dtmapi.bat') -OutputPath (Join-Path $testRoot 'uninstall-no-op.txt')
-    Assert-Installer061 -Condition ($noOpUninstall.ExitCode -eq 0 -and $noOpUninstall.Text -match 'No installed DTMAPI-owned Runtime files were found; no files were removed') -Message "Repeated uninstall did not report an explicit no-op. See $($noOpUninstall.OutputPath)"
+    Assert-Installer061 -Condition ($noOpUninstall.ExitCode -eq 0 -and $noOpUninstall.Text -match 'DTM-S2002' -and $noOpUninstall.Text -match 'No installed DTMAPI-owned Runtime files were found; no files were removed') -Message "Repeated uninstall did not report an explicit no-op. See $($noOpUninstall.OutputPath)"
     $uninstallReceiptCountAfter = @(Get-ChildItem -LiteralPath (Join-Path $game 'DTMAPI') -Filter 'uninstall-state-*.json' -File -ErrorAction SilentlyContinue).Count
     Assert-Installer061 -Condition ($uninstallReceiptCountAfter -eq ($uninstallReceiptCount + 1)) -Message 'Repeated uninstall collided with or overwrote an earlier receipt.'
 

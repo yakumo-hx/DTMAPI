@@ -49,12 +49,32 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 "OnStartShow",
                 BindingFlags.Public | BindingFlags.Instance)
                 ?? throw new MissingMethodException("AccessoriesBar.OnStartShow");
+        private static readonly MethodInfo AccessoriesRenderTarget =
+            typeof(DolocTown.UI.AccessoriesBar).GetMethod(
+                "RenderPassiveItems",
+                BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new MissingMethodException(
+                    "AccessoriesBar.RenderPassiveItems");
+        private static readonly MethodInfo AccessoriesSelectablesTarget =
+            typeof(DolocTown.UI.AccessoriesBar).GetProperty(
+                "allSelectablesArray",
+                BindingFlags.Public | BindingFlags.Instance)?
+                .GetGetMethod()
+                ?? throw new MissingMethodException(
+                    "AccessoriesBar.get_allSelectablesArray");
+        private static readonly MethodInfo AccessoriesClearTarget =
+            typeof(DolocTown.UI.AccessoriesBar).GetMethod(
+                "ClearCallBack",
+                BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new MissingMethodException(
+                    "AccessoriesBar.ClearCallBack");
         private static readonly MethodInfo[] ProductTargets =
         {
             ReloadParamsTarget,
             NativeShieldTarget,
-            AccessoriesInitTarget,
-            AccessoriesShowTarget
+            AccessoriesRenderTarget,
+            AccessoriesSelectablesTarget,
+            AccessoriesClearTarget
         };
         private static readonly MethodInfo[] CompatibilityTargets =
         {
@@ -94,10 +114,17 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 ResidualCompatibilityOwnerIsRemovedAndRefused();
                 ResidualProductOwnerFailsClosed();
                 ProductDeactivationRemovesExactOwner();
+                ProductFiveHookCallbacksAreRuntimeCompatible();
+                ProductNewGameReusedSlotResetCommitsCleanAuthority();
+                ProductRowFollowsNativeTailAndReusesRoots();
+                ProductItemAdmissionMatchesZeroThreeOne();
                 ProductShieldProviderHookUsesOfficialAttackTail();
                 ProductShieldTailPreservesNativeSemantics();
                 CompatibilityShieldHookPreservesCurrentNativeSemantics();
                 SameItemRuntimeWithdrawalEvidenceIsExact();
+                ProductIncomingUnknownBlocksReplayAndSave();
+                ProductDurableIncomingUnknownNeverReplaysInProcess();
+                NativeBufferWithdrawalEvidenceIsExactAndFailClosed();
                 NativeMailEvidenceFiltersUnrelatedMail();
                 ProductMailOutcomeUnknownReconcilesImmediatelyWithoutReplay();
                 ProductOutcomeUnknownNoSaveTitleRetainsSidecar();
@@ -802,6 +829,239 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
             "\"shieldMaxValue\":0," +
             "\"shieldValue\":0," +
             "\"shieldDefend\":0}]}";
+
+        private static void
+            ProductNewGameReusedSlotResetCommitsCleanAuthority()
+        {
+            RunProductNewGameReusedSlotReset(
+                "same-name",
+                "same-name");
+            RunProductNewGameReusedSlotReset(
+                "deleted-owner",
+                "different-owner");
+        }
+
+        private static void RunProductNewGameReusedSlotReset(
+            string deletedOwnerName,
+            string newOwnerName)
+        {
+            const int archiveIndex = 11;
+            ResetOwners();
+            DolocAPI.ResetInventory();
+            var manager =
+                new DolocTown.GameData.AgentEquipmentManager();
+            string scenarioRoot =
+                CreateFixtureScenarioRoot(
+                    "product-newgame-slot-reset");
+            MoreEquipmentSlotsNativeRuntime product =
+                new MoreEquipmentSlotsNativeRuntime(
+                    NullMonitor.Instance,
+                    Path.Combine(
+                        scenarioRoot,
+                        "config.json"));
+            try
+            {
+                product.Configure(
+                    new MoreEquipmentSlotsConfig
+                    {
+                        Enabled = true
+                    },
+                    "NewGame reused-slot fixture");
+                string configRoot =
+                    (string)(GetField(
+                        product,
+                        "configRoot").GetValue(product)
+                        ?? throw new InvalidOperationException(
+                            "NewGame fixture config root was unavailable."));
+                string equipmentRoot = Path.Combine(
+                    configRoot,
+                    "protected-items",
+                    "equipment-slots");
+                string slotDirectory = Path.Combine(
+                    equipmentRoot,
+                    "slot-11");
+                string siblingDirectory = Path.Combine(
+                    equipmentRoot,
+                    "slot-10");
+                string fileName =
+                    "equipment-slots-" +
+                    MoreEquipmentSlotsProductContract
+                        .UniqueId +
+                    ".json";
+                string sidecarPath = Path.Combine(
+                    slotDirectory,
+                    fileName);
+                string siblingPath = Path.Combine(
+                    siblingDirectory,
+                    fileName);
+                var staleDocument =
+                    new EquipmentSlotStorageDocument
+                    {
+                        Scope = new EquipmentSlotSaveScope
+                        {
+                            ArchiveIndex = archiveIndex,
+                            PlayerName = deletedOwnerName,
+                            CustomPlayerName = deletedOwnerName,
+                            TotalGameSeconds = 100
+                        },
+                        Generation = 1
+                    };
+                string staleItemId =
+                    "stale-" + deletedOwnerName;
+                staleDocument.Slots[0].ItemId =
+                    staleItemId;
+                staleDocument.Slots[0].DisplayName =
+                    staleItemId;
+                new EquipmentSlotDocumentStore()
+                    .WriteAtomic(
+                        sidecarPath,
+                        staleDocument);
+                File.Copy(
+                    sidecarPath,
+                    sidecarPath + ".previous");
+                Directory.CreateDirectory(siblingDirectory);
+                File.WriteAllText(siblingPath, "sibling");
+
+                string nativeSavePath =
+                    ConfigureProductNativeSaveFingerprint(
+                        archiveIndex);
+                DolocAPI.archiveHandle =
+                    new ColdFixtureArchive(
+                        archiveIndex,
+                        string.Empty,
+                        string.Empty,
+                        manager);
+
+                bool eventIndexDriftRejected = false;
+                try
+                {
+                    product.OnSaveLoaded(
+                        slot: archiveIndex - 1,
+                        isNewGame: true);
+                }
+                catch (InvalidDataException)
+                {
+                    eventIndexDriftRejected = true;
+                }
+                Assert(
+                    eventIndexDriftRejected &&
+                    File.Exists(sidecarPath),
+                    "NewGame must reject event/native archive-index drift before deleting the retained Product owner.");
+
+                bool existingCurrentRejected = false;
+                try
+                {
+                    product.OnSaveLoaded(
+                        slot: null,
+                        isNewGame: true);
+                }
+                catch (InvalidDataException)
+                {
+                    existingCurrentRejected = true;
+                }
+                Assert(
+                    File.Exists(nativeSavePath) &&
+                    existingCurrentRejected &&
+                    File.Exists(sidecarPath),
+                    "NewGame must require a missing native current file before deleting the retained Product owner.");
+
+                File.Delete(nativeSavePath);
+
+                product.OnSaveLoaded(
+                    slot: null,
+                    isNewGame: true);
+                EquipmentSlotStorageDocument pending =
+                    (EquipmentSlotStorageDocument)(
+                        GetField(
+                            product,
+                            "document").GetValue(product)
+                        ?? throw new InvalidOperationException(
+                            "NewGame pending document was unavailable."));
+                Assert(
+                    !Directory.Exists(slotDirectory) &&
+                    File.Exists(siblingPath) &&
+                    pending.Slots.Count == 3 &&
+                    !pending.Slots.Any(slot => slot.IsOccupied) &&
+                    (bool)(GetField(
+                        product,
+                        "newGamePending").GetValue(product)
+                        ?? false) &&
+                    product.InstalledPatchCount == 5 &&
+                    DolocAPI.CountItem(
+                        staleItemId,
+                        false) == 0,
+                    "A proven NewGame boundary did not remove the complete reused Product directory, preserve its sibling, expose three clean slots, and keep the deleted owner's item detached.");
+
+                DolocAPI.archiveHandle =
+                    new ColdFixtureArchive(
+                        archiveIndex,
+                        newOwnerName,
+                        newOwnerName,
+                        manager);
+                product.OnSaveSaving(archiveIndex);
+                EquipmentSlotGameplayCandidate candidate =
+                    pending.GameplayCandidate
+                    ?? throw new InvalidOperationException(
+                        "First NewGame SaveSaving did not prepare an empty gameplay candidate.");
+                Assert(
+                    File.Exists(sidecarPath) &&
+                    candidate.Scope.PlayerName == newOwnerName &&
+                    candidate.Scope.CustomPlayerName ==
+                        newOwnerName &&
+                    candidate.PreSaveFingerprint.IndexOf(
+                        "|current=missing|",
+                        StringComparison.Ordinal) >= 0,
+                    "First NewGame SaveSaving did not rebind the post-dialogue name and persist a current=missing candidate.");
+
+                File.WriteAllText(
+                    nativeSavePath,
+                    "newgame-native-committed-" +
+                    newOwnerName);
+                product.OnSaveSaved(archiveIndex);
+                Assert(
+                    pending.GameplayCandidate == null &&
+                    !(bool)(GetField(
+                        product,
+                        "newGamePending").GetValue(product)
+                        ?? true) &&
+                    !pending.Slots.Any(slot => slot.IsOccupied) &&
+                    DolocAPI.CountItem(
+                        staleItemId,
+                        false) == 0,
+                    "SaveSaved did not finalize the clean NewGame Product authority without attaching the deleted owner's item.");
+
+                product.ReturnedToTitle();
+                product.OnSaveLoaded(
+                    archiveIndex,
+                    isNewGame: false);
+                EquipmentSlotStorageDocument cold =
+                    (EquipmentSlotStorageDocument)(
+                        GetField(
+                            product,
+                            "document").GetValue(product)
+                        ?? throw new InvalidOperationException(
+                            "Cold NewGame Product document was unavailable."));
+                Assert(
+                    cold.GameplayCandidate == null &&
+                    cold.Journal == null &&
+                    cold.Scope.PlayerName == newOwnerName &&
+                    cold.Slots.Count == 3 &&
+                    !cold.Slots.Any(slot => slot.IsOccupied) &&
+                    DolocAPI.CountItem(
+                        staleItemId,
+                        false) == 0,
+                    "The clean same-slot NewGame authority did not cold-load independently from the deleted owner.");
+            }
+            finally
+            {
+                product.DeactivateOwner(
+                    "RuntimeShutdown");
+                AssertOwnerCount(ProductOwner, 0);
+                DolocAPI.ResetInventory();
+                DolocAPI.archiveHandle = null;
+                DolocAPI.dataPersistenceManager = null;
+            }
+        }
 
         private static void
             ProductTraitRefreshCommitsOnlyAfterNativeSave()
@@ -4076,14 +4336,14 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                     Enabled = true
                 },
                 "physical product-first fixture");
-            AssertOwnerCount(ProductOwner, 4);
+            AssertOwnerCount(ProductOwner, 5);
             object service = CreateService();
             EquipmentSlotsRegisterResult result =
                 Register(service, "DTMAPI.Tests.EquipmentSlots.ProductFirst", enabled: true);
             Assert(
                 !result.Success,
-                "A real product-first four-Hook owner did not reject frozen compatibility.");
-            AssertOwnerCount(ProductOwner, 4);
+                "A real product-first five-Hook owner did not reject frozen compatibility.");
+            AssertOwnerCount(ProductOwner, 5);
             AssertOwnerCount(CompatibilityOwner, 0);
             Assert(
                 CountOwnerResources(service, result.OwnerId) == 0,
@@ -4165,7 +4425,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 "The injected third product Hook failure did not fail installation.");
             AssertOwnerCount(CompatibilityOwner, 0);
             AssertOwnerCount(ProductOwner, 0);
-            AssertOwnerCount(UnrelatedOwner, 4);
+            AssertOwnerCount(UnrelatedOwner, 5);
             Cleanup(UnrelatedOwner);
             Assert(
                 GetProductCallbackRuntime() == null,
@@ -4259,16 +4519,371 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                     Enabled = true
                 },
                 "physical product deactivation fixture");
-            AssertOwnerCount(ProductOwner, 4);
-            AssertOwnerCount(UnrelatedOwner, 4);
+            AssertOwnerCount(ProductOwner, 5);
+            AssertOwnerCount(UnrelatedOwner, 5);
             product.DeactivateOwner(
                 "physical Loader-style deactivation fixture");
             AssertOwnerCount(ProductOwner, 0);
-            AssertOwnerCount(UnrelatedOwner, 4);
+            AssertOwnerCount(UnrelatedOwner, 5);
             Assert(
                 GetProductCallbackRuntime() == null,
                 "Real product deactivation retained its static callback root.");
             Cleanup(UnrelatedOwner);
+        }
+
+        private static void
+            ProductFiveHookCallbacksAreRuntimeCompatible()
+        {
+            ResetOwners();
+            MoreEquipmentSlotsNativeRuntime product =
+                CreateProductRuntime();
+            product.Configure(
+                new MoreEquipmentSlotsConfig
+                {
+                    Enabled = true
+                },
+                "physical five-Hook callback fixture");
+            var bar = new DolocTown.UI.AccessoriesBar();
+            bar.RenderPassiveItems(
+                Array.Empty<UnityEngine.Sprite>());
+            UnityEngine.UI.Selectable[] selectables =
+                bar.allSelectablesArray;
+            bar.ClearCallBack();
+            Assert(
+                selectables.Length == 2,
+                "The Array-typed Product postfix did not preserve the exact native Selectable[] return when no Product UI session exists.");
+            product.DeactivateOwner(
+                "physical five-Hook callback fixture cleanup");
+            AssertOwnerCount(ProductOwner, 0);
+        }
+
+        private static void
+            ProductRowFollowsNativeTailAndReusesRoots()
+        {
+            ResetOwners();
+            MoreEquipmentSlotsNativeRuntime product =
+                CreateProductRuntime();
+            product.Configure(
+                new MoreEquipmentSlotsConfig
+                {
+                    Enabled = true
+                },
+                "physical Product dynamic-row fixture");
+            var document =
+                new EquipmentSlotStorageDocument();
+            GetField(product, "document").SetValue(
+                product,
+                document);
+            GetField(product, "workingSlots").SetValue(
+                product,
+                EquipmentSlotGameplayCandidateCoordinator
+                    .CloneSlots(document.Slots));
+
+            int cloneBaseline =
+                DolocTown.UI.AccessorySlot.CloneCount;
+            var bar = new DolocTown.UI.AccessoriesBar();
+            bar.RenderPassiveItems(
+                new[] { new UnityEngine.Sprite() });
+            MoreEquipmentSlotsDiagnosticsSnapshot first =
+                product.GetDiagnosticsSnapshot();
+            Assert(
+                first.CloneCount == 3 &&
+                first.RootCount == 1 &&
+                first.UiVisible &&
+                !first.UiLayoutBlocked &&
+                DolocTown.UI.AccessorySlot.CloneCount -
+                    cloneBaseline == 3 &&
+                bar.allSelectablesArray.Length == 6,
+                "The Product must append exactly three reusable slots after the one-passive native selectable set.");
+
+            object session =
+                GetField(product, "uiSession").GetValue(product) ??
+                throw new InvalidOperationException(
+                    "The Product UI session was unavailable.");
+            var rowRoot =
+                (UnityEngine.GameObject)GetPropertyValue(
+                    session,
+                    "ProductRowRoot");
+            var rowRect =
+                (UnityEngine.RectTransform)rowRoot.transform;
+            Assert(
+                rowRect.sizeDelta.x == 360f &&
+                rowRect.sizeDelta.y == 112f &&
+                rowRect.anchoredPosition.x == 372f &&
+                rowRect.anchoredPosition.y == 0f &&
+                ((UnityEngine.UI.LayoutElement)(
+                    rowRoot.GetComponent(
+                        typeof(UnityEngine.UI.LayoutElement)) ??
+                    throw new InvalidOperationException(
+                        "The Product row LayoutElement was absent.")))
+                    .ignoreLayout,
+                "The Product row must ignore native layout and begin exactly 12px after the actual one-passive tail.");
+
+            IList leases =
+                (IList)(GetField(product, "uiLeases")
+                    .GetValue(product) ??
+                    throw new InvalidOperationException(
+                        "The Product slot leases were unavailable."));
+            Assert(
+                leases.Count == 3,
+                "The dynamic Product row must own exactly three slot leases.");
+            object[] retainedSlots = new object[leases.Count];
+            for (int index = 0; index < leases.Count; index++)
+            {
+                var slot =
+                    (DolocTown.UI.AccessorySlot)GetPropertyValue(
+                        leases[index] ??
+                            throw new InvalidOperationException(),
+                        "Slot");
+                retainedSlots[index] = slot;
+                AssertSanitizedProductSlot(
+                    slot,
+                    "Product slot " + index);
+                Assert(
+                    slot.rectTransform.sizeDelta.x == 112f &&
+                    slot.rectTransform.sizeDelta.y == 112f &&
+                    slot.rectTransform.anchoredPosition.x ==
+                        56f + 124f * index &&
+                    slot.rectTransform.anchoredPosition.y == 56f,
+                    "The three Product slots must continue horizontally at full size with native 12px spacing.");
+            }
+            var firstSlot = (DolocTown.UI.AccessorySlot)retainedSlots[0];
+            int hideHoverBefore = DolocAPI.HideHoverBoxCallCount;
+            firstSlot.button.onPointerEnter.Invoke();
+            Assert(
+                !string.IsNullOrWhiteSpace(firstSlot.LastHint),
+                "A Product slot must publish its localized hint through an initialized cloned RectTransform.");
+            firstSlot.button.onPointerExit.Invoke();
+            Assert(
+                DolocAPI.HideHoverBoxCallCount ==
+                    hideHoverBefore + 1,
+                "Product pointer exit must select the exact zero-parameter DolocAPI.HideHoverBox overload.");
+
+            int rebuildBeforeGrowth =
+                bar.Panel.RebuildNavigationCount;
+            bar.RenderPassiveItems(
+                new[]
+                {
+                    new UnityEngine.Sprite(),
+                    new UnityEngine.Sprite()
+                });
+            Assert(
+                DolocTown.UI.AccessorySlot.CloneCount -
+                    cloneBaseline == 3 &&
+                ReferenceEquals(
+                    rowRoot,
+                    GetPropertyValue(session, "ProductRowRoot")) &&
+                rowRect.anchoredPosition.x == 496f &&
+                rowRect.anchoredPosition.y == 0f &&
+                bar.allSelectablesArray.Length == 7 &&
+                bar.DroneSelectable.interactable &&
+                bar.DroneSelectable.navigation.mode ==
+                    UnityEngine.UI.Navigation.Mode.Automatic &&
+                bar.DroneGraphic.raycastTarget &&
+                bar.Panel.RebuildNavigationCount ==
+                    rebuildBeforeGrowth + 1,
+                "Official passive growth 1->2 must move the same Product row by exactly one native 124px step, append all three Product Selectables, and leave drone state untouched.");
+            for (int index = 0; index < leases.Count; index++)
+            {
+                Assert(
+                    ReferenceEquals(
+                        retainedSlots[index],
+                        GetPropertyValue(
+                            leases[index] ??
+                                throw new InvalidOperationException(),
+                            "Slot")),
+                    "Official passive growth recreated a Product slot instead of moving the retained row.");
+            }
+
+            for (int passiveCount = 3;
+                 passiveCount <= 5;
+                 passiveCount++)
+            {
+                int rebuildBeforeStep =
+                    bar.Panel.RebuildNavigationCount;
+                bar.RenderPassiveItems(
+                    new UnityEngine.Sprite[passiveCount]);
+                Assert(
+                    DolocTown.UI.AccessorySlot.CloneCount -
+                        cloneBaseline == 3 &&
+                    ReferenceEquals(
+                        rowRoot,
+                        GetPropertyValue(
+                            session,
+                            "ProductRowRoot")) &&
+                    rowRect.anchoredPosition.x ==
+                        372f + 124f * (passiveCount - 1) &&
+                    rowRect.anchoredPosition.y == 0f &&
+                    bar.allSelectablesArray.Length ==
+                        5 + passiveCount &&
+                    bar.DroneSelectable.interactable &&
+                    bar.DroneSelectable.navigation.mode ==
+                        UnityEngine.UI.Navigation.Mode.Automatic &&
+                    bar.DroneGraphic.raycastTarget &&
+                    bar.Panel.RebuildNavigationCount ==
+                        rebuildBeforeStep + 1,
+                    "Official passive growth through five slots must move the same Product row by one native 124px step, append all three Product Selectables, and leave drone state untouched.");
+                for (int index = 0;
+                     index < leases.Count;
+                     index++)
+                {
+                    Assert(
+                        ReferenceEquals(
+                            retainedSlots[index],
+                            GetPropertyValue(
+                                leases[index] ??
+                                    throw new InvalidOperationException(),
+                                "Slot")),
+                        "Official passive growth through five slots recreated a Product slot instead of moving the retained row.");
+                }
+            }
+
+            bar.ClearCallBack();
+            Assert(
+                !product.GetDiagnosticsSnapshot().UiVisible &&
+                !rowRoot.activeSelf &&
+                bar.allSelectablesArray.Length == 7 &&
+                bar.DroneSelectable.interactable &&
+                bar.DroneGraphic.raycastTarget,
+                "AccessoriesBar.ClearCallBack must hide only the Product row and leave native drone state untouched.");
+
+            bar.RenderPassiveItems(
+                new UnityEngine.Sprite[5]);
+            Assert(
+                product.GetDiagnosticsSnapshot().UiVisible &&
+                rowRoot.activeSelf &&
+                bar.allSelectablesArray.Length == 10 &&
+                DolocTown.UI.AccessorySlot.CloneCount -
+                    cloneBaseline == 3,
+                "Reopening the same AccessoriesBar generation must reactivate and reuse the dynamic Product row.");
+
+            bar.RenderPassiveItems(
+                new UnityEngine.Sprite[6]);
+            MoreEquipmentSlotsDiagnosticsSnapshot blocked =
+                product.GetDiagnosticsSnapshot();
+            Assert(
+                blocked.UiLayoutBlocked &&
+                !blocked.UiVisible &&
+                bar.allSelectablesArray.Length == 8 &&
+                bar.DroneSelectable.interactable &&
+                bar.DroneGraphic.raycastTarget,
+                "A sixth unreviewed official passive slot must hide Product UI and fail closed without mutating native Selectables or drone interaction.");
+
+            product.ReturnedToTitle();
+            MoreEquipmentSlotsDiagnosticsSnapshot cleared =
+                product.GetDiagnosticsSnapshot();
+            Assert(
+                cleared.CloneCount == 0 &&
+                cleared.RootCount == 0 &&
+                !cleared.UiVisible &&
+                bar.DroneSelectable.interactable &&
+                bar.DroneGraphic.raycastTarget,
+                "ReturnedToTitle must destroy Product roots without ever changing native drone state.");
+            product.DeactivateOwner(
+                "physical Product dynamic-row fixture cleanup");
+            AssertOwnerCount(ProductOwner, 0);
+        }
+
+        private static void AssertSanitizedProductSlot(
+            DolocTown.UI.AccessorySlot slot,
+            string authority)
+        {
+            Assert(
+                slot.ClickCallbacksCleared &&
+                slot.TotalSlotListenerCount == 0 &&
+                slot.TotalButtonListenerCount == 5 &&
+                slot.button.onLeftContinuesClick == null &&
+                slot.button.onRightContinuesClick == null,
+                authority +
+                " retained an inherited native click/select/pointer/move listener or continuous-click callback.");
+        }
+
+        private static void
+            ProductItemAdmissionMatchesZeroThreeOne()
+        {
+            MoreEquipmentSlotsNativeRuntime product =
+                CreateProductRuntime();
+            DolocTown.ItemFactory.ShieldMaxValue = 10;
+            var ordinaryHat =
+                (EquipmentSlotStorageEntry)Invoke(
+                    product,
+                    "BuildStorageEntry",
+                    "fixture-hat",
+                    0);
+            var shieldHat =
+                (EquipmentSlotStorageEntry)Invoke(
+                    product,
+                    "BuildStorageEntry",
+                    "fixture-shield",
+                    1);
+            var passive =
+                (EquipmentSlotStorageEntry)Invoke(
+                    product,
+                    "BuildStorageEntry",
+                    "fixture-passive",
+                    2);
+            var herb =
+                (EquipmentSlotStorageEntry)Invoke(
+                    product,
+                    "BuildStorageEntry",
+                    "fixture-herb-package",
+                    0);
+            Assert(
+                ordinaryHat.IsOccupied &&
+                ordinaryHat.DefenseBonus == 0 &&
+                ordinaryHat.SkillId == string.Empty &&
+                !ordinaryHat.IsShield &&
+                shieldHat.IsShield &&
+                shieldHat.ShieldMaxValue == 10 &&
+                shieldHat.ShieldValue == 10 &&
+                passive.SkillId ==
+                    "fixture-passive-skill" &&
+                herb.SkillId == "fixture-herb-skill",
+                "Physical item reflection must preserve 0.3.1 semantics for ordinary zero-defense hats, shield hats, ItemFunctionPassive and ItemFunctionHerbPackage.");
+
+            foreach (string rejectedId in new[]
+            {
+                "fixture-skillless-passive",
+                "fixture-active"
+            })
+            {
+                bool rejected = false;
+                try
+                {
+                    Invoke(
+                        product,
+                        "BuildStorageEntry",
+                        rejectedId,
+                        0);
+                }
+                catch (InvalidOperationException)
+                {
+                    rejected = true;
+                }
+                Assert(
+                    rejected,
+                    "Physical item reflection accepted rejected item " +
+                    rejectedId +
+                    ".");
+            }
+            DolocTown.ItemFactory.ShieldMaxValue = 0;
+            bool zeroShieldRejected = false;
+            try
+            {
+                Invoke(
+                    product,
+                    "BuildStorageEntry",
+                    "fixture-shield",
+                    0);
+            }
+            catch (InvalidOperationException)
+            {
+                zeroShieldRejected = true;
+            }
+            DolocTown.ItemFactory.ShieldMaxValue = 10;
+            Assert(
+                zeroShieldRejected,
+                "Physical item reflection accepted a shield hat with non-positive MaxShieldValue.");
         }
 
         private static void
@@ -5382,6 +5997,271 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
         }
 
         private static void
+            ProductIncomingUnknownBlocksReplayAndSave()
+        {
+            ResetOwners();
+            DolocAPI.ResetInventory();
+            var manager =
+                new DolocTown.GameData.AgentEquipmentManager();
+            ConfigureProductSaveFixtureNative(
+                manager,
+                archiveIndex: 2,
+                playerName: "fixture-player");
+            MoreEquipmentSlotsNativeRuntime product =
+                CreateProductRuntime();
+            EquipmentSlotStorageDocument document =
+                ConfigureSeparatedProductShield(
+                    product,
+                    shieldValue: 5);
+            document.Slots[0].Clear();
+            GetField(product, "workingSlots").SetValue(
+                product,
+                EquipmentSlotGameplayCandidateCoordinator
+                    .CloneSlots(document.Slots));
+            GetField(product, "archiveIndex").SetValue(
+                product,
+                2);
+            DolocAPI.SetItemCount(
+                "fixture-shield",
+                1);
+            DolocAPI.CostItemThrowAfterMutation = true;
+
+            Assert(
+                !product.EquipFromBackpack(
+                    "fixture-shield",
+                    0) &&
+                DolocAPI.GetStoredItemCount(
+                    "fixture-shield") == 0 &&
+                DolocAPI.CostItemCallCount == 1 &&
+                GetField(
+                    product,
+                    "pendingGameplayIncomingWithdrawal")
+                    .GetValue(product) != null,
+                "A gameplay CostItem mutate-then-throw path must retain one outcome-unknown guard after the native count changed exactly once.");
+            Assert(
+                !product.EquipFromBackpack(
+                    "fixture-shield",
+                    0) &&
+                !product.RequestUnequip(0) &&
+                DolocAPI.CostItemCallCount == 1,
+                "A gameplay incoming outcome-unknown guard must block every later Product slot operation without replaying CostItem.");
+
+            int rejectedSaves = 0;
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    product.OnSaveSaving(2);
+                }
+                catch (InvalidOperationException)
+                {
+                    rejectedSaves++;
+                }
+            }
+            Assert(
+                rejectedSaves == 2 &&
+                DolocAPI.CostItemCallCount == 1 &&
+                document.GameplayCandidate == null &&
+                !(bool)(GetField(
+                    product,
+                    "pendingNativeSave").GetValue(
+                        product) ?? true),
+                "Repeated SaveSaving must remain blocked by gameplay incoming outcome-unknown without replay or sidecar candidate promotion.");
+
+            product.DeactivateOwner("RuntimeShutdown");
+            DolocAPI.ResetInventory();
+        }
+
+        private static void
+            ProductDurableIncomingUnknownNeverReplaysInProcess()
+        {
+            ResetOwners();
+            DolocAPI.ResetInventory();
+            var manager =
+                new DolocTown.GameData.AgentEquipmentManager();
+            ConfigureProductSaveFixtureNative(
+                manager,
+                archiveIndex: 2,
+                playerName: "fixture-player");
+            MoreEquipmentSlotsNativeRuntime product =
+                CreateProductRuntime();
+            EquipmentSlotStorageDocument document =
+                ConfigureSeparatedProductShield(
+                    product,
+                    shieldValue: 5);
+            document.Slots[0].Clear();
+            document.Slots[0].ItemId = "outgoing-item";
+            document.Slots[0].DisplayName = "outgoing-item";
+            EquipmentSlotTransactionJournal journal =
+                EquipmentSlotTransactionCoordinator
+                    .PrepareReplacement(
+                        document,
+                        0,
+                        new EquipmentSlotStorageEntry
+                        {
+                            Index = 0,
+                            ItemId = "fixture-shield",
+                            DisplayName = "fixture-shield",
+                            SkillId = "shield",
+                            IsShield = true,
+                            ShieldValue = 5,
+                            ShieldMaxValue = 5
+                        });
+            GetField(product, "workingSlots").SetValue(
+                product,
+                EquipmentSlotGameplayCandidateCoordinator
+                    .CloneSlots(document.Slots));
+            GetField(product, "archiveIndex").SetValue(
+                product,
+                2);
+            string sidecarPath =
+                (string)(GetField(
+                    product,
+                    "sidecarPath").GetValue(product) ??
+                    throw new InvalidOperationException(
+                        "Durable incoming fixture sidecar path was unavailable."));
+            new EquipmentSlotDocumentStore().WriteAtomic(
+                sidecarPath,
+                document);
+            DolocAPI.SetItemCount(
+                "fixture-shield",
+                1);
+            DolocAPI.CostItemThrowAfterMutation = true;
+
+            bool firstRejected = false;
+            try
+            {
+                product.OnSaveSaving(2);
+            }
+            catch (
+                EquipmentSlotNativeMutationOutcomeUnknownException)
+            {
+                firstRejected = true;
+            }
+            bool secondRejected = false;
+            try
+            {
+                product.OnSaveSaving(2);
+            }
+            catch (InvalidOperationException)
+            {
+                secondRejected = true;
+            }
+            IDictionary pending =
+                (IDictionary)(GetField(
+                    product,
+                    "pendingJournalPlacements")
+                    .GetValue(product) ??
+                    throw new InvalidOperationException(
+                        "Durable incoming pending map was unavailable."));
+            Assert(
+                firstRejected &&
+                secondRejected &&
+                DolocAPI.TryPlaceInBackpackCallCount == 1 &&
+                DolocAPI.CostItemCallCount == 1 &&
+                DolocAPI.GetStoredItemCount(
+                    "outgoing-item") == 1 &&
+                DolocAPI.GetStoredItemCount(
+                    "fixture-shield") == 0 &&
+                pending.Contains(-1) &&
+                journal.AttemptStarted &&
+                journal.Escrow[0].AttemptCompleted &&
+                !journal.IncomingAttemptCompleted &&
+                document.Journal != null &&
+                (bool)(GetField(
+                    product,
+                    "journalRecoveryBlocked").GetValue(
+                        product) ?? false),
+                "A durable incoming outcome-unknown must preserve one outgoing destination, one incoming mutation and a non-replayed -1 quarantine entry across repeated SaveSaving calls.");
+
+            product.DeactivateOwner("RuntimeShutdown");
+            DolocAPI.ResetInventory();
+        }
+
+        private static void
+            NativeBufferWithdrawalEvidenceIsExactAndFailClosed()
+        {
+            var success = new FixtureNativeBuffer(
+                "fixture-shield",
+                FixtureNativeBufferMode.Success);
+            Assert(
+                InvokeNativeBufferWithdrawal(
+                    success,
+                    out bool succeeded) &&
+                succeeded &&
+                success.CurrentItem == null,
+                "The native held-item buffer must succeed only when the matching object is returned and the buffer becomes empty.");
+
+            foreach (
+                FixtureNativeBufferMode mode in
+                new[]
+                {
+                    FixtureNativeBufferMode.ClearThenThrow,
+                    FixtureNativeBufferMode.WrongReturn,
+                    FixtureNativeBufferMode.FalseReturn,
+                    FixtureNativeBufferMode.RetainAfterReturn,
+                    FixtureNativeBufferMode.UnreadableAfter
+                })
+            {
+                var buffer = new FixtureNativeBuffer(
+                    "fixture-shield",
+                    mode);
+                bool unknown = false;
+                try
+                {
+                    InvokeNativeBufferWithdrawal(
+                        buffer,
+                        out _);
+                }
+                catch (
+                    EquipmentSlotNativeMutationOutcomeUnknownException)
+                {
+                    unknown = true;
+                }
+                Assert(
+                    unknown,
+                    "Native held-item buffer mode " +
+                    mode +
+                    " must be classified outcome-unknown rather than replayable failure or success.");
+            }
+            DolocAPI.ResetInventory();
+        }
+
+        private static bool InvokeNativeBufferWithdrawal(
+            FixtureNativeBuffer buffer,
+            out bool succeeded)
+        {
+            DolocAPI.archiveHandle =
+                new FixtureBufferArchive(buffer);
+            MethodInfo method =
+                typeof(MoreEquipmentSlotsNativeRuntime).GetMethod(
+                    "TryTakeMatchingNativeBuffer",
+                    BindingFlags.NonPublic |
+                    BindingFlags.Static) ??
+                throw new MissingMethodException(
+                    typeof(MoreEquipmentSlotsNativeRuntime)
+                        .FullName,
+                    "TryTakeMatchingNativeBuffer");
+            object[] arguments =
+            {
+                "fixture-shield",
+                false
+            };
+            try
+            {
+                bool attempted =
+                    (bool)(method.Invoke(null, arguments) ?? false);
+                succeeded = (bool)arguments[1];
+                return attempted;
+            }
+            catch (TargetInvocationException ex)
+                when (ex.InnerException != null)
+            {
+                throw ex.InnerException;
+            }
+        }
+
+        private static void
             ProductRuntimeShutdownDiscardsUnsavedWorkingState()
         {
             RunProductRuntimeShutdownScenario(
@@ -5574,7 +6454,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 "same-process restart");
             AssertOwnerCount(
                 ProductOwner,
-                4);
+                5);
             var restartedWorking =
                 (List<EquipmentSlotStorageEntry>)(
                     GetField(
@@ -5785,7 +6665,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                     "A failed config-file write mutated Product Working/Committed authority, created a journal, or changed the enabled config.");
                 AssertOwnerCount(
                     ProductOwner,
-                    4);
+                    5);
             }
             finally
             {
@@ -5863,7 +6743,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 "Dirty Product config disable did not retain the enabled owner and byte-identical committed sidecar.");
             AssertOwnerCount(
                 ProductOwner,
-                4);
+                5);
 
             product.ReturnedToTitle();
             product.Configure(
@@ -6068,7 +6948,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                     Enabled = true
                 },
                 "physical cleanup exception fixture");
-            AssertOwnerCount(ProductOwner, 4);
+            AssertOwnerCount(ProductOwner, 5);
 
             var item = new object();
             var function = new FixtureDisposable();
@@ -6099,7 +6979,7 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 function.Disposed &&
                 manager.ReloadCount == 1,
                 "Function cleanup must remove/dispose the exact lease and attempt one native ReloadParams recomputation.");
-            AssertOwnerCount(ProductOwner, 4);
+            AssertOwnerCount(ProductOwner, 5);
             Assert(
                 GetProductCallbackRuntime() == product,
                 "A cleanup restoration failure must retain the enabled Product owner for an explicit retry.");
@@ -6856,6 +7736,18 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                 instance.GetType().FullName,
                 name);
 
+        private static object GetPropertyValue(
+            object instance,
+            string name) =>
+            instance.GetType().GetProperty(
+                name,
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance)?.GetValue(instance) ??
+            throw new MissingMemberException(
+                instance.GetType().FullName,
+                name);
+
         private static object? GetProductCallbackRuntime() =>
             typeof(MoreEquipmentSlotsCallbacks).GetField(
                 "runtime",
@@ -7453,6 +8345,106 @@ namespace DTMAPI.EquipmentSlotsHarmonyOwnerFixture
                     (exception == null
                         ? string.Empty
                         : ": " + exception.Message));
+        }
+
+        private enum FixtureNativeBufferMode
+        {
+            Success,
+            ClearThenThrow,
+            WrongReturn,
+            FalseReturn,
+            RetainAfterReturn,
+            UnreadableAfter
+        }
+
+        private sealed class FixtureBufferItem
+        {
+            internal FixtureBufferItem(string itemId) =>
+                name = itemId;
+
+            public string name { get; }
+        }
+
+        private sealed class FixtureNativeBuffer
+        {
+            private readonly FixtureNativeBufferMode mode;
+            private object? currentItem;
+            private int reads;
+
+            internal FixtureNativeBuffer(
+                string itemId,
+                FixtureNativeBufferMode mode)
+            {
+                currentItem = new FixtureBufferItem(itemId);
+                this.mode = mode;
+            }
+
+            public object? CurrentItem
+            {
+                get
+                {
+                    reads++;
+                    if (mode ==
+                            FixtureNativeBufferMode
+                                .UnreadableAfter &&
+                        reads > 1)
+                    {
+                        throw new InvalidOperationException(
+                            "fixture held-item post-state unreadable");
+                    }
+                    return currentItem;
+                }
+            }
+
+            public object? Take()
+            {
+                object? taken = currentItem;
+                if (mode !=
+                    FixtureNativeBufferMode.RetainAfterReturn)
+                {
+                    currentItem = null;
+                }
+                if (mode ==
+                    FixtureNativeBufferMode.ClearThenThrow)
+                {
+                    throw new InvalidOperationException(
+                        "fixture held-item clear-then-throw");
+                }
+                if (mode ==
+                    FixtureNativeBufferMode.WrongReturn)
+                {
+                    return new FixtureBufferItem(
+                        "different-item");
+                }
+                if (mode ==
+                    FixtureNativeBufferMode.FalseReturn)
+                {
+                    return false;
+                }
+                return taken;
+            }
+        }
+
+        private sealed class FixtureBufferInventorySystem
+        {
+            internal FixtureBufferInventorySystem(
+                FixtureNativeBuffer value) =>
+                buffer = value;
+
+            public FixtureNativeBuffer buffer { get; }
+        }
+
+        private sealed class FixtureBufferArchive
+        {
+            internal FixtureBufferArchive(
+                FixtureNativeBuffer buffer) =>
+                InventorySystem =
+                    new FixtureBufferInventorySystem(buffer);
+
+            public FixtureBufferInventorySystem InventorySystem
+            {
+                get;
+            }
         }
 
         private sealed class FixtureArchive

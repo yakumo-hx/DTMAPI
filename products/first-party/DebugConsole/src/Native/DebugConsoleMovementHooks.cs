@@ -46,12 +46,11 @@ namespace DTMAPI.DebugConsole
             ref float __result)
         {
             float factor = Volatile.Read(ref multiplier);
+            if (factor == 1f)
+                return;
             object? owner = Volatile.Read(ref playerOwner);
-            if (Math.Abs(factor - 1f) >= 0.0001f &&
-                ReferenceEquals(owner, __instance))
-            {
+            if (ReferenceEquals(owner, __instance))
                 __result *= factor;
-            }
         }
 
         internal static double MultiplierForTests =>

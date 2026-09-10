@@ -32,6 +32,8 @@ $script:DtmInstallGamePathResolved = $false
 $script:DtmInstallLockAcquisitionPending = $false
 $script:DtmInstallFailureStateAllowed = $true
 $script:DtmInstallSourceCommit = ''
+$script:DtmReceiptTestFailureCountConsumed = 0
+$script:DtmReceiptCleanupTestFailureCountConsumed = 0
 $repo = Get-RepoRoot
 $script:DtmInstallSourceCommit = Get-DtmApiSourceCommit -RepoRoot $repo
 $detectedPackagePayloadRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\Payload'))
@@ -65,7 +67,13 @@ if (-not $SkipBuild) {
     & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
 }
 
-$gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
+try {
+    $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo
+}
+catch {
+    Write-DtmApiInstallerFailure -ErrorRecord $_
+    exit 1
+}
 $pluginDir = Join-Path $gameDir 'BepInEx\plugins\DTMAPI'
 $stateDir = Resolve-DtmApiStateDir -GameDir $gameDir
 $bepInExCore = Join-Path $gameDir 'BepInEx\core\BepInEx.dll'
@@ -110,6 +118,8 @@ function Write-DtmApiInstallFailureState {
 
 trap {
     $installErrorRecord = $_
+    $skipInstallFailureState = $false
+    Write-DtmApiInstallerFailure -ErrorRecord $installErrorRecord
     if ($script:DtmInstallLockAcquisitionPending) {
         Write-Warning "DTMAPI install stopped before its mutation lock was acquired; no install failure state was written: $($installErrorRecord.Exception.Message)"
         break
@@ -123,6 +133,7 @@ trap {
         break
     }
     if ($null -ne $script:DtmRuntimeInstallTransaction -and
+        [bool]$script:DtmRuntimeInstallTransaction.ReceiptEstablished -and
         (Get-Command Restore-DtmApiRuntimeInstallTransaction -ErrorAction SilentlyContinue)) {
         try {
             Restore-DtmApiRuntimeInstallTransaction -Transaction $script:DtmRuntimeInstallTransaction
@@ -131,9 +142,33 @@ trap {
             Write-Warning "DTMAPI Runtime transaction rollback failed: $($_.Exception.Message)"
         }
     }
-    if ($script:DtmInstallGamePathResolved -and
+    elseif ($null -ne $script:DtmRuntimeInstallTransaction -and
+        -not [bool]$script:DtmRuntimeInstallTransaction.ReceiptEstablished) {
+        $skipInstallFailureState = $true
+        try {
+            $receiptless = @(Get-DtmApiRuntimeTransactionClassifications -GameDir $gameDir -StateDir $stateDir -PluginDir $pluginDir |
+                Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.RuntimeRoot) -and [string]::Equals([string]$_.RuntimeRoot, [string]$script:DtmRuntimeInstallTransaction.RuntimeTransactionRoot, [System.StringComparison]::OrdinalIgnoreCase) })
+            if ($receiptless.Count -eq 1 -and [string]::Equals([string]$receiptless[0].Kind, 'SterileNoReceipt', [System.StringComparison]::Ordinal)) {
+                Remove-DtmApiSterileRuntimeTransactionRoot -Classification $receiptless[0] -GameDir $gameDir -StateDir $stateDir -PluginDir $pluginDir
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-W1301' `
+                    -Chinese '已清理首份凭据失败留下的安全事务空壳。' `
+                    -English 'Removed the safe transaction shell left by the failed first receipt.' `
+                    -Detail ([string]$receiptless[0].RuntimeRoot) `
+                    -Level Warning
+            }
+        }
+        catch {
+            Write-Warning "First-receipt cleanup did not complete; the original install error remains authoritative. $($_.Exception.Message)"
+        }
+    }
+    if (-not $skipInstallFailureState -and
+        $script:DtmInstallGamePathResolved -and
         (Get-Command Write-DtmApiInstallFailureState -ErrorAction SilentlyContinue)) {
         Write-DtmApiInstallFailureState -ErrorRecord $installErrorRecord
+    }
+    elseif ($skipInstallFailureState) {
+        Write-Warning 'DTMAPI install stopped before the first Runtime receipt was established; no ordinary install failure-state file was written.'
     }
     else {
         Write-Warning "DTMAPI install failed before the game folder was resolved: $($installErrorRecord.Exception.Message)"
@@ -283,6 +318,9 @@ function New-DtmApiRuntimeInstallTransaction {
     )
     $requestedFaultPhase = [string]$env:DTMAPI_RUNTIME_INSTALL_FAIL_PHASE
     $requestedRollbackFaultPhase = [string]$env:DTMAPI_RUNTIME_INSTALL_ROLLBACK_FAIL_PHASE
+    $requestedReceiptFaultStage = [string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_STAGE
+    $requestedReceiptFaultCount = [string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT
+    $requestedReceiptCleanupFaultCount = [string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT
     if (-not [string]::IsNullOrWhiteSpace($requestedFaultPhase)) {
         if (-not [string]::Equals([string]$env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE, '1', [System.StringComparison]::Ordinal)) {
             throw 'DTMAPI_RUNTIME_INSTALL_FAIL_PHASE is test-only and requires DTMAPI_INSTALL_TRANSACTION_TEST_MODE=1.'
@@ -297,6 +335,27 @@ function New-DtmApiRuntimeInstallTransaction {
         }
         if (@('InstallState', 'ReleaseManifest', 'Tools', 'Components', 'Runtime') -notcontains $requestedRollbackFaultPhase) {
             throw "Unsupported DTMAPI Runtime rollback fault phase '$requestedRollbackFaultPhase'."
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($requestedReceiptFaultStage) -or -not [string]::IsNullOrWhiteSpace($requestedReceiptFaultCount)) {
+        if (-not [string]::Equals([string]$env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE, '1', [System.StringComparison]::Ordinal)) {
+            throw 'DTMAPI_RUNTIME_RECEIPT_TEST_* is test-only and requires DTMAPI_INSTALL_TRANSACTION_TEST_MODE=1.'
+        }
+        if (@('Write', 'Publish') -notcontains $requestedReceiptFaultStage) {
+            throw "Unsupported DTMAPI receipt fault stage '$requestedReceiptFaultStage'."
+        }
+        $parsedReceiptFaultCount = 0
+        if (-not [int]::TryParse($requestedReceiptFaultCount, [ref]$parsedReceiptFaultCount) -or $parsedReceiptFaultCount -lt 1 -or $parsedReceiptFaultCount -gt 100) {
+            throw "DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT must be an integer from 1 through 100. Actual='$requestedReceiptFaultCount'."
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($requestedReceiptCleanupFaultCount)) {
+        if (-not [string]::Equals([string]$env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE, '1', [System.StringComparison]::Ordinal)) {
+            throw 'DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT is test-only and requires DTMAPI_INSTALL_TRANSACTION_TEST_MODE=1.'
+        }
+        $parsedReceiptCleanupFaultCount = 0
+        if (-not [int]::TryParse($requestedReceiptCleanupFaultCount, [ref]$parsedReceiptCleanupFaultCount) -or $parsedReceiptCleanupFaultCount -lt 1 -or $parsedReceiptCleanupFaultCount -gt 100) {
+            throw "DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT must be an integer from 1 through 100. Actual='$requestedReceiptCleanupFaultCount'."
         }
     }
 
@@ -345,6 +404,7 @@ function New-DtmApiRuntimeInstallTransaction {
         CommitSucceeded = $false
         RollbackSucceeded = $null
         RollbackFaultConsumed = $false
+        ReceiptEstablished = $false
     }
 }
 
@@ -368,6 +428,50 @@ function Invoke-DtmApiRuntimeRollbackFault {
         [string]::Equals([string]$env:DTMAPI_RUNTIME_INSTALL_ROLLBACK_FAIL_PHASE, $Phase, [System.StringComparison]::Ordinal)) {
         $Transaction.RollbackFaultConsumed = $true
         throw "Injected one-time DTMAPI Runtime rollback failure at phase $Phase."
+    }
+}
+
+function Invoke-DtmApiRuntimeReceiptTestFault {
+    param([Parameter(Mandatory = $true)] [string] $Stage)
+
+    if (-not [string]::Equals([string]$env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE, '1', [System.StringComparison]::Ordinal) -or
+        -not [string]::Equals([string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_STAGE, $Stage, [System.StringComparison]::Ordinal)) {
+        return
+    }
+    $requestedCount = 0
+    if (-not [int]::TryParse([string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT, [ref]$requestedCount)) {
+        return
+    }
+    if ($script:DtmReceiptTestFailureCountConsumed -lt $requestedCount) {
+        $script:DtmReceiptTestFailureCountConsumed++
+        throw (New-Object -TypeName System.UnauthorizedAccessException -ArgumentList "Injected transient DTMAPI receipt $Stage failure $script:DtmReceiptTestFailureCountConsumed/$requestedCount.")
+    }
+}
+
+function Test-DtmApiTransientReceiptFailure {
+    param([Parameter(Mandatory = $true)] $ErrorRecord)
+
+    $exception = $ErrorRecord.Exception
+    while ($null -ne $exception) {
+        if ($exception -is [System.UnauthorizedAccessException] -or $exception -is [System.IO.IOException]) {
+            return $true
+        }
+        $exception = $exception.InnerException
+    }
+    return $false
+}
+
+function Invoke-DtmApiRuntimeReceiptCleanupTestFault {
+    if (-not [string]::Equals([string]$env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE, '1', [System.StringComparison]::Ordinal)) {
+        return
+    }
+    $requestedCount = 0
+    if (-not [int]::TryParse([string]$env:DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT, [ref]$requestedCount)) {
+        return
+    }
+    if ($script:DtmReceiptCleanupTestFailureCountConsumed -lt $requestedCount) {
+        $script:DtmReceiptCleanupTestFailureCountConsumed++
+        throw (New-Object -TypeName System.UnauthorizedAccessException -ArgumentList "Injected best-effort DTMAPI receipt cleanup failure $script:DtmReceiptCleanupTestFailureCountConsumed/$requestedCount.")
     }
 }
 
@@ -414,27 +518,65 @@ function Write-DtmApiRuntimeTransactionReceipt {
         RollbackSucceeded = $Transaction.RollbackSucceeded
     }
     $json = $receipt | ConvertTo-Json -Depth 8
-    $tempPath = $Transaction.ReceiptPath + '.tmp-' + [Guid]::NewGuid().ToString('N')
-    $backupPath = $Transaction.ReceiptPath + '.bak-' + [Guid]::NewGuid().ToString('N')
-    try {
-        [System.IO.File]::WriteAllText($tempPath, $json, (New-Object System.Text.UTF8Encoding($false)))
-        if (Test-Path -LiteralPath $Transaction.ReceiptPath -PathType Leaf) {
-            [System.IO.File]::Replace($tempPath, $Transaction.ReceiptPath, $backupPath)
-            if (Test-Path -LiteralPath $backupPath) {
-                Remove-Item -LiteralPath $backupPath -Force
+    $delaysMilliseconds = @(0, 200, 400, 800, 1200, 1600)
+    $lastError = $null
+    for ($attempt = 0; $attempt -lt $delaysMilliseconds.Count; $attempt++) {
+        if ($delaysMilliseconds[$attempt] -gt 0) {
+            Start-Sleep -Milliseconds $delaysMilliseconds[$attempt]
+        }
+        $tempPath = $Transaction.ReceiptPath + '.tmp-' + [Guid]::NewGuid().ToString('N')
+        $backupPath = $Transaction.ReceiptPath + '.bak-' + [Guid]::NewGuid().ToString('N')
+        try {
+            Invoke-DtmApiRuntimeReceiptTestFault -Stage 'Write'
+            [System.IO.File]::WriteAllText($tempPath, $json, (New-Object System.Text.UTF8Encoding($false)))
+            Invoke-DtmApiRuntimeReceiptTestFault -Stage 'Publish'
+            if (Test-Path -LiteralPath $Transaction.ReceiptPath -PathType Leaf) {
+                [System.IO.File]::Replace($tempPath, $Transaction.ReceiptPath, $backupPath)
+            }
+            else {
+                [System.IO.File]::Move($tempPath, $Transaction.ReceiptPath)
+            }
+            $validated = Read-DtmApiRuntimeTransactionReceipt `
+                -RuntimeTransactionRoot $Transaction.RuntimeTransactionRoot `
+                -GameDir $gameDir `
+                -StateDir $stateDir `
+                -PluginDir $pluginDir
+            if (-not [string]::Equals([string]$validated.Phase, [string]$Transaction.Phase, [System.StringComparison]::Ordinal)) {
+                throw "DTMAPI Runtime transaction receipt read-back phase mismatch. Expected=$($Transaction.Phase) Actual=$($validated.Phase)"
+            }
+            $Transaction.ReceiptEstablished = $true
+            return
+        }
+        catch {
+            $lastError = $_
+            if (-not (Test-DtmApiTransientReceiptFailure -ErrorRecord $_) -or $attempt -ge ($delaysMilliseconds.Count - 1)) {
+                break
             }
         }
-        else {
-            [System.IO.File]::Move($tempPath, $Transaction.ReceiptPath)
-        }
-    }
-    finally {
-        foreach ($path in @($tempPath, $backupPath)) {
-            if (Test-Path -LiteralPath $path) {
-                Remove-Item -LiteralPath $path -Force
+        finally {
+            foreach ($path in @($tempPath, $backupPath)) {
+                try {
+                    if (Test-Path -LiteralPath $path) {
+                        Invoke-DtmApiRuntimeReceiptCleanupTestFault
+                        Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+                    }
+                }
+                catch {
+                    Write-Verbose "Could not clean transaction receipt scratch path ${path}: $($_.Exception.Message)"
+                }
             }
         }
     }
+
+    if (-not [bool]$Transaction.ReceiptEstablished) {
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1301' `
+            -Chinese '无法建立并验证首份 Runtime 事务凭据；安装尚未开始修改现有 Runtime。' `
+            -English 'The first Runtime transaction receipt could not be established and validated; the installer has not started changing the existing Runtime.' `
+            -Detail ([string]$lastError.Exception.Message) `
+            -InnerException $lastError.Exception
+    }
+    throw $lastError
 }
 
 function Get-DtmApiManagedAssemblyFileVersion {
@@ -1065,163 +1207,36 @@ function Restore-DtmApiRuntimeInstallTransaction {
     Remove-DtmApiRuntimeInstallTransactionArtifacts -Transaction $Transaction
 }
 
-function Assert-DtmApiRuntimeTransactionPath {
-    param(
-        [Parameter(Mandatory = $true)] [string] $Actual,
-        [Parameter(Mandatory = $true)] [string] $Expected,
-        [Parameter(Mandatory = $true)] [string] $Label
-    )
-
-    $actualFull = [System.IO.Path]::GetFullPath($Actual)
-    $expectedFull = [System.IO.Path]::GetFullPath($Expected)
-    if (-not [string]::Equals($actualFull, $expectedFull, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Interrupted DTMAPI Runtime transaction has an unsafe $Label path. Expected=$expectedFull Actual=$actualFull"
-    }
-}
-
-function Read-DtmApiRuntimeTransactionReceipt {
-    param([Parameter(Mandatory = $true)] [string] $RuntimeTransactionRoot)
-
-    $receiptPath = Join-Path $RuntimeTransactionRoot 'transaction.json'
-    if (-not (Test-Path -LiteralPath $receiptPath -PathType Leaf)) {
-        throw "Interrupted DTMAPI Runtime transaction has no recovery receipt: $RuntimeTransactionRoot"
-    }
-    try {
-        $receipt = Get-Content -Raw -Encoding UTF8 -LiteralPath $receiptPath | ConvertFrom-Json
-    }
-    catch {
-        throw "Interrupted DTMAPI Runtime transaction receipt is unreadable: $receiptPath. $($_.Exception.Message)"
-    }
-    $requiredProperties = @(
-        'SchemaVersion', 'GameDir', 'StateDir', 'PluginDir', 'Phase', 'RuntimeTransactionRoot', 'TransactionRoot',
-        'CandidatePlugin', 'RecoveryPlugin', 'CandidateTools', 'CandidateReleaseManifest', 'CandidateInstallState',
-        'RecoveryState', 'LiveTools', 'LiveReleaseManifest', 'LiveInstallState', 'OldPluginExisted', 'OldPluginMoved',
-        'CandidatePluginPlaced', 'OldToolsExisted', 'OldToolsMoved', 'CandidateToolsPlaced',
-        'OldReleaseManifestExisted', 'OldReleaseManifestMoved', 'CandidateReleaseManifestPlaced',
-        'OldInstallStateExisted', 'OldInstallStateMoved', 'CandidateInstallStatePlaced', 'CommitSucceeded'
-    )
-    foreach ($propertyName in $requiredProperties) {
-        if ($null -eq $receipt.PSObject.Properties[$propertyName]) {
-            throw "Interrupted DTMAPI Runtime transaction receipt is missing ${propertyName}: $receiptPath"
-        }
-    }
-    if ([int]$receipt.SchemaVersion -ne 1) {
-        throw "Interrupted DTMAPI Runtime transaction receipt has unsupported schema $($receipt.SchemaVersion): $receiptPath"
-    }
-    $componentReceiptProperties = @(
-        'CandidateComponents', 'LiveComponents', 'OldComponentsExisted', 'OldComponentsMoved', 'CandidateComponentsPlaced'
-    )
-    $componentReceiptPropertyCount = @($componentReceiptProperties | Where-Object { $null -ne $receipt.PSObject.Properties[$_] }).Count
-    if ($componentReceiptPropertyCount -ne 0 -and $componentReceiptPropertyCount -ne $componentReceiptProperties.Count) {
-        throw "Interrupted DTMAPI Runtime transaction receipt has an incomplete optional-component projection: $receiptPath"
-    }
-    $hasComponentReceipt = $componentReceiptPropertyCount -eq $componentReceiptProperties.Count
-
-    $runtimeRootFull = [System.IO.Path]::GetFullPath($RuntimeTransactionRoot)
-    $runtimeRootName = Split-Path -Leaf $runtimeRootFull
-    $runtimePrefix = '.dtmapi-runtime-install-'
-    if (-not $runtimeRootName.StartsWith($runtimePrefix, [System.StringComparison]::Ordinal) -or $runtimeRootName.Length -le $runtimePrefix.Length) {
-        throw "Interrupted DTMAPI Runtime transaction directory has an invalid name: $runtimeRootFull"
-    }
-    Assert-DtmApiRuntimeTransactionPath -Actual (Split-Path -Parent $runtimeRootFull) -Expected $gameDir -Label 'game-root parent'
-    $stamp = $runtimeRootName.Substring($runtimePrefix.Length)
-    $expectedStateTransactionRoot = Join-Path $stateDir ('.runtime-install-transaction-' + $stamp)
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.GameDir) -Expected $gameDir -Label 'game directory'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.StateDir) -Expected $stateDir -Label 'state directory'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.PluginDir) -Expected $pluginDir -Label 'live plugin directory'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RuntimeTransactionRoot) -Expected $runtimeRootFull -Label 'runtime transaction root'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.TransactionRoot) -Expected $expectedStateTransactionRoot -Label 'state transaction root'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidatePlugin) -Expected (Join-Path $runtimeRootFull 'candidate-plugin') -Label 'candidate plugin'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RecoveryPlugin) -Expected (Join-Path $runtimeRootFull 'recovery-plugin') -Label 'recovery plugin'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateTools) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\tools') -Label 'candidate tools'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateReleaseManifest) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\release-manifest.json') -Label 'candidate release manifest'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateInstallState) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\install-state.json') -Label 'candidate install state'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RecoveryState) -Expected (Join-Path $expectedStateTransactionRoot 'recovery') -Label 'state recovery root'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveTools) -Expected (Join-Path $stateDir 'tools') -Label 'live tools'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveReleaseManifest) -Expected (Join-Path $stateDir 'release-manifest.json') -Label 'live release manifest'
-    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveInstallState) -Expected (Join-Path $stateDir 'install-state.json') -Label 'live install state'
-    if ($hasComponentReceipt) {
-        Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateComponents) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\components') -Label 'candidate components'
-        Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveComponents) -Expected (Join-Path $stateDir 'components') -Label 'live components'
-    }
-
-    $rollbackSucceeded = $null
-    if ($null -ne $receipt.PSObject.Properties['RollbackSucceeded'] -and $null -ne $receipt.RollbackSucceeded) {
-        $rollbackSucceeded = [bool]$receipt.RollbackSucceeded
-    }
-    $transaction = [pscustomobject][ordered]@{
-        Phase = [string]$receipt.Phase
-        FailedPhase = if ($null -eq $receipt.PSObject.Properties['FailedPhase']) { '' } else { [string]$receipt.FailedPhase }
-        RuntimeTransactionRoot = $runtimeRootFull
-        ReceiptPath = [System.IO.Path]::GetFullPath($receiptPath)
-        TransactionRoot = [System.IO.Path]::GetFullPath([string]$receipt.TransactionRoot)
-        CandidatePlugin = [System.IO.Path]::GetFullPath([string]$receipt.CandidatePlugin)
-        RecoveryPlugin = [System.IO.Path]::GetFullPath([string]$receipt.RecoveryPlugin)
-        CandidateTools = [System.IO.Path]::GetFullPath([string]$receipt.CandidateTools)
-        CandidateComponents = [System.IO.Path]::GetFullPath($(if ($hasComponentReceipt) { [string]$receipt.CandidateComponents } else { Join-Path ([string]$receipt.TransactionRoot) 'candidate\components' }))
-        CandidateReleaseManifest = [System.IO.Path]::GetFullPath([string]$receipt.CandidateReleaseManifest)
-        CandidateInstallState = [System.IO.Path]::GetFullPath([string]$receipt.CandidateInstallState)
-        RecoveryState = [System.IO.Path]::GetFullPath([string]$receipt.RecoveryState)
-        LiveTools = [System.IO.Path]::GetFullPath([string]$receipt.LiveTools)
-        LiveComponents = [System.IO.Path]::GetFullPath($(if ($hasComponentReceipt) { [string]$receipt.LiveComponents } else { Join-Path $stateDir 'components' }))
-        LiveReleaseManifest = [System.IO.Path]::GetFullPath([string]$receipt.LiveReleaseManifest)
-        LiveInstallState = [System.IO.Path]::GetFullPath([string]$receipt.LiveInstallState)
-        RuntimeMetadata = @()
-        RuntimeFileRecords = @()
-        StateToolRecords = @()
-        OptionalComponentMetadata = @()
-        OptionalComponentFileRecords = @()
-        AssetRecord = $null
-        OldPluginExisted = [bool]$receipt.OldPluginExisted
-        OldPluginMoved = [bool]$receipt.OldPluginMoved
-        CandidatePluginPlaced = [bool]$receipt.CandidatePluginPlaced
-        OldToolsExisted = [bool]$receipt.OldToolsExisted
-        OldToolsMoved = [bool]$receipt.OldToolsMoved
-        CandidateToolsPlaced = [bool]$receipt.CandidateToolsPlaced
-        OldComponentsExisted = if ($hasComponentReceipt) { [bool]$receipt.OldComponentsExisted } else { $false }
-        OldComponentsMoved = if ($hasComponentReceipt) { [bool]$receipt.OldComponentsMoved } else { $false }
-        CandidateComponentsPlaced = if ($hasComponentReceipt) { [bool]$receipt.CandidateComponentsPlaced } else { $false }
-        OldReleaseManifestExisted = [bool]$receipt.OldReleaseManifestExisted
-        OldReleaseManifestMoved = [bool]$receipt.OldReleaseManifestMoved
-        CandidateReleaseManifestPlaced = [bool]$receipt.CandidateReleaseManifestPlaced
-        OldInstallStateExisted = [bool]$receipt.OldInstallStateExisted
-        OldInstallStateMoved = [bool]$receipt.OldInstallStateMoved
-        CandidateInstallStatePlaced = [bool]$receipt.CandidateInstallStatePlaced
-        CommitSucceeded = [bool]$receipt.CommitSucceeded
-        RollbackSucceeded = $rollbackSucceeded
-        RollbackFaultConsumed = $false
-    }
-
-    switch ([string]$transaction.Phase) {
-        'MovingOldRuntime' { if (Test-Path -LiteralPath $transaction.RecoveryPlugin -PathType Container) { $transaction.OldPluginMoved = $true } }
-        'PlacingCandidate' { if (-not (Test-Path -LiteralPath $transaction.CandidatePlugin -PathType Container) -and (Test-Path -LiteralPath $pluginDir -PathType Container)) { $transaction.CandidatePluginPlaced = $true } }
-        'MovingOldTools' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'tools') -PathType Container) { $transaction.OldToolsMoved = $true } }
-        'PlacingTools' { if (-not (Test-Path -LiteralPath $transaction.CandidateTools -PathType Container) -and (Test-Path -LiteralPath $transaction.LiveTools -PathType Container)) { $transaction.CandidateToolsPlaced = $true } }
-        'MovingOldComponents' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'components') -PathType Container) { $transaction.OldComponentsMoved = $true } }
-        'PlacingComponents' { if (-not (Test-Path -LiteralPath $transaction.CandidateComponents -PathType Container) -and (Test-Path -LiteralPath $transaction.LiveComponents -PathType Container)) { $transaction.CandidateComponentsPlaced = $true } }
-        'MovingOldReleaseManifest' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'release-manifest.json') -PathType Leaf) { $transaction.OldReleaseManifestMoved = $true } }
-        'PlacingReleaseManifest' { if (-not (Test-Path -LiteralPath $transaction.CandidateReleaseManifest -PathType Leaf) -and (Test-Path -LiteralPath $transaction.LiveReleaseManifest -PathType Leaf)) { $transaction.CandidateReleaseManifestPlaced = $true } }
-        'MovingOldInstallState' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'install-state.json') -PathType Leaf) { $transaction.OldInstallStateMoved = $true } }
-        'PlacingInstallState' { if (-not (Test-Path -LiteralPath $transaction.CandidateInstallState -PathType Leaf) -and (Test-Path -LiteralPath $transaction.LiveInstallState -PathType Leaf)) { $transaction.CandidateInstallStatePlaced = $true } }
-    }
-    return $transaction
-}
-
 function Recover-DtmApiInterruptedRuntimeInstallTransactions {
-    $runtimeTransactions = @(Get-ChildItem -LiteralPath $gameDir -Directory -Force -Filter '.dtmapi-runtime-install-*' -ErrorAction SilentlyContinue | Sort-Object Name)
-    foreach ($runtimeTransaction in $runtimeTransactions) {
-        $transaction = Read-DtmApiRuntimeTransactionReceipt -RuntimeTransactionRoot $runtimeTransaction.FullName
-        Restore-DtmApiRuntimeInstallTransaction -Transaction $transaction
-        Write-Warning "Recovered interrupted DTMAPI Runtime transaction from $($runtimeTransaction.FullName)."
-    }
-
-    $orphanedStateTransactions = @()
-    if (Test-Path -LiteralPath $stateDir -PathType Container) {
-        $orphanedStateTransactions = @(Get-ChildItem -LiteralPath $stateDir -Directory -Force -Filter '.runtime-install-transaction-*' -ErrorAction SilentlyContinue)
-    }
-    if ($orphanedStateTransactions.Count -gt 0) {
-        $orphanedPaths = @($orphanedStateTransactions | ForEach-Object { $_.FullName })
-        throw "DTMAPI Runtime state recovery data has no matching validated transaction receipt. Refusing to install: $($orphanedPaths -join '; ')"
+    foreach ($classification in @(Get-DtmApiRuntimeTransactionClassifications -GameDir $gameDir -StateDir $stateDir -PluginDir $pluginDir)) {
+        switch ([string]$classification.Kind) {
+            'RecoverableReceipt' {
+                Restore-DtmApiRuntimeInstallTransaction -Transaction $classification.Transaction
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-W1302' `
+                    -Chinese '已恢复上一次中断的 Runtime 事务，正在继续本次安装。' `
+                    -English 'Recovered the previously interrupted Runtime transaction; this install will continue.' `
+                    -Detail ([string]$classification.RuntimeRoot) `
+                    -Level Warning
+            }
+            'SterileNoReceipt' {
+                Remove-DtmApiSterileRuntimeTransactionRoot -Classification $classification -GameDir $gameDir -StateDir $stateDir -PluginDir $pluginDir
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-W1301' `
+                    -Chinese '已清理上次失败留下的安全事务空壳，正在继续安装。' `
+                    -English 'Removed the safe transaction shell left by the previous failure; installation will continue.' `
+                    -Detail ([string]$classification.RuntimeRoot) `
+                    -Level Warning
+            }
+            default {
+                $path = if (-not [string]::IsNullOrWhiteSpace([string]$classification.RuntimeRoot)) { [string]$classification.RuntimeRoot } else { [string]$classification.StateRoot }
+                Throw-DtmApiInstallerError `
+                    -Code 'DTM-E1303' `
+                    -Chinese '检测到无法安全自动处理的 Runtime 事务残留，已在修改文件前停止。' `
+                    -English 'Unsafe or ambiguous Runtime transaction residue was detected; the installer stopped before changing files.' `
+                    -Detail "Kind=$($classification.Kind); Path=$path; $($classification.Detail)"
+            }
+        }
     }
 }
 
@@ -1490,8 +1505,8 @@ function Assert-DtmApiNoPausedAuthorSdkInstall {
     } | ForEach-Object { [string]$_.UniqueID } | Sort-Object)
     if ($pausedIds.Count -gt 0) {
         $script:DtmInstallFailureStateAllowed = $false
-        throw ("New managed product installation is paused for DTMAPI 0.6.1 because the unpublished Author SDK still targets the retired <game>/Mods root. " +
-            "Install Runtime only, or use the official MODS release transaction. Paused products: $([string]::Join(', ', $pausedIds)). " +
+        throw ("Managed product installation through this Runtime installer is unavailable. " +
+            "Install Runtime only. Use Author SDK install-local for an explicit package, or the official MODS release transaction. Blocked products: $([string]::Join(', ', $pausedIds)). " +
             "Existing SDK deployment-status, install-local-status, recover and withdraw commands remain available for old deployments.")
     }
 }
@@ -1919,8 +1934,8 @@ function Install-OfficialLocalDtmApiMod {
     )
 
     if (Test-DtmApiDefinitionFlag -Mod $Mod -Key 'AuthorSdkProject') {
-        throw ("New managed product installation is paused for DTMAPI 0.6.1 because the unpublished Author SDK still targets the retired <game>/Mods root. " +
-            "Install Runtime only, or use the official MODS release transaction. Existing SDK deployment-status, install-local-status, recover and withdraw commands remain available for old deployments.")
+        throw ("Managed product installation through this Runtime installer is unavailable. " +
+            "Install Runtime only. Use Author SDK install-local for an explicit package, or the official MODS release transaction. Existing SDK deployment-status, install-local-status, recover and withdraw commands remain available for old deployments.")
     }
 
     $persistentRoot = Get-DolocTownPersistentRoot
@@ -2449,8 +2464,30 @@ if (-not $SkipOfficialLocalMods) {
     }
 }
 
-Write-Host "Installed DTMAPI to $pluginDir"
-Write-Host "Wrote DTMAPI release manifest to $releaseManifestPath"
-Write-Host "Wrote DTMAPI install state to $installStatePath"
+$bepInExCompleteAfterInstall = Test-DtmApiBepInExInstallComplete -GameDir $gameDir
+$bepInExResult = if ($bepInExCompleteBeforeInstall) {
+    [pscustomobject]@{ Chinese = '保留现有完整安装'; English = 'kept existing complete installation' }
+}
+elseif ($bepInExCompleteAfterInstall -and $bepInExDetectedBeforeInstall) {
+    [pscustomobject]@{ Chinese = '已修复原有不完整安装'; English = 'repaired incomplete installation' }
+}
+elseif ($bepInExCompleteAfterInstall) {
+    [pscustomobject]@{ Chinese = '已安装随包版本'; English = 'installed bundled package' }
+}
+else {
+    [pscustomobject]@{ Chinese = '本次未请求安装，现有状态仍不完整'; English = 'not requested; existing installation remains incomplete' }
+}
+$nextStep = if ($bepInExCompleteAfterInstall) {
+    [pscustomobject]@{ Chinese = '运行 3_check_dtmapi_status.bat；显示健康后即可启动游戏'; English = 'run 3_check_dtmapi_status.bat, then start the game after it reports healthy' }
+}
+else {
+    [pscustomobject]@{ Chinese = '运行 1_install_dtmapi.bat 安装或修复 BepInEx'; English = 'run 1_install_dtmapi.bat to install or repair BepInEx' }
+}
+Write-DtmApiInstallerMessage `
+    -Code 'DTM-S1001' `
+    -Chinese "DTMAPI $script:DtmApiReleaseVersion Runtime 安装成功。五个 Runtime DLL、兼容组件和安装凭据均已验证。BepInEx：$($bepInExResult.Chinese)。下一步：$($nextStep.Chinese)。" `
+    -English "DTMAPI $script:DtmApiReleaseVersion Runtime installed successfully. All five Runtime DLLs, the compatibility component, and install receipts were verified. BepInEx: $($bepInExResult.English). Next: $($nextStep.English)." `
+    -Detail "GameDir=$gameDir; Runtime=$script:DtmApiReleaseVersion; Binary=$script:DtmApiBinaryVersion; PluginDir=$pluginDir; State=$installStatePath" `
+    -Level Success
 Exit-DtmApiInstallerMutationLock -Lock $script:DtmInstallerMutationLock
 $script:DtmInstallerMutationLock = $null

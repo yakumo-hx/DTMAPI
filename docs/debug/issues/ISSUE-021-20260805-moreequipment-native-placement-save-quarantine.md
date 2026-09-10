@@ -1,8 +1,10 @@
-# ISSUE-021: MoreEquipment native placement outcome can escape save quarantine
+﻿# ISSUE-021: MoreEquipment native placement outcome can escape save quarantine
+
+- State: `verified`
+- Current boundary: Exact Product-disabled cold recovery passed disposable native prepare/commit/NoNativeSave-observe processes with one recovered item, save quarantine/commit, zero replay, unchanged final archives/sidecars and whole-fixture cleanup.
 
 ## Status
 
-- State: `verified`
 - Opened: `2026-08-05`
 - Severity: high
 - Area: MoreEquipmentSlots / Compatibility Host / save commit / owner recovery
@@ -108,6 +110,71 @@ mail mutation-then-throw/readback-failure quarantine, save veto and retained
 recoverable evidence. Together with the clean from-start `r5` success path,
 the issue-specific acceptance is verified. MoreEquipmentSlots 1.0 packaging,
 the broader product matrix and publication remain separate release gates.
+
+### 2026-08-11 incoming-withdrawal extension
+
+The `1.0.0` direct-replacement lifecycle extends the same quarantine rule to
+the incoming side of gameplay equip/replacement. Backpack `CostItem` succeeds
+only on exact `before -> after -1`; a post-call throw, unreadable count or
+contradictory delta becomes outcome-unknown. A matching held-item buffer also
+requires both the returned matching object and an empty post-state. Its
+clear-then-throw, wrong/Boolean return, retained item or unreadable post-state
+is outcome-unknown.
+
+Focused executable tests now prove one gameplay guard blocks every later slot
+operation and two consecutive `SaveSaving` calls without repeating the native
+withdrawal. A durable replacement records an in-process `-1` quarantine entry
+and likewise refuses the second save without replay. These are source/fixture
+facts under Update `20260811-0001`; they do not by themselves authorize
+publication.
+
+### 2026-08-11 current 1.0 candidate revalidation
+
+The unchanged `1AD74EBD…C65444A` candidate passed disposable normal-save in
+`GAME-SMOKE/20260811-070554`, including two native saves and exact Product/item
+cleanup. A separate fresh fixture then passed the complete accepted boundary:
+`ColdPrepare/072005`, `ColdCommit/072056`, and `ColdObserve/072147`. The middle
+process recovered exactly one item with the Product disabled and finalized the
+journal through a real native save; the final `NoNativeSave` process observed
+the same one native item, empty Product-v3 authority, zero recovery session or
+replay, and unchanged current/prev/bak plus committed sidecars before whole-
+fixture cleanup. The aggregate receipt is
+`docs/debug/evidence/GAME-SMOKE/20260811-072147/cold-recovery-acceptance.json`.
+This revalidates the verified issue boundary for the actual 1.0 release
+candidate; complete Release and publication remain separate gates.
+
+### 2026-08-11 UI-only candidate supersession
+
+After that exact save/recovery run, the user replaced the entrance/drawer UI
+with a direct dynamic row after the last active official slot. The revised
+source does not change Product-v3 schema, withdrawal evidence, journal,
+`SaveSaving`/`SaveSaved`, cold recovery or typed shield-provider code, so the
+accepted issue boundary and its exact historical evidence remain valid. It
+does change the Product assembly and invalidates `1AD74EBD…C65444A` as the
+current release candidate; the old result must not be cited as runtime or
+package acceptance for the revised dynamic-row binary.
+
+### 2026-08-11 four-bag candidate exact-binary revalidation
+
+The official-slot compatibility correction produced exact seven-file candidate
+`E2EBF0C3…620CFE8`. Although the source delta is limited to the bounded UI
+count and QA range, the save boundary was rerun against those exact bytes rather
+than inferred from the earlier candidate. `GAME-SMOKE/20260811-152206` passed
+two real native saves, full-shield then empty Product-v3 commits, exact native
+item cleanup, process exit and deletion of the marked AutoCloud-isolated
+fixture.
+
+A separate fresh aggregate completed `ColdPrepare/152457`,
+`ColdCommit/152549`, and `ColdObserve/152639`. The middle process ran with the
+Product disabled, demanded the frozen recovery Host and recovered exactly one
+`grandmas_button`; the final `NoNativeSave` process observed the item once,
+empty terminal Product-v3 authority, zero recovery session/replay, and
+unchanged archive plus committed-sidecar state before whole-fixture cleanup.
+The durable receipt is
+`docs/debug/evidence/GAME-SMOKE/20260811-152639/cold-recovery-acceptance.json`.
+Installed Runtime `0.6.1 / db5e518a6d7f` and its frozen Host receipt were
+reverified without copying component bytes. This keeps ISSUE-021 `verified`
+for the current candidate; Release and publication remain separate gates.
 
 ## Rejected Approaches
 

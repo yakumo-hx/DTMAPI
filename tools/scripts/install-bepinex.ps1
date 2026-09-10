@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch] $Force
 )
 
@@ -66,7 +66,12 @@ function Get-BepInExPackageSource {
         return [pscustomobject]@{ Kind = 'official-network-fallback'; Path = $downloadZip }
     }
     catch {
-        throw "The bundled BepInEx package is missing or invalid, and the fixed official download failed. Bundled path: $packagedZip. Download URL: $bepInExDownloadUrl. Error: $($_.Exception.Message)"
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1103' `
+            -Chinese '离线 BepInEx 包不可用，安装器已实际尝试官方在线下载，但下载或校验失败。请检查网络、防火墙或代理后重试。' `
+            -English 'The bundled BepInEx package was unavailable, and the installer actually attempted the fixed official download, but download or verification failed. Check the network, firewall, or proxy, then retry.' `
+            -Detail "Bundled=$packagedZip; URL=$bepInExDownloadUrl; $($_.Exception.Message)" `
+            -InnerException $_.Exception
     }
 }
 

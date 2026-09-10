@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>core</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeShapeFixture.cs" Link="Shared/NativeShapeFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeConfigurationFixture.cs" Link="Shared/NativeConfigurationFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CodeModPackageFixture.cs" Link="Shared/CodeModPackageFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/SourceAuthorityFixture.cs" Link="Shared/SourceAuthorityFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/AuthorSessionFixture.cs" Link="Shared/AuthorSessionFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RuntimeHostFixture.cs" Link="Shared/RuntimeHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/PersistentRootFixture.cs" Link="Shared/PersistentRootFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/OfficialSourceFixture.cs" Link="Shared/OfficialSourceFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RetryingOwnerFixture.cs" Link="Shared/RetryingOwnerFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/ReflectionAssertions.cs" Link="Shared/ReflectionAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CoreOwnerCounts.cs" Link="Shared/CoreOwnerCounts.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj" />
+  </ItemGroup>
+</Project>

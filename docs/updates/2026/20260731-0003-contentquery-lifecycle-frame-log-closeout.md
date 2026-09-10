@@ -33,7 +33,7 @@ freezing are out of scope.
 ## Source Authorities
 
 - [`PROJECT.md`](../../../PROJECT.md)
-- [`20260731-0001 manual QA review`](../../reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md)
+- [`20260731-0001 manual QA review`](../../archive/reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md)
 - [`ISSUE-010`](../../debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md)
 - [`public API matrix`](../../api/public-api-matrix.md)
 - [`runtime simplification roadmap`](../../planning/20260731-runtime-query-lifecycle-driver-logging-roadmap.md)

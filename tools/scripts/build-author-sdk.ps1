@@ -9,6 +9,8 @@ param(
 
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\author-sdk-release-common.ps1"
+. "$PSScriptRoot\author-sdk-preparation.ps1"
+. "$PSScriptRoot\author-sdk-compatibility.ps1"
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
@@ -16,164 +18,35 @@ if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt
     throw 'Author SDK deterministic ZIP creation requires PowerShell 7+; Windows PowerShell 5.1 is retained as a syntax/check host but its .NET Framework ZipArchive cannot emit the frozen store-mode archive.'
 }
 
-function Resolve-NetStandardPackageRoot {
-    param(
-        [Parameter(Mandatory = $true)] [string] $RepoRoot,
-        [Parameter(Mandatory = $true)] [string] $DotNetExe,
-        [Parameter(Mandatory = $true)] $Contract,
-        [string] $RequestedRoot,
-        [switch] $DisableProvision
-    )
-
-    $packageCache = Join-Path $RepoRoot '.tools\author-sdk-packages'
-    $candidates = New-Object 'System.Collections.Generic.List[string]'
-    if (-not [string]::IsNullOrWhiteSpace($RequestedRoot)) {
-        $requested = [System.IO.Path]::GetFullPath($RequestedRoot)
-        $candidates.Add($requested) | Out-Null
-        $candidates.Add((Join-Path $requested 'netstandard.library\2.0.3')) | Out-Null
-        $candidates.Add((Join-Path $requested 'NETStandard.Library\2.0.3')) | Out-Null
-    }
-    else {
-        $candidates.Add((Join-Path $packageCache 'netstandard.library\2.0.3')) | Out-Null
-    }
-    foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath (Join-Path $candidate 'build\netstandard2.0\ref') -PathType Container) {
-            return [System.IO.Path]::GetFullPath($candidate)
-        }
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($RequestedRoot)) {
-        throw "The explicit NETStandard.Library package root does not contain 2.0.3/build/netstandard2.0/ref: $RequestedRoot"
-    }
-    if ($DisableProvision) {
-        throw "The repository-local NETStandard.Library 2.0.3 cache is absent and -NoProvision was requested: $packageCache"
-    }
-
-    $provisionRoot = Join-Path $packageCache '.provision'
-    if (-not (Test-Path -LiteralPath $provisionRoot -PathType Container)) {
-        New-Item -ItemType Directory -Path $provisionRoot -Force | Out-Null
-    }
-    $projectPath = Join-Path $provisionRoot 'DTMAPI.AuthorSdk.CompatibilityRestore.csproj'
-    $projectXml = @"
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RestorePackagesPath>$([System.Security.SecurityElement]::Escape($packageCache))</RestorePackagesPath>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
-  </ItemGroup>
-</Project>
-"@
-    Write-AuthorSdkUtf8NoBom -Path $projectPath -Value $projectXml
-    & $DotNetExe restore $projectPath --packages $packageCache --source 'https://api.nuget.org/v3/index.json' --force-evaluate --nologo | Out-Host
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Failed to provision the pinned NETStandard.Library 2.0.3 package into the repository-local Author SDK cache.'
-    }
-    $resolved = Join-Path $packageCache 'netstandard.library\2.0.3'
-    if (-not (Test-Path -LiteralPath (Join-Path $resolved 'build\netstandard2.0\ref') -PathType Container)) {
-        throw "NuGet restore completed without the expected pinned package tree: $resolved"
-    }
-    return [System.IO.Path]::GetFullPath($resolved)
-}
-
-function Assert-NetStandardPackage {
-    param(
-        [Parameter(Mandatory = $true)] [string] $PackageRoot,
-        [Parameter(Mandatory = $true)] $Contract
-    )
-
-    $nuspec = Join-Path $PackageRoot 'netstandard.library.nuspec'
-    if (-not (Test-Path -LiteralPath $nuspec -PathType Leaf)) {
-        throw "Pinned package nuspec is missing: $nuspec"
-    }
-    [xml]$metadata = Get-Content -Raw -Encoding UTF8 -LiteralPath $nuspec
-    $id = [string]$metadata.package.metadata.id
-    $version = [string]$metadata.package.metadata.version
-    if ($id -ne [string]$Contract.netstandardReferencePackage -or $version -ne [string]$Contract.netstandardReferencePackageVersion) {
-        throw "Pinned package identity mismatch: id=$id version=$version"
-    }
-    $referenceRoot = Join-Path $PackageRoot 'build\netstandard2.0\ref'
-    $references = @(Get-ChildItem -LiteralPath $referenceRoot -File)
-    if ($references.Count -ne [int]$Contract.netstandardReferenceFileCount) {
-        throw "Pinned reference count mismatch: expected=$($Contract.netstandardReferenceFileCount) actual=$($references.Count)"
-    }
-    $digest = Get-AuthorSdkFileTreeDigestV1 -Root $referenceRoot
-    if (-not $digest.Equals([string]$Contract.netstandardReferenceInventorySha256, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Pinned NETStandard.Library reference inventory mismatch: expected=$($Contract.netstandardReferenceInventorySha256) actual=$digest"
-    }
-    $license = Join-Path $PackageRoot 'LICENSE.TXT'
-    $notice = Join-Path $PackageRoot 'THIRD-PARTY-NOTICES.TXT'
-    if ((Get-AuthorSdkSha256 -Path $license) -ne ([string]$Contract.netstandardLicenseSha256).ToLowerInvariant()) {
-        throw 'Pinned NETStandard.Library license hash mismatch.'
-    }
-    if ((Get-AuthorSdkSha256 -Path $notice) -ne ([string]$Contract.netstandardNoticeSha256).ToLowerInvariant()) {
-        throw 'Pinned NETStandard.Library notice hash mismatch.'
-    }
-    return $referenceRoot
-}
-
-function Resolve-FrozenAuthorSdkAbstractions {
-    param(
-        [Parameter(Mandatory = $true)] [string] $RepoRoot,
-        [Parameter(Mandatory = $true)] $Contract,
-        [string] $RequestedPath,
-        [string] $CurrentBuildPath
-    )
-
-    $expectedHash = ([string]$Contract.abstractionsSha256).ToLowerInvariant()
-    $candidates = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($candidate in @(
-        $RequestedPath,
-        $env:DTMAPI_AUTHOR_SDK_FROZEN_ABSTRACTIONS_DLL,
-        (Join-Path $RepoRoot 'dist\author-sdk\DTMAPI-Author-SDK-0.1.0-win-x64\compatibility\0.5.5\DTMAPI.Abstractions.dll'),
-        (Join-Path $RepoRoot 'dist\workshop-packages\DTMAPI\Content\DTMAPIInstaller\Payload\BepInEx\plugins\DTMAPI\DTMAPI.Abstractions.dll'),
-        $CurrentBuildPath
-    )) {
-        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
-            $candidates.Add([System.IO.Path]::GetFullPath($candidate)) | Out-Null
-        }
-    }
-
-    $retainedRoot = Join-Path (Split-Path -Parent $RepoRoot) 'DTMAPI-retained-artifacts\release-candidates'
-    if (Test-Path -LiteralPath $retainedRoot -PathType Container) {
-        foreach ($candidate in @(Get-ChildItem -LiteralPath $retainedRoot -Recurse -File -Filter 'DTMAPI.Abstractions.dll' | Sort-Object FullName)) {
-            $candidates.Add($candidate.FullName) | Out-Null
-        }
-    }
-
-    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
-    foreach ($candidate in $candidates) {
-        if (-not $seen.Add($candidate) -or -not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
-            continue
-        }
-        if ((Get-AuthorSdkSha256 -Path $candidate) -eq $expectedHash) {
-            return $candidate
-        }
-    }
-
-    throw "Frozen Author SDK 0.1 Abstractions payload was not found in an explicit override, staged package, retained-artifact authority, or the current build. Expected SHA-256=$expectedHash."
-}
-
 if ($Configuration -ne 'Release') {
     throw 'The published Author SDK compatibility contract is Release-only. Use -Configuration Release.'
 }
 
 $repo = Get-RepoRoot
+$sdkVersion = Get-AuthorSdkReleaseVersion -RepoRoot $repo
+$targetCatalog = Get-AuthorSdkTargetCatalog -RepoRoot $repo
+$availableTargets = @(Get-AuthorSdkAvailableTargets -Catalog $targetCatalog -SdkVersion $sdkVersion)
 $dotnet = Get-DotNetExe -RepoRoot $repo
 $dotnetSdkVersion = (& $dotnet --version | Select-Object -First 1).Trim()
 if ($LASTEXITCODE -ne 0 -or $dotnetSdkVersion -ne '8.0.421') {
-    throw "Author SDK 0.1.0 must be built with the frozen .NET SDK 8.0.421 so its Roslyn compiler is reproducible. Resolved: '$dotnetSdkVersion' from '$dotnet'."
+    throw "Author SDK $sdkVersion must be built with the pinned .NET SDK 8.0.421 so its Roslyn compiler is reproducible. Resolved: '$dotnetSdkVersion' from '$dotnet'."
 }
-$contract = Get-AuthorSdkContract -RepoRoot $repo
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $repo 'dist\author-sdk'
 }
-$outputFull = [System.IO.Path]::GetFullPath($OutputRoot)
+$outputFull = if ([IO.Path]::IsPathRooted($OutputRoot)) { [IO.Path]::GetFullPath($OutputRoot) } else { [IO.Path]::GetFullPath((Join-Path $repo $OutputRoot)) }
+Assert-DtmApiBuildPathsDisjoint -OutputPath $outputFull -InputPaths @((Join-Path $repo 'src'), (Join-Path $repo 'author-sdk'), (Join-Path $repo 'tools/scripts'), (Join-Path $repo '.tools/dotnet'), (Join-Path $repo '.tools/author-sdk-packages'), $NetStandardPackageRoot, $FrozenAbstractionsDll)
+$preparationInput = Get-DtmApiAuthorSdkInput -RepoRoot $repo -DotNetExe $dotnet
+$preparedTargets = @{}
+foreach ($target in $availableTargets) {
+    # The legacy override remains bound to 0.5.5; every other target owns its source recipe.
+    $legacyOverride = if ($target.apiTarget -ceq '0.5.5') { $FrozenAbstractionsDll } else { '' }
+    $preparedTargets[$target.apiTarget] = Prepare-DtmApiAuthorSdkCompatibility -RepoRoot $repo -DotNetExe $dotnet -ApiTarget $target.apiTarget -NetStandardPackageRoot $NetStandardPackageRoot -FrozenAbstractionsDll $legacyOverride -NoProvision:$NoProvision
+}
 if (-not (Test-Path -LiteralPath $outputFull -PathType Container)) {
     New-Item -ItemType Directory -Path $outputFull -Force | Out-Null
 }
-$packageName = 'DTMAPI-Author-SDK-0.1.0-win-x64'
+$packageName = "DTMAPI-Author-SDK-$sdkVersion-win-x64"
 $stageRoot = Join-Path $outputFull $packageName
 $zipPath = Join-Path $outputFull ($packageName + '.zip')
 $sidecarPath = $zipPath + '.sha256'
@@ -190,26 +63,10 @@ try {
     }
     New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
 
-    $packageRoot = Resolve-NetStandardPackageRoot -RepoRoot $repo -DotNetExe $dotnet -Contract $contract -RequestedRoot $NetStandardPackageRoot -DisableProvision:$NoProvision
-    $referenceRoot = Assert-NetStandardPackage -PackageRoot $packageRoot -Contract $contract
-
     $packageCache = Join-Path $repo '.tools\author-sdk-packages'
     $nugetSource = 'https://api.nuget.org/v3/index.json'
-    $abstractionsProject = Join-Path $repo 'src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj'
     $authorProject = Join-Path $repo 'src\DTMAPI.AuthorSdk\DTMAPI.AuthorSdk.csproj'
     $pathMap = $repo + '=/_/DTMAPI'
-
-    & $dotnet restore $abstractionsProject --packages $packageCache --source $nugetSource --force-evaluate --nologo
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to restore the fixed Abstractions build graph into the repository-local package cache.' }
-    & $dotnet build $abstractionsProject -c Release --no-restore --nologo "/p:RestorePackagesPath=$packageCache" "/p:PathMap=$pathMap" '/p:ContinuousIntegrationBuild=true' '/p:Deterministic=true' '/p:DebugType=None' '/p:DebugSymbols=false'
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to build DTMAPI.Abstractions for the fixed compatibility payload.' }
-
-    $currentAbstractionsPath = Join-Path $repo 'src\DTMAPI.Abstractions\bin\Release\netstandard2.0\DTMAPI.Abstractions.dll'
-    $abstractionsPath = Resolve-FrozenAuthorSdkAbstractions `
-        -RepoRoot $repo `
-        -Contract $contract `
-        -RequestedPath $FrozenAbstractionsDll `
-        -CurrentBuildPath $currentAbstractionsPath
 
     & $dotnet restore $authorProject -r win-x64 --packages $packageCache --source $nugetSource --force-evaluate --nologo
     if ($LASTEXITCODE -ne 0) { throw 'Failed to restore the Author SDK publish graph into the repository-local package cache.' }
@@ -218,53 +75,29 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Failed to publish the win-x64 self-contained Author SDK.' }
 
     Move-Item -LiteralPath $publishRoot -Destination $stageRoot
+    Write-AuthorSdkUtf8NoBom -Path (Join-Path $stageRoot 'API-STATUS.md') -Value (Get-AuthorSdkApiStatusProjection -SourcePath (Join-Path $repo 'docs/api/public-api-matrix.md'))
     Get-ChildItem -LiteralPath $stageRoot -Filter '*.pdb' -File -Recurse | Remove-Item -Force
 
-    $compatibilityRoot = Join-Path $stageRoot 'compatibility\0.5.5'
-    $compatibilityRefRoot = Join-Path $compatibilityRoot 'ref\netstandard2.0'
-    if (-not (Test-Path -LiteralPath $compatibilityRefRoot -PathType Container)) {
-        New-Item -ItemType Directory -Path $compatibilityRefRoot -Force | Out-Null
-    }
-    foreach ($reference in @(Get-ChildItem -LiteralPath $referenceRoot -File | Sort-Object Name -CaseSensitive)) {
-        Copy-Item -LiteralPath $reference.FullName -Destination (Join-Path $compatibilityRefRoot $reference.Name) -Force
-    }
-    Copy-Item -LiteralPath $abstractionsPath -Destination (Join-Path $compatibilityRoot 'DTMAPI.Abstractions.dll') -Force
-    Copy-Item -LiteralPath (Join-Path $repo 'author-sdk\compatibility\0.5.5\DTMAPI.Author.props') -Destination (Join-Path $compatibilityRoot 'DTMAPI.Author.props') -Force
-    Copy-Item -LiteralPath (Join-Path $packageRoot 'LICENSE.TXT') -Destination (Join-Path $compatibilityRoot 'NETStandard.Library.LICENSE.TXT') -Force
-    Copy-Item -LiteralPath (Join-Path $packageRoot 'THIRD-PARTY-NOTICES.TXT') -Destination (Join-Path $compatibilityRoot 'NETStandard.Library.THIRD-PARTY-NOTICES.TXT') -Force
-
-    $compatibilityFiles = New-Object 'System.Collections.Generic.List[object]'
-    [string[]]$compatibilityPaths = @(Get-ChildItem -LiteralPath $compatibilityRoot -File -Recurse | ForEach-Object { $_.FullName })
-    [Array]::Sort($compatibilityPaths, [System.StringComparer]::Ordinal)
-    foreach ($file in $compatibilityPaths) {
-        $relative = Get-AuthorSdkRelativePath -Root $compatibilityRoot -Path $file
-        $kind = 'reference'
-        if ($relative -eq 'DTMAPI.Abstractions.dll') { $kind = 'abstractions' }
-        elseif ($relative -eq 'DTMAPI.Author.props') { $kind = 'props' }
-        elseif ($relative -eq 'NETStandard.Library.LICENSE.TXT') { $kind = 'license' }
-        elseif ($relative -eq 'NETStandard.Library.THIRD-PARTY-NOTICES.TXT') { $kind = 'notice' }
-        $compatibilityFiles.Add([ordered]@{ path = $relative; sha256 = Get-AuthorSdkSha256 -Path $file; kind = $kind }) | Out-Null
-    }
-    $compatibilityManifest = [ordered]@{
-        schemaVersion = 1
-        sdkVersion = '0.1.0'
-        targetRuntimeVersion = '0.5.5'
-        abstractionsAssemblyVersion = [string]$contract.abstractionsAssemblyVersion
-        abstractionsFileVersion = [string]$contract.abstractionsFileVersion
-        files = $compatibilityFiles.ToArray()
-    }
-    Write-AuthorSdkUtf8NoBom -Path (Join-Path $compatibilityRoot 'compatibility.json') -Value (($compatibilityManifest | ConvertTo-Json -Depth 8) + "`n")
-
+    Copy-Item -LiteralPath (Join-Path $repo 'author-sdk\target-catalog.json') -Destination (Join-Path $stageRoot 'target-catalog.json') -Force
     $contractsRoot = Join-Path $stageRoot 'contracts'
-    $licensesRoot = Join-Path $stageRoot 'licenses'
     New-Item -ItemType Directory -Path $contractsRoot -Force | Out-Null
+    foreach ($target in $availableTargets) {
+        $contract = Get-AuthorSdkContract -RepoRoot $repo -Target $target
+        $preparedCompatibility = $preparedTargets[$target.apiTarget]
+        $compatibilityRoot = Join-Path $stageRoot ([string]$target.payloadPath)
+        Remove-AuthorSdkTreeSafely -AllowedRoot $stageRoot -Path $compatibilityRoot
+        [IO.Directory]::CreateDirectory((Split-Path -Parent $compatibilityRoot)) | Out-Null
+        Copy-Item -LiteralPath $preparedCompatibility.compatibilityRoot -Destination $compatibilityRoot -Recurse
+        Copy-Item -LiteralPath (Join-Path (Join-Path $repo 'author-sdk') ([string]$target.contractPath)) -Destination (Join-Path $contractsRoot ("compatibility-$($target.apiTarget).contract.json")) -Force
+    }
+
+    $licensesRoot = Join-Path $stageRoot 'licenses'
     New-Item -ItemType Directory -Path $licensesRoot -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $repo 'author-sdk\compatibility\0.5.5\compatibility.contract.json') -Destination (Join-Path $contractsRoot 'compatibility-0.5.5.contract.json') -Force
     $dotnetRoot = Split-Path -Parent $dotnet
     Copy-Item -LiteralPath (Join-Path $dotnetRoot 'LICENSE.txt') -Destination (Join-Path $licensesRoot 'dotnet-LICENSE.txt') -Force
     Copy-Item -LiteralPath (Join-Path $dotnetRoot 'ThirdPartyNotices.txt') -Destination (Join-Path $licensesRoot 'dotnet-ThirdPartyNotices.txt') -Force
 
-    $inventory = New-AuthorSdkReleaseInventory -StageRoot $stageRoot -DotNetSdkVersion $dotnetSdkVersion
+    $inventory = New-AuthorSdkReleaseInventory -StageRoot $stageRoot -DotNetSdkVersion $dotnetSdkVersion -SdkVersion $sdkVersion -TargetCatalog $targetCatalog
     Write-AuthorSdkUtf8NoBom -Path (Join-Path $stageRoot 'author-sdk-release.json') -Value (($inventory | ConvertTo-Json -Depth 10) + "`n")
     New-AuthorSdkDeterministicZip -SourceRoot $stageRoot -ZipPath $zipPath | Out-Null
     $zipHash = Get-AuthorSdkSha256 -Path $zipPath
@@ -274,6 +107,19 @@ try {
         & "$PSScriptRoot\check-author-sdk-release.ps1" -PackagePath $zipPath
         if (-not $?) { throw 'Author SDK release check failed.' }
     }
+
+    $preparedInput = Get-DtmApiAuthorSdkInput -RepoRoot $repo -DotNetExe $dotnet
+    if ($preparedInput.sha256 -cne $preparationInput.sha256) {
+        throw 'SDK inputs changed during preparation; no reusable preparation receipt was issued.'
+    }
+    $preparation = [ordered]@{
+        schemaVersion = 1
+        inputSha256 = $preparedInput.sha256
+        stageRoot = $stageRoot
+        inventorySha256 = Get-AuthorSdkSha256 -Path (Join-Path $stageRoot 'author-sdk-release.json')
+        inputs = $preparedInput.identity
+    }
+    Write-AuthorSdkUtf8NoBom -Path (Join-Path $outputFull 'preparation.json') -Value (($preparation | ConvertTo-Json -Depth 8) + "`n")
 
     Write-Host "Author SDK stage: $stageRoot"
     Write-Host "Author SDK ZIP:   $zipPath"

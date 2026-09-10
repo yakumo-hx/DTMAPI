@@ -1,4 +1,5 @@
 using DTMAPI.Authoring.Contracts;
+using DTMAPI.Internal.Authoring;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -19,6 +20,17 @@ internal sealed class AuthorProjectContext
     public required bool ManifestDeclaresCodeModKind { get; init; }
     public required string SourcePath { get; init; }
     public required string ContentPath { get; init; }
+    public bool IsLibrary { get; init; }
+    public OrdinaryLibraryInput? OrdinaryLibrary { get; init; }
+    public string LibraryRole { get; set; } = "private-managed";
+    public string LibraryDistribution { get; set; } = "self-authored";
+    public List<string> LibraryLicenseFiles { get; set; } = new();
+    public List<ManagedPackageInput> BuiltLibraries { get; } = new();
+    public bool GraphPrepared { get; set; }
+    public ProjectGraph.Inputs? BuildSnapshot { get; set; }
+    public List<ProjectGraph.FileInput> GraphContent { get; } = new();
+    public string ApiTarget => AuthorProject.SchemaVersion == AuthorSdkContract.LegacyAuthorProjectSchemaVersion
+        ? AuthorProject.TargetRuntimeVersion : AuthorProject.TargetDtmApiVersion;
 }
 
 internal static class ProjectValidator
@@ -47,7 +59,10 @@ internal static class ProjectValidator
             report.Values["projectKind"] = context.Kind.ToString();
             report.Values["codeModKind"] = context.Kind == AuthorProjectKind.CodeMod ? context.CodeModKind.ToString() : string.Empty;
             report.Values["manifestAuthority"] = "manifest.json";
-            report.Values["targetRuntime"] = AuthorSdkContract.TargetRuntimeVersion;
+            report.TargetRuntimeVersion = context.ApiTarget;
+            report.Values["targetRuntime"] = context.ApiTarget;
+            report.Values["apiTarget"] = context.ApiTarget;
+            report.Values["minimumRuntimeVersion"] = context.Manifest.MinimumDTMApiVersion;
             report.FileCount = Directory.EnumerateFiles(context.RootPath, "*", SearchOption.AllDirectories)
                 .Count(path => !PathSafety.IsBuildPath(PathSafety.RelativePath(context.RootPath, path)));
         }
@@ -58,7 +73,7 @@ internal static class ProjectValidator
 
         report.Success = report.Diagnostics.All(diagnostic => diagnostic.Severity != DiagnosticSeverity.Error);
         if (report.Success)
-            report.Diagnostics.Insert(0, Info("SDK000", "Project is valid for the DTMAPI Runtime 0.5.5 managed-Mod author contract."));
+            report.Diagnostics.Insert(0, Info("SDK000", "Project is valid for DTMAPI API target " + report.TargetRuntimeVersion + "."));
         return report;
     }
 
@@ -69,12 +84,16 @@ internal static class ProjectValidator
         return context;
     }
 
+    internal static AuthorProjectContext LoadForRestore(string root) => Load(root, new List<AuthorDiagnostic>());
+
     private static AuthorProjectContext Load(string root, List<AuthorDiagnostic> diagnostics)
     {
         string fullRoot = Path.GetFullPath(root);
         if (!Directory.Exists(fullRoot))
             throw new DirectoryNotFoundException("Project directory was not found: " + fullRoot);
         PathSafety.RejectBepInExPluginDestination(fullRoot);
+
+        if (File.Exists(Path.Combine(fullRoot, "dtmapi.library.json"))) return ProjectGraph.LoadLibrary(fullRoot);
 
         string manifestPath = Path.Combine(fullRoot, "manifest.json");
         string authorPath = Path.Combine(fullRoot, "dtmapi.author.json");
@@ -92,6 +111,18 @@ internal static class ProjectValidator
             ?? throw new InvalidDataException("manifest.json must contain one JSON object.");
         AuthorProject author = JsonSerializer.Deserialize<AuthorProject>(File.ReadAllText(authorPath, Encoding.UTF8), JsonSupport.Tool)
             ?? throw new InvalidDataException("dtmapi.author.json must contain one JSON object.");
+        ProjectGraph.ValidateBuildJson(authorPath, author.Build);
+        var dependencyContract = PackageDependencyContract.ReadManifest(Encoding.UTF8.GetBytes(manifestText));
+        bool nativeSelected = NativePackageContract.Select(Encoding.UTF8.GetBytes(manifestText));
+        if (nativeSelected != (author.NativeReferences != null)) throw new InvalidDataException("nativeReferences and explicit manifest NativeContractVersion=1 must be selected together.");
+        if ((author.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion) != (dependencyContract != null))
+            throw new InvalidDataException("author schema 3 and manifest DependencyContractVersion=1 must be selected together; legacy schemas keep their original reader.");
+        if (author.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion && author.ManagedReferences == null)
+            throw new InvalidDataException("author schema 3 requires managedReferences (use an empty array when there are no libraries).");
+        if (author.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion)
+            RejectAmbiguousManagedReferences(authorPath);
+        if (author.SchemaVersion != AuthorSdkContract.DependencyAuthorProjectSchemaVersion && author.ManagedReferences != null)
+            throw new InvalidDataException("managedReferences requires explicit author schema 3 migration.");
         if (!Enum.TryParse(author.ProjectKind, true, out AuthorProjectKind kind))
             throw new InvalidDataException("dtmapi.author.json projectKind must be CodeMod or ContentPack.");
         bool manifestDeclaresCodeModKind = manifestJson.ContainsKey("CodeModKind");
@@ -136,14 +167,13 @@ internal static class ProjectValidator
 
         if (!UniqueIdPattern.IsMatch(manifest.UniqueID ?? string.Empty))
             diagnostics.Add(Error("SDK102", "UniqueID must be dotted and path-safe, for example Author.ModName.", context.ManifestPath));
-        if (!VersionPattern.IsMatch(manifest.Version ?? string.Empty))
+        if (!ManagedPackageReferences.UsesContract(context) && !VersionPattern.IsMatch(manifest.Version ?? string.Empty))
             diagnostics.Add(Error("SDK103", "Version must use numeric major.minor.patch with an optional label.", context.ManifestPath));
         if (!MinimumVersionPattern.IsMatch(manifest.MinimumDTMApiVersion ?? string.Empty))
             diagnostics.Add(Error("SDK104", "MinimumDTMApiVersion must use numeric major.minor.patch.", context.ManifestPath));
-        else if (CompareNumericVersion(manifest.MinimumDTMApiVersion ?? string.Empty, AuthorSdkContract.HighestSupportedRuntimeVersion) > 0)
-            diagnostics.Add(Error("SDK105", "The manifest requires Runtime " + manifest.MinimumDTMApiVersion + ", but this SDK can only issue packages through Runtime " + AuthorSdkContract.HighestSupportedRuntimeVersion + ".", context.ManifestPath));
-        else if (CompareNumericVersion(manifest.MinimumDTMApiVersion ?? string.Empty, AuthorSdkContract.TargetRuntimeVersion) < 0)
-            diagnostics.Add(Warning("SDK106", "This SDK compiles against the Runtime 0.5.5 public API while the manifest declares an older minimum. Keep that lower promise only if separately compatibility-tested.", context.ManifestPath));
+        else if (!AuthorApiTargetCatalog.Current.TryValidatePackageTarget(context.ApiTarget, AuthorSdkContract.SdkVersion,
+            manifest.MinimumDTMApiVersion ?? string.Empty, out _, out string targetReason))
+            diagnostics.Add(Error("SDK105", targetReason, context.ManifestPath));
 
         ValidateAuthorProjectVersion(context, diagnostics);
         if (!manifest.Type.Equals(context.Kind.ToString(), StringComparison.Ordinal))
@@ -151,15 +181,17 @@ internal static class ProjectValidator
 
         ValidateCodeModIdentity(context, diagnostics);
 
-        ValidateDependencies(manifest.Dependencies, context.ManifestPath, diagnostics);
+        if (!ManagedPackageReferences.UsesContract(context)) ValidateDependencies(manifest.Dependencies, context.ManifestPath, diagnostics);
+        else ManagedPackageReferences.Resolve(context);
         if (context.Kind == AuthorProjectKind.CodeMod)
             ValidateCodeMod(context, diagnostics);
         else
             ValidateContentPack(context, diagnostics);
         ValidatePublishMetadata(author.Publish, context.AuthorProjectPath, diagnostics);
-        if (context.Kind == AuthorProjectKind.CodeMod && context.CodeModKind == AuthorCodeModKind.Strict)
-            ScanForbiddenReferences(context, diagnostics);
+        if (context.Kind == AuthorProjectKind.CodeMod)
+            ProjectBuildInputs.Validate(context, diagnostics);
         ValidateNoBundledDllInputs(context, diagnostics);
+        ProjectGraph.ValidateLocal(context);
         ScanRetiredApiUse(context, diagnostics);
     }
 
@@ -175,11 +207,16 @@ internal static class ProjectValidator
                 diagnostics.Add(Error("SDK110", "schemaVersion 1 is Strict-only; use schemaVersion 2 for codeModKind/advanced reference intent.", context.AuthorProjectPath));
             return;
         }
-        if (author.SchemaVersion == AuthorSdkContract.AuthorProjectSchemaVersion)
+        if (author.SchemaVersion == AuthorSdkContract.AuthorProjectSchemaVersion || author.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion)
         {
-            if (!author.TargetDtmApiVersion.Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
-                || author.TargetRuntimeVersion.Length != 0)
-                diagnostics.Add(Error("SDK108", "schemaVersion 2 requires targetDtmApiVersion exactly 0.5.5 and does not accept legacy targetRuntimeVersion.", context.AuthorProjectPath));
+            if (author.TargetRuntimeVersion.Length != 0)
+                diagnostics.Add(Error("SDK108", "schemaVersion 2 requires targetDtmApiVersion and does not accept legacy targetRuntimeVersion.", context.AuthorProjectPath));
+            if (!AuthorApiTargetCatalog.Current.TryGet(author.TargetDtmApiVersion, out var target) || target.State != "available")
+                diagnostics.Add(Error("SDK108", "API target '" + author.TargetDtmApiVersion + "' is unknown or not yet available. Select an available target from target-catalog.json.", context.AuthorProjectPath));
+            else if (author.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion && !target.Capabilities.Contains("package-dependencies/1", StringComparer.Ordinal))
+                diagnostics.Add(Error("SDK108", "Author schema 3 requires the package-dependencies/1 target capability (first internal target 0.6.3).", context.AuthorProjectPath));
+            if (context.CodeModKind == AuthorCodeModKind.Advanced && !NativeProjectReferences.UsesContract(context) && author.TargetDtmApiVersion != AuthorSdkContract.TargetRuntimeVersion)
+                diagnostics.Add(Error("SDK108", "The existing Advanced reference policy remains bound to API target 0.5.5.", context.AuthorProjectPath));
             return;
         }
         diagnostics.Add(Error("SDK107", "Unsupported dtmapi.author.json schemaVersion. SDK 0.1.0 accepts legacy schema 1 or current schema 2.", context.AuthorProjectPath));
@@ -206,6 +243,11 @@ internal static class ProjectValidator
             diagnostics.Add(Error("SDK113", "manifest CodeModKind and dtmapi.author.json codeModKind must resolve to the same Strict or Advanced identity.", context.AuthorProjectPath));
         if (context.CodeModKind == AuthorCodeModKind.Advanced)
         {
+            if (NativeProjectReferences.UsesContract(context))
+            {
+                NativeProjectReferences.ValidateSettings(context);
+                return;
+            }
             if (author.SchemaVersion != AuthorSdkContract.AuthorProjectSchemaVersion || !authorDeclaresKind)
                 diagnostics.Add(Error("SDK114", "Advanced CodeMod requires schemaVersion 2 and explicit codeModKind Advanced author intent.", context.AuthorProjectPath));
             ValidateAdvancedSettings(context, diagnostics);
@@ -281,9 +323,12 @@ internal static class ProjectValidator
     {
         if (context.Kind != AuthorProjectKind.CodeMod)
             return;
+        var allowed = ManagedPackageReferences.UsesContract(context)
+            ? new HashSet<string>(ManagedPackageReferences.Resolve(context).Select(input => input.SourcePath), StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (string dll in Directory.EnumerateFiles(context.RootPath, "*.dll", SearchOption.AllDirectories)
                      .Where(path => !PathSafety.IsBuildPath(PathSafety.RelativePath(context.RootPath, path))))
-            diagnostics.Add(Error("SDK161", "CodeMod author inputs cannot bundle DLL dependencies; native/game references remain game-root-only and copyLocal=false.", dll));
+            if (!allowed.Contains(dll)) diagnostics.Add(Error("SDK161", "Only schema 3 explicitly declared managedReferences may carry library DLLs; native/game references remain game-root-only and copyLocal=false.", dll));
     }
 
     private static void ValidateDependencies(IEnumerable<RuntimeManifestDependency>? dependencies, string path, List<AuthorDiagnostic> diagnostics)
@@ -311,20 +356,6 @@ internal static class ProjectValidator
             diagnostics.Add(Error("SDK151", "publish.tags cannot contain blank values.", path));
         if (publish.Tags.Distinct(StringComparer.OrdinalIgnoreCase).Count() != publish.Tags.Count)
             diagnostics.Add(Error("SDK152", "publish.tags cannot contain duplicates.", path));
-    }
-
-    private static void ScanForbiddenReferences(AuthorProjectContext context, List<AuthorDiagnostic> diagnostics)
-    {
-        string[] forbidden = { "BepInEx", "HarmonyLib", "Assembly-CSharp", "UnityEngine" };
-        IEnumerable<string> candidates = Directory.EnumerateFiles(context.RootPath, "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.EnumerateFiles(context.RootPath, "*.csproj", SearchOption.AllDirectories))
-            .Where(path => !PathSafety.IsBuildPath(PathSafety.RelativePath(context.RootPath, path)));
-        foreach (string path in candidates)
-        {
-            string text = File.ReadAllText(path, Encoding.UTF8);
-            foreach (string value in forbidden.Where(value => text.Contains(value, StringComparison.OrdinalIgnoreCase)))
-                diagnostics.Add(Error("SDK160", "Direct " + value + " references are outside the ordinary DTMAPI Mod boundary; use DTMAPI.Abstractions.", path));
-        }
     }
 
     private static void ScanRetiredApiUse(AuthorProjectContext context, List<AuthorDiagnostic> diagnostics)
@@ -365,6 +396,26 @@ internal static class ProjectValidator
                 return comparison;
         }
         return 0;
+    }
+
+    private static void RejectAmbiguousManagedReferences(string path)
+    {
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path, Encoding.UTF8));
+        foreach (JsonProperty property in document.RootElement.EnumerateObject())
+        {
+            if (!property.Name.Equals("managedReferences", StringComparison.OrdinalIgnoreCase)) continue;
+            if (property.Name != "managedReferences" || property.Value.ValueKind != JsonValueKind.Array)
+                throw new InvalidDataException("schema 3 requires exact managedReferences array spelling.");
+            foreach (JsonElement reference in property.Value.EnumerateArray())
+            {
+                if (reference.ValueKind != JsonValueKind.Object)
+                    throw new InvalidDataException("managedReferences entries must be objects.");
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (JsonProperty field in reference.EnumerateObject())
+                    if (!seen.Add(field.Name) || field.Name is not ("path" or "role" or "distribution" or "licenseFiles"))
+                        throw new InvalidDataException("Unknown, mis-cased, or duplicate managedReferences field: " + field.Name);
+            }
+        }
     }
 
     private static void RejectDuplicateTopLevelProperties(string path)

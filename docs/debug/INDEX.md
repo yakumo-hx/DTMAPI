@@ -9,9 +9,10 @@ This file is a compact router. Detailed symptoms, attempts, evidence, and reject
 - [Evidence retention protocol](protocols/evidence-retention.md): bounded current-run collection, generated preservation allowlist, and cleanup safety boundary.
 - [Test artifact and process dump retention](protocols/test-artifact-retention.md): process-owned test temp, failed-session bounds, dump handoff receipts, and stale recovery.
 - [Evidence retention allowlist](evidence-retention-allowlist.json): generated identities referenced by project Markdown; preservation input only, not deletion authorization.
-- [Active smoke matrix](regressions/smoke-matrix.md): runtime validation recorded after the 2026-07-11 cutoff.
-- [Historical smoke matrix through 2026-07-11](regressions/smoke-matrix-history-through-20260711.md): full pre-cutoff runtime history.
-- [Smoke history for 2026-07-12](regressions/smoke-matrix-history-20260712.md): completed owner/platform and YConsole acceptance slice.
+- [Active smoke matrix](regressions/smoke-matrix.md): runtime validation recorded after the 2026-08-09 cutoff.
+- [Smoke history for 2026-08-04 through 2026-08-09](regressions/smoke-matrix-history-20260804-through-20260809.md): frozen AutoFishing, MoreSaves, MoreEquipment, ISSUE-011, Manbo and ruined-city runtime evidence before the second active-matrix cutoff.
+- [Historical smoke matrix through 2026-07-11](../archive/regressions/2026/smoke-matrix-history-through-20260711.md): full pre-cutoff runtime history.
+- [Smoke history for 2026-07-12](../archive/regressions/2026/smoke-matrix-history-20260712.md): completed owner/platform and YConsole acceptance slice.
 - [Superseded Batch 4 smoke attempts, 2026-07-15 through 2026-07-17](regressions/smoke-matrix-history-batch4-superseded-20260715-through-20260717.md): cutoff rows moved from the active router after later acceptance superseded them.
 - [Lessons learned](lessons.md): rejected directions and durable engineering lessons.
 - `evidence/`: local-only raw logs and reports; do not recursively scan or copy by default.

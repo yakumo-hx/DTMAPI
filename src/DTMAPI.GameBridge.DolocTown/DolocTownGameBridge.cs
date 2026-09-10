@@ -143,6 +143,7 @@ namespace DTMAPI.GameBridge.DolocTown
             PreparedQaHost? preparedQaHost)
         {
             this.runtime = runtime;
+            this.runtime.ConfigureLanguageProvider(DolocTownLanguageProvider.GetCurrentLanguage);
             this.debugConsoleApi = debugConsoleApi;
             debugActionApi = new DebugActionCompatibilityProxy(runtime);
             this.preparedQaHost = preparedQaHost;

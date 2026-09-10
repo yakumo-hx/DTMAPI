@@ -23,6 +23,18 @@ internal static class Program
 
     private static int Main()
     {
+        if (Environment.GetEnvironmentVariable("DTMAPI_DOCTOR_TEST_FOCUS") == "platform-sdk-targets")
+        {
+            Run(nameof(PlatformSdkTargetsMatchPackageBytes), PlatformSdkTargetsMatchPackageBytes);
+            return failures == 0 ? 0 : 1;
+        }
+        string? requestedFocus = Environment.GetEnvironmentVariable("DTMAPI_DOCTOR_TEST_FOCUS");
+        if (!string.IsNullOrEmpty(requestedFocus))
+        {
+            Console.Error.WriteLine("Unknown DTMAPI Doctor test focus: " + requestedFocus + ". Default tests were not run.");
+            return 1;
+        }
+        Run(nameof(PlatformSdkTargetsMatchPackageBytes), PlatformSdkTargetsMatchPackageBytes);
         Run(nameof(PeMetadataIsReadWithoutAssemblyLoad), PeMetadataIsReadWithoutAssemblyLoad);
         Run(nameof(TreeHashIsDeterministicAndContentSensitive), TreeHashIsDeterministicAndContentSensitive);
         Run(nameof(DoctorClassifiesAndNeverMutatesFixtureTree), DoctorClassifiesAndNeverMutatesFixtureTree);
@@ -76,6 +88,22 @@ internal static class Program
         {
             File.Delete(bad);
         }
+    }
+
+    private static void PlatformSdkTargetsMatchPackageBytes()
+    {
+        string root = TempDirectory();
+        try
+        {
+            DTMAPI.Testing.PlatformPackageTargetMatrix.Run(root, (packageRoot, name, accepted) =>
+            {
+                DoctorReport report = new DoctorEngine().Inspect(packageRoot, new DoctorOptions { ScanContext = DoctorScanContext.PackageArtifact });
+                DoctorArtifact content = report.Artifacts.Single(value => value.UniqueId == "DTMAPI.Tests.Target");
+                Assert(content.Findings.All(value => value.Code != "package-marker-invalid") == accepted,
+                    "Doctor package target case " + name + " must be " + accepted + ".");
+            });
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     private static void TreeHashIsDeterministicAndContentSensitive()

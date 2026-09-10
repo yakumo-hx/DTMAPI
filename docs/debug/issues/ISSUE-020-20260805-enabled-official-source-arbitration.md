@@ -1,8 +1,10 @@
-# ISSUE-020: Enabled official source loses to disabled Workshop duplicate
+﻿# ISSUE-020: Enabled official source loses to disabled Workshop duplicate
+
+- State: `open`
+- Current boundary: Enabled-first official Local selection is source-verified. The old Y-console cold-start subcondition was superseded by later exact 1.1.1 publication/acceptance; this issue remains open only for the broader multi-product source-arbitration closeout.
 
 ## Status
 
-- State: `open`
 - Opened: `2026-08-05`
 - Severity: high
 - Area: Core / Mod loading / official Local / Workshop / duplicate UniqueID
@@ -160,3 +162,17 @@ third non-native player source. This superseded the earlier enabled-first rule.
   cold start proves the exact Local DLL completes `Entry`/Hook installation and
   the in-save Y console opens and closes without the old `ResolveTargets`
   exception.
+
+## 2026-08-30 Y Console Subcondition Superseded
+
+- The pending 2026-08-06 Y-console Local observation is no longer a current
+  issue gate. Subsequent focused/player acceptance corrected the text-focus
+  route, and Update `20260823-0003` closed exact DebugConsole `1.1.1`
+  publication against Steam manifest `6693520158465470410` with matching
+  subscription bytes.
+- On 2026-08-30 the user also confirmed that the exact old `0.3.1-dtmapi`
+  product has no remaining users and released its Compatibility retention
+  prerequisite. This does not delete the compatibility code in this issue.
+- ISSUE-020 stays `open` only because its broader enabled-first Local/Workshop
+  source-arbitration lifecycle covers more than Y-console. It must no longer be
+  summarized as waiting for the stale `24585411` Y-console cold start.

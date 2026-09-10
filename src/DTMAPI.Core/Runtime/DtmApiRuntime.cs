@@ -14,10 +14,11 @@ using DTMAPI.Core.Logging;
 using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Services;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.Core.Runtime
 {
-    public sealed class DtmApiRuntime : IDtmDiagnosticsApi
+    public sealed partial class DtmApiRuntime : IDtmDiagnosticsApi
     {
         public const string ApiVersion = DtmApiBuildVersion.ReleaseVersion;
         public const string BinaryVersion = DtmApiBuildVersion.BinaryFileVersion;
@@ -28,6 +29,9 @@ namespace DTMAPI.Core.Runtime
         private readonly IConfigMenuRuntime? configMenuRuntime;
         private readonly List<DiscoveredMod> discoveredMods = new List<DiscoveredMod>();
         private readonly List<DiscoveredMod> loadedMods = new List<DiscoveredMod>();
+        private readonly Dictionary<string, DependencyLoadedAssembly> dependencyAssemblyEvidence = new Dictionary<string, DependencyLoadedAssembly>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string[]> requiredPackageProviders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, bool> ownerCleanupComplete = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private DiscoveredMod[] discoveredModsSnapshot = Array.Empty<DiscoveredMod>();
         private DiscoveredMod[] loadedModsSnapshot = Array.Empty<DiscoveredMod>();
         private IReadOnlyList<DiscoveredMod> discoveredModsView = Array.AsReadOnly(Array.Empty<DiscoveredMod>());
@@ -57,6 +61,8 @@ namespace DTMAPI.Core.Runtime
         private readonly HookStatusPublicationQueue hookStatusQueue = new HookStatusPublicationQueue();
         private readonly PlayerDoctorRuntimeService playerDoctor = new PlayerDoctorRuntimeService();
         private readonly ModOwnerLedgerService modOwnerLedger = new ModOwnerLedgerService();
+        private readonly OwnerServiceManager ownerServices;
+        private readonly PlatformRuntimeServices platformServices;
         private readonly ModOwnerLifecycleCoordinator modOwnerLifecycle = new ModOwnerLifecycleCoordinator();
         private readonly AdvancedHarmonySupervisor advancedHarmonySupervisor = new AdvancedHarmonySupervisor();
         private readonly List<Func<string>> runtimeReportContextProviders = new List<Func<string>>();
@@ -99,6 +105,7 @@ namespace DTMAPI.Core.Runtime
         private Action? modTransactionBeginDiagnosticForTests;
         private Action? modTransactionCommitDiagnosticForTests;
         private bool advancedHarmonyParticipantRegistered;
+        private readonly RuntimeLanguageSource languageSource = new RuntimeLanguageSource();
 
         public DtmApiRuntime(IRuntimeHost host, IDtmConfigMenuApi? configMenuApi = null)
         {
@@ -108,6 +115,14 @@ namespace DTMAPI.Core.Runtime
             runtimeThreadId = Thread.CurrentThread.ManagedThreadId;
             Paths = new RuntimePaths(host.GamePath, host.PluginPath);
             Diagnostics = new DiagnosticsService(Paths);
+            platformServices = new PlatformRuntimeServices(() => Thread.CurrentThread.ManagedThreadId == runtimeThreadId,
+                (owner, message, error) => Diagnostics.RecordError(owner, message, error.ToString()));
+            platformServices.ContextPublished = snapshot => RuntimeMonitor?.Log("Platform.Context instance=" + snapshot.RuntimeInstanceId +
+                "; revision=" + snapshot.Revision + "; phase=" + snapshot.Phase + "; saveEpoch=" + snapshot.SaveSessionEpoch +
+                "; worldEpoch=" + snapshot.WorldEpoch + "; ready=" + snapshot.IsWorldReady + "; thread=" + Thread.CurrentThread.ManagedThreadId);
+            ownerServices = new OwnerServiceManager(platformServices);
+            RegisterModOwnerCleanupParticipant(platformServices);
+            RegisterModOwnerCleanupParticipant(ownerServices);
             Events = new EventManager(
                 Diagnostics,
                 () => refactorOptions.EventMainThreadBoundary,
@@ -119,7 +134,8 @@ namespace DTMAPI.Core.Runtime
                 listenerTransition: OnEventListenerTransition,
                 eventHandlerTimingEnabled: () => refactorOptions.EventHandlerTimingDiagnostics);
             Config = new ConfigService(Paths, Diagnostics);
-            ModRegistry = new ModRegistryService(RecordModOwnerRegistration, RecordModOwnerCleanup);
+            ModRegistry = new ModRegistryService(RecordModOwnerRegistration, RecordModOwnerCleanup,
+                (owner, contract, message) => RuntimeMonitor.Log("Deprecated API requested owner=" + owner + "; contract=" + contract + "; " + message, LogLevel.Warn));
             Workshop = new WorkshopService();
             Content = new ContentQueryService(Paths);
             Input = new InputService(() => refactorOptions.OwnerBoundInput, RecordModOwnerRegistration, RecordModOwnerCleanup);
@@ -189,6 +205,11 @@ namespace DTMAPI.Core.Runtime
                 return input.OwnerRegistrations + events.ActiveHandlers + configPages + Config.TotalMigrationCount +
                     ModRegistry.TotalRootCount + customEntities + demandCoordinator.DemandEntryCount;
             }
+        }
+
+        internal void ConfigureLanguageProvider(Func<string?>? provider)
+        {
+            languageSource.SetNativeLanguageProvider(provider);
         }
         internal SaveLoadRequestSnapshot SaveLoadRequestSnapshot => saveLoadRequestCoordinator.GetSnapshot();
         internal TitleReturnBoundarySnapshot TitleReturnBoundarySnapshot => titleReturnBoundaryLedger.GetSnapshot();
@@ -619,6 +640,7 @@ namespace DTMAPI.Core.Runtime
             RunPlayerDoctorAtStartup();
             RefreshConfigPageLocks();
             SetHookStatus("GameLoop.GameLaunched", "verified", "DTMAPI.Core", "Dispatched after DTMAPI mod Entry completed.");
+            platformServices.ReturnToTitle(completed: true);
             Events.DispatchGameLaunched();
             FlushRuntimeQueues("Start.GameLaunched");
             RuntimeMonitor.Log("GameLaunched dispatched.");
@@ -642,9 +664,12 @@ namespace DTMAPI.Core.Runtime
             currentRuntimePhase = "Update";
             try
             {
+                platformServices.BeginTick(updateTick + 1);
                 ProcessAuthorSessionRequests();
                 FlushRuntimeQueues("Update.Begin");
                 updateTick++;
+                platformServices.Drain();
+                languageSource.PollLanguageChanges();
                 Events.DispatchUpdateTicked(updateTick);
                 DateTimeOffset now = DateTimeOffset.Now;
                 if ((now - lastSecondTick).TotalSeconds >= 1)
@@ -810,6 +835,8 @@ namespace DTMAPI.Core.Runtime
 
         public void NotifyReturnHomeRequested(string source)
         {
+            if (RejectOffThreadRuntimeProducer("GameLoop.ReturnHomeRequested", "DTMAPI.Core")) return;
+            platformServices.ReturnToTitle(completed: false);
             RecordTitleReturnBoundaryEvent("ReturnHomeRequested", source, "DolocAPI.ReturnHome entered.", currentLoadingSlot);
             CaptureTitleReturnObjectGraphSnapshot("BeforeReturnHome", source, "Before native ReturnHome cleanup and title transition.", currentLoadingSlot);
         }
@@ -841,6 +868,7 @@ namespace DTMAPI.Core.Runtime
             if (RejectOffThreadRuntimeProducer("Save.LoadGameRequested", "DTMAPI.Core"))
                 return;
             currentLoadingSlot = slot;
+            platformServices.BeginSaveAttempt();
             RecordTitleReturnBoundaryEvent("BeforeNextLoadGame", "Harmony LoadGame Prefix", "Before native LoadGame request is recorded.", slot);
             CaptureTitleReturnObjectGraphSnapshot("BeforeNextLoadGame", "Harmony LoadGame Prefix", "Before next native LoadGame enter.", slot);
             if (!refactorOptions.SaveLoadRequestCoordinator)
@@ -867,6 +895,8 @@ namespace DTMAPI.Core.Runtime
         {
             if (RejectOffThreadRuntimeProducer("Save.LoadGameReturned", "DTMAPI.Core"))
                 return;
+            RuntimeMonitor.Log("Native LoadGame returned for slot/index " + slot.ToString(CultureInfo.InvariantCulture) + "; result=" + (result ? "true" : "false") + ".");
+            platformServices.CompleteSaveAttempt(result);
             if (refactorOptions.SaveLoadRequestCoordinator)
             {
                 SaveLoadRequestUpdate update = saveLoadRequestCoordinator.RecordNativeReturn(
@@ -949,6 +979,7 @@ namespace DTMAPI.Core.Runtime
             if (RejectOffThreadRuntimeProducer("Save.SaveLoaded", "DTMAPI.Core"))
                 return;
             Stopwatch breadcrumb = Stopwatch.StartNew();
+            platformServices.ObserveAfterLoad();
             RecordSaveLoadedActivationBreadcrumb("Runtime.Enter", breadcrumb);
             currentRuntimePhase = RuntimeLifecyclePhase.SaveLoaded;
             RuntimeMonitor.Log($"SaveLoaded hook dispatched. slot/index={currentLoadingSlot?.ToString() ?? "unknown"} isNewGame={isNewGame}");
@@ -1034,6 +1065,7 @@ namespace DTMAPI.Core.Runtime
             if (RejectOffThreadRuntimeProducer("GameLoop.ReturnedToTitle", "DTMAPI.Core"))
                 return;
             currentRuntimePhase = "ReturnedToTitle";
+            platformServices.ReturnToTitle(completed: true);
             AuthorSessionHostSnapshot? authorSnapshot = AuthorSessionSnapshot;
             bool retainForStartupTitleBoundary =
                 !authorSessionStartupTitleBoundarySeen &&
@@ -1591,6 +1623,7 @@ namespace DTMAPI.Core.Runtime
 
         public void NotifyRuntimeShutdown(string reason)
         {
+            platformServices.Shutdown();
             currentRuntimePhase = "Shutdown";
             CloseAuthorSession("Shutdown:" + (reason ?? string.Empty));
             RuntimeMonitor.Log("Runtime shutdown observed by DTMAPI. reason=" + (string.IsNullOrWhiteSpace(reason) ? "unknown" : reason) + ".");
@@ -2932,6 +2965,8 @@ namespace DTMAPI.Core.Runtime
             RuntimeMonitor.Log(
                 "Explicit author session started session=" + host.SessionId +
                 "; pipe=" + host.PipeName +
+                "; schema=" + host.SchemaVersion.ToString(CultureInfo.InvariantCulture) +
+                "; hostVersion=" + host.HostVersion +
                 "; expiresAtUtc=" + host.ExpiresAtUtc.ToString("O", CultureInfo.InvariantCulture) +
                 "; ordinaryPlayerFacilities=false.");
         }
@@ -3053,8 +3088,18 @@ namespace DTMAPI.Core.Runtime
             }
 
             int loadedNow = 0;
-            HashSet<string> dependencyCycleBlockedIds;
-            foreach (DiscoveredMod mod in OrderMods(discoveredMods, out dependencyCycleBlockedIds))
+            using DependencyAssemblyLoader? dependencyLoader = discoveredMods.Any(mod => mod.OfficialEnabled && mod.Manifest.DependencyContract != null)
+                ? new DependencyAssemblyLoader(discoveredMods, processLifetimeProviderIds.Select(id => new KeyValuePair<string, string>(id, ModRegistry.Get(id)?.Version ?? ApiVersion)), dependencyAssemblyEvidence, message => RuntimeMonitor.Log(message), Paths.GamePath) : null;
+            HashSet<string> dependencyCycleBlockedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            IReadOnlyList<DiscoveredMod> ordered;
+            if (dependencyLoader == null) ordered = OrderMods(discoveredMods, out dependencyCycleBlockedIds);
+            else
+            {
+                var order = dependencyLoader.Plan.LoadOrder.Where(discoveredById.ContainsKey).Select(id => discoveredById[id]).ToList();
+                order.AddRange(discoveredMods.Where(mod => !order.Contains(mod)));
+                ordered = order;
+            }
+            foreach (DiscoveredMod mod in ordered)
             {
                 bool alreadyLoaded = IsLoadedMod(mod.Manifest.UniqueID);
                 if (!mod.OfficialEnabled)
@@ -3089,6 +3134,11 @@ namespace DTMAPI.Core.Runtime
                 if (!CanLoadGameVersion(mod))
                     continue;
 
+                if (dependencyLoader != null && dependencyLoader.Plan.Blocked.TryGetValue(mod.Manifest.UniqueID, out string? blockedReason))
+                {
+                    Diagnostics.RecordError(mod.Manifest.UniqueID, "依赖预检阻止加载。", blockedReason);
+                    continue;
+                }
                 if (dependencyCycleBlockedIds.Contains(mod.Manifest.UniqueID))
                 {
                     Diagnostics.RecordError(mod.Manifest.UniqueID, "依赖循环阻止加载。", "This mod is part of a dependency cycle and is blocked until the cycle is resolved.");
@@ -3116,6 +3166,8 @@ namespace DTMAPI.Core.Runtime
                     try
                     {
                         modOwnerLifecycle.BeginEntry(mod.Manifest.UniqueID);
+                        if (mod.Manifest.DependencyContract != null)
+                            requiredPackageProviders[mod.Manifest.UniqueID] = mod.Manifest.DependencyContract.Dependencies.Where(dependency => dependency.Required).Select(dependency => dependency.Id).ToArray();
                         ModRegistry.AddLoaded(mod.Manifest);
                         loadedMods.Add(mod);
                         modOwnerLifecycle.Activate(mod.Manifest.UniqueID);
@@ -3148,7 +3200,7 @@ namespace DTMAPI.Core.Runtime
                     continue;
                 }
 
-                if (LoadCodeMod(mod))
+                if (LoadCodeMod(mod, dependencyLoader))
                     loadedNow++;
             }
             PublishLoadedModsSnapshot();
@@ -3348,7 +3400,9 @@ namespace DTMAPI.Core.Runtime
                     foreach (IManifestDependency dependency in ((IManifest)loaded.Manifest).Dependencies)
                     {
                         bool available = TryGetAvailableDependencyVersion(dependency.UniqueID, deactivate, out string providerVersion) &&
-                            IsVersionRequirementSatisfied(dependency.MinimumVersion, providerVersion, out _);
+                            (loaded.Manifest.DependencyContract != null
+                                ? PackageRangeSatisfied(loaded.Manifest.DependencyContract.Dependencies.Single(item => item.Id.Equals(dependency.UniqueID, StringComparison.OrdinalIgnoreCase)), providerVersion)
+                                : IsVersionRequirementSatisfied(dependency.MinimumVersion, providerVersion, out _));
                         if (available)
                             continue;
                         if (!dependency.Required)
@@ -3383,6 +3437,11 @@ namespace DTMAPI.Core.Runtime
             }
         }
 
+        private readonly HashSet<string> runtimeConfigOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        internal void RegisterRuntimeConfigOwner(string ownerId) => runtimeConfigOwners.Add(ownerId);
+        internal void RemoveRuntimeConfigOwner(string ownerId) => runtimeConfigOwners.Remove(ownerId);
+
         private void RefreshConfigPageLocks()
         {
             if (configMenuRuntime == null)
@@ -3390,6 +3449,11 @@ namespace DTMAPI.Core.Runtime
 
             foreach (IConfigMenuPage page in configMenuRuntime.GetPages())
             {
+                if (runtimeConfigOwners.Contains(page.Manifest.UniqueID))
+                {
+                    configMenuRuntime.SetPageLock(page.Manifest.UniqueID, false, string.Empty);
+                    continue;
+                }
                 if (!discoveredById.TryGetValue(page.Manifest.UniqueID, out DiscoveredMod discovered))
                 {
                     configMenuRuntime.SetPageLock(page.Manifest.UniqueID, true, "DTMAPI 当前不再发现此 Mod。");
@@ -3414,7 +3478,7 @@ namespace DTMAPI.Core.Runtime
             }
         }
 
-        private bool LoadCodeMod(DiscoveredMod mod)
+        private bool LoadCodeMod(DiscoveredMod mod, DependencyAssemblyLoader? dependencyLoader = null)
         {
             if (!TryResolveEntryDllPath(mod, out string dllPath))
                 return false;
@@ -3458,7 +3522,14 @@ namespace DTMAPI.Core.Runtime
                     // state escaped, even if canonical Harmony cleanup reaches zero.
                     MarkManagedAssemblyLoadAttempt(mod.Manifest.UniqueID);
                 }
-                Assembly assembly = Assembly.LoadFrom(dllPath);
+                if (mod.Manifest.DependencyContract != null)
+                {
+                    requiredPackageProviders[mod.Manifest.UniqueID] = mod.Manifest.DependencyContract.Dependencies.Where(dependency => dependency.Required).Select(dependency => dependency.Id).ToArray();
+                    MarkManagedAssemblyLoadAttempt(mod.Manifest.UniqueID);
+                }
+                Assembly assembly = mod.Manifest.DependencyContract != null
+                    ? (dependencyLoader ?? throw new InvalidOperationException("Dependency load plan missing.")).LoadEntry(mod.Manifest.UniqueID, dllPath)
+                    : Assembly.LoadFrom(dllPath);
                 // A successfully loaded Mono assembly is process-lifetime even if any later
                 // construction, Entry, publication, or commit checkpoint fails.
                 MarkManagedAssemblyLoadAttempt(mod.Manifest.UniqueID);
@@ -3483,6 +3554,7 @@ namespace DTMAPI.Core.Runtime
                 RunModLoadCheckpoint(ModLoadCheckpoint.ContextAttached);
                 Action ensureRuntimeThread = () => EnsureModHelperRuntimeThread(mod.Manifest.UniqueID);
                 Action ensureOwnerActive = () => EnsureModOwnerRegistrationAllowed(mod.Manifest.UniqueID);
+                var translation = new TranslationService(mod.RootPath, languageSource, message => monitor.Log(message, LogLevel.Warn));
                 var helper = new DtmHelper(
                     mod.Manifest,
                     monitor,
@@ -3494,7 +3566,14 @@ namespace DTMAPI.Core.Runtime
                     Diagnostics.CreateOwnerBound(mod.Manifest.UniqueID, ensureRuntimeThread, ensureOwnerActive),
                     Content,
                     Input.CreateOwnerBound(mod.Manifest.UniqueID, ensureOwnerActive),
-                    new TranslationService(mod.RootPath, TranslationService.DetectLanguage()));
+                    translation,
+                    ownerServices.Create(mod.Manifest.UniqueID, ensureOwnerActive, ensureRuntimeThread,
+                        mod.RootPath, Paths.GlobalDataPath, Config, Input, translation, () =>
+                        {
+                            // Coordinator state is lock-protected. Reflection over plain managed objects may run off-thread.
+                            try { modOwnerLifecycle.EnsureRegistrationAllowed(mod.Manifest.UniqueID); }
+                            catch (InvalidOperationException ex) { throw new ObjectDisposedException(mod.Manifest.UniqueID, ex.Message); }
+                        }));
                 modInstance.Entry(helper);
                 if (mod.Classification.IsAdvanced)
                     advancedHarmonySupervisor.CompleteEntry(mod.Manifest.UniqueID);
@@ -3788,9 +3867,16 @@ namespace DTMAPI.Core.Runtime
 
         internal string DeactivateOwner(string uniqueId, ModOwnerCleanupReason reason, bool shutdown, string transactionId)
         {
+            foreach (string dependent in requiredPackageProviders.Where(pair => pair.Value.Contains(uniqueId, StringComparer.OrdinalIgnoreCase)).Select(pair => pair.Key).OrderByDescending(id => id, StringComparer.OrdinalIgnoreCase).ToArray())
+            {
+                DeactivateOwner(dependent, reason, shutdown, transactionId: string.Empty);
+                if (!ownerCleanupComplete.TryGetValue(dependent, out bool clean) || !clean)
+                    return "OwnerBoundCleanup: owner=" + uniqueId + ", deactivationDeferred=true, requiredDependentCleanupPending=" + dependent;
+            }
             modOwnerLifecycle.TryGetState(uniqueId, out ModOwnerLifecycleState previousState);
             if (!modOwnerLifecycle.BeginDeactivation(uniqueId))
                 return "OwnerBoundCleanup: owner=" + uniqueId + ", cleanupInProgressOrUnknown=true";
+            ownerCleanupComplete[uniqueId] = false;
 
             bool effectiveShutdown = shutdown || previousState == ModOwnerLifecycleState.Shutdown;
             bool firstDeactivation = previousState == ModOwnerLifecycleState.Entering || previousState == ModOwnerLifecycleState.Active;
@@ -3930,6 +4016,8 @@ namespace DTMAPI.Core.Runtime
                         // Cleanup completion and retryability must not depend on diagnostics.
                     }
                 }
+                ownerCleanupComplete[uniqueId] = remaining == 0 && coreCleanupFailures == 0 && participants.RemainingResources == 0 && participants.FailureCount == 0;
+                if (ownerCleanupComplete[uniqueId]) requiredPackageProviders.Remove(uniqueId);
                 return summary;
             }
             catch (Exception ex)
@@ -4186,6 +4274,17 @@ namespace DTMAPI.Core.Runtime
 
         private bool CanLoadDependencies(DiscoveredMod mod)
         {
+            if (mod.Manifest.DependencyContract != null)
+            {
+                foreach (PackageModDependency dependency in mod.Manifest.DependencyContract.Dependencies)
+                {
+                    bool available = TryGetAvailableDependencyVersion(dependency.Id, null, out string providerVersion) && PackageRangeSatisfied(dependency, providerVersion);
+                    if (available || !dependency.Required) continue;
+                    Diagnostics.RecordError(mod.Manifest.UniqueID, "必需依赖未成功启动或版本不满足。", mod.Manifest.UniqueID + " -> " + dependency.Id);
+                    return false;
+                }
+                return true;
+            }
             foreach (IManifestDependency dependency in ((IManifest)mod.Manifest).Dependencies)
             {
                 if (string.IsNullOrWhiteSpace(dependency.UniqueID))
@@ -4222,6 +4321,9 @@ namespace DTMAPI.Core.Runtime
             }
             return true;
         }
+
+        private static bool PackageRangeSatisfied(PackageModDependency dependency, string version)
+        { try { return dependency.Range.Contains(PackageSemanticVersion.Parse(version)); } catch (InvalidDataException) { return false; } }
 
         private bool TryGetAvailableDependencyVersion(
             string dependencyId,

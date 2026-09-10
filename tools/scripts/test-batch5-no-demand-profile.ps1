@@ -243,7 +243,15 @@ try {
     Assert-NoDemandTest (-not [string]::IsNullOrWhiteSpace($powerShellHost)) 'Windows PowerShell 5.1 is required for the no-demand terminal-validator source test.'
 
     $wrapperSource = [System.IO.File]::ReadAllText($wrapper, [System.Text.Encoding]::UTF8)
-    $runnerSource = [System.IO.File]::ReadAllText($runner, [System.Text.Encoding]::UTF8)
+    $runnerEntrySource = [System.IO.File]::ReadAllText($runner, [System.Text.Encoding]::UTF8)
+    $runnerRoutingSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/routing.ps1')
+    $runnerPrepareSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/prepare-session.ps1')
+    $runnerDeploySource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/deploy-session.ps1')
+    $runnerExerciseSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/exercise-session.ps1')
+    $runnerRestoreSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/restore-session.ps1')
+    $runnerQaHostSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/core/qa-host.ps1')
+    $runnerDeploymentSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/core/deployment.ps1')
+    $runnerEvidenceSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/core/evidence.ps1')
     $orchestratorSource = [System.IO.File]::ReadAllText($orchestrator, [System.Text.Encoding]::UTF8)
     $receiptContractSource = [System.IO.File]::ReadAllText($receiptContract, [System.Text.Encoding]::UTF8)
     $qaUnitProjectSource = [System.IO.File]::ReadAllText($qaUnitProject, [System.Text.Encoding]::UTF8)
@@ -352,32 +360,33 @@ try {
         Assert-NoDemandTest ($wrapperSource.Contains($requiredWrapperField)) "The wrapper terminal contract is missing '$requiredWrapperField'."
     }
 
-    foreach ($requiredRunnerToken in @(
-        '[int] $AutoFishingPerformanceWarmupFrames = 0',
-        '[int] $AutoFishingPerformanceTargetFrames = 0',
-        "`$AutoFishingPerformanceTargetFrames -gt 0 -and `$AutoFishingPerformanceProfile -ne 'InactiveNoConsumer'",
-        "InactiveNoConsumer frame-target performance requires -AutoFishingPerformanceWarmupFrames greater than zero.",
+    Assert-NoDemandTest ($runnerEntrySource.Contains('[int] $AutoFishingPerformanceWarmupFrames = 0') -and
+        $runnerEntrySource.Contains('[int] $AutoFishingPerformanceTargetFrames = 0')) 'The smoke CLI must retain the optional frame-target inputs.'
+    Assert-NoDemandTest ($runnerRoutingSource.Contains("`$AutoFishingPerformanceTargetFrames -gt 0 -and `$AutoFishingPerformanceProfile -ne 'InactiveNoConsumer'") -and
+        $runnerRoutingSource.Contains('InactiveNoConsumer frame-target performance requires -AutoFishingPerformanceWarmupFrames greater than zero.')) 'The routing phase must restrict measured frame targets to a warmed InactiveNoConsumer profile.'
+    foreach ($requiredQaSetting in @(
         'AutoFishingPerformanceWarmupFrames = $AutoFishingPerformanceWarmupFrames',
         'AutoFishingPerformanceTargetFrames = $AutoFishingPerformanceTargetFrames',
         'Batch5NoDemandEnabled = $AutoFishingPerformanceEnabled',
         'Batch5NoDemandWarmupFrames = $AutoFishingPerformanceWarmupFrames',
-        'Batch5NoDemandTargetFrames = $AutoFishingPerformanceTargetFrames',
-        '($AutoFishingPerformanceWarmupFrames + $AutoFishingPerformanceTargetFrames)'
+        'Batch5NoDemandTargetFrames = $AutoFishingPerformanceTargetFrames'
     )) {
-        Assert-NoDemandTest ($runnerSource.Contains($requiredRunnerToken)) "The game-smoke frame-target route is missing '$requiredRunnerToken'."
+        Assert-NoDemandTest ($runnerQaHostSource.Contains($requiredQaSetting)) "The QA-host module is missing frame-target binding '$requiredQaSetting'."
     }
-    Assert-NoDemandTest ($runnerSource.Contains('$autoFishingNoDemandFrameProfile =') -and
-        $runnerSource.Contains('($AutoExerciseAutoFishingPhase -and -not $autoFishingNoDemandFrameProfile)') -and
-        $runnerSource.Contains('[bool]$autoFishingNoDemandFrameProfile') -and
-        $runnerSource.Contains('elseif ($probeOk -and $autoFishingNoDemandFrameProfile -and $SaveSlot -gt 0)')) 'Only the inactive frame-target observer profile may use the third-save no-demand fixture, request its save load, and project the real SaveLoaded receipt without the retired AutoFishing lifecycle case; real AutoFishing phases must retain the fifth-save gate.'
-    Assert-NoDemandTest ($runnerSource.Contains('$coreOnlyNoDemandSourceIsolation = $autoFishingNoDemandFrameProfile') -and
-        $runnerSource.Contains('Set-SmokeRecoveryOnlyAuthorSourceState') -and
-        $runnerSource.Contains("Purpose = 'RecoveryOnlyClear'") -and
-        $runnerSource.Contains('selections = @()') -and
-        -not $runnerSource.Contains('-AllowEmpty:$coreOnlyNoDemandSourceIsolation') -and
-        $runnerSource.Contains('function Get-SmokeFileSha256') -and
-        $runnerSource.Contains('$originalSha256 = if ($originalExisted) { Get-SmokeFileSha256 -Path $statePath }') -and
-        $runnerSource.Contains('$actualSha256 = if ($existsAfter) { Get-SmokeFileSha256 -Path $statePath }')) 'The CoreOnly no-demand route may clear only the recovery-only Author source-state projection, must publish zero selections, hash its exact backup without an optional cmdlet, and restore the exact previous bytes.'
+    Assert-NoDemandTest ($runnerDeploySource.Contains('($AutoFishingPerformanceWarmupFrames + $AutoFishingPerformanceTargetFrames)')) 'The deployment phase must allow time for both warm-up and measured frames.'
+    Assert-NoDemandTest ($runnerRoutingSource.Contains('$autoFishingNoDemandFrameProfile =') -and
+        $runnerPrepareSource.Contains('($AutoExerciseAutoFishingPhase -and -not $autoFishingNoDemandFrameProfile)') -and
+        $runnerExerciseSource.Contains('[bool]$autoFishingNoDemandFrameProfile') -and
+        $runnerExerciseSource.Contains('elseif ($probeOk -and $autoFishingNoDemandFrameProfile -and $SaveSlot -gt 0)')) 'Only the inactive frame-target observer profile may use the third-save no-demand fixture, request its save load, and project the real SaveLoaded receipt without the retired AutoFishing lifecycle case; real AutoFishing phases must retain the fifth-save gate.'
+    Assert-NoDemandTest ($runnerDeploySource.Contains('$coreOnlyNoDemandSourceIsolation = $autoFishingNoDemandFrameProfile') -and
+        $runnerDeploySource.Contains('Set-SmokeRecoveryOnlyAuthorSourceState') -and
+        -not $runnerDeploySource.Contains('-AllowEmpty:$coreOnlyNoDemandSourceIsolation') -and
+        $runnerRestoreSource.Contains('Restore-SmokeRecoveryOnlyAuthorSourceState')) 'The CoreOnly no-demand phases must use and restore the recovery-only Author source-state projection.'
+    Assert-NoDemandTest ($runnerDeploymentSource.Contains("Purpose = 'RecoveryOnlyClear'") -and
+        $runnerDeploymentSource.Contains('selections = @()') -and
+        $runnerEvidenceSource.Contains('function Get-SmokeFileSha256') -and
+        $runnerDeploymentSource.Contains('$originalSha256 = if ($originalExisted) { Get-SmokeFileSha256 -Path $statePath }') -and
+        $runnerDeploymentSource.Contains('$actualSha256 = if ($existsAfter) { Get-SmokeFileSha256 -Path $statePath }')) 'The recovery-only deployment helper must publish zero selections, hash its exact backup without an optional cmdlet, and restore the exact previous bytes.'
     Assert-NoDemandTest ($orchestratorSource.Contains('if (!IsFrameTargetNoDemandProfile)') -and
         $orchestratorSource.Contains('would enqueue observer-owned work inside the measured')) 'The frame-target baseline must not enqueue its own pending Hook-status publication inside the measured window.'
     Assert-NoDemandTest ($currentFixtureSource.Contains('if (measurementFrames < measurementFrameTarget)') -and

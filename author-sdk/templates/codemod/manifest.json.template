@@ -6,7 +6,7 @@
   "UniqueID": {{UNIQUE_ID_JSON}},
   "EntryDll": {{ASSEMBLY_DLL_JSON}},
   "EntryType": {{ENTRY_TYPE_JSON}},
-  "MinimumDTMApiVersion": "0.5.5",
+  "MinimumDTMApiVersion": {{MINIMUM_RUNTIME_JSON}},
   "Type": "CodeMod",
   "CodeModKind": "Strict",
   "Dependencies": [],

@@ -8,7 +8,7 @@
 - Related Issue State: `mitigated`
 - Area: `support/player/save/recovery/archive-mutation/steam-autocloud`
 - Source Request: 分析原生保存时 `currentRoom` 为空的原因，并使用维护者已取得的备份制作玩家一键恢复；恢复后黑屏则继续从新支持包定点修复，不在玩家电脑额外备份
-- Source Review: [20260808-0001](../../reviews/manual-qa/2026/20260808-0001-save-list-null-scene-after-debug-save.md)
+- Source Review: [20260808-0001](../../archive/reviews/manual-qa/2026/20260808-0001-save-list-null-scene-after-debug-save.md)
 
 ## Scope
 

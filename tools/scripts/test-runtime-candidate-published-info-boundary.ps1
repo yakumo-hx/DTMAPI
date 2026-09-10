@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string] $RuntimePackageRoot,
-    [string] $CatalogPath = ''
+    [string] $CatalogPath = '',
+    [string] $ExpectedRuntimeBuildCommit = ''
 )
 
 Set-StrictMode -Version 2.0
@@ -41,6 +42,9 @@ function Invoke-CatalogChecker([string] $EffectiveCatalogPath) {
         '-CatalogPath',
         $EffectiveCatalogPath
     )
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedRuntimeBuildCommit)) {
+        $arguments += @('-ExpectedRuntimeBuildCommit', $ExpectedRuntimeBuildCommit)
+    }
     $start = New-Object System.Diagnostics.ProcessStartInfo
     $start.FileName = $hostExe
     $start.Arguments = [string]::Join(' ', @($arguments | ForEach-Object { ConvertTo-ProcessArgument ([string]$_) }))
@@ -72,7 +76,7 @@ function Assert-CheckerRejected(
 ) {
     $result = Invoke-CatalogChecker $EffectiveCatalogPath
     if ($result.ExitCode -eq 0) {
-        throw "$Label unexpectedly passed the Runtime candidate/published info boundary."
+        throw "$Label unexpectedly passed the Runtime source/published info boundary."
     }
     if ($result.Output.IndexOf($ExpectedOutput, [StringComparison]::OrdinalIgnoreCase) -lt 0) {
         throw "$Label failed without the expected diagnostic '$ExpectedOutput': $($result.Output)"
@@ -104,31 +108,34 @@ if (-not (Test-Path -LiteralPath $catalog -PathType Leaf)) {
 
 $canonicalInfoBytes = [System.IO.File]::ReadAllBytes($infoPath)
 $canonicalInfoHash = (Get-FileHash -LiteralPath $infoPath -Algorithm SHA256).Hash
-if ($canonicalInfoBytes.Length -ne 9192 -or
-    $canonicalInfoHash -cne 'C148F2EBB71805A9D749C7683F8EF9B053E74C6A049F64290EEC6AF432A82D41') {
-    throw "Runtime info boundary positive control is not the exact 0.6 candidate: $($canonicalInfoBytes.Length)/$canonicalInfoHash"
+$catalogAuthority = [System.IO.File]::ReadAllText($catalog, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+$expectedInfoBytes = [int64]$catalogAuthority.runtime.currentSourceBaseline.infoJsonBytes
+$expectedInfoHash = [string]$catalogAuthority.runtime.currentSourceBaseline.infoJsonSha256
+if ($canonicalInfoBytes.Length -ne $expectedInfoBytes -or
+    -not [string]::Equals($canonicalInfoHash, $expectedInfoHash, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Runtime info boundary positive control is not the exact current source projection: $($canonicalInfoBytes.Length)/$canonicalInfoHash"
 }
 
 try {
     [System.IO.Directory]::CreateDirectory($fixtureRoot) | Out-Null
-    Assert-CheckerPassed 'Exact Runtime candidate positive control' $catalog
+    Assert-CheckerPassed 'Exact current Runtime source positive control' $catalog
 
     $info = Read-FreshInfo $canonicalInfoBytes
     $info.PSObject.Properties.Remove('version')
     Write-JsonNoBom $infoPath $info
-    Assert-CheckerRejected 'Missing Runtime candidate version' $catalog 'Built Runtime info.json candidate version'
+    Assert-CheckerRejected 'Missing current Runtime version' $catalog 'Built Runtime info.json current version'
     Restore-Info $canonicalInfoBytes
 
     $info = Read-FreshInfo $canonicalInfoBytes
-    $info.version = '0.6.1'
+    $info.version = '0.6.0'
     Write-JsonNoBom $infoPath $info
-    Assert-CheckerRejected 'Wrong Runtime candidate version' $catalog 'Built Runtime info.json candidate version'
+    Assert-CheckerRejected 'Wrong current Runtime version' $catalog 'Built Runtime info.json current version'
     Restore-Info $canonicalInfoBytes
 
     $info = Read-FreshInfo $canonicalInfoBytes
     $info.description = ([string]$info.description) + ' '
     Write-JsonNoBom $infoPath $info
-    Assert-CheckerRejected 'Legal JSON byte drift' $catalog 'matches current candidate stable-form SHA-256'
+    Assert-CheckerRejected 'Legal JSON byte drift' $catalog 'matches current stable-form SHA-256'
     Restore-Info $canonicalInfoBytes
 
     Remove-Item -LiteralPath $infoPath -Force
@@ -148,19 +155,17 @@ try {
     Restore-Info $canonicalInfoBytes
 
     $catalogFixture = [System.IO.File]::ReadAllText($catalog, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
-    $catalogFixture.runtime.currentSourceBaseline.candidateInfoJsonSha256 =
-        [string]$catalogFixture.runtime.currentPublishedArtifact.infoJsonSha256
+    $catalogFixture.runtime.currentSourceBaseline.infoJsonSha256 = ('0' * 64)
     Write-JsonNoBom $fixtureCatalogPath $catalogFixture
-    Assert-CheckerRejected 'Candidate owner replaced by published info identity' $fixtureCatalogPath 'Current Runtime candidate info.json SHA-256'
+    Assert-CheckerRejected 'Current source info authority drift' $fixtureCatalogPath 'Current Runtime info.json SHA-256'
 
     $catalogFixture = [System.IO.File]::ReadAllText($catalog, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
-    $catalogFixture.runtime.currentPublishedArtifact.infoJsonSha256 =
-        [string]$catalogFixture.runtime.currentSourceBaseline.candidateInfoJsonSha256
+    $catalogFixture.runtime.currentPublishedArtifact.infoJsonSha256 = ('0' * 64)
     Write-JsonNoBom $fixtureCatalogPath $catalogFixture
-    Assert-CheckerRejected 'Published owner replaced by candidate info identity' $fixtureCatalogPath 'Published current Runtime info.json SHA-256'
+    Assert-CheckerRejected 'Published info authority drift' $fixtureCatalogPath 'Published current Runtime info.json SHA-256'
 
-    Write-Host 'Runtime candidate/published info hostile matrix: PASS'
-    Write-Host '  positive=exact candidate'
+    Write-Host 'Runtime source/published info hostile matrix: PASS'
+    Write-Host '  positive=exact current source projection'
     Write-Host '  package-negative=6 catalog-owner-negative=2'
 }
 finally {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
+using DTMAPI.Core.Reflection;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
@@ -145,7 +146,8 @@ namespace DTMAPI.GameBridge.DolocTown
             object?[] args = { itemId, null };
             if (query == null || !(query.Invoke(null, args) is bool found) || !found || args[1] == null)
                 return null;
-            return args[1]!.GetType().GetProperty("Title", BindingFlags.Public | BindingFlags.Instance)?.GetValue(args[1]) as string;
+            using (var scope = new ReflectionScope())
+                return scope.TryProperty<string>(args[1]!, "Title", out var title) ? title!.GetValue() : null;
         }
     }
 }

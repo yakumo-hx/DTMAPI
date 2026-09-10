@@ -100,7 +100,7 @@ foreach ($retired in @('src\DTMAPI.GameBridge.DolocTown\Features\FishRoeTooltip\
     if (Get-Item -Path (Join-Path $repo $retired) -ErrorAction SilentlyContinue) { Add-FishFailure "Retired product-owned path still exists: $retired" }
 }
 
-$demandTests = Read-FishText (Join-Path $repo 'tests\DTMAPI.UnitTests\Batch5GameBridgeDemandTests.cs')
+$demandTests = Read-FishText (Join-Path $repo 'tests\DTMAPI.Compatibility.Tests\Batch5GameBridgeDemandTests.cs')
 foreach ($token in @('ManagedFishBreedingOwnerFailsClosedInBothLoadOrders', 'Product-first then IItemTooltipApi compatibility request must fail closed', 'Compatibility-first then product must synchronously clear')) {
     Require-FishToken 'Bidirectional frozen/product owner exclusion' ($compatibilityText + $demandTests) $token
 }

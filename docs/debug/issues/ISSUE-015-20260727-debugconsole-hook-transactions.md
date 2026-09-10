@@ -1,8 +1,10 @@
-# ISSUE-015: DebugConsole Compatibility Hook Transactions
+﻿# ISSUE-015: DebugConsole Compatibility Hook Transactions
+
+- State: `verified`
+- Current boundary: Compatibility Hook topology is edge-triggered/transactional, ProductNative cleanup and exact-original leases are retryable, dual owners fail closed, and the exact-current retained 0.3.1 route passed its final player reacceptance. The user later confirmed that old product has no remaining users; physical retirement is separate work.
 
 ## State
 
-`verified`
 
 The repeated Hook rebuild, non-transactional acquisition, retry-loss,
 zero-update construction order and dual-owner source defects are corrected and

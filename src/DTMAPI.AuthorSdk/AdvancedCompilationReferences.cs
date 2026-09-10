@@ -14,6 +14,7 @@ internal sealed class AdvancedCompilationReferenceSet
 {
     public required IReadOnlyList<MetadataReference> References { get; init; }
     public required string SurfaceSha256 { get; init; }
+    public required IReadOnlyDictionary<MetadataReference, string> InMemoryReferenceIdentities { get; init; }
 }
 
 internal static class AdvancedCompilationReferences
@@ -48,17 +49,19 @@ internal static class AdvancedCompilationReferences
             .ToList<MetadataReference>();
         if (harmonyPath != null)
             references.Add(MetadataReference.CreateFromFile(harmonyPath));
-        references.Add(CreateAssemblyCSharpSurface(compatibility, resolved.Registration));
+        MetadataReference surface = CreateAssemblyCSharpSurface(compatibility, resolved.Registration, out string imageSha256);
+        references.Add(surface);
         return new AdvancedCompilationReferenceSet
         {
             References = references,
-            SurfaceSha256 = resolved.Registration.CompilerSurfaceSha256.ToLowerInvariant()
+            SurfaceSha256 = resolved.Registration.CompilerSurfaceSha256.ToLowerInvariant(),
+            InMemoryReferenceIdentities = new Dictionary<MetadataReference, string> { [surface] = "Assembly-CSharp.dll=" + imageSha256 }
         };
     }
 
     private static MetadataReference CreateAssemblyCSharpSurface(
         CompatibilityAssets compatibility,
-        AdvancedReferencePolicyRegistration registration)
+        AdvancedReferencePolicyRegistration registration, out string imageSha256)
     {
         byte[] sourceBytes;
         string resourceName = SurfaceResourcePrefix + registration.PolicyId + SurfaceResourceSuffix;
@@ -110,6 +113,7 @@ internal static class AdvancedCompilationReferences
             throw new InvalidDataException("Failed to construct the hash-fixed Advanced compiler reference surface for policy " + registration.PolicyId + ": " + errors);
         }
         ImmutableArray<byte> image = ImmutableArray.Create(output.ToArray());
+        imageSha256 = PathSafety.Sha256Bytes(image.AsSpan());
         VerifyReferenceSurface(image, registration);
         return MetadataReference.CreateFromImage(image);
     }

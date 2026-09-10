@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Runtime;
 using DTMAPI.GameBridge.DolocTown;
@@ -21,11 +22,20 @@ namespace DTMAPI.QaUnitTests
 {
     internal static class Program
     {
-        private static int Main()
+        private static int Main(string[] args)
         {
             using DtmApiTestSession testSession = DtmApiTestSession.Start("DTMAPI.QaUnitTests");
             try
             {
+                if (args.Length > 0)
+                {
+                    if (args.Length != 1 || args[0] != "--manual-exit-only")
+                        throw new ArgumentException("Unknown QA test selection; default tests were not run.");
+                    QaManualExitPreservesCompletedSaveLoadedObservation();
+                    testSession.MarkSucceeded();
+                    Console.WriteLine("DTMAPI.QaUnitTests: OK (manual-exit only)");
+                    return 0;
+                }
                 FishingPerformanceProbeUsesRealHundredFishTarget();
                 InactiveNoConsumerProbeMeasuresExactWarmedFrameWindow();
                 RuntimeMemoryTrendProbeKeepsBoundedIndependentSamples();
@@ -52,6 +62,7 @@ namespace DTMAPI.QaUnitTests
                 QaPerformanceWritesAreRetryableBeforeTerminalCommit();
                 G3CustomEntityContractIsOwnerBoundReadOnlyAndDisposable();
                 G3LifecycleNotificationsAndCallbackOrderAreDeterministic();
+                QaManualExitPreservesCompletedSaveLoadedObservation();
                 G3FishRoeObservationAndRunnerProjectionAreQaOwned();
                 G4ContinuousHomePageRequiresUninterruptedWindow();
                 ScenarioStableObservationRequiresContinuousIndependentWindows();
@@ -633,13 +644,16 @@ namespace DTMAPI.QaUnitTests
             string root = FindRepositoryRoot();
             string outer = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-batch6-autofishing-manager-lifecycle.ps1"));
             string smoke = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
-            int outerGuard = outer.IndexOf("throw 'Batch 6 AutoFishing same-process Manager lifecycle is retired", StringComparison.Ordinal);
+            int outerGuard = outer.IndexOf("\nthrow ", StringComparison.Ordinal);
             int outerMutation = outer.IndexOf("New-Item -ItemType Directory -Path $OutputRoot", StringComparison.Ordinal);
-            int smokeGuard = smoke.IndexOf("throw '-Batch6AutoFishingManagerLifecycle is retired", StringComparison.Ordinal);
-            int smokeLegacyPath = smoke.IndexOf("Join-Path $gameDir 'Mods\\Yuuka.DTMAPI.AutoFishing'", StringComparison.Ordinal);
-            int smokeMarkerWrite = smoke.IndexOf("[System.IO.File]::WriteAllBytes($batch6ManagerMarkerPath", StringComparison.Ordinal);
-            Assert(outerGuard >= 0 && outerMutation > outerGuard &&
-                smokeGuard >= 0 && smokeLegacyPath > smokeGuard && smokeMarkerWrite > smokeGuard,
+            Assert(outerGuard >= 0 && (outerMutation < 0 || outerMutation > outerGuard),
+                "The retired outer wrapper must stop before creating its output; removing unreachable legacy mutation code must remain possible.");
+            AssertSmokePhaseOrder(smoke, "phases/preflight.ps1", "phases/enter-save-environment.ps1", "phases/prepare-session.ps1", "phases/run-session.ps1");
+            var retired = RunQaRoutingProbe("-StageQaHost", "-Batch6AutoFishingManagerLifecycle", "-ValidateQaG6RoutingOnly");
+            Assert(retired.ExitCode != 0 &&
+                retired.Error.Contains("preflight.ps1", StringComparison.OrdinalIgnoreCase) &&
+                retired.Error.Contains("Batch6AutoFishingManagerLifecycle", StringComparison.Ordinal) &&
+                retired.Error.Contains("retired", StringComparison.OrdinalIgnoreCase),
                 "The retired same-process Manager fixture must fail before evidence creation, Runtime lock/deployment, <game>/Mods lookup, marker mutation, or game launch.");
         }
 
@@ -1971,6 +1985,57 @@ namespace DTMAPI.QaUnitTests
                 Assert(!source.Contains(forbidden, StringComparison.Ordinal), "The G3 registration probe exposes a forbidden runtime verb: " + forbidden);
         }
 
+        private static void QaManualExitPreservesCompletedSaveLoadedObservation()
+        {
+            foreach (bool manual in new[] { false, true })
+            {
+                string runId = Guid.NewGuid().ToString("N");
+                string gameDir = Path.Combine(Path.GetTempPath(), "DTMAPI-QA-Tests", runId);
+                Directory.CreateDirectory(gameDir);
+                var runtime = new DtmApiRuntime(new FakeHost(gameDir), new ConfigMenuRegistry());
+                var values = new Dictionary<string, object>
+                {
+                    ["schemaVersion"] = QaHostProtocol.SchemaVersion,
+                    ["protocolVersion"] = QaHostProtocol.ProtocolVersion,
+                    ["runId"] = runId,
+                    ["mode"] = QaHostProtocol.ParticipantOnlyMode,
+                    ["SaveSlot"] = 1,
+                    ["ObserveSaveLoaded"] = true
+                };
+                if (manual)
+                    values["WaitForManualExit"] = true;
+                byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(values);
+                QaHostSettings settings = QaHostSettings.Read(bytes);
+                settings.Validate(runId);
+                Assert(settings.WaitForManualExit == manual,
+                    "Omitted manual-exit setting must preserve the default automatic terminal.");
+                var factory = new QaHostFactory();
+                factory.PrepareStartupOptions(new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, bytes));
+                var participant = (QaHostParticipant)factory.CreateParticipant(
+                    new GameBridgeFixtureAccess(runtime, runId, runtime.Paths.DtmApiPath, () => true));
+                participant.Start();
+                Assert(participant.GetRunDisposition() != QaHostRunDisposition.RequestQuit,
+                    "Manual/default observation must not report completion before SaveLoaded.");
+                participant.OnSaveLoaded(0, false);
+                var status = runtime.Diagnostics.GetHookStatuses().Single(row => row.HookId == "Smoke.QaLifecycle.SaveLoaded");
+                Assert(status.Status == "verified",
+                    "Manual observation must still publish the actual SaveLoaded terminal.");
+                Assert(participant.GetRunDisposition() == (manual ? QaHostRunDisposition.Continue : QaHostRunDisposition.RequestQuit),
+                    "Completed manual observation must wait; the default must still request normal quit.");
+                participant.Close("unit-manual-exit-completed");
+                participant.Close("unit-idempotent-close");
+
+                settings.WaitForManualExit = true;
+                settings.ObserveSaveLoaded = false;
+                AssertThrows<InvalidDataException>(() => settings.Validate(runId),
+                    "Manual mode without its SaveLoaded observation must be rejected.");
+                settings.ObserveSaveLoaded = true;
+                settings.SaveSlot = 0;
+                AssertThrows<InvalidDataException>(() => settings.Validate(runId),
+                    "Manual mode must name a playable UI slot.");
+            }
+        }
+
         private static void G3LifecycleNotificationsAndCallbackOrderAreDeterministic()
         {
             const string runId = "44444444444444444444444444444444";
@@ -2080,35 +2145,46 @@ namespace DTMAPI.QaUnitTests
                 !FishRoeTooltipObservationProbe.ContainsDecoration("Roe", "plain", "plain"),
                 "The extracted FishRoe observer must recognize only the decorated tooltip forms.");
 
-            string runner = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "tools", "scripts", "run-game-smoke.ps1"));
+            string smokeQaHost = ReadSmokeModule(FindRepositoryRoot(), "core/qa-host.ps1");
+            string smokeDeploy = ReadSmokeModule(FindRepositoryRoot(), "phases/deploy-session.ps1");
+            string smokeExercise = ReadSmokeModule(FindRepositoryRoot(), "phases/exercise-session.ps1");
+            string smokeRouting = ReadSmokeModule(FindRepositoryRoot(), "phases/routing.ps1");
             string observer = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "DTMAPI.GameBridge.DolocTown.QA", "G3", "FishRoeTooltipObservationProbe.cs"));
             Assert(observer.Contains("Batch6AdvancedHarmonyOwnerObserver.Observe", StringComparison.Ordinal) &&
                 observer.Contains("dtmapi.mod.yuuka.dtmapi.fishbreedingassistant", StringComparison.Ordinal) &&
                 observer.Contains("owner.ExactOwnerPatchCount != 1", StringComparison.Ordinal),
                 "FishRoe observation must prove the product's exact one-patch Harmony owner before accepting visible text.");
-            Assert(runner.Contains("protocolVersion = 7", StringComparison.Ordinal) &&
-                runner.Contains("CustomEntityContractEnabled = $CustomEntityContractEnabled", StringComparison.Ordinal) &&
-                runner.Contains("FishRoeTooltipObservationEnabled = $FishRoeTooltipObservationEnabled", StringComparison.Ordinal) &&
-                runner.Contains("DiagnosticsSnapshotEnabled = $DiagnosticsSnapshotEnabled", StringComparison.Ordinal) &&
-                runner.Contains("ObserveWorkshopReloadCompleted = $ObserveWorkshopReloadCompleted", StringComparison.Ordinal),
+            Assert(smokeQaHost.Contains("protocolVersion = 7", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("CustomEntityContractEnabled = $CustomEntityContractEnabled", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("FishRoeTooltipObservationEnabled = $FishRoeTooltipObservationEnabled", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("DiagnosticsSnapshotEnabled = $DiagnosticsSnapshotEnabled", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("ObserveWorkshopReloadCompleted = $ObserveWorkshopReloadCompleted", StringComparison.Ordinal),
                 "Runner must project the complete G5 settings surface while preserving the G3 cases.");
-            Assert(runner.Contains("FishRoe, diagnostics, and QA lifecycle observation switches require -StageQaHost", StringComparison.Ordinal) &&
-                runner.Contains("$qaCustomEntityContractEnabled = [bool]$StageQaHost -and [bool]$AutoExerciseCustomEntityApis", StringComparison.Ordinal) &&
-                runner.Contains("$qaFishRoeTooltipObservationEnabled = [bool]$StageQaHost", StringComparison.Ordinal) &&
-                runner.Contains("QA CustomEntity, FishRoe, and diagnostics scenarios require a positive -SaveSlot", StringComparison.Ordinal),
+            Assert(smokeRouting.Contains("$qaCustomEntityContractEnabled = [bool]$StageQaHost -and [bool]$AutoExerciseCustomEntityApis", StringComparison.Ordinal) &&
+                smokeRouting.Contains("$qaFishRoeTooltipObservationEnabled = [bool]$StageQaHost", StringComparison.Ordinal),
                 "G3 runner cases must require explicit staging and route existing CustomEntity/experimental FishRoe cases to exactly one owner.");
-            int hookProbeBranch = runner.IndexOf("if ($probeOk -and $IncludeHookProbe -and $SaveSlot -gt 0)", StringComparison.Ordinal);
-            int g3Branch = runner.IndexOf("elseif ($probeOk -and $qaG3SaveLoadedBranchRequested)", hookProbeBranch, StringComparison.Ordinal);
-            int legacyBranch = runner.IndexOf("elseif ($probeOk -and $AutoExerciseTitleButtonLifecycle", g3Branch, StringComparison.Ordinal);
+            int hookProbeBranch = smokeExercise.IndexOf("if ($probeOk -and $IncludeHookProbe -and $SaveSlot -gt 0)", StringComparison.Ordinal);
+            int g3Branch = smokeExercise.IndexOf("elseif ($probeOk -and $qaG3SaveLoadedBranchRequested)", StringComparison.Ordinal);
+            int legacyBranch = smokeExercise.IndexOf("elseif ($probeOk -and $AutoExerciseTitleButtonLifecycle", StringComparison.Ordinal);
             Assert(hookProbeBranch >= 0 && g3Branch > hookProbeBranch && legacyBranch > g3Branch,
                 "Pure G3 SaveLoaded must have an explicit runner branch before legacy scenario routing.");
-            Assert(runner.Contains("$qaDiagnosticsExpectedFeatureIds = @('FishRoeTooltip')", StringComparison.Ordinal) &&
-                runner.Contains("-DiagnosticsExpectedFeatureIds $qaDiagnosticsExpectedFeatureIds", StringComparison.Ordinal),
+            Assert(smokeRouting.Contains("$qaDiagnosticsExpectedFeatureIds = @('FishRoeTooltip')", StringComparison.Ordinal) &&
+                smokeDeploy.Contains("-DiagnosticsExpectedFeatureIds $qaDiagnosticsExpectedFeatureIds", StringComparison.Ordinal),
                 "Standalone diagnostics must carry an explicit non-empty expected feature set.");
-            string routingOutput = RunQaG3RoutingSelfTest();
-            Assert(routingOutput.Contains("\"QaG3SaveLoadedBranchRequested\": true", StringComparison.OrdinalIgnoreCase) &&
-                routingOutput.Contains("FishRoeTooltip", StringComparison.Ordinal),
+            using JsonDocument routingOutput = JsonDocument.Parse(RunQaG3RoutingSelfTest());
+            Assert(routingOutput.RootElement.GetProperty("QaG3SaveLoadedBranchRequested").GetBoolean() &&
+                routingOutput.RootElement.GetProperty("DiagnosticsSnapshotEnabled").GetBoolean() &&
+                routingOutput.RootElement.GetProperty("DiagnosticsExpectedFeatureIds").EnumerateArray()
+                    .Select(item => item.GetString()).SequenceEqual(new[] { "FishRoeTooltip" }),
                 "Executed runner routing self-test did not select the pure G3 SaveLoaded branch and explicit diagnostics feature set.");
+            var unstaged = RunQaRoutingProbe("-AutoExerciseDiagnosticsSnapshot", "-SaveSlot", "3", "-ValidateQaG3RoutingOnly");
+            Assert(unstaged.ExitCode != 0 && unstaged.Error.Contains("StageQaHost", StringComparison.Ordinal) &&
+                unstaged.Error.Contains("require", StringComparison.OrdinalIgnoreCase),
+                "Removing QA staging from the accepted diagnostics route must be rejected. output=" + unstaged.Error);
+            var noSave = RunQaRoutingProbe("-StageQaHost", "-AutoExerciseDiagnosticsSnapshot", "-SaveSlot", "0", "-ValidateQaG3RoutingOnly");
+            Assert(noSave.ExitCode != 0 && noSave.Error.Contains("SaveSlot", StringComparison.Ordinal) &&
+                noSave.Error.Contains("positive", StringComparison.OrdinalIgnoreCase),
+                "Changing the accepted diagnostics route to slot zero must be rejected by its save-slot boundary. output=" + noSave.Error);
 
             string participantSource = File.ReadAllText(Path.Combine(FindRepositoryRoot(), "src", "DTMAPI.GameBridge.DolocTown.QA", "QaHostParticipant.cs"));
             Assert(participantSource.Contains("bool completed = RunG3Probe(\"Smoke.FishRoeTooltip\"", StringComparison.Ordinal) &&
@@ -2198,29 +2274,9 @@ namespace DTMAPI.QaUnitTests
 
         private static string RunQaG3RoutingSelfTest()
         {
-            string runner = Path.Combine(FindRepositoryRoot(), "tools", "scripts", "run-game-smoke.ps1");
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "pwsh.exe",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            foreach (string argument in new[]
-            {
-                "-NoLogo", "-NoProfile", "-File", runner,
-                "-StageQaHost", "-AutoExerciseDiagnosticsSnapshot", "-SaveSlot", "3", "-ValidateQaG3RoutingOnly"
-            })
-                startInfo.ArgumentList.Add(argument);
-
-            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the G3 runner routing self-test.");
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException("G3 runner routing self-test failed: " + error);
-            return output;
+            var result = RunQaRoutingProbe("-StageQaHost", "-AutoExerciseDiagnosticsSnapshot", "-SaveSlot", "3", "-ValidateQaG3RoutingOnly");
+            Assert(result.ExitCode == 0, "G3 runner routing self-test failed: " + result.Error);
+            return result.Output;
         }
 
         private static void G4ContinuousHomePageRequiresUninterruptedWindow()
@@ -2833,7 +2889,10 @@ namespace DTMAPI.QaUnitTests
             string hostBoundary = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown", "QaHost", "DolocTownGameBridge.QaHost.cs"));
             string participant = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "QaHostParticipant.cs"));
             string qaSettings = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "QaHostSettings.cs"));
-            string runnerScript = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
+            string smokeQaHost = ReadSmokeModule(FindRepositoryRoot(), "core/qa-host.ps1");
+            string smokeExercise = ReadSmokeModule(FindRepositoryRoot(), "phases/exercise-session.ps1");
+            string smokeRouting = ReadSmokeModule(FindRepositoryRoot(), "phases/routing.ps1");
+            string smokeDesktopInput = ReadSmokeModule(FindRepositoryRoot(), "scenarios/desktop-input.ps1");
 
             string retiredSmokeDirectory = Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown", "Smoke");
             Assert((!Directory.Exists(retiredSmokeDirectory) || !Directory.EnumerateFiles(retiredSmokeDirectory, "*.cs", SearchOption.AllDirectories).Any()) &&
@@ -2889,7 +2948,7 @@ namespace DTMAPI.QaUnitTests
                 participant.Contains("settings.ExternalPlayerInputEvidenceRoot, settings.ExternalPlayerInputMarkerPath", StringComparison.Ordinal) &&
                 participant.Contains("Path.GetDirectoryName(marker)", StringComparison.Ordinal) &&
                 participant.Contains("external-player-input-complete.signal", StringComparison.Ordinal) &&
-                runnerScript.Contains("ExternalPlayerInputEvidenceRoot = $ExternalPlayerInputEvidenceRoot", StringComparison.Ordinal),
+                smokeQaHost.Contains("ExternalPlayerInputEvidenceRoot = $ExternalPlayerInputEvidenceRoot", StringComparison.Ordinal),
                 "The external marker must be the fixed direct child of the explicitly authorized runner evidence root, independent of the game-side QA screenshot root.");
 
             Assert(participant.Contains("if (!externalPlayerInput.MarkerPassed)", StringComparison.Ordinal) &&
@@ -2903,23 +2962,23 @@ namespace DTMAPI.QaUnitTests
                 participant.Contains("bool failureClose = failureCloseRequested;", StringComparison.Ordinal),
                 "Once a failure close begins, later shutdown/cleanup retries must retain failure semantics instead of reclassifying intentionally incomplete G4 terminals.");
 
-            Assert(runnerScript.Contains("$externalPlayerInputCompletionTempPath = $externalPlayerInputCompletionMarkerPath + '.tmp.'", StringComparison.Ordinal) &&
-                runnerScript.Contains("Move-Item -LiteralPath $externalPlayerInputCompletionTempPath -Destination $externalPlayerInputCompletionMarkerPath -ErrorAction Stop", StringComparison.Ordinal) &&
-                !runnerScript.Contains(") | Set-Content -LiteralPath $externalPlayerInputCompletionMarkerPath", StringComparison.Ordinal),
+            Assert(smokeExercise.Contains("$externalPlayerInputCompletionTempPath = $externalPlayerInputCompletionMarkerPath + '.tmp.'", StringComparison.Ordinal) &&
+                smokeExercise.Contains("Move-Item -LiteralPath $externalPlayerInputCompletionTempPath -Destination $externalPlayerInputCompletionMarkerPath -ErrorAction Stop", StringComparison.Ordinal) &&
+                !smokeExercise.Contains(") | Set-Content -LiteralPath $externalPlayerInputCompletionMarkerPath", StringComparison.Ordinal),
                 "The external-input terminal marker must become visible only after a complete same-directory temporary write is atomically renamed.");
-            Assert(runnerScript.Contains("$strictPlayerInputGate = [bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4DebugConsoleEnabled", StringComparison.Ordinal) &&
-                runnerScript.Contains("[bool]$qaG4DebugConsoleEnabled -or [bool]$qaG4EquipmentSlotsObservationEnabled", StringComparison.Ordinal) &&
-                runnerScript.Contains("$externalPlayerInputAttempts.Add", StringComparison.Ordinal) &&
-                runnerScript.Contains("Wait-ForLogLineAfterOffsetUntilDeadline -LogPath $logPath -Offset ([int64]$y1Attempt[0].LogOffset)", StringComparison.Ordinal) &&
-                runnerScript.Contains("-Deadline (Get-SmokeCappedDeadline -Deadline $debugConsoleActionDeadline -MaximumMilliseconds 5000)", StringComparison.Ordinal) &&
-                runnerScript.Contains("-Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", StringComparison.Ordinal) &&
-                runnerScript.IndexOf("-Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", StringComparison.Ordinal) < runnerScript.IndexOf("-Label 'YHoldCleanupEscape'", StringComparison.Ordinal),
+            Assert(smokeDesktopInput.Contains("$strictPlayerInputGate = [bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4DebugConsoleEnabled", StringComparison.Ordinal) &&
+                smokeDesktopInput.Contains("[bool]$qaG4DebugConsoleEnabled -or [bool]$qaG4EquipmentSlotsObservationEnabled", StringComparison.Ordinal) &&
+                smokeDesktopInput.Contains("$externalPlayerInputAttempts.Add", StringComparison.Ordinal) &&
+                smokeExercise.Contains("Wait-ForLogLineAfterOffsetUntilDeadline -LogPath $logPath -Offset ([int64]$y1Attempt[0].LogOffset)", StringComparison.Ordinal) &&
+                smokeExercise.Contains("-Deadline (Get-SmokeCappedDeadline -Deadline $debugConsoleActionDeadline -MaximumMilliseconds 5000)", StringComparison.Ordinal) &&
+                smokeExercise.Contains("-Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", StringComparison.Ordinal) &&
+                smokeExercise.IndexOf("-Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", StringComparison.Ordinal) < smokeExercise.IndexOf("-Label 'YHoldCleanupEscape'", StringComparison.Ordinal),
                 "The staged DebugConsole G4 lane must use the same one-attempt foreground SendInput provenance and causal-offset receipt as the no-QA player lane, forbid PostMessage fallback, and close only after QA evidence is ready.");
             Assert(
-                runnerScript.IndexOf("if ($saveLoadedOk -and $requiresDebugConsoleKeySmoke)", StringComparison.Ordinal) <
-                runnerScript.IndexOf("if ($saveLoadedOk -and $AutoExerciseTitleButtonLifecycle)", StringComparison.Ordinal) &&
-                runnerScript.IndexOf("if ($saveLoadedOk -and $requiresDebugConsoleKeySmoke)", StringComparison.Ordinal) <
-                runnerScript.IndexOf("if ($saveLoadedOk -and $AssertAdvancedProductOwnerDeactivation)", StringComparison.Ordinal),
+                smokeExercise.IndexOf("if ($saveLoadedOk -and $requiresDebugConsoleKeySmoke)", StringComparison.Ordinal) <
+                smokeExercise.IndexOf("if ($saveLoadedOk -and $AutoExerciseTitleButtonLifecycle)", StringComparison.Ordinal) &&
+                smokeExercise.IndexOf("if ($saveLoadedOk -and $requiresDebugConsoleKeySmoke)", StringComparison.Ordinal) <
+                smokeExercise.IndexOf("if ($saveLoadedOk -and $AssertAdvancedProductOwnerDeactivation)", StringComparison.Ordinal),
                 "DebugConsole real-input exercise must run before title lifecycle and Advanced owner-deactivation waits so the QA participant can trigger those terminals.");
 
             Assert(participant.Contains("scenarios.AdvanceSaveSlotScenario(settings.SaveSlot)", StringComparison.Ordinal) &&
@@ -2993,6 +3052,15 @@ namespace DTMAPI.QaUnitTests
                 fixture.Contains("observation.ConstraintCount == 1", StringComparison.Ordinal) &&
                 fixture.Contains("observation.ConstraintCount == observation.VisibleSlots", StringComparison.Ordinal),
                 "Title cleanup must use an exact overlay session identity and all Native UI verification must require concrete state, target, constraints, and installed production repair hooks.");
+            Assert(fixture.Contains("TryEnsureTitleConfigPagerFixturePages", StringComparison.Ordinal) &&
+                fixture.Contains("DTMAPI.Config.ListPager.Next", StringComparison.Ordinal) &&
+                fixture.Contains("DTMAPI.Config.ListPager.Prev", StringComparison.Ordinal) &&
+                fixture.Contains("DTMAPI.Config.Mod.", StringComparison.Ordinal) &&
+                fixture.Contains("DTMAPI.Config.PageTitle", StringComparison.Ordinal) &&
+                fixture.Contains("The Config Mod pager snapped back", StringComparison.Ordinal) &&
+                fixture.Contains("CleanupTitleConfigPagerFixturePages", StringComparison.Ordinal) &&
+                fixture.Contains("runtime.DeactivateOwner(ownerId", StringComparison.Ordinal),
+                "The title Config smoke must force a QA-only second page when the installed product set is too small, click both real pager buttons plus a page-two Mod row, verify its detail title, reject snapback, and remove every synthetic owner.");
             Assert(fixture.Contains("remove.MakeGenericMethod(ownedStateType).Invoke(manager, null);", StringComparison.Ordinal) &&
                 fixture.Contains("TryInvokeExactPopStateForFixture(userInput, state)", StringComparison.Ordinal) &&
                 fixture.Contains("if (!ReferenceEquals(getCurrentState(), ownedState))", StringComparison.Ordinal) &&
@@ -3086,13 +3154,13 @@ namespace DTMAPI.QaUnitTests
 
             string settings = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "QaHostSettings.cs"));
             string activation = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.BepInExBootstrap", "QaHostActivationLoader.cs"));
-            string runner = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
             Assert(QaHostProtocol.ProtocolVersion == 7 &&
                 settings.Contains("ProtocolVersion != QaHostProtocol.ProtocolVersion", StringComparison.Ordinal) &&
                 activation.Contains("receipt.ProtocolVersion != QaHostProtocol.ProtocolVersion", StringComparison.Ordinal) &&
-                CountTextOccurrences(runner, "protocolVersion = 7") >= 2 &&
-                runner.Contains("ProtocolVersion = 7", StringComparison.Ordinal) &&
-                !runner.Contains("protocolVersion = 4", StringComparison.Ordinal),
+                CountTextOccurrences(smokeQaHost, "protocolVersion = 7") >= 2 &&
+                smokeRouting.Contains("ProtocolVersion = 7", StringComparison.Ordinal) &&
+                !smokeQaHost.Contains("protocolVersion = 4", StringComparison.Ordinal) &&
+                !smokeRouting.Contains("ProtocolVersion = 4", StringComparison.Ordinal),
                 "Protocol source, settings validation, activation validation, staging receipts, and routing projection must agree on protocol 7.");
         }
 
@@ -3119,7 +3187,10 @@ namespace DTMAPI.QaUnitTests
             string batch6CoordinatorSource = File.ReadAllText(Path.Combine(productQaRoot, "batch6", "Batch6AutoFishingPilotCoordinator.cs"));
             string legacyFishingSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "LegacyFishingAutomationCompatibilityFixtureCase.cs"));
             string fishingSharedSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "CompatibilityFishingFixtureShared.cs"));
-            string runnerSource = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
+            string smokeQaHost = ReadSmokeModule(FindRepositoryRoot(), "core/qa-host.ps1");
+            string smokeAssess = ReadSmokeModule(FindRepositoryRoot(), "phases/assess-evidence.ps1");
+            string smokePublish = ReadSmokeModule(FindRepositoryRoot(), "phases/publish-result.ps1");
+            string smokeRouting = ReadSmokeModule(FindRepositoryRoot(), "phases/routing.ps1");
             string moreSavesPostSaveStage = SliceBetween(
                 moreSavesFixtureSource,
                 "if (g6MoreSavesFixed12Stage == 3)",
@@ -3241,14 +3312,14 @@ namespace DTMAPI.QaUnitTests
                 !genericQaProject.Contains("Yuuka.DTMAPI.AutoFishing", StringComparison.Ordinal) &&
                 !controllerSource.Contains("AutoFishing", StringComparison.Ordinal),
                 "Generic QA may deserialize and delegate the linked product-owned Batch6 pilot, but its shared scenario controller must not own ProductNative logic and the optional DLL must have no product project/assembly reference.");
-            Assert(runnerSource.Contains("G6LifecycleCases = @($G6LifecycleCases)", StringComparison.Ordinal) &&
-                runnerSource.Contains("G6NativeLoadContinuationProbe = $G6NativeLoadContinuationProbe", StringComparison.Ordinal) &&
-                runnerSource.Contains("Hook status: Smoke\\.NativeLoadContinuationProbe = closed\\.", StringComparison.Ordinal) &&
-                runnerSource.Contains("unpatchSucceeded=True;", StringComparison.Ordinal) &&
-                runnerSource.Contains("SmokeNativeLoadContinuationCleanup", StringComparison.Ordinal) &&
-                runnerSource.Contains("Hook status: Smoke\\.OwnerLifetimeCleanup = verified\\.", StringComparison.Ordinal) &&
-                runnerSource.Contains("OwnerLifetimeCloseCleanup", StringComparison.Ordinal) &&
-                runnerSource.Contains("ProductionSaveLoadOrder = 'unchanged'", StringComparison.Ordinal),
+            Assert(smokeQaHost.Contains("G6LifecycleCases = @($G6LifecycleCases)", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("G6NativeLoadContinuationProbe = $G6NativeLoadContinuationProbe", StringComparison.Ordinal) &&
+                smokeAssess.Contains("Hook status: Smoke\\.NativeLoadContinuationProbe = closed\\.", StringComparison.Ordinal) &&
+                smokeAssess.Contains("unpatchSucceeded=True;", StringComparison.Ordinal) &&
+                smokePublish.Contains("SmokeNativeLoadContinuationCleanup", StringComparison.Ordinal) &&
+                smokeAssess.Contains("Hook status: Smoke\\.OwnerLifetimeCleanup = verified\\.", StringComparison.Ordinal) &&
+                smokePublish.Contains("OwnerLifetimeCloseCleanup", StringComparison.Ordinal) &&
+                smokeRouting.Contains("ProductionSaveLoadOrder = 'unchanged'", StringComparison.Ordinal),
                 "The runner must project the complete G6 route, require owner-only probe and synthetic-owner/Camera cleanup, and expose its ordering receipt.");
 
             const string runId = "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd";
@@ -3396,28 +3467,10 @@ namespace DTMAPI.QaUnitTests
 
         private static string RunQaG6RoutingSelfTest()
         {
-            string runner = Path.Combine(FindRepositoryRoot(), "tools", "scripts", "run-game-smoke.ps1");
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "pwsh.exe",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            foreach (string argument in new[]
-            {
-                "-NoLogo", "-NoProfile", "-File", runner,
-                "-StageQaHost", "-SaveSlot", "3", "-AutoExerciseModOwnerLifetime",
-                "-AutoExerciseSaveLoadCycle", "-SaveLoadCycleCount", "1", "-ValidateQaG6RoutingOnly"
-            })
-                startInfo.ArgumentList.Add(argument);
-            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the G6 routing self-test.");
-            string stdout = process.StandardOutput.ReadToEnd();
-            string stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            Assert(process.ExitCode == 0, "G6 runner routing self-test failed: " + stderr);
-            return stdout;
+            var result = RunQaRoutingProbe("-StageQaHost", "-SaveSlot", "3", "-AutoExerciseModOwnerLifetime",
+                "-AutoExerciseSaveLoadCycle", "-SaveLoadCycleCount", "1", "-ValidateQaG6RoutingOnly");
+            Assert(result.ExitCode == 0, "G6 runner routing self-test failed: " + result.Error);
+            return result.Output;
         }
 
         private static void G5WorldMutationRoutingAndRestorationAreClosed()
@@ -3431,13 +3484,21 @@ namespace DTMAPI.QaUnitTests
             string fixtureSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "DolocTownGameBridge.G5Fixtures.cs"));
             string g6FixtureRoutingSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "DolocTownGameBridge.G6Fixtures.cs"));
             string controllerSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "QaScenarioController.cs"));
+            string debugActionAdapterSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "DebugConsoleActionFixtureAdapter.cs"));
             string fixtureSupportSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "DolocTownGameBridge.FixtureSupport.cs"));
-            string runnerSource = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
+            string smokeQaHost = ReadSmokeModule(FindRepositoryRoot(), "core/qa-host.ps1");
+            string smokeDeploy = ReadSmokeModule(FindRepositoryRoot(), "phases/deploy-session.ps1");
+            string smokeExercise = ReadSmokeModule(FindRepositoryRoot(), "phases/exercise-session.ps1");
+            string smokePreflight = ReadSmokeModule(FindRepositoryRoot(), "phases/preflight.ps1");
+            string smokePrepare = ReadSmokeModule(FindRepositoryRoot(), "phases/prepare-session.ps1");
+            string smokePublish = ReadSmokeModule(FindRepositoryRoot(), "phases/publish-result.ps1");
+            string smokeRestore = ReadSmokeModule(FindRepositoryRoot(), "phases/restore-session.ps1");
             string actionCompletionSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "ActionCompletionFixtureCase.cs"));
             string actionSpeedSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "ActionSpeedFixtureCase.cs"));
             string advancedOwnerDeactivationSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "AdvancedProductOwnerDeactivationFixture.cs"));
             string moreEquipmentSlotsFixtureSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "MoreEquipmentSlotsFixtureCase.cs"));
             string moreEquipmentSlotsNoNativeSaveFixtureSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "MoreEquipmentSlotsNoNativeSaveFixtureCase.cs"));
+            string moreEquipmentSlots100UiFixtureSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "MoreEquipmentSlots100UiFixtureCase.cs"));
             string harmonyOwnerObserverSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Batch6AdvancedHarmonyOwnerObserver.cs"));
             string saveFixtureIsolationSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "QaSaveFixtureIsolation.cs"));
             string chestSource = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "Scenarios", "Fixtures", "ChestLocatorEnhancerFixtureCase.cs"));
@@ -3499,6 +3560,22 @@ namespace DTMAPI.QaUnitTests
             Assert(!fixtureSupportSource.Contains("QaHostOwnsG5WorldMutation", StringComparison.Ordinal) &&
                 !fixtureSupportSource.Contains("TryObserveQaOwnedCaseTerminal", StringComparison.Ordinal),
                 "G7 must remove the embedded G5 scheduler and dual-owner terminal consumer.");
+            Assert(
+                !debugActionAdapterSource.Contains("        ITeleportDebugApi,", StringComparison.Ordinal) &&
+                debugActionAdapterSource.Contains("internal BridgeFeatureStatus GetTeleportStatus()", StringComparison.Ordinal) &&
+                controllerSource.Contains("private DebugConsoleActionFixtureAdapter teleportDebugApi => DebugConsoleActions;", StringComparison.Ordinal) &&
+                smokeExercise.Contains("$debugTeleportCsvOk = $true", StringComparison.Ordinal) &&
+                smokePublish.Contains("DebugTeleportCsv = Get-SmokeStatus -Requested $false", StringComparison.Ordinal) &&
+                !smokeExercise.Contains("Smoke exercise DebugTeleportCsv OK", StringComparison.Ordinal),
+                "Current DebugConsole QA must use a concrete teleport seam on an older installed Runtime and must not resurrect the retired CSV export gate.");
+            Assert(
+                fixtureSource.Contains("IsG5WorldMutationReadyForFixture()", StringComparison.Ordinal) &&
+                fixtureSource.Contains("ReadMember(archive, \"currentRoom\")", StringComparison.Ordinal) &&
+                fixtureSource.Contains("ReadMember(currentRoom, \"RoomInfo\")", StringComparison.Ordinal) &&
+                participantSource.Contains("scenarios.IsG5WorldMutationReady()", StringComparison.Ordinal) &&
+                participantSource.Contains("ref g5WorldMutationReadyObservedAt", StringComparison.Ordinal) &&
+                participantSource.Contains("Gameplay + archive/currentRoom/RoomInfo/agent", StringComparison.Ordinal),
+                "G5 world mutations must wait for a continuous native room/agent readiness window after SaveLoaded instead of invoking official commands during scene attachment.");
             Assert(!actionCompletionSource.Contains("FindExistingEquipmentForFixture", StringComparison.Ordinal) &&
                 !actionCompletionSource.Contains("real DungeonResourceRenderer", StringComparison.Ordinal) &&
                 !actionSpeedSource.Contains("FindExistingEquipmentForFixture", StringComparison.Ordinal) &&
@@ -3535,7 +3612,7 @@ namespace DTMAPI.QaUnitTests
                 advancedOwnerDeactivationSource.Contains("Zoom=title4to1+native1+derived1+actual1+callback1->instance0+actual0+", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("zoomNativeSizeBefore", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("zoomVanillaBefore", StringComparison.Ordinal) &&
-                advancedOwnerDeactivationSource.Contains("MoreEquipmentSlots=actual4+targets4+callback1->instance0+actual0+callback0+clones0+listeners0+functions0+roots0", StringComparison.Ordinal) &&
+                advancedOwnerDeactivationSource.Contains("MoreEquipmentSlots=actual5+targets5+callback1->instance0+actual0+callback0+clones0+listeners0+functions0+roots0", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("StrongPlantingGun=nativeSave+titleReentry+actual5+callback1->instance0+actual0+callback0+listeners0+cachedObjects0+cachedMembers0+capacitySnapshots0+roots0", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("LifecycleSummaryProvesZero", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("StrongPlantingGunLifecycleSummaryProvesActive", StringComparison.Ordinal) &&
@@ -3550,7 +3627,7 @@ namespace DTMAPI.QaUnitTests
                 advancedOwnerDeactivationSource.Contains("if (moreEquipmentSlotsRequested)", StringComparison.Ordinal) &&
                 advancedOwnerDeactivationSource.Contains("if (strongPlantingGunRequested)", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("fixedExtraSlots=3", StringComparison.Ordinal) &&
-                moreEquipmentSlotsFixtureSource.Contains("patches=4", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("MoreEquipmentSlotsHarmonyTargets.Length", StringComparison.Ordinal) &&
                 participantSource.Contains("settings.AdvancedProductOwnerDeactivationEnabled", StringComparison.Ordinal) &&
                 participantSource.Contains("settings.AdvancedProductOwnerDeactivationOwnerIds", StringComparison.Ordinal) &&
                 participantSource.Contains("if (!deactivation.Completed)", StringComparison.Ordinal) &&
@@ -3566,21 +3643,41 @@ namespace DTMAPI.QaUnitTests
                 settingsSource.Contains("\"DTMAPI.StrongPlantingGunMod\"", StringComparison.Ordinal) &&
                 settingsSource.Contains("\"DTMAPI.MineMod\"", StringComparison.Ordinal) &&
                 settingsSource.Contains("requires an explicit non-empty owner ID set exactly when enabled", StringComparison.Ordinal) &&
-                runnerSource.Contains("AdvancedProductOwnerDeactivationOwnerIds", StringComparison.Ordinal) &&
-                runnerSource.Contains("'DTMAPI.StrongPlantingGunMod' = [bool]$AutoExerciseStrongPlantingGun", StringComparison.Ordinal) &&
-                runnerSource.Contains("StrongPlantingGun owner deactivation requires -AutoExerciseSaveLoadCycle -SaveLoadCycleCount 1", StringComparison.Ordinal) &&
-                runnerSource.Contains("strong-planting-gun-config-stage.json", StringComparison.Ordinal) &&
-                runnerSource.Contains("RestoreOwner = 'strong-planting-gun-exact-config-file'", StringComparison.Ordinal) &&
-                runnerSource.Contains("ConfigDirectoryTransaction = 'forbidden'", StringComparison.Ordinal) &&
-                runnerSource.IndexOf("g5-external-state-baseline.json", StringComparison.Ordinal) <
-                    runnerSource.IndexOf("strong-planting-gun-config-stage.json", StringComparison.Ordinal) &&
-                runnerSource.IndexOf("strong-planting-gun-config-stage.json", StringComparison.Ordinal) <
-                    runnerSource.IndexOf("$qaHostStage = if ($StageQaHost)", StringComparison.Ordinal) &&
-                runnerSource.Contains("PlayerSaveUnchangedBeforeCleanup", StringComparison.Ordinal) &&
-                runnerSource.Contains("CommittedSidecarsUnchangedBeforeCleanup", StringComparison.Ordinal) &&
-                runnerSource.Contains("RequireDisposableSaveRedirect", StringComparison.Ordinal) &&
-                runnerSource.Contains("ownerEvidenceRequirements", StringComparison.Ordinal),
+                smokePreflight.Contains("AdvancedProductOwnerDeactivationOwnerIds", StringComparison.Ordinal) &&
+                smokePreflight.Contains("'DTMAPI.StrongPlantingGunMod' = [bool]$AutoExerciseStrongPlantingGun", StringComparison.Ordinal) &&
+                smokeDeploy.Contains("strong-planting-gun-config-stage.json", StringComparison.Ordinal) &&
+                smokeDeploy.Contains("RestoreOwner = 'strong-planting-gun-exact-config-file'", StringComparison.Ordinal) &&
+                smokePrepare.Contains("ConfigDirectoryTransaction = 'forbidden'", StringComparison.Ordinal) &&
+                smokePrepare.Contains("g5-external-state-baseline.json", StringComparison.Ordinal) &&
+                smokeDeploy.IndexOf("strong-planting-gun-config-stage.json", StringComparison.Ordinal) >= 0 &&
+                smokeDeploy.IndexOf("strong-planting-gun-config-stage.json", StringComparison.Ordinal) <
+                    smokeDeploy.IndexOf("$qaHostStage = if ($StageQaHost)", StringComparison.Ordinal) &&
+                smokePublish.Contains("PlayerSaveUnchangedBeforeCleanup", StringComparison.Ordinal) &&
+                smokePublish.Contains("CommittedSidecarsUnchangedBeforeCleanup", StringComparison.Ordinal) &&
+                smokeQaHost.Contains("RequireDisposableSaveRedirect", StringComparison.Ordinal) &&
+                smokePreflight.Contains("ownerEvidenceRequirements", StringComparison.Ordinal),
                 "Advanced-product QA must observe real Harmony inventory and deactivate only the explicit requested-owner set after title recovery.");
+            string smokeFacade = File.ReadAllText(Path.Combine(root, "tools", "scripts", "run-game-smoke.ps1"));
+            AssertSmokePhaseOrder(smokeFacade, "phases/prepare-session.ps1", "phases/run-session.ps1");
+            AssertSmokePhaseOrder(ReadSmokeModule(root, "phases/run-session.ps1"), "phases/deploy-session.ps1", "phases/exercise-session.ps1", "phases/restore-session.ps1");
+            var strongArguments = new[]
+            {
+                "-StageQaHost", "-SaveSlot", "3", "-AutoExerciseStrongPlantingGun", "-AutoExerciseTitleButtonLifecycle",
+                "-AssertAdvancedProductOwnerDeactivation", "-AdvancedProductOwnerDeactivationOwnerIds", "DTMAPI.StrongPlantingGunMod",
+                "-ValidateQaG4RoutingOnly"
+            };
+            var strongWithoutReentry = RunQaRoutingProbe(strongArguments);
+            Assert(strongWithoutReentry.ExitCode != 0 &&
+                strongWithoutReentry.Error.Contains("StrongPlantingGun", StringComparison.Ordinal) &&
+                strongWithoutReentry.Error.Contains("AutoExerciseSaveLoadCycle", StringComparison.Ordinal) &&
+                strongWithoutReentry.Error.Contains("SaveLoadCycleCount", StringComparison.Ordinal),
+                "StrongPlantingGun owner cleanup must reject missing reentry. output=" + strongWithoutReentry.Error);
+            var strongWithReentry = RunQaRoutingProbe(strongArguments.Concat(new[] { "-AutoExerciseSaveLoadCycle", "-SaveLoadCycleCount", "1" }).ToArray());
+            Assert(strongWithReentry.ExitCode == 0, "The same StrongPlantingGun route with one reentry cycle must be accepted. output=" + strongWithReentry.Error);
+            using JsonDocument strongRoute = JsonDocument.Parse(strongWithReentry.Output);
+            Assert(strongRoute.RootElement.GetProperty("AdvancedProductOwnerDeactivationEnabled").GetBoolean() &&
+                strongRoute.RootElement.GetProperty("ContinuousHomePageRequiresSaveLoaded").GetBoolean(),
+                "Accepted StrongPlantingGun owner cleanup must retain its save/title boundary.");
             int participantPrepare = participantSource.IndexOf("public void PrepareBeforeRuntimeStart()", StringComparison.Ordinal);
             int participantStart = participantSource.IndexOf("public void Start()", StringComparison.Ordinal);
             int participantInstall = participantSource.IndexOf("saveFixtureIsolation?.Install();", StringComparison.Ordinal);
@@ -3663,20 +3760,39 @@ namespace DTMAPI.QaUnitTests
             string advancedDebug = SliceBetween(debugSource, "private void TryExerciseAdvancedDebugForFixture()", "private FixtureAttemptResult TryExerciseDebugTeleportForFixture()");
             Assert(advancedDebug.IndexOf("CurrentRoom IMonsterHost + IDungeonResourceHost preflight", StringComparison.Ordinal) <
                 advancedDebug.IndexOf("advancedDebugApi.AdvanceTime(owner", StringComparison.Ordinal) &&
-                advancedDebug.Contains("Waiting for the loaded save to publish a room", StringComparison.Ordinal),
-                "G5 AdvancedDebug must wait for both native spawn hosts before its first time/money/world mutation.");
+                advancedDebug.Contains("Waiting for the loaded save to publish a room", StringComparison.Ordinal) &&
+                advancedDebug.Contains("SpawnMonster(owner, monsterOption.Id, 1)", StringComparison.Ordinal) &&
+                advancedDebug.Contains("SpawnMonster(owner, monsterOption.Id, 10)", StringComparison.Ordinal) &&
+                advancedDebug.Contains("monsterOne.SpawnedCount != 1", StringComparison.Ordinal) &&
+                advancedDebug.Contains("monsterTen.SpawnedCount != 10", StringComparison.Ordinal),
+                "G5 AdvancedDebug must wait for both native spawn hosts before mutation and prove exact ProductNative monster batches of one and ten.");
+            string moreEquipmentSlotsNormalEquip = SliceBetween(
+                moreEquipmentSlotsFixtureSource,
+                "private FixtureAttemptResult BeginMoreEquipmentSlotsProtectedTransaction(",
+                "private FixtureAttemptResult CommitMoreEquipmentSlotsEquippedSidecar(");
+            string moreEquipmentSlotsNormalUnequip = SliceBetween(
+                moreEquipmentSlotsFixtureSource,
+                "private FixtureAttemptResult BeginMoreEquipmentSlotsUnequipTransaction(",
+                "private FixtureAttemptResult CompleteMoreEquipmentSlotsProtectedTransaction(");
             Assert(moreEquipmentSlotsFixtureSource.Contains("TryExerciseMoreEquipmentSlotsForFixture", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("MoreEquipmentSlotsAssemblyName", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("MoreEquipmentSlotsHarmonyOwner", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("current committed document is unavailable before the protected transaction", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("TryReadValidated", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("\"sidecarPath\"", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("MoreEquipmentSlotsShieldItemId", StringComparison.Ordinal) &&
-                moreEquipmentSlotsFixtureSource.Contains("InvokeRealMoreEquipmentSlotsAttack(", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("RequireMoreEquipmentSlotsNativeShieldProvider(", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("TryGetShieldItem", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("DolocTown.IAgentEquipmentShieldItem", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("providerAssembly", StringComparison.Ordinal) &&
                 moreEquipmentSlotsFixtureSource.Contains("replacement=grandmas_button->box_hat", StringComparison.Ordinal) &&
-                moreEquipmentSlotsFixtureSource.Contains("shieldBreak=true equipAfterBreak=true unequipAfterBreak=true", StringComparison.Ordinal) &&
-                moreEquipmentSlotsFixtureSource.Contains("SaveSaved did not commit the real damaged shield state.", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("typedShieldProvider=true", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("shieldUnequip=true passiveEquipUnequip=true", StringComparison.Ordinal) &&
+                moreEquipmentSlotsFixtureSource.Contains("SaveSaved did not commit the equipped typed shield state.", StringComparison.Ordinal) &&
+                !moreEquipmentSlotsNormalEquip.Contains("InvokeRealMoreEquipmentSlotsAttack(", StringComparison.Ordinal) &&
+                !moreEquipmentSlotsNormalUnequip.Contains("InvokeRealMoreEquipmentSlotsAttack(", StringComparison.Ordinal) &&
                 !moreEquipmentSlotsFixtureSource.Contains("RegisterSlots(", StringComparison.Ordinal),
-                "The eighth-product NativeSaveExpected route must drive replacement, real ProductNative shield damage/break, equip/unequip, and committed sidecar observation without registering a second frozen-ABI consumer.");
+                "The current Product NativeSaveExpected route must drive replacement, the exact native typed shield provider, shield/passive unequip, and committed sidecar observation without reopening the frozen attack tail or registering a second ABI consumer.");
             int interruptedObserver =
                 moreEquipmentSlotsFixtureSource.IndexOf(
                     "TryObserveMoreEquipmentSlotsInterruptedCandidateRecovery",
@@ -3774,7 +3890,7 @@ namespace DTMAPI.QaUnitTests
                     "candidate=false",
                     StringComparison.Ordinal) &&
                 moreEquipmentSlotsNoNativeSaveFixtureSource.Contains(
-                    "ExactOwnerPatchCount != 4",
+                    "ExactOwnerPatchCount != MoreEquipmentSlotsHarmonyTargets.Length",
                     StringComparison.Ordinal) &&
                 !moreEquipmentSlotsNoNativeSaveFixtureSource.Contains(
                     "RequestMoreEquipmentSlotsNativeSave(",
@@ -3787,8 +3903,8 @@ namespace DTMAPI.QaUnitTests
                 contentSource.Contains("migrated-to-dedicated-MoreEquipmentSlots-ProductNative-fixture", StringComparison.Ordinal) &&
                 g4FixtureSource.Contains("ObserveEquipmentSlotsUiForFixture(string screenshotPath, string summaryPath)", StringComparison.Ordinal) &&
                 g4FixtureSource.Contains("ReadMoreEquipmentSlotsProductObservation()", StringComparison.Ordinal) &&
-                g4FixtureSource.Contains("DTMAPI.MoreEquipmentSlots.MoreEquipmentSlotsCallbacks", StringComparison.Ordinal) &&
-                g4FixtureSource.Contains("EVIDENCE_CAPTURED_WAITING_ESCAPE", StringComparison.Ordinal) &&
+                moreEquipmentSlots100UiFixtureSource.Contains("DTMAPI.MoreEquipmentSlots.MoreEquipmentSlotsCallbacks", StringComparison.Ordinal) &&
+                moreEquipmentSlots100UiFixtureSource.Contains("EVIDENCE_CAPTURED_WAITING_ESCAPE", StringComparison.Ordinal) &&
                 controllerSource.Contains("ObserveEquipmentSlotsUiForFixture(GetEvidencePath(\"g4/ui\", \"equipment-slots.png\")", StringComparison.Ordinal) &&
                 settingsSource.Contains("QA G4 equipment-slot UI observation and G5 NewContent must run as separate participant transactions", StringComparison.Ordinal),
                 "The dedicated MoreEquipmentSlots product fixture must own G5 behavior while the independent G4 route observes ProductNative UI without a second frozen-ABI consumer.");
@@ -3852,18 +3968,19 @@ namespace DTMAPI.QaUnitTests
             Assert(participantSource.Contains("DTMAPI.QA.Protocol7.Participant", StringComparison.Ordinal) &&
                 !participantSource.Contains("DTMAPI.QA.Protocol6.Participant", StringComparison.Ordinal),
                 "The optional participant identity must match global QA protocol version 7.");
-            Assert(runnerSource.Contains("ConfigDirectoryTransaction = 'forbidden'", StringComparison.Ordinal) &&
-                runnerSource.Contains("case-local exact files only", StringComparison.Ordinal) &&
-                runnerSource.Contains("CapturedBeforeQaStage = $true", StringComparison.Ordinal) &&
-                runnerSource.Contains("CapturedBeforeOfficialProfile = $true", StringComparison.Ordinal) &&
-                runnerSource.Contains("CapturedBeforeProductConfigWrite = $true", StringComparison.Ordinal) &&
-                runnerSource.Contains("Set-SmokeRecoveryOnlyAuthorSourceState", StringComparison.Ordinal) &&
-                !runnerSource.Contains("Join-Path (Join-Path $canonicalGameRoot 'Mods')", StringComparison.Ordinal) &&
-                !runnerSource.Contains(".dtmapi-author-receipt.json", StringComparison.Ordinal) &&
-                runnerSource.Contains("Wait-SmokeProcessExitBeforeRecovery", StringComparison.Ordinal) &&
-                runnerSource.Contains("StrongPlantingGunExactConfig", StringComparison.Ordinal) &&
-                !runnerSource.Contains("smoke-settings.json", StringComparison.OrdinalIgnoreCase) &&
-                runnerSource.Contains("QaG5ExternalStateRestored", StringComparison.Ordinal),
+            Assert(smokePrepare.Contains("ConfigDirectoryTransaction = 'forbidden'", StringComparison.Ordinal) &&
+                smokePrepare.Contains("case-local exact files only", StringComparison.Ordinal) &&
+                smokePrepare.Contains("CapturedBeforeQaStage = $true", StringComparison.Ordinal) &&
+                smokePrepare.Contains("CapturedBeforeOfficialProfile = $true", StringComparison.Ordinal) &&
+                smokePrepare.Contains("CapturedBeforeProductConfigWrite = $true", StringComparison.Ordinal) &&
+                smokeDeploy.Contains("Set-SmokeRecoveryOnlyAuthorSourceState", StringComparison.Ordinal) &&
+                new[] { smokePrepare, smokeDeploy, ReadSmokeModule(root, "core/deployment.ps1") }.All(source =>
+                    !source.Contains("Join-Path (Join-Path $canonicalGameRoot 'Mods')", StringComparison.Ordinal) &&
+                    !source.Contains(".dtmapi-author-receipt.json", StringComparison.Ordinal)) &&
+                smokeRestore.Contains("Wait-SmokeProcessExitBeforeRecovery", StringComparison.Ordinal) &&
+                smokeRestore.Contains("StrongPlantingGunExactConfig", StringComparison.Ordinal) &&
+                new[] { smokePrepare, smokeDeploy, smokeRestore }.All(source => !source.Contains("smoke-settings.json", StringComparison.OrdinalIgnoreCase)) &&
+                smokePublish.Contains("QaG5ExternalStateRestored", StringComparison.Ordinal),
                 "Runner must snapshot save/sidecar metadata before staging, forbid whole-config restore and retired game-Mods deployment state, leave the deleted settings channel untouched, and restore only explicit config files after stable process exit.");
 
             const string runId = "abababababababababababababababab";
@@ -4648,31 +4765,11 @@ namespace DTMAPI.QaUnitTests
 
         private static string RunQaG5RoutingSelfTest()
         {
-            string runner = Path.Combine(FindRepositoryRoot(), "tools", "scripts", "run-game-smoke.ps1");
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "pwsh.exe",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-            foreach (string argument in new[]
-            {
-                "-NoLogo", "-NoProfile", "-File", runner,
-                "-StageQaHost", "-SaveSlot", "3", "-AutoExerciseActionSpeedTool",
+            var result = RunQaRoutingProbe("-StageQaHost", "-SaveSlot", "3", "-AutoExerciseActionSpeedTool",
                 "-AutoExerciseOneActionVegetation", "-AutoExerciseChestLocatorEnhancer",
-                "-AutoExerciseMoreEquipmentSlots", "-ValidateQaG5RoutingOnly"
-            })
-                startInfo.ArgumentList.Add(argument);
-
-            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the G5 runner routing self-test.");
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (process.ExitCode != 0)
-                throw new InvalidOperationException("G5 runner routing self-test failed: " + error);
-            return output;
+                "-AutoExerciseMoreEquipmentSlots", "-ValidateQaG5RoutingOnly");
+            Assert(result.ExitCode == 0, "G5 runner routing self-test failed: " + result.Error);
+            return result.Output;
         }
 
         private static void MigratedTypesExistOnlyInOptionalQaAssembly()
@@ -4724,6 +4821,49 @@ namespace DTMAPI.QaUnitTests
                 qaReadme.Contains("CompatibilityNativeControl", StringComparison.Ordinal) &&
                 qaReadme.Contains("AUTO-FISHING-PERF", StringComparison.Ordinal),
                 "Product QA authority must document the live linked Batch6 pilot, its production exclusion, independent L0 driver, and exact evidence root.");
+        }
+
+        private static string ReadSmokeModule(string root, string relativePath)
+        {
+            return File.ReadAllText(Path.Combine(root, "tools", "scripts", "game-smoke", relativePath.Replace('/', Path.DirectorySeparatorChar)));
+        }
+
+        private static void AssertSmokePhaseOrder(string source, params string[] phases)
+        {
+            int previous = -1;
+            foreach (string phase in phases)
+            {
+                int current = source.IndexOf(". (Join-Path $SmokeRunnerModuleRoot '" + phase + "')", StringComparison.Ordinal);
+                Assert(current > previous, "Smoke phase must exist after its predecessor: " + phase);
+                previous = current;
+            }
+        }
+
+        private static (int ExitCode, string Output, string Error) RunQaRoutingProbe(params string[] arguments)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "pwsh.exe",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            foreach (string argument in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-File", Path.Combine(FindRepositoryRoot(), "tools", "scripts", "run-game-smoke.ps1") }.Concat(arguments))
+                startInfo.ArgumentList.Add(argument);
+            using Process process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the QA routing probe.");
+            Task<string> output = process.StandardOutput.ReadToEndAsync();
+            Task<string> error = process.StandardError.ReadToEndAsync();
+            if (!process.WaitForExit(30000))
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) when (process.HasExited) { }
+                process.WaitForExit(5000);
+                throw new TimeoutException("QA routing probe exceeded 30 seconds; only its own process tree was terminated. arguments=" + string.Join(" ", arguments));
+            }
+            if (!Task.WaitAll(new Task[] { output, error }, 5000))
+                throw new TimeoutException("QA routing probe exited but its redirected output did not close within 5 seconds.");
+            return (process.ExitCode, output.Result, error.Result);
         }
 
         private static string FindRepositoryRoot()

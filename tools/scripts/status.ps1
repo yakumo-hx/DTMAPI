@@ -1,11 +1,28 @@
 . "$PSScriptRoot\common.ps1"
 $repo = Get-RepoRoot
-$dotnet = Get-DotNetExe -RepoRoot $repo
-$gameDir = Resolve-DolocTownGamePath -RepoRoot $repo -AllowMissing
+# Status is read-only: Get-DotNetExe can download/install a missing toolchain.
+$dotnet = $null
+$dotnetCandidates = @((Join-Path $repo '.tools\dotnet\dotnet.exe'))
+$systemDotnet = Get-Command dotnet -CommandType Application -ErrorAction SilentlyContinue
+if ($systemDotnet) { $dotnetCandidates += $systemDotnet.Source }
+foreach ($candidate in ($dotnetCandidates | Select-Object -Unique)) {
+    if (Test-DtmApiDotNet8Toolchain -Path $candidate) {
+        $dotnet = $candidate
+        break
+    }
+}
 
 Write-Host "Repo: $repo"
-Write-Host "dotnet: $dotnet"
-& $dotnet --list-sdks
+if ($dotnet) {
+    Write-Host "dotnet: $dotnet"
+    & $dotnet --list-sdks
+}
+else {
+    Write-Host 'dotnet: compatible SDK/.NET 8 not found; build/test commands can provision it when needed.'
+}
+$gameDir = $null
+try { $gameDir = Resolve-DolocTownGamePath -RepoRoot $repo -AllowMissing }
+catch { Write-Host "Game path unavailable: $($_.Exception.Message)" }
 Write-Host "GameDir: $gameDir"
 $runtimeLock = Get-DtmApiRuntimeLockInfo -RepoRoot $repo
 Write-Host (Format-DtmApiRuntimeLockInfo -LockInfo $runtimeLock)

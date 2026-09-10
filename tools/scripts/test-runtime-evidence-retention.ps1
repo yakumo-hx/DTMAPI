@@ -2,6 +2,7 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\document-paths.ps1"
 
 function Assert-DtmRuntimeEvidenceTest {
     param([bool] $Condition, [string] $Message)
@@ -82,7 +83,7 @@ Assert-DtmRuntimeEvidenceThrows { Get-DtmDurableEvidenceRootReferencesFromText -
 Assert-DtmRuntimeEvidenceThrows { Get-DtmDurableEvidenceRootReferencesFromText -SourcePath '<test>' -Text '`docs/debug/evidence/BATCH6-AUTOFISHING-GC-LADDER/NUL/stage.json`' } 'Batch 6 GC-ladder reserved-device roots must fail closed.'
 Assert-DtmRuntimeEvidenceThrows { Get-DtmDurableEvidenceRootReferencesFromText -SourcePath '<test>' -Text '`docs/debug/evidence/PRERELEASE-ACTIVE-GC/../outside`' } 'Pre-release active-GC traversal references must fail closed.'
 
-$smokeScript = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'run-game-smoke.ps1'))
+$smokeScript = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'game-smoke/phases/exercise-session.ps1'))
 Assert-DtmRuntimeEvidenceTest (-not [regex]::IsMatch($smokeScript, '(?m)collect-logs\.ps1.*-IncludeRuntimeEvidence')) 'Routine GAME-SMOKE must not request a full runtime evidence tree.'
 Assert-DtmRuntimeEvidenceTest ([regex]::IsMatch($smokeScript, '(?m)collect-logs\.ps1.*-RuntimeEvidenceSinceUtc')) 'Routine GAME-SMOKE must pass its current-run evidence boundary.'
 $formalOuterContracts = @(
@@ -359,7 +360,7 @@ try {
     )
     $expectedDurableRootSourceFiles = @(
         'docs/debug/regressions/smoke-matrix-history-20260728.md',
-        'docs/debug/regressions/smoke-matrix.md',
+        'docs/debug/regressions/smoke-matrix-history-20260804-through-20260809.md',
         'docs/reviews/code/2026/20260713-0014-workshop-subscription-and-prerelease-baseline-review.md',
         'docs/reviews/code/2026/20260719-0002-batch5-gc-ladder-save-loaded-evidence-path-runner-failure.md',
         'docs/reviews/code/2026/20260719-0005-batch5-autofishing-native-session-normal-state-stall.md',
@@ -391,7 +392,12 @@ try {
     foreach ($requiredSmokeRoot in $requiredSmokeRoots) {
         Assert-DtmRuntimeEvidenceTest (@($allowlist.gameSmokeRuns) -contains $requiredSmokeRoot) "Generated allowlist is missing required smoke identity $requiredSmokeRoot."
     }
-    Assert-DtmRuntimeEvidenceTest (@(Compare-Object -ReferenceObject $expectedDurableRootSourceFiles -DifferenceObject @($allowlist.durableRootSourceFiles)).Count -eq 0 -and @($allowlist.durableRootSourceFiles).Count -eq $expectedDurableRootSourceFiles.Count) 'Generated allowlist durable-root source file set is not exact or the Catalog JSON source is missing.'
+    $documentRepository = Get-RepoRoot
+    $expectedDurableLocations = @($expectedDurableRootSourceFiles | ForEach-Object {
+        $resolvedDocument = Resolve-DtmApiDocumentPath -RepoRoot $documentRepository -RelativePath $_
+        $resolvedDocument.Substring($documentRepository.TrimEnd('\', '/').Length + 1).Replace('\', '/')
+    })
+    Assert-DtmRuntimeEvidenceTest (@(Compare-Object -ReferenceObject $expectedDurableLocations -DifferenceObject @($allowlist.durableRootSourceFiles)).Count -eq 0 -and @($allowlist.durableRootSourceFiles).Count -eq $expectedDurableLocations.Count) 'Generated allowlist durable-root source file set is not exact or the Catalog JSON source is missing.'
     Assert-DtmRuntimeEvidenceTest (@($allowlist.sourceFiles) -contains 'tools/release/dtmapi-product-catalog.json') 'Generated allowlist did not scan the Catalog JSON source.'
 
     $cleanupScript = [System.IO.File]::ReadAllText($cleanupScriptPath)

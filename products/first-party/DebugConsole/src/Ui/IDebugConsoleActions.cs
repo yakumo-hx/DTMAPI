@@ -15,6 +15,7 @@ namespace DTMAPI.DebugConsole
 
     internal interface IWeatherActions
     {
+        WeatherPanelSnapshot GetPanelSnapshot();
         WeatherDebugState GetState();
         IReadOnlyList<WeatherDebugOption> GetAvailableWeathers();
         WeatherSetResult SetWeather(
@@ -27,11 +28,9 @@ namespace DTMAPI.DebugConsole
     internal interface ITeleportActions
     {
         IReadOnlyList<TeleportDestination> GetDestinations();
-        TeleportSnapshot GetCurrentSnapshot();
         TeleportResult Teleport(
             IManifest owner,
             string destinationId);
-        TeleportCsvExportResult ExportDestinationsCsv(IManifest owner);
         BridgeFeatureStatus GetStatus();
     }
 
@@ -65,9 +64,8 @@ namespace DTMAPI.DebugConsole
 
     internal interface IAdvancedActions
     {
-        IReadOnlyList<TechPointDebugOption> GetTechPointOptions();
-        IReadOnlyList<SpawnDebugOption> GetMonsterOptions();
-        IReadOnlyList<SpawnDebugOption> GetResourceOptions();
+        IReadOnlyList<SpawnCatalogOption> GetMonsterCatalog();
+        IReadOnlyList<AnimalCatalogOption> GetAnimalCatalog();
         CreativeModeState GetCreativeModeState();
         TimeSkipResult AdvanceTime(
             IManifest owner,
@@ -89,14 +87,13 @@ namespace DTMAPI.DebugConsole
         CreativeModeResult SetCreativeMode(
             IManifest owner,
             bool enabled);
-        InventoryGiveResult GiveCreativeGenerator(IManifest owner);
-        SpawnDebugResult SpawnMonster(
+        SpawnActionResult SpawnMonster(
             IManifest owner,
             string monsterId,
             int count);
-        SpawnDebugResult SpawnResource(
+        SpawnActionResult SpawnAnimal(
             IManifest owner,
-            string resourceId,
+            string cardId,
             int count);
         BridgeFeatureStatus GetStatus();
     }

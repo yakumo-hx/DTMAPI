@@ -7,6 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.cs" Link="Compatibility\DebugConsole\DebugConsoleUi.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.Layout.cs" Link="Compatibility\DebugConsole\DebugConsoleUi.Layout.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.Catalog.cs" Link="Compatibility\DebugConsole\DebugConsoleUi.Catalog.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.Actions.cs" Link="Compatibility\DebugConsole\DebugConsoleUi.Actions.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleUi.Reflection.cs" Link="Compatibility\DebugConsole\DebugConsoleUi.Reflection.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleCatalogModels.cs" Link="Compatibility\DebugConsole\DebugConsoleCatalogModels.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleLayout.cs" Link="Compatibility\DebugConsole\DebugConsoleLayout.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\IDebugConsoleActions.cs" Link="Compatibility\DebugConsole\IDebugConsoleActions.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\IDebugConsoleRuntime.cs" Link="Compatibility\DebugConsole\IDebugConsoleRuntime.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Ui\DebugConsoleText.cs" Link="Compatibility\DebugConsole\DebugConsoleText.cs" />
@@ -15,6 +21,7 @@
     <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Core.cs" Link="Compatibility\DebugConsole\DebugConsoleNativeActions.Core.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Advanced.cs" Link="Compatibility\DebugConsole\DebugConsoleNativeActions.Advanced.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Helpers.cs" Link="Compatibility\DebugConsole\DebugConsoleNativeActions.Helpers.cs" />
+    <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleNativeActions.Spawn.cs" Link="Compatibility\DebugConsole\DebugConsoleNativeActions.Spawn.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleCreativeHooks.cs" Link="Compatibility\DebugConsole\DebugConsoleCreativeHooks.cs" />
     <Compile Include="..\..\products\first-party\DebugConsole\src\Native\DebugConsoleMovementHooks.cs" Link="Compatibility\DebugConsole\DebugConsoleMovementHooks.cs" />
     <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />

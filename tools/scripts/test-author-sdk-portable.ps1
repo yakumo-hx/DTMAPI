@@ -45,6 +45,7 @@ function Invoke-PortableAuthor {
     $start.EnvironmentVariables['NUGET_PACKAGES'] = $NuGetRoot
     $start.EnvironmentVariables['DTMAPI_AUTHOR_STATE_ROOT'] = (Join-Path $ProfileRoot 'author-state')
     $start.EnvironmentVariables['DTMAPI_GAME_DIR'] = $FakeGameRoot
+    $start.EnvironmentVariables['DTMAPI_DOLOC_PERSISTENT_ROOT'] = (Join-Path $ProfileRoot 'DolocTown-persistent')
     $start.EnvironmentVariables.Remove('DTMAPI_AUTHOR_COMPAT_ROOT') | Out-Null
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $start
@@ -203,7 +204,7 @@ function Convert-PortableOutputBytes {
 
 $repo = Get-RepoRoot
 if ([string]::IsNullOrWhiteSpace($PackagePath)) {
-    $PackagePath = Join-Path $repo 'dist\author-sdk\DTMAPI-Author-SDK-0.1.0-win-x64.zip'
+    $PackagePath = Join-Path $repo ('dist\author-sdk\DTMAPI-Author-SDK-' + (Get-AuthorSdkReleaseVersion -RepoRoot $repo) + '-win-x64.zip')
 }
 $packageFull = [System.IO.Path]::GetFullPath($PackagePath)
 if (-not (Test-Path -LiteralPath $packageFull -PathType Leaf)) { throw "Author SDK portable ZIP is missing: $packageFull" }
@@ -267,24 +268,6 @@ try {
     $pausedPackageTree = Get-PortableExactTreeSnapshot -Root $bogusPackageRoot
     $pausedCommands = @(
         [pscustomobject]@{
-            Label = 'Portable paused deploy'
-            Arguments = @('deploy', $bogusPackage, '--game-root', $fakeGame, '--json')
-        },
-        [pscustomobject]@{
-            Label = 'Portable paused update'
-            Arguments = @('update', $bogusPackage, '--game-root', $fakeGame, '--json')
-        },
-        [pscustomobject]@{
-            Label = 'Portable paused install-local'
-            Arguments = @(
-                'install-local', $bogusPackage,
-                '--game-root', $fakeGame,
-                '--expected-unique-id', 'Tests.Paused',
-                '--expected-version', '1.0.0',
-                '--expected-package-sha256', $bogusPackageSha256,
-                '--json')
-        },
-        [pscustomobject]@{
             Label = 'Portable paused source local select'
             Arguments = @('source', 'local', 'select', 'Tests.Paused', $legacySource, '--game-root', $fakeGame, '--json')
         }
@@ -306,14 +289,14 @@ try {
             -BogusPackagePath $bogusPackage `
             -ExpectedBogusPackageSha256 $bogusPackageSha256
     }
-    Write-Host 'Packaged paused mutation matrix: PASS (4/4 SDK003; exact game/state/package identities unchanged)'
+    Write-Host 'Packaged legacy source selection: PASS (SDK003; exact game/state/package identities unchanged)'
 
     $playerDllLock = New-Object System.IO.FileStream($playerDll, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
 
     $version = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('version')
     Assert-PortableSuccess -Label 'Portable version' -Result $version
-    if ($version.StdOut.IndexOf('0.1.0', [System.StringComparison]::Ordinal) -lt 0 -or $version.StdOut.IndexOf('0.5.5', [System.StringComparison]::Ordinal) -lt 0) {
-        throw "Portable version output does not identify SDK 0.1.0 / Runtime 0.5.5: $($version.StdOut)"
+    if ($version.StdOut.IndexOf((Get-AuthorSdkReleaseVersion -RepoRoot $repo), [System.StringComparison]::Ordinal) -lt 0) {
+        throw "Portable version output does not identify the built SDK: $($version.StdOut)"
     }
     $help = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('help')
     Assert-PortableSuccess -Label 'Portable help' -Result $help

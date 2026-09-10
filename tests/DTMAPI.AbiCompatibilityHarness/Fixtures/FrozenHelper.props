@@ -1,0 +1,15 @@
+<Project>
+  <ItemGroup>
+    <Reference Include="DTMAPI.Abstractions">
+      <HintPath>$(FrozenAbstractionsPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>FrozenAbstractionsSha256</_Parameter1>
+      <_Parameter2>$(FrozenAbstractionsSha256)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <Target Name="RequireFrozenPayload" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(FrozenAbstractionsSha256)' == '' Or !Exists('$(FrozenAbstractionsPath)')" Text="Use test-helper-retained-abi.ps1 with the verified frozen payload; current project references are forbidden." />
+  </Target>
+</Project>

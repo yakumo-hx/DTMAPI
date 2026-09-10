@@ -1,8 +1,10 @@
-# ISSUE-018: Runtime Workshop installer entry and host compatibility
+﻿# ISSUE-018: Runtime Workshop installer entry and host compatibility
+
+- State: `open`
+- Current boundary: Old BAT compound blocks break on `Program Files (x86)` paths; ambient CMD-extension and degraded WinPS capability gaps are separate. Source redesign passes the exact path, while publication/player retest remains open.
 
 ## Status
 
-- State: `open`
 - Opened: `2026-08-03`
 - Severity: high
 - Area: Runtime Workshop BAT / CMD / PowerShell host / installer compatibility
@@ -51,6 +53,76 @@ The source acceptance criteria are satisfied. State remains `open` because the S
 - Rejected as PowerShell syntax failure for the independent WinPS case: all ten scripts parse under the exact failing host.
 - Rejected for the affected player: disabled command extensions, Windows PowerShell version, missing `Get-FileHash`, execution policy and action-script-specific failure.
 - Unproven and no longer required to explain the incident: antivirus blocking, permissions, corrupt subscription bytes or a broken `.bat` association.
+
+## 2026-08-10 App Control / mixed-language-mode player evidence
+
+- A new screenshot from the published `0.6.1` subscription shows Windows PowerShell 5.1 rejecting
+  `probe-powershell-host.ps1` with
+  `FullyQualifiedErrorId=DotSourceNotSupported` because the command and imported content were defined
+  in different language modes. Both displayed attempts are the same Windows PowerShell executable;
+  no PowerShell 7 candidate passed or was available.
+- The current Steam item is not corrupt: excluding Steam's `workshop.json`, all 27 subscription files
+  are length/SHA-256 identical to the frozen `db5e518a6d7f` candidate. The exact subscription bytes also
+  passed a fresh FullLanguage Windows PowerShell 5.1 fake-game package matrix with zero blockers at
+  `tmp/test-runs/player-installer-language-mode-20260810/DTMAPI Workshop Audit
+  20260810-194418/Results/stress-summary.md`.
+- This is a different host boundary from the original parenthesized-path incident. The failure occurs
+  during read-only host selection before an action or Runtime mutation. It is consistent with
+  WDAC/App Control, AppLocker or an equivalent security sandbox assigning different trust/language
+  modes to the script scopes. Current architecture deliberately requires `FullLanguage` and does not
+  promise to bypass application control.
+- The package nevertheless has a diagnostic defect: after the visible language-mode rejection it says
+  to repair or install PowerShell, even though PowerShell exists and system policy is the relevant
+  blocker; it also probes the same resolved Windows PowerShell path twice. Removing only the probe's
+  dot-source would not add compatibility because every action imports the same helpers and uses
+  FullLanguage-only .NET capabilities.
+- Exact screenshot transcription, artifact hashes, ownership split, player guidance and any future
+  acceptance gate are owned by manual-QA Review
+  `docs/reviews/manual-qa/2026/20260803-0001-runtime-workshop-installer-entry-regressions.md`, Issue 3.
+- State remains `open`. A future bounded correction may deduplicate candidates and report application
+  control/FullLanguage failure accurately, but true locked-environment support requires a separate
+  trusted-delivery/signing decision and must not weaken or bypass the player's security policy.
+
+Follow-up policy evidence from the same personal PC narrows the environment owner without changing the
+package classification:
+
+- Windows Security opens as a blank white shell. `CiTool.exe -lp` on Windows `10.0.26200.8875` shows
+  both `VerifiedAndReputableDesktop` and `VerifiedAndReputableDesktopEvaluation` present on disk but not
+  enforced or authorized, so Smart App Control is not the active enforcement path shown by this capture.
+- An unsigned, non-platform policy named `WindowsWorks`, version `10.3.0.4`, is on disk, authorized and
+  enforced. Its PolicyId and BasePolicyId are both the reserved single-policy-format ID
+  `{A244370E-44C9-4C06-B551-F6016E563076}`. This is the strongest candidate for the observed system App
+  Control lockdown and PowerShell `ConstrainedLanguage`, but the friendly name alone does not establish
+  who installed it. CodeIntegrity activation/block events or a separately authorized removal/reboot
+  comparison are still needed for exact owner proof.
+- Windows Security's blank UI remains a separate unresolved system symptom. It can reflect a broken
+  `Microsoft.SecHealthUI`/SecurityHealth service chain or an App Control side effect; no current event
+  evidence proves either. The support order is collect policy and event evidence, repair/reset the app,
+  run DISM then SFC if needed, and only then let the personal-device owner decide whether to remove an
+  unrecognized App Control policy through Microsoft's documented process.
+- This evidence strengthens the environment-block classification. It does not authorize DTMAPI to
+  weaken the policy and does not turn manual file copying into installer acceptance.
+
+## 2026-08-10 Malformed Steam library candidate evidence
+
+- A separate player ran the published installer from
+  `E:\steam\steamapps\workshop\content\2285550\3743016467` under `FullLanguage` Windows
+  PowerShell. Host, JSON, portable SHA-256 and ZIP probes passed, but install failed before resolving a
+  game folder because `Test-Path -LiteralPath $path` reported an illegal-character path. Status repeated
+  the same resolver failure.
+- The resolver reads every quoted `path` from Steam `steamapps\libraryfolders.vdf` and currently calls
+  `Test-Path` without isolating per-candidate argument failures. A malformed or stale auto-discovered
+  entry can therefore abort discovery before a later valid library is considered. A normal drive colon
+  is not illegal, and no Runtime mutation had begun at this boundary.
+- The user moved this player to manual installation and requested a small correction in the next
+  installer version. Manual success is a workaround, not packaged-entry acceptance.
+- The correction boundary is narrow: catch and warn for malformed **auto-discovered** Steam library
+  candidates, then continue enumeration. Explicit `DTMAPI_GAME_DIR` or local configured targets remain
+  strict and fail closed. Package acceptance must place one malformed VDF candidate before a valid
+  library and exercise at least install and status while retaining the existing path matrix.
+- Exact screenshot transcription, rejected hypotheses and player outcome are owned by manual-QA Review
+  `docs/reviews/manual-qa/2026/20260803-0001-runtime-workshop-installer-entry-regressions.md`, Issue 4.
+  State remains `open`; no source correction was made in this evidence-only update.
 
 ## Acceptance Criteria
 

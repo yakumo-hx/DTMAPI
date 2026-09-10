@@ -15,10 +15,13 @@ dist/
 tmp/
 temp/
 /output/
+/outputs/
+products/first-party/AnimalPack/.local-build/
 *.pyc
 
 # Runtime/debug artifacts that are recorded in docs but too large/noisy for Git
 docs/debug/evidence/
+docs/archive/conversations/
 reports/
 crash-reports/
 logs/

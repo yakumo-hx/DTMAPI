@@ -19,6 +19,10 @@ namespace DTMAPI.Core.Manifesting
             RejectMisCasedOrDuplicateWireField(properties, "CodeModKind");
 
             ManifestModel model = JsonFile.Read<ManifestModel>(path);
+            if (properties.Any(property => property.Equals("NativeContractVersion", StringComparison.OrdinalIgnoreCase)))
+                model.NativeContractSelected = DTMAPI.Internal.Authoring.NativePackageContract.Select(File.ReadAllBytes(path));
+            if (properties.Any(property => property.Equals("DependencyContractVersion", StringComparison.OrdinalIgnoreCase)))
+                model.DependencyContract = DTMAPI.Internal.Authoring.PackageDependencyContract.ReadManifest(File.ReadAllBytes(path));
             model.Normalize();
             if (string.IsNullOrWhiteSpace(model.UniqueID))
                 throw new InvalidDataException("manifest 缺少 UniqueID。");

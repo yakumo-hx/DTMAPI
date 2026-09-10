@@ -32,10 +32,10 @@ version.
 ## Source Authorities
 
 - [`PROJECT.md`](../../../PROJECT.md)
-- [`20260731-0001 manual QA review`](../../reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md)
-- [`20260719-0008 DLL entry audit`](../../reviews/code/2026/20260719-0008-dll-mod-entry-and-migration-boundary-audit.md)
-- [`20260719-0001 audit Update`](20260719-0001-dll-mod-entry-model-audit.md)
-- [`20260728-0005 retained external consumer review`](../../reviews/code/2026/20260728-0005-retained-external-consumer-native-admission-review.md)
+- [`20260731-0001 manual QA review`](../../archive/reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md)
+- [`20260719-0008 DLL entry audit`](../../archive/reviews/code/2026/20260719-0008-dll-mod-entry-and-migration-boundary-audit.md)
+- [`20260719-0001 audit Update`](../../archive/updates/2026/20260719-0001-dll-mod-entry-model-audit.md)
+- [`20260728-0005 retained external consumer review`](../../archive/reviews/code/2026/20260728-0005-retained-external-consumer-native-admission-review.md)
 - [`Batch 6 managed identity contract`](../../architecture/batch6-managed-mod-identity-contract.md)
 - [`ISSUE-010`](../../debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md)
 - [`Hook Map`](../../hook-map/README.md)

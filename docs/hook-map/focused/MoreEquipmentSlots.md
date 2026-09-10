@@ -1,22 +1,23 @@
 # MoreEquipmentSlots Protected Equipment
 
-Status: `Branch B storage/recovery implemented and cold acceptance passed / current dynamic native-slot UI conflicts / Product 1.0 publication blocked pending UI correction`
+Status: `Product 1.0 five-Hook/transaction implemented / dynamic native-tail UI and NoNativeSave game acceptance pass / complete Release and publication pending`
 
 ## Native Boundary
 
 - Current tracked game reference: `24456188_test_E861E0`.
 - Exact ProductNative owner:
   `dtmapi.mod.dtmapi.moreequipmentslotsmod`.
-- Atomic four-target set:
+- Atomic five-target set:
   `AgentEquipmentManager.ReloadParams()` Postfix,
   `AgentEquipmentManager.TryGetShieldItem(out IAgentEquipmentShieldItem)`
   Postfix,
-  `AccessoriesBar.__Init()` Postfix and
-  `AccessoriesBar.OnStartShow()` Postfix.
+  `AccessoriesBar.RenderPassiveItems(Sprite[])` Postfix,
+  `AccessoriesBar.get_allSelectablesArray()` Postfix and
+  `AccessoriesBar.ClearCallBack()` Postfix.
 - The retained Compatibility owner continues to use the current
   `BodyController.OnAttacked(float,bool,Vector2,AttackProperties,out bool)`
   Prefix for frozen `0.3.1-dtmapi` consumers. It is not part of the Product
-  four-target set.
+  five-target set.
 - The product owns exactly three extra-slot records, protected
   prepared/committed journal state, clone/listener lifecycle and product
   configuration.
@@ -28,7 +29,8 @@ Status: `Branch B storage/recovery implemented and cold acceptance passed / curr
 
 ## Install And Lifecycle
 
-- All four targets are pre-resolved and installed as one transaction. Any
+- All five targets are pre-resolved before the first patch and installed as
+  one transaction. Any
   target failure rolls back the exact product owner; any residual exact or
   conflicting owner fails closed.
 - Product-first and frozen-compatibility-first load orders both reconcile
@@ -75,8 +77,9 @@ does not consume the frozen API. No SharedNative component is introduced.
 
 ## Evidence
 
-- The current physical Harmony fixture resolves and installs both exact
-  four-target owners. Product tests prove official native-shield priority,
+- The current physical Harmony fixture resolves and installs the exact
+  five-target Product owner while retaining the frozen four-target Host owner.
+  Product tests prove official native-shield priority,
   `ShieldDefend`, full block, exact depletion, residual/critical/Thunder,
   death/drone escape, nonfatal invincibility/fishing/hit/hitback and
   Working-only shield persistence. Retained-Host tests exercise the same
@@ -96,6 +99,41 @@ does not consume the frozen API. No SharedNative component is introduced.
   ordinary Equip/Unequip, shield damage, SaveSaving/SaveSaved,
   title/cold-restart rollback, native-success-before-promotion, tombstone
   cleanup and typed management recovery.
+- The current UI fixture executes the reflected Unity hierarchy rather than a
+  source-string proxy. It proves one `ignoreLayout` Product row plus three
+  full-size `112 x 112` slots are created once, follow the actual final native
+  slot at `12` spacing, and move by exactly `124` per official passive growth
+  step through `1 -> 2 -> 3 -> 4 -> 5`. Getter composition is always
+  `native + 3` while visible;
+  inherited slot/button listeners and continuous-click callbacks are removed,
+  repeated render and clear/reopen reuse the same roots, and native drone
+  selectable/navigation/raycast state is never changed. A sixth unreviewed
+  official passive slot hides the Product row and leaves native Selectables
+  unchanged.
+- The legacy-target process fixture omits `RenderPassiveItems`, matching the
+  decisive `23762374` gap. Entry configuration fails before the first Hook,
+  callback, UI root or sidecar JSON. Product/Host exact-owner conflict tests
+  continue to pass in both loading orders without state mutation.
+- Incoming-withdrawal physical faults now cover CostItem mutate-then-throw,
+  unreadable and contradictory post-counts, buffer clear-then-throw, wrong or
+  Boolean return, retained buffer state and unreadable post-state. Gameplay
+  and durable paths both reject a second `SaveSaving` without repeating the
+  native withdrawal.
+- `GAME-SMOKE/20260811-062611` passed the superseded
+  `1AD74EBD...C65444A` entrance/drawer candidate on public `24650773`: five
+  Hooks `5/5`, two-resolution UI, configuration lifecycle, real passive/盾帽
+  replacement, typed shield damage/break and post-break equip/unequip. The
+  third-save run entered no native save; player archives and committed sidecar
+  were unchanged before cleanup. It remains exact historical gameplay and
+  transaction evidence, but its UI Rects and package bytes do not validate the
+  later dynamic native-tail source.
+- `GAME-SMOKE/20260811-070554` passes two disposable real native saves for the
+  same candidate. Aggregate `GAME-SMOKE/20260811-072147` then passes the fresh
+  three-process disabled-Product cold route: one exact backpack recovery,
+  terminal empty Product-v3 authority, zero session/replay state and final
+  `NoNativeSave` archive/sidecar unchanged proof. The fixture received only a
+  byte-exact installed Runtime release-manifest projection; Compatibility Host
+  component bytes remained under the game-owned installed path.
 - Commit `10e74ed6` adds production malformed-mail preflight, post-send
   unreadable evidence, SaveSaving rejection/no replay, exact `+1`
   reconciliation, Product and real-Host Working/durable recovery, Product
@@ -209,6 +247,44 @@ must follow the variable native prefix through a layout-safe owner after native
 pool rendering, without incrementing the official count or deleting the frozen
 compatibility/recovery path. A focused `1 -> 2` native-count UI test and a
 current-game UI acceptance are required before Product 1.0 publication.
+
+## 2026-08-11 Product 1.0 Implementation State
+
+The old `__Init` / `OnStartShow` UI pair remains removed from the Product
+owner. The Product observes `RenderPassiveItems`, leaves native
+`passiveItems`, `SetPassiveSlotCount`, `passiveItemPool`, `hatItem` and drone
+interaction authorities untouched, and owns one `ignoreLayout` row containing
+three retained clones. After native layout it reads the last two active
+official Rects, requires the reviewed `112 x 112` / `12` geometry, and places
+the Product row directly after the current official tail. Official passive
+growth `1 -> 2 -> 3 -> 4 -> 5` therefore moves the existing row one native
+step at a time rather than recreating it.
+
+There is no fixed entrance, collapsed/expanded state, drawer, opaque overlay,
+focus modal or drone-state snapshot. Geometry/navigation work runs only from
+the native render and UI lifecycle/configuration callbacks; the Product adds
+no per-frame `Update` or polling path. The drone Rect remains a read-only
+collision boundary. A sixth native passive slot, unexpected reviewed slot
+geometry, official-slot intersection or drone-boundary intersection hides the
+entire Product row with a release-blocking diagnostic. Runtime render-time
+validation deliberately does not enumerate the whole native Selectable tree or
+test the animating equipment-panel viewport. The bounded QA route owns those
+screen-wide checks only after five stable in-viewport frames.
+
+The old exact dynamic candidate `0F4BD87B...7527F` passed only a two-to-one
+native passive transition in `GAME-SMOKE/20260811-103047`. Player retest at
+three official passives then hit its explicit one-to-two ceiling, retained all
+three clones but hid the Product row. Its upload exception was revoked before
+submission and the local official folder was restored to retained 0.3.1.
+
+Current source raises the bounded promise to five official passives (base slot
+plus four official bags). Focused Product/physical tests exercise
+`1 -> 2 -> 3 -> 4 -> 5`, retain the same row and three clone identities,
+project every native Selectable plus the Product three, and preserve count `6`
+as unsupported fail-closed. QA build/routing and save-mode contracts pass and
+still contain no frame poll. A new exact-binary `1920 x 1080` / `1024 x 768`
+game acceptance, package, save/cold run, complete Release, upload authorization
+and Steam replacement audit remain open; publication is blocked.
 
 ## Relations
 

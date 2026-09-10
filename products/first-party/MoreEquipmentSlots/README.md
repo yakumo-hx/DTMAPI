@@ -6,22 +6,48 @@ game state. The frozen `IEquipmentSlotsApi` compatibility surface is not this
 product's configuration model and retains its historical `0..24` range in the
 optional Compatibility Host.
 
-Release status: `verified/closed` for product admission and the bounded
-legacy-to-Product transition. The corrected U1 route binds the exact retained
-0.3.1 Workshop tree and proves each protected item exists exactly once;
-U3/U4, C0 and the migrated-save no-save/save chain pass their targeted
-boundaries; final cold `GAME-SMOKE/20260730-161355` proves each target item
-exists exactly once across backpack, unaccepted mail and committed sidecar.
-The separately proposed player claim crash/resume gate is formally
-withdrawn, not counted as a PASS: deterministic child-process fault tests own
-the filesystem transaction windows, while U2 and migrated-save evidence own
-the Unity/save integration. Publication remains controlled by the Catalog
-release stop and the exact frozen package; this status does not publish the
-product.
+Release status: `1.0.1` is the current observed Steam artifact after the
+downloaded subscription tree matched the prepared eight-file package,
+manifest, single entry DLL and Advanced receipt exactly. Current
+public/subscription identity is owned by the
+[Product Catalog](../../../tools/release/dtmapi-product-catalog.json),
+[subscription manifest](../../../tools/release/current-subscription-manifest.json),
+and [release Update](../../../docs/archive/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md);
+there is no remaining upload authorization. The corrected U1 route binds the
+exact retained 0.3.1 Workshop tree and proves each protected item exists
+exactly once; U3/U4, C0 and the migrated-save no-save/save chain pass their
+targeted boundaries, while final cold `GAME-SMOKE/20260730-161355` proves each
+target item exists exactly once across backpack, unaccepted mail and committed
+sidecar. The separately proposed player claim crash/resume gate remains
+withdrawn rather than counted as a PASS: deterministic child-process fault
+tests own the filesystem transaction windows, while U2 and migrated-save
+evidence own the Unity/save integration.
 
-The product uses one exact Harmony owner for four all-or-nothing native hooks.
+The current Product uses one exact Harmony owner for five all-or-nothing
+native hooks: native parameter reload, typed shield provision, passive-slot
+render completion, the AccessoriesBar selectable getter and panel callback
+clear. After native passive-slot rendering completes, one `ignoreLayout`
+Product row follows the last active official slot and exposes three reusable
+full-size slots. Official growth from one through five passive slots moves that
+same row by one native step per added slot; the Product never joins or resizes the official
+passive-item array or pool. Layout work is event-driven by the native render
+callback, not polled per frame. Unexpected native counts, reviewed slot
+geometry, or intersection with an official equipment slot or the read-only
+drone boundary hides the whole Product row. Stable viewport, backpack,
+close-button and full native-control intersection checks run after the panel
+settles in the bounded release QA route; transient native panel animation is
+not treated as a Product layout failure. The bounded 1.0 promise stops at five
+official passive slots (base slot plus four official bags); a sixth official
+passive slot remains unsupported and fails closed.
 Protected item recovery is coordinated with the native save through an
 embedded schema-v3 prepared/committed journal.
+
+Version `1.0.1` also treats a proven native NewGame load as the ownership
+boundary for a reused archive index. Before exposing the three empty in-memory
+slots, it deletes only that index's complete Product sidecar directory; normal
+existing-save loads keep the strict archive, player-name and save-clock checks.
+This prevents a deleted save's local Product data from being adopted by a new
+save created in the same position without weakening mismatch rejection.
 
 On the first load after an upgrade, the product recognizes the exact public
 pre-schema global writer shape plus flat schema 1-3 used by the old mod and the

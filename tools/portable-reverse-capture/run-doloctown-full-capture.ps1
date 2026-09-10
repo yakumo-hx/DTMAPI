@@ -10,7 +10,11 @@ param(
     [switch] $InventoryOnly,
     [switch] $ReuseSnapshot,
     [switch] $ReuseExport,
-    [switch] $ReuseDecompile
+    [switch] $ReuseDecompile,
+    [switch] $Resume,
+    [switch] $CodeOnly,
+    [switch] $Status,
+    [string] $ReuseBuildRoot
 )
 
 Set-StrictMode -Version Latest
@@ -23,6 +27,9 @@ if (-not (Test-Path -LiteralPath $steamIdentityHelper -PathType Leaf)) {
     $steamIdentityHelper = Join-Path $PSScriptRoot '..\scripts\steam-appmanifest-identity.ps1'
 }
 . $steamIdentityHelper
+$stateHelper = Join-Path $PSScriptRoot 'reverse-capture-state.ps1'
+if (-not (Test-Path -LiteralPath $stateHelper -PathType Leaf)) { $stateHelper = Join-Path $PSScriptRoot '../scripts/reverse-capture-state.ps1' }
+. $stateHelper
 $sourceWorkspaceMode = $false
 $captureScript = Join-Path $PSScriptRoot 'capture-doloctown-reverse-baseline.ps1'
 if (-not (Test-Path -LiteralPath $captureScript -PathType Leaf)) {
@@ -148,7 +155,7 @@ function Ensure-PortableDotNet8Runtime {
     if ($systemDotNet -and (Test-PortableDotNet8Runtime -DotNetPath $systemDotNet.Source)) {
         return [ordered]@{
             executable = $systemDotNet.Source
-            version = 'system-8.x'
+            version = (@(& $systemDotNet.Source --list-runtimes) | Where-Object { $_ -match '^Microsoft\.NETCore\.App 8\.' } | Select-Object -Last 1).Split(' ')[1]
             source = 'system'
             archiveSha512 = $null
             downloadUri = $null
@@ -229,35 +236,31 @@ function Ensure-PortableIlSpy {
     }
 }
 
-function Get-PortableDecompileInventory {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Root
+if ($Status) {
+    if ([string]::IsNullOrWhiteSpace($BuildRoot)) { throw '-Status requires -BuildRoot; no game or tool discovery is performed.' }
+    $statusResult = Get-ReverseCaptureStatus -BuildRoot $BuildRoot
+    $statusResult['toolRequirements'] = @(
+        [ordered]@{ name = 'AssetRipper'; version = $AssetRipperVersion; archiveSha256 = $AssetRipperSha256; cacheExecutablePresent = (Test-Path -LiteralPath (Join-Path $packageRoot ".tools/assetripper/$AssetRipperVersion/app/AssetRipper.GUI.Free.exe")); neededFor = 'export'; integrity = 'not-checked-by-status' },
+        [ordered]@{ name = 'ILSpy'; version = $ilSpyVersion; packageSha256 = $ilSpyPackageSha256; cacheAssemblyPresent = (Test-Path -LiteralPath (Join-Path $packageRoot ".tools/ilspycmd/$ilSpyVersion/app/tools/net8.0/any/ilspycmd.dll")); neededFor = 'decompile'; integrity = 'not-checked-by-status' },
+        [ordered]@{ name = '.NET runtime'; version = $dotNetRuntimeVersion; acceptedHost = 'Microsoft.NETCore.App 8.x'; cacheExecutablePresent = (Test-Path -LiteralPath (Join-Path $packageRoot ".tools/dotnet-runtime/$dotNetRuntimeVersion/app/dotnet.exe")); neededFor = 'decompile'; integrity = 'not-checked-by-status' }
     )
-
-    if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
-        return @()
-    }
-
-    $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
-    return @(Get-ChildItem -LiteralPath $Root -File -Recurse -Force | Sort-Object FullName | ForEach-Object {
-        [ordered]@{
-            path = $_.FullName.Substring($resolvedRoot.Length).Replace('\', '/')
-            bytes = [long]$_.Length
-            sha256 = Get-PortableFileHashHex -Path $_.FullName
-        }
-    })
+    $statusResult | ConvertTo-Json -Depth 10
+    return
 }
-
-if ([string]::IsNullOrWhiteSpace($GameDir)) {
-    $GameDir = Resolve-DolocTownGamePath -RepoRoot $packageRoot
+$Resume = $Resume -or $ReuseSnapshot -or $ReuseExport -or $ReuseDecompile
+$offline = $Resume -and -not [string]::IsNullOrWhiteSpace($BuildRoot) -and [string]::IsNullOrWhiteSpace($GameDir)
+if ($offline) {
+    $BuildRoot = Resolve-DtmApiReverseBaselineBuildRoot -RepoRoot $packageRoot -BuildRoot $BuildRoot
+    $manifestPath = Join-Path $BuildRoot 'raw-snapshot/appmanifest_2285550.acf'
+    $identityRoot = Join-Path $BuildRoot 'raw-snapshot/game'
 }
 else {
-    Assert-DtmApiDolocTownGamePath -Path $GameDir -Source 'portable full capture -GameDir'
+    if ([string]::IsNullOrWhiteSpace($GameDir)) { $GameDir = Resolve-DolocTownGamePath -RepoRoot $packageRoot }
+    else { Assert-DtmApiDolocTownGamePath -Path $GameDir -Source 'portable full capture -GameDir' }
+    $GameDir = (Resolve-Path -LiteralPath $GameDir).Path
+    $manifestPath = Get-PortableSteamManifestPath -ResolvedGameDir $GameDir
+    $identityRoot = $GameDir
 }
-$GameDir = (Resolve-Path -LiteralPath $GameDir).Path
-
-$manifestPath = Get-PortableSteamManifestPath -ResolvedGameDir $GameDir
 $steamIdentityParameters = @{
     ManifestPath = $manifestPath
     ExplicitBranch = $Branch
@@ -271,7 +274,7 @@ if ($AllowPendingBranchSwitch) {
 $startSteamIdentity = Get-DtmApiSteamBuildIdentity @steamIdentityParameters
 $steamBuild = $startSteamIdentity.BuildId
 $resolvedBranch = $startSteamIdentity.Branch
-$sourceAssembly = Join-Path $GameDir 'DolocTown_Data\Managed\Assembly-CSharp.dll'
+$sourceAssembly = Join-Path $identityRoot 'DolocTown_Data\Managed\Assembly-CSharp.dll'
 $sourceAssemblyHash = Get-PortableFileHashHex -Path $sourceAssembly
 $buildName = "${steamBuild}_${resolvedBranch}_$($sourceAssemblyHash.Substring(0, 6))"
 if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
@@ -279,7 +282,7 @@ if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
 }
 $BuildRoot = Resolve-DtmApiReverseBaselineBuildRoot -RepoRoot $packageRoot -BuildRoot $BuildRoot -GameDir $GameDir
 
-if (-not $InventoryOnly) {
+if (-not $InventoryOnly -and -not $Resume) {
     Assert-PortableCaptureFreeSpace -Path $BuildRoot
 }
 
@@ -298,6 +301,8 @@ if ($AllowPendingBranchSwitch) { $captureParameters['AllowPendingBranchSwitch'] 
 if ($InventoryOnly) { $captureParameters['InventoryOnly'] = $true }
 if ($ReuseSnapshot) { $captureParameters['ReuseSnapshot'] = $true }
 if ($ReuseExport) { $captureParameters['ReuseExport'] = $true }
+if ($Resume) { $captureParameters['Resume'] = $true }
+if ($CodeOnly) { $captureParameters['CodeOnly'] = $true }
 
 Write-Host "Capture package: $packageRoot"
 Write-Host "Source game: $GameDir"
@@ -315,76 +320,91 @@ $decompileTargets = @(
 
 $dotNetReceipt = $null
 $ilSpyReceipt = $null
-if (-not $InventoryOnly) {
-    $dotNetReceipt = Ensure-PortableDotNet8Runtime
-    $ilSpyReceipt = Ensure-PortableIlSpy -DotNet $dotNetReceipt
-}
-
-$decompileResults = [System.Collections.Generic.List[object]]::new()
+$priorSummaryPath = Join-Path $inventoryRoot 'portable-full-capture-summary.json'
+$priorSummary = if (Test-Path -LiteralPath $priorSummaryPath) { Get-Content -Raw -LiteralPath $priorSummaryPath | ConvertFrom-Json } else { $null }
+$snapshotInventory = @(Read-ReverseJsonItems (Join-Path $inventoryRoot 'raw-snapshot-files.json'))
+$decompileResults = [Collections.Generic.List[object]]::new()
 foreach ($target in $decompileTargets) {
     $targetAssembly = Join-Path $snapshotManagedRoot $target.file
     $targetOutput = Join-Path $decompileRoot $target.name
     $targetLog = Join-Path $decompileLogRoot "$($target.name)-ilspy.log"
-    $targetWasReused = $false
-
+    $stageName = 'decompile-' + $target.name
     if (-not (Test-Path -LiteralPath $targetAssembly -PathType Leaf)) {
-        if ($target.required) {
-            throw "Required frozen managed assembly is missing: $targetAssembly"
-        }
+        if ($target.required) { throw "Required frozen assembly is missing: $targetAssembly" }
         $decompileResults.Add([ordered]@{ assembly = $target.file; status = 'source-not-present'; files = 0; bytes = 0; sha256 = $null })
         continue
     }
-
-    if ($InventoryOnly) {
-        if (-not (Test-Path -LiteralPath $targetOutput -PathType Container)) {
-            $decompileResults.Add([ordered]@{
-                assembly = $target.file
-                status = 'decompile-not-present'
-                sourceBytes = [long](Get-Item -LiteralPath $targetAssembly).Length
-                sourceSha256 = Get-PortableFileHashHex -Path $targetAssembly
-                files = 0
-                bytes = 0
-            })
-            continue
+    $sourceHash = Get-PortableFileHashHex $targetAssembly
+    $inputs = [ordered]@{
+        format = 1; assembly = $target.file; sourceSha256 = $sourceHash
+        tool = [ordered]@{ version = $ilSpyVersion; packageSha256 = $ilSpyPackageSha256; runtime = 'Microsoft.NETCore.App-8' }
+        parameters = @('-p', '-r', '<frozen-managed-root>'); dependencies = Get-ReverseManagedDependencies $targetAssembly $snapshotManagedRoot $snapshotInventory
+    }
+    $receipt = $null
+    $origin = 'decompiled'
+    if ($Resume -or $InventoryOnly) { $receipt = Test-ReverseStage $BuildRoot $stageName $inputs $targetOutput }
+    if ($receipt) { $origin = 'reused-verified' }
+    $legacyInventoryPath = Join-Path $inventoryRoot "$($target.name)-decompiled-files.json"
+    if (-not $receipt -and ($Resume -or $InventoryOnly) -and -not (Get-ReverseStageReceipt $BuildRoot $stageName) -and (Test-Path -LiteralPath $legacyInventoryPath)) {
+        $priorTool = Get-ReverseValue $priorSummary 'ilSpy'
+        $priorResults = @(Get-ReverseValue $priorSummary 'decompiledAssemblies' @())
+        $priorResult = @($priorResults | Where-Object { $_.assembly -eq $target.file }) | Select-Object -First 1
+        $priorInventory = @(Read-ReverseJsonItems $legacyInventoryPath)
+        if ((Get-ReverseValue $priorTool 'version') -eq $ilSpyVersion -and (Get-ReverseValue $priorTool 'packageSha256') -ieq $ilSpyPackageSha256 -and (Get-ReverseValue $priorResult 'sourceSha256') -ieq $sourceHash -and (Test-ReverseInventory $targetOutput $priorInventory)) {
+            $receipt = Complete-ReverseStage $BuildRoot $stageName $inputs $targetOutput -Inventory $priorInventory -Origin 'validated-legacy-inventory'
+            $origin = 'legacy-output-verified'
         }
     }
-    elseif (Test-Path -LiteralPath $targetOutput) {
-        if (-not $ReuseDecompile) {
-            throw "Decompile output already exists. Refusing to overwrite it without -ReuseDecompile: $targetOutput"
+    if (-not $receipt -and $InventoryOnly) { throw "Decompile integrity/tool identity is unproven: $($target.file). Resume reruns only this stage." }
+    if (-not $receipt) {
+        if ((Test-Path -LiteralPath $targetOutput) -and -not $Resume) { throw "Decompile exists; use Resume to validate/retry this stage: $targetOutput" }
+        $candidate = $null
+        $candidateOutput = $null
+        if ($ReuseBuildRoot) {
+            $candidateRoot = Resolve-DtmApiReverseBaselineBuildRoot -RepoRoot $packageRoot -BuildRoot $ReuseBuildRoot
+            $candidateOutput = Join-Path $candidateRoot ('decompiled/' + $target.name)
+            $candidate = Test-ReverseStage $candidateRoot $stageName $inputs $candidateOutput
         }
-        $targetWasReused = $true
-    }
-    else {
-        [System.IO.Directory]::CreateDirectory($decompileLogRoot) | Out-Null
-        Write-Host "Decompiling $($target.file) with ILSpy $ilSpyVersion..."
-        & $dotNetReceipt.executable $ilSpyReceipt.assembly -p -r $snapshotManagedRoot -o $targetOutput $targetAssembly 2>&1 |
-            Tee-Object -FilePath $targetLog
-        if ($LASTEXITCODE -ne 0) {
-            throw "ILSpy failed for $($target.file) with exit code $LASTEXITCODE. See $targetLog"
+        Start-ReverseStage $BuildRoot $stageName $inputs ('decompiled/' + $target.name) | Out-Null
+        try {
+            if ($candidate) {
+                [IO.Directory]::CreateDirectory($targetOutput) | Out-Null
+                foreach ($entry in $candidate.outputs) {
+                    $destination = Resolve-ReverseChild $targetOutput $entry.path
+                    [IO.Directory]::CreateDirectory((Split-Path -Parent $destination)) | Out-Null
+                    Copy-Item -LiteralPath (Resolve-ReverseChild $candidateOutput $entry.path) -Destination $destination
+                }
+                if (-not (Test-ReverseInventory $targetOutput @($candidate.outputs))) { throw 'Copied decompile did not match its verified source.' }
+                $receipt = Complete-ReverseStage $BuildRoot $stageName $inputs $targetOutput -Inventory @($candidate.outputs) -Origin ('identical-inputs:' + $candidateRoot)
+                $origin = 'copied-identical-assembly-and-dependencies'
+            }
+            else {
+                if (-not $dotNetReceipt) { $dotNetReceipt = Ensure-PortableDotNet8Runtime; $ilSpyReceipt = Ensure-PortableIlSpy -DotNet $dotNetReceipt }
+                [IO.Directory]::CreateDirectory($decompileLogRoot) | Out-Null
+                Write-Host "Decompiling $($target.file) with ILSpy $ilSpyVersion..."
+                & $dotNetReceipt.executable $ilSpyReceipt.assembly -p -r $snapshotManagedRoot -o $targetOutput $targetAssembly 2>&1 | Tee-Object -FilePath $targetLog
+                if ($LASTEXITCODE -ne 0) { throw "ILSpy failed for $($target.file), exit $LASTEXITCODE. See $targetLog" }
+                if (@(Get-ChildItem -LiteralPath $targetOutput -Filter '*.csproj' -File).Count -eq 0) { throw 'ILSpy project output marker is missing.' }
+                $receipt = Complete-ReverseStage $BuildRoot $stageName $inputs $targetOutput
+            }
         }
+        catch { Fail-ReverseStage $BuildRoot $stageName $_.Exception.Message; throw }
     }
-
-    $targetInventory = @(Get-PortableDecompileInventory -Root $targetOutput)
+    $targetInventory = @($receipt.outputs)
     [long]$targetBytes = 0
-    foreach ($entry in $targetInventory) {
-        $targetBytes += [long]$entry.bytes
-    }
+    foreach ($entry in $targetInventory) { $targetBytes += [long]$entry.bytes }
     $inventoryPath = Join-Path $inventoryRoot "$($target.name)-decompiled-files.json"
-    Write-PortableUtf8NoBomFile -Path $inventoryPath -Text (($targetInventory | ConvertTo-Json -Depth 5) + [Environment]::NewLine)
+    Write-ReverseJson $inventoryPath $targetInventory
     $decompileResults.Add([ordered]@{
-        assembly = $target.file
-        status = $(if ($InventoryOnly) { 'verified-existing' } elseif ($targetWasReused) { 'reused-existing' } else { 'decompiled' })
-        sourceBytes = [long](Get-Item -LiteralPath $targetAssembly).Length
-        sourceSha256 = Get-PortableFileHashHex -Path $targetAssembly
-        files = $targetInventory.Count
-        bytes = $targetBytes
-        output = $targetOutput
-        inventory = $inventoryPath
+        assembly = $target.file; status = $origin; sourceBytes = [long](Get-Item -LiteralPath $targetAssembly).Length
+        sourceSha256 = $sourceHash; files = $targetInventory.Count; bytes = $targetBytes; output = $targetOutput; inventory = $inventoryPath
+        stageReceipt = Get-ReverseStagePath $BuildRoot $stageName; inputFingerprint = $receipt.inputFingerprint
     })
 }
-
 $portableSummary = [ordered]@{
-    format = 'dtmapi.doloctown-portable-full-capture/v1'
+    format = 'dtmapi.doloctown-portable-full-capture/v2'
+    scope = $(if ($CodeOnly) { 'code' } else { 'full' })
+    resumedFromFrozen = [bool]$offline
     generatedAtUtc = [DateTime]::UtcNow.ToString('o')
     steamAppId = 2285550
     steamBuild = $steamBuild
@@ -407,13 +427,13 @@ $portableSummary = [ordered]@{
         version = $AssetRipperVersion
         archiveSha256 = $AssetRipperSha256
     }
-    dotNet = $dotNetReceipt
-    ilSpy = $ilSpyReceipt
+    dotNet = $(if ($dotNetReceipt) { $dotNetReceipt } else { Get-ReverseValue $priorSummary 'dotNet' })
+    ilSpy = $(if ($ilSpyReceipt) { $ilSpyReceipt } else { Get-ReverseValue $priorSummary 'ilSpy' })
     decompiledAssemblies = @($decompileResults)
     sourceBoundary = 'Local research only. Do not publish or redistribute official snapshots, extracted assets, or decompiled source.'
 }
 $portableSummaryPath = Join-Path $inventoryRoot 'portable-full-capture-summary.json'
 Write-PortableUtf8NoBomFile -Path $portableSummaryPath -Text (($portableSummary | ConvertTo-Json -Depth 10) + [Environment]::NewLine)
 
-Write-Host "Portable full capture completed: $BuildRoot"
+Write-Host "Portable capture completed (scope=$($portableSummary.scope)): $BuildRoot"
 Write-Host "Portable receipt: $portableSummaryPath"

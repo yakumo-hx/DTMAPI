@@ -14,13 +14,17 @@ namespace DTMAPI.Core.Services
         private readonly Dictionary<OwnerBoundFacadeKey, object> ownerBoundFacades = new Dictionary<OwnerBoundFacadeKey, object>(OwnerBoundFacadeKeyComparer.Instance);
         private readonly Action<string, string, string, string>? recordOwnerRegistration;
         private readonly Action<string, string, int, string>? recordOwnerCleanup;
+        private readonly Action<string, string, string>? reportDeprecatedApi;
+        private readonly Dictionary<string, HashSet<Type>> deprecatedApiWarnings = new Dictionary<string, HashSet<Type>>(StringComparer.OrdinalIgnoreCase);
 
         public ModRegistryService(
             Action<string, string, string, string>? recordOwnerRegistration = null,
-            Action<string, string, int, string>? recordOwnerCleanup = null)
+            Action<string, string, int, string>? recordOwnerCleanup = null,
+            Action<string, string, string>? reportDeprecatedApi = null)
         {
             this.recordOwnerRegistration = recordOwnerRegistration;
             this.recordOwnerCleanup = recordOwnerCleanup;
+            this.reportDeprecatedApi = reportDeprecatedApi;
         }
 
         public void AddLoaded(IManifest manifest)
@@ -132,6 +136,7 @@ namespace DTMAPI.Core.Services
                 return 0;
 
             int removed = loaded.Remove(uniqueId) ? 1 : 0;
+            deprecatedApiWarnings.Remove(uniqueId);
             foreach (ApiRegistrationKey key in apis.Keys.Where(k => OwnerEquals(k.OwnerId, uniqueId)).ToArray())
             {
                 if (apis.Remove(key))
@@ -182,6 +187,7 @@ namespace DTMAPI.Core.Services
         private TApi? GetApiForOwner<TApi>(IManifest consumer, string providerId, Action ensureOwnerActive) where TApi : class
         {
             ensureOwnerActive();
+            ReportDeprecatedApi<TApi>(consumer.UniqueID);
             var providerKey = new ApiRegistrationKey(providerId, typeof(TApi));
             if (!apis.TryGetValue(providerKey, out object api))
                 return null;
@@ -203,6 +209,31 @@ namespace DTMAPI.Core.Services
                 ownerBoundFacades.Add(facadeKey, facade);
             }
             return facade as TApi;
+        }
+
+        private void ReportDeprecatedApi<TApi>(string owner)
+        {
+            string message = DeprecatedContract<TApi>.Message;
+            if (message.Length == 0 || reportDeprecatedApi == null)
+                return;
+            if (!deprecatedApiWarnings.TryGetValue(owner, out HashSet<Type> warned))
+                deprecatedApiWarnings.Add(owner, warned = new HashSet<Type>());
+            if (!warned.Add(typeof(TApi)))
+                return;
+            try { reportDeprecatedApi(owner, typeof(TApi).FullName ?? typeof(TApi).Name, message); }
+            catch { /* A diagnostic sink cannot change the existing API result. */ }
+        }
+
+        private static class DeprecatedContract<TApi>
+        {
+            internal static readonly string Message = ReadMessage();
+            private static string ReadMessage()
+            {
+                Type type = typeof(TApi);
+                if (!ReferenceEquals(type.Assembly, typeof(IDtmHelper).Assembly)) return string.Empty;
+                var obsolete = (ObsoleteAttribute?)Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute), false);
+                return obsolete?.Message ?? string.Empty;
+            }
         }
 
         internal int CountOwner(string uniqueId)
@@ -301,8 +332,9 @@ namespace DTMAPI.Core.Services
         }
     }
 
-    internal sealed class DtmHelper : IDtmHelper
+    internal sealed class DtmHelper : IDtmHelper, IDtmHelperServices
     {
+        private readonly OwnerServiceScope? services;
         public DtmHelper(
             IManifest manifest,
             IMonitor monitor,
@@ -314,8 +346,10 @@ namespace DTMAPI.Core.Services
             IDiagnosticsHelper diagnostics,
             IContentQueryHelper content,
             IInputHelper input,
-            ITranslationHelper translation)
+            ITranslationHelper translation,
+            OwnerServiceScope? services = null)
         {
+            this.services = services;
             ModManifest = manifest;
             Monitor = monitor;
             Events = events;
@@ -340,6 +374,7 @@ namespace DTMAPI.Core.Services
         public IContentQueryHelper Content { get; }
         public IInputHelper Input { get; }
         public ITranslationHelper Translation { get; }
+        public TService? GetService<TService>() where TService : class => services?.GetService<TService>();
         public TConfig ReadConfig<TConfig>() where TConfig : new() => Config.ReadConfig<TConfig>(ModManifest);
         public void WriteConfig<TConfig>(TConfig config) => Config.WriteConfig(ModManifest, config);
     }

@@ -1,6 +1,6 @@
-# Install The DTMAPI 0.6.1 Local Candidate
+# Install DTMAPI 0.6.1
 
-The current source candidate reports release/API `0.6.1`, file version `0.6.1.0`, and retained assembly compatibility `0.5.3.0`. It has not been published as 0.6.1 and this guide does not authorize a Workshop upload. Public APIs keep their per-surface stability and disposition; the public Abstractions assembly is not uniformly Stable.
+The current source and Steam-published Runtime report release/API `0.6.1`, file version `0.6.1.0`, and retained assembly compatibility `0.5.3.0`. This installation guide is not a Workshop upload authorization. Public APIs keep their per-surface stability and disposition; the public Abstractions assembly is not uniformly Stable.
 
 ## Recommended Player Path
 

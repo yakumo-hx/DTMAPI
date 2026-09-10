@@ -1,13 +1,38 @@
 param(
     [string] $Configuration = 'Release',
     [string] $TestTempRoot = '',
-    [switch] $KeepFailedTestTemp
+    [switch] $KeepFailedTestTemp,
+    [string] $StartAt = 'FromStart',
+    [string] $Stage = 'All',
+    [switch] $List
 )
 
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\test-common.ps1"
 . "$PSScriptRoot\release-common.ps1"
+. "$PSScriptRoot\author-sdk-release-common.ps1"
 $ErrorActionPreference = 'Stop'
+$selection = Get-DtmApiReleaseTestSelection -Stage $Stage -StartAt $StartAt
+if ($List) {
+    $selection | ConvertTo-Json -Depth 3
+    return
+}
+Assert-DtmApiFullTestEnvironment
 $repo = Get-RepoRoot
+# Fail before building or generating packages. The same process boundary is
+# checked again by cleanup; do not launch another test/game during this run.
+$activeProcesses = @(Get-DtmApiActiveTestProcess -IncludeGame)
+if ($activeProcesses.Count -gt 0) {
+    throw "Release tests require an idle game/test environment. Active PIDs: $($activeProcesses.ProcessId -join ', ')."
+}
+if ($selection.CompleteRun -or $selection.Stages -contains 'ScriptContracts') {
+    & "$PSScriptRoot\build-evidence-retention-allowlist.ps1" -Check
+    if (-not $?) { exit 1 }
+}
+if (-not $selection.CompleteRun) {
+    Write-Warning 'DIAGNOSTIC ONLY: this selection never counts as a complete Release PASS. Rebuild changed inputs before using stages that consume existing outputs.'
+}
+$currentAuthorSdkPackageName = "DTMAPI-Author-SDK-$(Get-AuthorSdkReleaseVersion -RepoRoot $repo)-win-x64"
 if ([string]::IsNullOrWhiteSpace($TestTempRoot)) {
     $TestTempRoot = Join-Path $repo 'tmp\test-runs'
 }
@@ -23,9 +48,13 @@ function Clear-CompletedTestSessions {
     }
 }
 
+$dotnet = if ($selection.Stages -contains 'BuildAndUnit' -or $selection.Stages -contains 'AuthorSdk') {
+    Get-DotNetExe -RepoRoot $repo
+}
+if ($selection.Stages -contains 'BuildAndUnit') {
 & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
-$dotnet = Get-DotNetExe -RepoRoot $repo
-& $dotnet run --project (Join-Path $repo 'tests\DTMAPI.UnitTests\DTMAPI.UnitTests.csproj') -c $Configuration --no-build
+if (-not $?) { exit 1 }
+& "$PSScriptRoot\test-unit.ps1" -Configuration $Configuration -NoBuild
 $unitTestExitCode = $LASTEXITCODE
 Clear-CompletedTestSessions
 if ($unitTestExitCode -ne 0) {
@@ -43,7 +72,9 @@ if ($qaUnitTestExitCode -ne 0) {
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+}
 
+if ($selection.Stages -contains 'RuntimeInstaller') {
 $packageTestBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $packageTestUnicodeChinese = -join @([char]0x4E2D, [char]0x6587)
 $packageTestRoot = [System.IO.Path]::GetFullPath((Join-Path $packageTestBase ('DTMAPI Player Package ' + $packageTestUnicodeChinese + ' ' + [Guid]::NewGuid().ToString('N'))))
@@ -51,7 +82,9 @@ if (-not (Test-DtmApiPathIsSameOrChild -Child $packageTestRoot -Parent $packageT
     throw "Runtime package test root escaped system temp: $packageTestRoot"
 }
 try {
-    & "$PSScriptRoot\build-release-workshop-packages.ps1" -Configuration $Configuration -SkipBuild -RuntimeOnly -OutputRoot $packageTestRoot
+    & "$PSScriptRoot\test-runtime-build-source.ps1"
+    if (-not $?) { exit 1 }
+    & "$PSScriptRoot\build-release-workshop-packages.ps1" -Configuration $Configuration -RuntimeOnly -OutputRoot $packageTestRoot
     if (-not $?) { exit 1 }
     & "$PSScriptRoot\test-runtime-candidate-published-info-boundary.ps1" `
         -RuntimePackageRoot (Join-Path $packageTestRoot 'DTMAPI')
@@ -65,15 +98,14 @@ finally {
         Remove-Item -LiteralPath $packageTestRoot -Recurse -Force
     }
 }
+}
 
+if ($selection.Stages -contains 'ScriptContracts') {
 & "$PSScriptRoot\test-runtime-evidence-retention.ps1"
 if (-not $?) {
     exit 1
 }
 
-& "$PSScriptRoot\build-evidence-retention-allowlist.ps1" -Check
-if (-not $?) {
-    exit 1
 }
 
 $productCatalogChecker = Join-Path $PSScriptRoot 'check-product-catalog.ps1'
@@ -100,6 +132,7 @@ $releaseArtifactSetTest = Join-Path $PSScriptRoot 'test-dtmapi-060-release-artif
 $portableReverseCaptureRoot = Join-Path $repo 'tools\portable-reverse-capture'
 $portableReverseCaptureBuilder = Join-Path $PSScriptRoot 'build-portable-reverse-capture-package.ps1'
 $portableReverseCapturePathSafetyTest = Join-Path $PSScriptRoot 'test-portable-reverse-capture-path-safety.ps1'
+if ($selection.Stages -contains 'ScriptContracts') {
 Test-DtmApiWindowsPowerShellSyntax -Paths @(
     $productCatalogChecker,
     $releaseContractChecker,
@@ -208,6 +241,9 @@ if ($workshopDownloadMarkerExitCode -ne 0) {
     exit $workshopDownloadMarkerExitCode
 }
 
+}
+
+if ($selection.Stages -contains 'AuthorSdk') {
 if ($Configuration -eq 'Release') {
     & "$PSScriptRoot\build-author-sdk.ps1" -Configuration Release
     if (-not $?) {
@@ -216,7 +252,7 @@ if ($Configuration -eq 'Release') {
 
     $previousSelfContainedExe = $env:DTMAPI_AUTHOR_SELF_CONTAINED_EXE
     try {
-        $env:DTMAPI_AUTHOR_SELF_CONTAINED_EXE = Join-Path $repo 'dist\author-sdk\DTMAPI-Author-SDK-0.1.0-win-x64\dtmapi-author.exe'
+        $env:DTMAPI_AUTHOR_SELF_CONTAINED_EXE = Join-Path $repo "dist\author-sdk\$currentAuthorSdkPackageName\dtmapi-author.exe"
         & $dotnet run --project (Join-Path $repo 'tests\DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj') -c $Configuration --no-build -- --require-exact-advanced-reference
         if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
@@ -232,48 +268,23 @@ if ($Configuration -eq 'Release') {
         $env:DTMAPI_AUTHOR_SELF_CONTAINED_EXE = $previousSelfContainedExe
     }
 
-    & "$PSScriptRoot\test-author-sdk-portable.ps1" -PackagePath (Join-Path $repo 'dist\author-sdk\DTMAPI-Author-SDK-0.1.0-win-x64.zip')
+    & "$PSScriptRoot\test-author-sdk-portable.ps1" -PackagePath (Join-Path $repo "dist\author-sdk\$currentAuthorSdkPackageName.zip")
     if (-not $?) {
         exit 1
     }
 }
 else {
+    & "$PSScriptRoot\prepare-author-sdk-compatibility.ps1"
+    if (-not $?) { throw 'Frozen Author SDK compatibility preparation failed.' }
     & $dotnet run --project (Join-Path $repo 'tests\DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj') -c $Configuration --no-build
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
 }
 
-& $ownershipMatrix -Configuration $Configuration
-if (-not $?) {
-    exit 1
 }
 
-& $installerInvalidTargetMatrix -Configuration $Configuration
-if (-not $?) {
-    exit 1
-}
-
-& $runtimeUpgradeTransactionMatrix -Configuration $Configuration
-if (-not $?) {
-    exit 1
-}
-
-& $installTransactionMatrix -Configuration $Configuration
-if (-not $?) {
-    exit 1
-}
-
-$candidate11Pwsh = Get-Command pwsh.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $candidate11Pwsh -or $candidate11Pwsh.Version.Major -lt 7) {
-    throw 'Candidate11 source transaction tests require PowerShell 7+ (pwsh.exe); Windows PowerShell 5.1 remains a syntax-validation host only.'
-}
-& $candidate11Pwsh.Source -NoProfile -ExecutionPolicy Bypass -File $candidate11SourceTransactionTest
-$candidate11TestExitCode = $LASTEXITCODE
-if ($candidate11TestExitCode -ne 0) {
-    exit $candidate11TestExitCode
-}
-
+if ($selection.Stages -contains 'ProductContracts') {
 & $productCatalogChecker
 if (-not $?) {
     exit 1
@@ -344,7 +355,7 @@ $authorSdkPrimaryRoot = Join-Path $authorSdkReleaseContractRoot 'primary'
 $authorSdkRepeatRoot = Join-Path $authorSdkReleaseContractRoot 'repeat'
 $authorSdkReferenceFixtureRoot = Join-Path $authorSdkReleaseContractRoot 'reference-games'
 $sharedAuthorSdkRoot = Join-Path $repo 'dist\author-sdk'
-$sharedAuthorSdkExe = Join-Path $sharedAuthorSdkRoot 'DTMAPI-Author-SDK-0.1.0-win-x64\dtmapi-author.exe'
+$sharedAuthorSdkExe = Join-Path $sharedAuthorSdkRoot "$currentAuthorSdkPackageName\dtmapi-author.exe"
 if (Test-Path -LiteralPath $authorSdkReleaseContractRoot) {
     Remove-Item -LiteralPath $authorSdkReleaseContractRoot -Recurse -Force
 }
@@ -360,10 +371,10 @@ try {
     $releaseCatalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'tools\release\dtmapi-product-catalog.json') | ConvertFrom-Json
     $advancedReleaseProducts = @(Get-DtmApiReleaseContractAdvancedProducts -Catalog $releaseCatalog)
     $advancedReleaseCatalogIds = @($advancedReleaseProducts | ForEach-Object { [string]$_.catalogId })
-    if ($advancedReleaseCatalogIds.Count -ne 9) {
-        throw "The 0.6 Release contract must select exactly nine Advanced ProductNative artifacts; found $($advancedReleaseCatalogIds.Count)."
+    if ($advancedReleaseCatalogIds.Count -eq 0) {
+        throw 'The current-published Advanced ProductNative artifact selection must not be empty.'
     }
-    $forbiddenReleaseProducts = @('more-equipment-slots', 'strong-planting-gun', 'mine')
+    $forbiddenReleaseProducts = @('strong-planting-gun', 'mine')
     $forbiddenSelectedProducts = @($advancedReleaseCatalogIds | Where-Object { $forbiddenReleaseProducts -ccontains $_ })
     if ($forbiddenSelectedProducts.Count -gt 0) {
         throw "The 0.6 Release contract must never invoke the Advanced builder for: $($forbiddenSelectedProducts -join ', ')."
@@ -406,6 +417,9 @@ if (-not $releaseContractPassed) {
     exit 1
 }
 
+}
+
+if ($selection.Stages -contains 'QaLifecycle') {
 & "$PSScriptRoot\check-batch4-qa-semantic-boundary.ps1" -Configuration $Configuration
 if (-not $?) {
     exit 1
@@ -492,6 +506,9 @@ if (-not $?) {
     exit 1
 }
 
+}
+
+if ($selection.Stages -contains 'RetainedAbi') {
 & "$PSScriptRoot\test-synthetic-retained-abi.ps1" -Configuration $Configuration -NoBuild
 if (-not $?) {
     exit 1
@@ -517,10 +534,43 @@ if (-not $?) {
     exit 1
 }
 
+}
+
+if ($selection.Stages -contains 'InstallerMatrices') {
+& $ownershipMatrix -Configuration $Configuration
+if (-not $?) {
+    exit 1
+}
+
+& $installerInvalidTargetMatrix -Configuration $Configuration
+if (-not $?) {
+    exit 1
+}
+
+& $runtimeUpgradeTransactionMatrix -Configuration $Configuration
+if (-not $?) {
+    exit 1
+}
+
+& $installTransactionMatrix -Configuration $Configuration
+if (-not $?) {
+    exit 1
+}
+
+# Candidate11/Local11 is a frozen 0.6 milestone transaction, not a current
+# product-release invariant. Keep its helper, dedicated replay and syntax
+# validation as historical audit tooling, but do not replay the complete
+# nine-source/two-retained transaction in every current Release suite.
+}
+
+if ($selection.Stages -contains 'Governance') {
 & "$PSScriptRoot\check-test-artifact-governance.ps1" -RunCleanupFixture
 if (-not $?) {
     exit 1
 }
 
 & "$PSScriptRoot\check-doc-governance.ps1" -Quiet
-exit $LASTEXITCODE
+if (-not $?) { exit 1 }
+}
+Write-Host $(if ($selection.CompleteRun) { 'Complete test sequence passed; release eligibility still follows the named release gates.' } else { 'Diagnostic selection passed; full Release acceptance is not established.' })
+exit 0

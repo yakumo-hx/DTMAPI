@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"DTMAPI SDK auxiliary managed library",
+  "type":"object","additionalProperties":false,
+  "required":["schemaVersion","assemblyName","version","apiTarget","targetFramework","role","sourceDirectory","managedReferences","build"],
+  "properties":{
+    "schemaVersion":{"const":1},
+    "assemblyName":{"type":"string","minLength":1},
+    "version":{"type":"string","minLength":1},
+    "apiTarget":{"type":"string","minLength":1},
+    "targetFramework":{"const":"netstandard2.0"},
+    "role":{"enum":["shared-contract","private-managed"]},
+    "sourceDirectory":{"type":"string","minLength":1},
+    "managedReferences":{"$ref":"dtmapi-author.schema.json#/$defs/schema3/properties/managedReferences"},
+    "build":{"$ref":"dtmapi-build.schema.json"}
+  }
+}

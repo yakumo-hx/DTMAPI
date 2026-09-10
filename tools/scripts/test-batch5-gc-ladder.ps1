@@ -60,14 +60,16 @@ try {
     . $sourceTransactionHelper
 
     $wrapperSource = Read-Text $wrapper
-    $runnerSource = Read-Text $runner
+    $runnerEntrySource = Read-Text $runner
+    $runnerRoutingSource = Read-Text (Join-Path $PSScriptRoot 'game-smoke/phases/routing.ps1')
+    $runnerPublishSource = Read-Text (Join-Path $PSScriptRoot 'game-smoke/phases/publish-result.ps1')
     Assert-True ($wrapperSource.IndexOf("'-SaveTestMode', 'NoNativeSave'", [System.StringComparison]::Ordinal) -ge 0 -and
         $wrapperSource.IndexOf('$stage.PlayerSaveUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0 -and
         $wrapperSource.IndexOf('$stage.CommittedSidecarsUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0 -and
         $wrapperSource.IndexOf("'-RequirePlayerSaveRestore'", [System.StringComparison]::Ordinal) -lt 0) 'Every executable GC stage must use the metadata-only NoNativeSave contract without requesting archive writeback.'
-    Assert-True ($runnerSource.IndexOf("ValidateSet('NoNativeSave','NativeSaveExpected','ArchiveMutation')", [System.StringComparison]::Ordinal) -ge 0 -and
-        $runnerSource.IndexOf('PlayerSaveUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0 -and
-        $runnerSource.IndexOf('CommittedSidecarsUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0) 'The smoke runner must expose fail-closed pre-cleanup archive and committed-sidecar evidence independent of G5 cleanup.'
+    Assert-True ($runnerEntrySource.IndexOf("ValidateSet('NoNativeSave','NativeSaveExpected','ArchiveMutation')", [System.StringComparison]::Ordinal) -ge 0 -and
+        $runnerPublishSource.IndexOf('PlayerSaveUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0 -and
+        $runnerPublishSource.IndexOf('CommittedSidecarsUnchangedBeforeCleanup', [System.StringComparison]::Ordinal) -ge 0) 'The smoke CLI and result publisher must expose fail-closed pre-cleanup archive and committed-sidecar evidence independent of G5 cleanup.'
 
     function Start-TestSourceTransaction {
         param(
@@ -509,7 +511,6 @@ try {
 
     $wrapperSource = Read-Text $wrapper
     $sourceTransactionSource = Read-Text $sourceTransactionHelper
-    $runnerSource = Read-Text $runner
     $settingsSource = Read-Text $settingsPath
     $participantSource = Read-Text $participantPath
     $trendSource = Read-Text $trendPath
@@ -518,11 +519,8 @@ try {
     $ladderContractSource = Read-Text $ladderContractPath
 
     Assert-True ($wrapperSource.Contains('wait-runtime-lock.ps1') -and $wrapperSource.Contains('release-runtime-lock.ps1') -and $wrapperSource.Contains('run-game-smoke.ps1')) 'Executable ladder must own the shared runtime lock and delegate each stage to run-game-smoke.'
-    Assert-True ($runnerSource.Contains('elseif ($probeOk -and $batch5GcLadderEnabled -and $SaveSlot -gt 0)') -and
-        $runnerSource.Contains("`$saveLoadedOk = Wait-ForLogLine -LogPath `$logPath -Pattern 'SaveLoaded hook dispatched.'")) 'Batch 5 GC must own a distinct neutral SaveLoaded wait branch before stage-specific terminals are evaluated.'
-    Assert-True (([regex]::Matches($runnerSource, 'DTMAPI_SMOKE_EVIDENCE_PATH=')).Count -eq 1 -and
-        $runnerSource.IndexOf("Write-SmokeJsonObject -Path (Join-Path `$evidence 'result.json')", [System.StringComparison]::Ordinal) -lt
-        $runnerSource.IndexOf("Write-Output ('DTMAPI_SMOKE_EVIDENCE_PATH=' + `$machineEvidencePath)", [System.StringComparison]::Ordinal)) 'Smoke must emit exactly one machine evidence marker after result.json and before terminal success/failure routing.'
+
+
     Assert-True ($wrapperSource.Contains('function Find-Batch5GcSmokeEvidence') -and
         $wrapperSource.Contains('function Resolve-Batch5GcSmokeEvidenceCandidate') -and
         $wrapperSource.Contains("`$gameSmokeEvidenceRoot = [System.IO.Path]::GetFullPath((Join-Path `$repo 'docs\debug\evidence\GAME-SMOKE'))") -and
@@ -550,8 +548,8 @@ try {
     Assert-True ($wrapperSource.Contains("`$plan.Status = 'failed'") -and $wrapperSource.Contains('$plan.FailedAt = $failedAt') -and $wrapperSource.Contains('$plan.Failure = $failure') -and $wrapperSource.Contains('finally {')) 'Executable ladder must persist a root failed terminal and still enter lock-release cleanup for every exception.'
     Assert-True ($wrapperSource.Contains("'-OfficialModProfileExtraEnabledIds', 'Local.Yuuka_DTMAPI_ActionSpeed'") -and $wrapperSource.Contains("'-IsolateAllOfficialMods'")) 'The historical ActionSpeed ladder must isolate its measured product.'
     Assert-True (-not $wrapperSource.Contains('GC.Collect') -and -not $orchestratorSource.Contains('GC.Collect') -and -not $actionSource.Contains('GC.Collect')) 'Batch 5 ActionSpeed ladder automation must not force GC.'
-    Assert-True ($runnerSource.Contains('[ValidateRange(0, 500)]') -and $runnerSource.Contains('Batch5GcLadderTargetUnits')) 'Smoke runner must accept bounded arbitrary positive ActionSpeed work targets.'
-    Assert-True ($runnerSource.Contains("[ValidateSet('Tool','Interact','Eat','ContinuousUse','FishLoop')]") -and $runnerSource.Contains("@('Tool','Interact','Eat','ContinuousUse')")) 'Smoke runner must expose all four ActionSpeed workload identities and reject ambiguous labels.'
+    Assert-True ($runnerEntrySource -match '\[ValidateRange\(1, 500\)\]\s*\[int\] \$Batch5GcLadderTargetUnits') 'Smoke CLI must accept bounded positive ActionSpeed work targets.'
+    Assert-True ($runnerEntrySource.Contains("[ValidateSet('Tool','Interact','Eat','ContinuousUse','FishLoop')]") -and $runnerRoutingSource.Contains("@('Tool','Interact','Eat','ContinuousUse')")) 'Smoke CLI and routing phase must expose all four ActionSpeed workload identities and reject ambiguous labels.'
     Assert-True ($wrapperSource.Contains("`$actionSpeedWorkloads = @('Tool','Interact','Eat','ContinuousUse')") -and $wrapperSource.Contains("`$domainName + '-' + `$level.Id + '-' + `$workload")) 'Wrapper stage ids must distinguish every ActionSpeed workload in machine-readable evidence.'
     Assert-True ($settingsSource.Contains('ActionSpeedGcLadder') -and $settingsSource.Contains('{ "Tool", "Interact", "Eat", "ContinuousUse" }')) 'Historical QA settings must retain ActionSpeed and all four workload identities.'
     Assert-True ($participantSource.Contains('Batch5GcLadderOrchestrator') -and $participantSource.Contains('batch5GcLadder.OnSaveLoaded') -and $participantSource.Contains('batch5GcLadder.OnReturnedToTitle')) 'QA participant must own sampler save/title lifecycle.'

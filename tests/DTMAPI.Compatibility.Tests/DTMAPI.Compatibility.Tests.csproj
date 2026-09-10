@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>compatibility</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleMovementHooks.cs" Link="DebugConsole/DebugConsoleMovementHooks.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeShapeFixture.cs" Link="Shared/NativeShapeFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeConfigurationFixture.cs" Link="Shared/NativeConfigurationFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CodeModPackageFixture.cs" Link="Shared/CodeModPackageFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RuntimeHostFixture.cs" Link="Shared/RuntimeHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CompatibilityHostFixture.cs" Link="Shared/CompatibilityHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/PersistentRootFixture.cs" Link="Shared/PersistentRootFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RetryingOwnerFixture.cs" Link="Shared/RetryingOwnerFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/ReflectionAssertions.cs" Link="Shared/ReflectionAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CoreOwnerCounts.cs" Link="Shared/CoreOwnerCounts.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots/EquipmentSlotProtectedStoragePolicy.cs" Link="Compatibility/EquipmentSlots/EquipmentSlotProtectedStoragePolicy.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots/EquipmentSlotShieldPolicy.cs" Link="Compatibility/EquipmentSlots/EquipmentSlotShieldPolicy.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DebugConsole/CompatibilityDebugConsoleInputHooks.cs" Link="DebugConsole/CompatibilityDebugConsoleInputHooks.cs" />
+    <Compile Include="../../products/first-party/DebugConsole/src/Native/DebugConsoleCreativeHooks.cs" Link="DebugConsole/DebugConsoleCreativeHooks.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown/DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongNameFixture/CompatibilityHostWrongNameFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongVersionFixture/CompatibilityHostWrongVersionFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongFrameworkFixture/CompatibilityHostWrongFrameworkFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="StageCompatibilityHost" AfterTargets="Build">
+    <Copy SourceFiles="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/bin/$(Configuration)/netstandard2.0/DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongNameFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.GameBridge.DolocTown.Compatibility.Substitute.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongNameFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongVersionFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongVersionFixture" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongFrameworkFixture/bin/$(Configuration)/net8.0/DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostWrongFrameworkFixture" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

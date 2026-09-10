@@ -1,8 +1,10 @@
-# ISSUE-023: Runtime installer stress boundaries can report false success or overlap mutation
+﻿# ISSUE-023: Runtime installer stress boundaries can report false success or overlap mutation
+
+- State: `mitigated`
+- Current boundary: The 0.6.1 source/package matrix now freezes host proof, per-game mutation ownership, pending-transaction uninstall, unique complete log publication and truthful no-op receipts; publication/player acceptance remains pending.
 
 ## Status
 
-- State: `mitigated`
 - Opened: `2026-08-08`
 - Severity: high
 - Area: Runtime Workshop host selection, install/uninstall serialization and support-log publication

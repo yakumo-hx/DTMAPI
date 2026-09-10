@@ -291,7 +291,10 @@ namespace DTMAPI.Core.Runtime
                 throw Violation("advanced-harmony-owner-mismatch", "Advanced owner supervision already exists for " + ownerId + ".");
             AdvancedHarmonySnapshot before = RequireSnapshot();
             string expectedOwner = classification.ExpectedHarmonyOwner;
-            if (!expectedOwner.StartsWith("dtmapi.mod.", StringComparison.Ordinal) || expectedOwner.Length == "dtmapi.mod.".Length)
+            if (classification.DeclarationProvenance == "sdk-native-contract-v1-verified"
+                || classification.DeclarationProvenance == "sdk-native-contract-v2-verified")
+                DTMAPI.Internal.Authoring.NativePackageContract.RequireOwner(ownerId, expectedOwner);
+            else if (!expectedOwner.StartsWith("dtmapi.mod.", StringComparison.Ordinal) || expectedOwner.Length == "dtmapi.mod.".Length)
                 throw Violation("advanced-harmony-owner-mismatch", "Canonical Harmony owner must use the non-empty dtmapi.mod.<uniqueid> namespace.");
             if (before.Patches.Any(patch => patch.Owner.Equals(expectedOwner, StringComparison.Ordinal)))
                 throw Violation("advanced-harmony-owner-mismatch", "Canonical Harmony owner already has patches before Entry: " + expectedOwner + ".");

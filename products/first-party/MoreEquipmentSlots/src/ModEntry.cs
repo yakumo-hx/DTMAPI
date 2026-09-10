@@ -34,6 +34,10 @@ namespace DTMAPI.MoreEquipmentSlots
             runtimeCreated = true;
             try
             {
+                runtime.ConfigureUiText(
+                    T(
+                        "ui.slot.hint",
+                        "Extra equipment slot {0}"));
                 config =
                     helper.ReadConfig<MoreEquipmentSlotsConfig>() ??
                     new MoreEquipmentSlotsConfig();
@@ -248,7 +252,9 @@ namespace DTMAPI.MoreEquipmentSlots
         private void OnSaveLoaded(
             object sender,
             SaveLoadedEventArgs e) =>
-            runtime.OnSaveLoaded(e.SaveSlot);
+            runtime.OnSaveLoaded(
+                e.SaveSlot,
+                e.IsNewGame);
 
         private void OnSaveSaving(
             object sender,

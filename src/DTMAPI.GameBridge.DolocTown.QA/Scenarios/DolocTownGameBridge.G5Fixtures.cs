@@ -6,6 +6,27 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     internal sealed partial class QaScenarioController
     {
+        internal bool IsG5WorldMutationReadyForFixture()
+        {
+            if (!IsNormalGameplayForFixture())
+                return false;
+
+            patcher ??= new HarmonyReflectionPatcher(runtime);
+            Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
+            object? archive = ReadStaticMember(dolocApi, "archiveHandle");
+            object? currentRoom = archive == null
+                ? null
+                : ReadMember(archive, "currentRoom");
+            object? roomInfo = currentRoom == null
+                ? null
+                : ReadMember(currentRoom, "RoomInfo");
+            object? agent = ReadStaticMember(dolocApi, "agent");
+            return archive != null &&
+                currentRoom != null &&
+                roomInfo != null &&
+                agent != null;
+        }
+
         internal G4FixtureStepResult AdvanceG5WorldMutationForFixture(string caseId)
         {
             caseId = caseId ?? string.Empty;

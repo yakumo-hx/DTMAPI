@@ -1,0 +1,24 @@
+{
+  "name": "缺氧动物包",
+  "author": "Yuuka",
+  "version": "1.0.0",
+  "description": "缺氧动物包（示例）\n需要 DTMAPI 0.6.0 或更高版本。虽然是纯粹内容包，但是加载能力需要DTMAPI实现。\n新增四种可养殖动物：哈奇、壁虎、田鼠和浮游生物。\n\n哈奇每天产出1枚哈奇蛋，可加工为铁矿石×5、铜矿石×5；产出设备为鸡窝；\n壁虎每3天产出1枚壁虎蛋，可加工为羊毛×3；产出设备为粘毛滚；\n田鼠每天产出1枚田鼠蛋，可加工为生肉×10；产出设备为挤奶器；\n浮游生物每天产出1枚浮游生物蛋，可加工为煤×20、树脂×5；产出设备为蜂箱。\n\n隐藏产出：\n哈奇阈值60，产出石化哈奇蛋，可加工为金矿石×10、钛矿石×5；\n壁虎阈值60，产出羊毛脂×3；\n田鼠阈值40，产出肥沃田鼠蛋，可加工为生肉×5、有机肥×30；\n浮游生物阈值120，产出聚合浮游生物蛋，可加工为橡胶×30、塑料×30。\n购买与设备：前往凯涅尼木的动物商店购买四种幼体袋，价格分别为哈奇800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年动物售价为对应幼体购买价的3倍。\n同一商店固定出售小动物照料站图纸，价格1000G。使用图纸解锁配方后，在设备工作台使用铜锭×5、木头×100制作小动物照料站，将普通蛋和三种稀有蛋投入设备即可加工，加工时间为1h，耗电为1。\n\n本mod为示例mod，基于DTMAPI的动物拓展能力，将在日后更新教程文档。作者只需要配置PNG、WAV、JSON即可实现添加养殖动物。欢迎大家体验。有bug请反馈，喜欢请点好评♥️",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Animal",
+    "Developer"
+  ],
+  "localized_name": {
+    "schinese": "缺氧动物包",
+    "tchinese": "缺氧動物包",
+    "english": "Oxygen Not Included Animal Pack"
+  },
+  "localized_description": {
+    "schinese": "缺氧动物包（示例）\n需要 DTMAPI 0.6.0 或更高版本。虽然是纯粹内容包，但是加载能力需要DTMAPI实现。\n新增四种可养殖动物：哈奇、壁虎、田鼠和浮游生物。\n\n哈奇每天产出1枚哈奇蛋，可加工为铁矿石×5、铜矿石×5；产出设备为鸡窝；\n壁虎每3天产出1枚壁虎蛋，可加工为羊毛×3；产出设备为粘毛滚；\n田鼠每天产出1枚田鼠蛋，可加工为生肉×10；产出设备为挤奶器；\n浮游生物每天产出1枚浮游生物蛋，可加工为煤×20、树脂×5；产出设备为蜂箱。\n\n隐藏产出：\n哈奇阈值60，产出石化哈奇蛋，可加工为金矿石×10、钛矿石×5；\n壁虎阈值60，产出羊毛脂×3；\n田鼠阈值40，产出肥沃田鼠蛋，可加工为生肉×5、有机肥×30；\n浮游生物阈值120，产出聚合浮游生物蛋，可加工为橡胶×30、塑料×30。\n购买与设备：前往凯涅尼木的动物商店购买四种幼体袋，价格分别为哈奇800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年动物售价为对应幼体购买价的3倍。\n同一商店固定出售小动物照料站图纸，价格1000G。使用图纸解锁配方后，在设备工作台使用铜锭×5、木头×100制作小动物照料站，将普通蛋和三种稀有蛋投入设备即可加工，加工时间为1h，耗电为1。\n\n本mod为示例mod，基于DTMAPI的动物拓展能力，将在日后更新教程文档。作者只需要配置PNG、WAV、JSON即可实现添加养殖动物。欢迎大家体验。有bug请反馈，喜欢请点好评♥️",
+    "tchinese": "缺氧動物包（示例）\n需要 DTMAPI 0.6.0 或更高版本。雖然是純內容包，但是載入能力需要DTMAPI實現。\n新增四種可養殖動物：哈奇、壁虎、田鼠和浮游生物。\n\n哈奇每天產出1枚哈奇蛋，可加工為鐵礦石×5、銅礦石×5；產出設備為雞窩；\n壁虎每3天產出1枚壁虎蛋，可加工為羊毛×3；產出設備為粘毛滾；\n田鼠每天產出1枚田鼠蛋，可加工為生肉×10；產出設備為擠奶器；\n浮游生物每天產出1枚浮游生物蛋，可加工為煤×20、樹脂×5；產出設備為蜂箱。\n\n隱藏產出：\n哈奇閾值60，產出石化哈奇蛋，可加工為金礦石×10、鈦礦石×5；\n壁虎閾值60，產出羊毛脂×3；\n田鼠閾值40，產出肥沃田鼠蛋，可加工為生肉×5、有機肥×30；\n浮游生物閾值120，產出聚合浮游生物蛋，可加工為橡膠×30、塑膠×30。\n購買與設備：前往凱涅尼木的動物商店購買四種幼體袋，價格分別為哈奇800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年動物售價為對應幼體購買價的3倍。\n同一商店固定出售小動物照料站圖紙，價格1000G。使用圖紙解鎖配方後，在設備工作台使用銅錠×5、木頭×100製作小動物照料站，將普通蛋和三種稀有蛋投入設備即可加工，加工時間為1h，耗電為1。\n\n本mod為示例mod，基於DTMAPI的動物擴充能力，將在日後更新教學文件。作者只需要配置PNG、WAV、JSON即可實現新增養殖動物。歡迎大家體驗。有bug請回報，喜歡請點好評♥️",
+    "english": "Oxygen Not Included Animal Pack (Example)\nRequires DTMAPI 0.6.0 or later. Although this is a content-only pack, its loading capability is provided by DTMAPI.\nAdds four ranchable animals: Hatch, Drecko, Mole, and Oilfloater.\n\nHatch produces 1 Hatch Egg per day. It can be processed into Iron Ore ×5 and Copper Ore ×5; production equipment: Chicken Coop;\nDrecko produces 1 Drecko Egg every 3 days. It can be processed into Wool ×3; production equipment: Lint Roller;\nMole produces 1 Mole Egg per day. It can be processed into Raw Meat ×10; production equipment: Milking Machine;\nOilfloater produces 1 Oilfloater Egg per day. It can be processed into Coal ×20 and Resin ×5; production equipment: Hive Box.\n\nHidden products:\nHatch threshold 60: produces a Petrified Hatch Egg, which can be processed into Gold Ore ×10 and Titanium Ore ×5;\nDrecko threshold 60: produces Lanolin ×3;\nMole threshold 40: produces a Fertile Mole Egg, which can be processed into Raw Meat ×5 and Organic Fertilizer ×30;\nOilfloater threshold 120: produces a Polymer Oilfloater Egg, which can be processed into Rubber ×30 and Plastic ×30.\nPurchasing and equipment: Visit Kenenimuu's Animal Shop to buy the four juvenile animal bags: Hatch 800G, Drecko 3000G, Mole 5000G, and Oilfloater 1200G.\nEach adult animal sells for three times the corresponding juvenile purchase price.\nThe same shop always sells the Small Animal Care Station Blueprint for 1000G. Use the blueprint to unlock its recipe, then craft the Small Animal Care Station at the Equipment Workbench with Copper Ingots ×5 and Wood ×100. Insert ordinary eggs or any of the three rare eggs to process them. Processing takes 1h and power consumption is 1.\n\nThis is an example mod built on DTMAPI's animal-extension capability. The tutorial documentation will be updated later. Authors only need to configure PNG, WAV, and JSON files to add ranchable animals. We hope you enjoy it. If you find a bug, please report it; if you like the mod, please leave a positive rating ♥️"
+  }
+}

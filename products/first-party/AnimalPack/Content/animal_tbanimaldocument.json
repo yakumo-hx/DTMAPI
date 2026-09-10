@@ -1,0 +1,90 @@
+[
+  {
+    "id": "hatch",
+    "ui_sprite_asset": { "url": "anim_animal_hatch_young_idle_0" },
+    "ui_adult_sprite_asset": { "url": "anim_animal_hatch_adult_idle_0" },
+    "infancy_asset": { "url": "anim_animal_hatch_young_idle_0" },
+    "adult_asset": { "url": "anim_animal_hatch_adult_idle_0" },
+    "document_infos": [
+      {
+        "id": "hatch_0",
+        "document_type": 1,
+        "value": 0,
+        "description_append": { "key": "document_animal_hatch_0", "text": "哈奇是一种会产下矿物蛋的小动物。" }
+      },
+      {
+        "id": "hatch_1",
+        "document_type": 4,
+        "value": 1,
+        "description_append": { "key": "document_animal_hatch_1", "text": "它沿用立尾雉的行为，哈奇蛋可在小动物照料站分解为矿石。" }
+      }
+    ],
+    "display": true
+  },
+  {
+    "id": "drecko",
+    "ui_sprite_asset": { "url": "anim_animal_drecko_young_idle_0" },
+    "ui_adult_sprite_asset": { "url": "anim_animal_drecko_adult_idle_0" },
+    "infancy_asset": { "url": "anim_animal_drecko_young_idle_0" },
+    "adult_asset": { "url": "anim_animal_drecko_adult_idle_0" },
+    "document_infos": [
+      {
+        "id": "drecko_0",
+        "document_type": 1,
+        "value": 0,
+        "description_append": { "key": "document_animal_drecko_0", "text": "壁虎是一种会产下富含纤维蛋壳的小动物。" }
+      },
+      {
+        "id": "drecko_1",
+        "document_type": 4,
+        "value": 1,
+        "description_append": { "key": "document_animal_drecko_1", "text": "它沿用角羊驼的行为，每三天产下一枚可分解为羊毛的蛋。" }
+      }
+    ],
+    "display": true
+  },
+  {
+    "id": "mole",
+    "ui_sprite_asset": { "url": "anim_animal_mole_young_idle_0" },
+    "ui_adult_sprite_asset": { "url": "anim_animal_mole_adult_idle_0" },
+    "infancy_asset": { "url": "anim_animal_mole_young_idle_0" },
+    "adult_asset": { "url": "anim_animal_mole_adult_idle_0" },
+    "document_infos": [
+      {
+        "id": "mole_0",
+        "document_type": 1,
+        "value": 0,
+        "description_append": { "key": "document_animal_mole_0", "text": "田鼠是一种会产下肉质蛋的小动物。" }
+      },
+      {
+        "id": "mole_1",
+        "document_type": 4,
+        "value": 1,
+        "description_append": { "key": "document_animal_mole_1", "text": "它沿用沼泽兽的行为，特殊照料还能得到肥沃田鼠蛋。" }
+      }
+    ],
+    "display": true
+  },
+  {
+    "id": "oilfloater",
+    "ui_sprite_asset": { "url": "anim_animal_oilfloater_young_idle_0" },
+    "ui_adult_sprite_asset": { "url": "anim_animal_oilfloater_adult_idle_0" },
+    "infancy_asset": { "url": "anim_animal_oilfloater_young_idle_0" },
+    "adult_asset": { "url": "anim_animal_oilfloater_adult_idle_0" },
+    "document_infos": [
+      {
+        "id": "oilfloater_0",
+        "document_type": 1,
+        "value": 0,
+        "description_append": { "key": "document_animal_oilfloater_0", "text": "浮游生物是一种会聚集燃料物质的小动物。" }
+      },
+      {
+        "id": "oilfloater_1",
+        "document_type": 4,
+        "value": 1,
+        "description_append": { "key": "document_animal_oilfloater_1", "text": "它沿用变形蜜虫的行为，产下的蛋可分解为煤和树脂。" }
+      }
+    ],
+    "display": true
+  }
+]

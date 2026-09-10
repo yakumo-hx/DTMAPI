@@ -72,4 +72,4 @@ longer attempted and cannot create a startup Error after PlayerLoop succeeds.
 
 - [Owning Update](../../updates/2026/20260731-0002-autofishing-legacy-native-and-runtime-fallback-closeout.md)
 - [Long-run Mono/GC issue](../../debug/issues/ISSUE-010-20260620-long-run-mono-gc-crash.md)
-- [Historical Hook snapshot](../README-history-through-20260711.md)
+- [Historical Hook snapshot](../../archive/hook-map/2026/README-history-through-20260711.md)

@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using DTMAPI.Abstractions;
 using Native = DTMAPI.DebugConsole.DebugConsoleNativeAccess;
 
@@ -20,6 +18,12 @@ namespace DTMAPI.DebugConsole
         IAdvancedActions
     {
         private readonly IDebugConsoleNativeRuntime runtime;
+        private static Type? playerApiType;
+        private static MemberInfo? playerAgentMember;
+        private static bool playerAgentMemberResolved;
+        private static Type? addTechPointApiType;
+        private static MethodInfo? addTechPointMethod;
+        private static bool addTechPointMethodResolved;
         private double movementMultiplier = 1d;
         private object? movementOwner;
         private string movementLeaseOwnerId = string.Empty;
@@ -41,6 +45,43 @@ namespace DTMAPI.DebugConsole
         private bool creativeAttemptedShop;
         private bool creativeAttemptedSpirit;
         private bool creativeMutationUncertain;
+        private IReadOnlyList<InventoryDebugItem>? inventoryCatalog;
+        private IReadOnlyList<InventoryDebugSourceGroup>? inventorySourceGroups;
+        private IReadOnlyList<SpawnCatalogOption>? monsterCatalog;
+        private IReadOnlyList<AnimalCatalogOption>? animalCatalog;
+        private readonly Dictionary<string, object> monsterProtos =
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object> animalProtos =
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private WeatherPanelSnapshot? weatherSnapshotCache;
+        private DateTimeOffset weatherSnapshotExpiresAtUtc = DateTimeOffset.MinValue;
+
+        internal static readonly string[] StableItemCategoryIds =
+        {
+            "tool",
+            "material",
+            "farm",
+            "husbandry",
+            "product",
+            "food",
+            "kit",
+            "equipment",
+            "construction",
+            "special"
+        };
+        private static readonly IReadOnlyList<string> StableItemCategories =
+            Array.AsReadOnly(StableItemCategoryIds);
+
+        internal static readonly string[] StableWeatherIds =
+        {
+            "SUNNY",
+            "CLOUDY",
+            "RAIN",
+            "THUNDERSTORM",
+            "WINDY",
+            "ACID_RAIN",
+            "SCORCH_SUN"
+        };
 
         internal DebugConsoleNativeActions(
             IDebugConsoleNativeRuntime runtime)
@@ -71,6 +112,20 @@ namespace DTMAPI.DebugConsole
                 return;
             runtime.SetMovementMultiplier(current, movementMultiplier);
             movementOwner = current;
+        }
+
+        internal bool NeedsUpdate => movementLeaseActive;
+
+        internal void InvalidateCatalogs()
+        {
+            inventoryCatalog = null;
+            inventorySourceGroups = null;
+            monsterCatalog = null;
+            animalCatalog = null;
+            monsterProtos.Clear();
+            animalProtos.Clear();
+            weatherSnapshotCache = null;
+            weatherSnapshotExpiresAtUtc = DateTimeOffset.MinValue;
         }
 
         internal void RestoreTransientState(string reason)
@@ -172,65 +227,80 @@ namespace DTMAPI.DebugConsole
             int page = Math.Max(0, query.Page);
             try
             {
-                List<InventoryDebugItem> items =
-                    EnumerateInventoryItems().ToList();
-                IEnumerable<InventoryDebugItem> filtered = items;
-                if (!query.IncludeUnavailable)
-                    filtered = filtered.Where(item => item.CanGive);
+                IReadOnlyList<InventoryDebugItem> items = InventoryCatalog();
                 string search = (query.SearchText ?? string.Empty).Trim();
-                if (search.Length > 0)
+                string source = (query.SourceId ?? string.Empty).Trim();
+                string category = (query.Category ?? string.Empty).Trim();
+                long requestedStart = (long)page * size;
+                var requestedItems = new List<InventoryDebugItem>(size);
+                var tail = new InventoryDebugItem[size];
+                int tailCount = 0;
+                int tailNext = 0;
+                int total = 0;
+                for (int index = 0; index < items.Count; index++)
                 {
-                    filtered = filtered.Where(item =>
+                    InventoryDebugItem item = items[index];
+                    if (!query.IncludeUnavailable && !item.CanGive)
+                        continue;
+                    if (search.Length > 0 &&
                         (item.SearchText ?? string.Empty).IndexOf(
                             search,
-                            StringComparison.OrdinalIgnoreCase) >= 0);
-                }
-                string source = (query.SourceId ?? string.Empty).Trim();
-                if (source.Equals("__base", StringComparison.OrdinalIgnoreCase))
-                    filtered = filtered.Where(item => !item.IsModItem);
-                else if (source.Equals("__mods", StringComparison.OrdinalIgnoreCase))
-                    filtered = filtered.Where(item => item.IsModItem);
-                else if (source.Length > 0)
-                {
-                    filtered = filtered.Where(item =>
-                        item.SourceId.Equals(
-                            source,
-                            StringComparison.OrdinalIgnoreCase));
-                }
-                else if (query.ModItemsOnly)
-                    filtered = filtered.Where(item => item.IsModItem);
+                            StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        continue;
+                    }
+                    if (!InventorySourceMatches(item, source))
+                        continue;
+                    if (category.Length > 0 &&
+                        !item.Category.Equals(
+                            category,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
-                List<InventoryDebugItem> sourceFiltered = filtered.ToList();
-                string[] categories = sourceFiltered
-                    .Select(item => Native.First(item.SubCategory, item.Category))
-                    .Where(value => value.Length > 0)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-                string category = (query.Category ?? string.Empty).Trim();
-                if (category.Length > 0)
-                {
-                    sourceFiltered = sourceFiltered.Where(item =>
-                            item.Category.Equals(category, StringComparison.OrdinalIgnoreCase) ||
-                            item.SubCategory.Equals(category, StringComparison.OrdinalIgnoreCase))
-                        .ToList();
+                    long matchIndex = total;
+                    total++;
+                    if (matchIndex >= requestedStart &&
+                        requestedItems.Count < size)
+                    {
+                        requestedItems.Add(item);
+                    }
+                    tail[tailNext] = item;
+                    tailNext = (tailNext + 1) % size;
+                    if (tailCount < size)
+                        tailCount++;
                 }
-                sourceFiltered = sourceFiltered
-                    .OrderBy(item => item.IsModItem ? 1 : 0)
-                    .ThenBy(item => item.RuntimeOrder)
-                    .ThenBy(item => item.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                int pages = Math.Max(1, (int)Math.Ceiling(sourceFiltered.Count / (double)size));
-                page = Math.Min(page, pages - 1);
+
+                int pages = Math.Max(
+                    1,
+                    (int)Math.Ceiling(total / (double)size));
+                int resolvedPage = Math.Min(page, pages - 1);
+                IReadOnlyList<InventoryDebugItem> pageItems;
+                if (resolvedPage == page)
+                    pageItems = requestedItems.ToArray();
+                else
+                {
+                    int resolvedCount = total - resolvedPage * size;
+                    var resolvedItems = new InventoryDebugItem[resolvedCount];
+                    int oldest = tailCount < size ? 0 : tailNext;
+                    int skip = tailCount - resolvedCount;
+                    for (int index = 0; index < resolvedCount; index++)
+                    {
+                        resolvedItems[index] =
+                            tail[(oldest + skip + index) % size];
+                    }
+                    pageItems = resolvedItems;
+                }
+
                 return new InventoryDebugPage
                 {
-                    Items = sourceFiltered.Skip(page * size).Take(size).ToArray(),
-                    Categories = categories,
-                    Sources = BuildSourceGroups(items),
-                    Page = page,
+                    Items = pageItems,
+                    Categories = StableItemCategories,
+                    Sources = InventorySourceGroups(),
+                    Page = resolvedPage,
                     PageSize = size,
-                    TotalItems = sourceFiltered.Count,
+                    TotalItems = total,
                     TotalPages = pages,
                     Status = "ok"
                 };
@@ -245,6 +315,21 @@ namespace DTMAPI.DebugConsole
                     Status = error.GetType().Name + ": " + error.Message
                 };
             }
+        }
+
+        private static bool InventorySourceMatches(
+            InventoryDebugItem item,
+            string source)
+        {
+            if (source.Length == 0)
+                return true;
+            if (source.Equals("__base", StringComparison.OrdinalIgnoreCase))
+                return !item.IsModItem;
+            if (source.Equals("__mods", StringComparison.OrdinalIgnoreCase))
+                return item.IsModItem;
+            return item.SourceId.Equals(
+                source,
+                StringComparison.OrdinalIgnoreCase);
         }
 
         public InventoryGiveResult GiveItem(
@@ -351,8 +436,14 @@ namespace DTMAPI.DebugConsole
             Status(runtime.NativeOwnerLabel +
                 " item query and native backpack placement.");
 
-        public WeatherDebugState GetState()
+        public WeatherPanelSnapshot GetPanelSnapshot()
         {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (weatherSnapshotCache != null &&
+                now <= weatherSnapshotExpiresAtUtc)
+            {
+                return weatherSnapshotCache;
+            }
             try
             {
                 object? archive = Native.Archive;
@@ -360,64 +451,70 @@ namespace DTMAPI.DebugConsole
                 object? timeData = Native.Read(archive, "timeData");
                 string seasonGroupId = CurrentSeasonGroupId(archive);
                 object? season = CurrentSeason(timeData, seasonGroupId);
-                string id = Native.Read(archive, "LocalWeatherType")?.ToString() ??
+                string currentId = Native.Read(archive, "LocalWeatherType")?.ToString() ??
                     string.Empty;
-                WeatherDebugOption? current = GetAvailableWeathers()
-                    .FirstOrDefault(option =>
-                        option.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-                return new WeatherDebugState
+                string[] forecastIds = CurrentDayWeather(timeData, seasonGroupId)
+                    .Select(WeatherId)
+                    .Where(value => value.Length > 0)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var forecast = new HashSet<string>(
+                    forecastIds,
+                    StringComparer.OrdinalIgnoreCase);
+                var byId = Native.Enumerate(Native.TableList("TbWeather"))
+                    .Select(weather => BuildWeather(weather, currentId, forecast))
+                    .Where(option => option.Id.Length > 0)
+                    .GroupBy(option => option.Id, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.First(),
+                        StringComparer.OrdinalIgnoreCase);
+                string[] fixedIds = StableWeatherIds;
+                WeatherDebugOption[] options = fixedIds
+                    .Select(id => byId.TryGetValue(id, out var option)
+                        ? option
+                        : BuildUnavailableWeather(id, currentId, forecast))
+                    .ToArray();
+                WeatherDebugOption? current = options.FirstOrDefault(option =>
+                    option.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase));
+                weatherSnapshotCache = new WeatherPanelSnapshot
                 {
-                    CurrentWeatherId = id,
-                    CurrentWeatherName = current?.DisplayName ?? id,
-                    Year = Native.Int(date, "Year"),
-                    Month = Native.Int(date, "Month"),
-                    Day = Native.Int(date, "Day"),
-                    Hour = Native.Int(date, "Hour"),
-                    SeasonName = Native.First(
-                        Native.Text(season, "Title"),
-                        Native.Text(season, "Id")),
-                    CurrentDayForecastWeatherIds =
-                        CurrentDayWeather(timeData, seasonGroupId)
-                            .Select(WeatherId)
-                            .Where(value => value.Length > 0)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray()
+                    State = new WeatherDebugState
+                    {
+                        CurrentWeatherId = currentId,
+                        CurrentWeatherName = current?.DisplayName ?? currentId,
+                        Year = Native.Int(date, "Year"),
+                        Month = Native.Int(date, "Month"),
+                        Day = Native.Int(date, "Day"),
+                        Hour = Native.Int(date, "Hour"),
+                        SeasonName = Native.First(
+                            Native.Text(season, "Title"),
+                            Native.Text(season, "Id")),
+                        CurrentDayForecastWeatherIds = forecastIds
+                    },
+                    Options = options,
+                    AvailableWeatherIds = fixedIds
+                        .Where(byId.ContainsKey)
+                        .ToArray()
                 };
+                weatherSnapshotExpiresAtUtc = now.AddMilliseconds(100);
+                return weatherSnapshotCache;
             }
             catch (Exception error)
             {
-                runtime.Error("weather-state", error);
-                return new WeatherDebugState();
+                runtime.Error("weather-snapshot", error);
+                return new WeatherPanelSnapshot();
             }
         }
 
+        public WeatherDebugState GetState() => GetPanelSnapshot().State;
+
         public IReadOnlyList<WeatherDebugOption> GetAvailableWeathers()
         {
-            try
-            {
-                object? archive = Native.Archive;
-                string current = Native.Read(archive, "LocalWeatherType")?.ToString() ??
-                    string.Empty;
-                object? timeData = Native.Read(archive, "timeData");
-                string seasonGroupId = CurrentSeasonGroupId(archive);
-                var forecast = new HashSet<string>(
-                    CurrentDayWeather(timeData, seasonGroupId).Select(WeatherId),
-                    StringComparer.OrdinalIgnoreCase);
-                return Native.Enumerate(Native.TableList("TbWeather"))
-                    .Select(weather => BuildWeather(weather, current, forecast))
-                    .Where(option =>
-                        option.Id.Length > 0 &&
-                        !option.Id.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                    .OrderByDescending(option => option.IsCurrent)
-                    .ThenByDescending(option => option.IsCurrentDayForecast)
-                    .ThenBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-            }
-            catch (Exception error)
-            {
-                runtime.Error("weather-list", error);
-                return Array.Empty<WeatherDebugOption>();
-            }
+            WeatherPanelSnapshot snapshot = GetPanelSnapshot();
+            return snapshot.Options
+                .Where(option => snapshot.IsAvailable(option.Id))
+                .ToArray();
         }
 
         public WeatherSetResult SetWeather(
@@ -436,12 +533,13 @@ namespace DTMAPI.DebugConsole
                 object? archive = Native.Archive;
                 Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
                 if (archive == null || api == null)
-                    return Fail(result, "missing-native-weather", "Native weather owner is unavailable.");
-                WeatherDebugOption? allowed = GetAvailableWeathers()
+                    return FailWeather(result, "missing-native-weather", "Native weather owner is unavailable.");
+                WeatherPanelSnapshot snapshot = GetPanelSnapshot();
+                WeatherDebugOption? allowed = snapshot.Options
                     .FirstOrDefault(option =>
                         option.Id.Equals(weatherId, StringComparison.OrdinalIgnoreCase));
-                if (allowed == null)
-                    return Fail(result, "not-whitelisted", "Weather is not in the bounded TbWeather list.");
+                if (allowed == null || !snapshot.IsAvailable(weatherId))
+                    return FailWeather(result, "not-whitelisted", "Weather is not in the bounded TbWeather list.");
                 result.BeforeWeatherId =
                     Native.Read(archive, "LocalWeatherType")?.ToString() ??
                     string.Empty;
@@ -452,10 +550,12 @@ namespace DTMAPI.DebugConsole
                     new[] { typeof(string), typeof(bool) },
                     null);
                 if (command == null)
-                    return Fail(result, "missing-set-weather-command", "DolocAPI.Command_SetWeather(string, bool) is unavailable.");
+                    return FailWeather(result, "missing-set-weather-command", "DolocAPI.Command_SetWeather(string, bool) is unavailable.");
                 command.Invoke(
                     null,
                     new object[] { weatherId, patchCurrentPeriod });
+                weatherSnapshotCache = null;
+                weatherSnapshotExpiresAtUtc = DateTimeOffset.MinValue;
                 result.AfterWeatherId =
                     Native.Read(archive, "LocalWeatherType")?.ToString() ??
                     string.Empty;
@@ -474,8 +574,24 @@ namespace DTMAPI.DebugConsole
             catch (Exception error)
             {
                 runtime.Error("weather-set", error);
-                return Fail(result, error.GetType().Name, error.Message);
+                return FailWeather(result, error.GetType().Name, error.Message);
             }
+        }
+
+        private WeatherSetResult FailWeather(
+            WeatherSetResult result,
+            string reason,
+            string message)
+        {
+            result = Fail(result, reason, message);
+            LogMutation(
+                "weather-set",
+                false,
+                "Weather request id=" + result.WeatherId +
+                " patchCurrentPeriod=" + result.PatchedCurrentPeriod +
+                " reason=" + reason +
+                "; " + message);
+            return result;
         }
 
         BridgeFeatureStatus IWeatherActions.GetStatus() =>
@@ -486,41 +602,16 @@ namespace DTMAPI.DebugConsole
         {
             try
             {
-                var result = new Dictionary<string, TeleportDestination>(
+                var usedMarkPoints = new HashSet<string>(
                     StringComparer.OrdinalIgnoreCase);
-                foreach (object station in Native.Enumerate(Native.TableList("TbStation")))
+                var result = new List<TeleportDestination>();
+                foreach (TeleportSpec spec in StableTeleportDirectory)
                 {
-                    string stationId = Native.Text(station, "Id");
-                    string markId = Native.Text(station, "MarkPointId");
-                    AddDestination(
-                        result,
-                        "station:" + stationId,
-                        Native.First(Native.Text(station, "Title"), stationId),
-                        "Station",
-                        markId,
-                        true,
-                        "TbStation.MarkPointId");
-                }
-                foreach (object mark in Native.Enumerate(Native.TableList("TbMarkPoint")))
-                {
-                    string markId = Native.Text(mark, "Id");
-                    string roomId = Native.Text(mark, "RoomId");
-                    if (!WhitelistedMark(markId, roomId))
+                    if (!usedMarkPoints.Add(spec.MarkPointId))
                         continue;
-                    AddDestination(
-                        result,
-                        "mark:" + markId,
-                        DisplayMark(markId, roomId),
-                        "Key",
-                        markId,
-                        false,
-                        "TbMarkPoint allowlist");
+                    result.Add(BuildDestination(spec));
                 }
-                return result.Values
-                    .OrderBy(value => value.Group, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(value => value.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .Take(80)
-                    .ToArray();
+                return result;
             }
             catch (Exception error)
             {
@@ -548,13 +639,15 @@ namespace DTMAPI.DebugConsole
                     .FirstOrDefault(value =>
                         value.Id.Equals(destinationId, StringComparison.OrdinalIgnoreCase));
                 if (destination == null)
-                    return Fail(result, "not-whitelisted", "Destination is not in the ProductNative allowlist.");
+                    return Fail(result, "not-in-semantic-directory", "Destination is not in the ProductNative semantic directory.");
+                if (!destination.IsUnlocked)
+                    return Fail(result, destination.Source, "Destination is currently unavailable: " + destination.Source + ".");
                 Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
-                MethodInfo? transport = api?.GetMethods(
-                        BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(method =>
-                        method.Name == "DoTransport" &&
-                        method.GetParameters().Length == 5);
+                MethodInfo? transport = Native.Method(
+                    api,
+                    "DoTransport",
+                    5,
+                    true);
                 if (transport == null)
                     return Fail(result, "missing-do-transport", "DolocAPI.DoTransport is unavailable.");
                 result.DestinationName = destination.DisplayName;
@@ -583,51 +676,6 @@ namespace DTMAPI.DebugConsole
             {
                 runtime.Error("teleport", error);
                 return Fail(result, error.GetType().Name, error.Message);
-            }
-        }
-
-        public TeleportCsvExportResult ExportDestinationsCsv(IManifest owner)
-        {
-            var result = new TeleportCsvExportResult();
-            try
-            {
-                TeleportDestination[] destinations = GetDestinations().ToArray();
-                string directory = Path.Combine(
-                    runtime.EvidencePath,
-                    "TELEPORT-DESTINATIONS",
-                    DateTimeOffset.Now.ToString(
-                        "yyyyMMdd-HHmmss",
-                        CultureInfo.InvariantCulture));
-                Directory.CreateDirectory(directory);
-                string path = Path.Combine(directory, "teleport-destinations.csv");
-                var csv = new StringBuilder(
-                    "internal_id,map,x,y,display_name,source,mark_point_id,group,is_station\r\n");
-                foreach (TeleportDestination destination in destinations)
-                {
-                    csv.Append(Csv(destination.Id)).Append(',')
-                        .Append(Csv(destination.RoomId)).Append(',')
-                        .Append(destination.X.ToString("0.###", CultureInfo.InvariantCulture)).Append(',')
-                        .Append(destination.Y.ToString("0.###", CultureInfo.InvariantCulture)).Append(',')
-                        .Append(Csv(destination.DisplayName)).Append(',')
-                        .Append(Csv(destination.Source)).Append(',')
-                        .Append(Csv(destination.MarkPointId)).Append(',')
-                        .Append(Csv(destination.Group)).Append(',')
-                        .Append(destination.IsStation ? "true" : "false")
-                        .AppendLine();
-                }
-                File.WriteAllText(path, csv.ToString(), Encoding.UTF8);
-                result.Success = true;
-                result.Path = path;
-                result.RowCount = destinations.Length;
-                result.Message = "Exported " + destinations.Length + " bounded teleport destinations.";
-                return result;
-            }
-            catch (Exception error)
-            {
-                runtime.Error("teleport-export", error);
-                result.FailureReason = error.GetType().Name;
-                result.Message = error.Message;
-                return result;
             }
         }
 

@@ -1,0 +1,40 @@
+# Runtime lifecycle observations
+
+Status: `installed`; M1 lifecycle facts verified with explicit native failure limits. PN-009/PN-020 now prove bounded public context/world readiness and shutdown; R2 retains the native null-data failure limitation.
+
+## Native boundary and owner
+
+- Current observed build: Steam public 25163613, Assembly-CSharp SHA-256 `60489873c645886c5a523fd0d17c4d451a7d68df133f552c6667501245110ac6`.
+- `System.Boolean DolocAPI::LoadGame(System.Int32)`: existing Prefix/Postfix, production Harmony owner `dtmapi.gamebridge.doloctown`; persistence fallback remains unchanged.
+- `System.Void DolocAPI::AfterLoadArchiveData(System.Boolean)`: existing public `OnAfterLoadArchiveData` UnityEvent subscription preferred, Harmony Postfix fallback. Actual run used UnityEvent. The event can precede the rest of native load continuation; do not conflate it with world readiness.
+- `System.Void DolocTown.NormalGameState::OnUpdate(System.Single)`: existing Postfix calls native-frame drain. No new native patch was added.
+- Existing bridge close unsubscribes the UnityEvent and releases its own production hooks. The observer is bridge-local, with at most 600 subsequent native frames and four sampled records, and uses SafeCallback so diagnostic failure cannot suppress native-frame notification. It creates no event, owner or public scheduling capability.
+
+## Observed facts
+
+In [the M1 run](../../debug/evidence/GAME-SMOKE/20260908-225439-platform-m1/README.md), a public Strict author loaded native index 2. SaveLoaded callback ran on thread 1 with data loaded, archive and agent present, but normal state false and current room absent. LoadGame returned afterward. First subsequent NormalGameState postfix observed all five fields present on thread 1. Before/after saveGeneration was 0/1; this is existing internal accounting, not a public save identity.
+
+Focused native inspection found LoadGame can return false before AfterLoadArchiveData and found normal updates gated by loaded data. No decompiled implementation was copied into this rebuild. The [2026-09-09 continuation](../../debug/evidence/GAME-SMOKE/20260909-platform-m1-continuation/README.md) proves A→title→B and same-slot reload with the same callback/first-native-frame distinction. Entry/Update source trace is proven; duplicate/backward sample ticks were not observed.
+
+The [post-reboot disposable run](../../debug/evidence/GAME-SMOKE/20260909-platform-m1-reboot/README.md) adds native new game: SaveLoaded runs before a room exists, even though normal state is already true. New game bypasses LoadGame; after the tutorial, the first observed native frame has all five fields. A native save in the disposable slot and return to title completed normally.
+
+Temporarily removing only that new slot's data file after the native picker cached its metadata produced the native read-failure message, one LoadGame enter/return, and no SaveLoaded. Restoring exact bytes and retrying in the same process produced no second LoadGame enter, only the title background; native archive update and error-report serialization threw null references. Cold restart loaded the exact restored file and returned to title successfully. The cause of the UI retry failure is not established by those native stack frames; DTMAPI's observer Prefix is void and cannot suppress a native call. The coordinator's independently verified false-return accounting defect is repaired in the owning Update. Neither the failed process's continued Update ticks nor its surviving objects establishes world readiness.
+
+## Related contracts and follow-up
+
+PN-009 additions (source/Core and actual PN-020 Mono verified in [0004](../../updates/2026/20260909-0004-platform-context-scheduler.md)): production owner remains `dtmapi.gamebridge.doloctown`. Exact DolocAPI.NewGame(int) prefix/postfix and a void exception-observing finalizer cover new-game attempts; DolocAPI.LoadGame(int) gets the same failure finalizer without swallowing exceptions. GameStateSceneTransition.Start(Room, Vector2, Action, bool) and DungeonTransitionState.Start(DungeonRoom, Action) prefixes invalidate before asynchronous transitions. DolocAPI.QuitCurrentRoom(Room, bool) and Room.OnEnterRoom() prefix/postfix cover direct changes and fresh room completion. Matching build's Room.OnEnterRoom assigns archiveHandle.currentRoom; RoomGizmos.CurrentRoom is only a separate property and is not used as the authoritative current-world setter. Readiness additionally requires successful outer load/new-game, AfterLoad, exact entered/current room equality and the existing NormalGameState.OnUpdate postfix with IsNormalState (current state, not stack membership). Missing hook coverage keeps world scope unavailable. No new timer/frame driver or native body replacement is introduced.
+
+The final IO-error comparison held the disposable data with FileShare.None. Native file-open exception returned false without the null-data/new-game branch. After release, the same process made a fresh LoadGame call, received SaveLoaded, returned true, observed the next normal frame, then returned to title and completed owner/QA close and process exit. Runner `20260909-082409` passed. Thus failure/recovery is established for actual IO failure; the failed missing/malformed controls remain limited. Matching native owners are LocalSave.LoadGame, DataPersistenceManager.LoadGame/NewGame, GameDataUiState.OnConfirm/Load, LoadingPanel.Update and DolocUIPanel.UpdateDisplay. The null-data path can set IsDataLoaded despite a false return before AfterLoadArchiveData. LoadingPanel auto-hide can interrupt its Show completion; this last UI cancellation is an inference, not directly instrumented proof. No native code was copied or state-reset patch added.
+
+- [PN-016 Update](../../updates/2026/20260908-0013-platform-lifecycle-evidence.md) owns implementation and gaps.
+- [R1](../../reviews/code/2026/20260908-0016-platform-m1-r1.md) accepts the M1 factual exit and opens PN-009 implementation. Each attempt/failure must invalidate old context; new game needs a separate beginning boundary because it bypasses LoadGame. New service readiness/epoch promises still require their own focused native facts and PN-020 tests.
+- [Public API matrix](../../api/public-api-matrix.md): SaveLoaded, UpdateTicked and ReturnedToTitle retain Experimental semantics. SaveSaving/SaveSaved are untouched.
+- [Optional QA continuation](NativeLoadContinuationQa.md) remains a separate diagnostic owner; the external author probe did not install it.
+
+Rollback removes only this bridge-local observation and its two callback calls. Preserve established event/native drain semantics and the original production ownership rules.
+
+## M2 real consumer closure
+
+[PN-020](../../debug/evidence/GAME-SMOKE/20260909-platform-pn020-runtime/README.md) proves two external API 0.7 consumers: new-game intro delays WorldReady until entered/current room and normal frame match; IO false clears epoch 1 and rejects world work; same-process retry creates save 2/world 1. Room/title boundaries cancel pending work and release resources. Unity Application.quitting (CoreModule identity in that evidence) is subscribed by Bootstrap; normal exit and QA Quit publish one main-thread ShuttingDown and close all owner roots. This adds no Harmony owner or frame driver. [Shutdown review](../../reviews/code/2026/20260909-0002-platform-shutdown-entry.md) owns that fix. SaveSaving/SaveSaved remain untouched.
+
+[PN-021 reflection](../../debug/evidence/GAME-SMOKE/20260909-platform-pn021-runtime/README.md) uses the existing optional owner cleanup participant. Service acquisition is on the runtime thread; subsequent plain-managed reflection uses the lock-protected owner state on the caller thread. Failed Entry and shutdown reject new wrapper calls before Mod.Dispose; cleanup clears targets held through surviving wrappers. An independent author observed target GC after rollback in Mono. No new native Hook, frame driver or Unity liveness inference is introduced. [PN-006](../../updates/2026/20260909-0008-platform-reflection-core.md) separately owns the two short-lived native read adapters.

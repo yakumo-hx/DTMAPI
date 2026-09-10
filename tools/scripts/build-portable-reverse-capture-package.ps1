@@ -52,6 +52,7 @@ $portableRoot = Join-Path $repoRoot 'tools\portable-reverse-capture'
 $packageFiles = @(
     [ordered]@{ source = (Join-Path $repoRoot 'tools\scripts\capture-doloctown-reverse-baseline.ps1'); destination = 'capture-doloctown-reverse-baseline.ps1' },
     [ordered]@{ source = (Join-Path $repoRoot 'tools\scripts\steam-appmanifest-identity.ps1'); destination = 'steam-appmanifest-identity.ps1' },
+    [ordered]@{ source = (Join-Path $repoRoot 'tools\scripts\reverse-capture-state.ps1'); destination = 'reverse-capture-state.ps1' },
     [ordered]@{ source = (Join-Path $portableRoot 'run-doloctown-full-capture.ps1'); destination = 'run-doloctown-full-capture.ps1' },
     [ordered]@{ source = (Join-Path $portableRoot 'common.ps1'); destination = 'common.ps1' },
     [ordered]@{ source = (Join-Path $portableRoot 'reverse-baseline-path-safety.ps1'); destination = 'reverse-baseline-path-safety.ps1' },

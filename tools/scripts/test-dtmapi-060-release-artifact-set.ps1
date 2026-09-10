@@ -15,12 +15,13 @@ $expectedCatalogIds = @(
     'auto-fishing',
     'chest-locator-enhancer',
     'fish-roe-info',
+    'more-equipment-slots',
     'more-saves',
     'one-action-complete',
     'y-console',
     'zoom'
 )
-$forbiddenCatalogIds = @('more-equipment-slots', 'strong-planting-gun', 'mine')
+$forbiddenCatalogIds = @('strong-planting-gun', 'mine')
 
 function Copy-ReleaseArtifactSetCatalog {
     param([Parameter(Mandatory = $true)] $Value)
@@ -103,37 +104,49 @@ foreach ($forbiddenCatalogId in $forbiddenCatalogIds) {
     }
 }
 
-foreach ($forbiddenCatalogId in $forbiddenCatalogIds) {
-    Assert-ReleaseArtifactSetThrows -Label "$forbiddenCatalogId builder-selection mutation" -Action {
-        $mutated = Copy-ReleaseArtifactSetCatalog -Value $catalog
-        $product = @($mutated.products | Where-Object { [string]$_.catalogId -ceq $forbiddenCatalogId }) | Select-Object -First 1
-        if ($null -eq $product) {
-            throw "Test fixture product is missing: $forbiddenCatalogId"
-        }
-        $entrypoint = [pscustomobject]@{
-            action = 'ExistingWorkshopUpdate'
-            catalogId = $forbiddenCatalogId
-            workshopId = [string]$product.workshopId
-            version = [string]$product.sourceVersion
-            officialFolder = [string]$product.officialFolder
-            treeSha256 = ('0' * 64)
-        }
-        $mutated.releaseStop.publicMutationEntrypoints = @($mutated.releaseStop.publicMutationEntrypoints) + @($entrypoint)
-        Get-DtmApiReleaseContractAdvancedProducts -Catalog $mutated
+$authorizationMutation = Copy-ReleaseArtifactSetCatalog -Value $catalog
+$authorizationMutation.releaseStop.state = 'ActiveWithExactExistingWorkshopUpdateExceptions'
+$authorizationMutation.releaseStop.publicMutationEntrypoints = @(
+    [pscustomobject]@{
+        action = 'ExistingWorkshopUpdate'
+        catalogId = 'more-equipment-slots'
+        workshopId = '3744059735'
+        version = '1.0.0'
+        officialFolder = 'DTMAPI_MoreEquipmentSlots'
+        treeSha256 = ('0' * 64)
     }
+)
+$authorizationMutation.releaseStop.explicitlyExcludedExistingWorkshopUpdates = @()
+$authorizationMutationIds = @(Get-DtmApiReleaseContractAdvancedProducts -Catalog $authorizationMutation | ForEach-Object {
+    [string](Get-DtmApiMapValue -Map $_ -Key 'catalogId' -Default '')
+} | Sort-Object)
+if (($authorizationMutationIds -join '|') -cne ($expectedCatalogIds -join '|')) {
+    throw 'Future upload authorization leaked into the current-published Advanced artifact projection.'
 }
 
-Assert-ReleaseArtifactSetThrows -Label 'MoreEquipment retained-version mutation' -Action {
-    $mutated = Copy-ReleaseArtifactSetCatalog -Value $catalog
-    $mutated.releaseStop.explicitlyExcludedExistingWorkshopUpdates[0].retainedVersion = '1.0.0'
-    Get-DtmApiReleaseContractAdvancedProducts -Catalog $mutated
+$observedArtifactMutation = Copy-ReleaseArtifactSetCatalog -Value $catalog
+$moreEquipmentProduct = @($observedArtifactMutation.products | Where-Object {
+    [string]$_.catalogId -ceq 'more-equipment-slots'
+}) | Select-Object -First 1
+$moreEquipmentProduct.PSObject.Properties.Remove('currentPublishedArtifact')
+$beforeObservationIds = @(Get-DtmApiReleaseContractAdvancedProducts -Catalog $observedArtifactMutation | ForEach-Object { [string]$_.catalogId })
+if ($beforeObservationIds.Count -ne ($expectedCatalogIds.Count - 1) -or $beforeObservationIds -ccontains 'more-equipment-slots') {
+    throw 'A product without an observed artifact entered the current-published projection.'
+}
+$moreEquipmentProduct | Add-Member -NotePropertyName currentPublishedArtifact -NotePropertyValue ([pscustomobject]@{
+    state = 'SteamPublishedObservedExact'
+}) -Force
+$observedArtifactMutationIds = @(Get-DtmApiReleaseContractAdvancedProducts -Catalog $observedArtifactMutation | ForEach-Object {
+    [string](Get-DtmApiMapValue -Map $_ -Key 'catalogId' -Default '')
+} | Sort-Object)
+if (($observedArtifactMutationIds -join '|') -cne ($expectedCatalogIds -join '|')) {
+    throw 'An exact observed MoreEquipment artifact did not enter the current-published Advanced artifact projection.'
 }
 
-Assert-ReleaseArtifactSetThrows -Label 'Manbo ordinary-retained activation removal' -Action {
+Assert-ReleaseArtifactSetThrows -Label 'non-exact observed artifact state' -Action {
     $mutated = Copy-ReleaseArtifactSetCatalog -Value $catalog
-    $mutated.releaseStop.publicMutationEntrypoints = @($mutated.releaseStop.publicMutationEntrypoints | Where-Object {
-        [string]$_.catalogId -cne 'manbo-cardboard-audio'
-    })
+    $product = @($mutated.products | Where-Object { [string]$_.catalogId -ceq 'zoom' }) | Select-Object -First 1
+    $product.currentPublishedArtifact.state = 'CandidateOnly'
     Get-DtmApiReleaseContractAdvancedProducts -Catalog $mutated
 }
 
@@ -193,7 +206,7 @@ foreach ($routeCase in $routeCases) {
 $workshopPlan = @(& (Join-Path $PSScriptRoot 'build-release-workshop-packages.ps1') -ModsOnly -PlanOnly)
 $workshopPlanIds = @($workshopPlan | ForEach-Object { [string]$_.CatalogId } | Sort-Object)
 if (($workshopPlanIds -join '|') -cne ($expectedCatalogIds -join '|')) {
-    throw "The Workshop staging plan does not match the exact nine-product artifact set: $($workshopPlanIds -join '|')."
+    throw "The Workshop staging plan does not match the exact current-published artifact set: $($workshopPlanIds -join '|')."
 }
 foreach ($workshopPlanItem in $workshopPlan) {
     if ([string]$workshopPlanItem.BuildScript -cne 'build-batch6-advanced-product.ps1') {
@@ -206,6 +219,34 @@ $publicationManagedParent = Join-Path $repo 'temp\test-runs\release-workshop-pub
 $publicationTestRoot = Join-Path $publicationManagedParent ([Guid]::NewGuid().ToString('N'))
 [System.IO.Directory]::CreateDirectory($publicationTestRoot) | Out-Null
 try {
+    # Execute the checker's real set validator against controlled directory trees.
+    $contractTokens = $null
+    $contractErrors = $null
+    $contractAst = [System.Management.Automation.Language.Parser]::ParseFile(
+        (Join-Path $PSScriptRoot 'check-release-contract.ps1'), [ref]$contractTokens, [ref]$contractErrors)
+    if ($contractErrors.Count -gt 0) { throw 'Release contract checker did not parse.' }
+    foreach ($functionName in @('Add-ReleaseContractFailure', 'Assert-ReleaseContractTrue', 'Assert-ReleaseContractExactArtifactRoot')) {
+        $definition = $contractAst.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false) |
+            Where-Object { $_.Name -ceq $functionName } | Select-Object -First 1
+        if ($null -eq $definition) { throw "Missing actual release validator: $functionName" }
+        . ([ScriptBlock]::Create($definition.Extent.Text))
+    }
+    $setFixture = Join-Path $publicationTestRoot 'artifact-set'
+    [IO.Directory]::CreateDirectory((Join-Path $setFixture 'fixture-a')) | Out-Null
+    [IO.Directory]::CreateDirectory((Join-Path $setFixture 'fixture-b')) | Out-Null
+    foreach ($setCase in @(
+        @{ Label = 'exact'; Expected = @('fixture-a', 'fixture-b'); Pass = $true },
+        @{ Label = 'extra'; Expected = @('fixture-a'); Pass = $false },
+        @{ Label = 'missing'; Expected = @('fixture-a', 'fixture-b', 'fixture-c'); Pass = $false }
+    )) {
+        $script:failures = New-Object 'System.Collections.Generic.List[string]'
+        Assert-ReleaseContractExactArtifactRoot -Label $setCase.Label -Root $setFixture -ExpectedCatalogIds $setCase.Expected
+        if (($script:failures.Count -eq 0) -ne $setCase.Pass) { throw "Artifact set fixture failed: $($setCase.Label)" }
+    }
+    $script:failures = New-Object 'System.Collections.Generic.List[string]'
+    Assert-ReleaseContractExactArtifactRoot -Label 'empty root' -Root '' -ExpectedCatalogIds @('fixture-a')
+    if ($script:failures.Count -ne 1) { throw 'An absent artifact root did not produce a structured failure.' }
+
     $finalPublicationRoot = Join-Path $publicationTestRoot 'candidate-output'
     [System.IO.Directory]::CreateDirectory($finalPublicationRoot) | Out-Null
     $oldSentinel = Join-Path $finalPublicationRoot 'old-valid-candidate.txt'
@@ -289,4 +330,4 @@ foreach ($wrapperPath in @(Get-ChildItem -LiteralPath $PSScriptRoot -File -Filte
     }
 }
 
-Write-Host 'DTMAPI 0.6 exact release artifact set tests passed (9 selected; 3 forbidden before builder; deterministic cross-host JSON; MoreEquipment and Manbo retained lanes preserved).'
+Write-Host "DTMAPI current-published Advanced artifact tests passed ($($expectedCatalogIds.Count) observed; upload authorization decoupled; deterministic cross-host JSON; observed artifacts enter dynamically)."

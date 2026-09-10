@@ -1,0 +1,122 @@
+[
+  {
+    "length": 1048,
+    "path": "compatibility.contract.json",
+    "sha256": "A9B301778D1909317923AD0D47D3F5AC80846094A3266C3E4F10D341BAEDB616"
+  },
+  {
+    "length": 996,
+    "path": "DTMAPI.Author.props",
+    "sha256": "874A2A2110D04116D839C5B8E60C12F1A0937342FBC7724C3495D9701476C87D"
+  },
+  {
+    "length": 5682,
+    "path": "source-build.json",
+    "sha256": "62C134EFA4556AC61C4E91D8045A575FB1F4C86D288FAFD76B92B7832EF2CE7A"
+  },
+  {
+    "length": 2052,
+    "path": "source/Directory.Build.props",
+    "sha256": "AE7F28FF89F8B7BFD7E27140CA24B9AD586CD564D69C2A2D48AFDD8F37339C11"
+  },
+  {
+    "length": 102,
+    "path": "source/global.json",
+    "sha256": "A2448D4AF1DF968006ADF8E4E046FB68EF617AF7A1A15B6CE9D82CB455532C58"
+  },
+  {
+    "length": 1747,
+    "path": "source/src/DTMAPI.Abstractions/ApiStatus.cs",
+    "sha256": "61EB8767C44B05A1692F80225285345890D5AFBA1F86A0ADB74C3E1AFE12A8F8"
+  },
+  {
+    "length": 443,
+    "path": "source/src/DTMAPI.Abstractions/AssemblyInfo.cs",
+    "sha256": "1CB3DB47ECEDDFA72DCE467F8E726287B890E3B5AACD683A0895EBCCFC86323B"
+  },
+  {
+    "length": 3781,
+    "path": "source/src/DTMAPI.Abstractions/AuthorSettingsServices.cs",
+    "sha256": "E31CC9EA821FC3B58D7BE64BEA1F4908A6F9CEC0EDEAE3A183FCD9A25055375B"
+  },
+  {
+    "length": 5947,
+    "path": "source/src/DTMAPI.Abstractions/ConfigMenu.cs",
+    "sha256": "83C596ED87806835F096559A217443A6496D2041FCE76FB0D066F8BF48810753"
+  },
+  {
+    "length": 47336,
+    "path": "source/src/DTMAPI.Abstractions/CustomEntities.cs",
+    "sha256": "317FA3146BE9EE0C36E7A00CE7611462CDF98CC3971DD30E8EEBEC0CD6EA0223"
+  },
+  {
+    "length": 244,
+    "path": "source/src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj",
+    "sha256": "CA62A70D341F3D18FEF3EFEF0559F5FF18A351BB99BD6A1361DE779FF8A4724A"
+  },
+  {
+    "length": 454,
+    "path": "source/src/DTMAPI.Abstractions/DtmMod.cs",
+    "sha256": "352644C5973EC14C655EC87F75730E27C63521143393F3F57ABBA06755084B4F"
+  },
+  {
+    "length": 6423,
+    "path": "source/src/DTMAPI.Abstractions/Events.cs",
+    "sha256": "6DC4D172EA10B1418B4ADD355F582FF7BAF20E63FA84D974A336CBC85A1A12EB"
+  },
+  {
+    "length": 78014,
+    "path": "source/src/DTMAPI.Abstractions/ExperimentalGameBridge.cs",
+    "sha256": "4BD54A371A73B099E00CEC601D22C93E905F527249136E7FDF4F3643E6106BFC"
+  },
+  {
+    "length": 9438,
+    "path": "source/src/DTMAPI.Abstractions/Helpers.cs",
+    "sha256": "C9EF146633A17A5E49CBE53AE8BEF61873C58AA37709657BE8E91DD019A7A00C"
+  },
+  {
+    "length": 1598,
+    "path": "source/src/DTMAPI.Abstractions/HelperServices.cs",
+    "sha256": "E4A8E579CB331D29234F2E54F0B495393CD52A2013CF6C30DF0E642DD2F9FC4D"
+  },
+  {
+    "length": 22672,
+    "path": "source/src/DTMAPI.Abstractions/Input.cs",
+    "sha256": "B98235966FE818A9E69C188930B7EC0E3EC43720425D75F6DDDE7CDEDE8F6E7A"
+  },
+  {
+    "length": 860,
+    "path": "source/src/DTMAPI.Abstractions/Logging.cs",
+    "sha256": "29734E721FB6428F60B416899B3FF043F23704782C0EF50147A9829D5AA0D7D2"
+  },
+  {
+    "length": 1677,
+    "path": "source/src/DTMAPI.Abstractions/Manifest.cs",
+    "sha256": "9DE9E93166C74A920600F6C59BBD43941514D29641129696869CB8BAD8BEBBA8"
+  },
+  {
+    "length": 2088,
+    "path": "source/src/DTMAPI.Abstractions/OwnerFiles.cs",
+    "sha256": "23503FAB894C7AEF263717FDB87655F1B69ADCC451599D39DEA995913A6D2982"
+  },
+  {
+    "length": 3449,
+    "path": "source/src/DTMAPI.Abstractions/RetiredLampControl.cs",
+    "sha256": "86636535A1F884BCEDC714675DFDC6283643D5205ADF2598D5F99F83A11D7405"
+  },
+  {
+    "length": 6529,
+    "path": "source/src/DTMAPI.Abstractions/RuntimeServices.cs",
+    "sha256": "85DDEE02AC8FE99C2FEAE61CD4A174814720F6545747B78F8807A98A8995AD2C"
+  },
+  {
+    "length": 2222,
+    "path": "source/src/DTMAPI.Abstractions/Internal/MoreSavesNativeOwnerCoordinator.cs",
+    "sha256": "B33D2978220956D6CF87F76AFDD16BEEECB536447680D18DE21DDD51369BEC3C"
+  },
+  {
+    "length": 328,
+    "path": "source/tools/release/dtmapi-runtime-version.props",
+    "sha256": "F7EAF3C90398D327C93A61D0334DAFE448C113796E3512D3878DEE8C6F06221B"
+  }
+]

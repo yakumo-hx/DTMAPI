@@ -1,4 +1,5 @@
 using DTMAPI.Authoring.Contracts;
+using DTMAPI.Internal.Authoring;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -35,7 +36,7 @@ internal static class DeploymentPackage
     private static readonly Regex UniqueIdPattern = new(@"^[A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9][A-Za-z0-9_-]*)+$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
     private static readonly Regex MinimumVersionPattern = new(@"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    public static StagedDeploymentPackage ExtractAndReceipt(string packagePath, string stagingPath, string gameRoot, string gameRootKey, string transactionId)
+    public static StagedDeploymentPackage ExtractAndReceipt(string packagePath, string stagingPath, string gameRoot, string gameRootKey, string transactionId, bool official = false)
     {
         string fullPackage = Path.GetFullPath(packagePath);
         if (!File.Exists(fullPackage))
@@ -74,7 +75,7 @@ internal static class DeploymentPackage
             ValidatedPackageBinding binding = ValidateKindPayload(stagingPath, manifest, manifestBytes, kind, codeModKind, gameRoot);
 
             DeploymentTreeInventory payload = DeploymentTree.Create(stagingPath, excludeReceipt: true);
-            string destinationRelative = "Mods/" + manifest.UniqueID;
+            string destinationRelative = (official ? "OfficialLocal/" : "Mods/") + manifest.UniqueID;
             var receipt = new DeploymentReceipt
             {
                 SchemaVersion = AuthorSdkContract.DeploymentSchemaVersion,
@@ -201,28 +202,11 @@ internal static class DeploymentPackage
         if (string.IsNullOrWhiteSpace(manifest.Version) || string.IsNullOrWhiteSpace(manifest.Name) || string.IsNullOrWhiteSpace(manifest.Author))
             throw new InvalidDataException("Packaged manifest identity/version fields are incomplete.");
         string minimumVersion = manifest.MinimumDTMApiVersion ?? string.Empty;
-        if (!MinimumVersionPattern.IsMatch(minimumVersion) ||
-            CompareNumericVersion(minimumVersion, AuthorSdkContract.HighestSupportedRuntimeVersion) > 0)
+        if (!MinimumVersionPattern.IsMatch(minimumVersion))
         {
             throw new InvalidDataException(
-                "Author SDK deployment requires a numeric major.minor.patch MinimumDTMApiVersion no newer than " +
-                AuthorSdkContract.HighestSupportedRuntimeVersion + ".");
+                "Author SDK deployment requires a numeric major.minor.patch MinimumDTMApiVersion.");
         }
-    }
-
-    private static int CompareNumericVersion(string left, string right)
-    {
-        string[] a = left.Split('.');
-        string[] b = right.Split('.');
-        for (int index = 0; index < 3; index++)
-        {
-            int comparison = a[index].Length.CompareTo(b[index].Length);
-            if (comparison == 0)
-                comparison = string.CompareOrdinal(a[index], b[index]);
-            if (comparison != 0)
-                return comparison;
-        }
-        return 0;
     }
 
     private static void ValidateInfoParity(string infoPath, RuntimeManifest manifest)
@@ -242,6 +226,27 @@ internal static class DeploymentPackage
         string markerPath = Path.Combine(root, "Content", "DTMAPI", "dtmapi-package.json");
         if (!File.Exists(markerPath))
             throw new InvalidDataException("Package is missing the SDK package-binding marker.");
+        bool nativeSelected = DTMAPI.Internal.Authoring.NativePackageContract.Select(manifestBytes);
+        if (DTMAPI.Internal.Authoring.PackageDependencyContract.ReadManifest(manifestBytes) != null)
+        {
+            if (legacyDeployment) throw new InvalidDataException("Dependency V1 cannot use a legacy deployment reader.");
+            if (kind == AuthorProjectKind.CodeMod && ((manifest.CodeModKind != "Strict" && !nativeSelected) || string.IsNullOrWhiteSpace(manifest.EntryType)))
+                throw new InvalidDataException("Dependency V1 requires an explicit supported CodeModKind and EntryType.");
+            string entry = kind == AuthorProjectKind.ContentPack ? "" : PathSafety.ResolveUnderRoot(root, manifest.EntryDll, "EntryDll");
+            var bundle = DTMAPI.Internal.Authoring.PackageDependencyBundle.Read(root, Path.Combine(root, AuthorSdkContract.PackageManifestPath), manifest.UniqueID, manifest.Version,
+                kind.ToString(), kind == AuthorProjectKind.ContentPack ? "" : manifest.CodeModKind, entry, manifest.MinimumDTMApiVersion);
+            DTMAPI.Internal.Authoring.PackageDependencyVerifier.Verify(root, bundle.Inventory, DTMAPI.Internal.Authoring.PackagePortableMetadata.Inspect,
+                reference => DTMAPI.Internal.Authoring.PackageHostReferences.IsStrictHostReference(reference) || (bundle.Native?.AllowsReference(reference) ?? false), DTMAPI.Internal.Authoring.PackageHostReferences.ReservedFor(bundle.Inventory.Assemblies), bundle.Files, bundle.Native);
+            if (bundle.Native != null && gameRoot.Length > 0)
+                bundle.Native.VerifyHost(gameRoot, bytes => DTMAPI.Internal.Authoring.NativePackageContract.IdentityString(DTMAPI.Internal.Authoring.PackagePortableMetadata.Inspect(bytes).Identity),
+                    (bytes, member) => member.GenericUse != null ? DTMAPI.Tooling.Metadata.NativeGenericMetadata.Contains(bytes, DTMAPI.Internal.Authoring.NativeGenericSignature.Write(member.GenericUse)) : DTMAPI.Tooling.Metadata.NativeMemberMetadata.Contains(bytes, new DTMAPI.Tooling.Metadata.NativeMemberDescription { AssemblyIdentity = member.AssemblyIdentity, DeclaringType = member.DeclaringType, Kind = member.Kind, Name = member.Name, IsStatic = member.IsStatic, ReturnType = member.ReturnType, ParameterTypes = member.ParameterTypes }));
+            return new ValidatedPackageBinding
+            {
+                CodeModKind = kind == AuthorProjectKind.ContentPack ? "" : manifest.CodeModKind,
+                ManifestSha256 = manifestSha256, EntryDllSha256 = entry.Length == 0 ? "" : PathSafety.Sha256File(entry),
+                AdvancedReferenceReceiptSha256 = "", PackageMarkerSha256 = PathSafety.Sha256File(markerPath)
+            };
+        }
         string[] dlls = Directory.EnumerateFiles(root, "*.dll", SearchOption.AllDirectories).ToArray();
         if (kind == AuthorProjectKind.ContentPack)
         {
@@ -332,6 +337,14 @@ internal static class DeploymentPackage
         });
         JsonObject marker = JsonNode.Parse(markerText)?.AsObject()
             ?? throw new InvalidDataException("dtmapi-package.json must contain one object.");
+        string targetReason;
+        bool validTarget = codeModKind == "Advanced"
+            ? AuthorApiTargetCatalog.Current.TryValidatePackageTarget(Value(marker, "targetDtmApiVersion"), Value(marker, "authorSdkVersion"), manifest.MinimumDTMApiVersion, out _, out targetReason)
+            : AuthorApiTargetCatalog.Current.TryValidateReadablePackageTarget(Value(marker, "targetDtmApiVersion"), Value(marker, "authorSdkVersion"), manifest.MinimumDTMApiVersion, out _, out targetReason);
+        if (!validTarget)
+            throw new InvalidDataException(targetReason);
+        if (codeModKind == "Advanced" && Value(marker, "targetDtmApiVersion") != AuthorSdkContract.TargetRuntimeVersion)
+            throw new InvalidDataException("Existing Advanced receipts remain bound to API target 0.5.5.");
         string entryPath = manifest.Type.Equals(AuthorProjectKind.CodeMod.ToString(), StringComparison.Ordinal) ? manifest.EntryDll.Replace('\\', '/') : string.Empty;
         string receiptPath = advancedReceiptSha256.Length == 0 ? string.Empty : AuthorSdkContract.AdvancedReferenceReceiptPath;
         if (marker["schemaVersion"]?.GetValue<int>() != 2
@@ -340,8 +353,6 @@ internal static class DeploymentPackage
             || !Value(marker, "version").Equals(manifest.Version, StringComparison.Ordinal)
             || !Value(marker, "packageKind").Equals(manifest.Type, StringComparison.Ordinal)
             || !Value(marker, "codeModKind").Equals(codeModKind, StringComparison.Ordinal)
-            || !Value(marker, "authorSdkVersion").Equals(AuthorSdkContract.SdkVersion, StringComparison.Ordinal)
-            || !Value(marker, "targetDtmApiVersion").Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
             || !Value(marker, "manifestPath").Equals(AuthorSdkContract.PackageManifestPath, StringComparison.Ordinal)
             || !Value(marker, "manifestSha256").Equals(manifestSha256, StringComparison.OrdinalIgnoreCase)
             || !Value(marker, "entryDllPath").Equals(entryPath, StringComparison.Ordinal)
@@ -362,12 +373,15 @@ internal static class DeploymentPackage
         });
         JsonObject marker = JsonNode.Parse(markerText)?.AsObject()
             ?? throw new InvalidDataException("Legacy dtmapi-package.json must contain one object.");
+        if (!AuthorApiTargetCatalog.Current.TryValidateReadablePackageTarget(Value(marker, "targetRuntimeVersion"),
+            Value(marker, "authorSdkVersion"), manifest.MinimumDTMApiVersion, out _, out string targetReason))
+            throw new InvalidDataException(targetReason);
         if (marker["schemaVersion"]?.GetValue<int>() != 1
             || !Value(marker, "owner").Equals("DTMAPI", StringComparison.Ordinal)
             || !Value(marker, "uniqueId").Equals(manifest.UniqueID, StringComparison.Ordinal)
             || !Value(marker, "version").Equals(manifest.Version, StringComparison.Ordinal)
             || !Value(marker, "packageKind").Equals(manifest.Type, StringComparison.Ordinal)
-            || !Value(marker, "authorSdkVersion").Equals(AuthorSdkContract.SdkVersion, StringComparison.Ordinal)
+            || !Value(marker, "authorSdkVersion").Equals("0.1.0", StringComparison.Ordinal)
             || !Value(marker, "targetRuntimeVersion").Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
             || !Value(marker, "authority").Equals("metadata-only-not-an-ownership-receipt", StringComparison.Ordinal))
             throw new InvalidDataException("Legacy dtmapi-package.json does not match the exact historical Strict/ContentPack identity.");

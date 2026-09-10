@@ -1,4 +1,5 @@
 using DTMAPI.Authoring.Contracts;
+using DTMAPI.Internal.Authoring;
 using System.Text;
 
 namespace DTMAPI.AuthorSdk;
@@ -20,7 +21,7 @@ public static class AuthorApplication
 
             if (command.Name is "version" or "--version" or "-v")
             {
-                await output.WriteLineAsync("DTMAPI Author SDK " + AuthorSdkContract.SdkVersion + " (Runtime " + AuthorSdkContract.TargetRuntimeVersion + ")").ConfigureAwait(false);
+                await output.WriteLineAsync("DTMAPI Author SDK " + AuthorSdkContract.SdkVersion + " (default API target " + AuthorApiTargetCatalog.Current.DefaultTarget + ")").ConfigureAwait(false);
                 return 0;
             }
 
@@ -38,24 +39,28 @@ public static class AuthorApplication
                     error,
                     1,
                     "SDK003",
-                    "DTMAPI 0.6.0 pauses new legacy <game>/Mods deployment and source-selection mutations until a released Author SDK targets Doloc Town's official MODS root. Existing deployment-status, install-local-status, recover, withdraw, source status, and source local clear commands remain available for old deployments.").ConfigureAwait(false);
+                    "Legacy <game>/Mods source local select is paused. Install packages into official MODS with deploy/install-local and enable through the game's Mod UI. Historical status, recover, withdraw and source local clear remain available.").ConfigureAwait(false);
             }
 
             CommandReport report;
             if (command.Name == "session")
                 report = await AuthorSessionService.ExecuteAsync(command).ConfigureAwait(false);
+            else if (command.Name == "restore")
+                report = await LockedPackageRestore.Execute(command).ConfigureAwait(false);
             else
             {
                 report = command.Name switch
                 {
                     "new" => TemplateCreator.Create(command),
+                    "migrate-build" => TemplateCreator.MigrateBuild(command),
                     "validate" => ProjectValidator.ValidateCommand(command),
                     "build" => CodeModBuilder.BuildCommand(command),
                     "pack" => DeterministicPackager.PackCommand(command),
                     "hash" => DeterministicPackager.HashCommand(command),
-                    "deploy" => DeploymentService.Deploy(command),
-                    "update" => DeploymentService.Update(command),
-                    "install-local" => DeploymentService.InstallLocal(command),
+                    "symbols" => SymbolInspector.Execute(command),
+                    "deploy" => DeploymentService.OfficialPackage(command, "deploy"),
+                    "update" => DeploymentService.OfficialPackage(command, "update"),
+                    "install-local" => DeploymentService.OfficialPackage(command, "install-local"),
                     "install-local-status" => DeploymentService.InstallLocalStatus(command),
                     "withdraw" => DeploymentService.Withdraw(command),
                     "recover" => DeploymentService.Recover(command),
@@ -91,9 +96,6 @@ public static class AuthorApplication
 
     private static bool IsPausedLegacyGameModsMutation(ParsedCommand command)
     {
-        if (command.Name is "deploy" or "update" or "install-local")
-            return true;
-
         return command.Name == "source" &&
                command.Positionals.Count >= 2 &&
                command.Positionals[0].Equals("local", StringComparison.OrdinalIgnoreCase) &&
@@ -136,22 +138,24 @@ public static class AuthorApplication
         if (report.Sha256.Length > 0)
             await destination.WriteLineAsync("SHA-256: " + report.Sha256).ConfigureAwait(false);
         foreach (KeyValuePair<string, string> pair in report.Values)
-            await destination.WriteLineAsync(pair.Key + ": " + pair.Value).ConfigureAwait(false);
+            if (pair.Key is not ("buildInputIdentity" or "referenceIdentities" or "boundAssemblyReferences"))
+                await destination.WriteLineAsync(pair.Key + ": " + pair.Value).ConfigureAwait(false);
     }
 
     private const string HelpText = """
-DTMAPI Author SDK 0.1.0 - Runtime 0.5.5 authoring authority
+DTMAPI Author SDK 0.7.0 - available API targets from target-catalog.json
 
 Usage:
-  dtmapi-author new codemod <directory> --id Author.Mod --name "Mod" --author "Author" [--code-mod-kind Strict|Advanced] [--json]
-  dtmapi-author new contentpack <directory> --id Author.Pack --name "Pack" --author "Author" [--json]
+  dtmapi-author new codemod <directory> --id Author.Mod --name "Mod" --author "Author" [--code-mod-kind Strict|Advanced] [--api-target <version>] [--game-root <installed-game-for-open-Advanced>] [--native-references <paths-separated-by-semicolons>] [--harmony-owner <owner>] [--json]
+  dtmapi-author new contentpack <directory> --id Author.Pack --name "Pack" --author "Author" [--api-target <version>] [--json]
   dtmapi-author validate <directory> [--json]
-  dtmapi-author build <directory> [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--output <directory>] [--json]
-  dtmapi-author pack <directory> [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--output <zip>] [--json]
+  dtmapi-author migrate-build <directory> [--json]
+  dtmapi-author build <directory> [--configuration Debug|Release] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--output <directory>] [--json]
+  dtmapi-author pack <directory> [--configuration Debug|Release] [--symbols true|false] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--build-output <directory>] [--output <zip>] [--json]
   dtmapi-author hash <file-or-directory> [--json]
-  dtmapi-author deploy <package.zip> --game-root <directory> [--json]                         (paused: legacy game/Mods mutation)
-  dtmapi-author update <package.zip> --game-root <directory> [--json]                         (paused: legacy game/Mods mutation)
-  dtmapi-author install-local <package.zip> --game-root <directory> --expected-unique-id <UniqueID> --expected-version <version> --expected-package-sha256 <sha256> [--json]  (paused)
+  dtmapi-author deploy <package.zip> --game-root <directory> [--json]
+  dtmapi-author update <package.zip> --game-root <directory> [--json]
+  dtmapi-author install-local <package.zip> --game-root <directory> --expected-unique-id <UniqueID> --expected-version <version> --expected-package-sha256 <sha256> [--json]
   dtmapi-author install-local-status <UniqueID> --game-root <directory> --expected-version <version> --expected-package-sha256 <sha256> [--json]
   dtmapi-author withdraw <UniqueID> --game-root <directory> [--json]
   dtmapi-author recover <UniqueID> --game-root <directory> [--json]
@@ -162,11 +166,17 @@ Usage:
   dtmapi-author source reproduction begin --game-root <directory> [--json]
   dtmapi-author source reproduction restore <snapshotId> --game-root <directory> [--json]
   dtmapi-author source status [UniqueID] --game-root <directory> [--json]
-  dtmapi-author session prepare --game-root <directory> [--json]
+  dtmapi-author session prepare --game-root <directory> [--api-target <version>] [--commands true|false] [--json]
   dtmapi-author session snapshot <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
   dtmapi-author session reload <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
+  dtmapi-author new library <directory> --id <Assembly.Name> [--api-target <version>] [--role shared-contract|private-managed] [--json]
+  dtmapi-author restore <project-directory> [--offline true|false] [--json]
+    Explicit NuGet lock verification/download; build and pack never access package feeds.
+  dtmapi-author session command <UniqueID> <selectedRoot> --game-root <directory> [--command-line <text>] [--timeout-seconds <1..60>] [--json]
+    Prepare with --commands true to offer execute-command/1; the Host must accept it. Default command-line is help.
   dtmapi-author session clear --game-root <directory> [--json]
   dtmapi-author doctor <directory> [--json]
+  dtmapi-author symbols <DLL> [--pdb <path>] [--json]
   dtmapi-author version
 
 The CLI never uploads, adopts existing packages, starts or polls the game, or writes ordinary Mods under BepInEx/plugins.

@@ -1,8 +1,10 @@
-# ISSUE-008: 2026-06-05 0.2.7 Manual QA Root-Cause Fixes
+﻿# ISSUE-008: 2026-06-05 0.2.7 Manual QA Root-Cause Fixes
+
+- State: `verified`
+- Current boundary: Current record is smoke-verified.
 
 ## Current Status
 
-- Status: smoke-verified
 - Opened: 2026-06-05 +08:00
 - Target: DTMAPI 0.2.7
 - Source: `readme.md` 0.2.7 implementation ledger, based on review records `20260605-0001` and `20260605-0002`.

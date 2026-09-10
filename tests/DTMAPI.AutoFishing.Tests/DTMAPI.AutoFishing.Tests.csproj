@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>autofishing</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/TextAssertions.cs" Link="Shared/TextAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/FishingDecisionEngine.cs" Link="AutoFishing/FishingDecisionEngine.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/FishingProductContracts.cs" Link="AutoFishing/FishingProductContracts.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/AutoFishingConfig.cs" Link="AutoFishing/AutoFishingConfig.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/Native/FishingNativeMovementPolicy.cs" Link="AutoFishing/FishingNativeMovementPolicy.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/Native/FishingBitePreparationTransaction.cs" Link="AutoFishing/FishingBitePreparationTransaction.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/Native/FishingRuntimeComponents.cs" Link="AutoFishing/FishingRuntimeComponents.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/Native/FishingMiniGameInputState.cs" Link="AutoFishing/FishingMiniGameInputState.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

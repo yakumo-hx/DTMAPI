@@ -1,8 +1,11 @@
-# ISSUE-012: Player title settings entry missing while current DTMAPI runtime is absent
+﻿# ISSUE-012: Player title settings entry missing while current DTMAPI runtime is absent
+
+- State: `mitigated`
+- Current boundary: Restart restored BepInEx/DTMAPI and the player-visible title button; exact transient native trigger remains unproven.
 
 ## Status
 
-- State: `mitigated / restart-resolved`
+- Previous status wording: `mitigated / restart-resolved`
 - Opened: 2026-07-11
 - Severity: high
 - Area: installer / BepInEx-Doorstop injection / title UI / diagnostics freshness

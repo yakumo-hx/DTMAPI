@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using DTMAPI.Internal;
 
 namespace DTMAPI.Core.Runtime
 {
@@ -41,6 +42,7 @@ namespace DTMAPI.Core.Runtime
                         return AuthorSessionWireReadResult.Rejected("request-empty", "The request frame is empty.");
 
                     string json = StrictUtf8.GetString(buffer.ToArray());
+                    AuthorSessionJson.Validate(buffer.ToArray(), "request");
                     using (var jsonStream = new MemoryStream(StrictUtf8.GetBytes(json), writable: false))
                     {
                         var serializer = new DataContractJsonSerializer(typeof(AuthorSessionRequest));
@@ -78,21 +80,15 @@ namespace DTMAPI.Core.Runtime
 
             if (payload.Length > AuthorSessionProtocol.MaximumResponseBytes)
             {
-                var fallback = new AuthorSessionResponse
-                {
-                    Runtime = response.Runtime,
-                    Session = response.Session,
-                    RequestId = response.RequestId,
-                    Operation = response.Operation,
-                    UniqueId = response.UniqueId,
-                    Status = "error",
-                    Code = "response-too-large",
-                    Message = "The Runtime response exceeded the author-session frame limit."
-                };
+                // Retain the full negotiated envelope even on bounded-response fallback.
+                response.Status = "error";
+                response.Code = "response-too-large";
+                response.Message = "The Runtime response exceeded the author-session frame limit.";
+                response.Values.Clear();
                 using (var buffer = new MemoryStream())
                 {
                     var serializer = new DataContractJsonSerializer(typeof(AuthorSessionResponse));
-                    serializer.WriteObject(buffer, fallback);
+                    serializer.WriteObject(buffer, response);
                     payload = buffer.ToArray();
                 }
             }

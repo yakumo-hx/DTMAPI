@@ -120,7 +120,8 @@ foreach ($token in @('Exception? runtimeFailure', 'Exception? unpatchFailure', '
 $qaFixture = Read-Text (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown.QA\Scenarios\Fixtures\ActionSpeedFixtureCase.cs')
 $qaObserver = Read-Text (Join-Path $productRoot 'qa\batch6\Batch6ActionSpeedReflectionObserver.cs')
 $qaParticipant = Read-Text (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown.QA\QaHostParticipant.cs')
-$smokeRunner = Read-Text (Join-Path $repo 'tools\scripts\run-game-smoke.ps1')
+$smokeRunner = (Read-Text (Join-Path $repo 'tools/scripts/game-smoke/core/deployment.ps1')) +
+    (Read-Text (Join-Path $repo 'tools/scripts/game-smoke/phases/deploy-session.ps1'))
 if ($qaFixture.Contains('experimentalApi?.ActionSpeed')) { Add-Failure 'ActionSpeed QA seam still reads the frozen GameBridge executor instead of the managed product.' }
 foreach ($token in @('ContinuousUseApplicationCount', 'LastContinuousUseSummary', 'AutoFillCooldownActive', 'PendingAnimalTimestampActive', 'NativeTransientCount', 'CanonicalHarmonyPatchCount', 'CanonicalHarmonyTargetCount', 'ActualHarmonyOwnerReady', 'ProductCallbackRuntimePresent')) {
     Require-Token 'External ActionSpeed QA observation' $qaObserver $token
@@ -155,7 +156,7 @@ $service = Read-Text (Join-Path $compatibilityRoot 'ActionSpeedService.cs')
 if ($service.IndexOf('ThrowIfManagedProductOwnsActionSpeedRoute();', [StringComparison]::Ordinal) -gt $service.IndexOf('actionSpeedOptions[owner.UniqueID] = normalized;', [StringComparison]::Ordinal)) {
     Add-Failure 'Compatibility collision check occurs after policy retention.'
 }
-$ownerOrder = (Read-Text (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown\DolocTownGameBridge.Features.cs')) + (Read-Text (Join-Path $repo 'tests\DTMAPI.UnitTests\Batch5GameBridgeDemandTests.cs'))
+$ownerOrder = (Read-Text (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown\DolocTownGameBridge.Features.cs')) + (Read-Text (Join-Path $repo 'tests\DTMAPI.Compatibility.Tests\Batch5GameBridgeDemandTests.cs'))
 foreach ($token in @('actionSpeedFeature?.Service.ReconcileManagedProductOwnerBeforeHookInstall()', 'ManagedActionSpeedOwnerFailsClosedInBothLoadOrders', 'ActionSpeed product-first then Compatibility-request must fail closed.', 'product-first then AutoFill-only Compatibility request must fail closed', 'Compatibility-first AutoFill-only demand must reconcile at the updater boundary', 'preserve an unrelated OneActionComplete-style shared InteractExit demand')) {
     Require-Token 'Bidirectional owner-order exclusion' $ownerOrder $token
 }

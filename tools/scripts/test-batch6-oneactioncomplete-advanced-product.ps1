@@ -201,7 +201,7 @@ if ($collisionCheckIndex -lt 0 -or $policyStoreIndex -lt 0 -or $collisionCheckIn
     Add-OneActionFailure 'Frozen compatibility must reject the managed product action collision before retaining owner policy state.'
 }
 $featureInstallText = Read-OneActionText -Path (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown\DolocTownGameBridge.Features.cs')
-$demandTestText = Read-OneActionText -Path (Join-Path $repo 'tests\DTMAPI.UnitTests\Batch5GameBridgeDemandTests.cs')
+$demandTestText = Read-OneActionText -Path (Join-Path $repo 'tests\DTMAPI.Compatibility.Tests\Batch5GameBridgeDemandTests.cs')
 foreach ($token in @(
     'ReconcileManagedProductOwnerBeforeHookInstall()',
     'ManagedOneActionOwnerFailsClosedInBothLoadOrders',

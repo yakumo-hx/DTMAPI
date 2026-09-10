@@ -1,8 +1,11 @@
-# ISSUE-006: 2026-06-04 0.2.5 critical manual QA regressions
+﻿# ISSUE-006: 2026-06-04 0.2.5 critical manual QA regressions
+
+- State: `verified`
+- Current boundary: Smoke-backed; manual visual recheck remains useful.
 
 ## Current Status
 
-- Status: verified by smoke / manual visual recheck useful
+- Previous status wording: verified by smoke / manual visual recheck useful
 - Opened: 2026-06-04 +08:00
 - Target: DTMAPI 0.2.5
 - Source: user manual QA feedback summarized in `readme.md`

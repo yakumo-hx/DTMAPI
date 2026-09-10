@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 3,
+  "distributionPolicy": "LocalPrototypeOnlyDoNotPublish",
+  "prototypeInputRoot": {
+    "environmentOverride": "DTMAPI_ANIMAL_PACK_INPUT_ROOT",
+    "defaultRelativeToUserProfile": "AppData/LocalLow/RedSawGames/DolocTown/MODS"
+  },
+  "branding": {
+    "largePreview": {
+      "role": "steam-large-preview",
+      "source": "D:/图片/封面图/缺氧动物包.jpg",
+      "sourceFormat": "JPEG",
+      "sourceWidth": 1549,
+      "sourceHeight": 925,
+      "sha256": "5D217596C9BBD5F4087ECD53CBDE55A559617064B1378BA38EDB6B449CF9C1E6",
+      "destination": "preview.png",
+      "outputFormat": "PNG",
+      "outputWidth": 1549,
+      "outputHeight": 925,
+      "outputBytes": 849062,
+      "maximumBytesExclusive": 1000000,
+      "outputSha256": "743206EE3A57402CA20611F6160A738E82E61292EE31400911D866A099ADC96F"
+    },
+    "icon": {
+      "role": "in-game-cover-and-steam-small-preview",
+      "source": "D:/图片/封面图/缺氧动物包 - 副本.jpg",
+      "sourceFormat": "JPEG",
+      "sourceWidth": 744,
+      "sourceHeight": 482,
+      "sha256": "5D332C54242F0CB69A51A2B233FC47BA5416752E364279600C9A86BCEE7B0F90",
+      "destination": "icon.png",
+      "outputFormat": "PNG",
+      "outputWidth": 744,
+      "outputHeight": 482,
+      "outputSha256": "4FF9E28E95123D37C9C80E7C43C067AF0D27C793673C6D489A1DEEF361845960"
+    }
+  },
+  "animals": [
+    {
+      "speciesId": "hatch",
+      "sourceFolder": "DTMAPI_HatchAssets",
+      "spritePrefix": "anim_animal_hatch_",
+      "frameManifest": "hatch_frame_manifest.json",
+      "audioFiles": ["hatch_pet_young.wav", "hatch_pet_adult.wav"]
+    },
+    {
+      "speciesId": "drecko",
+      "sourceFolder": "DTMAPI_DreckoAssets",
+      "spritePrefix": "anim_animal_drecko_",
+      "frameManifest": "drecko_frame_manifest.json",
+      "audioFiles": ["drecko_pet_young.wav", "drecko_pet_adult.wav"]
+    },
+    {
+      "speciesId": "mole",
+      "sourceFolder": "DTMAPI_MoleAssets",
+      "spritePrefix": "anim_animal_mole_",
+      "frameManifest": "mole_frame_manifest.json",
+      "audioFiles": ["mole_pet_young.wav", "mole_pet_adult.wav"]
+    },
+    {
+      "speciesId": "oilfloater",
+      "sourceFolder": "DTMAPI_OilfloaterAssets",
+      "spritePrefix": "anim_animal_oilfloater_",
+      "frameManifest": "oilfloater_frame_manifest.json",
+      "audioFiles": ["oilfloater_pet_young.wav", "oilfloater_pet_adult.wav"]
+    }
+  ],
+  "itemIcons": {
+    "environmentOverride": "DTMAPI_ANIMAL_PACK_ICON_INPUT_ROOT",
+    "defaultRoot": "E:/DolocTownUnity/ONIExtracted",
+    "researchSummary": "E:/DolocTownUnity/ONIExtracted/creature_research_summary.csv",
+    "normalization": {
+      "canvasWidth": 28,
+      "canvasHeight": 28,
+      "contentWidth": 24,
+      "contentHeight": 24,
+      "alignment": "center",
+      "resampling": "high-quality-bicubic",
+      "pixelsPerUnit": 8
+    },
+    "files": [
+      {
+        "itemId": "hatch_egg",
+        "sourceVariant": "Hatch Egg / ui",
+        "source": "hatch/rendered_png/egg_hatch_anim/ui/ui_000.png",
+        "destination": "Content/Sprites/icon_item_hatch_egg.png",
+        "sha256": "5230F45CEEE2055BA1DC46C6181687BA067D5C9B1AC9B3D1C1E89AF8A41E2F6C",
+        "outputSha256": "2C2FD3CFDAD3C0A0A14C7E08E2477734D66FE9A62C9A50C38A19B31318102742"
+      },
+      {
+        "itemId": "petrified_hatch_egg",
+        "sourceVariant": "Metal Hatch Egg / mtl_ui",
+        "source": "hatch/rendered_png/egg_hatch_anim/mtl_ui/mtl_ui_000.png",
+        "destination": "Content/Sprites/icon_item_petrified_hatch_egg.png",
+        "sha256": "E6593452D323498EBEFE689B4FACD2EB4BBE9564A9F00E87F14A69CC1128CE2A",
+        "outputSha256": "9B23D6CA87BF32989D3E366542F31B013CC3C2B331DF556675E5355BF2C43BCD"
+      },
+      {
+        "itemId": "drecko_egg",
+        "sourceVariant": "Drecko Egg / ui",
+        "source": "drecko/rendered_png/egg_drecko_anim/ui/ui_000.png",
+        "destination": "Content/Sprites/icon_item_drecko_egg.png",
+        "sha256": "EE0549A475DA2E0A545DC7C3ACFFA6E549A09DE9AF2EB2178B6727B952E68664",
+        "outputSha256": "3ADD1943BD21D75720FBC138E55151194F5BC487FE39A02ED36223879A505F94"
+      },
+      {
+        "itemId": "mole_egg",
+        "sourceVariant": "Shove Vole Egg / ui",
+        "source": "mole/rendered_png/egg_driller_anim/ui/ui_000.png",
+        "destination": "Content/Sprites/icon_item_mole_egg.png",
+        "sha256": "6427F184F5C23B407DA42ECD4E853CD2BEB3BCB742495494634E43FB5548C3D5",
+        "outputSha256": "C8C5796D7C7E6682DBF721C45E4C2370E750C5FFD4050E9ADF056F63FD0D5CFC"
+      },
+      {
+        "itemId": "fertile_mole_egg",
+        "sourceVariant": "Delecta Vole Egg / del_ui",
+        "source": "mole/rendered_png/egg_driller_anim/del_ui/del_ui_000.png",
+        "destination": "Content/Sprites/icon_item_fertile_mole_egg.png",
+        "sha256": "F45DDE5F35E6D07F45072FFA48A5C3368668E89318E28E8D520E3BC8FFBFA8C8",
+        "outputSha256": "1AF33B2BF6330F0CE104E45AF1C2A0AE55A1064ACBABDE1A77B7799EB5CEFC16"
+      },
+      {
+        "itemId": "oilfloater_egg",
+        "sourceVariant": "Slickster Egg / ui",
+        "source": "oilfloater/rendered_png/egg_oilfloater_anim/ui/ui_000.png",
+        "destination": "Content/Sprites/icon_item_oilfloater_egg.png",
+        "sha256": "FF1032911861BD50973C755C20A6C2EF817E28666F285FF771F0378BAE4DDEEE",
+        "outputSha256": "9AE2B57DE6B898F202B3A2817131CD0CADF8418E08BF2C893F80753E33B4BF37"
+      },
+      {
+        "itemId": "polymer_oilfloater_egg",
+        "sourceVariant": "Molten Slickster Egg / hot_ui",
+        "source": "oilfloater/rendered_png/egg_oilfloater_anim/hot_ui/hot_ui_000.png",
+        "destination": "Content/Sprites/icon_item_polymer_oilfloater_egg.png",
+        "sha256": "6E63EF322D15284B7ED0DAD1A28E1C2C6CA2513A87038E6A7624045BB14AE676",
+        "outputSha256": "FC87A776868381748FA66ABC303FC5D35DBAAB9008E91AE60FE758DFF0861F26"
+      }
+    ]
+  },
+  "careStation": {
+    "environmentOverride": "DTMAPI_ANIMAL_PACK_STATION_SPRITE",
+    "defaultSource": "E:/DolocTownUnity/ONIExtracted/rancherstation/frames/ui/ui_000.png",
+    "destination": "Content/Sprites/sprite_equipment_animal_care_station.png",
+    "sha256": "28A709F619A84BBD311B5DB7F5DBC0C93F8AE0D2E8F078B63397D3EF4389D296",
+    "outputSha256": "5291F7C2E1D89E0C31BD24643857FFB72BE5D5FF8A49B8524CB6A05B7527AAB5",
+    "normalization": {
+      "canvasWidth": 32,
+      "canvasHeight": 48,
+      "contentWidth": 32,
+      "contentHeight": 46,
+      "alignment": "bottom-center",
+      "bottomPadding": 1,
+      "resampling": "high-quality-bicubic",
+      "pivot": { "x": 16, "y": 1 },
+      "pixelsPerUnit": 8,
+      "coverSize": { "x": 2, "y": 4 }
+    }
+  }
+}

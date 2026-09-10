@@ -76,7 +76,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 new DebugConsoleActionFixtureAdapter(runtime, bridge);
         private IInventoryDebugApi inventoryDebugApi => DebugConsoleActions;
         private IWeatherDebugApi weatherDebugApi => DebugConsoleActions;
-        private ITeleportDebugApi teleportDebugApi => DebugConsoleActions;
+        // This concrete QA seam intentionally avoids binding the current
+        // reduced interface to an older installed Runtime vtable.
+        private DebugConsoleActionFixtureAdapter teleportDebugApi => DebugConsoleActions;
         private IInstantSaveDebugApi instantSaveDebugApi => DebugConsoleActions;
         private ITimeDebugApi timeDebugApi => DebugConsoleActions;
         private IMovementDebugApi movementDebugApi => DebugConsoleActions;
@@ -139,6 +141,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal G4FixtureStepResult ObserveContentMetadata(bool expectOilAbsent) => ObserveContentMetadataForFixture(expectOilAbsent);
         internal G4FixtureStepResult ObserveNativeUiLayout() => ObserveNativeUiLayoutForFixture();
         internal G4FixtureStepResult RequestProductOwnerRefresh() => TryReloadOfficialModsAndConfig("Smoke.ProductOwnerRefresh", "optional QA product-owner refresh before save load", out string details) ? G4FixtureStepResult.Verified(details) : G4FixtureStepResult.Failed(details);
+        internal bool IsG5WorldMutationReady() =>
+            IsG5WorldMutationReadyForFixture();
         internal G4FixtureStepResult AdvanceG5WorldMutation(string caseId) => AdvanceG5WorldMutationForFixture(caseId);
         internal void ConfigureDebugConsoleSaveAcceptance(
             string phase,
@@ -196,6 +200,7 @@ namespace DTMAPI.GameBridge.DolocTown
             var failures = new List<Exception>();
             RunScenarioCloseStep(failures, "ActionSpeedAutoFillFixtureCleanup", () => CleanupActionSpeedAutoFillFixtureState("QA host close: " + (reason ?? string.Empty)));
             RunScenarioCloseStep(failures, "PendingMineProductionCleanup", () => CleanupPendingMineProductionForFixture("QA host close: " + (reason ?? string.Empty)));
+            RunScenarioCloseStep(failures, "TitleConfigPagerFixtureCleanup", () => CleanupTitleConfigPagerFixturePages("QA host close: " + (reason ?? string.Empty)));
             RunScenarioCloseStep(failures, "OwnerLifetimeCleanup", () => CleanupOwnerLifetimeOnClose(reason ?? string.Empty));
             RunScenarioCloseStep(failures, "MoreSavesFixed12Cleanup", () => CleanupMoreSavesFixed12OnClose(reason ?? string.Empty));
             if (failures.Count > 0)

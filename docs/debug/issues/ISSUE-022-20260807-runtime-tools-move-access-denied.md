@@ -1,8 +1,11 @@
-# ISSUE-022: Runtime tools transaction move is denied on some player systems
+﻿# ISSUE-022: Runtime tools transaction move is denied on some player systems
+
+- State: `open`
+- Current boundary: Two players reach the Runtime transaction but receive access denied while publishing `candidate\tools`; an EXE-free standalone package is the current isolation/workaround attempt.
 
 ## Status
 
-- State: `open / mitigated in the 0.6.1 candidate pending affected-player acceptance`
+- Previous status wording: `open / mitigated in the 0.6.1 candidate pending affected-player acceptance`
 - Opened: `2026-08-07`
 - Severity: high
 - Area: Runtime Workshop install transaction / support tools / endpoint security compatibility

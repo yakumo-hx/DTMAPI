@@ -126,7 +126,9 @@ $bat = Join-Path $packageCopy '1_collect_save_and_crash_logs.bat'
 $collectorCopy = Join-Path $packageCopy 'collect-save-and-crash-logs.ps1'
 
 $env:DTMAPI_PARSE_TARGET = $collectorCopy
-$parseOutput = & $winPs -NoLogo -NoProfile -Command '$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile($env:DTMAPI_PARSE_TARGET,[ref]$tokens,[ref]$errors)|Out-Null;$errors|ForEach-Object{$_.ToString()};Write-Output ("ParserErrors="+$errors.Count);if($errors.Count){exit 1}' 2>&1
+$parseScript = '$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile($env:DTMAPI_PARSE_TARGET,[ref]$tokens,[ref]$errors)|Out-Null;$errors|ForEach-Object{$_.ToString()};Write-Output ("ParserErrors="+$errors.Count);if($errors.Count){exit 1}'
+$parseEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($parseScript))
+$parseOutput = & $winPs -NoLogo -NoProfile -EncodedCommand $parseEncoded 2>&1
 $parseExit = $LASTEXITCODE
 Write-DtmCollectorTestText -Path (Join-Path $sessionFull 'winps-parser.txt') -Text ($parseOutput -join [Environment]::NewLine)
 Assert-DtmCollectorTest -Condition ($parseExit -eq 0) -Message ('Windows PowerShell parser failed: ' + ($parseOutput -join ' | '))

@@ -1,7 +1,7 @@
 {
   "name": "作物收获手测夹具（DTMAPI）",
   "author": "DTMAPI QA",
-  "version": "1.0.0",
+  "version": "0.1.0-dtmapi",
   "description": "开发者手测夹具。\n依赖 DTMAPI，仅用于测试作物容器扫描/收获；乔木盆、草/采集类只用于不支持边界确认，不发布到 Workshop。",
   "tags": [
     "Mod",

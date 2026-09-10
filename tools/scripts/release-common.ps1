@@ -469,224 +469,73 @@ function Get-DtmApiPersistentRoot {
     return Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\RedSawGames\DolocTown'
 }
 
-function Get-DtmApiPublishedModDefinitions {
-    return @(
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_Zoom'
-            Project = 'DTMAPI.Zoom'
-            SourceRoot = 'products\first-party\Zoom'
-            SourceDll = 'DTMAPI.Zoom.dll'
-            PackageDll = 'DTMAPI.Zoom.dll'
-            UniqueID = 'DTMAPI.ZoomMod'
-            DisplayName = 'DTMAPI Zoom'
-            PackageName = 'DTMAPI-Zoom'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'zoom'
-            AuthorSdkPackageFile = 'DTMAPI-Zoom-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_ActionSpeed'
-            Project = 'Yuuka.DTMAPI.ActionSpeed'
-            SourceRoot = 'products\first-party\ActionSpeed'
-            SourceDll = 'Yuuka.DTMAPI.ActionSpeed.dll'
-            PackageDll = 'Yuuka.DTMAPI.ActionSpeed.dll'
-            UniqueID = 'Yuuka.DTMAPI.ActionSpeed'
-            DisplayName = 'DTMAPI Action Speed'
-            PackageName = 'DTMAPI-ActionSpeed'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'action-speed'
-            AuthorSdkPackageFile = 'DTMAPI-ActionSpeed-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_OneActionComplete'
-            Project = 'Yuuka.DTMAPI.OneActionComplete'
-            SourceRoot = 'products\first-party\OneActionComplete'
-            SourceDll = 'Yuuka.DTMAPI.OneActionComplete.dll'
-            PackageDll = 'Yuuka.DTMAPI.OneActionComplete.dll'
-            UniqueID = 'Yuuka.DTMAPI.OneActionComplete'
-            DisplayName = 'DTMAPI One Action Complete'
-            PackageName = 'DTMAPI-OneActionComplete'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'one-action-complete'
-            AuthorSdkPackageFile = 'DTMAPI-OneActionComplete-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_ChestLocatorEnhancer'
-            Project = 'DTMAPI.ChestLocatorEnhancer'
-            SourceRoot = 'products\first-party\ChestLocatorEnhancer'
-            SourceDll = 'DTMAPI.ChestLocatorEnhancer.dll'
-            PackageDll = 'DTMAPI.ChestLocatorEnhancer.dll'
-            UniqueID = 'DTMAPI.ChestLocatorEnhancerMod'
-            DisplayName = 'DTMAPI Chest Locator Enhancer'
-            PackageName = 'DTMAPI-ChestLocatorEnhancer'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'chest-locator-enhancer'
-            AuthorSdkPackageFile = 'DTMAPI-ChestLocatorEnhancer-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_YKeyConsole'
-            Project = 'DTMAPI.DebugConsole'
-            SourceRoot = 'products\first-party\DebugConsole'
-            SourceDll = 'DTMAPI.DebugConsole.dll'
-            PackageDll = 'DTMAPI.DebugConsole.dll'
-            UniqueID = 'DTMAPI.DebugConsoleMod'
-            DisplayName = 'DTMAPI Y-Key Console'
-            PackageName = 'DTMAPI-YKeyConsole'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'y-console'
-            AuthorSdkPackageFile = 'DTMAPI-YKeyConsole-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_FishBreedingAssistant'
-            Project = 'Yuuka.DTMAPI.FishBreedingAssistant'
-            SourceRoot = 'products\first-party\FishBreedingAssistant'
-            SourceDll = 'Yuuka.DTMAPI.FishBreedingAssistant.dll'
-            PackageDll = 'Yuuka.DTMAPI.FishBreedingAssistant.dll'
-            UniqueID = 'Yuuka.DTMAPI.FishBreedingAssistant'
-            DisplayName = 'DTMAPI Fish Roe Info Display'
-            PackageName = 'DTMAPI-FishBreedingAssistant'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'fish-roe-info'
-            AuthorSdkPackageFile = 'DTMAPI-FishBreedingAssistant-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_MoreSaves'
-            Project = 'DTMAPI.MoreSaves'
-            SourceRoot = 'products\first-party\MoreSaves'
-            SourceDll = 'DTMAPI.MoreSaves.dll'
-            PackageDll = 'DTMAPI.MoreSaves.dll'
-            UniqueID = 'DTMAPI.MoreSavesMod'
-            DisplayName = 'DTMAPI More Saves'
-            PackageName = 'DTMAPI-MoreSaves'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'more-saves'
-            AuthorSdkPackageFile = 'DTMAPI-MoreSaves-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_AnimalHusbandryProgress'
-            Project = 'Yuuka.DTMAPI.AnimalHusbandryProgress'
-            SourceRoot = 'products\first-party\AnimalHusbandryProgress'
-            SourceDll = 'Yuuka.DTMAPI.AnimalHusbandryProgress.dll'
-            PackageDll = 'Yuuka.DTMAPI.AnimalHusbandryProgress.dll'
-            UniqueID = 'Yuuka.DTMAPI.AnimalHusbandryProgress'
-            DisplayName = 'DTMAPI Animal Bell Hidden Produce Progress'
-            PackageName = 'DTMAPI-AnimalHusbandryProgress'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'animal-husbandry-progress'
-            AuthorSdkPackageFile = 'DTMAPI-AnimalHusbandryProgress-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_AutoFishing'
-            Project = 'Yuuka.DTMAPI.AutoFishing'
-            SourceRoot = 'products\first-party\AutoFishing'
-            SourceDll = 'Yuuka.DTMAPI.AutoFishing.dll'
-            PackageDll = 'Yuuka.DTMAPI.AutoFishing.dll'
-            UniqueID = 'Yuuka.DTMAPI.AutoFishing'
-            DisplayName = 'DTMAPI Auto Fishing'
-            PackageName = 'DTMAPI-AutoFishing'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'auto-fishing'
-            AuthorSdkPackageFile = 'DTMAPI-AutoFishing-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_MoreEquipmentSlots'
-            Project = 'DTMAPI.MoreEquipmentSlots'
-            SourceRoot = 'products\first-party\MoreEquipmentSlots'
-            SourceDll = 'DTMAPI.MoreEquipmentSlots.dll'
-            PackageDll = 'DTMAPI.MoreEquipmentSlots.dll'
-            UniqueID = 'DTMAPI.MoreEquipmentSlotsMod'
-            DisplayName = 'DTMAPI More Equipment Slots'
-            PackageName = 'DTMAPI-MoreEquipmentSlots'
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'more-equipment-slots'
-            AuthorSdkPackageFile = 'DTMAPI-MoreEquipmentSlots-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'Yuuka_DTMAPI_ManboCardboardAudio'
-            Project = 'ManboCardboardAudioMod'
-            SourceRoot = 'products\first-party\ManboCardboardAudio'
-            SourceDll = 'ManboCardboardAudioMod.dll'
-            PackageDll = 'Yuuka.DTMAPI.ManboCardboardAudio.dll'
-            UniqueID = 'Yuuka.DTMAPI.ManboCardboardAudio'
-            DisplayName = 'DTMAPI Manbo Cardboard Audio'
-            PackageName = 'DTMAPI-ManboCardboardAudio'
+function Get-DtmApiProductDefinitions {
+    $catalogPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'release/dtmapi-product-catalog.json'
+    $snapshotPath = Join-Path $PSScriptRoot 'dtmapi-product-definitions.json'
+    if (Test-Path -LiteralPath $catalogPath -PathType Leaf) {
+        $catalog = Get-Content -Raw -Encoding UTF8 -LiteralPath $catalogPath | ConvertFrom-Json
+        $definitions = @(
+            foreach ($product in $catalog.products) {
+                $lane = [string](Get-DtmApiMapValue $product 'legacyReleaseLane' '')
+                if ($lane -notin @('PublishedBuilder', 'DeveloperInstallOnly', 'ExplicitQaInstallOnly')) { continue }
+                $definition = [ordered]@{}
+                foreach ($field in @('OfficialFolder', 'Project', 'SourceRoot', 'SourceDll', 'PackageDll', 'UniqueID', 'DisplayName', 'PackageName')) {
+                    $value = Get-DtmApiMapValue $product $field $null
+                    if ($null -ne $value) { $definition[$field] = $value }
+                }
+                $definition.SourceRoot = ([string]$definition.SourceRoot).Replace('/', '\')
+                if ($lane -cne 'PublishedBuilder') { $definition.DeveloperOnly = $true }
+                if ($lane -ceq 'ExplicitQaInstallOnly') { $definition.QaFixture = $true }
+                if ([string](Get-DtmApiMapValue $product 'currentImplementationType' '') -ceq 'OfficialJsonContentPack') { $definition.ContentOnly = $true }
+                if ([string](Get-DtmApiMapValue $product 'productionBuildAuthority' '') -ceq 'DTMAPI Author SDK build/pack/deploy') {
+                    $definition.AuthorSdkProject = $true
+                    $definition.AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
+                    $definition.AuthorSdkCatalogId = $product.catalogId
+                    $definition.AuthorSdkPackageFile = $product.packageName + '-advanced-pilot.zip'
+                }
+                $definition
+            }
+        )
+    }
+    elseif (Test-Path -LiteralPath $snapshotPath -PathType Leaf) {
+        $snapshot = Get-Content -Raw -Encoding UTF8 -LiteralPath $snapshotPath | ConvertFrom-Json
+        if ([int]$snapshot.schemaVersion -ne 1 -or [string]$snapshot.sourceCatalogSha256 -notmatch '^[a-f0-9]{64}$') { throw 'Invalid packaged product-definition snapshot.' }
+        $definitions = @($snapshot.definitions)
+    }
+    else {
+        throw 'Missing product definitions: package must include dtmapi-product-definitions.json beside release-common.ps1.'
+    }
+    $seen = @{}
+    foreach ($definition in $definitions) {
+        $id = [string](Get-DtmApiMapValue $definition 'UniqueID' '')
+        if ([string]::IsNullOrWhiteSpace($id) -or $seen.ContainsKey($id)) { throw "Duplicate or empty product identity '$id'." }
+        $seen[$id] = $true
+        foreach ($field in @('OfficialFolder', 'PackageName', 'SourceDll', 'PackageDll', 'AuthorSdkBuildScript', 'AuthorSdkPackageFile')) {
+            $value = [string](Get-DtmApiMapValue $definition $field '')
+            if (($field -in @('OfficialFolder', 'PackageName') -and [string]::IsNullOrWhiteSpace($value)) -or $value -match '[/\\:]|^\.{1,2}$') { throw "Invalid product $field for '$id'." }
         }
-    )
+        $source = [string](Get-DtmApiMapValue $definition 'SourceRoot' '')
+        if ([string]::IsNullOrWhiteSpace($source) -or [IO.Path]::IsPathRooted($source) -or $source -match '(^|[/\\])\.\.([/\\]|$)') { throw "Invalid source root for '$id'." }
+    }
+    return $definitions
+}
+
+function Export-DtmApiProductDefinitionsSnapshot {
+    param([Parameter(Mandatory = $true)] [string] $Path)
+    $catalogPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'release/dtmapi-product-catalog.json'
+    Write-Utf8NoBomJson -Path $Path -Value ([ordered]@{
+        schemaVersion = 1
+        sourceCatalogSha256 = (Get-DtmApiFileSha256 -Path $catalogPath).ToLowerInvariant()
+        definitions = @(Get-DtmApiProductDefinitions)
+    })
+}
+
+function Get-DtmApiPublishedModDefinitions {
+    return @(Get-DtmApiProductDefinitions | Where-Object { -not [bool](Get-DtmApiMapValue $_ 'DeveloperOnly' $false) })
 }
 
 function Get-DtmApiDeveloperOfficialModDefinitions {
-    $items = New-Object 'System.Collections.Generic.List[object]'
-    foreach ($item in @(Get-DtmApiPublishedModDefinitions)) {
-        $items.Add($item) | Out-Null
-    }
-
-    foreach ($item in @(
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_Oil'
-            SourceRoot = 'products\first-party\Oil'
-            UniqueID = 'DTMAPI.OilMod'
-            DisplayName = 'DTMAPI Oil'
-            PackageName = 'DTMAPI-Oil'
-            ContentOnly = $true
-            DeveloperOnly = $true
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_Mine'
-            Project = 'DTMAPI.Mine'
-            SourceRoot = 'products\first-party\Mine'
-            SourceDll = 'DTMAPI.Mine.dll'
-            PackageDll = 'DTMAPI.Mine.dll'
-            UniqueID = 'DTMAPI.MineMod'
-            DisplayName = 'DTMAPI Mine'
-            PackageName = 'DTMAPI-Mine'
-            DeveloperOnly = $true
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'mine'
-            AuthorSdkPackageFile = 'DTMAPI-Mine-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_StrongPlantingGun'
-            Project = 'DTMAPI.StrongPlantingGun'
-            SourceRoot = 'products\first-party\StrongPlantingGun'
-            SourceDll = 'DTMAPI.StrongPlantingGun.dll'
-            PackageDll = 'DTMAPI.StrongPlantingGun.dll'
-            UniqueID = 'DTMAPI.StrongPlantingGunMod'
-            DisplayName = 'DTMAPI Strong Planting Gun'
-            PackageName = 'DTMAPI-StrongPlantingGun'
-            DeveloperOnly = $true
-            AuthorSdkProject = $true
-            AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
-            AuthorSdkCatalogId = 'strong-planting-gun'
-            AuthorSdkPackageFile = 'DTMAPI-StrongPlantingGun-advanced-pilot.zip'
-        },
-        [ordered]@{
-            OfficialFolder = 'DTMAPI_CropHarvestingQA'
-            Project = 'CropHarvestingQaMod'
-            SourceRoot = 'tests\mod-fixtures\qa\CropHarvesting'
-            SourceDll = 'CropHarvestingQaMod.dll'
-            PackageDll = 'DTMAPI.CropHarvestingQA.dll'
-            UniqueID = 'DTMAPI.CropHarvestingQaMod'
-            DisplayName = 'DTMAPI Crop Harvesting QA'
-            PackageName = 'DTMAPI-CropHarvestingQA'
-            DeveloperOnly = $true
-            QaFixture = $true
-        }
-    )) {
-        $items.Add($item) | Out-Null
-    }
-
-    return $items.ToArray()
+    return @(Get-DtmApiProductDefinitions)
 }
 
 function Test-DtmApiMapKey {
@@ -730,72 +579,35 @@ function Get-DtmApiReleaseContractAdvancedProducts {
         [Parameter(Mandatory = $true)] $Catalog
     )
 
-    # The 0.6 roadmap reuses the Catalog's already-frozen exact Workshop
-    # mutation identities. The historical tree hashes remain audit material;
-    # this projection uses only those identities to choose current SDK builds.
+    # This is a current-published source/artifact projection, not an upload
+    # authorization projection. A product enters it only when its Catalog row
+    # carries an exact observed currentPublishedArtifact. Future upload
+    # authorization is owned independently by releaseStop and must not change
+    # this set until the resulting Steam artifact has been observed and
+    # registered back into the Catalog.
     $products = @((Get-DtmApiMapValue -Map $Catalog -Key 'products' -Default @()))
-    $releaseStop = Get-DtmApiMapValue -Map $Catalog -Key 'releaseStop' -Default $null
-    if ($null -eq $releaseStop) {
-        throw 'The product Catalog has no releaseStop identity authority.'
-    }
-    $entrypoints = @((Get-DtmApiMapValue -Map $releaseStop -Key 'publicMutationEntrypoints' -Default @()))
-    $productEntrypoints = @($entrypoints | Where-Object {
-        [string](Get-DtmApiMapValue -Map $_ -Key 'catalogId' -Default '') -cne 'runtime'
+    $publishedAdvancedProducts = @($products | Where-Object {
+        [string](Get-DtmApiMapValue -Map $_ -Key 'role' -Default '') -ceq 'PublishedProduct' -and
+        [string](Get-DtmApiMapValue -Map $_ -Key 'distributionState' -Default '') -ceq 'PublicWorkshop' -and
+        [string](Get-DtmApiMapValue -Map $_ -Key 'codeModKind' -Default '') -ceq 'Advanced' -and
+        [string](Get-DtmApiMapValue -Map $_ -Key 'nativeOwnership' -Default '') -ceq 'ProductNative' -and
+        $null -ne (Get-DtmApiMapValue -Map $_ -Key 'currentPublishedArtifact' -Default $null)
     })
-    $seenEntrypoints = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-    $advancedProducts = New-Object 'System.Collections.Generic.List[object]'
-    $ordinaryProductIds = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($entrypoint in $productEntrypoints) {
-        $catalogId = [string](Get-DtmApiMapValue -Map $entrypoint -Key 'catalogId' -Default '')
-        if ([string]::IsNullOrWhiteSpace($catalogId) -or -not $seenEntrypoints.Add($catalogId)) {
-            throw "Catalog release mutation product IDs must be non-empty and unique: '$catalogId'."
+    $seenCatalogIds = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($product in $publishedAdvancedProducts) {
+        $catalogId = [string](Get-DtmApiMapValue -Map $product -Key 'catalogId' -Default '')
+        $workshopId = [string](Get-DtmApiMapValue -Map $product -Key 'workshopId' -Default '')
+        $artifact = Get-DtmApiMapValue -Map $product -Key 'currentPublishedArtifact' -Default $null
+        $artifactState = [string](Get-DtmApiMapValue -Map $artifact -Key 'state' -Default '')
+        if ([string]::IsNullOrWhiteSpace($catalogId) -or -not $seenCatalogIds.Add($catalogId)) {
+            throw "Current-published Advanced Catalog IDs must be non-empty and unique: '$catalogId'."
         }
-        $matches = @($products | Where-Object {
-            [string](Get-DtmApiMapValue -Map $_ -Key 'catalogId' -Default '') -ceq $catalogId
-        })
-        if ($matches.Count -ne 1) {
-            throw "Catalog release mutation product '$catalogId' must map to exactly one product row; found $($matches.Count)."
-        }
-        $product = $matches[0]
-        if ([string](Get-DtmApiMapValue -Map $product -Key 'role' -Default '') -cne 'PublishedProduct' -or
-            [string](Get-DtmApiMapValue -Map $product -Key 'distributionState' -Default '') -cne 'PublicWorkshop' -or
-            [string](Get-DtmApiMapValue -Map $entrypoint -Key 'workshopId' -Default '') -cne
-                [string](Get-DtmApiMapValue -Map $product -Key 'workshopId' -Default '')) {
-            throw "Catalog release mutation product '$catalogId' is not one exact public Workshop product identity."
-        }
-        if ([string](Get-DtmApiMapValue -Map $product -Key 'codeModKind' -Default '') -ceq 'Advanced') {
-            if ([string](Get-DtmApiMapValue -Map $product -Key 'nativeOwnership' -Default '') -cne 'ProductNative') {
-                throw "Catalog release Advanced product '$catalogId' is not ProductNative."
-            }
-            $advancedProducts.Add($product) | Out-Null
-        }
-        else {
-            $ordinaryProductIds.Add($catalogId) | Out-Null
+        if ([string]::IsNullOrWhiteSpace($workshopId) -or $artifactState -cne 'SteamPublishedObservedExact') {
+            throw "Current-published Advanced product '$catalogId' lacks one exact observed Steam artifact identity."
         }
     }
 
-    if ($productEntrypoints.Count -ne 10 -or $advancedProducts.Count -ne 9 -or
-        ($ordinaryProductIds.ToArray() -join '|') -cne 'manbo-cardboard-audio') {
-        throw ("Catalog release mutation identities must resolve to exactly nine Advanced ProductNative updates plus retained ordinary Manbo activation. " +
-            "entries=$($productEntrypoints.Count); advanced=$($advancedProducts.Count); ordinary=$($ordinaryProductIds.ToArray() -join '|').")
-    }
-
-    $excludedUpdates = @((Get-DtmApiMapValue -Map $releaseStop -Key 'explicitlyExcludedExistingWorkshopUpdates' -Default @()))
-    if ($excludedUpdates.Count -ne 1 -or
-        [string](Get-DtmApiMapValue -Map $excludedUpdates[0] -Key 'catalogId' -Default '') -cne 'more-equipment-slots' -or
-        [string](Get-DtmApiMapValue -Map $excludedUpdates[0] -Key 'retainedVersion' -Default '') -cne '0.3.1-dtmapi') {
-        throw 'Catalog release exclusions must retain exactly MoreEquipmentSlots 0.3.1-dtmapi.'
-    }
-
-    $advancedIds = @($advancedProducts.ToArray() | ForEach-Object {
-        [string](Get-DtmApiMapValue -Map $_ -Key 'catalogId' -Default '')
-    })
-    foreach ($forbiddenId in @('more-equipment-slots', 'strong-planting-gun', 'mine')) {
-        if ($advancedIds -ccontains $forbiddenId) {
-            throw "Release artifact selection must never call the Advanced builder for excluded product '$forbiddenId'."
-        }
-    }
-    return @($advancedProducts.ToArray())
+    return @($publishedAdvancedProducts)
 }
 
 function Assert-DtmApiManifestInfoVersionParity {

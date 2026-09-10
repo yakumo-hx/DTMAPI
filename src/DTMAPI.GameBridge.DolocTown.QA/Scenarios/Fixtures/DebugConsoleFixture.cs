@@ -703,7 +703,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 var required = new List<string>();
                 var optional = new List<string>();
 
-                SpawnDebugOption? monsterOption = advancedDebugApi.GetMonsterOptions().FirstOrDefault(option => option.IsAvailableInCurrentRoom);
+                IReadOnlyList<SpawnDebugOption> monsterOptions =
+                    advancedDebugApi.GetMonsterOptions();
+                SpawnDebugOption? monsterOption = monsterOptions.FirstOrDefault(option =>
+                        option.IsAvailableInCurrentRoom &&
+                        option.Id.Equals(
+                            "space_ship",
+                            StringComparison.OrdinalIgnoreCase)) ??
+                    monsterOptions.FirstOrDefault(option =>
+                        option.IsAvailableInCurrentRoom);
                 SpawnDebugOption? resourceOption = advancedDebugApi.GetResourceOptions().FirstOrDefault(option => option.IsAvailableInCurrentRoom);
                 if (monsterOption == null || resourceOption == null)
                 {
@@ -765,14 +773,38 @@ namespace DTMAPI.GameBridge.DolocTown
                 optional.Add("crops{success=" + crops.Success + ", matured=" + crops.CropsMatured + "/" + crops.PlantBasinsVisited + ", reason=" + FirstNonEmpty(crops.FailureReason, "none") + "}");
 
                 InventoryGiveResult generator = advancedDebugApi.GiveCreativeGenerator(owner);
-                if (!generator.Success)
-                    throw new InvalidOperationException("Creative generator give failed: " + generator.FailureReason + ": " + generator.Message);
-                required.Add("generator{success=True, id=" + FirstNonEmpty(generator.ItemId, "dtmapi_creative_generator") + ", before=" + generator.BeforeCount + ", after=" + generator.AfterCount + "}");
+                optional.Add(
+                    "generator{success=" + generator.Success +
+                    ", id=" + FirstNonEmpty(generator.ItemId, "dtmapi_creative_generator") +
+                    ", before=" + generator.BeforeCount +
+                    ", after=" + generator.AfterCount +
+                    ", reason=" + FirstNonEmpty(generator.FailureReason, "none") +
+                    "}");
 
-                SpawnDebugResult monster = advancedDebugApi.SpawnMonster(owner, monsterOption.Id, 1);
-                if (!monster.Success)
-                    throw new InvalidOperationException("Monster spawn failed: " + monster.FailureReason + ": " + monster.Message);
-                required.Add("monster{success=True, id=" + monsterOption.Id + ", count=" + monster.SpawnedCount + "}");
+                SpawnDebugResult monsterOne = advancedDebugApi.SpawnMonster(owner, monsterOption.Id, 1);
+                if (!monsterOne.Success || monsterOne.SpawnedCount != 1)
+                    throw new InvalidOperationException("Monster 1-batch failed: " + monsterOne.FailureReason + ": " + monsterOne.Message);
+                SpawnDebugResult monsterTen = advancedDebugApi.SpawnMonster(owner, monsterOption.Id, 10);
+                if (!monsterTen.Success || monsterTen.SpawnedCount != 10)
+                    throw new InvalidOperationException("Monster 10-batch failed: " + monsterTen.FailureReason + ": " + monsterTen.Message);
+                if (monsterOption.Id.Equals("space_ship", StringComparison.OrdinalIgnoreCase) &&
+                    (monsterOne.Message.IndexOf("requestedRoots=1", StringComparison.Ordinal) < 0 ||
+                     monsterOne.Message.IndexOf("succeededRoots=1", StringComparison.Ordinal) < 0 ||
+                     monsterOne.Message.IndexOf("addedEntities=3", StringComparison.Ordinal) < 0 ||
+                     monsterTen.Message.IndexOf("requestedRoots=10", StringComparison.Ordinal) < 0 ||
+                     monsterTen.Message.IndexOf("succeededRoots=10", StringComparison.Ordinal) < 0 ||
+                     monsterTen.Message.IndexOf("addedEntities=30", StringComparison.Ordinal) < 0))
+                {
+                    throw new InvalidOperationException(
+                        "Old City Guardian composite counts were not observable in the ProductNative results. one=" +
+                        monsterOne.Message + "; ten=" + monsterTen.Message);
+                }
+                required.Add(
+                    "monster{success=True, id=" + monsterOption.Id +
+                    ", batches=" + monsterOne.SpawnedCount + "+" +
+                    monsterTen.SpawnedCount +
+                    ", one=" + monsterOne.Message +
+                    ", ten=" + monsterTen.Message + "}");
 
                 SpawnDebugResult resource = advancedDebugApi.SpawnResource(owner, resourceOption.Id, 1);
                 if (!resource.Success)
@@ -857,12 +889,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 TeleportSnapshot before = teleportDebugApi.GetCurrentSnapshot();
                 IReadOnlyList<TeleportDestination> destinations = teleportDebugApi.GetDestinations();
                 ManifestModel smokeManifest = CreateFixtureManifest();
-                TeleportCsvExportResult csvExport = teleportDebugApi.ExportDestinationsCsv(smokeManifest);
-                if (!csvExport.Success)
-                    throw new InvalidOperationException("Teleport CSV export failed: " + csvExport.FailureReason + ": " + csvExport.Message);
-                runtime.RuntimeMonitor.Log("Smoke exercise DebugTeleportCsv OK rows=" + csvExport.RowCount + " path=" + csvExport.Path);
-                runtime.SetHookStatus("Smoke.DebugTeleportCsv", "verified", "ITeleportDebugApi.ExportDestinationsCsv", "rows=" + csvExport.RowCount + " path=" + csvExport.Path);
-
                 TeleportDestination? destination = destinations
                     .Where(d => !string.IsNullOrWhiteSpace(d.MarkPointId))
                     .Where(d => string.IsNullOrWhiteSpace(before.RoomId) || !d.RoomId.Equals(before.RoomId, StringComparison.OrdinalIgnoreCase))

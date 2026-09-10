@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Security.Cryptography;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.Core.Manifesting
 {
@@ -155,7 +157,7 @@ namespace DTMAPI.Core.Manifesting
             int blobIndexSize = (heapSizes & 0x04) != 0 ? 4 : 2;
             var tableOffsets = new long[64];
             long currentTableOffset = cursor;
-            for (int table = 0; table < AssemblyRefTable; table++)
+            for (int table = 0; table <= 41; table++)
             {
                 tableOffsets[table] = currentTableOffset;
                 if (rowCounts[table] == 0)
@@ -163,13 +165,13 @@ namespace DTMAPI.Core.Manifesting
                 int rowSize = GetRowSize(table, rowCounts, stringIndexSize, guidIndexSize, blobIndexSize);
                 currentTableOffset = checked(currentTableOffset + checked((long)rowCounts[table] * rowSize));
             }
-            tableOffsets[AssemblyRefTable] = currentTableOffset;
 
             uint assemblyRefCount = rowCounts[AssemblyRefTable];
             int assemblyRefRowSize = 12 + blobIndexSize + stringIndexSize + stringIndexSize + blobIndexSize;
             long assemblyRefOffset = tableOffsets[AssemblyRefTable];
             EnsureRange(assemblyRefOffset, checked((long)assemblyRefCount * assemblyRefRowSize), checked(tableStream.Offset + tableStream.Size));
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var identities = new List<PackageAssemblyIdentity>();
             for (uint row = 0; row < assemblyRefCount; row++)
             {
                 long nameIndexOffset = assemblyRefOffset + checked((long)row * assemblyRefRowSize) + 12 + blobIndexSize;
@@ -178,6 +180,8 @@ namespace DTMAPI.Core.Manifesting
                 if (name.Length == 0)
                     throw new BadImageFormatException("AssemblyRef contains an empty assembly name.");
                 names.Add(name);
+                long referenceOffset = assemblyRefOffset + checked((long)row * assemblyRefRowSize);
+                identities.Add(ReadIdentity(reader, referenceOffset, definition: false, stringIndexSize, blobIndexSize, stringStream, blobStream, fileLength));
             }
             string targetFramework = ReadTargetFramework(
                 reader,
@@ -196,7 +200,53 @@ namespace DTMAPI.Core.Manifesting
                 targetFramework,
                 assemblyName,
                 assemblyVersion,
-                moduleMvid);
+                moduleMvid,
+                ReadIdentity(reader, tableOffsets[32], definition: true, stringIndexSize, blobIndexSize, stringStream, blobStream, fileLength),
+                identities, ReadDefinedTypes(reader, rowCounts, tableOffsets, stringIndexSize, guidIndexSize, blobIndexSize, stringStream, fileLength));
+        }
+
+        private static string[] ReadDefinedTypes(BinaryReader reader, uint[] rows, long[] offsets, int strings, int guids, int blobs, MetadataStream heap, long length)
+        {
+            var parents = new Dictionary<uint, uint>(); int indexSize = Table(rows, 2);
+            for (uint row = 0; row < rows[41]; row++)
+            {
+                long offset = offsets[41] + (long)row * indexSize * 2;
+                uint child = ReadIndex(reader, offset, indexSize, length), parent = ReadIndex(reader, offset + indexSize, indexSize, length);
+                if (child == 0 || child > rows[2] || parent == 0 || parent > rows[2] || parents.ContainsKey(child)) throw new BadImageFormatException("Invalid nested type row.");
+                parents.Add(child, parent);
+            }
+            int size = GetRowSize(2, rows, strings, guids, blobs);
+            string Name(uint row, int depth)
+            {
+                if (depth > 64) throw new BadImageFormatException("Nested type depth/cycle.");
+                long offset = offsets[2] + (long)(row - 1) * size + 4;
+                string name = ReadHeapString(reader, heap, ReadIndex(reader, offset, strings, length), length);
+                string ns = ReadHeapString(reader, heap, ReadIndex(reader, offset + strings, strings, length), length);
+                return parents.TryGetValue(row, out uint parent) ? Name(parent, depth + 1) + "+" + name : ns.Length == 0 ? name : ns + "." + name;
+            }
+            return Enumerable.Range(1, checked((int)rows[2])).Select(row => Name((uint)row, 0)).ToArray();
+        }
+
+        private static PackageAssemblyIdentity ReadIdentity(BinaryReader reader, long offset, bool definition,
+            int stringsSize, int blobsSize, MetadataStream strings, MetadataStream blobs, long length)
+        {
+            long version = offset + (definition ? 4 : 0);
+            long flags = version + 8;
+            long key = flags + 4;
+            uint keyIndex = ReadIndex(reader, key, blobsSize, length);
+            byte[] bytes = keyIndex == 0 ? Array.Empty<byte>() : ReadBlob(reader, blobs, keyIndex, length);
+            if (bytes.Length > 0 && (definition || (ReadUInt32(reader, flags, length) & 1) != 0))
+            {
+                using (SHA1 sha = SHA1.Create()) bytes = sha.ComputeHash(bytes).Reverse().Take(8).ToArray();
+            }
+            if (bytes.Length != 0 && bytes.Length != 8) throw new BadImageFormatException("Assembly public key token must contain eight bytes.");
+            return new PackageAssemblyIdentity
+            {
+                Name = ReadHeapString(reader, strings, ReadIndex(reader, key + blobsSize, stringsSize, length), length),
+                AssemblyVersion = ReadUInt16(reader, version, length) + "." + ReadUInt16(reader, version + 2, length) + "." + ReadUInt16(reader, version + 4, length) + "." + ReadUInt16(reader, version + 6, length),
+                Culture = ReadHeapString(reader, strings, ReadIndex(reader, key + blobsSize + stringsSize, stringsSize, length), length),
+                PublicKeyToken = BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant()
+            };
         }
 
         private static string ReadAssemblyVersion(BinaryReader reader, uint[] rows, long[] tableOffsets, long fileLength)
@@ -437,6 +487,13 @@ namespace DTMAPI.Core.Manifesting
                 case 32: return 16 + blobs + (2 * strings);
                 case 33: return 4;
                 case 34: return 12;
+                case 35: return 12 + (2 * blobs) + (2 * strings);
+                case 36: return 4 + Table(rows, 35);
+                case 37: return 12 + Table(rows, 35);
+                case 38: return 4 + strings + blobs;
+                case 39: return 8 + (2 * strings) + Coded(rows, 2, 38, 35, 39);
+                case 40: return 8 + strings + Coded(rows, 2, 38, 35, 39);
+                case 41: return 2 * Table(rows, 2);
                 default: throw new BadImageFormatException("Unsupported CLR metadata table " + table + ".");
             }
         }
@@ -569,13 +626,17 @@ namespace DTMAPI.Core.Manifesting
 
     internal sealed class PortableAssemblyMetadata
     {
-        public PortableAssemblyMetadata(IReadOnlyList<string> assemblyReferences, string targetFramework, string assemblyName, string assemblyVersion, string moduleMvid)
+        public PortableAssemblyMetadata(IReadOnlyList<string> assemblyReferences, string targetFramework, string assemblyName, string assemblyVersion, string moduleMvid,
+            PackageAssemblyIdentity? identity = null, IReadOnlyList<PackageAssemblyIdentity>? referenceIdentities = null, IReadOnlyList<string>? definedTypes = null)
         {
             AssemblyReferences = assemblyReferences ?? Array.Empty<string>();
             TargetFramework = targetFramework ?? string.Empty;
             AssemblyName = assemblyName ?? string.Empty;
             AssemblyVersion = assemblyVersion ?? string.Empty;
             ModuleMvid = moduleMvid ?? string.Empty;
+            Identity = identity ?? new PackageAssemblyIdentity { Name = AssemblyName, AssemblyVersion = AssemblyVersion };
+            ReferenceIdentities = referenceIdentities ?? Array.Empty<PackageAssemblyIdentity>();
+            DefinedTypes = definedTypes ?? Array.Empty<string>();
         }
 
         public IReadOnlyList<string> AssemblyReferences { get; }
@@ -583,5 +644,8 @@ namespace DTMAPI.Core.Manifesting
         public string AssemblyName { get; }
         public string AssemblyVersion { get; }
         public string ModuleMvid { get; }
+        public PackageAssemblyIdentity Identity { get; }
+        public IReadOnlyList<PackageAssemblyIdentity> ReferenceIdentities { get; }
+        public IReadOnlyList<string> DefinedTypes { get; }
     }
 }

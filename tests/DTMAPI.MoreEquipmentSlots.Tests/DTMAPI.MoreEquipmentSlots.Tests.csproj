@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>moreequipment</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" Link="Compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotContracts.cs" Link="MoreEquipmentSlots/EquipmentSlotContracts.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotTransactionJournal.cs" Link="MoreEquipmentSlots/EquipmentSlotTransactionJournal.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotStorageFormatProbe.cs" Link="MoreEquipmentSlots/EquipmentSlotStorageFormatProbe.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotLegacyMigration.cs" Link="MoreEquipmentSlots/EquipmentSlotLegacyMigration.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotDocumentStore.cs" Link="MoreEquipmentSlots/EquipmentSlotDocumentStore.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotDocumentStore.Migration.cs" Link="MoreEquipmentSlots/EquipmentSlotDocumentStore.Migration.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotNativePlacement.cs" Link="MoreEquipmentSlots/EquipmentSlotNativePlacement.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotNativeMailEvidence.cs" Link="MoreEquipmentSlots/EquipmentSlotNativeMailEvidence.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/MoreEquipmentSlotsHookOwnership.cs" Link="MoreEquipmentSlots/MoreEquipmentSlotsHookOwnership.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/MoreEquipmentSlotsEffectPolicy.cs" Link="MoreEquipmentSlots/MoreEquipmentSlotsEffectPolicy.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/MoreEquipmentSlotsReflectionAccess.cs" Link="MoreEquipmentSlots/MoreEquipmentSlotsReflectionAccess.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/MoreEquipmentSlotsItemAdmissionPolicy.cs" Link="MoreEquipmentSlots/MoreEquipmentSlotsItemAdmissionPolicy.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/MoreEquipmentSlotsUiLayoutPolicy.cs" Link="MoreEquipmentSlots/MoreEquipmentSlotsUiLayoutPolicy.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown/DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/EquipmentSlotsHarmonyOwnerFixture/EquipmentSlotsHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/EquipmentSlotsLegacyTargetFixture/EquipmentSlotsLegacyTargetFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="StageCompatibilityHost" AfterTargets="Build">
+    <Copy SourceFiles="../../src/DTMAPI.GameBridge.DolocTown.Compatibility/bin/$(Configuration)/netstandard2.0/DTMAPI.GameBridge.DolocTown.Compatibility.dll" DestinationFolder="$(OutDir)CompatibilityHostFixture" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

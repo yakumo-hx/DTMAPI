@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>source-arbitration</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/SourceAuthorityFixture.cs" Link="Shared/SourceAuthorityFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RuntimeHostFixture.cs" Link="Shared/RuntimeHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/OfficialSourceFixture.cs" Link="Shared/OfficialSourceFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+  </ItemGroup>
+</Project>

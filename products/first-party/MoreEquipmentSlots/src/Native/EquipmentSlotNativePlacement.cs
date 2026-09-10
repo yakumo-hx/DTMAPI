@@ -237,25 +237,43 @@ namespace DTMAPI.MoreEquipmentSlots
             }
             catch (Exception ex)
             {
-                throw new InvalidDataException(
-                    "Native backpack withdrawal failed after mutation may have begun for " +
-                    itemId +
-                    ".",
+                throw EquipmentSlotNativeMutationEvidence.Unknown(
+                    itemId,
+                    1,
+                    before,
+                    0,
+                    "Native backpack withdrawal threw after mutation may have begun.",
                     ex);
             }
 
-            int after = gateway.CountBackpack(itemId);
+            int after;
+            try
+            {
+                after = gateway.CountBackpack(itemId);
+            }
+            catch (Exception ex)
+            {
+                throw EquipmentSlotNativeMutationEvidence.Unknown(
+                    itemId,
+                    1,
+                    before,
+                    0,
+                    "Native backpack withdrawal post-state is unreadable.",
+                    ex);
+            }
             int delta = after - before;
             if (delta == -1)
                 return true;
             if (delta == 0 && !reported)
                 return false;
-            throw new InvalidDataException(
+            throw EquipmentSlotNativeMutationEvidence.Unknown(
+                itemId,
+                1,
+                before,
+                0,
                 "Native backpack withdrawal returned " +
                 reported +
-                " with non-exact count evidence for " +
-                itemId +
-                ": before=" +
+                " with contradictory count evidence: before=" +
                 before +
                 ", after=" +
                 after +
@@ -482,16 +500,66 @@ namespace DTMAPI.MoreEquipmentSlots
             };
         }
 
-        internal static string GetNativeSaveFingerprint(
+        internal static int ReadCurrentArchiveIndex()
+        {
+            object? archive =
+                ReadStaticMember(DolocApiType, "archiveHandle");
+            object? value = ReadMember(
+                archive,
+                "archiveIndex");
+            if (value is int archiveIndex && archiveIndex >= 0)
+                return archiveIndex;
+            throw new InvalidDataException(
+                "MoreEquipmentSlots could not resolve a valid initialized native archive index for NewGame.");
+        }
+
+        internal static bool NativeCurrentSaveExists(
+            int archiveIndex)
+        {
+            object handler = GetNativeSaveHandler();
+            return File.Exists(
+                GetNativeSavePath(
+                    handler,
+                    archiveIndex));
+        }
+
+        internal static void RequireNativeCurrentSaveMissing(
             int archiveIndex)
         {
             object handler = GetNativeSaveHandler();
             string path = GetNativeSavePath(
                 handler,
                 archiveIndex);
+            if (File.Exists(path))
+            {
+                throw new InvalidDataException(
+                    "MoreEquipmentSlots refused NewGame sidecar reset because the native current archive already exists: " +
+                    path);
+            }
+        }
+
+        internal static string GetNativeSaveFingerprint(
+            int archiveIndex) =>
+            GetNativeSaveFingerprint(
+                archiveIndex,
+                allowMissingCurrent: false);
+
+        internal static string GetNativeSaveFingerprint(
+            int archiveIndex,
+            bool allowMissingCurrent)
+        {
+            object handler = GetNativeSaveHandler();
+            string path = GetNativeSavePath(
+                handler,
+                archiveIndex);
             int backupCount = GetNativeBackupCount(handler);
-            return EquipmentSlotNativeCommitFingerprint
-                .Compute(path, backupCount);
+            return allowMissingCurrent
+                ? EquipmentSlotNativeCommitFingerprint
+                    .ComputeAllowingMissingCurrent(
+                        path,
+                        backupCount)
+                : EquipmentSlotNativeCommitFingerprint
+                    .Compute(path, backupCount);
         }
 
         private static object GetNativeSaveHandler()

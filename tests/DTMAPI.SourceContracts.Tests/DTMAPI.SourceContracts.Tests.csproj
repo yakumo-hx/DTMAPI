@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>source-contracts</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/TextAssertions.cs" Link="Shared/TextAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Authoring.Contracts/DTMAPI.Authoring.Contracts.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown/DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.BepInExBootstrap/DTMAPI.BepInExBootstrap.csproj" />
+  </ItemGroup>
+</Project>

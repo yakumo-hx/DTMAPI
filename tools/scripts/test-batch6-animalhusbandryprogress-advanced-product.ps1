@@ -78,7 +78,7 @@ foreach ($forbiddenHotPath in @('TotalSeconds < 0.08', 'DateTimeOffset.Now', 'Or
         Add-AnimalFailure "AnimalHusbandryProgress retained a superseded steady-state refresh token: $forbiddenHotPath"
     }
 }
-$unitSource = Read-AnimalText (Join-Path $repo 'tests\DTMAPI.UnitTests\AnimalHusbandryProductTests.cs')
+$unitSource = Read-AnimalText (Join-Path $repo 'tests\DTMAPI.AnimalHusbandry.Tests\AnimalHusbandryProductTests.cs')
 foreach ($token in @('StableRowsAreSortedOnceAndCappedAtThree', 'OverlayWritesOnlyOneNextFrameGuard', 'for (int i = 0; i < 100; i++)', 'OverlayCleanupIsReverseOrderAndExactlyOnce')) {
     Require-AnimalToken 'Animal ProductNative refresh focused Unit' $unitSource $token
 }
@@ -102,7 +102,7 @@ foreach ($retired in @('src\DTMAPI.GameBridge.DolocTown\Features\AnimalViewer\*.
     if (Get-Item -Path (Join-Path $repo $retired) -ErrorAction SilentlyContinue) { Add-AnimalFailure "Retired product-owned path still exists: $retired" }
 }
 
-$demandTests = Read-AnimalText (Join-Path $repo 'tests\DTMAPI.UnitTests\Batch5GameBridgeDemandTests.cs')
+$demandTests = Read-AnimalText (Join-Path $repo 'tests\DTMAPI.Compatibility.Tests\Batch5GameBridgeDemandTests.cs')
 foreach ($token in @('ManagedAnimalHusbandryOwnerFailsClosedInBothLoadOrders', 'Product-first then IAnimalViewerApi compatibility request must fail closed', 'Compatibility-first then product must synchronously clear pending AnimalViewer')) {
     Require-AnimalToken 'Bidirectional frozen/product owner exclusion' ($compatibilityText + $demandTests) $token
 }

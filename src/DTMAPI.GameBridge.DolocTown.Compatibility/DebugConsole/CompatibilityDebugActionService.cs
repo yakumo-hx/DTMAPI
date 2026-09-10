@@ -72,10 +72,6 @@ namespace DTMAPI.DebugConsole
             string destinationId) =>
             Actions.Teleport(owner, destinationId);
 
-        public TeleportCsvExportResult ExportDestinationsCsv(
-            IManifest owner) =>
-            Actions.ExportDestinationsCsv(owner);
-
         BridgeFeatureStatus ITeleportDebugApi.GetStatus() =>
             ((ITeleportActions)Actions).GetStatus();
 
@@ -170,7 +166,7 @@ namespace DTMAPI.DebugConsole
             IManifest owner,
             string monsterId,
             int count) =>
-            Actions.SpawnMonster(owner, monsterId, count);
+            Actions.SpawnMonster(owner, monsterId, count).Result;
 
         public SpawnDebugResult SpawnResource(
             IManifest owner,

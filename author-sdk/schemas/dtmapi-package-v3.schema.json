@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTMAPI generated package binding schema 3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "owner",
+    "uniqueId",
+    "version",
+    "packageKind",
+    "codeModKind",
+    "authorSdkVersion",
+    "targetDtmApiVersion",
+    "manifestPath",
+    "manifestSha256",
+    "entryDllPath",
+    "entryDllSha256",
+    "advancedReferenceReceiptPath",
+    "advancedReferenceReceiptSha256",
+    "authority",
+    "dependencyContractVersion",
+    "dependencyInventoryPath",
+    "dependencyInventorySha256",
+    "files"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "owner": {
+      "const": "DTMAPI"
+    },
+    "uniqueId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "$ref": "dtmapi-dependencies.schema.json#/$defs/semver"
+    },
+    "packageKind": {
+      "enum": [
+        "CodeMod",
+        "ContentPack"
+      ]
+    },
+    "codeModKind": {
+      "enum": [
+        "Strict",
+        "Advanced",
+        ""
+      ]
+    },
+    "authorSdkVersion": {
+      "type": "string"
+    },
+    "targetDtmApiVersion": {
+      "type": "string"
+    },
+    "manifestPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manifestSha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "entryDllPath": {
+      "type": "string"
+    },
+    "entryDllSha256": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{64})?$"
+    },
+    "advancedReferenceReceiptPath": {
+      "const": ""
+    },
+    "advancedReferenceReceiptSha256": {
+      "const": ""
+    },
+    "authority": {
+      "const": "dtmapi-author-sdk-package-binding"
+    },
+    "dependencyContractVersion": {
+      "const": 1
+    },
+    "dependencyInventoryPath": {
+      "const": "dtmapi-dependencies.json"
+    },
+    "dependencyInventorySha256": {
+      "$ref": "#/$defs/hash"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "length",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "#/$defs/hash"
+          }
+        }
+      }
+    },
+    "nativeContractVersion": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "nativeBuildPath": {
+      "const": "dtmapi-native-build.json"
+    },
+    "nativeBuildSha256": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "$comment": "Generated binding. Native V1 adds an acyclic native provenance binding and requires native-contract/1 target support; old Dependency V1 packages keep their exact field set. No legacy fallback on new-format failure.",
+  "allOf": [
+    {
+      "then": {
+        "required": [
+          "nativeContractVersion",
+          "nativeBuildPath",
+          "nativeBuildSha256"
+        ],
+        "properties": {
+          "packageKind": {
+            "const": "CodeMod"
+          }
+        }
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "nativeContractVersion"
+              ]
+            },
+            {
+              "required": [
+                "nativeBuildPath"
+              ]
+            },
+            {
+              "required": [
+                "nativeBuildSha256"
+              ]
+            }
+          ]
+        }
+      },
+      "if": {
+        "required": [
+          "codeModKind"
+        ],
+        "properties": {
+          "codeModKind": {
+            "const": "Advanced"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -9,7 +9,7 @@ namespace DTMAPI.DebugConsole
         IDebugConsoleInputRuntime Input { get; }
         IDebugConsoleModalRuntime UI { get; }
         ITranslationHelper Translation { get; }
-        string ApiVersion { get; }
+        string ProductVersion { get; }
         string DtmApiPath { get; }
         bool ModalOpen { set; }
         bool NativeInputDrainActive { set; }
@@ -34,7 +34,7 @@ namespace DTMAPI.DebugConsole
         string NativeOwnerLabel { get; }
         IReadOnlyList<IContentItemInfo> GetIndexedItems();
         IContentItemInfo? GetIndexedItem(string itemId);
-        string EvidencePath { get; }
+        IReadOnlyList<AnimalContentSource> GetAnimalContentSources();
         void SetCreativeHookDemand(bool enabled);
         void SetMovementMultiplier(object? player, double multiplier);
         void Status(string id, string status, string source, string details);

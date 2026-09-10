@@ -1,57 +1,253 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/manifest.schema.json",
-  "title": "DTMAPI Author SDK 0.1 manifest schema with a 0.5.5 API target",
+  "title": "DTMAPI manifest: legacy dependency reader or explicit dependency contract V1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["Name", "Author", "Version", "Description", "UniqueID", "MinimumDTMApiVersion", "Type"],
+  "required": [
+    "Name",
+    "Author",
+    "Version",
+    "Description",
+    "UniqueID",
+    "MinimumDTMApiVersion",
+    "Type"
+  ],
   "properties": {
-    "Name": { "type": "string", "minLength": 1 },
-    "Author": { "type": "string", "minLength": 1 },
-    "Version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$" },
-    "Description": { "type": "string", "minLength": 1 },
-    "UniqueID": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
-    "EntryDll": { "type": "string" },
-    "EntryType": { "type": "string" },
-    "MinimumDTMApiVersion": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
-    "MinimumGameVersion": { "type": "string" },
-    "Type": { "enum": ["CodeMod", "ContentPack"] },
-    "CodeModKind": { "enum": ["Strict", "Advanced"] },
+    "Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Author": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Version": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "UniqueID": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$"
+    },
+    "EntryDll": {
+      "type": "string"
+    },
+    "EntryType": {
+      "type": "string"
+    },
+    "MinimumDTMApiVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "MinimumGameVersion": {
+      "type": "string"
+    },
+    "Type": {
+      "enum": [
+        "CodeMod",
+        "ContentPack"
+      ]
+    },
+    "CodeModKind": {
+      "enum": [
+        "Strict",
+        "Advanced"
+      ]
+    },
     "Dependencies": {
+      "type": "array"
+    },
+    "UpdateKeys": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["UniqueID"],
-        "properties": {
-          "UniqueID": { "type": "string" },
-          "MinimumVersion": { "type": "string" },
-          "Required": { "type": "boolean" }
-        }
+        "type": "string"
       }
     },
-    "UpdateKeys": { "type": "array", "items": { "type": "string" } }
+    "DependencyContractVersion": {
+      "const": 1
+    },
+    "NativeContractVersion": {
+      "enum": [
+        1,
+        2
+      ]
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "Type": { "const": "CodeMod" } } },
-      "then": { "required": ["EntryDll", "EntryType"] }
+      "if": {
+        "properties": {
+          "Type": {
+            "const": "CodeMod"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "EntryDll",
+          "EntryType"
+        ]
+      }
     },
     {
-      "if": { "properties": { "Type": { "const": "ContentPack" } } },
+      "if": {
+        "properties": {
+          "Type": {
+            "const": "ContentPack"
+          }
+        }
+      },
       "then": {
         "not": {
           "anyOf": [
-            { "required": ["EntryDll"] },
-            { "required": ["EntryType"] },
-            { "required": ["CodeModKind"] }
+            {
+              "required": [
+                "EntryDll"
+              ]
+            },
+            {
+              "required": [
+                "EntryType"
+              ]
+            },
+            {
+              "required": [
+                "CodeModKind"
+              ]
+            }
           ]
         }
       }
     },
     {
-      "if": { "required": ["CodeModKind"] },
-      "then": { "properties": { "Type": { "const": "CodeMod" } } }
+      "if": {
+        "required": [
+          "CodeModKind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "Type": {
+            "const": "CodeMod"
+          }
+        }
+      }
+    },
+    {
+      "then": {
+        "properties": {
+          "Dependencies": {
+            "items": {
+              "required": [
+                "UniqueID",
+                "Required",
+                "VersionRange"
+              ],
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "Required": {
+                  "type": "boolean"
+                },
+                "VersionRange": {
+                  "required": [
+                    "minimumInclusive",
+                    "includePrerelease"
+                  ],
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "minimumInclusive": {
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+                      "type": "string"
+                    },
+                    "includePrerelease": {
+                      "type": "boolean"
+                    },
+                    "maximumExclusive": {
+                      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+                      "type": "string"
+                    }
+                  }
+                },
+                "UniqueID": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "Version": {
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "Dependencies"
+        ]
+      },
+      "if": {
+        "required": [
+          "DependencyContractVersion"
+        ]
+      },
+      "else": {
+        "properties": {
+          "Dependencies": {
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "UniqueID"
+              ],
+              "properties": {
+                "UniqueID": {
+                  "type": "string"
+                },
+                "MinimumVersion": {
+                  "type": "string"
+                },
+                "Required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "Version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+          }
+        }
+      }
+    },
+    {
+      "then": {
+        "required": [
+          "CodeModKind",
+          "Type",
+          "DependencyContractVersion"
+        ],
+        "properties": {
+          "CodeModKind": {
+            "const": "Advanced"
+          },
+          "DependencyContractVersion": {
+            "const": 1
+          },
+          "Type": {
+            "const": "CodeMod"
+          }
+        }
+      },
+      "if": {
+        "required": [
+          "NativeContractVersion"
+        ]
+      }
     }
   ]
 }

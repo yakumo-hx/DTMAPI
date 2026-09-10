@@ -64,6 +64,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private bool failureCloseRequested;
         private int g5WorldMutationIndex;
         private bool g5WorldMutationCompleted;
+        private DateTimeOffset g5WorldMutationReadyObservedAt;
         private int g6LifecycleIndex;
         private bool g6LifecycleCompleted;
         private DateTimeOffset startedAt;
@@ -98,6 +99,11 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 settings.ExpectedMoreEquipmentSlotsCommittedSlots);
             scenarios.ConfigureMoreEquipmentSlotsTransition(
                 settings.MoreEquipmentSlotsTransitionPhase);
+            scenarios.ConfigureMoreEquipmentSlots100UiAcceptance(
+                settings.EquipmentSlotsObservationEnabled &&
+                settings.G5WorldMutationCases.Contains(
+                    "MoreEquipmentSlotsNoNativeSave",
+                    StringComparer.Ordinal));
             if (settings.Batch6AutoFishingPilot.Enabled)
                 batch6AutoFishingPilot = new Batch6AutoFishingPilotCoordinator(access, settings.Batch6AutoFishingPilot);
             if (settings.Batch6AutoFishingManagerLifecycle.Enabled)
@@ -173,6 +179,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             if (settings.RequireDisposableSaveRedirect && !preRuntimePrepared)
                 throw new InvalidOperationException("The required disposable save guard was not installed before Runtime Mod loading.");
             PublishRootIsolationStatus();
+            RetainedHelperAbiProbe.RunIfRequested(message => access.Log(message));
             nativeLoadContinuationProbe?.Update("Start");
             if (settings.G6LifecycleCases.Length > 0)
             {
@@ -390,6 +397,20 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 }
                 if (!g5WorldMutationCompleted && settings.G5WorldMutationCases.Length > 0)
                 {
+                    if (!QaScenarioController.HasContinuousStableObservationForFixture(
+                            scenarios.IsG5WorldMutationReady(),
+                            DateTimeOffset.UtcNow,
+                            1d,
+                            ref g5WorldMutationReadyObservedAt))
+                    {
+                        access.PublishG5Status(
+                            "pending",
+                            "Waiting for continuous native world readiness: Gameplay + archive/currentRoom/RoomInfo/agent; completed=" +
+                            g5WorldMutationIndex + "/" +
+                            settings.G5WorldMutationCases.Length +
+                            "; owner=qa; fallback=false");
+                        return;
+                    }
                     string caseId = settings.G5WorldMutationCases[g5WorldMutationIndex];
                     G4FixtureStepResult result = scenarios.AdvanceG5WorldMutation(caseId);
                     if (!result.Completed)
@@ -598,7 +619,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 return QaHostRunDisposition.RequestReturnHome;
             }
 
-            return AllRequirementsComplete()
+            return AllRequirementsComplete() && !settings.WaitForManualExit
                 ? QaHostRunDisposition.RequestQuit
                 : QaHostRunDisposition.Continue;
         }

@@ -16,7 +16,7 @@ The user reported that manually watering with a watering can is not animation-ac
 
 ## Owning Review
 
-- [ActionSpeed Manual Watering Animation Review](../../reviews/manual-qa/2026/20260806-0002-actionspeed-manual-watering-animation.md)
+- [ActionSpeed Manual Watering Animation Review](../../archive/reviews/manual-qa/2026/20260806-0002-actionspeed-manual-watering-animation.md)
 
 ## Scope
 

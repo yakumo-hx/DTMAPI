@@ -2,3 +2,13 @@ references/doloc-town/official-workshop-docs/feishu-crawl-*/** -whitespace
 author-sdk/advanced-reference-policies/*.json text eol=lf
 author-sdk/advanced-reference-policies/*.txt text eol=lf
 author-sdk/compatibility/**/*.props text eol=lf
+author-sdk/compatibility/0.5.5/source/** text eol=lf
+author-sdk/compatibility/0.5.5/source-build.json text eol=lf
+# Preserve the byte form of the five frozen historical originals on checkout.
+docs/architecture/batch6-managed-mod-identity-contract.md text eol=lf
+docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md text eol=lf
+docs/debug/regressions/smoke-matrix-history-20260804-through-20260809.md text eol=lf
+# This original mixes CRLF and LF; store it without newline conversion.
+docs/planning/archive/20260601-dtmapi-original-planning-transcript.md -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/planning/archive/20260613-dtmapi-debug-system-planning-transcript.md text eol=lf
+/docs/archive/authoring/** -text

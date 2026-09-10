@@ -29,6 +29,7 @@ namespace DTMAPI.GameBridge.DolocTown
         public static DolocTownGameBridge? Bridge { get; set; }
         public static void LoadGamePrefix(int index)
         {
+            SafeCallback("Platform.ResetLoadObservation", () => Bridge?.ResetPlatformWorldObservation());
             StartNativeContinuationProbeStopwatch();
             SafeCallback("LoadGame.NotifyLoadGameRequested", () => Runtime?.NotifyLoadGameRequested(index));
             RecordNativeContinuationProbe("DolocAPI.LoadGame", "Enter");
@@ -44,6 +45,8 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
+                SafeCallback("Lifecycle.ObserveNativeFrame", () => Bridge?.ObserveFirstNativeWorldFrame());
+                SafeCallback("Platform.ObserveNativeFrame", () => Bridge?.ObservePlatformNativeFrame());
                 Runtime?.NotifyNativeGameFrame();
             }
             catch (Exception ex)
@@ -94,6 +97,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void AfterLoadArchiveDataPostfix(bool isNewGame)
         {
+            SafeCallback("Lifecycle.ObserveSaveLoaded", () => Bridge?.ObserveSaveLoadedNativeState());
             Stopwatch breadcrumb = Stopwatch.StartNew();
             Runtime?.RecordSaveLoadedActivationBreadcrumb("Hook.Enter", breadcrumb);
             Runtime?.RecordSaveLoadedActivationBreadcrumb("Hook.BeforeGameBridgeFeatureDispatch", breadcrumb);
@@ -138,6 +142,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         public static void ReturnHomePrefix()
         {
+            SafeCallback("Platform.ResetTitleObservation", () => Bridge?.ResetPlatformWorldObservation());
             SafeCallback("ReturnHome.NotifyRequested", () => Runtime?.NotifyReturnHomeRequested("Harmony Prefix: DolocAPI.ReturnHome"));
         }
 
@@ -147,6 +152,19 @@ namespace DTMAPI.GameBridge.DolocTown
             SafeCallback("ReturnedToTitle.NotifyGameBridgeFeatures", () => Bridge?.NotifyGameBridgeFeaturesReturnedToTitle());
             SafeCallback("ReturnedToTitle.NotifyRuntime", () => Runtime?.NotifyReturnedToTitle());
         }
+
+        public static void PlatformNewGamePrefix(int index)
+        {
+            SafeCallback("Platform.NewGame.Start", () => { Bridge?.ResetPlatformWorldObservation(); Runtime?.NotifyPlatformNewGameStarting(index); });
+        }
+        public static void PlatformNewGamePostfix() => SafeCallback("Platform.NewGame.End", () => Runtime?.NotifyPlatformNewGameCompleted());
+        // Void finalizer observes failure without swallowing or replacing the native exception.
+        public static void PlatformLoadFinalizer(Exception? __exception)
+        {
+            if (__exception != null) SafeCallback("Platform.Load.Exception", () => { Bridge?.ResetPlatformWorldObservation(); Runtime?.NotifyPlatformLoadFailure(); });
+        }
+        public static void PlatformWorldTransitionPrefix() => SafeCallback("Platform.World.Start", () => Bridge?.ObservePlatformWorldTransition());
+        public static void PlatformRoomEnteredPostfix(object __instance) => SafeCallback("Platform.Room.Entered", () => Bridge?.ObservePlatformRoomEntered(__instance));
 
         public static void DolocApiSetEnvCameraPostfix()
         {

@@ -105,3 +105,19 @@ layout-safe owner after native pool rendering, and integrate product controls
 with the same focus/navigation lifecycle. Expanding the official array by three
 on the player's behalf is not an accepted shortcut because it changes official
 progression and native save ownership.
+
+### 2026-08-11 bounded Product implementation
+
+The Product now observes the existing native `RenderPassiveItems(Sprite[])`
+completion and places one independent `ignoreLayout` row after the actual last
+official Rect. It does not write `passiveItems`, call `SetPassiveSlotCount`, or
+join the official pool. The reviewed range is one through five official
+passive slots, corresponding to the base slot plus at most four official bags;
+the same three Product clones and native-prefix-plus-three navigation are
+retained across every step. Count six and unexpected geometry remain
+fail-closed. This is a bounded ProductNative UI rule, not a new stable public
+arbitrary-slot API or a SharedNative owner.
+
+Focused physical tests cover `1 -> 2 -> 3 -> 4 -> 5` and count-six rejection
+without any frame loop. The prior exact package was invalidated by player
+three-slot evidence, so current runtime and release acceptance remain open.

@@ -5,6 +5,7 @@ param(
     [string[]] $PersistentRoot = @(),
     [string[]] $GameDirectory = @(),
     [string[]] $CrashTempRoot = @(),
+    [ValidateRange(0, 11)] [int[]] $SlotIndex = @(),
     [switch] $SkipWindowsEvents,
     [switch] $SkipProcessCheck
 )
@@ -507,7 +508,27 @@ try {
         if ([System.IO.Directory]::Exists($saveRoot)) {
             $script:SaveRootsFound++
             Write-Host ('[FOUND] SAVE: ' + $saveRoot) -ForegroundColor Green
-            Copy-DtmSupportTree -SourceRoot $saveRoot -DestinationRelativeRoot (Join-Path (Join-Path 'PlayerData' $label) 'SAVE') -Category 'SAVE'
+            $saveDestination = Join-Path (Join-Path 'PlayerData' $label) 'SAVE'
+            if ($SlotIndex.Count -eq 0) {
+                Copy-DtmSupportTree -SourceRoot $saveRoot -DestinationRelativeRoot $saveDestination -Category 'SAVE'
+            }
+            elseif (([IO.File]::GetAttributes($saveRoot) -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                Add-DtmSupportError 'Selected-slot SAVE root is a reparse point.'
+                $script:SaveCopyFailures++
+            }
+            else {
+                foreach ($selectedSlot in @($SlotIndex | Sort-Object -Unique)) {
+                    $currentName = 'doloc-save-' + $selectedSlot + '.data'
+                    if (-not [IO.File]::Exists((Join-Path $saveRoot $currentName))) {
+                        Add-DtmSupportError ('Selected native slot current file is missing: ' + $currentName)
+                        $script:SaveCopyFailures++
+                    }
+                    $familyPattern = '^' + [regex]::Escape($currentName) + '(?:\.bak|\.prev[0-9]+)?$'
+                    foreach ($saveFile in @(Get-ChildItem -LiteralPath $saveRoot -File -Force | Where-Object { $_.Name -cmatch $familyPattern })) {
+                        [void](Copy-DtmSupportSourceFile -Source $saveFile.FullName -DestinationRelative (Join-Path $saveDestination $saveFile.Name) -Category 'SAVE')
+                    }
+                }
+            }
         }
         else {
             Add-DtmSupportWarning ("SAVE directory was not present under '{0}'." -f $root)
@@ -632,6 +653,8 @@ try {
     $summary = New-Object 'System.Collections.Generic.List[string]'
     [void]$summary.Add('DTMAPI player SAVE and crash-log collector')
     [void]$summary.Add('CollectionStatus=' + $status)
+    [void]$summary.Add('SaveCollectionScope=' + $(if ($SlotIndex.Count -eq 0) { 'FullSAVE' } else { 'SelectedNativeSlots' }))
+    [void]$summary.Add('NativeSlotIndices=' + (@($SlotIndex | Sort-Object -Unique) -join ','))
     [void]$summary.Add('CollectedAt=' + (Get-Date).ToString('o'))
     [void]$summary.Add('UserProfileRoot=' + $UserProfileRoot)
     [void]$summary.Add('SaveRootsFound=' + $script:SaveRootsFound)
@@ -664,7 +687,7 @@ try {
     $sendText = @(
         'Send the complete outer ZIP to the DTMAPI maintainer.',
         'Do not edit or remove files inside it.',
-        'This package contains complete save data and local filesystem paths.',
+        $(if ($SlotIndex.Count -eq 0) { 'This package contains complete save data and local filesystem paths.' } else { 'This package contains the selected native slot families, logs and local filesystem paths; other SAVE files are omitted.' }),
         ('CollectionStatus=' + $status)
     )
     [System.IO.File]::WriteAllLines((Join-DtmSupportStagePath -RelativePath 'SEND_THIS_ZIP.txt'), [string[]]$sendText, $script:Utf8NoBom)

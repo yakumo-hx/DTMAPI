@@ -9,7 +9,8 @@ param(
     [switch]$FullOnly,
     [switch]$WebOnly,
     [switch]$SkipZip,
-    [switch]$SelfAuditOnly
+    [switch]$SelfAuditOnly,
+    [switch]$LegacyEvidenceSet
 )
 
 Set-StrictMode -Version Latest
@@ -48,8 +49,9 @@ function Get-GitValue {
 function New-CleanDirectory {
     param([string]$Path)
 
+    Assert-AuditOutputPath -Path $Path
     if (Test-Path -LiteralPath $Path) {
-        Remove-Item -LiteralPath $Path -Recurse -Force
+        throw "A previous audit staging directory exists; retain it and use a fresh output root: $Path"
     }
 
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
@@ -132,6 +134,10 @@ function Test-IsExcludedSourceFile {
         return $true
     }
 
+    if ($normalized -like ".codex/wiki-maintenance/*") {
+        return $true
+    }
+
     if ($normalized -like "references/doloc-town/reverse/builds/*") {
         return $true
     }
@@ -176,36 +182,18 @@ function Copy-AuditDocs {
         [string]$PackageRoot
     )
 
-    $auditDocs = Join-Path $PackageRoot "audit/docs"
-    $paths = @(
-        "docs/api/public-api-matrix.md",
-        "docs/debug/INDEX.md",
-        "docs/debug/issues",
-        "docs/debug/regressions/smoke-matrix.md",
-        "docs/hook-map/README.md",
-        "docs/hook-map/focused",
-        "docs/reviews/manual-qa/2026",
-        "docs/updates/INDEX.md",
-        "docs/updates/README.md",
-        "docs/updates/2026"
-    )
-
-    foreach ($path in $paths) {
-        $source = Join-Path $Root $path
-        $destination = Join-Path $auditDocs ($path -replace "^docs/", "")
-
-        if (Test-Path -LiteralPath $source -PathType Container) {
-            Copy-Tree -Source $source -Destination $destination -IncludeFile {
-                param($item)
-                $extension = $item.Extension.ToLowerInvariant()
-                return $extension -notin @(".dll", ".exe", ".pdb", ".zip", ".rar", ".7z", ".nupkg")
-            }
-        }
-        elseif (Test-Path -LiteralPath $source -PathType Leaf) {
-            New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
-            Copy-Item -LiteralPath $source -Destination $destination -Force
-        }
-    }
+    # The tracked source snapshot already contains the canonical docs and archived
+    # attachments. A second copy makes both links and status ownership ambiguous.
+    $auditDocs = Join-Path $PackageRoot 'audit/docs'
+    New-Item -ItemType Directory -Force -Path $auditDocs | Out-Null
+    @('# Audit document routes', '',
+      '- [Documentation](../../docs/README.md)',
+      '- [Issues](../../docs/debug/issues/README.md)',
+      '- [Updates](../../docs/updates/README.md)',
+      '- [History](../../docs/archive/README.md)',
+      '- [Knowledge](../../docs/knowledge/README.md)', '',
+      'Bodies and attachments retain their repository paths under docs/. This directory contains navigation only.') |
+        Set-Content -LiteralPath (Join-Path $auditDocs 'README.md') -Encoding UTF8
 }
 
 function Copy-ReverseSnippets {
@@ -242,12 +230,8 @@ function Copy-AuditTools {
 
     $destination = Join-Path $PackageRoot "audit/tools/scripts"
     New-Item -ItemType Directory -Path $destination -Force | Out-Null
-    foreach ($script in @("run-game-smoke.ps1", "run-hook-probe.ps1")) {
-        $source = Join-Path $Root "tools/scripts/$script"
-        if (Test-Path -LiteralPath $source) {
-            Copy-Item -LiteralPath $source -Destination (Join-Path $destination $script) -Force
-        }
-    }
+    @('# Audit tool routes', '', '[Canonical scripts and their modules](../../../tools/scripts/README.md) remain together under tools/scripts/. Do not copy a runner away from its modules.') |
+        Set-Content -LiteralPath (Join-Path $destination 'README.md') -Encoding UTF8
 }
 
 function Get-DefaultEvidence {
@@ -273,11 +257,13 @@ function Get-EvidenceItems {
 
     if ($Ids -and $Ids.Count -gt 0) {
         return $Ids | ForEach-Object {
+            if ($_ -notmatch '^\d{8}-\d{6}(?:-[A-Za-z0-9_-]+)?$') { throw "Invalid smoke evidence id: $_" }
             [pscustomobject]@{ Id = $_; Label = "User-selected smoke evidence" }
         }
     }
 
-    return Get-DefaultEvidence
+    if ($LegacyEvidenceSet) { return Get-DefaultEvidence }
+    return @()
 }
 
 function Copy-Evidence {
@@ -351,7 +337,7 @@ function Copy-ReportPayloads {
         }
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($PreviousReportPath) -and (Test-Path -LiteralPath $PreviousReportPath)) {
+    if ($LegacyEvidenceSet -and -not [string]::IsNullOrWhiteSpace($PreviousReportPath) -and (Test-Path -LiteralPath $PreviousReportPath)) {
         Get-ChildItem -LiteralPath $PreviousReportPath -File -Filter "*.zip" | ForEach-Object {
             $reportCandidates.Add($_.FullName)
         }
@@ -360,7 +346,12 @@ function Copy-ReportPayloads {
     $seen = New-Object System.Collections.Generic.HashSet[string]
     foreach ($path in $reportCandidates) {
         if ($seen.Add($path)) {
-            Copy-Item -LiteralPath $path -Destination (Join-Path $destination ([System.IO.Path]::GetFileName($path))) -Force
+            $target = Join-Path $destination ([System.IO.Path]::GetFileName($path))
+            if (Test-Path -LiteralPath $target) {
+                if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -cne (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash) { throw "Different report ZIPs share a filename: $path / $target" }
+                continue
+            }
+            Copy-Item -LiteralPath $path -Destination $target
         }
     }
 }
@@ -409,9 +400,9 @@ function Write-PackageMarkdown {
         "## Included Audit Contents",
         "",
         "- Buildable source snapshot: src/, products/, author-sdk/, tests/, tools/, assets/, archive/legacy-product-assets/, root solution/project metadata, and public reference docs tracked in git.",
-        "- Focused audit docs under audit/docs/: API matrix, hook map, smoke matrix, CameraZoom manual QA records, and update records.",
+        "- Canonical current/history docs and attachments under docs/; audit/docs contains navigation only.",
         "- Reverse snippet maps under audit/reverse-snippets/.",
-        "- Latest smoke scripts under audit/tools/scripts/.",
+        "- Complete tracked scripts and dependent modules under tools/scripts/.",
         "- Smoke evidence ids:"
     ) + $evidenceLines + @(
         "",
@@ -445,9 +436,8 @@ function Write-ValidationSummary {
         "",
         "- Source branch: $Branch.",
         "- Source commit: $Commit.",
-        "- Refactor validation expected before package generation: git diff --check.",
-        "- Refactor validation expected before package generation: tools/scripts/build.ps1 -Configuration Release.",
-        "- Refactor validation expected before package generation: tools/scripts/test.ps1 -Configuration Release.",
+        "- This packaging command does not build or test the source. Test results remain in the owning Update and explicitly selected evidence.",
+        "- An omitted evidence selection creates a source/document audit package with no runtime validation claim.",
         "- Package self-audit: AUDIT-PACKAGE.md, VALIDATION-SUMMARY.md, and report notes are scanned for control characters and hashtable interpolation text.",
         "- Package cleanup audit: no .git, .tools, bin, or obj directories are allowed in the package snapshot.",
         "- Package binary audit: no DLL/EXE/PDB/NuGet/RAR/7Z payloads are allowed; zip payloads are allowed only under audit/report in the full package.",
@@ -620,9 +610,7 @@ function Assert-EvidenceReferences {
         }
     }
 
-    if ($null -eq $expected -or $expected.Count -eq 0) {
-        throw "Package markdown does not list any GAME-SMOKE evidence ids."
-    }
+    if ($null -eq $expected -or $expected.Count -eq 0) { return }
 
     foreach ($id in $expected) {
         $evidenceDir = Join-Path $PackageRoot ("audit/evidence/GAME-SMOKE/" + $id)
@@ -651,7 +639,7 @@ function Invoke-PackageSelfAudit {
     Assert-NoDisallowedPayloads -PackageRoot $PackageRoot -Compact $Compact
     Assert-EvidenceReferences -PackageRoot $PackageRoot
 
-    foreach ($relative in @("AUDIT-PACKAGE.md", "VALIDATION-SUMMARY.md", "src", "products", "author-sdk", "tests", "tools/scripts/build.ps1", "audit/docs/api/public-api-matrix.md", "audit/docs/hook-map/README.md", "audit/docs/debug/regressions/smoke-matrix.md")) {
+    foreach ($relative in @("AUDIT-PACKAGE.md", "VALIDATION-SUMMARY.md", "src", "products", "author-sdk", "tests", "tools/scripts/build.ps1", "docs/api/public-api-matrix.md", "docs/hook-map/README.md", "docs/debug/regressions/smoke-matrix.md")) {
         $path = Join-Path $PackageRoot $relative
         if (-not (Test-Path -LiteralPath $path)) {
             throw "Required package path missing: $path"
@@ -700,37 +688,68 @@ function Replace-PackageDirectory {
     )
 
     $backupPath = $FinalPath + ".bak"
+    foreach ($path in @($TemporaryPath,$FinalPath,$backupPath)) { Assert-AuditOutputPath -Path $path }
     if (Test-Path -LiteralPath $backupPath) {
-        Remove-Item -LiteralPath $backupPath -Recurse -Force
+        throw "Retained previous audit package exists. Use a fresh output root or review it through the cleanup plan: $backupPath"
     }
 
     if (Test-Path -LiteralPath $FinalPath) {
         Move-Item -LiteralPath $FinalPath -Destination $backupPath
     }
 
-    Move-Item -LiteralPath $TemporaryPath -Destination $FinalPath
-
-    if (Test-Path -LiteralPath $backupPath) {
-        Remove-Item -LiteralPath $backupPath -Recurse -Force
+    try { Move-Item -LiteralPath $TemporaryPath -Destination $FinalPath -ErrorAction Stop }
+    catch {
+        if (-not (Test-Path -LiteralPath $FinalPath) -and (Test-Path -LiteralPath $backupPath)) { Move-Item -LiteralPath $backupPath -Destination $FinalPath -ErrorAction Stop }
+        throw
     }
+    # A previous delivery may contain unique selected evidence. Keep it until a
+    # concrete canonical-copy/rebuildability review authorizes cleanup.
 }
 
 function Write-PackageZip {
     param([string]$PackagePath)
 
     $zipPath = $PackagePath + ".zip"
-    if (Test-Path -LiteralPath $zipPath) {
-        Remove-Item -LiteralPath $zipPath -Force
+    Assert-AuditOutputPath -Path $zipPath
+    $temporaryZip = $PackagePath + '.new.zip'
+    $previousZip = $zipPath + '.bak'
+    foreach ($path in @($temporaryZip,$previousZip)) {
+        Assert-AuditOutputPath -Path $path
+        if (Test-Path -LiteralPath $path) { throw "Audit ZIP staging/previous delivery already exists: $path" }
     }
+    Compress-Archive -LiteralPath $PackagePath -DestinationPath $temporaryZip -CompressionLevel Optimal
+    if (Test-Path -LiteralPath $zipPath) { Move-Item -LiteralPath $zipPath -Destination $previousZip }
+    try { Move-Item -LiteralPath $temporaryZip -Destination $zipPath -ErrorAction Stop }
+    catch { if (-not (Test-Path -LiteralPath $zipPath) -and (Test-Path -LiteralPath $previousZip)) { Move-Item -LiteralPath $previousZip -Destination $zipPath }; throw }
+}
 
-    Compress-Archive -LiteralPath $PackagePath -DestinationPath $zipPath -CompressionLevel Optimal
+function Assert-AuditOutputPath {
+    param([string]$Path)
+    $full=[IO.Path]::GetFullPath($Path)
+    $prefix=$script:resolvedOutputRoot.TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar
+    if (-not $full.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) { throw "Audit output escapes its declared root: $full" }
+    foreach ($inputRoot in @($script:resolvedSourceRoot)) {
+        $inputFull=[IO.Path]::GetFullPath($inputRoot).TrimEnd('\','/')
+        if ($full.Equals($inputFull,[StringComparison]::OrdinalIgnoreCase) -or $inputFull.StartsWith($full.TrimEnd('\','/')+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Audit output contains the source repository.' }
+    }
+    $ancestor=$full
+    while ($ancestor) {
+        if ((Test-Path -LiteralPath $ancestor) -and ((Get-Item -LiteralPath $ancestor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw "Audit output traverses a reparse point: $ancestor" }
+        $ancestor=Split-Path -Parent $ancestor
+    }
+    if ((Test-Path -LiteralPath $full -PathType Container) -and @(Get-ChildItem -LiteralPath $full -Force -Recurse | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count -gt 0) { throw "Audit output contains a reparse point: $full" }
 }
 
 $resolvedSourceRoot = Resolve-SourceRoot -Path $SourceRoot
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot = Split-Path -Parent $resolvedSourceRoot
+    $OutputRoot = Join-Path $resolvedSourceRoot 'dist/audit-packages'
 }
-$resolvedOutputRoot = (Resolve-Path -LiteralPath $OutputRoot).Path
+$resolvedOutputRoot = if ([IO.Path]::IsPathRooted($OutputRoot)) { [IO.Path]::GetFullPath($OutputRoot) } else { [IO.Path]::GetFullPath((Join-Path $resolvedSourceRoot $OutputRoot)) }
+foreach ($protected in @('src','products','author-sdk','tests','tools','docs','references','.git','.tools')) {
+    $inputPath=Join-Path $resolvedSourceRoot $protected
+    if ($resolvedOutputRoot.Equals($inputPath,[StringComparison]::OrdinalIgnoreCase) -or $resolvedOutputRoot.StartsWith($inputPath+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw "Audit output is inside a source/input directory: $resolvedOutputRoot" }
+}
+if ($FullOnly -and $WebOnly) { throw 'Select FullOnly or WebOnly, not both.' }
 
 if ([string]::IsNullOrWhiteSpace($BranchName)) {
     $BranchName = Get-GitValue -Root $resolvedSourceRoot -Arguments @("branch", "--show-current") -Fallback "unknown"
@@ -745,7 +764,7 @@ $webPackagePath = Join-Path $resolvedOutputRoot "DTMAPI-audit-package-Refactor-w
 $fullTemporaryPath = $fullPackagePath + ".new"
 $webTemporaryPath = $webPackagePath + ".new"
 
-if ([string]::IsNullOrWhiteSpace($ReverseSnippetsSource)) {
+if ($LegacyEvidenceSet -and [string]::IsNullOrWhiteSpace($ReverseSnippetsSource)) {
     $candidate = Join-Path $fullPackagePath "audit/reverse-snippets"
     if (Test-Path -LiteralPath $candidate) {
         $ReverseSnippetsSource = $candidate
@@ -754,6 +773,15 @@ if ([string]::IsNullOrWhiteSpace($ReverseSnippetsSource)) {
 
 $previousReportPath = Join-Path $fullPackagePath "audit/report"
 $items = @(Get-EvidenceItems -Ids $EvidenceIds)
+if (-not $SelfAuditOnly) {
+    foreach ($item in $items) {
+        $result = Join-Path $resolvedSourceRoot ('docs/debug/evidence/GAME-SMOKE/' + $item.Id + '/result.json')
+        if (-not (Test-Path -LiteralPath $result -PathType Leaf)) { throw "Selected smoke evidence has no result.json: $result" }
+    }
+    foreach ($report in $ReportZipPaths) {
+        if (-not (Test-Path -LiteralPath $report -PathType Leaf) -or [IO.Path]::GetExtension($report) -ine '.zip') { throw "Selected report is not an existing ZIP: $report" }
+    }
+}
 
 if ($SelfAuditOnly) {
     if (-not $WebOnly) {

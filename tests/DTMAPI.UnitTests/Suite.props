@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <!-- Existing production friend access is confined to separately executed test graphs. -->
+    <AssemblyName>DTMAPI.UnitTests</AssemblyName>
+    <RootNamespace>DTMAPI.UnitTests</RootNamespace>
+    <StartupObject>DTMAPI.UnitTests.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)SuiteEntry.cs" Link="Infrastructure/SuiteEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../Shared/DtmApiTestSession.cs" Link="Infrastructure/DtmApiTestSession.cs" />
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>DtmApiTestSuite</_Parameter1>
+      <_Parameter2>$(DtmApiTestSuite)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

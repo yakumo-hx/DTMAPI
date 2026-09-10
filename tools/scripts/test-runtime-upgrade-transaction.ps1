@@ -302,6 +302,9 @@ function Invoke-RuntimeTransactionInstaller {
         [Parameter(Mandatory = $true)] $Fixture,
         [string] $FaultPhase = '',
         [string] $RollbackFaultPhase = '',
+        [string] $ReceiptFaultStage = '',
+        [int] $ReceiptFaultCount = 0,
+        [int] $ReceiptCleanupFaultCount = 0,
         [switch] $ExplicitPayloadRoot
     )
 
@@ -315,6 +318,9 @@ function Invoke-RuntimeTransactionInstaller {
     $oldTestMode = $env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE
     $oldFaultPhase = $env:DTMAPI_RUNTIME_INSTALL_FAIL_PHASE
     $oldRollbackFaultPhase = $env:DTMAPI_RUNTIME_INSTALL_ROLLBACK_FAIL_PHASE
+    $oldReceiptFaultStage = $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_STAGE
+    $oldReceiptFaultCount = $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT
+    $oldReceiptCleanupFaultCount = $env:DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT
     try {
         $env:DTMAPI_GAME_DIR = $Fixture.GameDir
         $env:DTMAPI_RUNTIME_DIR = $Fixture.StateDir
@@ -322,6 +328,9 @@ function Invoke-RuntimeTransactionInstaller {
         $env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE = '1'
         $env:DTMAPI_RUNTIME_INSTALL_FAIL_PHASE = $FaultPhase
         $env:DTMAPI_RUNTIME_INSTALL_ROLLBACK_FAIL_PHASE = $RollbackFaultPhase
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_STAGE = $ReceiptFaultStage
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT = if ($ReceiptFaultCount -gt 0) { [string]$ReceiptFaultCount } else { '' }
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT = if ($ReceiptCleanupFaultCount -gt 0) { [string]$ReceiptCleanupFaultCount } else { '' }
         $hostExe = Get-RuntimeTransactionPowerShellHost
         $packageToolsRoot = [System.IO.Path]::GetFullPath((Join-Path $Fixture.PayloadRoot '..\tools'))
         $packagedInstallScript = Join-Path $packageToolsRoot 'install-to-game.ps1'
@@ -353,6 +362,9 @@ function Invoke-RuntimeTransactionInstaller {
         $env:DTMAPI_INSTALL_TRANSACTION_TEST_MODE = $oldTestMode
         $env:DTMAPI_RUNTIME_INSTALL_FAIL_PHASE = $oldFaultPhase
         $env:DTMAPI_RUNTIME_INSTALL_ROLLBACK_FAIL_PHASE = $oldRollbackFaultPhase
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_STAGE = $oldReceiptFaultStage
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_FAIL_COUNT = $oldReceiptFaultCount
+        $env:DTMAPI_RUNTIME_RECEIPT_TEST_CLEANUP_FAIL_COUNT = $oldReceiptCleanupFaultCount
     }
 }
 
@@ -377,7 +389,7 @@ function Invoke-RuntimeTransactionUninstaller {
     param([Parameter(Mandatory = $true)] $Fixture)
 
     $hostExe = Get-RuntimeTransactionPowerShellHost
-    $uninstallScript = Join-Path $Fixture.ToolsDir 'uninstall-dtmapi.ps1'
+    $uninstallScript = Join-Path ([System.IO.Path]::GetFullPath((Join-Path $Fixture.PayloadRoot '..\tools'))) 'uninstall-dtmapi.ps1'
     $oldGameDir = $env:DTMAPI_GAME_DIR
     $oldRuntimeDir = $env:DTMAPI_RUNTIME_DIR
     try {
@@ -398,6 +410,49 @@ function Invoke-RuntimeTransactionUninstaller {
         $env:DTMAPI_GAME_DIR = $oldGameDir
         $env:DTMAPI_RUNTIME_DIR = $oldRuntimeDir
     }
+}
+
+function New-RuntimeTransactionResidueRoot {
+    param(
+        [Parameter(Mandatory = $true)] $Fixture,
+        [Parameter(Mandatory = $true)] [string] $Stamp
+    )
+
+    $runtimeRoot = Join-Path $Fixture.GameDir ('.dtmapi-runtime-install-' + $Stamp)
+    New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
+    return $runtimeRoot
+}
+
+function Assert-RuntimeTransactionStatusReadOnly {
+    param(
+        [Parameter(Mandatory = $true)] $Fixture,
+        [Parameter(Mandatory = $true)] [string] $ExpectedPattern,
+        [Parameter(Mandatory = $true)] [string] $Label
+    )
+
+    $before = Get-RuntimeTransactionTreeFingerprint -Root $Fixture.GameDir
+    $status = Invoke-RuntimeTransactionStatus -Fixture $Fixture
+    $after = Get-RuntimeTransactionTreeFingerprint -Root $Fixture.GameDir
+    Assert-RuntimeTransactionTest -Condition ($status.ExitCode -eq 1) -Message "$Label status exit code was $($status.ExitCode), expected 1. Output=$($status.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (($status.Output -join "`n") -match $ExpectedPattern) -Message "$Label status output omitted '$ExpectedPattern'. Output=$($status.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition ([string]::Equals($before, $after, [System.StringComparison]::Ordinal)) -Message "$Label status check changed files."
+    return $status
+}
+
+function Assert-RuntimeTransactionBlockedBeforeMutation {
+    param(
+        [Parameter(Mandatory = $true)] $Fixture,
+        [Parameter(Mandatory = $true)] $Result,
+        [Parameter(Mandatory = $true)] [string] $Label
+    )
+
+    Assert-RuntimeTransactionTest -Condition ($Result.ExitCode -ne 0) -Message "$Label unexpectedly succeeded. Output=$($Result.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (($Result.Output -join "`n") -match 'DTM-E1303') -Message "$Label omitted DTM-E1303. Output=$($Result.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition ((Get-RuntimeTransactionTreeFingerprint -Root $Fixture.PluginDir) -eq $Fixture.PluginBefore) -Message "$Label changed the old Runtime directory."
+    Assert-RuntimeTransactionTest -Condition ((Get-RuntimeTransactionTreeFingerprint -Root $Fixture.ToolsDir) -eq $Fixture.ToolsBefore) -Message "$Label changed the old tools directory."
+    Assert-RuntimeTransactionTest -Condition ((Get-RuntimeTransactionTreeFingerprint -Root $Fixture.ComponentsDir) -eq $Fixture.ComponentsBefore) -Message "$Label changed the old optional-component directory."
+    Assert-RuntimeTransactionTest -Condition ((Get-FileHash -LiteralPath (Join-Path $Fixture.StateDir 'release-manifest.json') -Algorithm SHA256).Hash -eq $Fixture.ReleaseBefore) -Message "$Label changed the old release manifest."
+    Assert-RuntimeTransactionTest -Condition ((Get-FileHash -LiteralPath (Join-Path $Fixture.StateDir 'install-state.json') -Algorithm SHA256).Hash -eq $Fixture.StateBefore) -Message "$Label changed the old install state."
 }
 
 function Assert-NoRuntimeTransactionResidue {
@@ -486,7 +541,8 @@ function Assert-RuntimeTransactionSuccess {
     param(
         [Parameter(Mandatory = $true)] $Fixture,
         [Parameter(Mandatory = $true)] [string] $Label,
-        [AllowEmptyString()] [string] $ExpectedSourceCommit = $script:RuntimeTransactionPackageBuildCommit
+        [AllowEmptyString()] [string] $ExpectedSourceCommit = $script:RuntimeTransactionPackageBuildCommit,
+        [int] $ExpectedFailureReceiptCount = 0
     )
 
     $actualDlls = @(Get-ChildItem -LiteralPath $Fixture.PluginDir -Filter '*.dll' -File | ForEach-Object { $_.Name } | Sort-Object)
@@ -616,7 +672,7 @@ function Assert-RuntimeTransactionSuccess {
     Assert-RuntimeTransactionTest -Condition ([System.IO.File]::ReadAllText((Join-Path $Fixture.StateDir 'reports\keep-report.txt')) -eq 'unrelated-report-sentinel') -Message "$Label changed unrelated report state."
     Assert-RuntimeTransactionTest -Condition ([System.IO.File]::ReadAllText((Join-Path $Fixture.StateDir 'config\keep-config.json')) -eq '{"keep":true}') -Message "$Label changed unrelated config state."
     Assert-NoRuntimeTransactionResidue -Fixture $Fixture -Label $Label
-    Assert-RuntimeTransactionTest -Condition (@(Get-ChildItem -LiteralPath $Fixture.StateDir -Filter 'install-state.failed-*.json' -File).Count -eq 0) -Message "$Label wrote an unexpected failure receipt."
+    Assert-RuntimeTransactionTest -Condition (@(Get-ChildItem -LiteralPath $Fixture.StateDir -Filter 'install-state.failed-*.json' -File).Count -eq $ExpectedFailureReceiptCount) -Message "$Label failure-receipt count did not match expected $ExpectedFailureReceiptCount."
 }
 
 function Set-InterruptedRuntimeTransactionFixture {
@@ -625,7 +681,7 @@ function Set-InterruptedRuntimeTransactionFixture {
         [Parameter(Mandatory = $true)] [string] $LivePayloadRoot
     )
 
-    $stamp = 'interrupted-fixture'
+    $stamp = '20260820-010101-001-a1b2c3d4'
     $runtimeRoot = Join-Path $Fixture.GameDir ('.dtmapi-runtime-install-' + $stamp)
     $stateTransactionRoot = Join-Path $Fixture.StateDir ('.runtime-install-transaction-' + $stamp)
     $recoveryPlugin = Join-Path $runtimeRoot 'recovery-plugin'
@@ -696,6 +752,92 @@ New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 
 try {
     $payloadRoot = New-RuntimeTransactionPayload -Root (Join-Path $tempRoot ('Payload ' + $unicodePathSegment))
+    $reliabilityCaseCount = 0
+
+    $writeRetryFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R01 receipt write retry ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $writeRetryResult = Invoke-RuntimeTransactionInstaller -Fixture $writeRetryFixture -ReceiptFaultStage 'Write' -ReceiptFaultCount 2
+    Assert-RuntimeTransactionTest -Condition ($writeRetryResult.ExitCode -eq 0) -Message "Two transient receipt-write failures did not recover on the third attempt. Output=$($writeRetryResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (($writeRetryResult.Output -join "`n") -match 'DTM-S1001') -Message 'Receipt-write retry success omitted DTM-S1001.'
+    Assert-RuntimeTransactionSuccess -Fixture $writeRetryFixture -Label 'Receipt write retry'
+    $reliabilityCaseCount++
+
+    $publishRetryFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R02 receipt publish cleanup retry ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $publishRetryResult = Invoke-RuntimeTransactionInstaller -Fixture $publishRetryFixture -ReceiptFaultStage 'Publish' -ReceiptFaultCount 2 -ReceiptCleanupFaultCount 2
+    Assert-RuntimeTransactionTest -Condition ($publishRetryResult.ExitCode -eq 0) -Message "Transient publish plus best-effort cleanup failures did not recover. Output=$($publishRetryResult.Output -join ' | ')"
+    Assert-RuntimeTransactionSuccess -Fixture $publishRetryFixture -Label 'Receipt publish and cleanup retry'
+    $reliabilityCaseCount++
+
+    $exhaustedFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R03 receipt exhaustion retry ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $exhaustedResult = Invoke-RuntimeTransactionInstaller -Fixture $exhaustedFixture -ReceiptFaultStage 'Publish' -ReceiptFaultCount 6 -ReceiptCleanupFaultCount 6
+    Assert-RuntimeTransactionTest -Condition ($exhaustedResult.ExitCode -ne 0) -Message 'Six first-receipt failures unexpectedly succeeded.'
+    $exhaustedText = $exhaustedResult.Output -join "`n"
+    Assert-RuntimeTransactionTest -Condition ($exhaustedText -match 'DTM-E1301') -Message "Receipt exhaustion omitted DTM-E1301. Output=$($exhaustedResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition ($exhaustedText -match 'DTM-W1301') -Message "Receipt exhaustion did not report precise sterile-shell cleanup. Output=$($exhaustedResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition ((Get-RuntimeTransactionTreeFingerprint -Root $exhaustedFixture.PluginDir) -eq $exhaustedFixture.PluginBefore) -Message 'Receipt exhaustion changed the old Runtime.'
+    Assert-RuntimeTransactionTest -Condition ((Get-RuntimeTransactionTreeFingerprint -Root $exhaustedFixture.ToolsDir) -eq $exhaustedFixture.ToolsBefore) -Message 'Receipt exhaustion changed the old tools.'
+    Assert-NoRuntimeTransactionResidue -Fixture $exhaustedFixture -Label 'Receipt exhaustion cleanup'
+    Assert-RuntimeTransactionTest -Condition (@(Get-ChildItem -LiteralPath $exhaustedFixture.StateDir -Filter 'install-state.failed-*.json' -File).Count -eq 0) -Message 'Receipt exhaustion wrote an ordinary failure-state file before the first transaction receipt existed.'
+    $exhaustedRetryResult = Invoke-RuntimeTransactionInstaller -Fixture $exhaustedFixture
+    Assert-RuntimeTransactionTest -Condition ($exhaustedRetryResult.ExitCode -eq 0) -Message "The clean retry after receipt exhaustion failed. Output=$($exhaustedRetryResult.Output -join ' | ')"
+    Assert-RuntimeTransactionSuccess -Fixture $exhaustedFixture -Label 'Receipt exhaustion next retry' -ExpectedFailureReceiptCount 0
+    $reliabilityCaseCount += 2
+
+    $sterileFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R04 sterile empty ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $sterileRoot = New-RuntimeTransactionResidueRoot -Fixture $sterileFixture -Stamp '20260820-020201-001-11111111'
+    $null = Assert-RuntimeTransactionStatusReadOnly -Fixture $sterileFixture -ExpectedPattern 'REPAIRABLE_STALE' -Label 'Empty sterile root'
+    Assert-RuntimeTransactionTest -Condition (Test-Path -LiteralPath $sterileRoot -PathType Container) -Message 'Read-only status removed the empty sterile root.'
+    $sterileResult = Invoke-RuntimeTransactionInstaller -Fixture $sterileFixture
+    Assert-RuntimeTransactionTest -Condition ($sterileResult.ExitCode -eq 0 -and ($sterileResult.Output -join "`n") -match 'DTM-W1301') -Message "Install did not clean and continue from an empty sterile root. Output=$($sterileResult.Output -join ' | ')"
+    Assert-RuntimeTransactionSuccess -Fixture $sterileFixture -Label 'Empty sterile root repair'
+    $reliabilityCaseCount++
+
+    $tempOnlyFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R05 sterile temp only ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $tempOnlyRoot = New-RuntimeTransactionResidueRoot -Fixture $tempOnlyFixture -Stamp '20260820-020202-002-22222222'
+    Write-RuntimeTransactionText -Path (Join-Path $tempOnlyRoot 'transaction.json.tmp-0123456789abcdef0123456789abcdef') -Text '{partial'
+    Write-RuntimeTransactionText -Path (Join-Path $tempOnlyRoot 'transaction.json.bak-fedcba9876543210fedcba9876543210') -Text '{old-partial'
+    $tempOnlyResult = Invoke-RuntimeTransactionInstaller -Fixture $tempOnlyFixture
+    Assert-RuntimeTransactionTest -Condition ($tempOnlyResult.ExitCode -eq 0 -and ($tempOnlyResult.Output -join "`n") -match 'DTM-W1301') -Message "Install did not repair a temp-only sterile root. Output=$($tempOnlyResult.Output -join ' | ')"
+    Assert-RuntimeTransactionSuccess -Fixture $tempOnlyFixture -Label 'Temp-only sterile root repair'
+    $reliabilityCaseCount++
+
+    $unknownFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R06 unsafe unknown file ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $unknownRoot = New-RuntimeTransactionResidueRoot -Fixture $unknownFixture -Stamp '20260820-020203-003-33333333'
+    Write-RuntimeTransactionText -Path (Join-Path $unknownRoot 'unknown.bin') -Text 'do-not-delete'
+    $null = Assert-RuntimeTransactionStatusReadOnly -Fixture $unknownFixture -ExpectedPattern 'BLOCKED' -Label 'Unknown receiptless file'
+    $unknownResult = Invoke-RuntimeTransactionInstaller -Fixture $unknownFixture
+    Assert-RuntimeTransactionBlockedBeforeMutation -Fixture $unknownFixture -Result $unknownResult -Label 'Unknown receiptless file'
+    Assert-RuntimeTransactionTest -Condition (Test-Path -LiteralPath (Join-Path $unknownRoot 'unknown.bin') -PathType Leaf) -Message 'Blocked install deleted the unknown receiptless file.'
+    $reliabilityCaseCount++
+
+    $candidateFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R07 unsafe candidate dir ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $candidateRoot = New-RuntimeTransactionResidueRoot -Fixture $candidateFixture -Stamp '20260820-020204-004-44444444'
+    New-Item -ItemType Directory -Force -Path (Join-Path $candidateRoot 'candidate-plugin') | Out-Null
+    $candidateResult = Invoke-RuntimeTransactionInstaller -Fixture $candidateFixture
+    Assert-RuntimeTransactionBlockedBeforeMutation -Fixture $candidateFixture -Result $candidateResult -Label 'Receiptless candidate directory'
+    $reliabilityCaseCount++
+
+    $pairedStateFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R08 unsafe paired state ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $pairedStamp = '20260820-020205-005-55555555'
+    $null = New-RuntimeTransactionResidueRoot -Fixture $pairedStateFixture -Stamp $pairedStamp
+    New-Item -ItemType Directory -Force -Path (Join-Path $pairedStateFixture.StateDir ('.runtime-install-transaction-' + $pairedStamp)) | Out-Null
+    $pairedStateResult = Invoke-RuntimeTransactionInstaller -Fixture $pairedStateFixture
+    Assert-RuntimeTransactionBlockedBeforeMutation -Fixture $pairedStateFixture -Result $pairedStateResult -Label 'Receiptless root with paired state'
+    $reliabilityCaseCount++
+
+    $invalidReceiptFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R09 invalid receipt ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    $invalidReceiptRoot = New-RuntimeTransactionResidueRoot -Fixture $invalidReceiptFixture -Stamp '20260820-020206-006-66666666'
+    Write-RuntimeTransactionText -Path (Join-Path $invalidReceiptRoot 'transaction.json') -Text '{not-json'
+    $invalidReceiptResult = Invoke-RuntimeTransactionInstaller -Fixture $invalidReceiptFixture
+    Assert-RuntimeTransactionBlockedBeforeMutation -Fixture $invalidReceiptFixture -Result $invalidReceiptResult -Label 'Invalid final receipt'
+    $reliabilityCaseCount++
+
+    $orphanFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('R10 orphan state ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
+    New-Item -ItemType Directory -Force -Path (Join-Path $orphanFixture.StateDir '.runtime-install-transaction-20260820-020207-007-77777777') | Out-Null
+    $null = Assert-RuntimeTransactionStatusReadOnly -Fixture $orphanFixture -ExpectedPattern 'BLOCKED' -Label 'Orphan state transaction'
+    $orphanResult = Invoke-RuntimeTransactionInstaller -Fixture $orphanFixture
+    Assert-RuntimeTransactionBlockedBeforeMutation -Fixture $orphanFixture -Result $orphanResult -Label 'Orphan state transaction'
+    $reliabilityCaseCount++
+
     $faultPhases = @(
         'CandidatePrepared',
         'OldRuntimeMoved',
@@ -724,9 +866,14 @@ try {
 
     $interruptedFixture = New-RuntimeTransactionFixture -Root (Join-Path $tempRoot ('08 interrupted ' + $unicodePathSegment)) -PayloadRoot $payloadRoot
     Set-InterruptedRuntimeTransactionFixture -Fixture $interruptedFixture -LivePayloadRoot $payloadRoot
+    $null = Assert-RuntimeTransactionStatusReadOnly -Fixture $interruptedFixture -ExpectedPattern 'RECOVERY_PENDING' -Label 'Validated interrupted transaction'
+    $interruptedBeforeUninstall = Get-RuntimeTransactionTreeFingerprint -Root $interruptedFixture.GameDir
+    $interruptedUninstall = Invoke-RuntimeTransactionUninstaller -Fixture $interruptedFixture
+    Assert-RuntimeTransactionTest -Condition ($interruptedUninstall.ExitCode -ne 0 -and ($interruptedUninstall.Output -join "`n") -match 'DTM-E1302') -Message "Uninstall did not refuse a validated recoverable transaction. Output=$($interruptedUninstall.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition ([string]::Equals($interruptedBeforeUninstall, (Get-RuntimeTransactionTreeFingerprint -Root $interruptedFixture.GameDir), [System.StringComparison]::Ordinal)) -Message 'Uninstall changed a validated recoverable transaction.'
     $interruptedResult = Invoke-RuntimeTransactionInstaller -Fixture $interruptedFixture -FaultPhase 'CandidatePrepared'
     Assert-RuntimeTransactionTest -Condition ($interruptedResult.ExitCode -ne 0) -Message 'Interrupted transaction recovery plus injected candidate failure unexpectedly succeeded.'
-    Assert-RuntimeTransactionTest -Condition (($interruptedResult.Output -join "`n") -match 'Recovered interrupted DTMAPI Runtime transaction') -Message "Interrupted transaction recovery output omitted the recovery boundary. Output=$($interruptedResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (($interruptedResult.Output -join "`n") -match 'DTM-W1302' -and ($interruptedResult.Output -join "`n") -match 'Recovered the previously interrupted Runtime transaction') -Message "Interrupted transaction recovery output omitted the recovery boundary. Output=$($interruptedResult.Output -join ' | ')"
     Assert-RuntimeTransactionRollback -Fixture $interruptedFixture -Label 'Interrupted transaction restart recovery' -ExpectedPhase 'CandidatePrepared'
 
     $missingPayload = New-RuntimeTransactionPayload -Root (Join-Path $tempRoot ('Missing ' + $unicodePathSegment))
@@ -753,8 +900,12 @@ try {
     $successResult = Invoke-RuntimeTransactionInstaller -Fixture $successFixture
     Assert-RuntimeTransactionTest -Condition ($successResult.ExitCode -eq 0) -Message "Successful upgrade failed. Output=$($successResult.Output -join ' | ')"
     Assert-RuntimeTransactionSuccess -Fixture $successFixture -Label 'Successful upgrade'
+    $uninstallSterileRoot = New-RuntimeTransactionResidueRoot -Fixture $successFixture -Stamp '20260820-020208-008-88888888'
+    $null = Assert-RuntimeTransactionStatusReadOnly -Fixture $successFixture -ExpectedPattern 'REPAIRABLE_STALE' -Label 'Sterile root before uninstall'
     $uninstallResult = Invoke-RuntimeTransactionUninstaller -Fixture $successFixture
     Assert-RuntimeTransactionTest -Condition ($uninstallResult.ExitCode -eq 0) -Message "Installed Runtime uninstall failed. Output=$($uninstallResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (($uninstallResult.Output -join "`n") -match 'DTM-W1301' -and ($uninstallResult.Output -join "`n") -match 'DTM-S2001') -Message "Uninstall did not report sterile cleanup and success. Output=$($uninstallResult.Output -join ' | ')"
+    Assert-RuntimeTransactionTest -Condition (-not (Test-Path -LiteralPath $uninstallSterileRoot)) -Message 'Uninstall retained the sterile Runtime root.'
     Assert-RuntimeTransactionTest -Condition (-not (Test-Path -LiteralPath $successFixture.ComponentsDir)) -Message 'Runtime uninstall retained the optional-component directory.'
     Assert-RuntimeTransactionTest -Condition (-not (Test-Path -LiteralPath $successFixture.PluginDir)) -Message 'Runtime uninstall retained the mandatory Runtime directory.'
     Assert-RuntimeTransactionTest -Condition ([System.IO.File]::ReadAllText((Join-Path $successFixture.StateDir 'reports\keep-report.txt')) -eq 'unrelated-report-sentinel') -Message 'Runtime uninstall changed unrelated reports.'
@@ -805,7 +956,7 @@ try {
         -ExpectedError 'Packaged DTMAPI release manifest payload receipt mismatch for DTMAPI.Core.dll.'
 
     if (-not $Quiet) {
-        $totalCases = $faultPhases.Count + 9
+        $totalCases = $faultPhases.Count + 9 + $reliabilityCaseCount
         Write-Host "DTMAPI Runtime upgrade transaction child matrix: OK (host=$((Get-RuntimeTransactionPowerShellHost)) cases=$totalCases)"
     }
 }

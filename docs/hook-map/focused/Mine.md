@@ -59,9 +59,9 @@ snapshot and retains the due cycle.
 ## Evidence
 
 - Admission Review:
-  [20260726-0002](../../reviews/code/2026/20260726-0002-eleventh-product-mine-admission-review.md)
+  [20260726-0002](../../archive/reviews/code/2026/20260726-0002-eleventh-product-mine-admission-review.md)
 - Owning Update:
-  [20260726-0004](../../updates/2026/20260726-0004-mine-eleventh-advanced-product.md)
+  [20260726-0004](../../archive/updates/2026/20260726-0004-mine-eleventh-advanced-product.md)
 - Focused Unit fixture proves three-target install, injected step-two rollback,
   unrelated-owner preservation, exact recipe/tech/scale restoration,
   retained failed-restore retry, power/inventory rollback, identity pruning,

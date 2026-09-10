@@ -12,10 +12,12 @@ internal static class DeterministicPackager
 
     public static CommandReport PackCommand(ParsedCommand command)
     {
-        command.RequireOnlyOptions("compatibility-root", "output", "game-root");
+        command.RequireOnlyOptions("compatibility-root", "output", "game-root", "build-output", "configuration", "symbols");
         if (command.Positionals.Count != 1)
             throw new CommandLineException("pack requires one project directory.");
-        return Pack(PathSafety.FullPath(command.Positionals[0]), command.Option("compatibility-root"), command.Option("output"), command.Option("game-root"));
+        string symbols = command.Option("symbols", "false");
+        if (!bool.TryParse(symbols, out bool includeSymbols)) throw new CommandLineException("--symbols requires true or false.");
+        return Pack(PathSafety.FullPath(command.Positionals[0]), command.Option("compatibility-root"), command.Option("output"), command.Option("game-root"), command.Option("build-output"), command.Option("configuration", "Release"), includeSymbols);
     }
 
     public static CommandReport HashCommand(ParsedCommand command)
@@ -47,7 +49,7 @@ internal static class DeterministicPackager
         return Finish(report);
     }
 
-    public static CommandReport Pack(string root, string compatibilityRoot, string requestedOutput, string gameRoot = "")
+    public static CommandReport Pack(string root, string compatibilityRoot, string requestedOutput, string gameRoot = "", string buildOutput = "", string configuration = "Release", bool symbols = false)
     {
         var report = new CommandReport { Command = "pack", RootPath = Path.GetFullPath(root) };
         AuthorProjectContext context;
@@ -62,19 +64,32 @@ internal static class DeterministicPackager
         }
         if (report.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error))
             return Finish(report);
+        if (context.IsLibrary)
+        {
+            report.Diagnostics.Add(Error("SDK303", "A library is a build product, not a Mod package. Reference it from a CodeMod project.", context.RootPath));
+            return Finish(report);
+        }
+        if (context.Kind != AuthorProjectKind.CodeMod && !string.IsNullOrWhiteSpace(buildOutput))
+        {
+            report.Diagnostics.Add(Error("SDK303", "--build-output is only valid for CodeMod projects.", context.RootPath));
+            return Finish(report);
+        }
 
         try
         {
             string builtDll = string.Empty;
             if (context.Kind == AuthorProjectKind.CodeMod)
             {
-                CommandReport build = CodeModBuilder.Build(context.RootPath, compatibilityRoot, string.Empty, gameRoot);
+                CommandReport build = CodeModBuilder.Build(context.RootPath, compatibilityRoot, buildOutput, gameRoot, configuration, context);
                 report.Diagnostics.AddRange(build.Diagnostics.Where(diagnostic => diagnostic.Severity != DiagnosticSeverity.Info));
                 if (!build.Success)
                     return Finish(report);
                 builtDll = build.OutputPath;
-                report.Values["abstractionsSha256"] = build.Values["abstractionsSha256"];
-                report.Values["compatibilityManifestSha256"] = build.Values["compatibilityManifestSha256"];
+                foreach (KeyValuePair<string, string> value in build.Values)
+                    report.Values[value.Key] = value.Value;
+                report.Values["buildOutputPath"] = build.OutputPath;
+                report.Values["buildOutputSha256"] = build.Sha256;
+                report.Values["buildSourceFileCount"] = build.FileCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
 
             var payload = new SortedDictionary<string, byte[]>(StringComparer.Ordinal);
@@ -91,10 +106,14 @@ internal static class DeterministicPackager
                 entryDllPath = "Content/DTMAPI/" + Path.GetFileName(builtDll);
                 entryDllBytes = File.ReadAllBytes(builtDll);
                 Add(payload, entryDllPath, entryDllBytes);
+                if (symbols || BuildPlan.NormalizeConfiguration(configuration) == "Debug")
+                    Add(payload, Path.ChangeExtension(entryDllPath, ".pdb"), File.ReadAllBytes(Path.ChangeExtension(builtDll, ".pdb")));
+                if (report.Values.ContainsKey("documentationPath"))
+                    Add(payload, Path.ChangeExtension(entryDllPath, ".xml"), File.ReadAllBytes(report.Values["documentationPath"]));
             }
 
             string advancedReceiptSha256 = string.Empty;
-            if (context.Kind == AuthorProjectKind.CodeMod && context.CodeModKind == AuthorCodeModKind.Advanced)
+            if (context.Kind == AuthorProjectKind.CodeMod && context.CodeModKind == AuthorCodeModKind.Advanced && !NativeProjectReferences.UsesContract(context))
             {
                 ResolvedAdvancedReferenceSet resolved = AdvancedReferenceAssets.Resolve(context, gameRoot);
                 AdvancedReferenceReceipt receipt = AdvancedReferenceAssets.CreateReceipt(
@@ -110,16 +129,26 @@ internal static class DeterministicPackager
             }
 
             AddContentDirectory(context, payload);
+            foreach (var file in (context.BuildSnapshot?.Content ?? Array.Empty<ProjectGraph.FileInput>()).Concat(context.GraphContent))
+                Add(payload, file.Name, file.Bytes);
             AddOptionalDirectory(context.RootPath, "i18n", "i18n", payload);
             AddOptionalRootFile(context.RootPath, "icon.png", payload);
             AddOptionalRootFile(context.RootPath, "preview.png", payload);
-            ManagedAssemblyInspector.ValidateNoBundledNativePayloads(payload, entryDllPath);
+            byte[] dependencyInventory = Array.Empty<byte>();
+            if (ManagedPackageReferences.UsesContract(context)) dependencyInventory = ManagedPackageReferences.AddInventory(context, payload, manifestBytes, entryDllPath, symbols || BuildPlan.NormalizeConfiguration(configuration) == "Debug");
+            else ManagedAssemblyInspector.ValidateNoBundledNativePayloads(payload, entryDllPath);
+            if (NativeProjectReferences.UsesContract(context))
+            {
+                Add(payload, DTMAPI.Internal.Authoring.NativePackageContract.FileName, NativeProjectReferences.BuildProvenance(context, payload, manifestBytes, entryDllPath, dependencyInventory, gameRoot, report.Values["nativeReferenceInputSha256"]));
+                if (context.BuildSnapshot?.Identity != ProjectGraph.Snapshot(context).Identity)
+                    throw new InvalidDataException("native-author-input-changed: Source/resources changed between build and pack; retry with stable inputs.");
+            }
             Add(payload, "Content/DTMAPI/dtmapi-package.json", SerializePackageMarker(
                 context,
                 PathSafety.Sha256Bytes(manifestBytes),
                 entryDllPath,
                 entryDllBytes.Length == 0 ? string.Empty : PathSafety.Sha256Bytes(entryDllBytes),
-                advancedReceiptSha256));
+                advancedReceiptSha256, dependencyInventory, payload));
 
             string defaultName = SafeFileName(context.Manifest.UniqueID) + "-" + SafeFileName(context.Manifest.Version) + ".zip";
             string outputPath = ResolveOutput(context.RootPath, requestedOutput, defaultName);
@@ -144,6 +173,7 @@ internal static class DeterministicPackager
 
                 var packageReport = new DeterministicPackageReport
                 {
+                    TargetRuntimeVersion = context.ApiTarget,
                     UniqueID = context.Manifest.UniqueID,
                     Version = context.Manifest.Version,
                     ProjectKind = context.Kind.ToString(),
@@ -164,6 +194,8 @@ internal static class DeterministicPackager
                 File.WriteAllText(reportPath, JsonSupport.SerializeTool(packageReport), new UTF8Encoding(false));
 
                 report.OutputPath = outputPath;
+                report.TargetRuntimeVersion = context.ApiTarget;
+                report.Values["apiTarget"] = context.ApiTarget;
                 report.Sha256 = newHash;
                 report.FileCount = payload.Count;
                 report.Values["reportPath"] = reportPath;
@@ -250,7 +282,8 @@ internal static class DeterministicPackager
         return Utf8(JsonSerializer.Serialize(info, JsonSupport.Tool) + "\n");
     }
 
-    private static byte[] SerializePackageMarker(AuthorProjectContext context, string manifestSha256, string entryDllPath, string entryDllSha256, string advancedReceiptSha256)
+    private static byte[] SerializePackageMarker(AuthorProjectContext context, string manifestSha256, string entryDllPath, string entryDllSha256, string advancedReceiptSha256,
+        byte[] dependencyInventory, SortedDictionary<string, byte[]> payload)
     {
         var marker = new JsonObject
         {
@@ -261,7 +294,7 @@ internal static class DeterministicPackager
             ["packageKind"] = context.Kind.ToString(),
             ["codeModKind"] = context.Kind == AuthorProjectKind.CodeMod ? context.CodeModKind.ToString() : string.Empty,
             ["authorSdkVersion"] = AuthorSdkContract.SdkVersion,
-            ["targetDtmApiVersion"] = AuthorSdkContract.TargetRuntimeVersion,
+            ["targetDtmApiVersion"] = context.ApiTarget,
             ["manifestPath"] = AuthorSdkContract.PackageManifestPath,
             ["manifestSha256"] = manifestSha256,
             ["entryDllPath"] = entryDllPath,
@@ -270,12 +303,29 @@ internal static class DeterministicPackager
             ["advancedReferenceReceiptSha256"] = advancedReceiptSha256,
             ["authority"] = "dtmapi-author-sdk-package-binding"
         };
+        if (ManagedPackageReferences.UsesContract(context))
+        {
+            marker["schemaVersion"] = 3;
+            marker["dependencyContractVersion"] = 1;
+            marker["dependencyInventoryPath"] = DTMAPI.Internal.Authoring.PackageDependencyInventory.FileName;
+            marker["dependencyInventorySha256"] = PathSafety.Sha256Bytes(dependencyInventory);
+            if (NativeProjectReferences.UsesContract(context))
+            {
+                marker["nativeContractVersion"] = context.Manifest.NativeContractVersion!.Value;
+                marker["nativeBuildPath"] = DTMAPI.Internal.Authoring.NativePackageContract.FileName;
+                marker["nativeBuildSha256"] = PathSafety.Sha256Bytes(payload[DTMAPI.Internal.Authoring.NativePackageContract.FileName]);
+            }
+            marker["files"] = new JsonArray(payload.Select(file => (JsonNode)new JsonObject
+            { ["path"] = file.Key, ["length"] = file.Value.LongLength, ["sha256"] = PathSafety.Sha256Bytes(file.Value) }).ToArray());
+        }
         return Utf8(JsonSerializer.Serialize(marker, JsonSupport.Tool) + "\n");
     }
 
     private static JsonObject ToJsonObject(IEnumerable<KeyValuePair<string, string>> values)
     {
-        var result = new JsonObject();
+        // Current native ModManager migrates absent/non-string upload locales
+        // on discovery. Emit complete fields so discovery keeps receipt bytes.
+        var result = new JsonObject { ["schinese"] = "", ["tchinese"] = "", ["english"] = "" };
         foreach (KeyValuePair<string, string> pair in values.OrderBy(pair => pair.Key, StringComparer.Ordinal))
             result[pair.Key] = pair.Value;
         return result;

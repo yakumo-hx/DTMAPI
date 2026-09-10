@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "defaultTarget": "0.7.0",
+  "targets": [
+    {
+      "apiTarget": "0.5.5",
+      "state": "available",
+      "minimumRuntimeVersion": "0.5.5",
+      "maximumPackageRuntimeVersion": "0.6.1",
+      "sdkVersions": [
+        "0.1.0",
+        "0.2.0"
+      ],
+      "payloadSdkVersion": "0.1.0",
+      "targetFramework": "netstandard2.0",
+      "payloadPath": "compatibility/0.5.5",
+      "contractPath": "compatibility/0.5.5/compatibility.contract.json",
+      "contractResourceName": "DTMAPI.AuthorSdk.compatibility.contract.json",
+      "contractSha256": "27ef629099e79eb38f5c7efd7c454ff540eb7b67581774e36c9d5e71fd06dc42",
+      "capabilities": [
+        "public-api/0.5.5"
+      ]
+    },
+    {
+      "apiTarget": "0.7.0",
+      "state": "available",
+      "minimumRuntimeVersion": "0.7.0",
+      "maximumPackageRuntimeVersion": "0.7.0",
+      "sdkVersions": [
+        "0.2.0"
+      ],
+      "payloadSdkVersion": "0.2.0",
+      "targetFramework": "netstandard2.0",
+      "payloadPath": "compatibility/0.7.0",
+      "contractPath": "compatibility/0.7.0/compatibility.contract.json",
+      "contractResourceName": "DTMAPI.AuthorSdk.compatibility.0.7.0.contract.json",
+      "contractSha256": "a9b301778d1909317923ad0d47d3f5ac80846094a3266c3e4f10d341baedb616",
+      "capabilities": [
+        "optional-helper-services/1",
+        "runtime-context/1",
+        "scheduler/1",
+        "owned-resources/1",
+        "commands/1",
+        "owner-files/1",
+        "global-data/1",
+        "versioned-config/1",
+        "input-diagnostics/1",
+        "translations/1"
+      ]
+    }
+  ]
+}

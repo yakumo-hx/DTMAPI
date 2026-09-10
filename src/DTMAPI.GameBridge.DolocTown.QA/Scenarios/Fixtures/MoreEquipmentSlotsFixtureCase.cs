@@ -17,7 +17,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private int moreEquipmentSlotsShieldBackpackBaseline;
         private int moreEquipmentSlotsTargetSlot = -1;
         private int moreEquipmentSlotsShieldValueBefore;
-        private int moreEquipmentSlotsShieldValueAfterDamage;
+        private int moreEquipmentSlotsCommittedShieldValue;
         private object? moreEquipmentSlotsProductRuntime;
         private DateTimeOffset moreEquipmentSlotsStageStartedAt;
         private bool
@@ -66,7 +66,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 int ownerRoots =
                     runtime.CountCoreOwnerRoots(MoreEquipmentSlotsOwnerId);
                 if (!inventory.IsComplete ||
-                    inventory.ExactOwnerPatchCount != 4 ||
+                    inventory.ExactOwnerPatchCount != MoreEquipmentSlotsHarmonyTargets.Length ||
                     productRuntime == null ||
                     !runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) ||
                     loadedOwners != 1 ||
@@ -289,10 +289,11 @@ namespace DTMAPI.GameBridge.DolocTown
             object productRuntime)
         {
             object committed =
-                FindMoreEquipmentSlotsDocument(
-                    productRuntime) ??
+                ReadReflectedMember(
+                    productRuntime,
+                    "document") ??
                 throw new InvalidOperationException(
-                    "MoreEquipmentSlots committed sidecar is unavailable before the protected transaction.");
+                    "MoreEquipmentSlots current committed document is unavailable before the protected transaction.");
             moreEquipmentSlotsTargetSlot =
                 FindFirstEmptyEquipmentSlot(
                     ReadReflectedMember(
@@ -412,7 +413,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ".");
             }
 
-            object shieldBeforeDamage =
+            object shieldBeforeSave =
                 RequireEquipmentSlotEntry(
                     ReadReflectedMember(
                         productRuntime,
@@ -421,50 +422,23 @@ namespace DTMAPI.GameBridge.DolocTown
             moreEquipmentSlotsShieldValueBefore =
                 Convert.ToInt32(
                     ReadReflectedMember(
-                        shieldBeforeDamage,
+                        shieldBeforeSave,
                         "ShieldValue") ?? 0);
-            int shieldDefend =
-                Convert.ToInt32(
-                    ReadReflectedMember(
-                        shieldBeforeDamage,
-                        "ShieldDefend") ?? 0);
             if (!(ReadReflectedMember(
-                      shieldBeforeDamage,
+                      shieldBeforeSave,
                       "IsShield") is bool isShield &&
                   isShield) ||
-                moreEquipmentSlotsShieldValueBefore <= 1)
+                moreEquipmentSlotsShieldValueBefore <= 0)
             {
                 throw new InvalidOperationException(
                     "The protected native box_hat did not expose live ProductNative shield state.");
             }
 
-            InvokeRealMoreEquipmentSlotsAttack(
-                shieldDefend +
-                Math.Max(
-                    1,
-                    moreEquipmentSlotsShieldValueBefore / 2));
-            object shieldAfterDamage =
-                RequireEquipmentSlotEntry(
-                    ReadReflectedMember(
-                        productRuntime,
-                        "workingSlots"),
-                    moreEquipmentSlotsTargetSlot);
-            moreEquipmentSlotsShieldValueAfterDamage =
-                Convert.ToInt32(
-                    ReadReflectedMember(
-                        shieldAfterDamage,
-                        "ShieldValue") ?? 0);
-            if (moreEquipmentSlotsShieldValueAfterDamage <= 0 ||
-                moreEquipmentSlotsShieldValueAfterDamage >=
-                    moreEquipmentSlotsShieldValueBefore)
-            {
-                throw new InvalidOperationException(
-                    "The real protected BodyController.OnAttacked route did not leave a non-breaking Working shield hit. shield=" +
-                    moreEquipmentSlotsShieldValueBefore +
-                    "->" +
-                    moreEquipmentSlotsShieldValueAfterDamage +
-                    ".");
-            }
+            RequireMoreEquipmentSlotsNativeShieldProvider(
+                productRuntime,
+                moreEquipmentSlotsShieldValueBefore);
+            moreEquipmentSlotsCommittedShieldValue =
+                moreEquipmentSlotsShieldValueBefore;
 
             RequestMoreEquipmentSlotsNativeSave();
             moreEquipmentSlotsTransactionStage = 1;
@@ -472,8 +446,8 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus(
                 "Smoke.MoreEquipmentSlots",
                 "pending",
-                "ProductNative replacement + real shield damage -> DolocAPI.SaveGame(2)",
-                "Waiting for SaveSaved to commit the damaged shield sidecar.");
+                "ProductNative replacement + typed shield provider -> DolocAPI.SaveGame(2)",
+                "Waiting for SaveSaved to commit the equipped shield sidecar.");
             return FixtureAttemptResult.Pending;
         }
 
@@ -486,7 +460,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 out int journalCount);
             if (occupied != 1 || journalCount != 0)
                 return WaitForMoreEquipmentSlotsStage(
-                    "damaged shield sidecar commit",
+                    "equipped shield sidecar commit",
                     "occupied=" + occupied + "; journal=" + journalCount);
 
             object committed =
@@ -514,15 +488,15 @@ namespace DTMAPI.GameBridge.DolocTown
                     MoreEquipmentSlotsShieldItemId,
                     StringComparison.Ordinal) ||
                 committedShieldValue !=
-                    moreEquipmentSlotsShieldValueAfterDamage)
+                    moreEquipmentSlotsCommittedShieldValue)
             {
                 throw new InvalidOperationException(
-                    "SaveSaved did not commit the real damaged shield state. item=" +
+                    "SaveSaved did not commit the equipped typed shield state. item=" +
                     committedItemId +
                     "; shield=" +
                     committedShieldValue +
                     "; expected=" +
-                    moreEquipmentSlotsShieldValueAfterDamage +
+                    moreEquipmentSlotsCommittedShieldValue +
                     ".");
             }
 
@@ -534,27 +508,36 @@ namespace DTMAPI.GameBridge.DolocTown
         private FixtureAttemptResult BeginMoreEquipmentSlotsUnequipTransaction(
             object productRuntime)
         {
-            object shieldBeforeBreak =
+            object shieldBeforeUnequip =
                 RequireEquipmentSlotEntry(
                     ReadReflectedMember(
                         productRuntime,
                         "workingSlots"),
                     moreEquipmentSlotsTargetSlot);
-            int shieldDefend =
-                Convert.ToInt32(
-                    ReadReflectedMember(
-                        shieldBeforeBreak,
-                        "ShieldDefend") ?? 0);
             int shieldValue =
                 Convert.ToInt32(
                     ReadReflectedMember(
-                        shieldBeforeBreak,
+                        shieldBeforeUnequip,
                         "ShieldValue") ?? 0);
-            InvokeRealMoreEquipmentSlotsAttack(
-                shieldDefend +
-                shieldValue +
-                1);
-            object afterBreak =
+            if (shieldValue != moreEquipmentSlotsCommittedShieldValue)
+            {
+                throw new InvalidOperationException(
+                    "The Working shield did not retain the SaveSaved value before normal unequip. shield=" +
+                    shieldValue +
+                    "; expected=" +
+                    moreEquipmentSlotsCommittedShieldValue +
+                    ".");
+            }
+            RequireMoreEquipmentSlotsNativeShieldProvider(
+                productRuntime,
+                shieldValue);
+            InvokeMoreEquipmentSlotsOperation(
+                productRuntime,
+                "RequestUnequip",
+                moreEquipmentSlotsTargetSlot,
+                MoreEquipmentSlotsShieldItemId,
+                "QA protected shield unequip");
+            object afterShieldUnequip =
                 RequireEquipmentSlotEntry(
                     ReadReflectedMember(
                         productRuntime,
@@ -562,11 +545,24 @@ namespace DTMAPI.GameBridge.DolocTown
                     moreEquipmentSlotsTargetSlot);
             if (!string.IsNullOrWhiteSpace(
                     ReadReflectedMember(
-                        afterBreak,
+                        afterShieldUnequip,
                         "ItemId") as string))
             {
                 throw new InvalidOperationException(
-                    "The real protected shield-break route did not clear the Working slot.");
+                    "The Product shield unequip did not clear the Working slot.");
+            }
+            int shieldAfterUnequip =
+                CountNativeItemForFixture(
+                    ResolveMoreEquipmentSlotsDolocApiType(),
+                    MoreEquipmentSlotsShieldItemId,
+                    checkBox: false);
+            if (shieldAfterUnequip !=
+                moreEquipmentSlotsShieldBackpackBaseline + 1)
+            {
+                throw new InvalidOperationException(
+                    "The Product shield unequip did not return exactly one QA-owned shield to the backpack. shield=" +
+                    shieldAfterUnequip +
+                    ".");
             }
 
             InvokeMoreEquipmentSlotsOperation(
@@ -574,7 +570,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 "EquipFromBackpack",
                 moreEquipmentSlotsTargetSlot,
                 MoreEquipmentSlotsTransactionItemId,
-                "QA protected post-break equip");
+                "QA protected post-save equip");
             InvokeMoreEquipmentSlotsOperation(
                 productRuntime,
                 "RequestUnequip",
@@ -587,7 +583,7 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus(
                 "Smoke.MoreEquipmentSlots",
                 "pending",
-                "ProductNative real shield break + equip/unequip -> DolocAPI.SaveGame(2)",
+                "ProductNative shield unequip + passive equip/unequip -> DolocAPI.SaveGame(2)",
                 "Waiting for the empty committed sidecar after the second SaveSaved.");
             return FixtureAttemptResult.Pending;
         }
@@ -614,10 +610,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 journalCount != 0 ||
                 backpack != moreEquipmentSlotsBackpackBaseline + 1 ||
                 shieldBackpack !=
-                    moreEquipmentSlotsShieldBackpackBaseline)
+                    moreEquipmentSlotsShieldBackpackBaseline + 1)
             {
                 return WaitForMoreEquipmentSlotsStage(
-                    "post-break empty sidecar commit",
+                    "post-unequip empty sidecar commit",
                     "occupied=" +
                     occupied +
                     "; journal=" +
@@ -629,26 +625,42 @@ namespace DTMAPI.GameBridge.DolocTown
                     "; shieldBackpack=" +
                     shieldBackpack +
                     "; expectedShieldBackpack=" +
-                    moreEquipmentSlotsShieldBackpackBaseline);
+                    (moreEquipmentSlotsShieldBackpackBaseline + 1));
             }
 
-            bool removed = CostNativeItemForFixture(
+            bool removedPassive = CostNativeItemForFixture(
                 ResolveMoreEquipmentSlotsDolocApiType(),
                 MoreEquipmentSlotsTransactionItemId,
                 1,
                 checkBox: false);
-            int afterCleanup = CountNativeItemForFixture(
+            bool removedShield = CostNativeItemForFixture(
+                ResolveMoreEquipmentSlotsDolocApiType(),
+                MoreEquipmentSlotsShieldItemId,
+                1,
+                checkBox: false);
+            int passiveAfterCleanup = CountNativeItemForFixture(
                 ResolveMoreEquipmentSlotsDolocApiType(),
                 MoreEquipmentSlotsTransactionItemId,
                 checkBox: false);
-            if (!removed ||
-                afterCleanup != moreEquipmentSlotsBackpackBaseline)
+            int shieldAfterCleanup = CountNativeItemForFixture(
+                ResolveMoreEquipmentSlotsDolocApiType(),
+                MoreEquipmentSlotsShieldItemId,
+                checkBox: false);
+            if (!removedPassive ||
+                !removedShield ||
+                passiveAfterCleanup != moreEquipmentSlotsBackpackBaseline ||
+                shieldAfterCleanup !=
+                    moreEquipmentSlotsShieldBackpackBaseline)
             {
                 throw new InvalidOperationException(
-                    "QA could not remove its recovered item after proving the protected transaction. backpack=" +
+                    "QA could not remove both staged items after proving the protected transaction. passive=" +
                     backpack +
                     "->" +
-                    afterCleanup +
+                    passiveAfterCleanup +
+                    "; shield=" +
+                    shieldBackpack +
+                    "->" +
+                    shieldAfterCleanup +
                     ".");
             }
 
@@ -658,18 +670,21 @@ namespace DTMAPI.GameBridge.DolocTown
                 MoreEquipmentSlotsTransactionItemId +
                 " native=1 committedSidecar=0 journal=0 logicalItems=1" +
                 " replacement=grandmas_button->box_hat" +
-                " shieldDamage=" +
-                moreEquipmentSlotsShieldValueBefore +
-                "->" +
-                moreEquipmentSlotsShieldValueAfterDamage +
-                " shieldBreak=true equipAfterBreak=true unequipAfterBreak=true";
+                " typedShieldProvider=true" +
+                " shieldSaved=" +
+                moreEquipmentSlotsCommittedShieldValue +
+                " shieldUnequip=true passiveEquipUnequip=true";
             string summary =
                 "route=ProductNative" +
                 "; fixedExtraSlots=3" +
                 "; exactOwner=" +
                 MoreEquipmentSlotsHarmonyOwner +
-                "; patches=4" +
-                "; targets=4/4" +
+                "; patches=" +
+                inventory.ExactOwnerPatchCount +
+                "; targets=" +
+                inventory.ExactOwnerTargetCount +
+                "/" +
+                inventory.ResolvedTargetCount +
                 "; callback=1" +
                 "; loaded=1" +
                 "; roots=" +
@@ -690,7 +705,7 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.SetHookStatus(
                 "Smoke.MoreEquipmentSlots",
                 "verified",
-                "MoreEquipmentSlots ProductNative replacement/damage/break/equip/unequip -> two native saves",
+                "MoreEquipmentSlots ProductNative replacement/provider/unequip -> two native saves",
                 summary);
             moreEquipmentSlotsTransactionStage = 4;
             return FixtureAttemptResult.Succeeded;
@@ -841,6 +856,99 @@ namespace DTMAPI.GameBridge.DolocTown
                 " is unavailable.");
         }
 
+        private void RequireMoreEquipmentSlotsNativeShieldProvider(
+            object productRuntime,
+            int expectedShieldValue)
+        {
+            Type dolocApi = ResolveMoreEquipmentSlotsDolocApiType();
+            object manager =
+                ReadReflectedMember(
+                    ReadReflectedMember(
+                        ReadReflectedMember(
+                            ReadStaticMember(
+                                dolocApi,
+                                "archiveHandle"),
+                            "farmData"),
+                        "agentData"),
+                    "agentEquipment") ??
+                throw new InvalidOperationException(
+                    "The native AgentEquipmentManager is unavailable for the Product shield-provider check.");
+            MethodInfo[] candidates = manager.GetType().GetMethods(
+                    BindingFlags.Instance |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic)
+                .Where(method =>
+                {
+                    ParameterInfo[] parameters = method.GetParameters();
+                    return method.Name.Equals(
+                               "TryGetShieldItem",
+                               StringComparison.Ordinal) &&
+                        method.ReturnType == typeof(bool) &&
+                        parameters.Length == 1 &&
+                        parameters[0].ParameterType.IsByRef &&
+                        parameters[0].ParameterType
+                            .GetElementType()?.FullName ==
+                        "DolocTown.IAgentEquipmentShieldItem";
+                })
+                .ToArray();
+            if (candidates.Length != 1)
+            {
+                throw new MissingMethodException(
+                    manager.GetType().FullName,
+                    "TryGetShieldItem(out IAgentEquipmentShieldItem) (found " +
+                    candidates.Length +
+                    ")");
+            }
+
+            object?[] arguments = { null };
+            object? result;
+            try
+            {
+                result = candidates[0].Invoke(
+                    manager,
+                    arguments);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
+
+            object provider = arguments[0] ??
+                throw new InvalidOperationException(
+                    "AgentEquipmentManager.TryGetShieldItem returned no provider for the equipped Product shield.");
+            string providerAssembly =
+                provider.GetType().Assembly.GetName().Name ?? string.Empty;
+            float shieldValue = Convert.ToSingle(
+                ReadReflectedMember(
+                    provider,
+                    "ShieldValue") ?? 0f);
+            float shieldPercent = Convert.ToSingle(
+                ReadReflectedMember(
+                    provider,
+                    "ShieldPercent") ?? 0f);
+            if (!(result is bool found && found) ||
+                !providerAssembly.Equals(
+                    productRuntime.GetType().Assembly.GetName().Name,
+                    StringComparison.Ordinal) ||
+                Math.Abs(shieldValue - expectedShieldValue) > 0.001f ||
+                shieldPercent <= 0f ||
+                shieldPercent > 1f)
+            {
+                throw new InvalidOperationException(
+                    "The native TryGetShieldItem route did not expose the exact Product typed shield provider. found=" +
+                    (result is bool value && value) +
+                    "; providerAssembly=" +
+                    providerAssembly +
+                    "; shieldValue=" +
+                    shieldValue +
+                    "; expected=" +
+                    expectedShieldValue +
+                    "; shieldPercent=" +
+                    shieldPercent +
+                    ".");
+            }
+        }
+
         private void InvokeRealMoreEquipmentSlotsAttack(
             int damageAfterNativeDefense)
         {
@@ -878,15 +986,17 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     ParameterInfo[] parameters =
                         method.GetParameters();
-                    return parameters.Length == 4 &&
+                    return parameters.Length == 5 &&
                         parameters[0].ParameterType ==
                             typeof(float) &&
                         parameters[1].ParameterType ==
                             typeof(bool) &&
                         parameters[2].ParameterType.FullName ==
                             "UnityEngine.Vector2" &&
-                        parameters[3].ParameterType.IsByRef &&
-                        parameters[3].ParameterType
+                        parameters[3].ParameterType.FullName ==
+                            "DolocTown.AttackProperties" &&
+                        parameters[4].ParameterType.IsByRef &&
+                        parameters[4].ParameterType
                             .GetElementType() == typeof(bool);
                 })
                 .ToArray();
@@ -894,20 +1004,30 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 throw new MissingMethodException(
                     body.GetType().FullName,
-                    "OnAttacked(float,bool,Vector2,out bool) (found " +
+                    "OnAttacked(float,bool,Vector2,AttackProperties,out bool) (found " +
                     targets.Length +
                     ")");
             }
 
+            ParameterInfo[] attackParameters =
+                targets[0].GetParameters();
             float nativeDefense = Convert.ToSingle(
                 ReadReflectedMember(
                     body,
                     "CurrentDefend") ?? 0f);
             object position =
                 Activator.CreateInstance(
-                    targets[0].GetParameters()[2].ParameterType) ??
+                    attackParameters[2].ParameterType) ??
                 throw new InvalidOperationException(
                     "Could not construct the native Vector2 attack position.");
+            object attackProperties =
+                attackParameters[3].ParameterType.GetField(
+                    "Physical",
+                    BindingFlags.Public |
+                    BindingFlags.Static)?.GetValue(null) ??
+                throw new MissingFieldException(
+                    attackParameters[3].ParameterType.FullName,
+                    "Physical");
             object?[] arguments =
             {
                 nativeDefense +
@@ -916,6 +1036,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         damageAfterNativeDefense),
                 false,
                 position,
+                attackProperties,
                 false
             };
             object? result;
@@ -932,14 +1053,14 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (!(result is bool handled) ||
                 !handled ||
-                arguments[3] is bool isDead &&
+                arguments[4] is bool isDead &&
                 isDead)
             {
                 throw new InvalidOperationException(
                     "The real BodyController.OnAttacked route did not complete as a non-fatal handled ProductNative attack. handled=" +
                     (result is bool value && value) +
                     "; isDead=" +
-                    (arguments[3] is bool dead && dead) +
+                    (arguments[4] is bool dead && dead) +
                     ".");
             }
         }

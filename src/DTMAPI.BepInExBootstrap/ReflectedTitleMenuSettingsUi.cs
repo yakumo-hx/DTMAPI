@@ -8,10 +8,11 @@ using DTMAPI.Abstractions;
 using DTMAPI.Core.Manager;
 using DTMAPI.Core.Runtime;
 using DTMAPI.Core.Services;
+using DTMAPI.GameBridge.DolocTown.Native;
 
 namespace DTMAPI.BepInExBootstrap
 {
-    internal sealed class ReflectedTitleMenuSettingsUi
+    internal sealed partial class ReflectedTitleMenuSettingsUi
     {
         private const int ConfigListPageSize = 14;
         private const int ConfigItemPageSize = 12;
@@ -20,6 +21,17 @@ namespace DTMAPI.BepInExBootstrap
         private const int ManagerHookPageSize = 17;
         private const int ManagerFeaturePageSize = 14;
         private const int ManagerAdvancedPageSize = 14;
+        internal const float ConfigDetailPaneX = 326f;
+        internal const float PanelDesignWidth = 1060f;
+        internal const float PanelDesignHeight = 720f;
+        internal const float ConfigListPagerX = 44f;
+        internal const float ConfigListPagerY = -158f;
+        internal const float ConfigListPagerLabelWidth = 114f;
+        internal const float ConfigListPagerButtonWidth = 60f;
+        internal const float ConfigListPagerHeight = 30f;
+        internal const float ConfigListPagerGap = 8f;
+        internal const float ConfigListSinglePageRowStartY = -158f;
+        internal const float ConfigListPagedRowStartY = -196f;
 
         private readonly DtmApiRuntime runtime;
         private readonly IConfigMenuRuntime configMenu;
@@ -56,6 +68,12 @@ namespace DTMAPI.BepInExBootstrap
         private Type? unityActionStringType;
 
         private object? root;
+        private object? viewportScaler;
+        private Type? screenType;
+        private PropertyInfo? screenWidthProperty;
+        private PropertyInfo? screenHeightProperty;
+        private int viewportWidth;
+        private int viewportHeight;
         private object? eventSystemRoot;
         private object? eventSystemComponent;
         private object? titleButtonRoot;
@@ -65,10 +83,12 @@ namespace DTMAPI.BepInExBootstrap
         private string? selectedConfigModId;
         private string? capturingKeybindItemId;
         private bool keyCaptureArming;
+        private bool keyCaptureAppend;
         private int keyCaptureStartedFrame = -1;
         private string statusMessage = string.Empty;
         private bool initialized;
         private bool dirty = true;
+        private readonly EditRenderBarrier editRenderBarrier = new EditRenderBarrier();
         private bool wasTitleVisible;
         private bool buttonVisibleLogged;
         private bool menuOpenLogged;
@@ -154,16 +174,29 @@ namespace DTMAPI.BepInExBootstrap
 
         public void Shutdown(string reason)
         {
+            nativeTitleEntry?.Dispose();
+            nativeTitleEntry = null;
+            ResetNavigation(shutdown: true);
+            CloseInputOwner();
             ResetBoundaryState("Shutdown " + (reason ?? string.Empty));
             ResetUiReferences("Shutdown " + (reason ?? string.Empty));
         }
 
         public void Update()
         {
+            skipNavigationThisFrame = IsCapturingKey;
+            InitializeInputSettings();
+            if (nativeTitleEntryEnabledAtStartup && !inputOwnerClosed)
+            {
+                nativeTitleEntry ??= new NativeTitleConfigEntry(runtime, () => T("controller.entry", "Open Mod config"), OpenFromTitleButton);
+                nativeTitleEntry.Update();
+            }
+            PollPlatformCommand();
             if (!EnsureInitialized())
                 return;
             if (!EnsureMountedUiObjects() && !EnsureInitialized())
                 return;
+            UpdateViewportScale();
 
             bool titleVisible = runtime.UI.InputContext.Equals("HomePageUiState", StringComparison.OrdinalIgnoreCase);
             SetActive(root, titleVisible);
@@ -212,8 +245,10 @@ namespace DTMAPI.BepInExBootstrap
             bool showPanel = runtime.UI.IsOpen;
             SetActive(panelRoot, showPanel);
             SetActive(titleButtonRoot, !showPanel);
+            TickNavigation();
             bool configRequestChanged = !string.Equals(renderedConfigUniqueId, runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase);
-            if (showPanel && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage || configRequestChanged || renderedOverlaySessionSequence != runtime.UI.OverlaySessionSequence))
+            bool canRender = !editRenderBarrier.IsPending || editRenderBarrier.Advance(ReflectedUnityInput.GetKey("Mouse0"));
+            if (showPanel && canRender && (!menuOpenLogged || dirty || renderedPage != runtime.UI.CurrentPage || configRequestChanged || renderedOverlaySessionSequence != runtime.UI.OverlaySessionSequence))
             {
                 if (!menuOpenLogged)
                 {
@@ -239,12 +274,12 @@ namespace DTMAPI.BepInExBootstrap
             AddComponent(root, canvasScalerType!);
             AddComponent(root, graphicRaycasterType!);
 
-            object? scaler = GetComponent(root, canvasScalerType!);
-            if (scaler != null)
+            viewportScaler = GetComponent(root, canvasScalerType!);
+            viewportWidth = viewportHeight = 0;
+            if (viewportScaler != null)
             {
-                SetEnumProperty(scaler, "uiScaleMode", 1);
-                SetProperty(scaler, "referenceResolution", Vector2(1920, 1080));
-                SetProperty(scaler, "matchWidthOrHeight", 0.5f);
+                SetEnumProperty(viewportScaler, "uiScaleMode", 0);
+                UpdateViewportScale();
             }
 
             DontDestroyOnLoad(root);
@@ -335,7 +370,7 @@ namespace DTMAPI.BepInExBootstrap
             trackingRenderedObjects = false;
             panelRoot = CreateUiObject("DTMAPI.TitleSettings.Panel", root);
             CreateImage(panelRoot, "DTMAPI.TitleSettings.Panel.Background", null, Color(0.06f, 0.08f, 0.10f, 0.96f), stretch: true);
-            SetRect(panelRoot, Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0, 0), Vector2(1060, 720));
+            SetRect(panelRoot, Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0.5f, 0.5f), Vector2(0, 0), Vector2(PanelDesignWidth, PanelDesignHeight));
             panelContentRoot = CreateUiObject("DTMAPI.TitleSettings.Panel.Content", panelRoot);
             SetRect(panelContentRoot, Vector2(0, 0), Vector2(1, 1), Vector2(0.5f, 0.5f), Vector2(0, 0), Vector2(0, 0));
             SetActive(panelRoot, false);
@@ -606,6 +641,26 @@ namespace DTMAPI.BepInExBootstrap
             return true;
         }
 
+        // Coordinates below describe the panel, not a monitor resolution. Fit both axes
+        // so a wide/portrait viewport cannot crop controls; Canvas applies the same scale
+        // to text, hit targets and the separately anchored title icon.
+        internal static float CalculateViewportScale(int width, int height) =>
+            width <= 0 || height <= 0 ? 1f : Math.Min(width * 0.75f / PanelDesignWidth, height * 0.8f / PanelDesignHeight);
+
+        private void UpdateViewportScale()
+        {
+            if (viewportScaler == null) return;
+            screenType ??= Type.GetType("UnityEngine.Screen, UnityEngine.CoreModule") ?? Type.GetType("UnityEngine.Screen, UnityEngine");
+            screenWidthProperty ??= screenType?.GetProperty("width", BindingFlags.Public | BindingFlags.Static);
+            screenHeightProperty ??= screenType?.GetProperty("height", BindingFlags.Public | BindingFlags.Static);
+            if (!(screenWidthProperty?.GetValue(null, null) is int width) || !(screenHeightProperty?.GetValue(null, null) is int height) || width <= 0 || height <= 0) return;
+            if (width == viewportWidth && height == viewportHeight) return;
+            SetProperty(viewportScaler, "scaleFactor", CalculateViewportScale(width, height));
+            viewportWidth = width;
+            viewportHeight = height;
+            runtime.RuntimeMonitor.Log("DTMAPI title UI viewport adjusted: " + width + "x" + height + "; scale=" + CalculateViewportScale(width, height).ToString(CultureInfo.InvariantCulture) + ".");
+        }
+
         private static bool IsInputSystemNotInitializedException(Exception ex)
         {
             string text = (ex.Message ?? string.Empty) + " " + ex.ToString();
@@ -627,6 +682,13 @@ namespace DTMAPI.BepInExBootstrap
 
             ClearRenderedObjects();
             RuntimeSnapshot snapshot = runtime.CreateSnapshot();
+            bool followConfigSelection = ShouldFollowConfigListSelection(
+                renderedPage,
+                renderedOverlaySessionSequence,
+                renderedConfigUniqueId,
+                runtime.UI.CurrentPage,
+                runtime.UI.OverlaySessionSequence,
+                runtime.UI.RequestedConfigUniqueId);
             renderedPage = runtime.UI.CurrentPage;
             renderedOverlaySessionSequence = runtime.UI.OverlaySessionSequence;
             renderedConfigUniqueId = runtime.UI.RequestedConfigUniqueId;
@@ -662,7 +724,7 @@ namespace DTMAPI.BepInExBootstrap
             switch (runtime.UI.CurrentPage)
             {
                 case DtmOverlayPage.Config:
-                    RenderConfig(snapshot);
+                    RenderConfig(snapshot, followConfigSelection);
                     break;
                 case DtmOverlayPage.Mods:
                     RenderMods(snapshot);
@@ -688,9 +750,10 @@ namespace DTMAPI.BepInExBootstrap
                 AddText(panelContentRoot, "DTMAPI.StatusMessage", Truncate(statusMessage, 150), 15, Color(0.88f, 0.95f, 1f, 1f), TextAnchorMiddleLeft, 40, -676, 940, 24);
 
             dirty = false;
+            RestoreNavigationFocus();
         }
 
-        private void RenderConfig(RuntimeSnapshot snapshot)
+        private void RenderConfig(RuntimeSnapshot snapshot, bool followConfigSelection)
         {
             IConfigMenuPage[] pages = snapshot.ConfigPages.OrderBy(p => p.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
             if (pages.Length == 0)
@@ -699,25 +762,36 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             }
 
-            if (runtime.UI.RequestedConfigUniqueId != null && pages.Any(p => p.Manifest.UniqueID.Equals(runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase)))
+            bool selectionChanged = false;
+            if (runtime.UI.RequestedConfigUniqueId != null &&
+                pages.Any(p => p.Manifest.UniqueID.Equals(runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase)) &&
+                !string.Equals(selectedConfigModId, runtime.UI.RequestedConfigUniqueId, StringComparison.OrdinalIgnoreCase))
+            {
                 selectedConfigModId = runtime.UI.RequestedConfigUniqueId;
+                selectionChanged = true;
+            }
             if (selectedConfigModId == null || !pages.Any(p => p.Manifest.UniqueID.Equals(selectedConfigModId, StringComparison.OrdinalIgnoreCase)))
+            {
                 selectedConfigModId = pages[0].Manifest.UniqueID;
+                selectionChanged = true;
+            }
             int selectedIndex = Array.FindIndex(pages, p => p.Manifest.UniqueID.Equals(selectedConfigModId, StringComparison.OrdinalIgnoreCase));
-            if (selectedIndex >= 0 && !IsIndexOnPage(selectedIndex, configListPageIndex, ConfigListPageSize))
-                configListPageIndex = selectedIndex / ConfigListPageSize;
-
-            ClampPage(ref configListPageIndex, pages.Length, ConfigListPageSize);
+            configListPageIndex = ResolveConfigListPageIndex(
+                configListPageIndex,
+                pages.Length,
+                selectedIndex,
+                followConfigSelection || selectionChanged);
             GetPageBounds(pages.Length, configListPageIndex, ConfigListPageSize, out int pageStart, out int pageEnd, out int pageCount);
 
             AddText(panelContentRoot!, "DTMAPI.Config.ListTitle", T("config.listTitle", "Enabled DTMAPI mods"), 16, Color(0.78f, 0.88f, 0.92f, 1f), TextAnchorMiddleLeft, 44, -126, 260, 24);
             if (pageCount > 1)
-                RenderPager("DTMAPI.Config.ListPager", configListPageIndex, pageCount, pages.Length, pageStart, pageEnd, 172, -126, page =>
+                RenderPager("DTMAPI.Config.ListPager", configListPageIndex, pageCount, pages.Length, pageStart, pageEnd, ConfigListPagerX, ConfigListPagerY, page =>
                 {
                     configListPageIndex = page;
                     dirty = true;
-                });
+                }, ConfigListPagerLabelWidth, ConfigListPagerButtonWidth, ConfigListPagerHeight, ConfigListPagerGap);
 
+            float rowStartY = pageCount > 1 ? ConfigListPagedRowStartY : ConfigListSinglePageRowStartY;
             for (int i = pageStart; i < pageEnd; i++)
             {
                 IConfigMenuPage page = pages[i];
@@ -727,7 +801,7 @@ namespace DTMAPI.BepInExBootstrap
                 CreateButton(panelContentRoot!, "DTMAPI.Config.Mod." + page.Manifest.UniqueID, label, () =>
                 {
                     SelectConfigPage(page.Manifest.UniqueID);
-                }, active ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.10f, 0.13f, 0.15f, 1f), Color(1f, 1f, 1f, 1f), 44, -158 - row * 32, 250, 28);
+                }, active ? Color(0.18f, 0.42f, 0.50f, 1f) : Color(0.10f, 0.13f, 0.15f, 1f), Color(1f, 1f, 1f, 1f), 44, rowStartY - row * 32, 250, 28);
             }
 
             IConfigMenuPage selectedPage = configMenu.GetPage(selectedConfigModId!) ?? pages[0];
@@ -741,7 +815,7 @@ namespace DTMAPI.BepInExBootstrap
             IDisposable? preview = configMenu.PreviewPendingValues(page);
             try
             {
-                float x = 326;
+                float x = ConfigDetailPaneX;
                 float y = -126;
                 AddText(panelContentRoot!, "DTMAPI.Config.PageTitle", page.DisplayName + " (" + page.Manifest.UniqueID + ")" + (page.HasPendingChanges ? " *" : string.Empty), 18, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, x, y, 600, 28);
                 if (page.IsLocked)
@@ -759,6 +833,14 @@ namespace DTMAPI.BepInExBootstrap
                 }
 
                 IConfigMenuItem[] items = page.Items.ToArray();
+                foreach (IConfigMenuItem item in items)
+                {
+                    if (item.Kind != "Keybind") continue;
+                    string unknown = ReflectedUnityInput.FindUnrecognizedBindingButton(item.PendingValue);
+                    if (unknown.Length == 0) continue;
+                    AddText(panelContentRoot!, "DTMAPI.Config.UnknownBinding", Truncate(item.Name + ": " + unknown + " — " + T("controller.unknown", "Unrecognized button retained; edit or reset."), 110), 12, Color(1f, 0.76f, 0.50f, 1f), TextAnchorMiddleLeft, x, -650, 700, 26);
+                    break;
+                }
                 ClampPage(ref configItemPageIndex, items.Length, ConfigItemPageSize);
                 GetPageBounds(items.Length, configItemPageIndex, ConfigItemPageSize, out int itemStart, out int itemEnd, out int itemPageCount);
                 if (itemPageCount > 1)
@@ -887,7 +969,10 @@ namespace DTMAPI.BepInExBootstrap
             else if (item.Kind == "Keybind")
             {
                 bool capturing = item.ItemId == capturingKeybindItemId;
-                AddText(panelContentRoot!, "DTMAPI.Item.KeyValue." + item.ItemId, capturing ? T("item.pressKey", "Press key...") : item.PendingValue, 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, controlX, y, 100, 26);
+                if (capturing)
+                    AddText(panelContentRoot!, "DTMAPI.Item.KeyValue." + item.ItemId, T("item.pressKey", "Press key..."), 14, Color(1f, 1f, 1f, 1f), TextAnchorMiddleLeft, controlX, y, 100, 26);
+                else
+                    CreateInput(panelContentRoot!, "DTMAPI.Item.KeyEdit." + item.ItemId, item.PendingValue, v => TrySetPending(item, v), controlX, y, 100, 26);
                 CreateButton(panelContentRoot!, "DTMAPI.Item.KeyCapture." + item.ItemId, capturing ? T("config.cancel", "Cancel") : T("item.capture", "Capture"), () =>
                 {
                     if (capturing)
@@ -901,13 +986,21 @@ namespace DTMAPI.BepInExBootstrap
                         keyCaptureStartedFrame = ReflectedUnityInput.BeginKeyCapture();
                         capturingKeybindItemId = item.ItemId;
                         keyCaptureArming = true;
+                        keyCaptureAppend = false;
                     }
                     dirty = true;
-                }, capturing ? Color(0.43f, 0.24f, 0.18f, 1f) : Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), controlX + 106, y, 90, 26);
+                }, capturing ? Color(0.43f, 0.24f, 0.18f, 1f) : Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), controlX + 106, y, 58, 26);
+                CreateButton(panelContentRoot!, "DTMAPI.Item.KeyAppend." + item.ItemId, "+", () =>
+                {
+                    keyCaptureStartedFrame = ReflectedUnityInput.BeginKeyCapture();
+                    capturingKeybindItemId = item.ItemId;
+                    keyCaptureArming = true;
+                    keyCaptureAppend = true;
+                    dirty = true;
+                }, Color(0.18f, 0.34f, 0.42f, 1f), Color(1f, 1f, 1f, 1f), controlX + 170, y, 28, 26);
+                CreateButton(panelContentRoot!, "DTMAPI.Item.KeyClear." + item.ItemId, T("item.clear", "Clear"), () => TrySetPending(item, "None"), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 46, 26);
                 if (item is IResettableKeybindConfigMenuItem resettable && resettable.HasDefaultValue)
-                    CreateButton(panelContentRoot!, "DTMAPI.Item.KeyReset." + item.ItemId, T("config.reset", "Reset"), () => TryResetKeybind(item, resettable), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 66, 26);
-                else
-                    CreateButton(panelContentRoot!, "DTMAPI.Item.KeyNone." + item.ItemId, T("item.none", "None"), () => TrySetPending(item, "None"), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 204, y, 66, 26);
+                    CreateButton(panelContentRoot!, "DTMAPI.Item.KeyReset." + item.ItemId, T("config.reset", "Reset"), () => TryResetKeybind(item, resettable), Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), controlX + 256, y, 46, 26);
             }
             else if (item.Kind == "Button")
             {
@@ -1025,6 +1118,7 @@ namespace DTMAPI.BepInExBootstrap
             };
             for (int i = 0; i < lines.Length; i++)
                 AddText(panelContentRoot!, "DTMAPI.Status.Row." + i, Truncate(lines[i], 140), 15, Color(0.92f, 0.95f, 0.96f, 1f), TextAnchorMiddleLeft, 52, -176 - i * 32, 930, 26);
+            RenderPlatformCommands();
         }
 
         private string FormatManagerPathStatus(string label, bool hasPath, bool exists, string path)
@@ -1035,27 +1129,57 @@ namespace DTMAPI.BepInExBootstrap
             return label + ": " + status + (hasPath ? " | " + path : string.Empty);
         }
 
-        private void RenderPager(string id, int pageIndex, int pageCount, int total, int start, int end, float x, float y, Action<int> setPage)
+        private void RenderPager(
+            string id,
+            int pageIndex,
+            int pageCount,
+            int total,
+            int start,
+            int end,
+            float x,
+            float y,
+            Action<int> setPage,
+            float labelWidth = 160f,
+            float buttonWidth = 30f,
+            float height = 22f,
+            float gap = 6f)
         {
             pageCount = Math.Max(1, pageCount);
             string label = total <= 0
                 ? "0/0"
                 : string.Format(CultureInfo.InvariantCulture, T("pager.page", "{0}-{1}/{2}  Page {3}/{4}"), start + 1, end, total, pageIndex + 1, pageCount);
-            AddText(panelContentRoot!, id + ".Label", label, 12, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, x, y, 160, 22);
+            float previousX = x + labelWidth + gap;
+            float nextX = previousX + buttonWidth + gap;
+            AddText(panelContentRoot!, id + ".Label", label, 12, Color(0.72f, 0.82f, 0.86f, 1f), TextAnchorMiddleLeft, x, y, labelWidth, height);
             CreateButton(panelContentRoot!, id + ".Prev", "<", () =>
             {
                 setPage(Math.Max(0, pageIndex - 1));
-            }, pageIndex <= 0 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 166, y, 30, 22);
+            }, pageIndex <= 0 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), previousX, y, buttonWidth, height);
             CreateButton(panelContentRoot!, id + ".Next", ">", () =>
             {
                 setPage(Math.Min(pageCount - 1, pageIndex + 1));
-            }, pageIndex >= pageCount - 1 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), x + 202, y, 30, 22);
+            }, pageIndex >= pageCount - 1 ? Color(0.12f, 0.13f, 0.14f, 1f) : Color(0.22f, 0.25f, 0.29f, 1f), Color(1f, 1f, 1f, 1f), nextX, y, buttonWidth, height);
         }
 
-        private static bool IsIndexOnPage(int index, int pageIndex, int pageSize)
+        internal static bool ShouldFollowConfigListSelection(
+            DtmOverlayPage previousPage,
+            long previousSessionSequence,
+            string? previousRequestedUniqueId,
+            DtmOverlayPage currentPage,
+            long currentSessionSequence,
+            string? currentRequestedUniqueId)
         {
-            int start = Math.Max(0, pageIndex) * Math.Max(1, pageSize);
-            return index >= start && index < start + pageSize;
+            return currentPage == DtmOverlayPage.Config &&
+                (previousPage != DtmOverlayPage.Config ||
+                    previousSessionSequence != currentSessionSequence ||
+                    !string.Equals(previousRequestedUniqueId, currentRequestedUniqueId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        internal static int ResolveConfigListPageIndex(int currentPageIndex, int total, int selectedIndex, bool followSelection)
+        {
+            if (followSelection && selectedIndex >= 0)
+                currentPageIndex = selectedIndex / ConfigListPageSize;
+            return ManagerPagination.Create(total, currentPageIndex, ConfigListPageSize).PageIndex;
         }
 
         private static void ClampPage(ref int pageIndex, int total, int pageSize)
@@ -1380,6 +1504,9 @@ namespace DTMAPI.BepInExBootstrap
 
         private void ResetBoundaryState(string reason)
         {
+            editRenderBarrier.Reset();
+            ResetNavigation();
+            CancelPlatformCommand();
             string normalizedReason = reason ?? string.Empty;
             bool forceLog = normalizedReason.StartsWith("SaveLoaded", StringComparison.OrdinalIgnoreCase) ||
                 normalizedReason.StartsWith("ReturnedToTitle", StringComparison.OrdinalIgnoreCase) ||
@@ -1510,7 +1637,8 @@ namespace DTMAPI.BepInExBootstrap
                 return;
             IConfigMenuItem? item = configMenu.GetPage(selectedConfigModId)?.Items.FirstOrDefault(i => i.ItemId == capturingKeybindItemId);
             if (item != null)
-                TrySetPending(item, key);
+                TrySetPending(item, keyCaptureAppend && !string.IsNullOrWhiteSpace(DtmButton.Normalize(item.PendingValue)) && key != "None"
+                    ? item.PendingValue + ", " + key : key);
         }
 
         private object CreateButton(object parent, string name, string label, Action onClick, object background, object textColor, float x = 0, float y = 0, float w = 100, float h = 28)
@@ -1521,6 +1649,9 @@ namespace DTMAPI.BepInExBootstrap
             object button = AddComponent(go, buttonType!);
             SetProperty(button, "targetGraphic", image);
             AddButtonListener(button, onClick);
+            bool editable = (name != "DTMAPI.Config.Save" && name != "DTMAPI.Config.Reset") || selectedConfigModId == null || configMenu.GetPage(selectedConfigModId)?.IsLocked != true;
+            SetProperty(button, "interactable", editable);
+            if (editable) TrackNavigation(name, go, button, image, background, x, y, false, onClick);
             AddText(go, name + ".Text", label, 14, textColor, TextAnchorMiddleCenter, 0, 0, 0, 0, stretch: true);
             SetRect(go, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(w, h));
             if (trackingRenderedObjects)
@@ -1540,9 +1671,14 @@ namespace DTMAPI.BepInExBootstrap
                 SetProperty(input, "targetGraphic", image);
                 SetProperty(input, "textComponent", text);
                 SetProperty(input, "text", value);
+                TrackNavigation(name, go, input, image, Color(0.04f, 0.05f, 0.06f, 1f), x, y, true, null);
                 AddStringListener(GetProperty(input, "onEndEdit"), v =>
                 {
+                    if (GetProperty(input, "wasCanceled") is bool canceled && canceled) v = value;
                     inputValues[name] = v;
+                    // Deselect happens on pointer-down; keep the receiving button alive
+                    // through pointer-up and the EventSystem's click callback.
+                    editRenderBarrier.Defer();
                     onEdited(v);
                 });
             }
@@ -1715,6 +1851,8 @@ namespace DTMAPI.BepInExBootstrap
 
         private void ClearRenderedObjects()
         {
+            editingTarget = null;
+            navigationTargets.Clear();
             foreach (object go in renderedObjects.ToArray())
             {
                 if (ReferenceEquals(go, titleButtonRoot) || ReferenceEquals(go, panelRoot))
@@ -1861,6 +1999,8 @@ namespace DTMAPI.BepInExBootstrap
             if (root != null && objectType != null && !IsDestroyed(root))
                 Destroy(root);
             root = null;
+            viewportScaler = null;
+            viewportWidth = viewportHeight = 0;
             titleButtonRoot = null;
             panelRoot = null;
             panelContentRoot = null;

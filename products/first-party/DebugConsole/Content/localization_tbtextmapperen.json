@@ -1,0 +1,10 @@
+[
+  {
+    "key": "item_dtmapi_creative_generator",
+    "text": "Infinite Fuel"
+  },
+  {
+    "key": "item_dtmapi_creative_generator_desc",
+    "text": "An extremely energy-dense piece of coal with ordinary fuel properties. A compatible machine accepts only up to its own fuel-capacity limit; this item does not exceed that limit."
+  }
+]

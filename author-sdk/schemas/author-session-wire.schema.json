@@ -1,53 +1,460 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/author-session-wire.schema.json",
-  "title": "DTMAPI Runtime 0.5.5 Author session JSONL frame",
+  "title": "DTMAPI Author session JSONL: legacy wire and negotiated protocol 1",
   "oneOf": [
-    { "$ref": "#/$defs/request" },
-    { "$ref": "#/$defs/response" }
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/response"
+    },
+    {
+      "$ref": "#/$defs/negotiatedRequest"
+    },
+    {
+      "$ref": "#/$defs/negotiatedResponse"
+    }
   ],
   "$defs": {
     "request": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["protocol", "runtime", "gameRoot", "session", "token", "requestId", "uniqueId", "selectedRoot", "expectedTreeSha256", "operation"],
+      "required": [
+        "protocol",
+        "runtime",
+        "gameRoot",
+        "session",
+        "token",
+        "requestId",
+        "uniqueId",
+        "selectedRoot",
+        "expectedTreeSha256",
+        "operation"
+      ],
       "properties": {
-        "protocol": { "const": "dtmapi-author-session/1" },
-        "runtime": { "const": "0.5.5" },
-        "gameRoot": { "type": "string", "minLength": 1 },
-        "session": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-        "token": { "type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$" },
-        "requestId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-        "uniqueId": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "selectedRoot": { "type": "string", "minLength": 1 },
-        "expectedTreeSha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
-        "operation": { "enum": ["get-source-snapshot", "reload-content"] }
+        "protocol": {
+          "const": "dtmapi-author-session/1"
+        },
+        "runtime": {
+          "const": "0.5.5"
+        },
+        "gameRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "uniqueId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "selectedRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedTreeSha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "operation": {
+          "enum": [
+            "get-source-snapshot",
+            "reload-content"
+          ]
+        }
       }
     },
     "responseValue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["key", "value"],
+      "required": [
+        "key",
+        "value"
+      ],
       "properties": {
-        "key": { "type": "string", "minLength": 1, "maxLength": 64 },
-        "value": { "type": "string", "maxLength": 2048 }
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 2048
+        }
       }
     },
     "response": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["protocol", "runtime", "session", "requestId", "operation", "uniqueId", "status", "code", "message", "values"],
+      "required": [
+        "protocol",
+        "runtime",
+        "session",
+        "requestId",
+        "operation",
+        "uniqueId",
+        "status",
+        "code",
+        "message",
+        "values"
+      ],
       "properties": {
-        "protocol": { "const": "dtmapi-author-session/1" },
-        "runtime": { "const": "0.5.5" },
-        "session": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-        "requestId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-        "operation": { "enum": ["get-source-snapshot", "reload-content"] },
-        "uniqueId": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "status": { "enum": ["ok", "rejected", "restart-required", "error"] },
-        "code": { "type": "string", "minLength": 1, "maxLength": 96 },
-        "message": { "type": "string", "minLength": 1, "maxLength": 512 },
-        "values": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/responseValue" } }
+        "protocol": {
+          "const": "dtmapi-author-session/1"
+        },
+        "runtime": {
+          "const": "0.5.5"
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "operation": {
+          "enum": [
+            "get-source-snapshot",
+            "reload-content"
+          ]
+        },
+        "uniqueId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "rejected",
+            "restart-required",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "values": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/responseValue"
+          }
+        }
+      }
+    },
+    "negotiatedRequest": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schemaVersion",
+        "protocolMajor",
+        "minimumMinor",
+        "maximumMinor",
+        "apiTarget",
+        "minimumRuntimeVersion",
+        "requiredCapabilities",
+        "optionalCapabilities",
+        "gameRoot",
+        "session",
+        "token",
+        "requestId",
+        "operation"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "protocolMajor": {
+          "const": 1
+        },
+        "minimumMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maximumMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "apiTarget": {
+          "pattern": "^[0-9]+(?:\\.[0-9]+){1,3}$",
+          "type": "string"
+        },
+        "minimumRuntimeVersion": {
+          "pattern": "^[0-9]+(?:\\.[0-9]+){1,3}$",
+          "type": "string"
+        },
+        "requiredCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "optionalCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "gameRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "uniqueId": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "selectedRoot": {
+          "type": "string"
+        },
+        "expectedTreeSha256": {
+          "type": "string"
+        },
+        "operation": {
+          "enum": [
+            "hello",
+            "get-source-snapshot",
+            "reload-content",
+            "execute-command"
+          ]
+        },
+        "commandLine": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "protocolMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "hostVersion": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "protocol"
+            ]
+          },
+          {
+            "required": [
+              "runtime"
+            ]
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "then": {
+            "properties": {
+              "selectedRoot": {
+                "minLength": 1
+              },
+              "uniqueId": {
+                "minLength": 1
+              },
+              "expectedTreeSha256": {
+                "pattern": "^[A-Fa-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "uniqueId",
+              "selectedRoot",
+              "expectedTreeSha256",
+              "hostVersion",
+              "protocolMinor"
+            ]
+          },
+          "if": {
+            "properties": {
+              "operation": {
+                "enum": [
+                  "get-source-snapshot",
+                  "reload-content",
+                  "execute-command"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "operation": { "const": "execute-command" } }, "required": ["operation"] },
+          "then": { "required": ["commandLine"] }
+        }
+      ]
+    },
+    "negotiatedResponse": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "session",
+        "requestId",
+        "uniqueId",
+        "status",
+        "code",
+        "message",
+        "values",
+        "operation",
+        "schemaVersion",
+        "protocolMajor",
+        "protocolMinor",
+        "gameRoot",
+        "hostVersion",
+        "apiTarget",
+        "acceptedCapabilities",
+        "unsupportedOptionalCapabilities"
+      ],
+      "properties": {
+        "session": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "uniqueId": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "rejected",
+            "restart-required",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "values": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/responseValue"
+          }
+        },
+        "operation": {
+          "enum": [
+            "hello",
+            "get-source-snapshot",
+            "reload-content"
+          ]
+        },
+        "schemaVersion": {
+          "const": 2
+        },
+        "protocolMajor": {
+          "const": 1
+        },
+        "protocolMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "gameRoot": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "hostVersion": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "apiTarget": {
+          "pattern": "^[0-9]+(?:\\.[0-9]+){1,3}$",
+          "type": "string"
+        },
+        "acceptedCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "unsupportedOptionalCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "protocol"
+            ]
+          },
+          {
+            "required": [
+              "runtime"
+            ]
+          }
+        ]
       }
     }
   }

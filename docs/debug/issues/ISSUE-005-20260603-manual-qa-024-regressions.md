@@ -1,8 +1,10 @@
-# ISSUE-005: 2026-06-03 0.2.4 manual QA regressions
+﻿# ISSUE-005: 2026-06-03 0.2.4 manual QA regressions
+
+- State: `open`
+- Current boundary: Historical manual-QA batch retains unresolved boundaries.
 
 ## Current Status
 
-- Status: open
 - Opened: 2026-06-03 +08:00
 - Target: DTMAPI 0.2.4
 - Source: user manual QA feedback summarized in `readme.md`

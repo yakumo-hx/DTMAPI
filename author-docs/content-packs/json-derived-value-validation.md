@@ -19,7 +19,7 @@ effectiveValue = NativeRound(effectiveFloat)
 
 ## 强制检查项
 
-提交生产、加工、成长、冷却、概率或资源转换 JSON 前，逐项确认：
+新增或改变生产、加工、成长、冷却、概率或资源转换数值，以及改变其引用组、倍率或消费公式时，检查受影响条目。已有公式和原生依据可以复用；简介、翻译、图片等无关修改不触发此流程。
 
 1. 找到最终消费该值的原生责任函数，不只看 JSON 反序列化类。
 2. 列出所有会引用该条目的配方组、设备、场景和升级形态。
@@ -29,7 +29,9 @@ effectiveValue = NativeRound(effectiveFloat)
 6. 不依赖恰好位于 `.5` 的舍入边界；为浮点误差和取整规则留出余量。
 7. 同时测试最小值、常用值、最大值，以及倍率小于 `1`、存在除数或约数的组合。
 8. 对会先扣物品/货币再启动工作的配置，额外验证失败路径不会吞物品或把非法状态写进存档。
-9. 做一次保存、退出、重载检查；内容包可禁用时，再检查禁用后的存档恢复行为。
+9. 首次引入持久化状态，或改变保存、读回、停用恢复行为时，做一次对应的保存/冷读场景；复用已准备的可处置 fixture。其余普通生产验证原地运行，不调用保存或睡觉，不例行备份和还原存档。
+
+受影响条目的派生值和实际生产行为通过、没有剩余命名失败时结束。只有输入改变、新失败或尚未完成的具体场景才重跑对应部分；详细保存策略和证据复用见[产品验证工作流](../../docs/workflows/product-change-validation.md)。
 
 静态审查表至少记录：
 
@@ -68,4 +70,4 @@ effectiveInterval = RoundToInt(recipeGroup.TimeRatio × recipe.CostTime)
 ## 关联记录
 
 - 根因、坏存档对比及修复证据：`docs/reviews/manual-qa/2026/20260713-0002-garbage-shredder-last-run-log-review.md`
-- 当前原生参考构建：`references/doloc-town/reverse/builds/23762374_public_C416D4`
+- 本案例的原生参考构建：`references/doloc-town/reverse/builds/23762374_public_C416D4`，不代表当前游戏版本。

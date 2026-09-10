@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import re
 from collections import Counter, defaultdict
@@ -44,6 +45,18 @@ def read_json(path: Path) -> dict:
 def write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
+def input_identity(paths: list[Path], repo_root: Path) -> list[dict]:
+    return [{"path": path_label(path, repo_root), "bytes": path.stat().st_size,
+             "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(set(paths))]
+
+
+def path_label(path: Path, repo_root: Path) -> str:
+    try:
+        return path.relative_to(repo_root).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def bool_text(value: str) -> bool:
@@ -114,7 +127,7 @@ def extract_domain_reports(reports_dir: Path, repo_root: Path) -> list[dict]:
                 "id": report_id,
                 "slug": slug,
                 "title": normalize_report_title(slug),
-                "path": str(path.relative_to(repo_root).as_posix()),
+                "path": path_label(path, repo_root),
                 "symbols": sorted(set(symbols)),
             }
         )
@@ -132,7 +145,7 @@ def match_symbol(symbol: str, methods: list[dict], methods_by_full: dict[str, in
     # Full signature fragments, e.g. "System.Void Type::Method(...)".
     if "::" in symbol:
         for index, method in enumerate(methods):
-            if symbol in method["full_name"]:
+            if symbol in method["fullName"]:
                 matched.add(index)
         return matched
 
@@ -212,7 +225,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build the Doloc Town native function map workbench data.")
     parser.add_argument(
         "--build-root",
-        default="references/doloc-town/reverse/builds/23465763_workshop_38581E",
+        required=True,
         help="Reverse build root containing metadata/ and maps/index/.",
     )
     parser.add_argument(
@@ -222,7 +235,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--output-dir",
-        default="docs/reviews/api/native-function-map/data",
+        default="tools/native-function-map/workbench/data",
         help="Output directory for generated JSON files.",
     )
     args = parser.parse_args()
@@ -241,6 +254,21 @@ def main() -> int:
     call_rows = read_csv(metadata_dir / "calls.csv")
     summary = read_json(metadata_dir / "summary.json")
     build_info = read_json(metadata_dir / "build-info.json")
+    required = [metadata_dir / name for name in ("types.csv", "methods.csv", "calls.csv", "summary.json", "build-info.json")]
+    if any(not path.is_file() for path in required) or not method_rows or not type_rows:
+        parser.error("The selected baseline needs non-empty types/methods and complete metadata inputs; generation never captures or exports resources.")
+    if any(not row.get("full_name") for row in type_rows) or any(not all(row.get(key) for key in ("full_name", "type", "name")) for row in method_rows):
+        parser.error("Metadata rows require complete type and method symbol columns.")
+    if len({row["full_name"] for row in method_rows}) != len(method_rows):
+        parser.error("Method identities are duplicated; generation cannot merge unrelated nodes.")
+    assembly_hash = build_info.get("assembly", {}).get("sha256", "")
+    if not re.fullmatch(r"[a-fA-F0-9]{64}", assembly_hash) or not build_info.get("steam_build") or not build_info.get("branch"):
+        parser.error("build-info.json must identify the actual Steam build, branch and full Assembly-CSharp SHA-256.")
+    if not reports_dir.is_dir():
+        parser.error("Native-owner reports directory is missing; choose its current path explicitly.")
+    input_paths = required + list(maps_index_dir.glob("*-methods.csv")) + list(reports_dir.glob("*.md"))
+    input_paths += [path for path in (diffs_dir / "methods-added.csv", diffs_dir / "methods-body-size-changed.csv") if path.is_file()]
+    generation_inputs = input_identity(input_paths, repo_root)
 
     type_meta = {row["full_name"]: row for row in type_rows}
 
@@ -401,12 +429,14 @@ def main() -> int:
 
     meta = {
         "generatedAtUtc": datetime.now(timezone.utc).isoformat(),
-        "sourceBuildRoot": str(build_root.relative_to(repo_root)).replace("\\", "/"),
-        "reportsDir": str(reports_dir.relative_to(repo_root)).replace("\\", "/"),
+        "sourceBuildRoot": path_label(build_root, repo_root),
+        "reportsDir": path_label(reports_dir, repo_root),
         "game": build_info.get("game", "Doloc Town"),
         "steamBuild": build_info.get("steam_build", ""),
         "branch": build_info.get("branch", ""),
         "assemblySha256": build_info.get("assembly", {}).get("sha256", ""),
+        "generation": {"schemaVersion": 1, "status": "complete", "generatorSha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                       "inputs": generation_inputs, "parameters": {"buildRoot": path_label(build_root, repo_root), "reportsDir": path_label(reports_dir, repo_root)}},
         "methodCount": len(methods),
         "typeCount": len(type_rows),
         "metadataCallCount": len(call_rows),
@@ -426,9 +456,12 @@ def main() -> int:
         "domains": sorted(domain_stats, key=lambda item: item["id"]),
     }
 
-    write_json(output_dir / "summary.json", summary_json)
+    if generation_inputs != input_identity(input_paths, repo_root):
+        raise RuntimeError("Generation inputs changed while the map was being built; output was not promoted.")
     write_json(output_dir / "methods.json", methods)
     write_json(output_dir / "links.json", links)
+    summary_json["meta"]["generation"]["outputs"] = input_identity([output_dir / "methods.json", output_dir / "links.json"], output_dir)
+    write_json(output_dir / "summary.json", summary_json)
 
     print(f"Wrote {len(methods)} methods and {len(links)} internal links to {output_dir}")
     print(f"Native-owner covered methods: {coverage_counts.get('native-owner', 0)}")

@@ -38,6 +38,86 @@ namespace DTMAPI.MoreEquipmentSlots
             return CreateEmpty(expectedScope);
         }
 
+        internal bool DeleteSlotDirectoryForNewGame(
+            string sidecarPath,
+            int archiveIndex)
+        {
+            if (archiveIndex < 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(archiveIndex));
+            if (string.IsNullOrWhiteSpace(sidecarPath))
+            {
+                throw new ArgumentException(
+                    "A NewGame sidecar path is required.",
+                    nameof(sidecarPath));
+            }
+
+            string fullSidecarPath =
+                Path.GetFullPath(sidecarPath);
+            string expectedFileName =
+                "equipment-slots-" +
+                MoreEquipmentSlotsProductContract.UniqueId +
+                ".json";
+            string? slotDirectory =
+                Path.GetDirectoryName(fullSidecarPath);
+            string? equipmentSlotsDirectory =
+                slotDirectory == null
+                    ? null
+                    : Path.GetDirectoryName(slotDirectory);
+            string? protectedItemsDirectory =
+                equipmentSlotsDirectory == null
+                    ? null
+                    : Path.GetDirectoryName(
+                        equipmentSlotsDirectory);
+            string expectedSlotName =
+                "slot-" + archiveIndex.ToString(
+                    System.Globalization.CultureInfo
+                        .InvariantCulture);
+            if (!string.Equals(
+                    Path.GetFileName(fullSidecarPath),
+                    expectedFileName,
+                    StringComparison.Ordinal) ||
+                string.IsNullOrWhiteSpace(slotDirectory) ||
+                !string.Equals(
+                    Path.GetFileName(slotDirectory),
+                    expectedSlotName,
+                    StringComparison.Ordinal) ||
+                string.IsNullOrWhiteSpace(
+                    equipmentSlotsDirectory) ||
+                !string.Equals(
+                    Path.GetFileName(
+                        equipmentSlotsDirectory),
+                    "equipment-slots",
+                    StringComparison.Ordinal) ||
+                string.IsNullOrWhiteSpace(
+                    protectedItemsDirectory) ||
+                !string.Equals(
+                    Path.GetFileName(
+                        protectedItemsDirectory),
+                    "protected-items",
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    "MoreEquipmentSlots refused a NewGame reset outside the exact Product slot-directory shape.");
+            }
+
+            string exactSlotDirectory = slotDirectory!;
+            if (!Directory.Exists(exactSlotDirectory))
+                return false;
+            ThrowIfDirectoryContainsReparsePoint(
+                exactSlotDirectory);
+            Directory.Delete(
+                exactSlotDirectory,
+                recursive: true);
+            if (Directory.Exists(exactSlotDirectory))
+            {
+                throw new IOException(
+                    "The stale MoreEquipmentSlots Product slot directory remained after NewGame reset: " +
+                    exactSlotDirectory);
+            }
+            return true;
+        }
+
         internal void WriteAtomic(
             string path,
             EquipmentSlotStorageDocument document)
@@ -1367,11 +1447,42 @@ namespace DTMAPI.MoreEquipmentSlots
             new DataContractJsonSerializer(
                 typeof(EquipmentSlotStorageDocument));
 
-        private static EquipmentSlotStorageDocument CreateEmpty(
+        internal static EquipmentSlotStorageDocument CreateEmpty(
             EquipmentSlotSaveScope scope) =>
             new EquipmentSlotStorageDocument
             {
                 Scope = scope.Clone()
             };
+
+        private static void ThrowIfDirectoryContainsReparsePoint(
+            string root)
+        {
+            var pending = new Stack<DirectoryInfo>();
+            var rootInfo = new DirectoryInfo(root);
+            if ((rootInfo.Attributes &
+                 FileAttributes.ReparsePoint) != 0)
+            {
+                throw new InvalidDataException(
+                    "MoreEquipmentSlots refused to delete a reparse-point Product slot directory during NewGame reset.");
+            }
+            pending.Push(rootInfo);
+            while (pending.Count > 0)
+            {
+                DirectoryInfo directory = pending.Pop();
+                foreach (FileSystemInfo entry in
+                    directory.EnumerateFileSystemInfos())
+                {
+                    if ((entry.Attributes &
+                         FileAttributes.ReparsePoint) != 0)
+                    {
+                        throw new InvalidDataException(
+                            "MoreEquipmentSlots refused to traverse reparse-point residue during NewGame reset: " +
+                            entry.FullName);
+                    }
+                    if (entry is DirectoryInfo child)
+                        pending.Push(child);
+                }
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using DTMAPI.Core.Json;
 using DTMAPI.Core.Runtime;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.Core.Manifesting
 {
@@ -245,8 +246,37 @@ namespace DTMAPI.Core.Manifesting
             // Every classifier check in this method completes before DtmApiRuntime reaches Assembly.LoadFrom.
             ManagedModClassification declaration = ClassifyDeclaredIdentity(manifest);
             string placement = ClassifyPlacement(source, nativeWorkshopSourceVerified, declaration.IsAdvanced);
+            if (manifest.NativeContractSelected)
+            {
+                try
+                {
+                    var bundle = DependencyPackageVerifier.Read(manifest, modRoot, manifestPath);
+                    var native = bundle.Native ?? throw new InvalidDataException("native-contract-missing");
+                    var warnings = NativePackageVerifier.VerifyInstalled(native, gamePath);
+                    string entry = PackageDependencyContract.ResolveFile(modRoot, bundle.Inventory.EntryPath);
+                    return new ManagedModClassification(ManagedModIdentity.AdvancedCodeMod, "Advanced", "sdk-native-contract-v" + native.SchemaVersion + "-verified", placement,
+                        "native-code/local-host-provenance-bound", warnings.Count == 0 ? "native-required-signatures-verified/exact-host-bytes" : string.Join("; ", warnings),
+                        "restart-required-after-load", native.HarmonyOwner, true, NativePackageContract.FileName, "native-contract/" + native.SchemaVersion, native.SchemaVersion,
+                        PackageDependencyContract.ComputeHash(File.ReadAllBytes(PackageDependencyContract.ResolveFile(modRoot, NativePackageContract.FileName))),
+                        "netstandard2.0", native.GameBuild, ComputeSourceFingerprint(modRoot), native.EntrySha256,
+                        PortableAssemblyReferenceInspector.Inspect(entry).ModuleMvid);
+                }
+                catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is UnauthorizedAccessException || ex is BadImageFormatException || ex is TypeLoadException || ex is ReflectionTypeLoadException)
+                { throw Failure("native-package-invalid", ex.Message); }
+            }
             if (!declaration.IsAdvanced)
             {
+                // Unmarked legacy packages retain their compatibility lane. A reserved SDK marker
+                // cannot be bypassed by deleting CodeModKind from the manifest.
+                try
+                {
+                    AuthorPackageMarker.ValidateIfPresent(modRoot, manifestPath, manifest.UniqueID, manifest.Version,
+                        declaration.IsCodeMod ? "CodeMod" : "ContentPack", declaration.Identity == ManagedModIdentity.StrictCodeMod ? "Strict" : string.Empty,
+                        declaration.IsCodeMod ? TryResolveLegacyEntryPath(modRoot, manifest.EntryDll) : string.Empty,
+                        manifest.MinimumDTMApiVersion, manifest.DependencyContract != null);
+                }
+                catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is UnauthorizedAccessException)
+                { throw Failure("package-marker-invalid", ex.Message); }
                 LegacyExternalCompatibilityMatch? legacyMatch = declaration.IsLegacyNativeCompatibility
                     ? legacyExternalPolicy.Match(
                         manifest,
@@ -255,7 +285,13 @@ namespace DTMAPI.Core.Manifesting
                         nativeWorkshopSourceVerified,
                         workshopId)
                     : null;
-                if (declaration.IsCodeMod)
+                if (manifest.DependencyContract != null)
+                {
+                    try { DependencyPackageVerifier.Read(manifest, modRoot, manifestPath); }
+                    catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is UnauthorizedAccessException)
+                    { throw Failure("dependency-package-invalid", ex.Message); }
+                }
+                else if (declaration.IsCodeMod)
                     ValidateCodeModAssemblyBoundary(
                         manifest,
                         modRoot,
@@ -954,9 +990,8 @@ namespace DTMAPI.Core.Manifesting
                 !marker.Version.Equals(manifest.Version, StringComparison.Ordinal) ||
                 !marker.PackageKind.Equals("CodeMod", StringComparison.Ordinal) ||
                 !marker.CodeModKind.Equals("Advanced", StringComparison.Ordinal) ||
-                !marker.AuthorSdkVersion.Equals(TrackedAuthorSdkVersion, StringComparison.Ordinal) ||
                 !marker.TargetDtmApiVersion.Equals(TrackedAuthorSdkTargetDtmApiVersion, StringComparison.Ordinal) ||
-                !IsNumericVersionAtLeast(manifest.MinimumDTMApiVersion, marker.TargetDtmApiVersion) ||
+                !AuthorApiTargetCatalog.Current.TryValidatePackageTarget(marker.TargetDtmApiVersion, marker.AuthorSdkVersion, manifest.MinimumDTMApiVersion, out _, out _) ||
                 !marker.ManifestPath.Equals(manifestRelative, StringComparison.Ordinal) ||
                 !marker.ManifestPath.Equals(receipt.ManifestPath, StringComparison.Ordinal) ||
                 !marker.ManifestSha256.Equals(receipt.ManifestSha256, StringComparison.OrdinalIgnoreCase) ||
@@ -969,13 +1004,6 @@ namespace DTMAPI.Core.Manifesting
             {
                 throw Failure("advanced-package-marker-invalid", "dtmapi-package.json does not bind the exact Advanced manifest/entry/reference receipt and tracked Author SDK target.");
             }
-        }
-
-        private static bool IsNumericVersionAtLeast(string actual, string minimum)
-        {
-            return Version.TryParse(actual, out Version actualVersion) &&
-                Version.TryParse(minimum, out Version minimumVersion) &&
-                actualVersion.CompareTo(minimumVersion) >= 0;
         }
 
         private static string GetNormalizedRelativePath(string root, string path)

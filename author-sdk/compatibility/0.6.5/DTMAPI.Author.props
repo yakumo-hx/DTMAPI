@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <RestoreProjectStyle>None</RestoreProjectStyle>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <DtmApiAuthorCompatibilityRoot>$(MSBuildThisFileDirectory)</DtmApiAuthorCompatibilityRoot>
+    <DtmApiAuthorReferenceDirectory>$(DtmApiAuthorCompatibilityRoot)ref\netstandard2.0</DtmApiAuthorReferenceDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(DtmApiAuthorReferenceDirectory)\*.dll">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DTMAPI.Abstractions">
+      <HintPath>$(DtmApiAuthorCompatibilityRoot)DTMAPI.Abstractions.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

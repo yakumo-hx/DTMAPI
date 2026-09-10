@@ -3,7 +3,7 @@
 > 日期：2026-07-31
 > 状态：本版最小修正已实现，下一版本简化待逐项设计
 > Owning Update：[20260731-0003](../updates/2026/20260731-0003-contentquery-lifecycle-frame-log-closeout.md)
-> 根因记录：[20260731-0001 手测审查](../reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md#2026-07-31-autofishing-复测通过后的平台告警审查)
+> 根因记录：[20260731-0001 手测审查](../archive/reviews/manual-qa/2026/20260731-0001-autofishing-manager-player-ui-and-loop-stall.md#2026-07-31-autofishing-复测通过后的平台告警审查)
 
 ## 1. 当前版本边界
 

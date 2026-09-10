@@ -1,7 +1,8 @@
 param(
-    [string]$BuildRoot = "references/doloc-town/reverse/builds/23465763_workshop_38581E",
+    [Parameter(Mandatory = $true)]
+    [string]$BuildRoot,
     [string]$ReportsDir = "docs/reviews/api/native-owner-domains",
-    [string]$OutputDir = "docs/reviews/api/native-function-map/data"
+    [string]$OutputDir = "tools/native-function-map/workbench/data"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,6 +17,7 @@ if (-not (Test-Path -LiteralPath $script)) {
 Push-Location $repoRoot
 try {
     python $script --build-root $BuildRoot --reports-dir $ReportsDir --output-dir $OutputDir
+    if ($LASTEXITCODE -ne 0) { throw "Native function map generation failed, exit $LASTEXITCODE." }
 }
 finally {
     Pop-Location

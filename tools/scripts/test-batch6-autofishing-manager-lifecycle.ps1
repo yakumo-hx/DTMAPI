@@ -22,18 +22,21 @@ function Assert-Retired {
 $outerRunner = Join-Path $PSScriptRoot 'run-batch6-autofishing-manager-lifecycle.ps1'
 $smokeRunner = Join-Path $PSScriptRoot 'run-game-smoke.ps1'
 $outerSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $outerRunner
-$smokeSource = Get-Content -Raw -Encoding UTF8 -LiteralPath $smokeRunner
+$smokeEntrySource = Get-Content -Raw -Encoding UTF8 -LiteralPath $smokeRunner
+$smokePreflightSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/preflight.ps1')
 
 $outerGuard = $outerSource.IndexOf("throw 'Batch 6 AutoFishing same-process Manager lifecycle is retired", [System.StringComparison]::Ordinal)
 $outerFirstMutation = $outerSource.IndexOf('New-Item -ItemType Directory -Path $OutputRoot', [System.StringComparison]::Ordinal)
 Assert-True ($outerGuard -ge 0 -and $outerFirstMutation -gt $outerGuard) `
     'The historical outer runner must fail before creating evidence, acquiring the Runtime lock, deploying a package, or launching the game.'
 
-$smokeGuard = $smokeSource.IndexOf("throw '-Batch6AutoFishingManagerLifecycle is retired", [System.StringComparison]::Ordinal)
-$smokeLegacyPath = $smokeSource.IndexOf("Join-Path `$gameDir 'Mods\Yuuka.DTMAPI.AutoFishing'", [System.StringComparison]::Ordinal)
-$smokeMarkerWrite = $smokeSource.IndexOf('[System.IO.File]::WriteAllBytes($batch6ManagerMarkerPath', [System.StringComparison]::Ordinal)
-Assert-True ($smokeGuard -ge 0 -and $smokeLegacyPath -gt $smokeGuard -and $smokeMarkerWrite -gt $smokeGuard) `
-    'The common smoke runner must reject the retired lane before any historical <game>/Mods path or marker mutation is evaluated.'
+$smokeGuard = $smokePreflightSource.IndexOf("throw '-Batch6AutoFishingManagerLifecycle is retired", [System.StringComparison]::Ordinal)
+$preflightCall = $smokeEntrySource.IndexOf("'phases/preflight.ps1'", [System.StringComparison]::Ordinal)
+Assert-True ($smokeGuard -ge 0 -and $preflightCall -ge 0) 'The retired Manager route must be rejected by the smoke preflight phase.'
+foreach ($laterPhase in @('enter-save-environment','prepare-session','run-session')) {
+    $laterCall = $smokeEntrySource.IndexOf("'phases/$laterPhase.ps1'", [System.StringComparison]::Ordinal)
+    Assert-True ($laterCall -gt $preflightCall) "Smoke preflight must reject the retired lane before $laterPhase can alter save environment, evaluate legacy paths, or mutate markers."
+}
 
 Assert-Retired -Label 'Historical outer runner' -Action {
     & $outerRunner -PlanOnly

@@ -1,14 +1,17 @@
 # Source Layout
 
-DTMAPI source should grow under these projects:
+| Projects | Responsibility |
+| --- | --- |
+| Abstractions, Authoring.Contracts | Author and tooling contracts; public visibility alone does not imply stable adoption |
+| Core | Managed discovery, loading, ownership, events, configuration and diagnostics |
+| BepInExBootstrap | Single player bootstrap; BepInExStubs supports source builds |
+| GameBridge.DolocTown | Proven shared native adapters |
+| GameBridge.DolocTown.Compatibility | Retained compatibility surfaces and old consumer behavior |
+| GameBridge.DolocTown.QA | Optional acceptance instrumentation |
+| ModConfigMenu | Configuration UI and managed menu integration |
+| AuthorSdk, Tooling.Metadata | Author CLI, target selection, validation, build and packaging |
+| InstallDoctor, PlayerDoctor, MultiPlatformInstaller | Installation diagnostics and supported installer routes |
 
-- `DTMAPI.Abstractions`: public author contracts with per-surface stability and adoption disposition; public does not mean uniformly Stable.
-- `DTMAPI.Core`: manifest parsing, dependency ordering, mod loading, logging, config, event dispatch, error isolation.
-- `DTMAPI.BepInExBootstrap`: the one BepInEx plugin entry; the current package also places four co-located Runtime dependencies beside it under `BepInEx/plugins/DTMAPI`, while managed Mods remain outside that directory.
-- `DTMAPI.GameBridge.DolocTown`: proven SharedNative Doloc Town Unity/Harmony/reflection adapters; not the default owner of Platform or single-product ProductNative code.
-- `DTMAPI.ModConfigMenu`: built-in declaration-based config menu API and UI.
-- `DTMAPI.ContentPatcher`: official JSON/content-pack bridge, added after the runtime core is stable.
-- `DTMAPI.ConsoleCommands`: diagnostics and developer commands.
-- `DTMAPI.TemplateMod`: minimal author template.
+ContentPatcher, ConsoleCommands and TemplateMod are README placeholders, not current build projects. Actual build membership belongs to [the solution](../DTMAPI.sln). Product implementations are located by the [Catalog](../tools/release/dtmapi-product-catalog.json).
 
-Do not import old DLKsmapi source. Build the new runtime from these boundaries and the canonical Mod/ownership model in `../PROJECT.md`. Corrected Phase 0, bounded G2 and the exact current admitted-product/evidence set are recorded only by `../docs/architecture/batch6-managed-mod-identity-contract.md`. Advanced remains SDK-, identity- and tracked-policy-bound; the verified first-party set is not a general authoring lane or permission for another product.
+[PROJECT](../PROJECT.md) owns native responsibility and Mod identity. Game-loaded code stays netstandard2.0; native research is reference-only and never copied into this rebuild.

@@ -29,7 +29,7 @@ gameplay settings and acceptance rules remain in their owning products.
 
 ## 2026-07-20 Managed identity projection
 
-The Managed identity projection is frozen by the [Batch 6 managed Mod identity contract](../architecture/batch6-managed-mod-identity-contract.md). G2 added the manifest, Loader, SDK, Doctor, Manager, package and UI projection atomically and verified it only with the SDK-generated `DTMAPI.AdvancedFixture` under tracked policy `doloctown-23762374-g2-v1`. Player rows distinguish managed identity, provenance, source, placement, game/reference compatibility, native risk and restart policy; External BepInEx Plugins remain read-only diagnostics. The Manager must never infer Advanced status from `EntryDll`, source, path, product type or capabilities. AutoFishing is admitted-not-migrated, so no real-product Manager row is G2 proof; its proof remains pending G3/G4 and the relevant G5/G6 gates.
+The original G2 projection and synthetic-fixture proof are frozen in the [Batch 6 / 0.5.5 historical annex](../architecture/batch6-managed-mod-identity-contract.md). Current managed-product admission comes only from the Catalog-generated [managed-product admission registry](../architecture/managed-product-admission-registry.md), not from Manager inference or this dated design note. Player rows distinguish managed identity, provenance, source, placement, game/reference compatibility, native risk and restart policy; External BepInEx Plugins remain read-only diagnostics. The Manager must never infer Advanced status from `EntryDll`, source, path, product type, publication, subscription or capabilities.
 
 ## Purpose
 
@@ -180,7 +180,7 @@ Interactions:
 - Filter by status.
 - Search by name or unique ID.
 - Select a mod to show manifest path, root path, entry DLL, entry type, official enablement reason, and dependency summary.
-- Copy selected mod status as text for review.
+- Copy selected mod status as text for review remains planned; the selectable Mods list and its identity/dependency/restart details are already implemented.
 
 Boundary:
 
@@ -353,5 +353,5 @@ Before implementation is considered complete:
 - Report bundle preview and one-click compact web package export.
 - Runtime aggregate diagnostics display if an internal UI data source exposes aggregate counters.
 - Manual QA record linking from UI rows to docs/reviews records.
-- Copy selected row and row detail panels for Mods, Errors/Warnings, Hooks, and Features.
+- Copy selected row for Mods, Errors/Warnings, Hooks, and Features. Add the still-missing per-row detail panels on the diagnostic pages; do not reimplement the existing Mods selection/detail view.
 - Visual density polish after Developer Preview feedback, especially long paths, long mod names, and long diagnostics messages.

@@ -19,21 +19,21 @@ exit /b 2
 
 :dtmapi_configure_install
 set "DTMAPI_TARGET=%DTMAPI_TOOLS%install-to-game.ps1"
-set "DTMAPI_SUCCESS_MESSAGE=DTMAPI install finished."
+set "DTMAPI_SUCCESS_MESSAGE=[DTM-S1001] DTMAPI install script finished; use the bilingual summary above as the authoritative result."
 set "DTMAPI_FAILURE_MESSAGE=DTMAPI install failed."
 set "DTMAPI_HELP_MESSAGE=Run 3_check_dtmapi_status.bat and include the whole output when asking for help."
 goto dtmapi_configured
 
 :dtmapi_configure_uninstall
 set "DTMAPI_TARGET=%DTMAPI_TOOLS%uninstall-dtmapi.ps1"
-set "DTMAPI_SUCCESS_MESSAGE=DTMAPI uninstall finished."
+set "DTMAPI_SUCCESS_MESSAGE=DTMAPI uninstall script finished; use the bilingual S2001/S2002 summary above as the authoritative result."
 set "DTMAPI_FAILURE_MESSAGE=DTMAPI uninstall failed."
 set "DTMAPI_HELP_MESSAGE=Run 3_check_dtmapi_status.bat and include the whole output when asking for help."
 goto dtmapi_configured
 
 :dtmapi_configure_status
 set "DTMAPI_TARGET=%DTMAPI_TOOLS%check-dtmapi-status.ps1"
-set "DTMAPI_SUCCESS_MESSAGE=DTMAPI status check passed."
+set "DTMAPI_SUCCESS_MESSAGE=[DTM-S3001] DTMAPI status check finished; use the single final state above as the authoritative result."
 set "DTMAPI_FAILURE_MESSAGE=DTMAPI status check reported problems."
 set "DTMAPI_HELP_MESSAGE=Include the whole output above when asking for help."
 goto dtmapi_configured
@@ -47,12 +47,12 @@ goto dtmapi_configured
 
 :dtmapi_configured
 if not exist "%DTMAPI_HOST_PROBE%" (
-  echo [ERROR] PowerShell host probe script is missing: "%DTMAPI_HOST_PROBE%"
+  echo [DTM-E1201] PowerShell host probe script is missing: "%DTMAPI_HOST_PROBE%"
   call :dtmapi_pause_if_needed
   exit /b 1
 )
 if not exist "%DTMAPI_TARGET%" (
-  echo [ERROR] DTMAPI action script is missing: "%DTMAPI_TARGET%"
+  echo [DTM-E1201] DTMAPI action script is missing: "%DTMAPI_TARGET%"
   call :dtmapi_pause_if_needed
   exit /b 1
 )
@@ -62,7 +62,7 @@ if defined DTMAPI_POWERSHELL_HOST (
   echo [INFO] PowerShell host override: "%DTMAPI_POWERSHELL_HOST%"
   call :dtmapi_try_powershell "%DTMAPI_POWERSHELL_HOST%"
   if defined DTMAPI_POWERSHELL goto dtmapi_powershell_found
-  echo [ERROR] The configured DTMAPI_POWERSHELL_HOST did not pass the capability probe.
+  echo [DTM-E1101] The configured DTMAPI_POWERSHELL_HOST did not pass the installer capability probe.
   goto dtmapi_no_powershell
 )
 
@@ -82,8 +82,7 @@ for /f "delims=" %%P in ('where pwsh.exe 2^>nul') do (
 )
 
 :dtmapi_no_powershell
-echo [ERROR] No PowerShell host passed the DTMAPI runtime capability probe.
-echo [ERROR] Tested Windows PowerShell and PowerShell 7 candidates. Repair or install PowerShell, then run this file again.
+echo [DTM-E1101] No PowerShell host passed the DTMAPI installer capability probe. Repair Windows PowerShell language-mode/application-control restrictions, or install PowerShell 7, then retry.
 call :dtmapi_pause_if_needed
 exit /b 1
 

@@ -1,0 +1,10 @@
+[
+  {
+    "key": "item_dtmapi_creative_generator",
+    "text": "無限燃料"
+  },
+  {
+    "key": "item_dtmapi_creative_generator_desc",
+    "text": "通常の燃料として使える、熱量が極めて高い石炭。対応する機械には、その機械の燃料容量上限までしか補充されず、上限を超えることはありません。"
+  }
+]

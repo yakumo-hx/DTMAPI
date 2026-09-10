@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
 using DTMAPI.Abstractions;
 
 namespace DTMAPI.DebugConsole
@@ -53,10 +57,8 @@ namespace DTMAPI.DebugConsole
         public IDebugConsoleInputRuntime Input => this;
         public IDebugConsoleModalRuntime UI => this;
         public ITranslationHelper Translation => helper.Translation;
-        public string ApiVersion => "0.5.5";
+        public string ProductVersion => helper.ModManifest.Version;
         public string DtmApiPath { get; }
-        public string EvidencePath =>
-            Path.Combine(DtmApiPath, "evidence");
 
         public bool ModalOpen
         {
@@ -147,6 +149,99 @@ namespace DTMAPI.DebugConsole
         public IContentItemInfo? GetIndexedItem(string itemId) =>
             helper.Content.GetAnyIndexedItem(itemId);
 
+        public IReadOnlyList<AnimalContentSource> GetAnimalContentSources()
+        {
+            IContentItemInfo[] indexedItems = helper.Content
+                .GetAllIndexedItems()
+                .ToArray();
+            var candidates = new List<AnimalContentSource>();
+            foreach (IContentAssetInfo asset in helper.Content
+                .FindAssets("json")
+                .Where(IsCustomAnimalDefinitionAsset))
+            {
+                try
+                {
+                    IContentItemInfo? source = indexedItems
+                        .Where(item => IsPathInsideRoot(
+                            asset.SourcePath,
+                            item.RootPath))
+                        .OrderByDescending(item => item.Enabled)
+                        .ThenBy(item => item.LoadOrder < 0
+                            ? int.MaxValue
+                            : item.LoadOrder)
+                        .FirstOrDefault();
+                    string sourceId = FirstText(
+                        source?.SourceId,
+                        asset.SourceModId);
+                    string displayName = FirstText(
+                        source?.SourceModTitle,
+                        asset.SourceModId,
+                        sourceId);
+                    var serializer = new DataContractJsonSerializer(
+                        typeof(CustomAnimalSourceDefinition[]));
+                    using (FileStream stream = File.OpenRead(asset.SourcePath))
+                    {
+                        var definitions = serializer.ReadObject(stream) as
+                            CustomAnimalSourceDefinition[] ??
+                            Array.Empty<CustomAnimalSourceDefinition>();
+                        foreach (CustomAnimalSourceDefinition definition in
+                            definitions)
+                        {
+                            string animalId =
+                                (definition.SpeciesId ?? string.Empty).Trim();
+                            if (animalId.Length == 0)
+                                continue;
+                            candidates.Add(new AnimalContentSource
+                            {
+                                AnimalId = animalId,
+                                SourceId = sourceId,
+                                DisplayName = displayName,
+                                SourceKind = FirstText(
+                                    source?.SourceKind,
+                                    "DTMAPI"),
+                                Enabled = source?.Enabled ?? true,
+                                EnablementKnown =
+                                    source?.EnablementKnown ?? true,
+                                WorkshopId = source?.WorkshopId
+                            });
+                        }
+                    }
+                }
+                catch (Exception error)
+                {
+                    helper.Monitor.Log(
+                        "Y-Key Console ignored custom animal source metadata " +
+                        asset.RelativePath + ": " +
+                        error.GetType().Name + ": " + error.Message,
+                        LogLevel.Warn);
+                }
+            }
+
+            var result = new List<AnimalContentSource>();
+            foreach (IGrouping<string, AnimalContentSource> group in
+                candidates.GroupBy(
+                    candidate => candidate.AnimalId,
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                AnimalContentSource[] owners = group.ToArray();
+                if (owners.Select(owner => owner.SourceId)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Skip(1)
+                    .Any())
+                {
+                    helper.Monitor.Log(
+                        "Y-Key Console left custom animal species '" +
+                        group.Key +
+                        "' unattributed because multiple active content " +
+                        "sources declared it.",
+                        LogLevel.Warn);
+                    continue;
+                }
+                result.Add(owners[0]);
+            }
+            return result;
+        }
+
         public void SetCreativeHookDemand(bool enabled)
         {
             // ProductNative owns the complete hook set for its assembly lifetime.
@@ -172,6 +267,58 @@ namespace DTMAPI.DebugConsole
                 "DTMAPI.DebugConsoleMod",
                 operation + " failed.",
                 error.ToString());
+
+        private static bool IsCustomAnimalDefinitionAsset(
+            IContentAssetInfo asset)
+        {
+            string relative = (asset?.RelativePath ?? string.Empty)
+                .Replace('\\', '/')
+                .TrimStart('/');
+            return relative.Equals(
+                "Content/DTMAPI/custom-animals.json",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsPathInsideRoot(
+            string sourcePath,
+            string rootPath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) ||
+                string.IsNullOrWhiteSpace(rootPath))
+            {
+                return false;
+            }
+            try
+            {
+                string source = Path.GetFullPath(sourcePath);
+                string root = Path.GetFullPath(rootPath).TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar);
+                return source.Equals(root, StringComparison.OrdinalIgnoreCase) ||
+                    source.StartsWith(
+                        root + Path.DirectorySeparatorChar,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    source.StartsWith(
+                        root + Path.AltDirectorySeparatorChar,
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string FirstText(params string?[] values) =>
+            values.FirstOrDefault(value =>
+                !string.IsNullOrWhiteSpace(value))?.Trim() ??
+            string.Empty;
+
+        [DataContract]
+        private sealed class CustomAnimalSourceDefinition
+        {
+            [DataMember(Name = "speciesId")]
+            public string SpeciesId { get; set; } = string.Empty;
+        }
 
         private static MethodInfo ResolveModalMethod(
             Type type,

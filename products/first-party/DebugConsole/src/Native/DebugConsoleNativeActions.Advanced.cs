@@ -44,39 +44,15 @@ namespace DTMAPI.DebugConsole
         }
 
         public IReadOnlyList<SpawnDebugOption> GetMonsterOptions()
-        {
-            try
-            {
-                Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
-                object? assets = Native.Read(api, "assets");
-                object? monsters = Native.Read(assets, "monsters");
-                object? protos = Native.Read(monsters, "TotalProtos");
-                bool available = CurrentRoomImplements("DolocTown.IMonsterHost");
-                return Native.Enumerate(protos)
-                    .Select(proto => new SpawnDebugOption
-                    {
-                        Id = Native.First(
-                            Native.Text(proto, "Id"),
-                            Native.Text(proto, "id"),
-                            Native.Text(proto, "Name")),
-                        DisplayName = Native.First(
-                            Native.Text(proto, "Title"),
-                            Native.Text(proto, "Name"),
-                            Native.Text(proto, "Id")),
-                        Category = Native.Read(proto, "MonsterType")?.ToString() ?? "monster",
-                        IsAvailableInCurrentRoom = available
-                    })
-                    .Where(option => option.Id.Length > 0)
-                    .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .Take(80)
-                    .ToArray();
-            }
-            catch (Exception error)
-            {
-                runtime.Error("monster-options", error);
-                return Array.Empty<SpawnDebugOption>();
-            }
-        }
+            => GetMonsterCatalog()
+                .Select(option => new SpawnDebugOption
+                {
+                    Id = option.Id,
+                    DisplayName = option.DisplayName,
+                    Category = option.Category,
+                    IsAvailableInCurrentRoom = option.IsAvailable
+                })
+                .ToArray();
 
         public IReadOnlyList<SpawnDebugOption> GetResourceOptions()
         {
@@ -94,10 +70,11 @@ namespace DTMAPI.DebugConsole
                 return Native.Enumerate(Native.TableList("TbResource"))
                     .Select(proto => new SpawnDebugOption
                     {
-                        Id = Native.First(
-                            Native.Text(proto, "Id"),
-                            Native.Text(proto, "id"),
-                            Native.Text(proto, "Name")),
+                        Id = Native.TextFirst(
+                            proto,
+                            "Id",
+                            "id",
+                            "Name"),
                         DisplayName = Native.First(
                             Native.Text(proto, "Title"),
                             Native.Text(proto, "Id")),
@@ -337,12 +314,7 @@ namespace DTMAPI.DebugConsole
                 object value = Enum.Parse(type, pointTypeId, true);
                 ReadTechPoint(value, out int before, out _);
                 result.BeforeValue = before;
-                MethodInfo? add = api.GetMethods(
-                        BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(method =>
-                        method.Name == "AddTechPoint" &&
-                        method.GetParameters().Length == 2 &&
-                        method.GetParameters()[1].ParameterType == typeof(int));
+                MethodInfo? add = ResolveAddTechPointMethod(api);
                 if (add == null)
                     return Fail(result, "missing-add-tech-point", "DolocAPI.AddTechPoint is unavailable.");
                 add.Invoke(null, new[] { value, (object)amount });
@@ -377,9 +349,7 @@ namespace DTMAPI.DebugConsole
                 int before = Native.Count(unlocked);
                 foreach (object proto in Native.Enumerate(Native.TableList("TbTechTree")))
                 {
-                    string id = Native.First(
-                        Native.Text(proto, "Id"),
-                        Native.Text(proto, "id"));
+                    string id = Native.TextFirst(proto, "Id", "id");
                     if (id.Length > 0 && Native.Add(unlocked, id))
                         result.AffectedCount++;
                 }
@@ -468,50 +438,11 @@ namespace DTMAPI.DebugConsole
         public InventoryGiveResult GiveCreativeGenerator(IManifest owner) =>
             GiveItem(owner, "dtmapi_creative_generator", 1);
 
-        public SpawnDebugResult SpawnMonster(
+        public SpawnActionResult SpawnMonster(
             IManifest owner,
             string monsterId,
-            int count)
-        {
-            monsterId = (monsterId ?? string.Empty).Trim();
-            count = Math.Max(1, Math.Min(10, count));
-            var result = new SpawnDebugResult
-            {
-                SpawnId = monsterId,
-                RequestedCount = count
-            };
-            try
-            {
-                SpawnDebugOption? allowed = GetMonsterOptions()
-                    .FirstOrDefault(option =>
-                        option.Id.Equals(monsterId, StringComparison.OrdinalIgnoreCase) &&
-                        option.IsAvailableInCurrentRoom);
-                if (allowed == null)
-                    return Fail(result, "not-whitelisted-or-unsupported-room", "Monster is unavailable in the current room.");
-                Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
-                MethodInfo? generate = api?.GetMethod(
-                    "Command_GenerateMonster",
-                    BindingFlags.NonPublic | BindingFlags.Static,
-                    null,
-                    new[] { typeof(string), typeof(int) },
-                    null);
-                if (generate == null)
-                    return Fail(result, "missing-official-command", "Native monster generation owner is unavailable.");
-                generate.Invoke(null, new object[] { monsterId, count });
-                result.DisplayName = allowed.DisplayName;
-                result.SpawnedCount = count;
-                result.Success = true;
-                result.Message = "Spawned monster " + monsterId +
-                    " count=" + count + ".";
-                LogMutation("spawn-monster", true, result.Message);
-                return result;
-            }
-            catch (Exception error)
-            {
-                runtime.Error("spawn-monster", error);
-                return Fail(result, error.GetType().Name, error.Message);
-            }
-        }
+            int count) =>
+            SpawnMonsterNative(owner, monsterId, count);
 
         public SpawnDebugResult SpawnResource(
             IManifest owner,
@@ -545,17 +476,13 @@ namespace DTMAPI.DebugConsole
                     return Fail(result, "missing-resource-owner", "Native resource creation owner is unavailable.");
                 int baseX = (int)Math.Round(Native.Vector(Native.AgentPosition, "x"));
                 int baseY = (int)Math.Round(Native.Vector(Native.AgentPosition, "y"));
+                var replaceArguments =
+                    new object?[] { resourceId, 0, 0, null };
                 for (int index = 0; index < count; index++)
                 {
-                    replace.Invoke(
-                        null,
-                        new object?[]
-                        {
-                            resourceId,
-                            baseX + index % 5,
-                            baseY + index / 5,
-                            null
-                        });
+                    replaceArguments[1] = baseX + index % 5;
+                    replaceArguments[2] = baseY + index / 5;
+                    replace.Invoke(null, replaceArguments);
                     result.SpawnedCount++;
                 }
                 result.DisplayName = allowed.DisplayName;
@@ -1186,11 +1113,11 @@ namespace DTMAPI.DebugConsole
 
         private static bool TryMature(object crop)
         {
-            MethodInfo? debugSet = crop.GetType().GetMethods(
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(method =>
-                    method.Name == "DEBUG_SetLevel" &&
-                    method.GetParameters().Length == 1);
+            MethodInfo? debugSet = Native.Method(
+                crop.GetType(),
+                "DEBUG_SetLevel",
+                1,
+                false);
             if (debugSet != null)
             {
                 ParameterInfo parameter = debugSet.GetParameters()[0];
@@ -1209,6 +1136,32 @@ namespace DTMAPI.DebugConsole
                 return true;
             }
             return false;
+        }
+
+        private static MethodInfo? ResolveAddTechPointMethod(Type api)
+        {
+            if (!ReferenceEquals(addTechPointApiType, api))
+            {
+                addTechPointApiType = api;
+                addTechPointMethod = null;
+                addTechPointMethodResolved = false;
+            }
+            if (addTechPointMethodResolved)
+                return addTechPointMethod;
+            foreach (MethodInfo method in api.GetMethods(
+                BindingFlags.Public | BindingFlags.Static))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name == "AddTechPoint" &&
+                    parameters.Length == 2 &&
+                    parameters[1].ParameterType == typeof(int))
+                {
+                    addTechPointMethod = method;
+                    break;
+                }
+            }
+            addTechPointMethodResolved = true;
+            return addTechPointMethod;
         }
 
         private static TimeScaleDebugResult Fail(

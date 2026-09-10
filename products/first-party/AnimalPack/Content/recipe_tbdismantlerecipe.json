@@ -1,0 +1,93 @@
+[
+  {
+    "id": "animal_care_hatch_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "hatch_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_hatch_egg_drop",
+      "count_range": { "min_count": 10, "max_count": 10 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_petrified_hatch_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "petrified_hatch_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_petrified_hatch_egg_drop",
+      "count_range": { "min_count": 15, "max_count": 15 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_drecko_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "drecko_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_drecko_egg_drop",
+      "count_range": { "min_count": 3, "max_count": 3 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_mole_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "mole_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_mole_egg_drop",
+      "count_range": { "min_count": 10, "max_count": 10 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_fertile_mole_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "fertile_mole_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_fertile_mole_egg_drop",
+      "count_range": { "min_count": 35, "max_count": 35 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_oilfloater_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "oilfloater_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_oilfloater_egg_drop",
+      "count_range": { "min_count": 25, "max_count": 25 }
+    },
+    "tech_point": 0
+  },
+  {
+    "id": "animal_care_polymer_oilfloater_egg",
+    "title": { "key": "", "text": "" },
+    "cost_time": 12,
+    "input_items": [
+      { "item_name": "polymer_oilfloater_egg", "item_count": 1 }
+    ],
+    "output_item_spawn_entry": {
+      "spawn_lut": "animal_care_polymer_oilfloater_egg_drop",
+      "count_range": { "min_count": 60, "max_count": 60 }
+    },
+    "tech_point": 0
+  }
+]

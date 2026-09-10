@@ -1,5 +1,7 @@
 public static class DolocAPI
 {
+    public static int HideHoverBoxCallCount;
+
     public static object? archiveHandle =
         new FixtureArchiveHandle();
     public static object? dataPersistenceManager;
@@ -10,6 +12,8 @@ public static class DolocAPI
     public static System.Func<string, bool, int>?
         CountItemOverride;
     public static int CountItemOverrideCallCount;
+    public static bool CostItemThrowAfterMutation;
+    public static int CostItemCallCount;
     public static bool NativeMutationObservationPending;
     public static bool ThrowOnNativeMutationObservation;
     public static int NativeMutationObservationCallCount;
@@ -31,6 +35,16 @@ public static class DolocAPI
         new FixtureAgentController();
     public static FixtureGlobalParameter GlobalParameter { get; } =
         new FixtureGlobalParameter();
+
+    public static void HideHoverBox() =>
+        HideHoverBoxCallCount++;
+
+    public static void HideHoverBox(object owner) =>
+        HideHoverBoxCallCount++;
+
+    public static void HideHoverBox(
+        UnityEngine.RectTransform owner) =>
+        HideHoverBoxCallCount++;
 
     private static readonly System.Collections.Generic.Dictionary<string, int>
         Backpack =
@@ -107,6 +121,7 @@ public static class DolocAPI
         int count,
         bool includeEquipment)
     {
+        CostItemCallCount++;
         int current = CountItem(itemId, includeEquipment);
         if (string.IsNullOrWhiteSpace(itemId) ||
             count <= 0 ||
@@ -115,6 +130,11 @@ public static class DolocAPI
             return false;
         }
         Backpack[itemId] = current - count;
+        if (CostItemThrowAfterMutation)
+        {
+            throw new System.InvalidOperationException(
+                "fixture CostItem mutate-then-throw");
+        }
         return true;
     }
 
@@ -128,11 +148,14 @@ public static class DolocAPI
         TryPlaceInBackpackCallCount = 0;
         CountItemOverride = null;
         CountItemOverrideCallCount = 0;
+        CostItemThrowAfterMutation = false;
+        CostItemCallCount = 0;
         NativeMutationObservationPending = false;
         ThrowOnNativeMutationObservation = false;
         NativeMutationObservationCallCount = 0;
         SendItemAsEmailOverride = null;
         SendItemAsEmailCallCount = 0;
+        HideHoverBoxCallCount = 0;
     }
 
     public static void SetItemCount(string itemId, int count)
@@ -263,13 +286,6 @@ public sealed class FixtureEmail
 
     public object emailAttaches { get; set; } =
         System.Array.Empty<object>();
-}
-
-namespace UnityEngine
-{
-    public struct Vector2
-    {
-    }
 }
 
 namespace DolocTown.GameData
@@ -438,6 +454,29 @@ namespace DolocTown
     {
     }
 
+    public class ItemPassive : Item
+    {
+    }
+
+    public sealed class FixtureItemHatOrdinary : ItemHat
+    {
+        public FixtureItemHatOrdinary()
+        {
+            proto.Title = "fixture ordinary hat";
+            proto.Function =
+                new DolocTown.Config.Item.ItemFunctionHat();
+        }
+    }
+
+    public sealed class FixtureItemPassive : ItemPassive
+    {
+        public FixtureItemPassive(object function)
+        {
+            proto.Title = "fixture passive equipment";
+            proto.Function = function;
+        }
+    }
+
     public sealed class FixtureItemHatShield : ItemHat
     {
     }
@@ -471,7 +510,7 @@ namespace DolocTown
 
     public sealed class FixtureSkillInfo
     {
-        public FixtureAgentEquipmentFuncProtoShield Function
+        public object Function
         {
             get;
             set;
@@ -504,13 +543,92 @@ namespace DolocTown
                     "fixture-shield",
                     System.StringComparison.Ordinal)
                 ? new FixtureItemHatShield()
-                : null;
+                : string.Equals(
+                    itemId,
+                    "fixture-hat",
+                    System.StringComparison.Ordinal)
+                    ? new FixtureItemHatOrdinary()
+                    : string.Equals(
+                        itemId,
+                        "fixture-passive",
+                        System.StringComparison.Ordinal)
+                        ? new FixtureItemPassive(
+                            new Config.Item.ItemFunctionPassive())
+                        : string.Equals(
+                            itemId,
+                            "fixture-herb-package",
+                            System.StringComparison.Ordinal)
+                            ? new FixtureItemPassive(
+                                new Config.Item.ItemFunctionHerbPackage())
+                            : string.Equals(
+                                itemId,
+                                "fixture-skillless-passive",
+                                System.StringComparison.Ordinal)
+                                ? new FixtureItemPassive(
+                                    new Config.Item.ItemFunctionPassive
+                                    {
+                                        Skill = string.Empty
+                                    })
+                                : string.Equals(
+                                    itemId,
+                                    "fixture-active",
+                                    System.StringComparison.Ordinal)
+                                    ? new Item
+                                    {
+                                        proto =
+                                            new FixtureItemProto
+                                            {
+                                                Title =
+                                                    "fixture active",
+                                                Function =
+                                                    new Config
+                                                        .Item
+                                                        .ItemFunctionActive()
+                                            }
+                                    }
+                                    : null;
             if (item?.proto.Function is
                 FixtureItemFunctionHatShield shield)
             {
                 shield.MaxShieldValue = ShieldMaxValue;
             }
             return item != null;
+        }
+    }
+
+    namespace Config.Item
+    {
+        public sealed class ItemFunctionHat
+        {
+            public FixtureHatInfo HatId_Ref { get; } =
+                new FixtureHatInfo
+                {
+                    Skill = string.Empty,
+                    Defense = 0,
+                    Skill_Ref =
+                        new FixtureSkillInfo
+                        {
+                            Function = new object()
+                        }
+                };
+        }
+
+        public sealed class ItemFunctionPassive
+        {
+            public string Skill { get; set; } =
+                "fixture-passive-skill";
+        }
+
+        public sealed class ItemFunctionHerbPackage
+        {
+            public string Skill { get; set; } =
+                "fixture-herb-skill";
+        }
+
+        public sealed class ItemFunctionActive
+        {
+            public string Skill { get; set; } =
+                "fixture-active-skill";
         }
     }
 
@@ -768,20 +886,6 @@ namespace Cysharp.Threading.Tasks
         }
 
         public static void Forget(UniTask task)
-        {
-        }
-    }
-}
-
-namespace DolocTown.UI
-{
-    public sealed class AccessoriesBar
-    {
-        public void __Init()
-        {
-        }
-
-        public void OnStartShow()
         {
         }
     }

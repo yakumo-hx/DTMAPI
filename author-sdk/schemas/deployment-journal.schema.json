@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/deployment-journal.schema.json",
   "title": "DTMAPI Author SDK package-external deployment journal",
-  "$comment": "Current writer contract: deployment journal schema 3. Package-local receipts and package markers remain schema 2. The CLI reader also accepts the exact historical schema-1 and prior schema-2 journal shapes, then writes schema 3 on the next mutation.",
+  "$comment": "Official Local writes schema 4; historical game/Mods recovery writes schema 3. Package-local receipts and markers remain schema 2. Readers retain exact historical schema-1 and schema-2 journal shapes.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,7 +20,7 @@
     "recoveryArtifacts"
   ],
   "properties": {
-    "schemaVersion": { "const": 3 },
+    "schemaVersion": { "enum": [3, 4], "description": "3: historical game/Mods; 4: official profile MODS/UniqueID. Schema 4 forbids localInstall state and uses OfficialLocal/UniqueID receipt destination binding." },
     "gameRoot": { "type": "string", "minLength": 1 },
     "gameRootKey": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
     "uniqueId": { "$ref": "#/$defs/uniqueId" },
@@ -43,6 +43,10 @@
     }
   },
   "allOf": [
+    {
+      "if": { "properties": { "schemaVersion": { "const": 4 } }, "required": ["schemaVersion"] },
+      "then": { "properties": { "localInstall": { "type": "null" } } }
+    },
     {
       "if": { "properties": { "packageKind": { "const": "ContentPack" } }, "required": ["packageKind"] },
       "then": { "properties": { "codeModKind": { "const": "" } } }

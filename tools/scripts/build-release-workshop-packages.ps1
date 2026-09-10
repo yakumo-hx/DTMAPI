@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string] $Configuration = 'Release',
     [string] $OutputRoot = '',
     [switch] $SkipBuild,
@@ -10,6 +10,7 @@ param(
 
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\release-common.ps1"
+. "$PSScriptRoot\runtime-build-source.ps1"
 $ErrorActionPreference = 'Stop'
 
 function Assert-DtmApiWorkshopOrdinaryTree {
@@ -162,7 +163,7 @@ if ($RuntimeOnly -and $ModsOnly) {
     throw '-RuntimeOnly and -ModsOnly are mutually exclusive.'
 }
 if ($PlanOnly -and $RuntimeOnly) {
-    throw '-PlanOnly describes the nine-product mutation route and cannot be combined with -RuntimeOnly.'
+    throw '-PlanOnly describes the current Catalog product route and cannot be combined with -RuntimeOnly.'
 }
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $repo 'dist\workshop-packages'
@@ -185,10 +186,10 @@ foreach ($releaseProduct in $releaseProducts) {
     }
     $releaseMods.Add($matches[0]) | Out-Null
 }
-if ($releaseMods.Count -ne 9) {
-    throw "The 0.6 Workshop staging route must contain exactly nine current ProductNative updates; found $($releaseMods.Count)."
+if ($releaseMods.Count -eq 0) {
+    throw 'The current-published ProductNative staging selection must not be empty.'
 }
-$forbiddenBuilderCatalogIds = @('more-equipment-slots', 'strong-planting-gun', 'mine')
+$forbiddenBuilderCatalogIds = @('strong-planting-gun', 'mine')
 $forbiddenBuilderTargets = @($releaseMods.ToArray() | Where-Object {
     $forbiddenBuilderCatalogIds -ccontains [string](Get-DtmApiMapValue -Map $_ -Key 'AuthorSdkCatalogId' -Default '')
 })
@@ -206,8 +207,23 @@ if ($PlanOnly) {
     return
 }
 
+$runtimeBuildSource = $null
+if (-not $ModsOnly) {
+    $runtimeProjects = @('src/DTMAPI.BepInExBootstrap/DTMAPI.BepInExBootstrap.csproj')
+    $runtimeInvariant = Get-DtmApiMapValue -Map $releaseCatalog -Key 'playerRuntimePackageInvariant' -Default $null
+    foreach ($component in @((Get-DtmApiMapValue -Map $runtimeInvariant -Key 'optionalComponents' -Default @()))) {
+        $sourceProject = [string](Get-DtmApiMapValue -Map $component -Key 'sourceProject' -Default '')
+        if ($sourceProject) { $runtimeProjects += $sourceProject }
+    }
+    $runtimeDotNet = Get-DotNetExe -RepoRoot $repo
+    $runtimeBuildSource = Assert-DtmApiRuntimeBuildSource -RepoRoot $repo -DotNetExe $runtimeDotNet -Projects $runtimeProjects -Configuration $Configuration -SkipBuild:$SkipBuild
+}
 if (-not $SkipBuild) {
-    & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests
+    & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests -Rebuild:(!$ModsOnly)
+    if (-not $?) { throw 'Workshop source build failed.' }
+}
+if ($null -ne $runtimeBuildSource) {
+    Assert-DtmApiRuntimeBuildSourceUnchanged -RepoRoot $repo -DotNetExe $runtimeDotNet -Before $runtimeBuildSource
 }
 
 function Clear-Directory {
@@ -248,7 +264,8 @@ function Get-DtmApiPublishMetadata {
         throw "Missing DTMAPI publish metadata file: $metadataPath"
     }
 
-    $metadata = Get-Content -Raw -Encoding UTF8 -LiteralPath $metadataPath | ConvertFrom-Json
+    . "$PSScriptRoot/product-projections.ps1"
+    $metadata = Get-DtmApiPublishProjection -RepoRoot $RepoRoot
     $entry = @($metadata.mods | Where-Object { $_.uniqueId -eq $UniqueId } | Select-Object -First 1)
     if ($entry.Count -ne 1) {
         throw "DTMAPI publish metadata does not contain exactly one entry for UniqueID '$UniqueId'."
@@ -511,6 +528,7 @@ if (-not $ModsOnly) {
     Copy-DtmApiTextFileUtf8Bom `
         -Source (Join-Path $repo 'tools\release\dtmapi-runtime-version.props') `
         -Destination (Join-Path $installerTools 'dtmapi-runtime-version.props')
+    Export-DtmApiProductDefinitionsSnapshot -Path (Join-Path $installerTools 'dtmapi-product-definitions.json')
     $playerInstallerScriptNames = @(
         'common.ps1',
         'release-common.ps1',
@@ -545,36 +563,11 @@ if (-not $ModsOnly) {
     $runtimePayload = Join-Path $runtimePackage 'Content\DTMAPIInstaller\Payload\BepInEx\plugins\DTMAPI'
     $outDir = Get-DtmapiOutputDir -RepoRoot $repo -Configuration $Configuration
     $runtimeFiles = @('DTMAPI.BepInExBootstrap.dll', 'DTMAPI.Abstractions.dll', 'DTMAPI.Core.dll', 'DTMAPI.GameBridge.DolocTown.dll', 'DTMAPI.ModConfigMenu.dll')
-    $runtimeSourcePaths = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($path in @(
-        'Directory.Build.props',
-        'src/DTMAPI.BepInExBootstrap',
-        'src/DTMAPI.Abstractions',
-        'src/DTMAPI.Core',
-        'src/DTMAPI.GameBridge.DolocTown',
-        'src/DTMAPI.ModConfigMenu'
-    )) {
-        $runtimeSourcePaths.Add($path) | Out-Null
-    }
-    $catalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'tools\release\dtmapi-product-catalog.json') | ConvertFrom-Json
-    $runtimeInvariant = Get-DtmApiMapValue -Map $catalog -Key 'playerRuntimePackageInvariant' -Default $null
-    foreach ($component in @((Get-DtmApiMapValue -Map $runtimeInvariant -Key 'optionalComponents' -Default @()))) {
-        $sourceProject = [string](Get-DtmApiMapValue -Map $component -Key 'sourceProject' -Default '')
-        if (-not [string]::IsNullOrWhiteSpace($sourceProject)) {
-            $runtimeSourcePaths.Add((Split-Path -Parent $sourceProject).Replace('\', '/')) | Out-Null
-        }
-    }
-    $runtimeSourceStatus = @(& git -C $repo status --porcelain --untracked-files=all -- @($runtimeSourcePaths.ToArray()))
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Workshop Runtime package could not verify the mandatory Runtime source worktree.'
-    }
-    if ($runtimeSourceStatus.Count -ne 0) {
-        throw "Workshop Runtime package requires committed mandatory Runtime source. Dirty paths:`n$([string]::Join([Environment]::NewLine, $runtimeSourceStatus))"
-    }
+    Assert-DtmApiRuntimeBuildSourceUnchanged -RepoRoot $repo -DotNetExe $runtimeDotNet -Before $runtimeBuildSource
     Copy-DirectoryContents -Source $outDir -Destination $runtimePayload -Include $runtimeFiles
     Copy-IfExists -Source (Join-Path $repo 'assets\branding\dtmapi-icon.png') -Destination (Join-Path $runtimePayload 'assets\branding\dtmapi-icon.png')
 
-    $buildCommit = [string](Get-DtmApiSourceCommit -RepoRoot $repo)
+    $buildCommit = [string]$runtimeBuildSource.Commit
     if ([string]::IsNullOrWhiteSpace($buildCommit) -or $buildCommit.Trim() -notmatch '^[0-9a-fA-F]{7,64}$') {
         throw "Workshop Runtime package requires a valid Git BuildCommit; actual='$buildCommit'."
     }
@@ -589,7 +582,7 @@ if (-not $ModsOnly) {
         -IncludedAssemblies $runtimeAssemblyReceipts `
         -OptionalComponents $optionalComponentReceipts `
         -BundledMods @() `
-        -BuildCommit $buildCommit.Trim()
+        -BuildCommit $buildCommit.Trim().Substring(0, 12)
     Write-Utf8NoBomJson -Path (Join-Path $runtimePackage 'Content\DTMAPI\release-manifest.json') -Value $manifest
     $runtimeMetadata = Get-DtmApiPublishMetadata -RepoRoot $repo -UniqueId 'DTMAPI.Runtime'
     $runtimeDescription = [string]$runtimeMetadata.steamDescription
@@ -640,6 +633,11 @@ if (-not $RuntimeOnly) {
     $advancedReferenceFixtureSessionRoot = Join-Path $repo (
         'temp\release-workshop-reference-games-' + $PID + '-' + [Guid]::NewGuid().ToString('N'))
     $advancedReferenceGameRoots = @{}
+    $preparedAuthorSdkRoot = Join-Path $repo '.tools/author-sdk'
+    if (-not $SkipBuild -and @($releaseMods.ToArray() | Where-Object { [bool](Get-DtmApiMapValue $_ 'AuthorSdkProject' $false) }).Count -gt 0) {
+        & "$PSScriptRoot/prepare-author-sdk.ps1" -OutputRoot $preparedAuthorSdkRoot
+        if (-not $?) { throw 'Release product SDK preparation failed.' }
+    }
     try {
         foreach ($excludedPackageName in @('DTMAPI-MoreEquipmentSlots', 'DTMAPI-ManboCardboardAudio', 'DTMAPI-StrongPlantingGun', 'DTMAPI-Mine')) {
             $excludedPackagePath = Join-Path $OutputRoot $excludedPackageName
@@ -695,6 +693,7 @@ if (-not $RuntimeOnly) {
                     & (Join-Path $PSScriptRoot $builderName) `
                         -CatalogId $builderCatalogId `
                         -GameDir $productReferenceGameRoot `
+                        -AuthorSdkRoot $preparedAuthorSdkRoot `
                         -Configuration $Configuration `
                         -OutputRoot $authorOutput
                     if (-not $?) {

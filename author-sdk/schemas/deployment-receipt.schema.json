@@ -29,7 +29,7 @@
     "uniqueId": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
     "packageKind": { "enum": ["CodeMod", "ContentPack"] },
     "codeModKind": { "enum": ["", "Strict", "Advanced"] },
-    "destinationRelativePath": { "type": "string", "pattern": "^Mods/[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
+    "destinationRelativePath": { "type": "string", "pattern": "^(?:Mods|OfficialLocal)/[A-Za-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
     "packageSha256": { "$ref": "#/$defs/sha256" },
     "manifestSha256": { "$ref": "#/$defs/sha256" },
     "entryDllSha256": { "$ref": "#/$defs/nullableSha256" },

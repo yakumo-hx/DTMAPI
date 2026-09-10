@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.6.4",
+  "targetRuntimeVersion": "0.6.4",
+  "abstractionsAssemblyVersion": "0.5.3.0",
+  "abstractionsFileVersion": "0.6.4.0",
+  "abstractionsSha256": "c894d6d3835fb13c1e20684f7b0f1b6ba14e9f0967ca621abbb0e21918bdb212",
+  "authorPropsSha256": "874a2a2110d04116d839c5b8e60c12f1a0937342fbc7724c3495d9701476c87d",
+  "netstandardReferencePackage": "NETStandard.Library",
+  "netstandardReferencePackageVersion": "2.0.3",
+  "netstandardReferenceFileCount": 114,
+  "netstandardReferenceInventoryAlgorithm": "DTMAPI-FileTree-SHA256-v1",
+  "netstandardReferenceInventorySha256": "11E205DA4ED42E6F22CEA8E1FB805550D4530E6B11659CE83FF8FC5BCFB6BC41",
+  "netstandardLicenseSha256": "fc95de1436a321aadbfafd21f8a8506a2f4678bfc003bd806d6b59d3088efadc",
+  "netstandardNoticeSha256": "0684b2349427ee28e392ae8914645832e59731dba8a38a984f72b3fb8769c76b",
+  "requiredKinds": [
+    "abstractions",
+    "reference",
+    "props",
+    "license",
+    "notice"
+  ],
+  "releaseManifestName": "compatibility.json"
+}

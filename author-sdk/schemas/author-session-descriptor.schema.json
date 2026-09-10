@@ -1,27 +1,169 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/author-session-descriptor.schema.json",
-  "title": "DTMAPI Runtime 0.5.5 one-shot Author session descriptor/client credential",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "gameRoot",
-    "runtimeVersion",
-    "sessionId",
-    "token",
-    "pipeName",
-    "createdAtUtc",
-    "expiresAtUtc"
+  "title": "DTMAPI one-shot Author session descriptor: legacy schema 1 and negotiated schema 2",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/legacy"
+    },
+    {
+      "$ref": "#/$defs/negotiated"
+    }
   ],
-  "properties": {
-    "schemaVersion": { "const": 1 },
-    "gameRoot": { "type": "string", "minLength": 1 },
-    "runtimeVersion": { "const": "0.5.5" },
-    "sessionId": { "type": "string", "pattern": "^[a-f0-9]{32}$" },
-    "token": { "type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9_-]+$" },
-    "pipeName": { "type": "string", "pattern": "^dtmapi-author-[a-f0-9]{32}-[a-f0-9]{32}$" },
-    "createdAtUtc": { "type": "string", "format": "date-time" },
-    "expiresAtUtc": { "type": "string", "format": "date-time" }
+  "$defs": {
+    "legacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "gameRoot",
+        "runtimeVersion",
+        "sessionId",
+        "token",
+        "pipeName",
+        "createdAtUtc",
+        "expiresAtUtc"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "gameRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeVersion": {
+          "const": "0.5.5"
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "pipeName": {
+          "type": "string",
+          "pattern": "^dtmapi-author-[a-f0-9]{32}-[a-f0-9]{32}$"
+        },
+        "createdAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "negotiated": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schemaVersion",
+        "protocolMajor",
+        "minimumMinor",
+        "maximumMinor",
+        "apiTarget",
+        "minimumRuntimeVersion",
+        "requiredCapabilities",
+        "optionalCapabilities",
+        "gameRoot",
+        "sessionId",
+        "token",
+        "pipeName",
+        "createdAtUtc",
+        "expiresAtUtc"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "protocolMajor": {
+          "const": 1
+        },
+        "minimumMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maximumMinor": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "apiTarget": {
+          "pattern": "^[0-9]+(?:\\.[0-9]+){1,3}$",
+          "type": "string"
+        },
+        "minimumRuntimeVersion": {
+          "pattern": "^[0-9]+(?:\\.[0-9]+){1,3}$",
+          "type": "string"
+        },
+        "requiredCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "optionalCapabilities": {
+          "maxItems": 32,
+          "items": {
+            "maxLength": 96,
+            "pattern": "^[a-z0-9./-]+$",
+            "minLength": 1,
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "type": "array"
+        },
+        "gameRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "pipeName": {
+          "type": "string",
+          "pattern": "^dtmapi-author-[a-f0-9]{32}-[a-f0-9]{32}$"
+        },
+        "createdAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAtUtc": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "runtimeVersion"
+            ]
+          },
+          {
+            "required": [
+              "hostVersion"
+            ]
+          }
+        ]
+      }
+    }
   }
 }

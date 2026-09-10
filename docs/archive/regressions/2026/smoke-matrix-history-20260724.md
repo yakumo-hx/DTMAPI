@@ -1,0 +1,14 @@
+# Smoke History: 2026-07-24
+
+These rows moved intact from the active runtime smoke matrix on 2026-08-04 when
+that router reached its governance size limit. They remain acceptance authority
+for the exact bounded scopes stated here. Current prerelease results remain in
+[the active smoke matrix](../../../debug/regressions/smoke-matrix.md). Do not append new runtime results
+here.
+
+| ID | Date | Scope | Result | Runtime evidence | Related issue/update | Remaining gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| `BATCH6-MOREEQUIPMENTSLOTS-ADVANCED-20260724` | 2026-07-24 | Working/Committed no-save, cold and isolated native-save routes | passed | Earlier `202032`/`202146` cover the empty-Committed route and isolated `202526` covers normal-save promotion. Final current-commit `222231` normally saves one durability-80 shield; `222329` proves no-save damage; `222423` proves the prior rollback then no-save replace/unequip/break; cold `222516` proves exact durability 80, one logical shield, zero candidate/journal and deletes the disposable fixture. All NoNativeSave archive/sidecar metadata are unchanged before cleanup. | Update `20260723-0008`; MoreEquipmentSlots Hook map; Reviews `20260724-0006`/`0007` | Focused non-empty rollback sequence only. No broad suite. |
+| `BATCH5-NO-DEMAND-EIGHT-PRODUCT-20260724-065325` | 2026-07-24 | current eight-product Runtime, exact 300-warmup/10,000-frame no-demand remeasurement | passed | `GAME-SMOKE/20260724-065325` and `BATCH5-NO-DEMAND/eight-product-current-20260724-065500-r4-final`: third-save CoreOnly run passed SaveLoaded, exact generic QA counters, title cleanup, save/profile/Author-source restoration and process exit. The final receipt binds five candidate/installed Runtime DLLs and the staged QA DLL. | Update `20260718-0003`; `ISSUE-010`; `ISSUE-011` | Optional-call/cadence silence only; allocation counter unavailable, so no whole-game zero-allocation, quantified GC/memory budget, Release, L0–L5 or long-test claim. |
+| `BATCH6-STRONGPLANTINGGUN-NINTH-PRODUCT-20260724-101757` | 2026-07-24 | native save/title/Loader | passed | `101757`: current DLL; three-slot reload; five owners; Loader roots zero; Doctor/exit. `101553` is prior-DLL non-acceptance. | Update `20260724-0001`; Hook map | Ninth product closed; immediate nested-container repair remains P3. |
+| `BATCH6-ZOOM-TENTH-PRODUCT-20260724` | 2026-07-24 | NoNativeSave Zoom/Loader | passed | `180233` remains the original compounding non-acceptance and `202032` covers orthographic size only. Final current-commit `221902` reproduces native resolution/fullscreen refresh at 2x/4x, then proves direct 1x, maximum-to-1, config-disable, title and Loader restoration of `16.875`, exact `camSize`/x/y ranges and zero instance/callback/Hook/roots. | Update `20260724-0002`; Camera Hook map; Reviews `20260724-0006`/`0007` | Final bounded Zoom reacceptance; no broad suite. |

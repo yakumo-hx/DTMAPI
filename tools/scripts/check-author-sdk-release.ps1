@@ -31,7 +31,9 @@ function Get-OrdinalSortedStrings {
 }
 
 $repo = Get-RepoRoot
-$contract = Get-AuthorSdkContract -RepoRoot $repo
+$sdkVersion = Get-AuthorSdkReleaseVersion -RepoRoot $repo
+$targetCatalog = Get-AuthorSdkTargetCatalog -RepoRoot $repo
+$availableTargets = @(Get-AuthorSdkAvailableTargets -Catalog $targetCatalog -SdkVersion $sdkVersion)
 $packageFull = [System.IO.Path]::GetFullPath($PackagePath)
 $temporaryBase = Join-Path ([System.IO.Path]::GetTempPath()) 'DTMAPI Author SDK release checks'
 $temporaryRoot = Join-Path $temporaryBase ([Guid]::NewGuid().ToString('N'))
@@ -72,8 +74,19 @@ try {
     if (-not (Test-Path -LiteralPath $releasePath -PathType Leaf)) { throw "Top-level Author SDK inventory is missing: $releasePath" }
     $release = Get-Content -Raw -Encoding UTF8 -LiteralPath $releasePath | ConvertFrom-Json
     Assert-ReleaseEqual -Label 'Release schemaVersion' -Actual ([int]$release.schemaVersion) -Expected 1
-    Assert-ReleaseEqual -Label 'Release sdkVersion' -Actual ([string]$release.sdkVersion) -Expected '0.1.0'
-    Assert-ReleaseEqual -Label 'Release targetRuntimeVersion' -Actual ([string]$release.targetRuntimeVersion) -Expected '0.5.5'
+    Assert-ReleaseEqual -Label 'Release sdkVersion' -Actual ([string]$release.sdkVersion) -Expected $sdkVersion
+    Assert-ReleaseEqual -Label 'Release targetRuntimeVersion (legacy default alias)' -Actual ([string]$release.targetRuntimeVersion) -Expected ([string]$targetCatalog.defaultTarget)
+    Assert-ReleaseEqual -Label 'Release defaultTarget' -Actual ([string]$release.defaultTarget) -Expected ([string]$targetCatalog.defaultTarget)
+    $trackedTargetCatalogPath = Join-Path $repo 'author-sdk\target-catalog.json'
+    $stagedTargetCatalogPath = Join-Path $stageRoot 'target-catalog.json'
+    $trackedTargetCatalogHash = Get-AuthorSdkSha256 -Path $trackedTargetCatalogPath
+    Assert-ReleaseHash -Label 'Staged target catalog' -Path $stagedTargetCatalogPath -Expected $trackedTargetCatalogHash
+    Assert-ReleaseEqual -Label 'Release target catalog binding' -Actual ([string]$release.targetCatalogSha256) -Expected $trackedTargetCatalogHash
+    [string[]]$expectedTargets = @($availableTargets | ForEach-Object { [string]$_.apiTarget })
+    [string[]]$declaredTargets = @($release.availableTargets | ForEach-Object { [string]$_ })
+    if ($declaredTargets.Count -ne $expectedTargets.Count -or @(Compare-Object -ReferenceObject $expectedTargets -DifferenceObject $declaredTargets -SyncWindow 0).Count -ne 0) {
+        throw 'Release availableTargets must declare exactly the available targets supported by this SDK; planned targets cannot be packaged.'
+    }
     Assert-ReleaseEqual -Label 'Release buildDotNetSdkVersion' -Actual ([string]$release.buildDotNetSdkVersion) -Expected '8.0.421'
     Assert-ReleaseEqual -Label 'Release runtimeIdentifier' -Actual ([string]$release.runtimeIdentifier) -Expected 'win-x64'
     Assert-ReleaseEqual -Label 'Release packageKind' -Actual ([string]$release.packageKind) -Expected 'self-contained-portable-author-sdk'
@@ -125,8 +138,9 @@ try {
 
     foreach ($required in @(
         'dtmapi-author.exe', 'dtmapi-author.dll', 'DTMAPI.InstallDoctor.dll', 'DTMAPI.Tooling.Metadata.dll',
-        'README.md', 'THIRD-PARTY-NOTICES.md', 'licenses/dotnet-LICENSE.txt',
-        'licenses/dotnet-ThirdPartyNotices.txt', 'contracts/compatibility-0.5.5.contract.json'
+        'README.md', 'SESSION-PROTOCOL.md', 'THIRD-PARTY-NOTICES.md', 'licenses/dotnet-LICENSE.txt',
+        'licenses/dotnet-ThirdPartyNotices.txt', 'target-catalog.json', 'Mono.Cecil.dll', 'licenses/Mono.Cecil-0.11.6-LICENSE.txt',
+        'NuGet.Protocol.dll', 'NuGet.Packaging.dll', 'licenses/NuGet-7.9.0-LICENSE.txt', 'licenses/Newtonsoft.Json-13.0.3-LICENSE.txt', 'PROJECTS-AND-RESTORE.md', 'ci/verify-project.ps1'
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $stageRoot $required.Replace('/', [System.IO.Path]::DirectorySeparatorChar)) -PathType Leaf)) {
             throw "Author SDK release support file is missing: $required"
@@ -139,6 +153,23 @@ try {
     $stagedReadmePath = Join-Path $stageRoot 'README.md'
     Assert-ReleaseHash -Label 'Staged deployment-journal schema' -Path $stagedJournalSchemaPath -Expected (Get-AuthorSdkSha256 -Path $trackedJournalSchemaPath)
     Assert-ReleaseHash -Label 'Staged Author SDK README' -Path $stagedReadmePath -Expected (Get-AuthorSdkSha256 -Path $trackedReadmePath)
+    Assert-ReleaseEqual -Label 'Authoritative API status projection' -Actual ([IO.File]::ReadAllText((Join-Path $stageRoot 'API-STATUS.md'))) -Expected (Get-AuthorSdkApiStatusProjection -SourcePath (Join-Path $repo 'docs/api/public-api-matrix.md'))
+    foreach ($guide in @(Get-ChildItem -LiteralPath $stageRoot -Filter '*.md' -File)) {
+        foreach ($link in [regex]::Matches([IO.File]::ReadAllText($guide.FullName), '\[[^\]]+\]\(([^)]+)\)')) {
+            $target = $link.Groups[1].Value
+            if ($target -match '^https?://') { continue }
+            $parts = $target.Split('#', 2)
+            $local = if ($parts[0].Length -eq 0) { $guide.FullName } else { [IO.Path]::GetFullPath((Join-Path $stageRoot $parts[0])) }
+            Assert-AuthorSdkChildPath -Root $stageRoot -Path $local -Label 'Portable author guide link' | Out-Null
+            if (-not (Test-Path -LiteralPath $local -PathType Leaf)) { throw "Broken author guide link: $($guide.Name) -> $target" }
+            if ($parts.Count -eq 2 -and $parts[1].Length -gt 0 -and $local.EndsWith('.md')) {
+                $anchors = @([regex]::Matches([IO.File]::ReadAllText($local), '(?m)^#{1,6}\s+(.+?)\r?$') | ForEach-Object {
+                    [regex]::Replace($_.Groups[1].Value.ToLowerInvariant(), '[^\p{L}\p{N}_\-\s]', '').Trim() -replace '\s', '-'
+                })
+                if ($anchors -notcontains $parts[1]) { throw "Broken author guide anchor: $($guide.Name) -> $target" }
+            }
+        }
+    }
 
     $contractsSource = [System.IO.File]::ReadAllText(
         (Join-Path $repo 'src\DTMAPI.Authoring.Contracts\AuthorContracts.cs'),
@@ -155,7 +186,10 @@ try {
     $journalVersion = [int]$journalVersionMatch.Groups[1].Value
     $receiptVersion = [int]$receiptVersionMatch.Groups[1].Value
     $journalSchema = Get-Content -Raw -Encoding UTF8 -LiteralPath $stagedJournalSchemaPath | ConvertFrom-Json
-    Assert-ReleaseEqual -Label 'Deployment journal published schema/current writer parity' -Actual ([int]$journalSchema.properties.schemaVersion.const) -Expected $journalVersion
+    $officialVersionMatch = [regex]::Match($contractsSource, 'public\s+const\s+int\s+OfficialDeploymentJournalSchemaVersion\s*=\s*(\d+)\s*;')
+    if (-not $officialVersionMatch.Success) { throw 'Official deployment journal version is missing.' }
+    Assert-ReleaseEqual -Label 'Deployment journal schema/legacy writer parity' -Actual ([int]$journalSchema.properties.schemaVersion.enum[0]) -Expected $journalVersion
+    Assert-ReleaseEqual -Label 'Deployment journal schema/official writer parity' -Actual ([int]$journalSchema.properties.schemaVersion.enum[1]) -Expected ([int]$officialVersionMatch.Groups[1].Value)
     if (@($journalSchema.required | Where-Object { [string]$_ -ceq 'localInstall' }).Count -ne 1 -or
         @($journalSchema.properties.localInstall.oneOf | Where-Object {
             $_.PSObject.Properties.Name -contains '$ref' -and
@@ -192,73 +226,105 @@ try {
         'dtmapi-author.exe',
         'dtmapi-author.dll',
         'DTMAPI.Authoring.Contracts.dll',
-        'DTMAPI.InstallDoctor.dll',
-        'DTMAPI.Tooling.Metadata.dll'
+        'DTMAPI.InstallDoctor.dll'
     )) {
         $versionInfo = (Get-Item -LiteralPath (Join-Path $stageRoot $versionedPe)).VersionInfo
-        Assert-ReleaseEqual -Label "$versionedPe FileVersion" -Actual ([string]$versionInfo.FileVersion) -Expected '0.1.0.0'
-        Assert-ReleaseEqual -Label "$versionedPe ProductVersion" -Actual ([string]$versionInfo.ProductVersion) -Expected '0.1.0'
+        Assert-ReleaseEqual -Label "$versionedPe FileVersion" -Actual ([string]$versionInfo.FileVersion) -Expected ($sdkVersion + '.0')
+        Assert-ReleaseEqual -Label "$versionedPe ProductVersion" -Actual ([string]$versionInfo.ProductVersion) -Expected $sdkVersion
     }
-    $trackedContractPath = Join-Path $repo 'author-sdk\compatibility\0.5.5\compatibility.contract.json'
-    Assert-ReleaseHash -Label 'Staged tracked compatibility contract' -Path (Join-Path $stageRoot 'contracts\compatibility-0.5.5.contract.json') -Expected (Get-AuthorSdkSha256 -Path $trackedContractPath)
+    $metadataVersion = (Get-Item -LiteralPath (Join-Path $stageRoot 'DTMAPI.Tooling.Metadata.dll')).VersionInfo
+    Assert-ReleaseEqual -Label 'Native reference generator FileVersion' -Actual ([string]$metadataVersion.FileVersion) -Expected '0.6.4.0'
+    Assert-ReleaseEqual -Label 'Native reference generator ProductVersion' -Actual ([string]$metadataVersion.ProductVersion) -Expected '0.6.4'
+    $allExpectedAbstractions = New-Object 'System.Collections.Generic.List[string]'
+    $allExpectedContractPaths = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($target in $availableTargets) {
+        $contract = Get-AuthorSdkContract -RepoRoot $repo -Target $target
+        $stagedContractPath = Join-Path $stageRoot ("contracts/compatibility-$($target.apiTarget).contract.json")
+        $allExpectedContractPaths.Add([System.IO.Path]::GetFullPath($stagedContractPath)) | Out-Null
+        Assert-ReleaseHash -Label "Staged tracked compatibility contract $($target.apiTarget)" -Path $stagedContractPath -Expected ([string]$target.contractSha256)
 
-    $compatibilityRoot = Join-Path $stageRoot 'compatibility\0.5.5'
-    $manifestPath = Join-Path $compatibilityRoot ([string]$contract.releaseManifestName)
-    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Compatibility manifest is missing: $manifestPath" }
-    $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath | ConvertFrom-Json
-    Assert-ReleaseEqual -Label 'Compatibility schemaVersion' -Actual ([int]$manifest.schemaVersion) -Expected 1
-    Assert-ReleaseEqual -Label 'Compatibility sdkVersion' -Actual ([string]$manifest.sdkVersion) -Expected ([string]$contract.sdkVersion)
-    Assert-ReleaseEqual -Label 'Compatibility targetRuntimeVersion' -Actual ([string]$manifest.targetRuntimeVersion) -Expected ([string]$contract.targetRuntimeVersion)
-    Assert-ReleaseEqual -Label 'Compatibility Abstractions AssemblyVersion' -Actual ([string]$manifest.abstractionsAssemblyVersion) -Expected ([string]$contract.abstractionsAssemblyVersion)
-    Assert-ReleaseEqual -Label 'Compatibility Abstractions FileVersion' -Actual ([string]$manifest.abstractionsFileVersion) -Expected ([string]$contract.abstractionsFileVersion)
+        $compatibilityRoot = Join-Path $stageRoot ([string]$target.payloadPath)
+        $manifestPath = Join-Path $compatibilityRoot ([string]$contract.releaseManifestName)
+        if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Compatibility manifest is missing: $manifestPath" }
+        $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath | ConvertFrom-Json
+        Assert-ReleaseEqual -Label 'Compatibility schemaVersion' -Actual ([int]$manifest.schemaVersion) -Expected 1
+        Assert-ReleaseEqual -Label 'Compatibility sdkVersion' -Actual ([string]$manifest.sdkVersion) -Expected ([string]$contract.sdkVersion)
+        Assert-ReleaseEqual -Label 'Compatibility targetRuntimeVersion' -Actual ([string]$manifest.targetRuntimeVersion) -Expected ([string]$contract.targetRuntimeVersion)
+        Assert-ReleaseEqual -Label 'Compatibility Abstractions AssemblyVersion' -Actual ([string]$manifest.abstractionsAssemblyVersion) -Expected ([string]$contract.abstractionsAssemblyVersion)
+        Assert-ReleaseEqual -Label 'Compatibility Abstractions FileVersion' -Actual ([string]$manifest.abstractionsFileVersion) -Expected ([string]$contract.abstractionsFileVersion)
 
-    $compatibilityRows = @($manifest.files)
-    $expectedCompatibilityCount = [int]$contract.netstandardReferenceFileCount + 4
-    if ($compatibilityRows.Count -ne $expectedCompatibilityCount) {
-        throw "Compatibility inventory count mismatch: expected=$expectedCompatibilityCount actual=$($compatibilityRows.Count)"
-    }
-    $compatibilityByPath = @{}
-    foreach ($row in $compatibilityRows) {
-        $relative = ([string]$row.path).Replace('\', '/')
-        $key = $relative.ToLowerInvariant()
-        if ([string]::IsNullOrWhiteSpace($relative) -or [System.IO.Path]::IsPathRooted($relative) -or $relative.Contains('../') -or $compatibilityByPath.ContainsKey($key)) {
-            throw "Unsafe or duplicate compatibility inventory path: $relative"
+        $compatibilityRows = @($manifest.files)
+        $expectedCompatibilityCount = [int]$contract.netstandardReferenceFileCount + 4
+        if ($compatibilityRows.Count -ne $expectedCompatibilityCount) {
+            throw "Compatibility inventory count mismatch: expected=$expectedCompatibilityCount actual=$($compatibilityRows.Count)"
         }
-        $path = Join-Path $compatibilityRoot $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
-        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Compatibility inventory file is missing: $relative" }
-        Assert-ReleaseHash -Label "Compatibility $relative" -Path $path -Expected ([string]$row.sha256)
-        $compatibilityByPath[$key] = $row
-    }
-    [string[]]$actualCompatibilityPaths = @(Get-ChildItem -LiteralPath $compatibilityRoot -File -Recurse | Where-Object { $_.FullName -ne $manifestPath } | ForEach-Object { Get-AuthorSdkRelativePath -Root $compatibilityRoot -Path $_.FullName })
-    if (@(Compare-Object -ReferenceObject @($compatibilityRows | ForEach-Object { [string]$_.path }) -DifferenceObject $actualCompatibilityPaths).Count -ne 0 -or $actualCompatibilityPaths.Count -ne $compatibilityRows.Count) {
-        throw 'compatibility.json is not an exact declaration of the compatibility payload.'
+        $compatibilityByPath = @{}
+        foreach ($row in $compatibilityRows) {
+            $relative = ([string]$row.path).Replace('\', '/')
+            $key = $relative.ToLowerInvariant()
+            if ([string]::IsNullOrWhiteSpace($relative) -or [System.IO.Path]::IsPathRooted($relative) -or $relative.Contains('../') -or $compatibilityByPath.ContainsKey($key)) {
+                throw "Unsafe or duplicate compatibility inventory path: $relative"
+            }
+            $path = Join-Path $compatibilityRoot $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Compatibility inventory file is missing: $relative" }
+            Assert-ReleaseHash -Label "Compatibility $relative" -Path $path -Expected ([string]$row.sha256)
+            $expectedKind = switch -CaseSensitive ($relative) {
+                'DTMAPI.Abstractions.dll' { 'abstractions'; break }
+                'DTMAPI.Author.props' { 'props'; break }
+                'NETStandard.Library.LICENSE.TXT' { 'license'; break }
+                'NETStandard.Library.THIRD-PARTY-NOTICES.TXT' { 'notice'; break }
+                default {
+                    if ($relative -cnotmatch '^ref/netstandard2\.0/[^/]+$') { throw "Undeclared compatibility path: $relative" }
+                    'reference'
+                }
+            }
+            Assert-ReleaseEqual -Label "Compatibility kind $relative" -Actual ([string]$row.kind) -Expected $expectedKind
+            $compatibilityByPath[$key] = $row
+        }
+        [string[]]$actualCompatibilityPaths = @(Get-ChildItem -LiteralPath $compatibilityRoot -File -Recurse | Where-Object { $_.FullName -ne $manifestPath } | ForEach-Object { Get-AuthorSdkRelativePath -Root $compatibilityRoot -Path $_.FullName })
+        if (@(Compare-Object -ReferenceObject @($compatibilityRows | ForEach-Object { [string]$_.path }) -DifferenceObject $actualCompatibilityPaths).Count -ne 0 -or $actualCompatibilityPaths.Count -ne $compatibilityRows.Count) {
+            throw 'compatibility.json is not an exact declaration of the compatibility payload.'
+        }
+
+        $kindCounts = @{}
+        foreach ($kind in @($contract.requiredKinds)) {
+            $kindCounts[[string]$kind] = @($compatibilityRows | Where-Object { [string]$_.kind -eq [string]$kind }).Count
+        }
+        foreach ($single in @('abstractions', 'props', 'license', 'notice')) {
+            if ($kindCounts[$single] -ne 1) { throw "Compatibility payload must contain exactly one '$single' file." }
+        }
+        if ($kindCounts['reference'] -ne [int]$contract.netstandardReferenceFileCount) { throw 'Compatibility reference kind count does not match the frozen contract.' }
+
+        $abstractionsPath = Join-Path $compatibilityRoot 'DTMAPI.Abstractions.dll'
+        $allExpectedAbstractions.Add([System.IO.Path]::GetFullPath($abstractionsPath)) | Out-Null
+        $propsPath = Join-Path $compatibilityRoot 'DTMAPI.Author.props'
+        $licensePath = Join-Path $compatibilityRoot 'NETStandard.Library.LICENSE.TXT'
+        $noticePath = Join-Path $compatibilityRoot 'NETStandard.Library.THIRD-PARTY-NOTICES.TXT'
+        Assert-ReleaseHash -Label 'Frozen DTMAPI.Abstractions' -Path $abstractionsPath -Expected ([string]$contract.abstractionsSha256)
+        Assert-ReleaseHash -Label 'Frozen Author props' -Path $propsPath -Expected ([string]$contract.authorPropsSha256)
+        Assert-ReleaseHash -Label 'Frozen NETStandard license' -Path $licensePath -Expected ([string]$contract.netstandardLicenseSha256)
+        Assert-ReleaseHash -Label 'Frozen NETStandard notice' -Path $noticePath -Expected ([string]$contract.netstandardNoticeSha256)
+        $referenceRoot = Join-Path $compatibilityRoot 'ref\netstandard2.0'
+        $referenceFiles = @(Get-ChildItem -LiteralPath $referenceRoot -File)
+        if ($referenceFiles.Count -ne [int]$contract.netstandardReferenceFileCount -or @(Get-ChildItem -LiteralPath $referenceRoot -Directory).Count -ne 0) {
+            throw 'Compatibility references must be the exact immediate-child NETStandard.Library 2.0.3 reference set.'
+        }
+        $referenceDigest = Get-AuthorSdkFileTreeDigestV1 -Root $referenceRoot
+        if (-not $referenceDigest.Equals([string]$contract.netstandardReferenceInventorySha256, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Compatibility reference FileTree digest mismatch: expected=$($contract.netstandardReferenceInventorySha256) actual=$referenceDigest"
+        }
     }
 
-    $kindCounts = @{}
-    foreach ($kind in @($contract.requiredKinds)) {
-        $kindCounts[[string]$kind] = @($compatibilityRows | Where-Object { [string]$_.kind -eq [string]$kind }).Count
+    $compatibilityContainer = Join-Path $stageRoot 'compatibility'
+    $expectedPayloadRoots = @($availableTargets | ForEach-Object { [System.IO.Path]::GetFullPath((Join-Path $stageRoot ([string]$_.payloadPath))) })
+    $actualPayloadRoots = @(Get-ChildItem -LiteralPath $compatibilityContainer -Directory | ForEach-Object { $_.FullName })
+    if ($actualPayloadRoots.Count -ne $expectedPayloadRoots.Count -or @(Compare-Object -ReferenceObject $expectedPayloadRoots -DifferenceObject $actualPayloadRoots).Count -ne 0 -or
+        @(Get-ChildItem -LiteralPath $compatibilityContainer -File).Count -ne 0) {
+        throw 'Author SDK compatibility directories must match its available targets exactly; no planned or undeclared payloads are allowed.'
     }
-    foreach ($single in @('abstractions', 'props', 'license', 'notice')) {
-        if ($kindCounts[$single] -ne 1) { throw "Compatibility payload must contain exactly one '$single' file." }
-    }
-    if ($kindCounts['reference'] -ne [int]$contract.netstandardReferenceFileCount) { throw 'Compatibility reference kind count does not match the frozen contract.' }
-
-    $abstractionsPath = Join-Path $compatibilityRoot 'DTMAPI.Abstractions.dll'
-    $propsPath = Join-Path $compatibilityRoot 'DTMAPI.Author.props'
-    $licensePath = Join-Path $compatibilityRoot 'NETStandard.Library.LICENSE.TXT'
-    $noticePath = Join-Path $compatibilityRoot 'NETStandard.Library.THIRD-PARTY-NOTICES.TXT'
-    Assert-ReleaseHash -Label 'Frozen DTMAPI.Abstractions' -Path $abstractionsPath -Expected ([string]$contract.abstractionsSha256)
-    Assert-ReleaseHash -Label 'Frozen Author props' -Path $propsPath -Expected ([string]$contract.authorPropsSha256)
-    Assert-ReleaseHash -Label 'Frozen NETStandard license' -Path $licensePath -Expected ([string]$contract.netstandardLicenseSha256)
-    Assert-ReleaseHash -Label 'Frozen NETStandard notice' -Path $noticePath -Expected ([string]$contract.netstandardNoticeSha256)
-    $referenceRoot = Join-Path $compatibilityRoot 'ref\netstandard2.0'
-    $referenceFiles = @(Get-ChildItem -LiteralPath $referenceRoot -File)
-    if ($referenceFiles.Count -ne [int]$contract.netstandardReferenceFileCount -or @(Get-ChildItem -LiteralPath $referenceRoot -Directory).Count -ne 0) {
-        throw 'Compatibility references must be the exact immediate-child NETStandard.Library 2.0.3 reference set.'
-    }
-    $referenceDigest = Get-AuthorSdkFileTreeDigestV1 -Root $referenceRoot
-    if (-not $referenceDigest.Equals([string]$contract.netstandardReferenceInventorySha256, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Compatibility reference FileTree digest mismatch: expected=$($contract.netstandardReferenceInventorySha256) actual=$referenceDigest"
+    $actualContractPaths = @(Get-ChildItem -LiteralPath (Join-Path $stageRoot 'contracts') -File -Recurse | ForEach-Object { $_.FullName })
+    if ($actualContractPaths.Count -ne $allExpectedContractPaths.Count -or @(Compare-Object -ReferenceObject $allExpectedContractPaths.ToArray() -DifferenceObject $actualContractPaths).Count -ne 0) {
+        throw 'Author SDK packaged contracts must match its available targets exactly.'
     }
 
     $catalogPath = Join-Path $repo 'tools\release\dtmapi-product-catalog.json'
@@ -297,8 +363,8 @@ try {
         }
     }
     $abstractionsCopies = @(Get-ChildItem -LiteralPath $stageRoot -Filter 'DTMAPI.Abstractions.dll' -File -Recurse)
-    if ($abstractionsCopies.Count -ne 1 -or $abstractionsCopies[0].FullName -ne $abstractionsPath) {
-        throw 'Author SDK release must carry exactly one fixed Abstractions DLL, only inside compatibility/0.5.5.'
+    if ($abstractionsCopies.Count -ne $allExpectedAbstractions.Count -or @(Compare-Object -ReferenceObject $allExpectedAbstractions.ToArray() -DifferenceObject @($abstractionsCopies | ForEach-Object { $_.FullName })).Count -ne 0) {
+        throw 'Author SDK release must carry exactly one frozen Abstractions DLL per available target, only in its declared compatibility directory.'
     }
     $forbiddenBuildArtifacts = @(Get-ChildItem -LiteralPath $stageRoot -File -Recurse | Where-Object { $_.Extension -in @('.pdb', '.nupkg') })
     if ($forbiddenBuildArtifacts.Count -ne 0) {
@@ -344,6 +410,7 @@ try {
     Write-Host "Author SDK release check: PASS"
     Write-Host "Package: $packageFull"
     Write-Host "Files:   $($declared.Count + 1)"
+    Write-Host "Available API targets: $($expectedTargets -join ', ') (planned targets excluded)"
     if ($isZip) { Write-Host "SHA-256: $(Get-AuthorSdkSha256 -Path $packageFull)" }
 }
 finally {

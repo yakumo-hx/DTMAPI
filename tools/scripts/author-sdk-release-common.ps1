@@ -1,5 +1,20 @@
 Set-StrictMode -Version 2.0
 
+function Get-AuthorSdkApiStatusProjection {
+    param([string] $SourcePath)
+    $source = [IO.File]::ReadAllText($SourcePath).Replace("`r`n", "`n")
+    # Preserve authoritative prose and headings. Repository evidence is identified
+    # as source-only text rather than a broken mandatory link in the portable SDK.
+    $body = [regex]::Replace($source, '\[([^\]]+)\]\(([^)]+)\)', [System.Text.RegularExpressions.MatchEvaluator]{
+        param($match)
+        $target = $match.Groups[2].Value
+        if ($target -match '^(https?://|#)') { return $match.Value }
+        return $match.Groups[1].Value + ' (repository evidence: `' + $target + '`)'
+    })
+    $hash = Get-AuthorSdkSha256 -Path $SourcePath
+    return "<!-- Generated from docs/api/public-api-matrix.md; source SHA-256: $hash. Do not edit this projection. -->`n`n" + $body
+}
+
 function Get-AuthorSdkSha256 {
     param([Parameter(Mandatory = $true)] [string] $Path)
 
@@ -68,10 +83,90 @@ function Remove-AuthorSdkTreeSafely {
     }
 }
 
-function Get-AuthorSdkContract {
+function Get-AuthorSdkReleaseVersion {
     param([Parameter(Mandatory = $true)] [string] $RepoRoot)
 
-    $path = Join-Path $RepoRoot 'author-sdk\compatibility\0.5.5\compatibility.contract.json'
+    [xml]$project = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $RepoRoot 'src\DTMAPI.AuthorSdk\DTMAPI.AuthorSdk.csproj')
+    $version = [string]$project.Project.PropertyGroup.Version
+    if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Author SDK project must declare one release version.' }
+    return $version
+}
+
+function Get-AuthorSdkTargetCatalog {
+    param([Parameter(Mandatory = $true)] [string] $RepoRoot)
+
+    $assetRoot = Join-Path $RepoRoot 'author-sdk'
+    $path = Join-Path $assetRoot 'target-catalog.json'
+    $catalog = Get-Content -Raw -Encoding UTF8 -LiteralPath $path | ConvertFrom-Json
+    foreach ($property in @('schemaVersion', 'defaultTarget', 'targets')) {
+        if ($null -eq $catalog.PSObject.Properties[$property]) { throw "Author SDK target catalog is missing '$property'." }
+    }
+    if ([int]$catalog.schemaVersion -ne 1) { throw 'Unsupported Author SDK target catalog schema.' }
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+    foreach ($target in @($catalog.targets)) {
+        foreach ($property in @('apiTarget', 'state', 'minimumRuntimeVersion', 'maximumPackageRuntimeVersion', 'sdkVersions', 'payloadSdkVersion', 'targetFramework', 'payloadPath', 'contractPath', 'contractResourceName', 'contractSha256', 'capabilities')) {
+            if ($null -eq $target.PSObject.Properties[$property]) { throw "Author SDK target is missing '$property'." }
+        }
+        $apiTarget = [string]$target.apiTarget
+        if ($apiTarget -notmatch '^\d+\.\d+\.\d+$' -or -not $seen.Add($apiTarget)) { throw "Invalid or duplicate Author SDK API target: $apiTarget" }
+        if ([string]$target.state -cnotin @('available', 'planned')) { throw "Unsupported Author SDK target state: $($target.state)" }
+        if ([string]$target.targetFramework -cne 'netstandard2.0') { throw "Unsupported target framework for $apiTarget." }
+        if ([string]$target.minimumRuntimeVersion -notmatch '^\d+\.\d+\.\d+$' -or
+            [string]$target.maximumPackageRuntimeVersion -notmatch '^\d+\.\d+\.\d+$' -or
+            [version]$target.minimumRuntimeVersion -gt [version]$target.maximumPackageRuntimeVersion) {
+            throw "Invalid Runtime range for Author SDK target $apiTarget."
+        }
+        $sdkVersions = @($target.sdkVersions | ForEach-Object { [string]$_ })
+        if ($sdkVersions.Count -eq 0 -or @($sdkVersions | Where-Object { $_ -notmatch '^\d+\.\d+\.\d+$' }).Count -gt 0 -or
+            @($sdkVersions | Select-Object -Unique).Count -ne $sdkVersions.Count -or [string]$target.payloadSdkVersion -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Invalid SDK versions for Author SDK target $apiTarget."
+        }
+        if ([string]$target.payloadPath -cne "compatibility/$apiTarget" -or
+            [string]$target.contractPath -cne "compatibility/$apiTarget/compatibility.contract.json") {
+            throw "Author SDK target $apiTarget must own its distinct compatibility directory and contract."
+        }
+        if ([string]$target.state -ceq 'available') {
+            if ([string]$target.contractSha256 -notmatch '^[a-fA-F0-9]{64}$' -or [string]::IsNullOrWhiteSpace([string]$target.contractResourceName)) {
+                throw "Available Author SDK target $apiTarget must bind a contract hash and embedded resource."
+            }
+            $contractPath = Assert-AuthorSdkChildPath -Root $assetRoot -Path (Join-Path $assetRoot ([string]$target.contractPath)) -Label 'target contract'
+            if ((Get-AuthorSdkSha256 -Path $contractPath) -cne ([string]$target.contractSha256).ToLowerInvariant()) {
+                throw "Author SDK target contract hash mismatch: $apiTarget"
+            }
+        }
+        elseif (-not [string]::IsNullOrEmpty([string]$target.contractSha256)) {
+            throw "Planned Author SDK target $apiTarget cannot claim a frozen contract hash."
+        }
+    }
+    if (@($catalog.targets | Where-Object { [string]$_.apiTarget -ceq [string]$catalog.defaultTarget -and [string]$_.state -ceq 'available' }).Count -ne 1) {
+        throw 'Author SDK default target must be available.'
+    }
+    return $catalog
+}
+
+function Get-AuthorSdkAvailableTargets {
+    param(
+        [Parameter(Mandatory = $true)] $Catalog,
+        [string] $SdkVersion = '0.1.0'
+    )
+
+    $targets = @($Catalog.targets | Where-Object { [string]$_.state -ceq 'available' -and @($_.sdkVersions) -ccontains $SdkVersion } | Sort-Object { [version]$_.apiTarget })
+    if (@($targets | Where-Object { [string]$_.apiTarget -ceq [string]$Catalog.defaultTarget }).Count -ne 1) {
+        throw "Author SDK $SdkVersion cannot use the catalog default target."
+    }
+    return $targets
+}
+
+function Get-AuthorSdkContract {
+    param(
+        [Parameter(Mandatory = $true)] [string] $RepoRoot,
+        $Target = $null
+    )
+
+    # Keep the no-Target entry point bound to the immutable legacy contract.
+    $relativePath = if ($null -eq $Target) { 'compatibility/0.5.5/compatibility.contract.json' } else { [string]$Target.contractPath }
+    $assetRoot = Join-Path $RepoRoot 'author-sdk'
+    $path = Assert-AuthorSdkChildPath -Root $assetRoot -Path (Join-Path $assetRoot $relativePath) -Label 'compatibility contract'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Tracked Author SDK compatibility contract is missing: $path"
     }
@@ -88,8 +183,13 @@ function Get-AuthorSdkContract {
             throw "Compatibility contract is missing '$property': $path"
         }
     }
-    if ([int]$contract.schemaVersion -ne 1 -or [string]$contract.sdkVersion -ne '0.1.0' -or [string]$contract.targetRuntimeVersion -ne '0.5.5') {
-        throw 'Compatibility contract must target Author SDK 0.1.0 and Runtime 0.5.5.'
+    $expectedSdk = if ($null -eq $Target) { '0.1.0' } else { [string]$Target.payloadSdkVersion }
+    $expectedTarget = if ($null -eq $Target) { '0.5.5' } else { [string]$Target.apiTarget }
+    if ([int]$contract.schemaVersion -ne 1 -or [string]$contract.sdkVersion -cne $expectedSdk -or [string]$contract.targetRuntimeVersion -cne $expectedTarget) {
+        throw "Compatibility contract must bind payload SDK $expectedSdk and API target $expectedTarget."
+    }
+    if ($null -ne $Target -and ([string]$Target.state -cne 'available' -or (Get-AuthorSdkSha256 -Path $path) -cne ([string]$Target.contractSha256).ToLowerInvariant())) {
+        throw "Compatibility target is unavailable or its frozen contract hash changed: $expectedTarget"
     }
     if ([string]$contract.netstandardReferencePackage -ne 'NETStandard.Library' -or [string]$contract.netstandardReferencePackageVersion -ne '2.0.3') {
         throw 'Compatibility contract must pin NETStandard.Library 2.0.3.'
@@ -162,7 +262,7 @@ function Get-AuthorSdkReleaseFileKind {
     if ($path.StartsWith('licenses/', [System.StringComparison]::Ordinal) -or $name.IndexOf('LICENSE', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $name.IndexOf('NOTICE', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return 'license' }
     if ($name -in @('dtmapi-author.exe', 'dtmapi-author.dll', 'dtmapi-author.deps.json', 'dtmapi-author.runtimeconfig.json')) { return 'cli' }
     if ($name.StartsWith('Microsoft.CodeAnalysis', [System.StringComparison]::OrdinalIgnoreCase)) { return 'compiler' }
-    if ($path.StartsWith('contracts/', [System.StringComparison]::Ordinal) -or $name -in @('README.md', 'THIRD-PARTY-NOTICES.md')) { return 'support' }
+    if ($path.StartsWith('contracts/', [System.StringComparison]::Ordinal) -or $name -in @('README.md', 'THIRD-PARTY-NOTICES.md', 'target-catalog.json')) { return 'support' }
     if ($name.EndsWith('.dll', [System.StringComparison]::OrdinalIgnoreCase) -or $name.EndsWith('.exe', [System.StringComparison]::OrdinalIgnoreCase) -or $name.EndsWith('.json', [System.StringComparison]::OrdinalIgnoreCase)) { return 'runtime-support' }
     return 'support'
 }
@@ -170,10 +270,16 @@ function Get-AuthorSdkReleaseFileKind {
 function New-AuthorSdkReleaseInventory {
     param(
         [Parameter(Mandatory = $true)] [string] $StageRoot,
-        [Parameter(Mandatory = $true)] [string] $DotNetSdkVersion
+        [Parameter(Mandatory = $true)] [string] $DotNetSdkVersion,
+        [string] $SdkVersion = '0.1.0',
+        $TargetCatalog = $null
     )
 
     $stageFull = [System.IO.Path]::GetFullPath($StageRoot)
+    if ($null -eq $TargetCatalog) {
+        $TargetCatalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $stageFull 'target-catalog.json') | ConvertFrom-Json
+    }
+    $availableTargets = @(Get-AuthorSdkAvailableTargets -Catalog $TargetCatalog -SdkVersion $SdkVersion)
     $items = New-Object 'System.Collections.Generic.List[object]'
     [string[]]$files = @(Get-ChildItem -LiteralPath $stageFull -File -Recurse | Where-Object { $_.Name -ne 'author-sdk-release.json' } | ForEach-Object { $_.FullName })
     [Array]::Sort($files, [System.StringComparer]::Ordinal)
@@ -196,8 +302,11 @@ function New-AuthorSdkReleaseInventory {
     }
     return [ordered]@{
         schemaVersion = 1
-        sdkVersion = '0.1.0'
-        targetRuntimeVersion = '0.5.5'
+        sdkVersion = $SdkVersion
+        targetRuntimeVersion = [string]$TargetCatalog.defaultTarget
+        defaultTarget = [string]$TargetCatalog.defaultTarget
+        targetCatalogSha256 = Get-AuthorSdkSha256 -Path (Join-Path $stageFull 'target-catalog.json')
+        availableTargets = @($availableTargets | ForEach-Object { [string]$_.apiTarget })
         buildDotNetSdkVersion = $DotNetSdkVersion
         runtimeIdentifier = 'win-x64'
         packageKind = 'self-contained-portable-author-sdk'

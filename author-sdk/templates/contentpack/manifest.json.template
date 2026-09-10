@@ -4,7 +4,7 @@
   "Version": {{VERSION_JSON}},
   "Description": {{DESCRIPTION_JSON}},
   "UniqueID": {{UNIQUE_ID_JSON}},
-  "MinimumDTMApiVersion": "0.5.5",
+  "MinimumDTMApiVersion": {{MINIMUM_RUNTIME_JSON}},
   "Type": "ContentPack",
   "Dependencies": [],
   "UpdateKeys": []

@@ -14,6 +14,7 @@ $ErrorActionPreference = 'Stop'
 $script:DtmUninstallMutationLock = $null
 
 trap {
+    Write-DtmApiInstallerFailure -ErrorRecord $_
     if ($null -ne $script:DtmUninstallMutationLock) {
         Exit-DtmApiInstallerMutationLock -Lock $script:DtmUninstallMutationLock
         $script:DtmUninstallMutationLock = $null
@@ -26,12 +27,12 @@ if ([string]::IsNullOrWhiteSpace($GameDir)) {
     $GameDir = Resolve-DolocTownGamePath -RepoRoot $repo
 }
 else {
-    $GameDir = [System.IO.Path]::GetFullPath($GameDir)
-    Assert-DtmApiDolocTownGamePath -Path $GameDir -Source '-GameDir'
+    $GameDir = Resolve-DtmApiExplicitGamePath -Path $GameDir -Source '-GameDir'
 }
 
 Assert-DtmApiGameDirectoryMutationRoot -GameDir $GameDir
 $stateDir = Resolve-DtmApiStateDir -GameDir $GameDir
+$pluginDir = Join-Path $GameDir 'BepInEx\plugins\DTMAPI'
 $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $backupRoot = Join-Path $stateDir "backups\uninstall-$stamp"
 $installStatePath = Join-Path $stateDir 'install-state.json'
@@ -111,20 +112,42 @@ if (-not $DryRun) {
     $script:DtmUninstallMutationLock = Enter-DtmApiInstallerMutationLock -GameDir $GameDir -Operation 'uninstall'
 }
 
-$pendingRuntimeTransactions = @(Get-ChildItem -LiteralPath $GameDir -Directory -Force -Filter '.dtmapi-runtime-install-*' -ErrorAction SilentlyContinue)
-$pendingStateTransactions = if (Test-Path -LiteralPath $stateDir -PathType Container) {
-    @(Get-ChildItem -LiteralPath $stateDir -Directory -Force -Filter '.runtime-install-transaction-*' -ErrorAction SilentlyContinue)
-}
-else {
-    @()
-}
-$pendingTransactions = @($pendingRuntimeTransactions) + @($pendingStateTransactions)
-if ($pendingTransactions.Count -gt 0) {
-    $pendingText = @($pendingTransactions | ForEach-Object { $_.FullName }) -join '; '
-    throw "DTMAPI uninstall stopped before changing files because a Runtime install transaction is pending. Run 1_install_dtmapi.bat once to recover it, then uninstall again. Pending=$pendingText"
+foreach ($classification in @(Get-DtmApiRuntimeTransactionClassifications -GameDir $GameDir -StateDir $stateDir -PluginDir $pluginDir)) {
+    if ([string]::Equals([string]$classification.Kind, 'SterileNoReceipt', [System.StringComparison]::Ordinal)) {
+        if ($DryRun) {
+            Write-DtmApiInstallerMessage `
+                -Code 'DTM-W1301' `
+                -Chinese '演练：将清理安全的无凭据事务空壳。' `
+                -English 'Dry run: would remove the safe receiptless transaction shell.' `
+                -Detail ([string]$classification.RuntimeRoot) `
+                -Level Warning
+        }
+        else {
+            Remove-DtmApiSterileRuntimeTransactionRoot -Classification $classification -GameDir $GameDir -StateDir $stateDir -PluginDir $pluginDir
+            Write-DtmApiInstallerMessage `
+                -Code 'DTM-W1301' `
+                -Chinese '已清理安全的无凭据事务空壳，卸载将继续。' `
+                -English 'Removed the safe receiptless transaction shell; uninstall will continue.' `
+                -Detail ([string]$classification.RuntimeRoot) `
+                -Level Warning
+        }
+        continue
+    }
+    $path = if (-not [string]::IsNullOrWhiteSpace([string]$classification.RuntimeRoot)) { [string]$classification.RuntimeRoot } else { [string]$classification.StateRoot }
+    if ([string]::Equals([string]$classification.Kind, 'RecoverableReceipt', [System.StringComparison]::Ordinal)) {
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1302' `
+            -Chinese '卸载已在修改文件前停止：存在可恢复的 Runtime 安装事务。请先运行 1_install_dtmapi.bat 完成恢复，再重新卸载。' `
+            -English 'Uninstall stopped before changing files because a recoverable Runtime install transaction is pending. Run 1_install_dtmapi.bat once to recover it, then uninstall again.' `
+            -Detail $path
+    }
+    Throw-DtmApiInstallerError `
+        -Code 'DTM-E1303' `
+        -Chinese '卸载已在修改文件前停止：存在不安全或无法验证的 Runtime 事务残留。' `
+        -English 'Uninstall stopped before changing files because unsafe or unverifiable Runtime transaction residue exists.' `
+        -Detail "Kind=$($classification.Kind); Path=$path; $($classification.Detail)"
 }
 
-$pluginDir = Join-Path $GameDir 'BepInEx\plugins\DTMAPI'
 Backup-And-Remove -Path $pluginDir -Kind 'runtime-plugin' -Reason 'DTMAPI runtime plugin directory'
 Backup-And-Remove -Path (Join-Path $stateDir 'components') -Kind 'optional-framework-components' -Reason 'DTMAPI dormant-shipped optional framework components'
 Backup-And-Remove -Path (Join-Path $stateDir 'tools') -Kind 'installer-tools' -Reason 'DTMAPI installed helper scripts'
@@ -203,11 +226,20 @@ New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 $statePath = Join-Path $stateDir "uninstall-state-$stamp.json"
 Write-Utf8NoBomJson -Path $statePath -Value $state
 if ($removedItems.Count -eq 0) {
-    Write-Host "No installed DTMAPI-owned Runtime files were found; no files were removed. State written to $statePath"
+    Write-DtmApiInstallerMessage `
+        -Code 'DTM-S2002' `
+        -Chinese '未发现已安装的 DTMAPI Runtime，无需删除。BepInEx、Mod、配置、日志和存档均保持不变。' `
+        -English "No installed DTMAPI-owned Runtime files were found; no files were removed. State written to $statePath" `
+        -Detail "GameDir=$GameDir" `
+        -Level Success
 }
 else {
-    Write-Host "Uninstalled $($removedItems.Count) DTMAPI-owned Runtime target(s). State written to $statePath"
-    Write-Host "Backups written under $backupRoot"
+    Write-DtmApiInstallerMessage `
+        -Code 'DTM-S2001' `
+        -Chinese "DTMAPI Runtime 卸载成功，共移除 $($removedItems.Count) 个受管目标；BepInEx、第三方插件、Mod、配置、日志和存档均已保留。" `
+        -English "DTMAPI Runtime uninstall succeeded; removed $($removedItems.Count) managed target(s). BepInEx, external plugins, Mods, configs, logs, and saves were preserved." `
+        -Detail "State=$statePath; Backup=$backupRoot" `
+        -Level Success
 }
 Exit-DtmApiInstallerMutationLock -Lock $script:DtmUninstallMutationLock
 $script:DtmUninstallMutationLock = $null

@@ -1,19 +1,35 @@
-# 20260802-0001：DTMAPI 0.6.0（8 月 2–5 日）唯一权威路线图
+# 20260802-0001：DTMAPI 0.6.0（8 月 2–5 日）冻结历史执行记录
 
 ## Metadata
 
 - Update ID: `20260802-0001`
 - Date: `2026-08-02`
-- Lifecycle Status: `in-progress`
+- Lifecycle Status: `superseded`
 - Validation Level: `docs, source, unit, runtime`
-- Runtime Validation: `failed`
-- Related Issue State: `open`
+- Runtime Validation: `partial`
+- Related Issue State: `deferred`
 - Authority window: `2026-08-02` 至 `2026-08-05`；同时定义 `2026-08-06` public 发布后的条件核验分支
 - Source: 用户要求把三轮附件长对话中的“询问—代码分析—用户决定”压缩进同一份路线图，并以 [未处理工作、产品设计与冻结兼容债务总审计](../../reviews/code/2026/20260802-0002-unresolved-work-design-and-compatibility-debt-audit.md) 的未决项为决策入口；后两轮只修订本文对应决定，原始总审计和输入 Review 保持不变
 
+## 0. Frozen Handoff And No-Write Boundary
+
+本文已于 2026-08-09 由 Update `20260809-0002` 冻结。它只保存 8 月 2–6 日执行窗口内的决定、尝试、失败与验收证据，不再是当前路线图、准入表、发布表或实施 owner。后续工作不得直接以本文为需求来源，也不得继续向本文追加状态、修复、发布观察或 Follow-Up；任何重开项必须先读其当前 canonical owner，并创建或更新自己的有界 Update。
+
+冻结时仍未完成的事务只保留下列 handoff，不把正文中的历史阶段重新解释为当前任务：
+
+| 未完成事务 | 冻结时边界 | 后续入口 |
+| --- | --- | --- |
+| ActionSpeed 手动浇水运行验收与后续发布 | source/unit/package 已有证据，runtime 仍未跑 | 由 `20260806-0002` 及其后续 Review/Update 独立收口；不得回写本文 |
+| MoreEquipmentSlots 1.0 动态官方栏位 UI composition/navigation 与发布 | Product-v3/save/cold-recovery 已有历史证据，但动态布局、导航、聚焦 UI/当前游戏验收和实际发布仍未完成 | 从最新 MoreEquipment Review、Issue、Catalog/准入注册表重新建有界 Update；保留 0.3.1 Compatibility，不把本文当设计规范 |
+| 下一次 Runtime/产品 Steam 发布与发布后身份核验 | 0.5.5 的既有发布集合已冻结；未发布候选、本地上传目录或玩家 PASS 都不构成新发布 | 当前集合只查 Catalog、current subscription manifest 与其 `authority.latestReleaseUpdate`；下一次发布另建 release Update，并由独立的 Catalog `releaseStop` 授权上传 |
+| 新 public game build 的兼容差异 | 本文只保留当时 test/public 条件门，不能授权未来 build | 从当前 reverse baseline、真实消费者和新的兼容 Review/Update 开始 |
+| post-0.6 设计债 | MoreSaves API/热停用、逐 Hook 容错、更新提示、allocation/GC 数值预算、Author 官方本地来源等均未进入本次完成集 | 各自从 API matrix、Debug issue、产品 owner 或新设计 Review 重新授权；不得把历史 Follow-Up 当待办队列 |
+
+受管 Advanced 准入集合现由 Catalog 生成的 [`managed-product-admission-registry.md`](../../architecture/managed-product-admission-registry.md) 唯一投影；它与当前公开/订阅集合不是同一集合。Batch 6 原文件已冻结为 0.5.5 历史 annex。
+
 ## 1. 唯一权威边界
 
-本文是 **2026-08-02 至 2026-08-05 的 DTMAPI 0.6.0 决策、执行顺序、范围和验收门的唯一权威**，同时也是本轮实现的 owning Update。该时间窗内不再另建一份内容重复的“0.6 决策文档”或“0.6 路线图”。
+本文曾是 **2026-08-02 至 2026-08-05 的 DTMAPI 0.6.0 决策、执行顺序、范围和验收门的唯一权威**，并曾承担该时间窗的 owning Update。该角色已由上方冻结 handoff 终止；以下内容只按当时语境阅读。
 
 权威关系如下：
 
@@ -56,7 +72,7 @@
 37. [MoreEquipmentSlots 与官方动态饰品栏复查](../../reviews/manual-qa/2026/20260806-0001-moreequipment-official-slot-growth-review.md)按用户顺序拥有三项当前手测通过、五项沿用既有 smoke、Manbo/Zoom 本轮不处理，以及 build `24585411` 的官方动态 `passiveItems[]`/对象池与 Product 1.0 UI 重叠根因；本文拥有发布处置和后续实现生命周期。
 38. [当前 test build 24585411 兼容性审查](../../reviews/code/2026/20260806-0003-current-test-24585411-compatibility-audit.md)拥有 `1.00.02 / test / 68AEA1...` 完整捕获相对 `24567135` 与 tracked `24456188` 的 raw/managed 差异、方法体和真实消费者映射；本文拥有“不为无消费者增量修改产品或新增 policy”、正式版 public 条件门和后续发布决定。
 
-若历史 Review、旧 roadmap 或附件中的早期候选方案与本文冲突，以本文在本时间窗内的明确决定为准；历史事实与失败证据不被改写。
+在原执行时间窗内，若更早的 Review、roadmap 或附件候选与本文冲突，本文当时的明确决定优先；冻结后本文不再裁决新事实。历史事实与失败证据不被改写。
 
 ## 2. 长对话的最终结论
 
@@ -922,7 +938,9 @@ MoreEquipment 1.0 的三个 Product-v3 边车记录不会被该扩容覆盖；�
 - Manbo gate 的版本参数化可独立回滚为旧 `0.5.5` 硬编码，但不得据此把历史 0.5.5 激活冒充 0.6 结果；native patch/final `hookInstalled=True` 断言不得在仍声称普通激活通过时移除。0.6 evidence 仍须绑定其实际 candidate manifest、retained Workshop tree/DLL 和 clean process/save/source 终态。
 - public 比较发现差异时保留 final-test baseline，新增/比较 public baseline；不得覆盖已有 reverse evidence。
 
-## 13. Follow-Up
+## 13. Frozen Follow-Up At Cutoff
+
+以下条目是冻结时的原始 Follow-Up 快照，只用于解释当时状态。后续实现不得更新本节，也不得仅凭本节启动工作；以第 0 节 handoff 和各 canonical owner 为准。
 
 1. clean `564e5450f2cd` 的 Runtime、`source9` 与 Local11 现在只是不含本次 MoreSaves 修正的历史候选；不得再安装、发布或用它做最终验收。当前源码树的 canonical Release 已在 `15662e6d` 从头通过，新 `566467f0-source9/local11` 已由同源 SDK/原子 builder、exact retained MoreEquipment/Manbo 与双宿主 preflight 关闭实物构建门，且同一 audited Runtime 已安装并通过 canonical byte/projection postflight。fixed-12 三冷进程门与 ISSUE-011 当前候选玩家事务均已在该 exact candidate 上通过；八项重传与 Runtime 的 publication 输入保持冻结可用，但本路线的下一项产品工作先关闭 MoreEquipment 1.0 的动态原生槽 UI composition/navigation，再分别执行其授权范围与实际 Steam publication。不得手改包、复用旧 MoreSaves DLL/hash、把未修 1.0 混入候选或用本地安装/玩家 PASS 冒充 publication。
 2. 真实 index-10 backup 不再是待用户选择丢弃/替换/恢复的局部数据阻断；MoreSaves 已在用户冷进程中按 old-bak → official `.bak` 角色移动它。exact Local `1.0.1` 的普通玩家 `16/16/0` 与 disposable `004819` / `005111` 两进程复验共同证明：16 个实际角色在官方名称下逐字节相同，所有旧名消失，两项原缺失角色保持 absent，官方 #7--#12 UI 有档并分别加载 index 6/11，冷进程迁移为 `0/0`，clean-exit/QA/fatal/profile/save-isolation 均通过。由旧 Local `1.0.0` 导致的现场症状和 ISSUE-019 当前迁移发布门均已 verified；这些证据仍不替代实际 Steam publication，任何后续存档验收也继续遵守 save-mode 隔离，不能用持久迁移或事后复制恢复冒充其他门。

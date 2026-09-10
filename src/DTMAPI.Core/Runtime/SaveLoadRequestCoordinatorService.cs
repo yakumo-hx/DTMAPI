@@ -91,8 +91,11 @@ namespace DTMAPI.Core.Runtime
                 request.NativeReturnThreadId = threadId;
                 request.NativeReturnPhase = phase ?? string.Empty;
                 request.NativeReturnResult = result;
-                if (!request.Completed)
-                    request.Status = SaveLoadRequestStatus.NativeReturned;
+                if (!request.Completed && !request.TimedOut)
+                {
+                    request.Status = result ? SaveLoadRequestStatus.NativeReturned : SaveLoadRequestStatus.NativeFailed;
+                    request.Completed = !result;
+                }
                 AddTimelineNoLock("NativeReturn", request.RequestId, slot, owner, source, threadId, phase ?? string.Empty, "Native LoadGame returned result=" + (result ? "true" : "false") + ".");
                 return BuildUpdateNoLock();
             }
@@ -343,6 +346,7 @@ namespace DTMAPI.Core.Runtime
         public const string Requested = "requested";
         public const string NativeEntered = "native-entered";
         public const string NativeReturned = "native-returned";
+        public const string NativeFailed = "native-failed";
         public const string SaveLoaded = "save-loaded";
         public const string Timeout = "timeout";
     }

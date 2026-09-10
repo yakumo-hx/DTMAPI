@@ -13,7 +13,7 @@ using System.Text.Json;
 
 namespace DTMAPI.AbiCompatibilityHarness
 {
-    internal static class Program
+    internal static partial class Program
     {
         private const string AbstractionsAssemblyName = "DTMAPI.Abstractions";
         private const string FishingOptionsTypeName = "DTMAPI.Abstractions.FishingAutomationOptions";
@@ -112,7 +112,6 @@ namespace DTMAPI.AbiCompatibilityHarness
             "DTMAPI.Abstractions.TeleportDestination",
             "DTMAPI.Abstractions.TeleportSnapshot",
             "DTMAPI.Abstractions.TeleportResult",
-            "DTMAPI.Abstractions.TeleportCsvExportResult",
             "DTMAPI.Abstractions.InstantSaveDebugState",
             "DTMAPI.Abstractions.InstantSaveDebugResult",
             "DTMAPI.Abstractions.TimeDebugState",
@@ -129,6 +128,33 @@ namespace DTMAPI.AbiCompatibilityHarness
             "DTMAPI.Abstractions.MovementDebugState",
             "DTMAPI.Abstractions.MovementSpeedResult"
         };
+        private static readonly HashSet<string> AuthorizedRetiredPublicApiEntries =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                // The exact old Y-console has no remaining users. Update
+                // 20260831-0001 authorizes only this unused CSV member/DTO
+                // surface; every other public deletion must still fail.
+                "M|public|instance|DTMAPI.Abstractions.ITeleportDebugApi|ExportDestinationsCsv|(DTMAPI.Abstractions.IManifest)|DTMAPI.Abstractions.TeleportCsvExportResult",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|.ctor|()|System.Void",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|get_FailureReason|()|System.String",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|get_Message|()|System.String",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|get_Path|()|System.String",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|get_RowCount|()|System.Int32",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|get_Success|()|System.Boolean",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|set_FailureReason|(System.String)|System.Void",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|set_Message|(System.String)|System.Void",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|set_Path|(System.String)|System.Void",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|set_RowCount|(System.Int32)|System.Void",
+                "M|public|instance|DTMAPI.Abstractions.TeleportCsvExportResult|set_Success|(System.Boolean)|System.Void",
+                "P|DTMAPI.Abstractions.TeleportCsvExportResult|FailureReason|()|System.String",
+                "P|DTMAPI.Abstractions.TeleportCsvExportResult|Message|()|System.String",
+                "P|DTMAPI.Abstractions.TeleportCsvExportResult|Path|()|System.String",
+                "P|DTMAPI.Abstractions.TeleportCsvExportResult|RowCount|()|System.Int32",
+                "P|DTMAPI.Abstractions.TeleportCsvExportResult|Success|()|System.Boolean",
+                "TB|DTMAPI.Abstractions.TeleportCsvExportResult|System.Object",
+                "TK|DTMAPI.Abstractions.TeleportCsvExportResult|sealed-class",
+                "T|DTMAPI.Abstractions.TeleportCsvExportResult"
+            };
         private static readonly KnownCompatibilityConsumerContract[] KnownCompatibilityConsumers =
         {
             new(
@@ -342,6 +368,8 @@ namespace DTMAPI.AbiCompatibilityHarness
             try
             {
                 IReadOnlyDictionary<string, string> options = ParseArguments(args);
+                if (options.ContainsKey("helper-implementer"))
+                    return RunHelperAbi(options);
                 if (options.ContainsKey("synthetic-contract"))
                     return RunSyntheticContract(options);
                 string baselinePath = RequireFile(options, "baseline-abstractions");
@@ -370,6 +398,12 @@ namespace DTMAPI.AbiCompatibilityHarness
                 string[] removed = baseline.PublicSurface.Except(candidate.PublicSurface, StringComparer.Ordinal)
                     .OrderBy(value => value, StringComparer.Ordinal)
                     .ToArray();
+                string[] authorizedRemoved = removed
+                    .Where(AuthorizedRetiredPublicApiEntries.Contains)
+                    .ToArray();
+                string[] unexpectedRemoved = removed
+                    .Where(value => !AuthorizedRetiredPublicApiEntries.Contains(value))
+                    .ToArray();
                 MemberReferenceInfo[] setterReferences = FindStopOnManualMoveSetterReferences(consumerPath);
                 if (setterReferences.Length == 0)
                 {
@@ -395,7 +429,7 @@ namespace DTMAPI.AbiCompatibilityHarness
 
                 var report = new AbiGateReport(
                     SchemaVersion: 4,
-                    OverallPass: removed.Length == 0,
+                    OverallPass: unexpectedRemoved.Length == 0,
                     RuntimeValidation: "NotRunDotNet8HostOnly",
                     Baseline: new ArtifactReport(
                         Path.GetFileName(baselinePath), baselineSha256, baseline.AssemblyVersion, baseline.FileVersion, baseline.PublicSurface.Count),
@@ -430,6 +464,8 @@ namespace DTMAPI.AbiCompatibilityHarness
                 Console.WriteLine("CandidateAbstractionsFileVersion=" + candidate.FileVersion);
                 Console.WriteLine("CandidatePublicApiCount=" + candidate.PublicSurface.Count);
                 Console.WriteLine("RemovedPublicApiCount=" + removed.Length);
+                Console.WriteLine("AuthorizedRetiredPublicApiCount=" + authorizedRemoved.Length);
+                Console.WriteLine("UnexpectedRemovedPublicApiCount=" + unexpectedRemoved.Length);
                 Console.WriteLine("ConsumerPath=" + consumerPath);
                 Console.WriteLine("ConsumerSha256=" + consumerSha256);
                 Console.WriteLine("ConsumerReferencedAbstractionsVersion=" + binding.ConsumerReferencedAbstractionsVersion);
@@ -487,12 +523,12 @@ namespace DTMAPI.AbiCompatibilityHarness
                 if (reportPath != null)
                     Console.WriteLine("MachineReadableReportPath=" + reportPath);
 
-                if (removed.Length > 0)
+                if (unexpectedRemoved.Length > 0)
                 {
                     Console.Error.WriteLine("ABI_GATE=FAIL");
                     Console.Error.WriteLine(
-                        "Candidate deleted " + removed.Length +
-                        " retained public API entries; assembly versions were ignored. See the machine-readable report for the full list.");
+                        "Candidate deleted " + unexpectedRemoved.Length +
+                        " public API entries outside the exact authorized DebugConsole CSV retirement; assembly versions were ignored. See the machine-readable report for the full removal list.");
                     return 1;
                 }
 

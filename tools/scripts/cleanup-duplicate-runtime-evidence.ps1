@@ -87,7 +87,7 @@ function Get-CanonicalSnapshot(
             throw "Canonical Runtime evidence contains a reparse-point file: $path"
         }
         $relative = $info.FullName.Substring($prefixLength).Replace('\', '/')
-        $hash = (Get-FileHash -LiteralPath $info.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        $hash = (Get-DtmApiFileSha256 -Path $info.FullName).ToLowerInvariant()
         $lines.Add("$relative|$($info.Length)|$hash") | Out-Null
         $bytes += [long] $info.Length
         $files++
@@ -212,7 +212,7 @@ function Get-DurableRootSnapshot(
                     throw "Durable evidence root contains a reparse-point file: $filePath"
                 }
                 $relative = $fileInfo.FullName.Substring($rootPrefixLength).Replace('\', '/')
-                $hash = (Get-FileHash -LiteralPath $fileInfo.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+                $hash = (Get-DtmApiFileSha256 -Path $fileInfo.FullName).ToLowerInvariant()
                 $manifestLines.Add("$identity/$relative|$($fileInfo.Length)|$hash") | Out-Null
                 $files++
                 $bytes += [long]$fileInfo.Length
@@ -271,7 +271,7 @@ $allowlistSchema = $allowlist.PSObject.Properties['schemaVersion']
 if ($null -eq $allowlistSchema -or [int]$allowlistSchema.Value -ne 5) {
     throw 'Evidence retention cleanup requires allowlist schema version 5 with complete durable-root categories.'
 }
-$allowlistHash = (Get-FileHash -LiteralPath $AllowlistPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$allowlistHash = (Get-DtmApiFileSha256 -Path $AllowlistPath).ToLowerInvariant()
 $requiredIdentities = @($allowlist.runtimeEvidence | Sort-Object -Unique)
 $baselineManifest = Get-Content -LiteralPath $CanonicalBaselineManifestPath -Raw | ConvertFrom-Json
 $baselineIdentities = @($baselineManifest.canonicalRetention.identities.identity | Sort-Object -Unique)
@@ -479,7 +479,7 @@ try {
     $canonicalAfter = Get-CanonicalSnapshot -Root $CanonicalRoot -RequiredIdentities $requiredIdentities
     $referencesAfter = Get-ReferenceSnapshot -Allowlist $allowlist -EvidenceRoot $evidenceRoot
     $durableRootsAfter = Get-DurableRootSnapshot -Allowlist $allowlist -EvidenceRoot $evidenceRoot
-    $allowlistHashAfter = (Get-FileHash -LiteralPath $AllowlistPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $allowlistHashAfter = (Get-DtmApiFileSha256 -Path $AllowlistPath).ToLowerInvariant()
     if (-not [string]::Equals($allowlistHash, $allowlistHashAfter, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Evidence retention allowlist changed during cleanup.'
     }

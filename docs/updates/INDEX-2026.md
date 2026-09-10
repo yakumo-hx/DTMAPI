@@ -8,6 +8,7 @@ This file is a stable year router. Full Update rows live in monthly ledgers.
 - [2026-06](INDEX-2026-06.md)
 - [2026-07](INDEX-2026-07.md)
 - [2026-08](INDEX-2026-08.md)
+- [2026-09](INDEX-2026-09.md)
 
 ## Write Policy
 

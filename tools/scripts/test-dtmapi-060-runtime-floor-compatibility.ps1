@@ -103,17 +103,17 @@ $historyRegistry = Get-Content -LiteralPath (Join-Path $repo 'author-sdk\advance
 Assert-RuntimeFloor ([int]$currentRegistry.schemaVersion -eq 2 -and [int]$historyRegistry.schemaVersion -eq 2) `
     'Current and historical Advanced registries must both use schema 2.'
 foreach ($product in @(
-    [pscustomobject]@{ Root = 'AutoFishing'; UniqueId = 'Yuuka.DTMAPI.AutoFishing'; CurrentPolicy = 'doloctown-24456188-autofishing-v1'; HistoricalPolicy = 'doloctown-23762374-autofishing-v1' },
-    [pscustomobject]@{ Root = 'DebugConsole'; UniqueId = 'DTMAPI.DebugConsoleMod'; CurrentPolicy = 'doloctown-24456188-debugconsole-v1'; HistoricalPolicy = 'doloctown-23762374-debugconsole-v1' },
-    [pscustomobject]@{ Root = 'MoreEquipmentSlots'; UniqueId = 'DTMAPI.MoreEquipmentSlotsMod'; CurrentPolicy = 'doloctown-24456188-moreequipmentslots-v1'; HistoricalPolicy = 'doloctown-23762374-moreequipmentslots-v1' },
-    [pscustomobject]@{ Root = 'MoreSaves'; UniqueId = 'DTMAPI.MoreSavesMod'; CurrentPolicy = 'doloctown-24456188-moresaves-v1'; HistoricalPolicy = 'doloctown-23762374-moresaves-v1' }
+    [pscustomobject]@{ Root = 'AutoFishing'; UniqueId = 'Yuuka.DTMAPI.AutoFishing'; ManifestFloor = '0.6.0'; CurrentPolicy = 'doloctown-24456188-autofishing-v1'; HistoricalPolicy = 'doloctown-23762374-autofishing-v1' },
+    [pscustomobject]@{ Root = 'DebugConsole'; UniqueId = 'DTMAPI.DebugConsoleMod'; ManifestFloor = '0.6.1'; CurrentPolicy = 'doloctown-24456188-debugconsole-v1'; HistoricalPolicy = 'doloctown-23762374-debugconsole-v1' },
+    [pscustomobject]@{ Root = 'MoreEquipmentSlots'; UniqueId = 'DTMAPI.MoreEquipmentSlotsMod'; ManifestFloor = '0.6.0'; CurrentPolicy = 'doloctown-24456188-moreequipmentslots-v1'; HistoricalPolicy = 'doloctown-23762374-moreequipmentslots-v1' },
+    [pscustomobject]@{ Root = 'MoreSaves'; UniqueId = 'DTMAPI.MoreSavesMod'; ManifestFloor = '0.6.0'; CurrentPolicy = 'doloctown-24456188-moresaves-v1'; HistoricalPolicy = 'doloctown-23762374-moresaves-v1' }
 )) {
     $productRoot = Join-Path $repo ("products\first-party\{0}" -f $product.Root)
     $manifest = Get-Content -LiteralPath (Join-Path $productRoot 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     $author = Get-Content -LiteralPath (Join-Path $productRoot 'dtmapi.author.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     $currentRows = @($currentRegistry.policies | Where-Object { [string]$_.requiredUniqueId -ceq [string]$product.UniqueId })
     $historyRows = @($historyRegistry.policies | Where-Object { [string]$_.requiredUniqueId -ceq [string]$product.UniqueId })
-    Assert-RuntimeFloor ([string]$manifest.MinimumDTMApiVersion -ceq '0.6.0') "$($product.Root) must truthfully require Runtime 0.6.0."
+    Assert-RuntimeFloor ([string]$manifest.MinimumDTMApiVersion -ceq [string]$product.ManifestFloor) "$($product.Root) must truthfully require Runtime $($product.ManifestFloor)."
     Assert-RuntimeFloor ([string]$author.targetDtmApiVersion -ceq '0.5.5') "$($product.Root) must retain the frozen 0.5.5 public-API compile target."
     Assert-RuntimeFloor ($currentRows.Count -eq 1 -and
         [string]$currentRows[0].policyId -ceq [string]$product.CurrentPolicy -and
@@ -180,6 +180,6 @@ Assert-RuntimeFloor ('doloctown-23762374-autofishing-v1' -in $oldPolicyIds -and
     'The retained 0.5.5 Core policy registry does not preserve the expected old/current policy separation.'
 
 Write-Host 'DTMAPI 0.6 Runtime-floor compatibility: PASS'
-Write-Host '  Author SDK API target=0.5.5; current AutoFishing/DebugConsole/MoreEquipmentSlots/MoreSaves floor=0.6.0'
+Write-Host '  Author SDK API target=0.5.5; DebugConsole product floor=0.6.1; other current product floors=0.6.0; authoring policy floors=0.6.0'
 Write-Host '  retained Core=0.5.5; own comparator rejects 0.6.0 before code loading'
 Write-Host '  old policies=retained Core current set; 244 policies=current 0.6 authoring set only'

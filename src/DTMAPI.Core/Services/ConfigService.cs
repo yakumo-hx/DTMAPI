@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Runtime.Serialization;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
@@ -10,38 +11,55 @@ using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.Core.Services
 {
-    internal sealed class ConfigService : IConfigHelper
+    internal sealed partial class ConfigService : IConfigHelper
     {
         private readonly RuntimePaths paths;
         private readonly DiagnosticsService diagnostics;
+        private readonly ConfigFileOperations files;
         private readonly Dictionary<MigrationKey, Delegate> migrations = new Dictionary<MigrationKey, Delegate>();
 
-        public ConfigService(RuntimePaths paths, DiagnosticsService diagnostics)
+        public ConfigService(RuntimePaths paths, DiagnosticsService diagnostics, ConfigFileOperations? files = null)
         {
             this.paths = paths;
             this.diagnostics = diagnostics;
+            this.files = files ?? new ConfigFileOperations();
         }
 
         public TConfig ReadConfig<TConfig>(IManifest manifest) where TConfig : new()
         {
             string path = GetConfigPath(manifest);
-            if (!File.Exists(path))
+            string json;
+            try
+            {
+                json = files.ReadAllText(path);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException)
             {
                 var defaultConfig = new TConfig();
                 WriteConfig(manifest, defaultConfig);
                 return defaultConfig;
             }
+            catch (Exception ex)
+            {
+                diagnostics.RecordError(manifest.UniqueID, "配置读取失败，保留原文件。", "Path=" + path + "; Error=" + ex);
+                throw;
+            }
 
             TConfig config;
             try
             {
-                config = JsonFile.Read<TConfig>(path);
+                config = JsonFile.Deserialize<TConfig>(json);
             }
-            catch (Exception ex)
+            catch (SerializationException ex)
             {
                 string backupPath = BackupInvalidConfig(path, manifest, ex);
                 var defaultConfig = new TConfig();
-                WriteConfig(manifest, defaultConfig);
+                try { WriteConfig(manifest, defaultConfig); }
+                catch (Exception writeEx)
+                {
+                    diagnostics.RecordError(manifest.UniqueID, "配置已备份，但默认配置写入失败。", "Path=" + path + "; Backup=" + backupPath + "; Error=" + writeEx);
+                    throw;
+                }
                 diagnostics.RecordError(
                     manifest.UniqueID,
                     "配置 JSON 损坏，已备份并恢复默认配置。",
@@ -67,9 +85,7 @@ namespace DTMAPI.Core.Services
             try
             {
                 JsonFile.Write(tempPath, config);
-                string raw = File.ReadAllText(tempPath, new UTF8Encoding(false, true));
-                File.WriteAllText(tempPath, JsonFile.Prettyish(raw), new UTF8Encoding(false));
-                ReplaceWithTempFile(tempPath, path);
+                files.Replace(tempPath, path);
             }
             finally
             {
@@ -153,10 +169,10 @@ namespace DTMAPI.Core.Services
 
         private string BackupInvalidConfig(string path, IManifest manifest, Exception ex)
         {
-            string backupPath = path + ".invalid-" + DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss") + ".bak";
+            string backupPath = path + ".invalid-" + DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N") + ".bak";
             try
             {
-                File.Copy(path, backupPath, overwrite: false);
+                files.Copy(path, backupPath);
                 return backupPath;
             }
             catch (Exception backupEx)
@@ -165,11 +181,11 @@ namespace DTMAPI.Core.Services
                     manifest.UniqueID,
                     "配置 JSON 损坏，但备份失败。",
                     "Path=" + path + "; Backup=" + backupPath + "; ReadError=" + ex + "; BackupError=" + backupEx);
-                return backupPath;
+                throw new IOException("Cannot back up invalid config; original preserved: " + path, backupEx);
             }
         }
 
-        private static void ReplaceWithTempFile(string tempPath, string path)
+        internal static void ReplaceWithTempFile(string tempPath, string path)
         {
             if (!File.Exists(path))
             {
@@ -238,5 +254,13 @@ namespace DTMAPI.Core.Services
                     throw new InvalidOperationException("Config helper for owner '" + owner.UniqueID + "' can't access another owner manifest.");
             }
         }
+    }
+
+    // Internal filesystem boundary for deterministic failure-window tests.
+    internal sealed class ConfigFileOperations
+    {
+        internal Func<string, string> ReadAllText { get; set; } = path => File.ReadAllText(path, new UTF8Encoding(false, true));
+        internal Action<string, string> Copy { get; set; } = (source, target) => File.Copy(source, target, false);
+        internal Action<string, string> Replace { get; set; } = ConfigService.ReplaceWithTempFile;
     }
 }

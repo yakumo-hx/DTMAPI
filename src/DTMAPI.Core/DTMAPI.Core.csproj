@@ -5,6 +5,10 @@
     <RootNamespace>DTMAPI.Core</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\AuthorSessionJson.cs" Link="Runtime\AuthorSessionJson.cs" />
+    <Compile Include="..\Shared\AuthorApiTargetCatalog.cs" Link="Manifesting\AuthorApiTargetCatalog.cs" />
+    <Compile Include="..\Shared\AuthorPackageMarker.cs" Link="Manifesting\AuthorPackageMarker.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\target-catalog.json" LogicalName="DTMAPI.Authoring.target-catalog.json" />
     <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
     <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json"
                       LogicalName="DTMAPI.Core.AdvancedReferencePolicyRegistry.json" />
@@ -29,4 +33,24 @@
       <Compile Include="$(DtmApiGeneratedVersionFile)" />
     </ItemGroup>
   </Target>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageSemanticVersion.cs" Link="Authoring\PackageSemanticVersion.cs" />
+    <Compile Include="..\Shared\PackageDependencyContract.cs" Link="Authoring\PackageDependencyContract.cs" />
+    <Compile Include="..\Shared\PackageDependencyPlanner.cs" Link="Authoring\PackageDependencyPlanner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyVerifier.cs" Link="Authoring\PackageDependencyVerifier.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageHostReferences.cs" Link="Authoring\PackageHostReferences.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\bcl-reference-identities.json" LogicalName="DTMAPI.Authoring.bcl-reference-identities.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyBundle.cs" Link="Authoring\PackageDependencyBundle.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/NativeSignature.cs" Link="Authoring/NativeSignature.cs" />
+    <Compile Include="../Shared/NativePackageContract.cs" Link="Authoring/NativePackageContract.cs" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/NativeGenericSignature.cs" Link="Authoring/NativeGenericSignature.cs" /></ItemGroup>
 </Project>

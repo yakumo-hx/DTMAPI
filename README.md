@@ -1,27 +1,34 @@
 # DTMAPI
 
-DTMAPI is a Doloc Town Modding API prototype for Windows. It uses a BepInEx bootstrap to start DTMAPI Core. Strict CodeMods consume public abstractions according to two per-contract axes: status/stability in the API matrix and the `Open`, `Frozen`, `Diagnostic`, `Internal`, or `Disabled` disposition; the assembly being public does not make every member stable or open to new adoption. Proven SharedNative reflection/Harmony adapters use `DTMAPI.GameBridge.DolocTown`, while managed Advanced CodeMods own separately admitted single-product ProductNative work under the canonical boundary in [`PROJECT.md`](PROJECT.md). The exact admitted-product set and evidence state are maintained only by the [Batch 6 identity contract](docs/architecture/batch6-managed-mod-identity-contract.md); those first-party policies do not open a general Advanced authoring lane or pre-authorize a future Runtime release.
+> **0.7.0 预览版 / Developer Preview — source snapshot (2026-09-10).**
+> 本分支提供当前源码预览；SDK 标准构建迁移及现有 Mod／接入方式兼容仍待验收。玩家 Runtime 的已发布版本仍为 0.6.1。当前范围及待办见 [候选说明](docs/planning/platform-next/release-candidate.md)。
+
+DTMAPI is a Doloc Town Modding API. BepInEx starts DTMAPI Core, which provides managed Mod loading, author services and diagnostics. Strict CodeMods use the public contracts according to their individual status and stability; a public assembly does not make every member stable. The current 0.7.0 candidate also provides a self-service Advanced path for any valid author ID through explicit local native references. Older receipt-based Advanced packages retain their registry and compatibility rules. Native ownership and supported Mod identities are defined in [PROJECT.md](PROJECT.md); current publication facts remain in the Product Catalog.
+
+Players use the appropriate Runtime installation package. Mod authors use the separate [Author SDK](author-sdk/README.md), distributed as a GitHub Release attachment rather than included in the player installer. See [SDK distribution and release](docs/workflows/author-sdk-release.md) for the packaging boundary; candidate availability does not mean a release has been published.
 
 ## Repository Layout
 
 - `src/`: DTMAPI runtime, public abstractions, bootstrap, GameBridge, and config menu projects.
-- `first-party-mods/`: remaining ordinary Strict first-party product sources.
-- `products/first-party/`: separately admitted managed Advanced ProductNative sources; presence here is not general authoring permission.
-- `testmods/`: examples, migrated feature slices, and QA fixtures used for smoke validation.
-- `tests/`: unit tests.
+- `products/first-party/`: current first-party product sources; the [Product Catalog](tools/release/dtmapi-product-catalog.json) owns each product's type and build route.
+- `author-sdk/examples/` and `author-sdk/samples/`: author examples and API-demand samples.
+- `tests/`: source tests, compatibility harnesses and fixtures; `tests/mod-fixtures/qa/` contains game QA Mods.
 - `tools/scripts/`: build, test, install, smoke, hook-probe, and evidence collection scripts.
 - `tools/release/runtime-workshop/`: four thin player BAT source entries plus their shared CMD dispatcher; the current boundary is defined in [Runtime Workshop Installer Boundary](docs/architecture/runtime-workshop-installer-boundary.md).
-- `docs/`: public API docs, architecture notes, debug records, reviews, goals, and update records.
+- `docs/`: [current documentation](docs/README.md), on-demand [research knowledge](docs/knowledge/README.md), active records and a separate [history archive](docs/archive/README.md).
 - `references/`: public reference docs plus local-only ignored research folders.
 
-## Build
+## Build and validation
 
 ```powershell
-tools/scripts/build.ps1 -Configuration Release
 tools/scripts/test.ps1 -Configuration Release
 ```
 
-The scripts resolve a local .NET SDK through `tools/scripts/common.ps1` when the system `dotnet` command has no SDK.
+The command above is the complete Release validation boundary and includes its own build. Do not precede it with another full build/test cycle. For compile-only work use `tools/scripts/build.ps1 -Configuration Release -SkipTests`; for an ordinary fix build/run the selected project using [focused validation](tools/scripts/README.md#choose-validation). Documentation-only changes use document checks.
+
+Tracked scripts select the compatible SDK and .NET 8 host through `Get-DotNetExe` in `tools/scripts/common.ps1`; PATH SDK presence alone is insufficient. Complete test entrypoints reject ambient focus filters so a subset cannot be reported as a full PASS.
+
+[DTMAPI.sln](DTMAPI.sln) owns the ordinary framework/example/test build graph used by `build.ps1`. Admitted Advanced products retain their Catalog/Author SDK build route. `tools/scripts/status.ps1` only reports existing local tools, paths and runtime state; it does not install a missing SDK.
 
 ## Local Game Paths
 

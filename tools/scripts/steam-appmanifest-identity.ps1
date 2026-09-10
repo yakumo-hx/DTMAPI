@@ -140,7 +140,7 @@ function Get-DtmApiSteamBuildIdentity {
         UserBranch = $branchIdentity.UserBranch
         MountedBranch = $branchIdentity.MountedBranch
         PendingBranchSwitch = [bool]$branchIdentity.PendingBranchSwitch
-        ManifestSha256 = (Get-FileHash -LiteralPath $ManifestPath -Algorithm SHA256).Hash.ToUpperInvariant()
+        ManifestSha256 = (Get-DtmApiFileSha256 -Path $ManifestPath).ToUpperInvariant()
     }
 }
 

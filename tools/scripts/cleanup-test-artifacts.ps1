@@ -132,45 +132,15 @@ function Add-CleanupCandidate {
     }) | Out-Null
 }
 
+. "$PSScriptRoot\test-common.ps1"
 $activeProcesses = @()
 try {
-    $processSnapshot = @(Get-CimInstance Win32_Process -ErrorAction Stop)
-    $processById = @{}
-    foreach ($processRow in $processSnapshot) {
-        $processById[[int]$processRow.ProcessId] = $processRow
-    }
-
-    # cleanup-test-artifacts.ps1 is invoked from test.ps1 between suites. The
-    # owning test.ps1 PowerShell is therefore an ancestor of this cleanup
-    # process and must not be mistaken for an independent concurrent test.
-    $ancestorProcessIds = @{}
-    $cursorProcessId = [int]$PID
-    while ($processById.ContainsKey($cursorProcessId)) {
-        $parentProcessId = [int]$processById[$cursorProcessId].ParentProcessId
-        if ($parentProcessId -le 0 -or $ancestorProcessIds.ContainsKey($parentProcessId)) {
-            break
-        }
-        $ancestorProcessIds[$parentProcessId] = $true
-        $cursorProcessId = $parentProcessId
-    }
-
-    $activeProcesses = @($processSnapshot | Where-Object {
-        $_.ProcessId -ne $PID -and
-        -not $ancestorProcessIds.ContainsKey([int]$_.ProcessId) -and
-        $_.CommandLine -and
-        $_.CommandLine -match 'DTMAPI\.(UnitTests|QaUnitTests)|tools[\\/]scripts[\\/](test|run-game-smoke)\.ps1'
-    } | ForEach-Object {
-        [pscustomobject]@{
-            ProcessId = [int]$_.ProcessId
-            Name = [string]$_.Name
-            CommandLine = [string]$_.CommandLine
-        }
-    })
+    $activeProcesses = @(Get-DtmApiActiveTestProcess)
 }
 catch {
+    if ($Apply) { throw }
     Write-Warning "Could not enumerate active test processes: $($_.Exception.Message)"
 }
-
 if ($Apply -and $activeProcesses.Count -gt 0) {
     throw "Refusing cleanup while a DTMAPI test or smoke process is active: $([string]::Join(', ', @($activeProcesses | ForEach-Object { $_.ProcessId })))"
 }

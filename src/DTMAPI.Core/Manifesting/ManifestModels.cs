@@ -50,6 +50,8 @@ namespace DTMAPI.Core.Manifesting
         IReadOnlyList<string> IManifest.UpdateKeys => UpdateKeyModels;
 
         [IgnoreDataMember] internal bool TypeWasDeclared { get; private set; }
+        [IgnoreDataMember] internal DTMAPI.Internal.Authoring.PackageDependencyManifest? DependencyContract { get; set; }
+        [IgnoreDataMember] internal bool NativeContractSelected { get; set; }
         [IgnoreDataMember] internal string DeclaredTypeValue { get; private set; } = string.Empty;
         [IgnoreDataMember] internal bool CodeModKindWasDeclared { get; private set; }
         [IgnoreDataMember] internal string DeclaredCodeModKindValue { get; private set; } = string.Empty;

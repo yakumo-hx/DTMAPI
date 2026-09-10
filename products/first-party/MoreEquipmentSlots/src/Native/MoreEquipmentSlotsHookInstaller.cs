@@ -40,8 +40,9 @@ namespace DTMAPI.MoreEquipmentSlots
             targets.Clear();
             targets.Add(ResolveReloadParams());
             targets.Add(ResolveTryGetShieldItem());
-            targets.Add(ResolveAccessoriesBarMethod("__Init"));
-            targets.Add(ResolveAccessoriesBarMethod("OnStartShow"));
+            targets.Add(ResolveRenderPassiveItems());
+            targets.Add(ResolveAccessoriesBarSelectablesGetter());
+            targets.Add(ResolveAccessoriesBarMethod("ClearCallBack"));
             ThrowIfOwnerCannotInstall(targets);
 
             MethodInfo reloadCallback = RequireCallback(
@@ -50,12 +51,15 @@ namespace DTMAPI.MoreEquipmentSlots
             MethodInfo shieldCallback = RequireCallback(
                 nameof(MoreEquipmentSlotsCallbacks
                     .AgentEquipmentManagerTryGetShieldItemPostfix));
-            MethodInfo initCallback = RequireCallback(
+            MethodInfo renderCallback = RequireCallback(
                 nameof(MoreEquipmentSlotsCallbacks
-                    .AccessoriesBarInitPostfix));
-            MethodInfo showCallback = RequireCallback(
+                    .AccessoriesBarRenderPassiveItemsPostfix));
+            MethodInfo selectablesCallback = RequireCallback(
                 nameof(MoreEquipmentSlotsCallbacks
-                    .AccessoriesBarStartShowPostfix));
+                    .AccessoriesBarAllSelectablesPostfix));
+            MethodInfo clearCallback = RequireCallback(
+                nameof(MoreEquipmentSlotsCallbacks
+                    .AccessoriesBarClearCallBackPostfix));
 
             harmony = new Harmony(
                 MoreEquipmentSlotsProductContract.HarmonyOwner);
@@ -73,18 +77,22 @@ namespace DTMAPI.MoreEquipmentSlots
                 PatchWithGate(
                     3,
                     targets[2],
-                    postfix: new HarmonyMethod(initCallback));
+                    postfix: new HarmonyMethod(renderCallback));
                 PatchWithGate(
                     4,
                     targets[3],
-                    postfix: new HarmonyMethod(showCallback));
+                    postfix: new HarmonyMethod(selectablesCallback));
+                PatchWithGate(
+                    5,
+                    targets[4],
+                    postfix: new HarmonyMethod(clearCallback));
 
                 PublishObservedState();
                 if (!IsInstalled ||
                     InstalledPatchCount != ExpectedPatchCount)
                 {
                     throw new InvalidOperationException(
-                        "MoreEquipmentSlots could not prove all four exact-owner hooks after installation.");
+                        "MoreEquipmentSlots could not prove all five exact-owner hooks after installation.");
                 }
 
                 monitor.Log(
@@ -225,6 +233,58 @@ namespace DTMAPI.MoreEquipmentSlots
                     name + "()");
         }
 
+        private static MethodInfo ResolveRenderPassiveItems()
+        {
+            Type type = ResolveGameType(
+                "DolocTown.UI.AccessoriesBar");
+            foreach (MethodInfo method in type.GetMethods(
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                if (method.Name == "RenderPassiveItems" &&
+                    method.ReturnType == typeof(void) &&
+                    parameters.Length == 1 &&
+                    parameters[0].ParameterType.IsArray &&
+                    string.Equals(
+                        parameters[0].ParameterType
+                            .GetElementType()?.FullName,
+                        "UnityEngine.Sprite",
+                        StringComparison.Ordinal))
+                {
+                    return method;
+                }
+            }
+            throw new MissingMethodException(
+                type.FullName,
+                "RenderPassiveItems(Sprite[])");
+        }
+
+        private static MethodInfo
+            ResolveAccessoriesBarSelectablesGetter()
+        {
+            Type type = ResolveGameType(
+                "DolocTown.UI.AccessoriesBar");
+            MethodInfo? getter = type.GetProperty(
+                "allSelectablesArray",
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.Instance)?.GetGetMethod(true);
+            if (getter == null ||
+                !getter.ReturnType.IsArray ||
+                !string.Equals(
+                    getter.ReturnType.GetElementType()?.FullName,
+                    "UnityEngine.UI.Selectable",
+                    StringComparison.Ordinal))
+            {
+                throw new MissingMethodException(
+                    type.FullName,
+                    "get_allSelectablesArray()");
+            }
+            return getter;
+        }
+
         private static Type ResolveGameType(string fullName) =>
             typeof(DolocAPI).Assembly.GetType(
                 fullName,
@@ -283,7 +343,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 case EquipmentSlotsInstallDecision
                     .RejectCompatibilityOwner:
                     throw new InvalidOperationException(
-                        "MoreEquipmentSlots refused to install because frozen Compatibility owns at least one of its four native targets.");
+                        "MoreEquipmentSlots refused to install because frozen Compatibility owns at least one of its five native targets.");
                 case EquipmentSlotsInstallDecision
                     .RejectDuplicateProductOwner:
                     throw new InvalidOperationException(

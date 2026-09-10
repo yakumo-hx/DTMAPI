@@ -1,6 +1,8 @@
-# ISSUE-016: Audio Hook Idempotent Review Republishes and Downgrades Status
+﻿# ISSUE-016: Audio Hook Idempotent Review Republishes and Downgrades Status
 
-State: `mitigated`
+- State: `mitigated`
+- Current boundary: Physical audio status publication is transition-based and focused/full Unit gates pass; corrected Manbo plus delayed ItemDisplayName player recheck remains open.
+
 
 ## Symptom
 
@@ -22,7 +24,7 @@ The warning appears even though audio playback succeeded and no second Harmony p
 
 ## Evidence and Root Cause
 
-The exact retained sequence and hashes are recorded by [Manual-QA Review 20260731-0002](../../reviews/manual-qa/2026/20260731-0002-audio-hook-idempotent-status-republish.md).
+The exact retained sequence and hashes are recorded by [Manual-QA Review 20260731-0002](../../archive/reviews/manual-qa/2026/20260731-0002-audio-hook-idempotent-status-republish.md).
 
 `AudioReplacementHookBridge.InstallHooks()` guards all four physical patches but unconditionally republishes status after every review. The lifecycle contract then uses install-looking English source/details to count that publication as another installation. This is a state-publication defect plus a later diagnostic-model debt, not an audio playback failure.
 
@@ -36,7 +38,7 @@ The exact retained sequence and hashes are recorded by [Manual-QA Review 2026073
 
 The `0.5.5` correction is intentionally minimal: cache the last published physical Hook tuple and republish only on the initial observation or a real physical-state transition. This preserves retries and prevents a stable physical review from erasing behavioral verification.
 
-The scheduler's at-least-once fanout, structured install outcomes, physical-versus-behavioral status layers, and the general lifecycle heuristic are deferred to the next-version [audio bridge roadmap](../../planning/20260731-audio-replacement-bridge-roadmap.md).
+The scheduler's at-least-once fanout, structured install outcomes, physical-versus-behavioral status layers, and the general lifecycle heuristic are deferred to the next-version [audio bridge roadmap](../../archive/planning/2026/20260731-audio-replacement-bridge-roadmap.md).
 
 ## 2026-07-31 Source Correction
 

@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
@@ -55,6 +56,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
             if (string.Equals(request.Operation, AuthorSessionProtocol.GetSourceSnapshotOperation, StringComparison.Ordinal))
                 return CreateAuthorSourceSnapshotResult(decision, selected, currentTreeSha256);
+            if (string.Equals(request.Operation, AuthorSessionProtocol.ExecuteCommandOperation, StringComparison.Ordinal))
+            {
+                if (!selected.OfficialEnabled || !runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID.Equals(request.UniqueId, StringComparison.OrdinalIgnoreCase)))
+                    return AuthorSessionOperationResult.Rejected("source-not-active", "Commands require the selected source's active Mod owner.");
+                return runtime.ExecuteAuthorPlatformCommand(request);
+            }
             if (!string.Equals(request.Operation, AuthorSessionProtocol.ReloadContentOperation, StringComparison.Ordinal))
                 return AuthorSessionOperationResult.Rejected("operation-unsupported", "The requested author operation is unsupported.");
 
@@ -135,7 +142,7 @@ namespace DTMAPI.GameBridge.DolocTown
             });
         }
 
-        private static AuthorSessionOperationResult CreateAuthorSourceSnapshotResult(
+        private AuthorSessionOperationResult CreateAuthorSourceSnapshotResult(
             AuthorSourceSelectionDecision decision,
             DiscoveredMod selected,
             string currentTreeSha256)
@@ -143,7 +150,7 @@ namespace DTMAPI.GameBridge.DolocTown
             DiscoveredMod[] shadowed = decision.Candidates
                 .Where(candidate => !IsSelectedSourceCandidate(candidate, selected))
                 .ToArray();
-            const int maximumReportedShadowedCandidates = 3;
+            const int maximumReportedShadowedCandidates = 2;
             DiscoveredMod[] reported = shadowed.Take(maximumReportedShadowedCandidates).ToArray();
             var values = new List<KeyValuePair<string, string>>
             {
@@ -159,6 +166,9 @@ namespace DTMAPI.GameBridge.DolocTown
                 Pair("treeHashAlgorithm", AuthorFileTreeDigest.Algorithm),
                 Pair("treeSha256", currentTreeSha256)
             };
+            values.Add(Pair("officialEnabled", selected.OfficialEnabled.ToString(CultureInfo.InvariantCulture)));
+            values.Add(Pair("ownerActive", runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID.Equals(selected.Manifest.UniqueID, StringComparison.OrdinalIgnoreCase)).ToString(CultureInfo.InvariantCulture)));
+            values.AddRange(AuthorAssemblyObservation.Read(selected));
 
             for (int index = 0; index < reported.Length; index++)
             {
@@ -345,19 +355,9 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 try
                 {
-                    SdkPackageMarker marker = ReadJson<SdkPackageMarker>(markerPath);
-                    if (marker.SchemaVersion != 1 ||
-                        !string.Equals(marker.Owner, "DTMAPI", StringComparison.Ordinal) ||
-                        !string.Equals(marker.UniqueId, selected.Manifest.UniqueID, StringComparison.Ordinal) ||
-                        !string.Equals(marker.Version, selected.Manifest.Version, StringComparison.Ordinal) ||
-                        !string.Equals(marker.PackageKind, "ContentPack", StringComparison.Ordinal) ||
-                        !string.Equals(marker.AuthorSdkVersion, "0.1.0", StringComparison.Ordinal) ||
-                        !string.Equals(marker.TargetRuntimeVersion, DtmApiRuntime.ApiVersion, StringComparison.Ordinal))
-                    {
-                        return AuthorSessionOperationResult.RestartRequired(
-                            "package-metadata-changed-restart-required",
-                            "dtmapi-package.json no longer matches the active ContentPack/Runtime manifest projection.");
-                    }
+                    AuthorPackageMarker.ValidateIfPresent(selected.RootPath, selected.ManifestPath,
+                        selected.Manifest.UniqueID, selected.Manifest.Version, "ContentPack", string.Empty, string.Empty,
+                        selected.Manifest.MinimumDTMApiVersion);
                 }
                 catch (Exception ex)
                 {
@@ -397,18 +397,6 @@ namespace DTMAPI.GameBridge.DolocTown
             [DataMember(Name = "name")] public string Name { get; set; } = string.Empty;
             [DataMember(Name = "author")] public string Author { get; set; } = string.Empty;
             [DataMember(Name = "version")] public string Version { get; set; } = string.Empty;
-        }
-
-        [DataContract]
-        private sealed class SdkPackageMarker
-        {
-            [DataMember(Name = "schemaVersion")] public int SchemaVersion { get; set; }
-            [DataMember(Name = "owner")] public string Owner { get; set; } = string.Empty;
-            [DataMember(Name = "uniqueId")] public string UniqueId { get; set; } = string.Empty;
-            [DataMember(Name = "version")] public string Version { get; set; } = string.Empty;
-            [DataMember(Name = "packageKind")] public string PackageKind { get; set; } = string.Empty;
-            [DataMember(Name = "authorSdkVersion")] public string AuthorSdkVersion { get; set; } = string.Empty;
-            [DataMember(Name = "targetRuntimeVersion")] public string TargetRuntimeVersion { get; set; } = string.Empty;
         }
 
         private static KeyValuePair<string, string> Pair(string key, string value) =>

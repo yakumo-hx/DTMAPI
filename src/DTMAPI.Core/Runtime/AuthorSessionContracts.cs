@@ -9,10 +9,17 @@ namespace DTMAPI.Core.Runtime
 {
     internal static class AuthorSessionProtocol
     {
-        public const int DescriptorSchemaVersion = 1;
+        public const int DescriptorSchemaVersion = 2;
+        public const int LegacySchemaVersion = 1;
+        public const string LegacyWireVersion = "0.5.5";
+        public const int Major = 1;
+        public const int MinimumMinor = 0;
+        public const int MaximumMinor = 0;
+        public const string HelloOperation = "hello";
         public const string ProtocolVersion = "dtmapi-author-session/1";
         public const string GetSourceSnapshotOperation = "get-source-snapshot";
         public const string ReloadContentOperation = "reload-content";
+        public const string ExecuteCommandOperation = "execute-command";
         public const int MaximumDescriptorBytes = 32 * 1024;
         public const int MaximumRequestBytes = 32 * 1024;
         public const int MaximumResponseBytes = 64 * 1024;
@@ -29,7 +36,8 @@ namespace DTMAPI.Core.Runtime
         public static bool IsSupportedOperation(string operation)
         {
             return string.Equals(operation, GetSourceSnapshotOperation, StringComparison.Ordinal) ||
-                string.Equals(operation, ReloadContentOperation, StringComparison.Ordinal);
+                string.Equals(operation, ReloadContentOperation, StringComparison.Ordinal) ||
+                string.Equals(operation, ExecuteCommandOperation, StringComparison.Ordinal);
         }
 
         public static string NormalizePath(string path)
@@ -168,7 +176,7 @@ namespace DTMAPI.Core.Runtime
         [DataMember(Name = "gameRoot", Order = 1, IsRequired = true)]
         public string GameRoot { get; set; } = string.Empty;
 
-        [DataMember(Name = "runtimeVersion", Order = 2, IsRequired = true)]
+        [DataMember(Name = "runtimeVersion", Order = 2, EmitDefaultValue = false)]
         public string RuntimeVersion { get; set; } = string.Empty;
 
         [DataMember(Name = "sessionId", Order = 3, IsRequired = true)]
@@ -186,6 +194,27 @@ namespace DTMAPI.Core.Runtime
         [DataMember(Name = "expiresAtUtc", Order = 7, IsRequired = true)]
         public string ExpiresAtUtc { get; set; } = string.Empty;
 
+        [DataMember(Name = "protocolMajor", EmitDefaultValue = false)] public int ProtocolMajor { get; set; }
+        [DataMember(Name = "minimumMinor")] public int MinimumMinor { get; set; }
+        [DataMember(Name = "maximumMinor")] public int MaximumMinor { get; set; }
+        [DataMember(Name = "apiTarget", EmitDefaultValue = false)] public string ApiTarget { get; set; } = string.Empty;
+        [DataMember(Name = "minimumRuntimeVersion", EmitDefaultValue = false)] public string MinimumRuntimeVersion { get; set; } = string.Empty;
+        [DataMember(Name = "requiredCapabilities", EmitDefaultValue = false)] public string[] RequiredCapabilities { get; set; } = Array.Empty<string>();
+        [DataMember(Name = "optionalCapabilities", EmitDefaultValue = false)] public string[] OptionalCapabilities { get; set; } = Array.Empty<string>();
+        [IgnoreDataMember] public int SelectedMinor { get; internal set; }
+        [IgnoreDataMember] public string[] AcceptedCapabilities { get; internal set; } = Array.Empty<string>();
+        [IgnoreDataMember] public string[] UnsupportedOptionalCapabilities { get; internal set; } = Array.Empty<string>();
+
+        internal AuthorSessionDescriptor CopyForHost()
+        {
+            var copy = (AuthorSessionDescriptor)MemberwiseClone();
+            copy.RequiredCapabilities = (RequiredCapabilities ?? Array.Empty<string>()).ToArray();
+            copy.OptionalCapabilities = (OptionalCapabilities ?? Array.Empty<string>()).ToArray();
+            copy.AcceptedCapabilities = (AcceptedCapabilities ?? Array.Empty<string>()).ToArray();
+            copy.UnsupportedOptionalCapabilities = (UnsupportedOptionalCapabilities ?? Array.Empty<string>()).ToArray();
+            return copy;
+        }
+
         [IgnoreDataMember]
         public DateTimeOffset CreatedAt { get; internal set; }
 
@@ -196,10 +225,10 @@ namespace DTMAPI.Core.Runtime
     [DataContract]
     internal sealed class AuthorSessionRequest
     {
-        [DataMember(Name = "protocol", Order = 0, IsRequired = true)]
+        [DataMember(Name = "protocol", Order = 0, EmitDefaultValue = false)]
         public string Protocol { get; set; } = string.Empty;
 
-        [DataMember(Name = "runtime", Order = 1, IsRequired = true)]
+        [DataMember(Name = "runtime", Order = 1, EmitDefaultValue = false)]
         public string Runtime { get; set; } = string.Empty;
 
         [DataMember(Name = "gameRoot", Order = 2, IsRequired = true)]
@@ -214,17 +243,31 @@ namespace DTMAPI.Core.Runtime
         [DataMember(Name = "requestId", Order = 5, IsRequired = true)]
         public string RequestId { get; set; } = string.Empty;
 
-        [DataMember(Name = "uniqueId", Order = 6, IsRequired = true)]
+        [DataMember(Name = "uniqueId", Order = 6)]
         public string UniqueId { get; set; } = string.Empty;
 
-        [DataMember(Name = "selectedRoot", Order = 7, IsRequired = true)]
+        [DataMember(Name = "selectedRoot", Order = 7)]
         public string SelectedRoot { get; set; } = string.Empty;
 
-        [DataMember(Name = "expectedTreeSha256", Order = 8, IsRequired = true)]
+        [DataMember(Name = "expectedTreeSha256", Order = 8)]
         public string ExpectedTreeSha256 { get; set; } = string.Empty;
 
         [DataMember(Name = "operation", Order = 9, IsRequired = true)]
         public string Operation { get; set; } = string.Empty;
+
+        [DataMember(Name = "commandLine", EmitDefaultValue = false)]
+        public string? CommandLine { get; set; }
+
+        [DataMember(Name = "schemaVersion", EmitDefaultValue = false)] public int SchemaVersion { get; set; }
+        [DataMember(Name = "protocolMajor", EmitDefaultValue = false)] public int ProtocolMajor { get; set; }
+        [DataMember(Name = "protocolMinor", EmitDefaultValue = false)] public int? ProtocolMinor { get; set; }
+        [DataMember(Name = "minimumMinor", EmitDefaultValue = false)] public int? MinimumMinor { get; set; }
+        [DataMember(Name = "maximumMinor", EmitDefaultValue = false)] public int? MaximumMinor { get; set; }
+        [DataMember(Name = "apiTarget", EmitDefaultValue = false)] public string? ApiTarget { get; set; }
+        [DataMember(Name = "minimumRuntimeVersion", EmitDefaultValue = false)] public string? MinimumRuntimeVersion { get; set; }
+        [DataMember(Name = "requiredCapabilities", EmitDefaultValue = false)] public string[]? RequiredCapabilities { get; set; }
+        [DataMember(Name = "optionalCapabilities", EmitDefaultValue = false)] public string[]? OptionalCapabilities { get; set; }
+        [DataMember(Name = "hostVersion", EmitDefaultValue = false)] public string? HostVersion { get; set; }
 
         internal void NormalizeAuthenticatedValues()
         {
@@ -237,10 +280,10 @@ namespace DTMAPI.Core.Runtime
     [DataContract]
     internal sealed class AuthorSessionResponse
     {
-        [DataMember(Name = "protocol", Order = 0)]
+        [DataMember(Name = "protocol", Order = 0, EmitDefaultValue = false)]
         public string Protocol { get; set; } = AuthorSessionProtocol.ProtocolVersion;
 
-        [DataMember(Name = "runtime", Order = 1)]
+        [DataMember(Name = "runtime", Order = 1, EmitDefaultValue = false)]
         public string Runtime { get; set; } = string.Empty;
 
         [DataMember(Name = "session", Order = 2)]
@@ -266,6 +309,15 @@ namespace DTMAPI.Core.Runtime
 
         [DataMember(Name = "values", Order = 9)]
         public List<AuthorSessionResponseValue> Values { get; set; } = new List<AuthorSessionResponseValue>();
+
+        [DataMember(Name = "schemaVersion", EmitDefaultValue = false)] public int SchemaVersion { get; set; }
+        [DataMember(Name = "protocolMajor", EmitDefaultValue = false)] public int ProtocolMajor { get; set; }
+        [DataMember(Name = "protocolMinor", EmitDefaultValue = false)] public int? ProtocolMinor { get; set; }
+        [DataMember(Name = "gameRoot", EmitDefaultValue = false)] public string? GameRoot { get; set; }
+        [DataMember(Name = "hostVersion", EmitDefaultValue = false)] public string? HostVersion { get; set; }
+        [DataMember(Name = "apiTarget", EmitDefaultValue = false)] public string? ApiTarget { get; set; }
+        [DataMember(Name = "acceptedCapabilities", EmitDefaultValue = false)] public string[]? AcceptedCapabilities { get; set; }
+        [DataMember(Name = "unsupportedOptionalCapabilities", EmitDefaultValue = false)] public string[]? UnsupportedOptionalCapabilities { get; set; }
     }
 
     [DataContract]
@@ -316,6 +368,13 @@ namespace DTMAPI.Core.Runtime
         public string Message { get; }
 
         public IReadOnlyList<AuthorSessionResponseValue> Values => values;
+
+        internal System.Threading.Tasks.Task<AuthorSessionOperationResult>? DeferredCompletion { get; private set; }
+        internal Func<bool>? CancelDeferred { get; private set; }
+
+        internal static AuthorSessionOperationResult Deferred(System.Threading.Tasks.Task<AuthorSessionOperationResult> completion, Func<bool> cancel)
+            => new AuthorSessionOperationResult("ok", "command-pending", "Command queued for Runtime execution.", Array.Empty<KeyValuePair<string, string>>())
+            { DeferredCompletion = completion, CancelDeferred = cancel };
 
         public static AuthorSessionOperationResult Success(string code, string message, params KeyValuePair<string, string>[] values) =>
             new AuthorSessionOperationResult("ok", code, message, values);

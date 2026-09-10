@@ -1,10 +1,14 @@
-# Batch 6 Managed Mod Identity And Phase 0 Contract
+# Batch 6 / DTMAPI 0.5.5 Managed Mod Identity Historical Annex
 
-Status: `Phase 0/G2 and the admitted product work in the 0.5.5 release set are verified/closed; MoreEquipmentSlots Branch B transaction, migration, current attack, current policy source and disposable Product-disabled cold-recovery gate are verified while broader product publication remains pending; every later product and G7 remain blocked; the pre-upload authorization remains Update 20260801-0002, the actual published Runtime 0.5.5 artifact is owned by Update 20260801-0003, and Update 20260802-0001 owns the nine observed current ProductNative Steam artifacts; IEquipmentSlotsApi/Compatibility continues to support the retained Workshop 0.3.1-dtmapi package; no historical proof opens general Advanced authoring or pre-authorizes a future release`
+Status: `frozen historical annex — preserves the Batch 6 / 0.5.5 Phase 0, G2, bounded product-migration, compatibility and release-era evidence that existed at the cutoff; it does not own the current admitted set, public/subscription set, product runtime state or a future release`
 
 Date: 2026-07-27
 
-Last status correction: 2026-08-06
+Historical coverage through: 2026-08-06
+
+Frozen: 2026-08-09 by Update `20260809-0002`. Do not append later implementation, publication, runtime or product status here.
+
+Current managed-product admission is the Catalog-generated [Managed Product Admission Registry](managed-product-admission-registry.md). Current public/subscription facts are resolved only through the [Product Catalog](../../tools/release/dtmapi-product-catalog.json), [current subscription manifest](../../tools/release/current-subscription-manifest.json), and the latest release Update named by that manifest's `authority.latestReleaseUpdate`. A future upload authorization is a separate Catalog `releaseStop` fact. Admission and publication/subscription are independent axes.
 
 This document projects the canonical identities and ownership categories from
 [`PROJECT.md`](../../PROJECT.md) onto the manifest, Loader, Author SDK, Doctor,
@@ -1126,7 +1130,7 @@ revalidate those bytes with populated official #7--#12 UI, native index 6 and
 no player archive writeback. This closes the corrected migration gate without
 claiming the separate full fixed-12 operation matrix or Steam publication.
 
-## Current Admission State
+## Frozen Closing State At Annex Cutoff
 
 ```text
 Phase 0 correction: PASS; schema-2 receipt, both-PowerShell-host gate, full Release suite and Runtime smoke verified
@@ -1159,7 +1163,7 @@ DebugConsole: VERIFIED/CLOSED TWELFTH PRODUCT; admission, ABI, native executors 
 Thirteenth-or-later real products: BLOCKED; no general Advanced authoring lane
 Content Host implementation: BLOCKED under G7
 0.5.5 pre-upload authority: EXACT PLAYER-ACCEPTED UPLOAD TREES authorized by Update 20260801-0002; that record preserves MoreEquipmentSlots Workshop 0.3.1 and limits mutation to eleven frozen existing-item updates
-Current ProductNative Steam publication: PUBLISHED-OBSERVED-EXACT for the nine authorized ProductNative items; Update 20260802-0001 owns their post-publication manifest/file/byte/tree/entry-DLL observations and Catalog row digest CBB54977...D3587. Their Steam trees exactly equal the pre-upload authorization, while old publishedVersion/retainedArtifact rows remain separate rollback identities. This does not claim that the later 24456188/minimum-0.6.0 AutoFishing/DebugConsole/MoreEquipmentSlots candidates or MoreSaves 1.0.1 candidate have already been re-uploaded
+ProductNative Steam publication at the historical cutoff: PUBLISHED-OBSERVED-EXACT for the nine authorized ProductNative items; the observation was originally recorded during Update 20260802-0001 and matched the 0.5.5 pre-upload authorization. That Update and this annex are now historical; current product-set routing is the Catalog, subscription manifest and Catalog-linked latest release Update. The old publishedVersion/retainedArtifact rows remain separate rollback identities, and the observation did not publish the later 24456188/minimum-0.6.0 AutoFishing/DebugConsole/MoreEquipmentSlots candidates or the MoreSaves 1.0.1 candidate
 0.5.5 Runtime publication: PUBLISHED; Update 20260801-0003 owns the exact Steam-delivered Runtime tree and native metadata normalization. New Workshop items, identity/folder moves, mass edits, MoreEquipmentSlots 1.0, every non-listed update and every future release still require their own bounded authority
 Generic protected storage API: DEFERRED; no IProtectedStorageApi is declared or admitted, and frozen IEquipmentSlotsApi compatibility is not a shared-storage promotion
 ```

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "dtmapi-managed-subscription-20260830T110019Z",
+  "observedAtUtc": "2026-08-30T11:00:19Z",
+  "steamAppId": "2285550",
+  "source": {
+    "kind": "SteamAppWorkshopManifest",
+    "pathConvention": "<SteamLibrary>/steamapps/workshop/appworkshop_2285550.acf",
+    "lastWriteUtc": "2026-08-30T10:51:39.0095695Z",
+    "sha256": "f757f6afb21c42eea0909ea17f86a7c8b6b68648864396888e09f4d29fbe6f66",
+    "installedItemCount": 53,
+    "sizeOnDisk": 116721449,
+    "needsUpdate": false,
+    "needsDownload": false
+  },
+  "authority": {
+    "catalog": "tools/release/dtmapi-product-catalog.json",
+    "latestReleaseUpdate": "docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md",
+    "selection": "The published Windows Runtime distribution, additional Runtime distributions listed below, plus Catalog rows whose role is PublishedProduct and whose WorkshopID occurs in both WorkshopItemsInstalled and WorkshopItemDetails in the captured native Steam manifest.",
+    "meaning": "This is a local Steam subscription-membership and installed-manifest observation. It is not an admission registry and does not prove public visibility, DTMAPI enablement, source selection, assembly loading or behavior.",
+    "cacheWarning": "The Workshop content directory is Steam-managed mutable cache. Directory bytes may be locally staged or newer than remote publication; membership and installed manifest IDs remain distinct from public release authorization."
+  },
+  "runtime": {
+    "catalogId": "runtime",
+    "uniqueId": "DTMAPI.Runtime",
+    "kind": "Runtime",
+    "workshopId": "3743016467",
+    "manifestId": "918505309011394484",
+    "installedBytes": 3866890,
+    "steamTimeUpdated": 1787185394,
+    "releaseVersion": "0.6.1",
+    "binaryFileVersion": "0.6.1.0",
+    "steamDeliveredFileCount": 29,
+    "steamDeliveredTreeSha256": "846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88",
+    "playerPayloadFileCount": 28,
+    "playerPayloadBytes": 3866857,
+    "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+    "additionalDistributions": [
+      {
+        "distributionId": "dtmapi-multiplatform",
+        "catalogId": "runtime",
+        "uniqueId": "DTMAPI.Runtime",
+        "kind": "RuntimeDistribution",
+        "workshopId": "3792681186",
+        "manifestId": "5128092030483852458",
+        "installedBytes": 29770736,
+        "steamTimeUpdated": 1788083449,
+        "steamDeliveredFileCount": 36,
+        "steamDeliveredBytes": 29770736,
+        "steamDeliveredTreeSha256": "e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4",
+        "workshopControlFileDelivered": false,
+        "contentParity": "RepositoryCandidateAndLocalUploadContentExactBeforeLocalMetadataSuccessor"
+      }
+    ]
+  },
+  "managedProducts": [
+    {
+      "catalogId": "zoom",
+      "uniqueId": "DTMAPI.ZoomMod",
+      "kind": "ManagedProduct",
+      "workshopId": "3742717440",
+      "manifestId": "5286680386495525564",
+      "installedBytes": 483303,
+      "steamTimeUpdated": 1785586353
+    },
+    {
+      "catalogId": "y-console",
+      "uniqueId": "DTMAPI.DebugConsoleMod",
+      "kind": "ManagedProduct",
+      "workshopId": "3742714442",
+      "manifestId": "6693520158465470410",
+      "installedBytes": 610335,
+      "steamTimeUpdated": 1787440923
+    },
+    {
+      "catalogId": "more-saves",
+      "uniqueId": "DTMAPI.MoreSavesMod",
+      "kind": "ManagedProduct",
+      "workshopId": "3742763050",
+      "manifestId": "7813358710828019241",
+      "installedBytes": 31765,
+      "steamTimeUpdated": 1786000661
+    },
+    {
+      "catalogId": "action-speed",
+      "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
+      "kind": "ManagedProduct",
+      "workshopId": "3742763309",
+      "manifestId": "1425556175612683122",
+      "installedBytes": 368423,
+      "steamTimeUpdated": 1786000698
+    },
+    {
+      "catalogId": "one-action-complete",
+      "uniqueId": "Yuuka.DTMAPI.OneActionComplete",
+      "kind": "ManagedProduct",
+      "workshopId": "3742763540",
+      "manifestId": "5152456336901109885",
+      "installedBytes": 234109,
+      "steamTimeUpdated": 1786000741
+    },
+    {
+      "catalogId": "fish-roe-info",
+      "uniqueId": "Yuuka.DTMAPI.FishBreedingAssistant",
+      "kind": "ManagedProduct",
+      "workshopId": "3742763706",
+      "manifestId": "7732688629514199778",
+      "installedBytes": 21246,
+      "steamTimeUpdated": 1786000732
+    },
+    {
+      "catalogId": "animal-husbandry-progress",
+      "uniqueId": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+      "kind": "ManagedProduct",
+      "workshopId": "3742763843",
+      "manifestId": "2559466282015340135",
+      "installedBytes": 49134,
+      "steamTimeUpdated": 1786000751
+    },
+    {
+      "catalogId": "chest-locator-enhancer",
+      "uniqueId": "DTMAPI.ChestLocatorEnhancerMod",
+      "kind": "ManagedProduct",
+      "workshopId": "3742765514",
+      "manifestId": "7187217852967426359",
+      "installedBytes": 39686,
+      "steamTimeUpdated": 1786000652
+    },
+    {
+      "catalogId": "auto-fishing",
+      "uniqueId": "Yuuka.DTMAPI.AutoFishing",
+      "kind": "ManagedProduct",
+      "workshopId": "3743799721",
+      "manifestId": "8401329064819981206",
+      "installedBytes": 344423,
+      "steamTimeUpdated": 1786000712
+    },
+    {
+      "catalogId": "more-equipment-slots",
+      "uniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+      "kind": "ManagedProduct",
+      "workshopId": "3744059735",
+      "manifestId": "3792342317410441560",
+      "installedBytes": 210913,
+      "steamTimeUpdated": 1788087016
+    },
+    {
+      "catalogId": "manbo-cardboard-audio",
+      "uniqueId": "Yuuka.DTMAPI.ManboCardboardAudio",
+      "kind": "ManagedProduct",
+      "workshopId": "3746319981",
+      "manifestId": "7315020066349798235",
+      "installedBytes": 229384,
+      "steamTimeUpdated": 1781656609
+    }
+  ]
+}

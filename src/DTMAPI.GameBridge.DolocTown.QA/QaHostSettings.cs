@@ -78,6 +78,9 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         [DataMember(Name = "ObserveSaveLoaded")]
         internal bool ObserveSaveLoaded { get; set; }
 
+        [DataMember(Name = "WaitForManualExit")]
+        internal bool WaitForManualExit { get; set; }
+
         [DataMember(Name = "ObserveSaveSaved")]
         internal bool ObserveSaveSaved { get; set; }
 
@@ -284,6 +287,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 throw new InvalidDataException("QA settings runId does not match the activation receipt.");
             if (!string.Equals(Mode, QaHostProtocol.ParticipantOnlyMode, StringComparison.Ordinal))
                 throw new InvalidDataException("QA settings require mode=participant-only.");
+            if (WaitForManualExit && (!ObserveSaveLoaded || SaveSlot <= 0))
+                throw new InvalidDataException("Manual exit observation requires ObserveSaveLoaded and a positive UI SaveSlot.");
             DiagnosticsExpectedFeatureIds = (DiagnosticsExpectedFeatureIds ?? Array.Empty<string>())
                 .Select(item => (item ?? string.Empty).Trim())
                 .Where(item => item.Length > 0)

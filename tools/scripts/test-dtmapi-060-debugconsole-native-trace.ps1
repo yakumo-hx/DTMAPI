@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string] $CurrentReverseBuildRoot = '',
-    [string] $PreviousReverseBuildRoot = ''
+    [string] $PreviousReverseBuildRoot = '',
+    [string] $LatestReverseBuildRoot = ''
 )
 
 . "$PSScriptRoot\common.ps1"
@@ -13,10 +14,15 @@ if ([string]::IsNullOrWhiteSpace($CurrentReverseBuildRoot)) {
 if ([string]::IsNullOrWhiteSpace($PreviousReverseBuildRoot)) {
     $PreviousReverseBuildRoot = Join-Path $repo 'references\doloc-town\reverse\builds\23762374_public_C416D4'
 }
+if ([string]::IsNullOrWhiteSpace($LatestReverseBuildRoot)) {
+    $LatestReverseBuildRoot = Join-Path $repo 'references\doloc-town\reverse\builds\24966367_public_958EAF'
+}
 $CurrentReverseBuildRoot = [IO.Path]::GetFullPath($CurrentReverseBuildRoot)
 $PreviousReverseBuildRoot = [IO.Path]::GetFullPath($PreviousReverseBuildRoot)
+$LatestReverseBuildRoot = [IO.Path]::GetFullPath($LatestReverseBuildRoot)
 $currentNativeRoot = Join-Path $CurrentReverseBuildRoot 'decompiled\Assembly-CSharp'
 $previousNativeRoot = Join-Path $PreviousReverseBuildRoot 'decompiled\Assembly-CSharp'
+$latestNativeRoot = Join-Path $LatestReverseBuildRoot 'asset-ripper-unity-project\ExportedProject\Assets\Scripts\Assembly-CSharp'
 $currentAssemblyPath = Join-Path $CurrentReverseBuildRoot 'raw-snapshot\game\DolocTown_Data\Managed\Assembly-CSharp.dll'
 $productRoot = Join-Path $repo 'products\first-party\DebugConsole'
 $failures = [Collections.Generic.List[string]]::new()
@@ -121,6 +127,42 @@ foreach ($token in @(
     Require-DebugConsoleTraceToken 'Final-test baseline identity' $baselineReadme $token
 }
 
+foreach ($relativePath in @(
+    'DolocTown\IAnimalHost.cs',
+    'DolocTown\Animal.cs',
+    'DolocTown\Config\Animal\AnimalInfo.cs',
+    'DolocTown\Config\Animal\TbHusbandry.cs',
+    'DolocTown\GameData\MonsterProto.cs',
+    'DolocTown\MonsterDecoratorSpaceShip.cs',
+    'DolocTown\MonsterDecoratorSpaceShipBastion.cs',
+    'DolocTown\MonsterManager.cs',
+    'DolocTown\MonsterController.cs',
+    'DolocTown\MonsterAI_SpaceShip.cs'
+)) {
+    $policyBaselinePath = Join-Path (
+        Join-Path $CurrentReverseBuildRoot 'asset-ripper-unity-project\ExportedProject\Assets\Scripts\Assembly-CSharp') `
+        $relativePath
+    $latestPath = Join-Path $latestNativeRoot $relativePath
+    if ((Get-DebugConsoleSha $policyBaselinePath) -cne (Get-DebugConsoleSha $latestPath)) {
+        Add-DebugConsoleTraceFailure "DebugConsole monster/animal owner drifted between policy build 24456188 and current public build 24966367: $relativePath"
+    }
+}
+
+$policyMonsterHost = Read-DebugConsoleTraceText (
+    Join-Path $CurrentReverseBuildRoot 'asset-ripper-unity-project\ExportedProject\Assets\Scripts\Assembly-CSharp\DolocTown\IMonsterHost.cs')
+$latestMonsterHost = Read-DebugConsoleTraceText (
+    Join-Path $LatestReverseBuildRoot 'asset-ripper-unity-project\ExportedProject\Assets\Scripts\Assembly-CSharp\DolocTown\IMonsterHost.cs')
+foreach ($signature in @(
+    'void RemoveMonster(Monster monster)',
+    'Monster GenerateMonster(MonsterProto proto, Vector2 position, bool shouldRender = true)'
+)) {
+    $policyMethod = Get-DebugConsoleMethodBlock 'Policy IMonsterHost' $policyMonsterHost $signature
+    $latestMethod = Get-DebugConsoleMethodBlock 'Latest IMonsterHost' $latestMonsterHost $signature
+    if ($policyMethod -cne $latestMethod) {
+        Add-DebugConsoleTraceFailure "DebugConsole IMonsterHost method drifted between policy build 24456188 and current public build 24966367: $signature"
+    }
+}
+
 $currentApi = Read-DebugConsoleTraceText (Join-Path $currentNativeRoot 'DolocAPI.cs')
 $currentAgent = Read-DebugConsoleTraceText (Join-Path $currentNativeRoot 'DolocTown\AgentControllerState.cs')
 $previousAgent = Read-DebugConsoleTraceText (Join-Path $previousNativeRoot 'DolocTown\AgentControllerState.cs')
@@ -208,8 +250,14 @@ $hooks = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugCon
 $compatibilityHooks = Read-DebugConsoleTraceText (Join-Path $repo 'src\DTMAPI.GameBridge.DolocTown.Compatibility\DebugConsole\CompatibilityDebugConsoleInputHooks.cs')
 $weatherActions = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugConsoleNativeActions.Core.cs')
 $weatherHelpers = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugConsoleNativeActions.Helpers.cs')
+$spawnActions = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugConsoleNativeActions.Spawn.cs')
+$nativeAccess = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugConsoleNativeAccess.cs')
 $movementHooks = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Native\DebugConsoleMovementHooks.cs')
-$ui = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\Ui\DebugConsoleUi.cs')
+$ui = @(
+    Get-ChildItem -Path (Join-Path $productRoot 'src\Ui') -Filter 'DebugConsoleUi*.cs' -File |
+        Sort-Object -Property Name |
+        ForEach-Object { Read-DebugConsoleTraceText $_.FullName }
+) -join "`n"
 $entry = Read-DebugConsoleTraceText (Join-Path $productRoot 'src\ModEntry.cs')
 $unit = Read-DebugConsoleTraceText (Join-Path $repo 'tests\DTMAPI.UnitTests\Program.cs')
 
@@ -248,9 +296,74 @@ foreach ($token in @(
     Reject-DebugConsoleTraceToken 'Product weather duplicate native logic' $weatherActions $token
 }
 Require-DebugConsoleTraceToken `
-    'Current forecast signature reflection' `
+    'Cached current forecast signature reflection' `
     $weatherHelpers `
-    'new[] { typeof(string), typeof(int) }'
+    '"GetWeatherInfoOfDay"'
+Require-DebugConsoleTraceToken `
+    'Cached current forecast arity' `
+    $weatherHelpers `
+    '2,'
+
+foreach ($token in @(
+    '"DolocTown.IMonsterHost"',
+    '"GenerateMonster"',
+    'Native.AgentPosition',
+    'generateParameters[1].ParameterType',
+    'Native.Vector2(',
+    'ValidateMonsterAddition(',
+    'AddedEntities(callBefore, callAfter)',
+    'object.Equals(rootProto, expectedProto)',
+    '"space_ship_bastion"',
+    '"DolocTown.IAnimalHost"',
+    '"CreateAnimal"',
+    'Native.TableList("TbAnimal")',
+    'Native.Read(api, "AgentRoomCellPosition")',
+    'ManhattanRing(',
+    '"DEBUG_SetAdult"',
+    '"DEBUG_SetHusbandryValue"',
+    '"HusbandryDatas"',
+    'requestedRoots=',
+    'succeededRoots=',
+    'addedEntities='
+)) {
+    Require-DebugConsoleTraceToken 'ProductNative monster/animal batch owner' $spawnActions $token
+}
+foreach ($token in @(
+    'RollbackMonsters(',
+    'RollbackAnimals(',
+    'OpenBatchSpawnCircuit(',
+    'batchSpawnCircuitOpen',
+    '"RemoveMonster"',
+    '"RemoveAnimal"'
+)) {
+    Reject-DebugConsoleTraceToken 'ProductNative visible partial spawn boundary' $spawnActions $token
+}
+Reject-DebugConsoleTraceToken 'ProductNative runtime animal catalog' $spawnActions 'StableAnimalIds'
+foreach ($token in @(
+    'BuildUnifiedCatalogSources(',
+    'CatalogSourceMatches(',
+    'option.SourceId',
+    'option.IsModSource'
+)) {
+    Require-DebugConsoleTraceToken 'Unified item/organism source column' $ui $token
+}
+foreach ($token in @(
+    'DTMAPI.DebugConsole.Teleport.ExportCsv',
+    'DTMAPI.DebugConsole.Teleport.State',
+    'ExportTeleportCsv(',
+    'DisplaySafeLocation('
+)) {
+    Reject-DebugConsoleTraceToken 'Retired teleport UI debt' $ui $token
+}
+Reject-DebugConsoleTraceToken 'ProductNative legacy monster command' $spawnActions 'Command_Generate'
+foreach ($token in @(
+    '"UnityEngine.Vector2"',
+    'Read(source, "x")',
+    'Read(source, "y")',
+    'Activator.CreateInstance(targetType, x, y)'
+)) {
+    Require-DebugConsoleTraceToken 'Exact reflected monster Vector2 conversion' $nativeAccess $token
+}
 
 foreach ($token in @(
     'private void AddTechnologyPoints()',
@@ -348,15 +461,16 @@ if (Test-Path -LiteralPath (Join-Path $repo 'author-sdk\advanced-reference-polic
 }
 if ([string]$author.advanced.referencePolicyId -cne $policyId -or
     [string]$author.targetDtmApiVersion -cne '0.5.5' -or
-    [string]$manifest.Version -cne '1.0.0' -or
-    [string]$manifest.MinimumDTMApiVersion -cne '0.6.0') {
+    [string]$manifest.Version -cne '1.1.2' -or
+    [string]$manifest.MinimumDTMApiVersion -cne '0.6.1') {
     Add-DebugConsoleTraceFailure 'DebugConsole frozen API compile target, current policy, or truthful Runtime floor drifted.'
 }
 if ($catalogRows.Count -ne 1 -or
     [string]$catalogRows[0].referencePolicyId -cne $policyId -or
-    [string]$catalogRows[0].sourceVersion -cne '1.0.0' -or
-    [string]$catalogRows[0].sourceMinimumDtmApiVersion -cne '0.6.0' -or
-    [string]$catalogRows[0].targetMinimumDtmApiVersion -cne '0.6.0') {
+    [string]$catalogRows[0].sourceVersion -cne '1.1.2' -or
+    [string]$catalogRows[0].targetVersion -cne '1.1.2' -or
+    [string]$catalogRows[0].sourceMinimumDtmApiVersion -cne '0.6.1' -or
+    [string]$catalogRows[0].targetMinimumDtmApiVersion -cne '0.6.1') {
     Add-DebugConsoleTraceFailure 'Catalog y-console policy or current Runtime-floor projection drifted.'
 }
 
@@ -371,6 +485,7 @@ Write-Host 'DTMAPI 0.6 DebugConsole native trace: PASS'
 Write-Host '  baseline=24456188_test_E861E0 assembly=E861E07E...0923'
 Write-Host '  cost=CostItemAt/4; hooks=19 atomic product + 15 transactional compatibility creative'
 Write-Host '  weather=official Command_SetWeather(string,bool) + LocalWeatherType verification'
+Write-Host '  spawn=current public 24966367 monster/animal owners and exact Generate/Remove methods match policy build 24456188; composite space_ship files unchanged; product validates 1 root + 2 bastions and exposes visible partial success without rollback/circuit'
 Write-Host '  technology=NATURE|OPERATE|SCIENCE|ANIMAL each +100'
 Write-Host '  input=UseTool/UseItem unchanged; EnterUICheck clear-owner reviewed; movement=final native result'
-Write-Host '  policy=doloctown-24456188-debugconsole-v1 floor=0.6.0; old 23762374=Runtime/Doctor exact history only'
+Write-Host '  policy=doloctown-24456188-debugconsole-v1 authoring floor=0.6.0; product floor=0.6.1; old 23762374=Runtime/Doctor exact history only'

@@ -8,6 +8,7 @@ param(
 )
 
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\document-paths.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
 $failures = New-Object System.Collections.Generic.List[string]
@@ -346,7 +347,20 @@ else {
     Assert-ExactSet 'Live author project schema kind enum' @($authorSchema.properties.projectKind.enum) @('CodeMod', 'ContentPack')
 }
 Assert-ExactBoolean 'Live author manifest schema top-level additionalProperties' $manifestSchema.additionalProperties $false
-Assert-ExactBoolean 'Live author manifest dependency additionalProperties' $manifestSchema.properties.Dependencies.items.additionalProperties $false
+Assert-ExactValue 'Live author manifest Dependencies type' $manifestSchema.properties.Dependencies.type 'array'
+$dependencyRules = @($manifestSchema.allOf | Where-Object {
+    $condition = $_.PSObject.Properties['if']
+    if ($null -eq $condition) { return $false }
+    $required = $condition.Value.PSObject.Properties['required']
+    return $null -ne $required -and @($required.Value) -contains 'DependencyContractVersion'
+})
+Assert-ExactValue 'Live author manifest dependency discriminator count' $dependencyRules.Count '1'
+if ($dependencyRules.Count -eq 1) {
+    $dependencyRule = $dependencyRules[0]
+    Assert-ExactBoolean 'Live author manifest contract dependency additionalProperties' $dependencyRule.then.properties.Dependencies.items.additionalProperties $false
+    Assert-ExactBoolean 'Live author manifest dependency VersionRange additionalProperties' $dependencyRule.then.properties.Dependencies.items.properties.VersionRange.additionalProperties $false
+    Assert-ExactBoolean 'Live author manifest legacy dependency additionalProperties' $dependencyRule.else.properties.Dependencies.items.additionalProperties $false
+}
 
 if (-not $g2Activated) {
     $runtimeManifestJsonSupportText = Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\JsonSupport.cs')
@@ -396,7 +410,11 @@ if (-not $g2Activated) {
     }
 }
 $validatorText = Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectValidator.cs')
-if ($validatorText.IndexOf([string]$identity.currentWire.strictSdkDiagnostic, [StringComparison]::Ordinal) -lt 0) { Add-Failure 'SDK160 is missing from the current Strict Author SDK validator.' }
+$buildInputsText = Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectBuildInputs.cs')
+if ($validatorText.IndexOf('ProjectBuildInputs.Validate(context, diagnostics)', [StringComparison]::Ordinal) -lt 0 -or
+    $buildInputsText.IndexOf([string]$identity.currentWire.strictSdkDiagnostic, [StringComparison]::Ordinal) -lt 0) {
+    Add-Failure 'The current Strict Author SDK validator must invoke the project-input owner that emits SDK160.'
+}
 
 $catalogRelativePath = 'tools/release/dtmapi-product-catalog.json'
 $currentCatalog = Read-Utf8Text (Join-Path $repo $catalogRelativePath) | ConvertFrom-Json
@@ -425,17 +443,23 @@ else {
 
 [xml]$runtimeVersionAuthority = Read-Utf8Text (Join-Path $repo 'tools\release\dtmapi-runtime-version.props')
 $runtimeVersionProperties = @($runtimeVersionAuthority.Project.PropertyGroup | Select-Object -First 1)[0]
-Assert-ExactValue 'Runtime release/API version authority' $runtimeVersionProperties.DtmApiReleaseVersion '0.6.1'
-Assert-ExactValue 'Runtime binary/file version authority' $runtimeVersionProperties.DtmApiBinaryFileVersion '0.6.1.0'
-Assert-ExactValue 'Runtime assembly compatibility authority' $runtimeVersionProperties.DtmApiAssemblyCompatibilityVersion '0.5.3.0'
+$currentSourceBaseline = $currentCatalog.runtime.currentSourceBaseline
+Assert-ExactValue 'Runtime release/API version authority' $runtimeVersionProperties.DtmApiReleaseVersion $currentSourceBaseline.releaseVersion
+Assert-ExactValue 'Runtime binary/file version authority' $runtimeVersionProperties.DtmApiBinaryFileVersion $currentSourceBaseline.binaryFileVersion
+Assert-ExactValue 'Runtime assembly compatibility authority' $runtimeVersionProperties.DtmApiAssemblyCompatibilityVersion $currentSourceBaseline.assemblyCompatibilityIdentity
 $apiMatrixText = Read-Utf8Text (Join-Path $repo 'docs\api\public-api-matrix.md')
-foreach ($token in @('release/API `0.6.1`', 'binary/file `0.6.1.0`', 'assembly compatibility `0.5.3.0`', 'future `0.6.2-alpha` requirement is blocked')) {
+foreach ($token in @(
+    ('release/API `{0}`' -f $currentSourceBaseline.releaseVersion),
+    ('binary/file `{0}`' -f $currentSourceBaseline.binaryFileVersion),
+    ('assembly compatibility `{0}`' -f $currentSourceBaseline.assemblyCompatibilityIdentity),
+    'a requirement above the current numeric source version is blocked'
+)) {
     if ($apiMatrixText.IndexOf($token, [StringComparison]::Ordinal) -lt 0) { Add-Failure "Public API matrix is missing the active Runtime version projection: $token" }
 }
 foreach ($staleCurrentText in @('Current version baseline is `0.5.3-alpha`', '`0.5.3-alpha` is the current dev baseline label', 'future `0.5.4-alpha` requirements are blocked')) {
     if ($apiMatrixText.IndexOf($staleCurrentText, [StringComparison]::Ordinal) -ge 0) { Add-Failure "Public API matrix retains a stale current-version statement: $staleCurrentText" }
 }
-$roadmapText = Read-Utf8Text (Join-Path $repo 'docs\planning\20260712-dtmapi-lightweight-functional-mod-roadmap.md')
+$roadmapText = Read-Utf8Text (Resolve-DtmApiDocumentPath $repo 'docs/planning/20260712-dtmapi-lightweight-functional-mod-roadmap.md')
 $zoomPriorityPhrase = ([string][char]0x4F18) + ([char]0x5148) + ([char]0x8FC1) + ([char]0x56DE) + ' Zoom'
 $solePilotPhrase = ([string][char]0x552F) + ([char]0x4E00) + ([char]0x771F) + ([char]0x5B9E) + ([char]0x4EA7) + ([char]0x54C1) + ' pilot'
 $secondProductPhrase = ([string][char]0x7B2C) + ([char]0x4E8C) + ([char]0x771F) + ([char]0x5B9E) + ([char]0x4EA7) + ([char]0x54C1)

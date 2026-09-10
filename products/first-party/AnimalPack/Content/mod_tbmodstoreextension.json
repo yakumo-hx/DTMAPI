@@ -1,0 +1,62 @@
+[
+  {
+    "id": "animal_shop",
+    "extra_items": [
+      {
+        "item_name": "sack_hatch",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 3 }, "spawn_weight": 0 }
+        ]
+      },
+      {
+        "item_name": "sack_drecko",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 3 }, "spawn_weight": 0 }
+        ]
+      },
+      {
+        "item_name": "sack_mole",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 3 }, "spawn_weight": 0 }
+        ]
+      },
+      {
+        "item_name": "sack_oilfloater",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 20, "max_count": 20 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 3 }, "spawn_weight": 0 }
+        ]
+      },
+      {
+        "item_name": "recipe_animal_care_station",
+        "storage": 1,
+        "default_unlock": true,
+        "season_spawn_data": [
+          { "count_range": { "min_count": 1, "max_count": 1 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 1 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 1 }, "spawn_weight": 0 },
+          { "count_range": { "min_count": 1, "max_count": 1 }, "spawn_weight": 0 }
+        ]
+      }
+    ]
+  }
+]

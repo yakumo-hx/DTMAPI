@@ -1,8 +1,11 @@
-# ISSUE-004: Steam Launch Stuck Before DolocTown.exe Creation
+﻿# ISSUE-004: Steam Launch Stuck Before DolocTown.exe Creation
+
+- State: `monitoring`
+- Current boundary: Steam restart mitigation; keep recurrence evidence.
 
 ## Current Status
 
-- Status: mitigated by Steam client restart; keep open for recurrence tracking
+- Previous status wording: mitigated by Steam client restart; keep open for recurrence tracking
 - Last observed: 2026-05-31
 - Last clean recheck: 2026-07-15 19:14
 - Last external observer validation: 2026-05-31 19:14

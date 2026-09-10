@@ -1,8 +1,8 @@
 {
   "name": "DTMAPI 更多装备槽",
   "author": "Yuuka",
-  "version": "1.0.0",
-  "description": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
+  "version": "1.0.1",
+  "description": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。\n\nupdate0830\n修正在同一栏位创建新存档后旧本地数据导致报错问题。",
   "tags": [
     "Mod",
     "Functional",
@@ -16,8 +16,8 @@
     "english": "DTMAPI More Equipment Slots"
   },
   "localized_description": {
-    "schinese": "需要 DTMAPI 0.6.0 或更高版本。\n增加三个独立的属性装备槽。",
-    "tchinese": "需要 DTMAPI 0.6.0 或更高版本。\n增加三個獨立的屬性裝備槽。",
-    "english": "Requires DTMAPI 0.6.0 or later.\nAdds three independent attribute equipment slots."
+    "schinese": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。\n\nupdate0830\n修正在同一栏位创建新存档后旧本地数据导致报错问题。",
+    "tchinese": "提供額外三個裝備欄位，可以放置帽子或四個特殊飾品。\n只會獲得帽子與特殊飾品的效果，人物外觀仍然載入遊戲內建的帽子欄位。\n停用 mod 後，進入存檔時，額外裝備欄中的物品會退回背包或郵件。\n\nupdate0830\n修正在同一欄位建立新存檔後，舊的本機資料導致錯誤的問題。",
+    "english": "Provides three additional equipment slots that can hold hats or any of the four special accessories.\nOnly the effects of the hats and special accessories apply; the character's appearance still uses the game's built-in hat slot.\nAfter the mod is disabled, items in the extra equipment slots are returned to the backpack or mailbox when the save is loaded.\n\nupdate0830\nFixed an error caused by old local data after creating a new save in the same slot."
   }
 }

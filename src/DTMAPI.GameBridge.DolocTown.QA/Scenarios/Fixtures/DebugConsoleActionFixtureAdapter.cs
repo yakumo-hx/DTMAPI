@@ -16,7 +16,6 @@ namespace DTMAPI.GameBridge.DolocTown
     internal sealed class DebugConsoleActionFixtureAdapter :
         IInventoryDebugApi,
         IWeatherDebugApi,
-        ITeleportDebugApi,
         IInstantSaveDebugApi,
         ITimeDebugApi,
         IMovementDebugApi,
@@ -143,15 +142,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     owner,
                     destinationId);
 
-        public TeleportCsvExportResult ExportDestinationsCsv(
-            IManifest owner) =>
-            productActions == null
-                ? bridge.TeleportDebugApiForQa.ExportDestinationsCsv(owner)
-                : Invoke<TeleportCsvExportResult>(
-                    "ExportDestinationsCsv",
-                    owner);
-
-        BridgeFeatureStatus ITeleportDebugApi.GetStatus() =>
+        // Keep teleport calls on this concrete QA facade. Runtime 0.6.1 still
+        // exposes the retired ExportDestinationsCsv interface slot; directly
+        // implementing the current, smaller ITeleportDebugApi makes Mono reject
+        // this type before any retained teleport member can be exercised.
+        internal BridgeFeatureStatus GetTeleportStatus() =>
             productActions == null
                 ? bridge.TeleportDebugApiForQa.GetStatus()
                 : Invoke<BridgeFeatureStatus>("GetStatus");
@@ -357,7 +352,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     owner,
                     monsterId,
                     count)
-                : Invoke<SpawnDebugResult>(
+                : InvokeSpawnResult(
                     "SpawnMonster",
                     owner,
                     monsterId,
@@ -382,6 +377,56 @@ namespace DTMAPI.GameBridge.DolocTown
             productActions == null
                 ? bridge.AdvancedDebugApiForQa.GetStatus()
                 : Invoke<BridgeFeatureStatus>("GetStatus");
+
+        private SpawnDebugResult InvokeSpawnResult(
+            string methodName,
+            params object?[] arguments)
+        {
+            object target = productActions ??
+                throw new InvalidOperationException(
+                    "ProductNative DebugConsole action engine is unavailable.");
+            MethodInfo? method = target.GetType().GetMethods(
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Instance)
+                .FirstOrDefault(candidate =>
+                    (candidate.Name.Equals(
+                         methodName,
+                         StringComparison.Ordinal) ||
+                     candidate.Name.EndsWith(
+                         "." + methodName,
+                         StringComparison.Ordinal)) &&
+                    candidate.GetParameters().Length == arguments.Length);
+            if (method == null)
+            {
+                throw new MissingMethodException(
+                    target.GetType().FullName,
+                    methodName + "(" + arguments.Length + ")");
+            }
+
+            try
+            {
+                object? outcome = method.Invoke(target, arguments);
+                if (outcome is SpawnDebugResult direct)
+                    return direct;
+                PropertyInfo? resultProperty = outcome?.GetType().GetProperty(
+                    "Result",
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Instance);
+                if (resultProperty?.GetValue(outcome, null) is SpawnDebugResult wrapped)
+                    return wrapped;
+                throw new InvalidCastException(
+                    method.Name + " returned " +
+                    (outcome?.GetType().FullName ?? "null") +
+                    " without a SpawnDebugResult payload.");
+            }
+            catch (TargetInvocationException error)
+                when (error.InnerException != null)
+            {
+                throw error.InnerException;
+            }
+        }
 
         private T Invoke<T>(
             string methodName,

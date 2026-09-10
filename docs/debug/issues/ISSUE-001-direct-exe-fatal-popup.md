@@ -1,8 +1,11 @@
-# ISSUE-001: Direct EXE Smoke Launch Shows Fatal Instance Popup
+﻿# ISSUE-001: Direct EXE Smoke Launch Shows Fatal Instance Popup
+
+- State: `open`
+- Current boundary: DirectExe fatal popup; script mitigation exists.
 
 ## Current Status
 
-- Status: open / mitigated in scripts
+- Previous status wording: open / mitigated in scripts
 - Last observed: 2026-05-30
 - Severity: high for automated smoke testing
 - Regression risk: high

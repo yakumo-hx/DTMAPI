@@ -11,6 +11,33 @@ namespace DTMAPI.DebugConsole
 {
     internal sealed partial class DebugConsoleNativeActions
     {
+        private IReadOnlyList<InventoryDebugItem> InventoryCatalog()
+        {
+            if (inventoryCatalog == null)
+            {
+                inventoryCatalog = EnumerateInventoryItems()
+                    .OrderBy(item => item.IsModItem ? 1 : 0)
+                    .ThenBy(item => item.RuntimeOrder)
+                    .ThenBy(
+                        item => item.DisplayName,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(
+                        item => item.Id,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                inventorySourceGroups = BuildSourceGroups(inventoryCatalog);
+            }
+            return inventoryCatalog;
+        }
+
+        private IReadOnlyList<InventoryDebugSourceGroup>
+            InventorySourceGroups()
+        {
+            _ = InventoryCatalog();
+            return inventorySourceGroups ??
+                Array.Empty<InventoryDebugSourceGroup>();
+        }
+
         private IEnumerable<InventoryDebugItem> EnumerateInventoryItems()
         {
             Dictionary<string, IContentItemInfo> sources = runtime
@@ -39,16 +66,22 @@ namespace DTMAPI.DebugConsole
                     DisplayName = Native.First(Native.Text(proto, "Title"), id),
                     ChineseName = Native.First(Native.Text(proto, "Title"), id),
                     EnglishName = Native.First(
-                        Native.Text(proto, "EnglishTitle"),
-                        Native.Text(proto, "TitleEn"),
-                        Native.Text(proto, "Name"),
+                        Native.TextFirst(
+                            proto,
+                            "EnglishTitle",
+                            "TitleEn",
+                            "Name"),
                         id),
-                    Category = Native.First(
-                        Native.Text(main, "Title"),
-                        Native.Text(main, "Id")),
+                    Category = NormalizeItemCategory(Native.Text(main, "Id")),
                     SubCategory = Native.First(
+                        Native.Text(sub, "Title"),
+                        Native.Text(proto, "SubType")),
+                    Tags = new[]
+                    {
+                        Native.Text(main, "Title"),
                         Native.Text(proto, "SubType"),
-                        Native.Text(sub, "Title")),
+                        Native.Text(sub, "Title")
+                    }.Where(value => value.Length > 0).ToArray(),
                     MaxStack = Math.Max(1, stack),
                     CanSpawn = stack > 0,
                     CanGive = stack > 0,
@@ -61,8 +94,13 @@ namespace DTMAPI.DebugConsole
                     SourceId = "Vanilla",
                     RuntimeOrder = order++
                 };
-                if (sources.TryGetValue(id, out IContentItemInfo source))
+                if (sources.TryGetValue(
+                        id,
+                        out IContentItemInfo? source) &&
+                    source != null)
+                {
                     ApplySource(item, source);
+                }
                 item.SearchText = SearchText(item);
                 yield return item;
             }
@@ -77,7 +115,7 @@ namespace DTMAPI.DebugConsole
                     DisplayName = Native.First(source.ChineseName, source.EnglishName, source.ItemId),
                     ChineseName = source.ChineseName,
                     EnglishName = source.EnglishName,
-                    Category = source.Category,
+                    Category = NormalizeItemCategory(source.Category),
                     SubCategory = source.Category,
                     Tags = source.Tags,
                     RuntimeLoaded = false,
@@ -154,6 +192,14 @@ namespace DTMAPI.DebugConsole
                     }
                     .Concat(item.Tags ?? Array.Empty<string>())
                     .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+        private static string NormalizeItemCategory(string value)
+        {
+            value = (value ?? string.Empty).Trim();
+            return StableItemCategoryIds.FirstOrDefault(id =>
+                       id.Equals(value, StringComparison.OrdinalIgnoreCase)) ??
+                "special";
+        }
 
         private static InventoryDebugSourceGroup[] BuildSourceGroups(
             IEnumerable<InventoryDebugItem> items)
@@ -234,12 +280,11 @@ namespace DTMAPI.DebugConsole
             object? timeData,
             string seasonGroupId)
         {
-            MethodInfo? method = timeData?.GetType().GetMethod(
+            MethodInfo? method = Native.Method(
+                timeData?.GetType(),
                 "GetSeasonInfo",
-                BindingFlags.Public | BindingFlags.Instance,
-                null,
-                new[] { typeof(string) },
-                null);
+                1,
+                false);
             return method?.Invoke(timeData, new object[] { seasonGroupId });
         }
 
@@ -247,12 +292,11 @@ namespace DTMAPI.DebugConsole
             object? timeData,
             string seasonGroupId)
         {
-            MethodInfo? method = timeData?.GetType().GetMethod(
+            MethodInfo? method = Native.Method(
+                timeData?.GetType(),
                 "GetWeatherInfoOfDay",
-                BindingFlags.Public | BindingFlags.Instance,
-                null,
-                new[] { typeof(string), typeof(int) },
-                null);
+                2,
+                false);
             return Native.Enumerate(
                 method?.Invoke(timeData, new object[] { seasonGroupId, 0 }));
         }
@@ -282,77 +326,109 @@ namespace DTMAPI.DebugConsole
             };
         }
 
-        private static bool WhitelistedMark(string markId, string roomId)
-        {
-            string text = (markId + " " + roomId).ToLowerInvariant();
-            string[] words =
+        private static WeatherDebugOption BuildUnavailableWeather(
+            string id,
+            string current,
+            HashSet<string> forecast) =>
+            new WeatherDebugOption
             {
-                "farm", "station", "bus", "city", "town", "hall",
-                "municip", "council", "government", "research",
-                "laboratory", "lab", "bar", "pub", "tavern"
+                Id = id,
+                DisplayName = id,
+                IsCurrent = id.Equals(current, StringComparison.OrdinalIgnoreCase),
+                IsCurrentDayForecast = forecast.Contains(id)
             };
-            return words.Any(text.Contains);
+
+        private sealed class TeleportSpec
+        {
+            internal TeleportSpec(
+                string id,
+                string title,
+                string markPointId,
+                bool station)
+            {
+                Id = id;
+                Title = title;
+                MarkPointId = markPointId;
+                IsStation = station;
+            }
+
+            internal string Id { get; }
+            internal string Title { get; }
+            internal string MarkPointId { get; }
+            internal bool IsStation { get; }
         }
 
-        private static string DisplayMark(string markId, string roomId)
+        private static readonly TeleportSpec[] StableTeleportDirectory =
         {
-            string text = (markId + " " + roomId).ToLowerInvariant();
-            if (text.Contains("farm"))
-                return "农场";
-            if (text.Contains("hall") || text.Contains("municip") || text.Contains("government"))
-                return "市政厅";
-            if (text.Contains("research") || text.Contains("laboratory") || text.Contains("lab"))
-                return "研究所";
-            if (text.Contains("bar") || text.Contains("pub") || text.Contains("tavern"))
-                return "酒吧";
-            if (text.Contains("station") || text.Contains("bus"))
-                return "车站";
-            if (text.Contains("city") || text.Contains("town"))
-                return "城镇";
-            return Native.First(markId, roomId, "Teleport");
-        }
+            new TeleportSpec("station.town", "公车站-小镇", "车站-小镇", true),
+            new TeleportSpec("station.outpost", "哨站", "车站-哨站", true),
+            new TeleportSpec("station.mountain-path", "山间小路", "车站-山间小路", true),
+            new TeleportSpec("station.wetland", "湿地", "湿地-码头出口", true),
+            new TeleportSpec("station.dock", "码头", "码头-湿地入口", true),
+            new TeleportSpec("station.farm-path", "农场小径", "车站-农场上路", true),
+            new TeleportSpec("station.pollution-zone", "污染区", "车站-污染区", true),
+            new TeleportSpec("station.peatland", "泥炭地", "车站-泥炭地", true),
+            new TeleportSpec("station.water-lily", "睡莲地", "车站-睡莲地", true),
+            new TeleportSpec("station.old-city-garrison", "旧城驻守地", "车站-驻守地", true),
+            new TeleportSpec("station.residential", "住宅区", "车站-住宅区", true),
+            new TeleportSpec("station.commercial", "商业区", "车站-商业区", true),
+            new TeleportSpec("station.vacant", "空闲区", "车站-空闲区", true),
+            new TeleportSpec("landmark.farm", "农场", "农场-初始位置", false),
+            new TeleportSpec("landmark.home", "住所", "列车集市-守车正门外", false),
+            new TeleportSpec("landmark.town-hall", "市政厅", "镇政厅-正门外", false),
+            new TeleportSpec("landmark.botanical-lab", "植生研究所", "植生研究所-正门外", false),
+            new TeleportSpec("landmark.tavern", "酒馆", "酒馆-正门外", false),
+            new TeleportSpec("landmark.deer-god-pond", "鹿神池塘", "林地深处-右端", false),
+            new TeleportSpec("landmark.mountain-cable-car", "后山缆车", "缆车-后山丘陵", false),
+            new TeleportSpec("landmark.witch-hut", "女巫小屋", "湿地-女巫小屋正门外", false),
+            new TeleportSpec("landmark.valley-summit-stele", "河谷山顶石碑", "河谷-山顶石碑", false)
+        };
 
         private static object? ResolveMark(string markId)
         {
             object? table = Native.Table("TbMarkPoint");
-            MethodInfo? method = table?.GetType().GetMethod(
+            MethodInfo? method = Native.Method(
+                table?.GetType(),
                 "GetOrDefault",
-                BindingFlags.Public | BindingFlags.Instance,
-                null,
-                new[] { typeof(string) },
-                null);
+                1,
+                false);
             return method?.Invoke(table, new object[] { markId });
         }
 
-        private static void AddDestination(
-            IDictionary<string, TeleportDestination> destinations,
-            string id,
-            string title,
-            string group,
-            string markId,
-            bool station,
-            string source)
+        private static TeleportDestination BuildDestination(TeleportSpec spec)
         {
-            if (id.Length == 0 || markId.Length == 0 || destinations.ContainsKey(id))
-                return;
-            object? mark = ResolveMark(markId);
-            if (mark == null)
-                return;
+            object? mark = ResolveMark(spec.MarkPointId);
+            string nativeTitle = Native.Text(mark, "Title");
             string roomId = Native.Text(mark, "RoomId");
             object? position = Native.Read(mark, "Position");
-            destinations[id] = new TeleportDestination
+            Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
+            bool hasTransport = Native.Method(
+                api,
+                "DoTransport",
+                5,
+                true) != null;
+            string unavailable = mark == null
+                ? "mark-point-missing"
+                : Native.CurrentRoom == null
+                    ? "current-room-unavailable"
+                    : !hasTransport
+                        ? "native-host-unavailable"
+                        : string.Empty;
+            return new TeleportDestination
             {
-                Id = id,
-                DisplayName = Native.First(title, DisplayMark(markId, roomId), markId),
-                SuggestedDisplayName = DisplayMark(markId, roomId),
-                Group = group,
-                MarkPointId = markId,
+                Id = spec.Id,
+                DisplayName = Native.First(nativeTitle, spec.Title),
+                SuggestedDisplayName = Native.First(nativeTitle, spec.Title),
+                Group = spec.IsStation ? "Station" : "Landmark",
+                MarkPointId = spec.MarkPointId,
                 RoomId = roomId,
                 X = Native.Vector(position, "x"),
                 Y = Native.Vector(position, "y"),
-                IsStation = station,
-                IsUnlocked = true,
-                Source = source
+                IsStation = spec.IsStation,
+                IsUnlocked = unavailable.Length == 0,
+                Source = unavailable.Length == 0
+                    ? "exact-mark-point"
+                    : unavailable
             };
         }
 
@@ -375,14 +451,6 @@ namespace DTMAPI.DebugConsole
                 Y = Native.Vector(position, "y"),
                 Z = Native.Vector(position, "z")
             };
-
-        private static string Csv(string value)
-        {
-            value ??= string.Empty;
-            bool quote = value.IndexOfAny(new[] { ',', '"', '\r', '\n' }) >= 0;
-            string escaped = value.Replace("\"", "\"\"");
-            return quote ? "\"" + escaped + "\"" : escaped;
-        }
 
         private InstantSaveDebugState GetSaveState()
         {
@@ -518,6 +586,33 @@ namespace DTMAPI.DebugConsole
         private static object? ResolvePlayerBody()
         {
             Type? api = Native.Resolve("DolocAPI, Assembly-CSharp");
+            if (api == null)
+                return null;
+            if (!ReferenceEquals(playerApiType, api))
+            {
+                playerApiType = api;
+                playerAgentMember = null;
+                playerAgentMemberResolved = false;
+            }
+            if (!playerAgentMemberResolved)
+            {
+                const BindingFlags Flags = BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Static;
+                for (Type? current = api;
+                    current != null && playerAgentMember == null;
+                    current = current.BaseType)
+                {
+                    playerAgentMember =
+                        (MemberInfo?)current.GetProperty("agent", Flags) ??
+                        current.GetField("agent", Flags);
+                }
+                playerAgentMemberResolved = true;
+            }
+            if (playerAgentMember is PropertyInfo property)
+                return property.GetValue(null, null);
+            if (playerAgentMember is FieldInfo field)
+                return field.GetValue(null);
             return Native.Read(api, "agent");
         }
 

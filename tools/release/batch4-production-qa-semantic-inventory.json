@@ -297,7 +297,7 @@
       {
         "id": "staged-debug-console-direct-postmessage",
         "scopePaths": [
-          "tools/scripts/run-game-smoke.ps1"
+          "tools/scripts/game-smoke/scenarios/desktop-input.ps1"
         ],
         "forbiddenPatterns": [
           "function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"
@@ -480,6 +480,10 @@
           "src/DTMAPI.GameBridge.DolocTown.QA",
           "products/first-party/AutoFishing/qa",
           "tests/DTMAPI.UnitTests",
+          "tests/DTMAPI.Core.Tests/Program.InputTests.cs",
+          "tests/DTMAPI.Core.Tests/Program.AuthorSettingsTests.cs",
+          "tests/DTMAPI.Core.Tests/Program.RuntimeAndOwnershipTests.cs",
+          "tests/DTMAPI.DebugConsole.Tests/Program.DebugConsoleTests.cs",
           "tests/DTMAPI.QaUnitTests"
         ]
       },
@@ -728,26 +732,34 @@
         ]
       },
       {
-        "path": "tools/scripts/run-game-smoke.ps1",
+        "path": "tools/scripts/game-smoke/phases/exercise-session.ps1",
         "requiredPatterns": [
-          { "pattern": "Hook status: Animals\\.ViewerProgressUi = visible\\.", "minimumOccurrences": 1 },
-          { "pattern": "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset", "minimumOccurrences": 1 },
-          { "pattern": "\\$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset", "minimumOccurrences": 1 },
-          { "pattern": "\\$noQaAnimalViewerCloseOrderOk = \\$nativeCloseIndex -ge 0 -and \\$overlayClearIndex -gt \\$nativeCloseIndex", "minimumOccurrences": 1 },
-          { "pattern": "NoQaAnimalViewerNativeClose", "minimumOccurrences": 1 },
-          { "pattern": "NoQaAnimalViewerOverlayClear", "minimumOccurrences": 1 }
+          { "pattern": "\\$noQaAnimalViewerReceiptPattern = 'AnimalHusbandryProgress product viewer active state=visible,\\.\\*receiptSequence=\\\\d\\+, receipt=new-data,'", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerProductClosePattern = 'AnimalHusbandryProgress native panel closed; product-owned derived rows and clones are zero\\.'", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffsetUntilDeadline", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerOverlayClearOk = \\$noQaAnimalViewerNativeCloseOk", "minimumOccurrences": 1 },
+          { "pattern": "\\$noQaAnimalViewerCloseOrderOk = \\$animalRenderMatches\\.Count -ge 2 -and \\$productCloseIndex -gt \\$lastRenderIndex", "minimumOccurrences": 1 }
         ],
         "orderedTokens": [
-          "Hook status: Animals.ViewerProgressUi = visible.",
-          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
-          "$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
-          "$nativeCloseIndex =",
-          "$overlayClearIndex =",
+          "$noQaAnimalViewerReceiptPattern =",
+          "$noQaAnimalViewerProductClosePattern =",
+          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffsetUntilDeadline",
+          "$noQaAnimalViewerOverlayClearOk = $noQaAnimalViewerNativeCloseOk",
+          "$animalRenderMatches =",
+          "$productCloseIndex =",
+          "$lastRenderIndex =",
           "$noQaAnimalViewerCloseOrderOk ="
         ]
       },
       {
-        "path": "tools/scripts/run-game-smoke.ps1",
+        "path": "tools/scripts/game-smoke/phases/publish-result.ps1",
+        "requiredPatterns": [
+          { "pattern": "NoQaAnimalViewerNativeClose = Get-SmokeStatus -Requested \\(\\[bool\\]\\$AssertNoQaUiEvidence\\) -Passed \\$noQaAnimalViewerNativeCloseOk", "minimumOccurrences": 1 },
+          { "pattern": "NoQaAnimalViewerOverlayClear = Get-SmokeStatus -Requested \\(\\[bool\\]\\$AssertNoQaUiEvidence\\) -Passed \\$noQaAnimalViewerOverlayClearOk", "minimumOccurrences": 1 }
+        ]
+      },
+      {
+        "path": "tools/scripts/game-smoke/phases/assess-evidence.ps1",
         "requiredPatterns": [
           { "pattern": "NativeLoadContinuationProbe = closed", "minimumOccurrences": 1 },
           { "pattern": "unpatchSucceeded=True;", "minimumOccurrences": 1 },
@@ -758,7 +770,7 @@
         ]
       },
       {
-        "path": "tools/scripts/run-game-smoke.ps1",
+        "path": "tools/scripts/game-smoke/scenarios/desktop-input.ps1",
         "requiredPatterns": [
           { "pattern": "\\[DtmApiSmokeInput\\]::SendKeyboardKey\\(", "minimumOccurrences": 1 },
           { "pattern": "\\$postMessageFallbackRequested = -not \\(\\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled -or \\[bool\\]\\$qaG4EquipmentSlotsObservationEnabled -or \\[bool\\]\\$moreEquipmentSlotsTransitionRequested -or \\[bool\\]\\$Batch6AutoFishingPilot -or \\[bool\\]\\$Batch6AutoFishingManagerLifecycle -or \\[bool\\]\\$AutoPressOneActionMenuKey\\)", "minimumOccurrences": 1 },
@@ -767,16 +779,13 @@
           { "pattern": "\\$postMessageFallbackUsed = \\[bool\\]\\$postReceipt\\.Accepted", "minimumOccurrences": 1 },
           { "pattern": "\\$strictPlayerInputGate = \\[bool\\]\\$RequireExternalPlayerInputGate -or \\[bool\\]\\$AssertNoQaUiEvidence -or \\[bool\\]\\$qaG4DebugConsoleEnabled", "minimumOccurrences": 1 },
           { "pattern": "if \\(\\$strictPlayerInputGate -and \\$Attempts -ne 1\\)", "minimumOccurrences": 1 },
-          { "pattern": "\\$sent = Send-DolocTownKey .* -InputLogPath \\$logPath", "minimumOccurrences": 1 },
+          { "pattern": "\\$sent = Send-DolocTownKey .* -InputLogPath \\$logPath -Deadline \\$Deadline", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath \\$logPath -Offset \\(\\[int64\\]\\$sendEvidence\\.LogOffsetAtSend\\) -Pattern \\$Pattern -Deadline \\$waitDeadline", "minimumOccurrences": 1 },
           { "pattern": "\\$externalPlayerInputAttempts\\.Add\\(\\[ordered\\]@\\{", "minimumOccurrences": 1 },
           { "pattern": "ForegroundMatched = \\[bool\\]\\$sendEvidence\\.ForegroundMatchedAtSend", "minimumOccurrences": 1 },
           { "pattern": "SendInputSucceeded = \\[bool\\]\\$sendEvidence\\.SendInputSucceeded", "minimumOccurrences": 1 },
-          { "pattern": "PostMessageFallbackUsed = \\[bool\\]\\$sendEvidence\\.PostMessageFallbackUsed", "minimumOccurrences": 1 },
-          { "pattern": "\\$y1Attempt = @\\(\\$externalPlayerInputAttempts\\.ToArray\\(\\)", "minimumOccurrences": 1 },
-          { "pattern": "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath \\$logPath -Offset \\(\\[int64\\]\\$y1Attempt\\[0\\]\\.LogOffset\\)", "minimumOccurrences": 1 },
-          { "pattern": "Wait-ForLogLineAfterOffset -LogPath \\$logPath -Offset \\(\\[int64\\]\\$holdAttempt\\[0\\]\\.LogOffset\\) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", "minimumOccurrences": 1 },
-          { "pattern": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'", "minimumOccurrences": 1 },
-          { "pattern": "Wait-ForLogLine -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'", "minimumOccurrences": 1 }
+          { "pattern": "CompletedBeforeDeadline = \\[bool\\]\\$sendEvidence\\.CompletedBeforeDeadline", "minimumOccurrences": 1 },
+          { "pattern": "PostMessageFallbackUsed = \\[bool\\]\\$sendEvidence\\.PostMessageFallbackUsed", "minimumOccurrences": 1 }
         ],
         "forbiddenPatterns": [
           "function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"
@@ -790,15 +799,54 @@
           "$strictPlayerInputGate = [bool]$RequireExternalPlayerInputGate -or [bool]$AssertNoQaUiEvidence -or [bool]$qaG4DebugConsoleEnabled",
           "if ($strictPlayerInputGate -and $Attempts -ne 1)",
           "$sent = Send-DolocTownKey",
+          "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath $logPath -Offset ([int64]$sendEvidence.LogOffsetAtSend)",
           "$externalPlayerInputAttempts.Add",
           "ForegroundMatched = [bool]$sendEvidence.ForegroundMatchedAtSend",
           "SendInputSucceeded = [bool]$sendEvidence.SendInputSucceeded",
-          "PostMessageFallbackUsed = [bool]$sendEvidence.PostMessageFallbackUsed",
+          "CompletedBeforeDeadline = [bool]$sendEvidence.CompletedBeforeDeadline",
+          "PostMessageFallbackUsed = [bool]$sendEvidence.PostMessageFallbackUsed"
+        ]
+      },
+      {
+        "path": "tools/scripts/game-smoke/phases/exercise-session.ps1",
+        "requiredPatterns": [
+          { "pattern": "Invoke-DebugConsoleSmokeKey -Label 'Y1'.* -Deadline \\$debugConsoleActionDeadline", "minimumOccurrences": 1 },
+          { "pattern": "\\$y1Attempt = @\\(\\$externalPlayerInputAttempts\\.ToArray\\(\\)", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath \\$logPath -Offset \\(\\[int64\\]\\$y1Attempt\\[0\\]\\.LogOffset\\).* -Deadline \\(Get-SmokeCappedDeadline -Deadline \\$debugConsoleActionDeadline", "minimumOccurrences": 1 },
+          { "pattern": "Wait-ForLogLineAfterOffset -LogPath \\$logPath -Offset \\(\\[int64\\]\\$holdAttempt\\[0\\]\\.LogOffset\\) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'", "minimumOccurrences": 1 },
+          { "pattern": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'.* -Deadline \\$debugConsoleActionDeadline", "minimumOccurrences": 1 },
+          { "pattern": "Wait-SmokeLogLine -Deadline \\$SmokeRunnerScenarioDeadline -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'", "minimumOccurrences": 1 }
+        ],
+        "orderedTokens": [
+          "Invoke-DebugConsoleSmokeKey -Label 'Y1'",
           "$y1Attempt = @($externalPlayerInputAttempts",
           "Wait-ForLogLineAfterOffsetUntilDeadline -LogPath $logPath -Offset ([int64]$y1Attempt[0].LogOffset",
           "Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
           "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
-          "Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
+          "Wait-SmokeLogLine -Deadline $SmokeRunnerScenarioDeadline -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
+        ]
+      },
+      {
+        "path": "tools/scripts/run-game-smoke.ps1",
+        "requiredPatterns": [],
+        "orderedTokens": [
+          ". (Join-Path $SmokeRunnerModuleRoot 'load-modules.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/prepare-session.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/run-session.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/assess-evidence.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/publish-result.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/leave-save-environment.ps1')"
+        ]
+      },
+      {
+        "path": "tools/scripts/game-smoke/phases/run-session.ps1",
+        "requiredPatterns": [],
+        "orderedTokens": [
+          "try {",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/deploy-session.ps1')",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/exercise-session.ps1')",
+          "finally {",
+          ". (Join-Path $SmokeRunnerModuleRoot 'phases/restore-session.ps1')"
         ]
       },
       {
@@ -950,15 +998,17 @@
         "name": "former-animal-runner-counted-duplicate-render-lines-and-assumed-close",
         "sample": "$noQaAnimalViewerRenderReceiptCount = [regex]::Matches($animalTail, [regex]::Escape('Animal viewer progress independent row active')).Count; $noQaAnimalViewerCloseOk = Wait-ForLogLineAfterOffset -Pattern 'Animal viewer progress overlay lifecycle session-cleared';",
         "requiredPatterns": [
-          "Hook status: Animals\\.ViewerProgressUi = visible\\.",
-          "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
-          "\\$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
-          "\\$noQaAnimalViewerCloseOrderOk ="
+          "\\$noQaAnimalViewerReceiptPattern = 'AnimalHusbandryProgress product viewer active state=visible,\\.\\*receiptSequence=\\\\d\\+, receipt=new-data,'",
+          "\\$noQaAnimalViewerProductClosePattern = 'AnimalHusbandryProgress native panel closed; product-owned derived rows and clones are zero\\.'",
+          "\\$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffsetUntilDeadline",
+          "\\$noQaAnimalViewerOverlayClearOk = \\$noQaAnimalViewerNativeCloseOk",
+          "\\$noQaAnimalViewerCloseOrderOk = \\$animalRenderMatches\\.Count -ge 2 -and \\$productCloseIndex -gt \\$lastRenderIndex"
         ],
         "orderedTokens": [
-          "Hook status: Animals.ViewerProgressUi = visible.",
-          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffset",
-          "$noQaAnimalViewerOverlayClearOk = Wait-ForLogLineAfterOffset",
+          "$noQaAnimalViewerReceiptPattern =",
+          "$noQaAnimalViewerProductClosePattern =",
+          "$noQaAnimalViewerNativeCloseOk = Wait-ForLogLineAfterOffsetUntilDeadline",
+          "$noQaAnimalViewerOverlayClearOk = $noQaAnimalViewerNativeCloseOk",
           "$noQaAnimalViewerCloseOrderOk ="
         ]
       },
@@ -980,16 +1030,16 @@
       },
       {
         "name": "former-runner-escape-before-debug-console-evidence-marker",
-        "sample": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'; Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'; Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified';",
+        "sample": "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'; Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'; Wait-SmokeLogLine -Deadline $SmokeRunnerScenarioDeadline -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified';",
         "requiredPatterns": [
           "Wait-ForLogLineAfterOffset -LogPath \\$logPath -Offset \\(\\[int64\\]\\$holdAttempt\\[0\\]\\.LogOffset\\) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
           "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
-          "Wait-ForLogLine -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'"
+          "Wait-SmokeLogLine -Deadline \\$SmokeRunnerScenarioDeadline -LogPath \\$logPath -Pattern 'Smoke\\.DebugConsoleHotkey = verified'"
         ],
         "orderedTokens": [
           "Wait-ForLogLineAfterOffset -LogPath $logPath -Offset ([int64]$holdAttempt[0].LogOffset) -Pattern 'EVIDENCE_CAPTURED_WAITING_ESCAPE'",
           "Invoke-DebugConsoleSmokeKey -Label 'YHoldCleanupEscape'",
-          "Wait-ForLogLine -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
+          "Wait-SmokeLogLine -Deadline $SmokeRunnerScenarioDeadline -LogPath $logPath -Pattern 'Smoke.DebugConsoleHotkey = verified'"
         ]
       }
     ],
@@ -1134,7 +1184,7 @@
         "name": "staged-debug-console-direct-postmessage-regression",
         "gate": "behavior",
         "contractId": "staged-debug-console-direct-postmessage",
-        "samplePath": "tools/scripts/run-game-smoke.ps1",
+        "samplePath": "tools/scripts/game-smoke/scenarios/desktop-input.ps1",
         "sample": "function Invoke-DebugConsoleSmokeKey { [DtmApiSmokeInput]::PostMessage($hWnd, 0x0100, $key, [UIntPtr]::Zero) }",
         "expectedPatterns": ["function\\s+Invoke-DebugConsoleSmokeKey\\s*\\{(?:(?!\\r?\\nfunction\\s)[\\s\\S])*?\\[DtmApiSmokeInput\\]::PostMessage"]
       },

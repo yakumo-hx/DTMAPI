@@ -2,7 +2,7 @@
 
 Store durable manual-test review records here when user feedback needs root-cause or code-path analysis before implementation.
 
-Phase summary: [2026-07-06 Manual QA Phase Summary](2026/20260706-0001-manual-qa-phase-summary.md).
+Phase summary: [2026-07-06 Manual QA Phase Summary](../../archive/reviews/manual-qa/2026/20260706-0001-manual-qa-phase-summary.md).
 
 Naming:
 

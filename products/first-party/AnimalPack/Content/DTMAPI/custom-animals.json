@@ -1,0 +1,46 @@
+[
+  {
+    "speciesId": "hatch",
+    "templateSpeciesId": "chicken",
+    "aiTemplate": "chicken",
+    "animatorMode": "pngSpriteOverride",
+    "adultAnimatorKey": "dtmapi_anim_animal_hatch",
+    "childAnimatorKey": "dtmapi_anim_animal_hatch_child",
+    "frameManifest": "Content/Sprites/hatch_frame_manifest.json",
+    "templateSpritePrefix": "anim_animal_chicken",
+    "customSpritePrefix": "anim_animal_hatch"
+  },
+  {
+    "speciesId": "drecko",
+    "templateSpeciesId": "goat",
+    "aiTemplate": "goat",
+    "animatorMode": "pngSpriteOverride",
+    "adultAnimatorKey": "dtmapi_anim_animal_drecko",
+    "childAnimatorKey": "dtmapi_anim_animal_drecko_child",
+    "frameManifest": "Content/Sprites/drecko_frame_manifest.json",
+    "templateSpritePrefix": "anim_animal_goat",
+    "customSpritePrefix": "anim_animal_drecko"
+  },
+  {
+    "speciesId": "mole",
+    "templateSpeciesId": "marsh_pangolin",
+    "aiTemplate": "marsh_pangolin",
+    "animatorMode": "pngSpriteOverride",
+    "adultAnimatorKey": "dtmapi_anim_animal_mole",
+    "childAnimatorKey": "dtmapi_anim_animal_mole_child",
+    "frameManifest": "Content/Sprites/mole_frame_manifest.json",
+    "templateSpritePrefix": "anim_animal_marsh_pangolin",
+    "customSpritePrefix": "anim_animal_mole"
+  },
+  {
+    "speciesId": "oilfloater",
+    "templateSpeciesId": "slime",
+    "aiTemplate": "slime",
+    "animatorMode": "pngSpriteOverride",
+    "adultAnimatorKey": "dtmapi_anim_animal_oilfloater",
+    "childAnimatorKey": "dtmapi_anim_animal_oilfloater_child",
+    "frameManifest": "Content/Sprites/oilfloater_frame_manifest.json",
+    "templateSpritePrefix": "anim_animal_slime",
+    "customSpritePrefix": "anim_animal_oilfloater"
+  }
+]

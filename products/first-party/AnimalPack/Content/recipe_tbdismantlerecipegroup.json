@@ -1,0 +1,17 @@
+[
+  {
+    "id": "animal_care_station",
+    "title": { "key": "dismantle_recipe_group_animal_care_station_title", "text": "小动物照料站" },
+    "time_ratio": 1,
+    "max_craft_count": 5,
+    "recipe_ids": [
+      "animal_care_hatch_egg",
+      "animal_care_petrified_hatch_egg",
+      "animal_care_drecko_egg",
+      "animal_care_mole_egg",
+      "animal_care_fertile_mole_egg",
+      "animal_care_oilfloater_egg",
+      "animal_care_polymer_oilfloater_egg"
+    ]
+  }
+]

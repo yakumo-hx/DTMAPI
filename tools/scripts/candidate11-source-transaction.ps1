@@ -12,7 +12,7 @@ work root and every original tree is restored from its exact before-image in fin
 
 The work root is intentionally retained for audit/recovery; this helper never deletes or
 overwrites a product tree. A normal smoke invocation must use the installed Runtime with
--UseSteam -SkipInstall -SaveSlot 3 -SaveTestMode NoNativeSave -OfficialModProfile Local11 -IsolateAllOfficialMods
+-UseSteam -SkipInstall -SaveSlot 10 -SaveTestMode NoNativeSave -OfficialModProfile Local11 -IsolateAllOfficialMods
 -AssertNoQaUiEvidence. After the child exits, the installed five Runtime assemblies and
 installed release-manifest projection are compared to the same candidate Runtime package.
 
@@ -20,7 +20,7 @@ installed release-manifest projection are compared to the same candidate Runtime
 .\tools\scripts\candidate11-source-transaction.ps1 `
     -CandidateRoot 'E:\candidate' `
     -SmokeScriptPath '.\tools\scripts\run-game-smoke.ps1' `
-    -SmokeArgumentList @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
+    -SmokeArgumentList @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
 #>
 param(
     [string] $CandidateRoot = '',
@@ -1187,7 +1187,7 @@ function Assert-Candidate11SmokeContract {
         throw 'Candidate11 smoke requires -OfficialModProfile Local11.'
     }
     foreach ($valueContract in @(
-        [ordered]@{ Name = '-SaveSlot'; Expected = '3' },
+        [ordered]@{ Name = '-SaveSlot'; Expected = '10' },
         [ordered]@{ Name = '-SaveTestMode'; Expected = 'NoNativeSave' }
     )) {
         $alternateForms = @($normalized | Where-Object {
@@ -1375,10 +1375,10 @@ function Get-Candidate11Issue011AcceptanceBinding {
     }
     $gameRoot = Get-Candidate11CanonicalPath -Path $GameDirectory
     if (-not [string]::Equals($gameRoot, (Get-Candidate11CanonicalPath -Path ([string]$receipt.GameDir)), [System.StringComparison]::OrdinalIgnoreCase) -or
-        [int]$receipt.SaveSlot -ne 3 -or [string]$receipt.SaveTestMode -cne 'NoNativeSave' -or
+        [int]$receipt.SaveSlot -ne 10 -or [string]$receipt.SaveTestMode -cne 'NoNativeSave' -or
         [string]$receipt.LaunchMode -cne 'Steam' -or [string]$receipt.OfficialModProfile -cne 'Local11' -or
         -not [bool]$receipt.AssertNoQaUiEvidence) {
-        throw 'Candidate11 ISSUE-011 receipt lost the exact GameDir/slot-3/NoNativeSave/Steam/Local11/no-QA contract.'
+        throw 'Candidate11 ISSUE-011 receipt lost the exact GameDir/slot-10/NoNativeSave/Steam/Local11/no-QA contract.'
     }
     $runStarted = [DateTimeOffset]::MinValue
     $completed = [DateTimeOffset]::MinValue

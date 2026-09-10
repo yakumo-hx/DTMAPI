@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using DTMAPI.Core.Services;
+using DTMAPI.GameBridge.DolocTown.Native;
 
 namespace DTMAPI.BepInExBootstrap
 {
@@ -12,6 +13,7 @@ namespace DTMAPI.BepInExBootstrap
     {
         private static readonly string[] CaptureCandidates = BuildCaptureCandidates();
         private static readonly HashSet<string> win32PreviousDown = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> captureHeldAtStart = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static Type? inputType;
         private static Type? keyCodeType;
         private static Type? keyboardType;
@@ -76,6 +78,8 @@ namespace DTMAPI.BepInExBootstrap
 
         public static bool GetKeyDown(string key)
         {
+            if (key.StartsWith("Gamepad", StringComparison.OrdinalIgnoreCase) && ControllerButtonAdapter.TrySample(key, GetUnityFrameCount(), out InputButtonSample controller))
+                return controller.PressedEdge;
             return InvokeLegacyKeyMethod(ref getKeyDown, "GetKeyDown", key) ||
                 InvokeInputSystemButton(key, "wasPressedThisFrame") ||
                 InvokeWin32KeyDown(key);
@@ -83,6 +87,8 @@ namespace DTMAPI.BepInExBootstrap
 
         public static bool GetKey(string key)
         {
+            if (key.StartsWith("Gamepad", StringComparison.OrdinalIgnoreCase) && ControllerButtonAdapter.TrySample(key, GetUnityFrameCount(), out InputButtonSample controller))
+                return controller.IsDownNow;
             return InvokeLegacyKeyMethod(ref getKey, "GetKey", key) ||
                 InvokeInputSystemButton(key, "isPressed") ||
                 InvokeWin32Key(key);
@@ -222,6 +228,8 @@ namespace DTMAPI.BepInExBootstrap
 
         public static void ClearTransientState()
         {
+            ControllerButtonAdapter.Reset();
+            captureHeldAtStart.Clear();
             win32PreviousDown.Clear();
             latchedButtons.Clear();
             staleLatchedButtons.Clear();
@@ -241,6 +249,8 @@ namespace DTMAPI.BepInExBootstrap
 
         private static InputButtonSample SampleSingleButtonCached(string key)
         {
+            if (key.StartsWith("Gamepad", StringComparison.OrdinalIgnoreCase) && ControllerButtonAdapter.TrySample(key, GetUnityFrameCount(), out InputButtonSample controller))
+                return controller;
             if (TrySampleInputSystemButtonCached(key, out bool inputDown, out bool inputPressed, out bool inputReleased))
                 return new InputButtonSample(key, inputDown, inputPressed, inputReleased);
             if (TrySampleWin32KeyCached(key, out bool win32Down, out bool win32Pressed, out bool win32Released))
@@ -674,9 +684,18 @@ namespace DTMAPI.BepInExBootstrap
 
             foreach (string candidate in CaptureCandidates)
             {
+                if (captureHeldAtStart.Contains(candidate))
+                {
+                    if (!GetKey(candidate)) captureHeldAtStart.Remove(candidate);
+                    continue;
+                }
+                if (candidate.EndsWith("Shift", StringComparison.Ordinal) || candidate.EndsWith("Control", StringComparison.Ordinal) || candidate.EndsWith("Alt", StringComparison.Ordinal)) continue;
                 if (GetKeyDown(candidate))
                 {
                     key = candidate;
+                    if (GetKey("LeftControl") || GetKey("RightControl")) key = "Control+" + key;
+                    if (GetKey("LeftShift") || GetKey("RightShift")) key = "Shift+" + key;
+                    if (GetKey("LeftAlt") || GetKey("RightAlt")) key = "Alt+" + key;
                     return true;
                 }
             }
@@ -687,12 +706,16 @@ namespace DTMAPI.BepInExBootstrap
 
         public static int BeginKeyCapture()
         {
+            captureHeldAtStart.Clear();
             bool foreground = IsCurrentProcessForeground();
             PrimeWin32Transition("Escape", foreground);
             PrimeWin32Transition("Backspace", foreground);
             PrimeWin32Transition("Delete", foreground);
             foreach (string candidate in CaptureCandidates)
+            {
                 PrimeWin32Transition(candidate, foreground);
+                if (GetKey(candidate)) captureHeldAtStart.Add(candidate);
+            }
             return GetUnityFrameCount();
         }
 
@@ -726,6 +749,27 @@ namespace DTMAPI.BepInExBootstrap
                 win32PreviousDown.Remove(key);
         }
 
+        internal static string FindUnrecognizedBindingButton(string value)
+        {
+            foreach (var bind in DTMAPI.Abstractions.DtmKeybindList.Parse(value).Keybinds)
+            foreach (var button in bind.Buttons)
+            {
+                string id = button.Id;
+                if (id == "Control" || id == "Shift" || id == "Alt" || id == "Escape" || id == "Backspace" || id == "Delete") continue;
+                bool known = false;
+                foreach (string candidate in CaptureCandidates)
+                    if (string.Equals(candidate, id, StringComparison.OrdinalIgnoreCase)) { known = true; break; }
+                // Preserve less common legacy KeyCode names, including device-specific raw buttons.
+                if (!known && keyCodeType != null)
+                {
+                    try { known = Enum.IsDefined(keyCodeType, Enum.Parse(keyCodeType, id, true)); }
+                    catch (ArgumentException) { }
+                }
+                if (!known) return id;
+            }
+            return string.Empty;
+        }
+
         private static string[] BuildCaptureCandidates()
         {
             string[] fixedKeys =
@@ -750,6 +794,8 @@ namespace DTMAPI.BepInExBootstrap
             keys.Add("KeypadPlus");
             keys.Add("KeypadMinus");
             keys.AddRange(fixedKeys);
+            for (int i = 0; i < 20; i++) keys.Add("JoystickButton" + i);
+            keys.AddRange(ControllerButtonAdapter.Buttons);
             return keys.ToArray();
         }
     }

@@ -1,0 +1,2 @@
+param([string]$OutputRoot, [string]$OrdinarySdkDirectory)
+throw 'This builder is a historical internal candidate recipe. Originals are preserved under author-sdk/internal-snapshots/20260909-m2-0.7.0/tools/scripts and the fixed artifacts. Build the current internal target with tools/scripts/build-author-sdk.ps1; do not relabel old ZIPs.'

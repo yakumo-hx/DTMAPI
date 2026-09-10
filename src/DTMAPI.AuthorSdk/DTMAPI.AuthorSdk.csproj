@@ -4,10 +4,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>dtmapi-author</AssemblyName>
     <RootNamespace>DTMAPI.AuthorSdk</RootNamespace>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0</InformationalVersion>
+    <Version>0.7.0</Version>
+    <AssemblyVersion>0.7.0.0</AssemblyVersion>
+    <FileVersion>0.7.0.0</FileVersion>
+    <InformationalVersion>0.7.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
@@ -15,6 +15,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NuGet.Protocol" Version="7.9.0" />
+    <Content Include="../../docs/api/public-api-matrix.md" Link="API-STATUS.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/PROJECTS-AND-RESTORE.md" Link="PROJECTS-AND-RESTORE.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/MIGRATION.md" Link="MIGRATION.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/licenses/NuGet-7.9.0-LICENSE.txt;../../author-sdk/licenses/Newtonsoft.Json-13.0.3-LICENSE.txt" Link="licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/ci/**" Link="ci/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="..\Shared\AuthorSessionJson.cs" Link="AuthorSessionJson.cs" />
+    <Compile Include="..\Shared\AuthorApiTargetCatalog.cs" Link="AuthorApiTargetCatalog.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\target-catalog.json" LogicalName="DTMAPI.Authoring.target-catalog.json" />
+    <Content Include="..\..\author-sdk\target-catalog.json" Link="target-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\DTMAPI.Authoring.Contracts\DTMAPI.Authoring.Contracts.csproj" />
     <ProjectReference Include="..\DTMAPI.InstallDoctor\DTMAPI.InstallDoctor.csproj" />
     <Reference Include="Microsoft.CodeAnalysis">
@@ -49,7 +59,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
-    <Content Include="..\..\author-sdk\README.md;..\..\author-sdk\THIRD-PARTY-NOTICES.md">
+    <Content Include="..\..\author-sdk\README.md;..\..\author-sdk\SESSION-PROTOCOL.md;..\..\author-sdk\PLATFORM-SERVICES.md;..\..\author-sdk\REFLECTION.md;..\..\author-sdk\PACKAGE-DEPENDENCIES.md;..\..\author-sdk\THIRD-PARTY-NOTICES.md">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -69,4 +79,41 @@
       <WithCulture>false</WithCulture>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../author-sdk/compatibility/0.6.2/compatibility.contract.json" LogicalName="DTMAPI.AuthorSdk.compatibility.0.6.2.contract.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageSemanticVersion.cs" Link="Authoring\PackageSemanticVersion.cs" />
+    <Compile Include="..\Shared\PackageDependencyContract.cs" Link="Authoring\PackageDependencyContract.cs" />
+    <Compile Include="..\Shared\PackageDependencyPlanner.cs" Link="Authoring\PackageDependencyPlanner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyVerifier.cs" Link="Authoring\PackageDependencyVerifier.cs" />
+    <Compile Include="..\Shared\PackagePortableMetadata.net.cs" Link="Authoring\PackagePortableMetadata.net.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageHostReferences.cs" Link="Authoring\PackageHostReferences.cs" />
+    <EmbeddedResource Include="..\..\author-sdk\bcl-reference-identities.json" LogicalName="DTMAPI.Authoring.bcl-reference-identities.json" />
+    <Content Include="..\..\author-sdk\bcl-reference-identities.json" Link="bcl-reference-identities.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageDependencyBundle.cs" Link="Authoring\PackageDependencyBundle.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../author-sdk/compatibility/0.6.3/compatibility.contract.json" LogicalName="DTMAPI.AuthorSdk.compatibility.0.6.3.contract.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/NativeSignature.cs" Link="Authoring/NativeSignature.cs" />
+    <Compile Include="../Shared/NativePackageContract.cs" Link="Authoring/NativePackageContract.cs" />
+    <Content Include="../../author-sdk/licenses/Mono.Cecil-0.11.6-LICENSE.txt" Link="licenses/Mono.Cecil-0.11.6-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/NATIVE-REFERENCES.md" Link="NATIVE-REFERENCES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="../../author-sdk/compatibility/0.6.4/compatibility.contract.json" LogicalName="DTMAPI.AuthorSdk.compatibility.0.6.4.contract.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../author-sdk/compatibility/0.6.5/compatibility.contract.json" LogicalName="DTMAPI.AuthorSdk.compatibility.0.6.5.contract.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../author-sdk/compatibility/0.7.0/compatibility.contract.json" LogicalName="DTMAPI.AuthorSdk.compatibility.0.7.0.contract.json" />
+  </ItemGroup>
+  <ItemGroup><Compile Include="../Shared/NativeGenericSignature.cs" Link="Authoring/NativeGenericSignature.cs" /></ItemGroup>
 </Project>

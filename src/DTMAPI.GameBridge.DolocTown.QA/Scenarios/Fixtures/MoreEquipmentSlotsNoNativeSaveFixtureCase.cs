@@ -55,7 +55,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 int ownerRoots =
                     runtime.CountCoreOwnerRoots(MoreEquipmentSlotsOwnerId);
                 if (!inventory.IsComplete ||
-                    inventory.ExactOwnerPatchCount != 4 ||
+                    inventory.ExactOwnerPatchCount != MoreEquipmentSlotsHarmonyTargets.Length ||
                     productRuntime == null ||
                     !runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) ||
                     loadedOwners != 1 ||
@@ -478,8 +478,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     "; nativeSaveRequested=false" +
                     "; exactOwner=" +
                     MoreEquipmentSlotsHarmonyOwner +
-                    "; patches=4" +
-                    "; targets=4/4" +
+                    "; patches=" +
+                    inventory.ExactOwnerPatchCount +
+                    "; targets=" +
+                    inventory.ExactOwnerTargetCount +
+                    "/" +
+                    inventory.ResolvedTargetCount +
                     "; callback=1" +
                     "; loaded=1" +
                     "; roots=" +
@@ -532,7 +536,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 int ownerRoots =
                     runtime.CountCoreOwnerRoots(MoreEquipmentSlotsOwnerId);
                 if (!inventory.IsComplete ||
-                    inventory.ExactOwnerPatchCount != 4 ||
+                    inventory.ExactOwnerPatchCount != MoreEquipmentSlotsHarmonyTargets.Length ||
                     productRuntime == null ||
                     !runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) ||
                     loadedOwners != 1 ||
@@ -756,8 +760,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     "; nativeSaveRequested=false" +
                     "; exactOwner=" +
                     MoreEquipmentSlotsHarmonyOwner +
-                    "; patches=4" +
-                    "; targets=4/4" +
+                    "; patches=" +
+                    inventory.ExactOwnerPatchCount +
+                    "; targets=" +
+                    inventory.ExactOwnerTargetCount +
+                    "/" +
+                    inventory.ResolvedTargetCount +
                     "; callback=1" +
                     "; loaded=1" +
                     "; roots=" +

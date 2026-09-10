@@ -5,4 +5,7 @@
     <AssemblyName>DTMAPI.AbiCompatibilityHarness</AssemblyName>
     <RootNamespace>DTMAPI.AbiCompatibilityHarness</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Fixtures/**/*.cs" />
+  </ItemGroup>
 </Project>

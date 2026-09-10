@@ -12,7 +12,10 @@ param(
     [string] $AssetRipperSha256 = '808CDDF66DD0357AD6B36B97DE3A2AEF5E3552E63AF3EE0610F9A03A0378101C',
     [switch] $InventoryOnly,
     [switch] $ReuseSnapshot,
-    [switch] $ReuseExport
+    [switch] $ReuseExport,
+    [switch] $Resume,
+    [switch] $CodeOnly,
+    [switch] $Status
 )
 
 Set-StrictMode -Version Latest
@@ -21,6 +24,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\reverse-baseline-path-safety.ps1"
 . "$PSScriptRoot\steam-appmanifest-identity.ps1"
+. "$PSScriptRoot\reverse-capture-state.ps1"
 
 $repo = Get-RepoRoot
 $officialRootFiles = @(
@@ -71,35 +75,6 @@ function Get-Sha256Hex {
     )
 
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
-}
-
-function Get-FileInventory {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Root,
-        [string] $ProgressLabel = 'Hashing files'
-    )
-
-    $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
-    $files = @(Get-ChildItem -LiteralPath $resolvedRoot -File -Recurse -Force | Sort-Object FullName)
-    $result = [System.Collections.Generic.List[object]]::new()
-
-    for ($index = 0; $index -lt $files.Count; $index++) {
-        $file = $files[$index]
-        if (($index % 500) -eq 0 -or $index -eq ($files.Count - 1)) {
-            $percent = if ($files.Count -eq 0) { 100 } else { [int](($index + 1) * 100 / $files.Count) }
-            Write-Progress -Activity $ProgressLabel -Status "$($index + 1) / $($files.Count)" -PercentComplete $percent
-        }
-
-        $result.Add([ordered]@{
-            path = ConvertTo-NormalizedRelativePath -Root $resolvedRoot -Path $file.FullName
-            bytes = [long]$file.Length
-            sha256 = Get-Sha256Hex -Path $file.FullName
-        })
-    }
-
-    Write-Progress -Activity $ProgressLabel -Completed
-    return @($result)
 }
 
 function Get-InventoryByteSum {
@@ -285,55 +260,44 @@ function Invoke-AssetRipperExport {
     }
 }
 
-if ([string]::IsNullOrWhiteSpace($GameDir)) {
-    $GameDir = Resolve-DolocTownGamePath -RepoRoot $repo
+if ($Status) {
+    if ([string]::IsNullOrWhiteSpace($BuildRoot)) { throw '-Status requires -BuildRoot; it does not discover the live game.' }
+    Get-ReverseCaptureStatus -BuildRoot $BuildRoot | ConvertTo-Json -Depth 10
+    return
+}
+$Resume = $Resume -or $ReuseSnapshot -or $ReuseExport
+if ($InventoryOnly) { Write-Warning 'InventoryOnly is a full integrity check; use Status for a read-only receipt query.' }
+$offline = $Resume -and -not [string]::IsNullOrWhiteSpace($BuildRoot) -and [string]::IsNullOrWhiteSpace($GameDir)
+if ($offline) {
+    $BuildRoot = Resolve-DtmApiReverseBaselineBuildRoot -RepoRoot $repo -BuildRoot $BuildRoot
+    $steamManifestPath = Join-Path $BuildRoot 'raw-snapshot/appmanifest_2285550.acf'
+    if (-not (Test-Path -LiteralPath $steamManifestPath -PathType Leaf)) { throw 'Frozen manifest is incomplete. Resume with explicit GameDir for the same source identity to retry only snapshot.' }
+    $identityRoot = Join-Path $BuildRoot 'raw-snapshot/game'
 }
 else {
-    Assert-DtmApiDolocTownGamePath -Path $GameDir -Source 'reverse baseline capture -GameDir'
+    if ([string]::IsNullOrWhiteSpace($GameDir)) { $GameDir = Resolve-DolocTownGamePath -RepoRoot $repo }
+    else { Assert-DtmApiDolocTownGamePath -Path $GameDir -Source 'reverse baseline capture -GameDir' }
+    $GameDir = (Resolve-Path -LiteralPath $GameDir).Path
+    if (Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue) { throw 'Close DolocTown.exe before freezing a reverse baseline.' }
+    $steamManifestPath = Get-SteamManifestPath -ResolvedGameDir $GameDir
+    $identityRoot = $GameDir
 }
-$GameDir = (Resolve-Path -LiteralPath $GameDir).Path
-
-if (-not $InventoryOnly -and (Get-Process -Name 'DolocTown' -ErrorAction SilentlyContinue)) {
-    throw 'DolocTown.exe is running. Close the game before freezing a reverse baseline.'
-}
-
-$steamManifestPath = Get-SteamManifestPath -ResolvedGameDir $GameDir
-$steamIdentityParameters = @{
-    ManifestPath = $steamManifestPath
-    ExplicitBranch = $Branch
-}
-if ($AllowUnknownSteamBranch) {
-    $steamIdentityParameters['AllowUnknownSteamBranch'] = $true
-}
-if ($AllowPendingBranchSwitch) {
-    $steamIdentityParameters['AllowPendingBranchSwitch'] = $true
-}
+$steamIdentityParameters = @{ ManifestPath = $steamManifestPath; ExplicitBranch = $Branch }
+if ($AllowUnknownSteamBranch) { $steamIdentityParameters.AllowUnknownSteamBranch = $true }
+if ($AllowPendingBranchSwitch) { $steamIdentityParameters.AllowPendingBranchSwitch = $true }
 $startSteamIdentity = Get-DtmApiSteamBuildIdentity @steamIdentityParameters
 $steamBuild = $startSteamIdentity.BuildId
 $resolvedBranch = $startSteamIdentity.Branch
-if (-not [string]::IsNullOrWhiteSpace($ExpectedSteamBuild) -and
-    -not $ExpectedSteamBuild.Equals($steamBuild, [System.StringComparison]::Ordinal)) {
-    throw "Steam build changed before capture started. Expected=$ExpectedSteamBuild Actual=$steamBuild"
-}
-if (-not [string]::IsNullOrWhiteSpace($ExpectedSteamManifestSha256) -and
-    -not $ExpectedSteamManifestSha256.Equals($startSteamIdentity.ManifestSha256, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Steam manifest changed before capture started. Expected=$ExpectedSteamManifestSha256 Actual=$($startSteamIdentity.ManifestSha256)"
-}
-$assemblyPath = Join-Path $GameDir 'DolocTown_Data\Managed\Assembly-CSharp.dll'
+if ($ExpectedSteamBuild -and $ExpectedSteamBuild -cne $steamBuild) { throw 'Steam build changed before capture started.' }
+if ($ExpectedSteamManifestSha256 -and $ExpectedSteamManifestSha256 -ine $startSteamIdentity.ManifestSha256) { throw 'Steam manifest changed before capture started.' }
+$assemblyPath = Join-Path $identityRoot 'DolocTown_Data/Managed/Assembly-CSharp.dll'
 $assemblyHash = Get-Sha256Hex -Path $assemblyPath
 $assemblyLength = (Get-Item -LiteralPath $assemblyPath).Length
-if (-not [string]::IsNullOrWhiteSpace($ExpectedAssemblyCSharpSha256) -and
-    -not $ExpectedAssemblyCSharpSha256.Equals($assemblyHash, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "Assembly-CSharp.dll changed before capture started. Expected=$ExpectedAssemblyCSharpSha256 Actual=$assemblyHash"
-}
+if ($ExpectedAssemblyCSharpSha256 -and $ExpectedAssemblyCSharpSha256 -ine $assemblyHash) { throw 'Assembly-CSharp.dll changed before capture started.' }
 $buildName = "${steamBuild}_${resolvedBranch}_$($assemblyHash.Substring(0, 6))"
-
-if ([string]::IsNullOrWhiteSpace($BuildRoot)) {
-    $BuildRoot = Join-Path $repo "references\doloc-town\reverse\builds\$buildName"
-}
+if ([string]::IsNullOrWhiteSpace($BuildRoot)) { $BuildRoot = Join-Path $repo "references/doloc-town/reverse/builds/$buildName" }
 $BuildRoot = Resolve-DtmApiReverseBaselineBuildRoot -RepoRoot $repo -BuildRoot $BuildRoot -GameDir $GameDir
-[System.IO.Directory]::CreateDirectory($BuildRoot) | Out-Null
-
+[IO.Directory]::CreateDirectory($BuildRoot) | Out-Null
 $snapshotRoot = Join-Path $BuildRoot 'raw-snapshot'
 $snapshotGameRoot = Join-Path $snapshotRoot 'game'
 $snapshotManifestPath = Join-Path $snapshotRoot 'appmanifest_2285550.acf'
@@ -341,153 +305,116 @@ $exportRoot = Join-Path $BuildRoot 'asset-ripper-unity-project'
 $inventoryRoot = Join-Path $BuildRoot 'full-baseline-inventory'
 $assetRipperEvidenceRoot = Join-Path $BuildRoot 'asset-ripper'
 $assetRipperLogPath = Join-Path $assetRipperEvidenceRoot "AssetRipper-$AssetRipperVersion.log"
-
-if (-not $InventoryOnly) {
-    if (Test-Path -LiteralPath $snapshotGameRoot) {
-        if (-not $ReuseSnapshot) {
-            throw "Snapshot already exists. Refusing to overwrite frozen bytes without -ReuseSnapshot: $snapshotGameRoot"
-        }
+$snapshotInputs = [ordered]@{
+    format = 1; steamBuild = $steamBuild; branch = $resolvedBranch
+    manifestSha256 = $startSteamIdentity.ManifestSha256; assemblySha256 = $assemblyHash
+    files = $officialRootFiles; directories = $officialRootDirectories
+}
+$snapshotReceipt = $null
+if (($Resume -or $InventoryOnly) -and $CodeOnly) {
+    $candidateSnapshot = Get-ReverseStageReceipt $BuildRoot 'snapshot'
+    if ((Get-ReverseValue $candidateSnapshot 'status') -eq 'complete' -and $candidateSnapshot.inputFingerprint -ceq (Get-ReverseDigest $snapshotInputs) -and $candidateSnapshot.outputFingerprint -ceq (Get-ReverseDigest @($candidateSnapshot.outputs))) {
+        $codeInputs = @($candidateSnapshot.outputs | Where-Object { $_.path -eq 'appmanifest_2285550.acf' -or $_.path.StartsWith('game/DolocTown_Data/Managed/') })
+        if (Test-ReverseInventory $snapshotRoot $codeInputs -AllowExtra) { $snapshotReceipt = $candidateSnapshot }
     }
-    else {
-        [System.IO.Directory]::CreateDirectory($snapshotGameRoot) | Out-Null
-        foreach ($directoryName in $officialRootDirectories) {
-            Copy-DirectoryWithRobocopy -Source (Join-Path $GameDir $directoryName) -Destination (Join-Path $snapshotGameRoot $directoryName)
-        }
-        foreach ($fileName in $officialRootFiles) {
-            Copy-Item -LiteralPath (Join-Path $GameDir $fileName) -Destination (Join-Path $snapshotGameRoot $fileName)
-        }
+}
+elseif ($Resume -or $InventoryOnly) { $snapshotReceipt = Test-ReverseStage $BuildRoot 'snapshot' $snapshotInputs $snapshotRoot }
+$legacyRawPath = Join-Path $inventoryRoot 'raw-snapshot-files.json'
+$legacyParityPath = Join-Path $inventoryRoot 'snapshot-source-parity.json'
+if (-not $snapshotReceipt -and ($Resume -or $InventoryOnly) -and -not (Get-ReverseStageReceipt $BuildRoot 'snapshot') -and (Test-Path -LiteralPath $legacyRawPath) -and (Test-Path -LiteralPath $legacyParityPath)) {
+    $legacyInventory = @(Read-ReverseJsonItems $legacyRawPath)
+    $legacyParity = Get-Content -Raw -LiteralPath $legacyParityPath | ConvertFrom-Json
+    $legacyManifest = Get-ReverseValue $legacyParity 'steamManifest'
+    if ($legacyParity.exact -and (Get-ReverseValue $legacyManifest 'sha256') -ieq $startSteamIdentity.ManifestSha256 -and (Test-ReverseInventory $snapshotGameRoot $legacyInventory)) {
+        $snapshotOutputs = @($legacyInventory | ForEach-Object { [ordered]@{ path = 'game/' + $_.path; bytes = $_.bytes; sha256 = $_.sha256 } })
+        $snapshotOutputs += @(Get-ChildItem -LiteralPath $snapshotRoot -File -Force | Sort-Object Name | ForEach-Object { [ordered]@{ path = $_.Name; bytes = $_.Length; sha256 = Get-Sha256Hex $_.FullName } })
+        $snapshotReceipt = Complete-ReverseStage $BuildRoot 'snapshot' $snapshotInputs $snapshotRoot -Inventory $snapshotOutputs -Origin 'validated-legacy-inventory'
+    }
+}
+if (-not $snapshotReceipt) {
+    if ($offline -or $InventoryOnly) { throw 'Frozen snapshot is incomplete, damaged, or lacks proof. It was preserved; Resume with explicit GameDir for the same source identity to retry only snapshot.' }
+    if (Test-Path -LiteralPath $snapshotRoot) {
+        if (-not $Resume) { throw 'Snapshot exists. Use Resume to validate it; never overwrite frozen bytes with a different installation.' }
+        $priorSnapshot = Get-ReverseStageReceipt $BuildRoot 'snapshot'
+        if (-not $priorSnapshot -or $priorSnapshot.inputFingerprint -cne (Get-ReverseDigest $snapshotInputs)) { throw 'Snapshot retry requires an existing receipt with the exact same source identity. Use a new BuildRoot for a different source or unproven legacy capture.' }
+    }
+    Start-ReverseStage $BuildRoot 'snapshot' $snapshotInputs 'raw-snapshot' | Out-Null
+    try {
+        [IO.Directory]::CreateDirectory($snapshotGameRoot) | Out-Null
+        foreach ($directoryName in $officialRootDirectories) { Copy-DirectoryWithRobocopy (Join-Path $GameDir $directoryName) (Join-Path $snapshotGameRoot $directoryName) }
+        foreach ($fileName in $officialRootFiles) { Copy-Item -LiteralPath (Join-Path $GameDir $fileName) -Destination (Join-Path $snapshotGameRoot $fileName) }
         Copy-Item -LiteralPath $steamManifestPath -Destination $snapshotManifestPath
-        Write-Utf8NoBomFile -Path (Join-Path $snapshotRoot 'DO_NOT_DISTRIBUTE_OFFICIAL_GAME_FILES.txt') -Text @'
-This directory contains official Doloc Town game files preserved for local reverse-engineering research.
-Do not commit, publish, package, or redistribute these files.
-'@
-    }
-
-    if (-not (Test-Path -LiteralPath $snapshotManifestPath -PathType Leaf)) {
-        throw "Frozen Steam manifest is missing: $snapshotManifestPath"
-    }
-    $snapshotSteamIdentityParameters = @{
-        ManifestPath = $snapshotManifestPath
-        ExplicitBranch = $resolvedBranch
-    }
-    if ($AllowUnknownSteamBranch) {
-        $snapshotSteamIdentityParameters['AllowUnknownSteamBranch'] = $true
-    }
-    if ($AllowPendingBranchSwitch) {
-        $snapshotSteamIdentityParameters['AllowPendingBranchSwitch'] = $true
-    }
-    $snapshotSteamIdentity = Get-DtmApiSteamBuildIdentity @snapshotSteamIdentityParameters
-    Assert-DtmApiSteamBuildIdentityMatch `
-        -Expected $startSteamIdentity `
-        -Actual $snapshotSteamIdentity `
-        -ExpectedLabel 'source-start' `
-        -ActualLabel 'frozen'
-
-    $snapshotAssemblyHash = Get-Sha256Hex -Path (Join-Path $snapshotGameRoot 'DolocTown_Data\Managed\Assembly-CSharp.dll')
-    if ($snapshotAssemblyHash -cne $assemblyHash) {
-        throw "Frozen Assembly-CSharp.dll does not match the source game. Source=$assemblyHash Snapshot=$snapshotAssemblyHash"
-    }
-
-    if (Test-Path -LiteralPath $exportRoot) {
-        if (-not $ReuseExport) {
-            throw "AssetRipper export already exists. Refusing to overwrite it without -ReuseExport: $exportRoot"
+        Write-Utf8NoBomFile (Join-Path $snapshotRoot 'DO_NOT_DISTRIBUTE_OFFICIAL_GAME_FILES.txt') 'Official game files for local research only. Do not commit, publish, package, or redistribute.'
+        $snapshotOutputs = @(Get-ReverseInventory $snapshotRoot)
+        $snapshotInventory = @($snapshotOutputs | Where-Object { $_.path.StartsWith('game/') } | ForEach-Object { [ordered]@{ path = $_.path.Substring(5); bytes = $_.bytes; sha256 = $_.sha256 } })
+        $mismatches = @($snapshotInventory | Where-Object {
+            $source = Join-Path $GameDir $_.path
+            -not (Test-Path -LiteralPath $source -PathType Leaf) -or (Get-Item -LiteralPath $source).Length -ne $_.bytes -or (Get-Sha256Hex $source) -cne $_.sha256
+        })
+        $frozenIdentity = Get-DtmApiSteamBuildIdentity -ManifestPath $snapshotManifestPath -ExplicitBranch $resolvedBranch -AllowUnknownSteamBranch:$AllowUnknownSteamBranch -AllowPendingBranchSwitch:$AllowPendingBranchSwitch
+        $endIdentity = Get-DtmApiSteamBuildIdentity @steamIdentityParameters
+        Assert-DtmApiSteamBuildIdentityMatch -Expected $startSteamIdentity -Actual $frozenIdentity -ExpectedLabel 'source-start' -ActualLabel 'frozen'
+        Assert-DtmApiSteamBuildIdentityMatch -Expected $startSteamIdentity -Actual $endIdentity -ExpectedLabel 'source-start' -ActualLabel 'source-end'
+        if ($mismatches.Count) { throw "Frozen/source payload mismatch: $($mismatches.Count) files." }
+        $parity = [ordered]@{
+            checkedAtUtc = [DateTime]::UtcNow.ToString('o'); sourceGameDir = $GameDir; snapshotGameRoot = $snapshotGameRoot
+            checkedFiles = $snapshotInventory.Count + 1; gameFiles = $snapshotInventory.Count; exact = $true; mismatches = @()
+            steamManifest = [ordered]@{ sourcePath = $steamManifestPath; snapshotPath = $snapshotManifestPath; buildId = $steamBuild; branch = $resolvedBranch; sha256 = $frozenIdentity.ManifestSha256; sourceStartSha256 = $startSteamIdentity.ManifestSha256; sourceEndSha256 = $endIdentity.ManifestSha256; exact = $true }
         }
+        Write-ReverseJson (Join-Path $inventoryRoot 'snapshot-source-parity.json') $parity
+        $snapshotReceipt = Complete-ReverseStage $BuildRoot 'snapshot' $snapshotInputs $snapshotRoot -Inventory $snapshotOutputs
     }
-    else {
-        [System.IO.Directory]::CreateDirectory($assetRipperEvidenceRoot) | Out-Null
-        $tool = Ensure-AssetRipper -Version $AssetRipperVersion -ExpectedSha256 $AssetRipperSha256
-        Invoke-AssetRipperExport -Tool $tool -SnapshotGameRoot $snapshotGameRoot -OutputRoot $exportRoot -LogPath $assetRipperLogPath
-        Write-Utf8NoBomFile -Path (Join-Path $assetRipperEvidenceRoot 'tool.json') -Text (($tool | ConvertTo-Json -Depth 5) + [Environment]::NewLine)
-    }
+    catch { Fail-ReverseStage $BuildRoot 'snapshot' $_.Exception.Message; throw }
 }
-
-if (-not (Test-Path -LiteralPath $snapshotGameRoot -PathType Container)) {
-    throw "Frozen snapshot is missing: $snapshotGameRoot"
+$snapshotInventory = @($snapshotReceipt.outputs | Where-Object { $_.path.StartsWith('game/') } | ForEach-Object { [ordered]@{ path = $_.path.Substring(5); bytes = $_.bytes; sha256 = $_.sha256 } })
+Write-ReverseJson (Join-Path $inventoryRoot 'raw-snapshot-files.json') $snapshotInventory
+if ($CodeOnly) { Write-Host "Frozen code inputs ready; resource export not requested: $BuildRoot"; return }
+$exportInputs = [ordered]@{
+    format = 1; snapshot = $snapshotReceipt.outputFingerprint
+    tool = [ordered]@{ version = $AssetRipperVersion; archiveSha256 = $AssetRipperSha256.ToUpperInvariant() }
+    parameters = @('LoadFolder', 'Export/UnityProject', 'default-settings')
 }
-if (-not (Test-Path -LiteralPath $snapshotManifestPath -PathType Leaf)) {
-    throw "Frozen Steam manifest is missing: $snapshotManifestPath"
-}
-if (-not (Test-Path -LiteralPath $exportRoot -PathType Container)) {
-    throw "AssetRipper Unity project export is missing: $exportRoot"
-}
-
-[System.IO.Directory]::CreateDirectory($inventoryRoot) | Out-Null
-$snapshotInventory = @(Get-FileInventory -Root $snapshotGameRoot -ProgressLabel 'Hashing frozen game snapshot')
-$exportInventory = @(Get-FileInventory -Root $exportRoot -ProgressLabel 'Hashing AssetRipper export')
-Write-Utf8NoBomFile -Path (Join-Path $inventoryRoot 'raw-snapshot-files.json') -Text (($snapshotInventory | ConvertTo-Json -Depth 5) + [Environment]::NewLine)
-Write-Utf8NoBomFile -Path (Join-Path $inventoryRoot 'asset-ripper-export-files.json') -Text (($exportInventory | ConvertTo-Json -Depth 5) + [Environment]::NewLine)
-
-$snapshotMismatches = [System.Collections.Generic.List[object]]::new()
-foreach ($entry in $snapshotInventory) {
-    $sourcePath = Join-Path $GameDir ($entry.path.Replace('/', '\'))
-    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-        $snapshotMismatches.Add([ordered]@{ path = $entry.path; reason = 'missing-source' })
-        continue
-    }
-    $sourceItem = Get-Item -LiteralPath $sourcePath
-    if ([long]$sourceItem.Length -ne [long]$entry.bytes) {
-        $snapshotMismatches.Add([ordered]@{ path = $entry.path; reason = 'length'; sourceBytes = [long]$sourceItem.Length; snapshotBytes = [long]$entry.bytes })
-        continue
-    }
-    $sourceHash = Get-Sha256Hex -Path $sourcePath
-    if ($sourceHash -cne [string]$entry.sha256) {
-        $snapshotMismatches.Add([ordered]@{ path = $entry.path; reason = 'sha256'; sourceSha256 = $sourceHash; snapshotSha256 = $entry.sha256 })
+$exportReceipt = $null
+if ($Resume -or $InventoryOnly) { $exportReceipt = Test-ReverseStage $BuildRoot 'export' $exportInputs $exportRoot }
+$legacyExportPath = Join-Path $inventoryRoot 'asset-ripper-export-files.json'
+$legacyToolPath = Join-Path $assetRipperEvidenceRoot 'tool.json'
+if (-not $exportReceipt -and ($Resume -or $InventoryOnly) -and -not (Get-ReverseStageReceipt $BuildRoot 'export') -and (Test-Path -LiteralPath $legacyExportPath) -and (Test-Path -LiteralPath $legacyToolPath)) {
+    $legacyTool = Get-Content -Raw -LiteralPath $legacyToolPath | ConvertFrom-Json
+    $legacyInventory = @(Read-ReverseJsonItems $legacyExportPath)
+    if ($legacyTool.version -eq $AssetRipperVersion -and $legacyTool.archiveSha256 -ieq $AssetRipperSha256 -and (Test-ReverseInventory $exportRoot $legacyInventory)) {
+        $exportReceipt = Complete-ReverseStage $BuildRoot 'export' $exportInputs $exportRoot -Inventory $legacyInventory -Origin 'validated-legacy-inventory'
     }
 }
-
-$snapshotSteamIdentityParameters = @{
-    ManifestPath = $snapshotManifestPath
-    ExplicitBranch = $resolvedBranch
-}
-$endSteamIdentityParameters = @{
-    ManifestPath = $steamManifestPath
-    ExplicitBranch = $resolvedBranch
-}
-if ($AllowUnknownSteamBranch) {
-    $snapshotSteamIdentityParameters['AllowUnknownSteamBranch'] = $true
-    $endSteamIdentityParameters['AllowUnknownSteamBranch'] = $true
-}
-if ($AllowPendingBranchSwitch) {
-    $snapshotSteamIdentityParameters['AllowPendingBranchSwitch'] = $true
-    $endSteamIdentityParameters['AllowPendingBranchSwitch'] = $true
-}
-$snapshotSteamIdentity = Get-DtmApiSteamBuildIdentity @snapshotSteamIdentityParameters
-$endSteamIdentity = Get-DtmApiSteamBuildIdentity @endSteamIdentityParameters
-Assert-DtmApiSteamBuildIdentityMatch `
-    -Expected $startSteamIdentity `
-    -Actual $snapshotSteamIdentity `
-    -ExpectedLabel 'source-start' `
-    -ActualLabel 'frozen'
-Assert-DtmApiSteamBuildIdentityMatch `
-    -Expected $startSteamIdentity `
-    -Actual $endSteamIdentity `
-    -ExpectedLabel 'source-start' `
-    -ActualLabel 'source-end'
-
-$parity = [ordered]@{
-    checkedAtUtc = [DateTime]::UtcNow.ToString('o')
-    sourceGameDir = $GameDir
-    snapshotGameRoot = $snapshotGameRoot
-    checkedFiles = $snapshotInventory.Count + 1
-    gameFiles = $snapshotInventory.Count
-    steamManifest = [ordered]@{
-        sourcePath = $steamManifestPath
-        snapshotPath = $snapshotManifestPath
-        buildId = $snapshotSteamIdentity.BuildId
-        branch = $snapshotSteamIdentity.Branch
-        sha256 = $snapshotSteamIdentity.ManifestSha256
-        sourceStartSha256 = $startSteamIdentity.ManifestSha256
-        sourceEndSha256 = $endSteamIdentity.ManifestSha256
-        exact = $true
+if (-not $exportReceipt) {
+    if ($InventoryOnly) { throw 'Export integrity/tool identity failed; InventoryOnly does not re-export.' }
+    if ((Test-Path -LiteralPath $exportRoot) -and -not $Resume) { throw 'Export exists. Use Resume to validate or retry only that stage.' }
+    Start-ReverseStage $BuildRoot 'export' $exportInputs 'asset-ripper-unity-project' | Out-Null
+    try {
+        [IO.Directory]::CreateDirectory($assetRipperEvidenceRoot) | Out-Null
+        $tool = Ensure-AssetRipper $AssetRipperVersion $AssetRipperSha256
+        Invoke-AssetRipperExport $tool $snapshotGameRoot $exportRoot $assetRipperLogPath
+        if (-not (Test-Path -LiteralPath (Join-Path $exportRoot 'ExportedProject/ProjectSettings/ProjectVersion.txt'))) { throw 'AssetRipper did not produce a complete project marker.' }
+        Write-ReverseJson (Join-Path $assetRipperEvidenceRoot 'tool.json') $tool
+        $exportReceipt = Complete-ReverseStage $BuildRoot 'export' $exportInputs $exportRoot
     }
-    exact = ($snapshotMismatches.Count -eq 0)
-    mismatches = @($snapshotMismatches)
+    catch { Fail-ReverseStage $BuildRoot 'export' $_.Exception.Message; throw }
 }
-Write-Utf8NoBomFile -Path (Join-Path $inventoryRoot 'snapshot-source-parity.json') -Text (($parity | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
-if (-not $parity.exact) {
-    throw "Frozen snapshot no longer matches the source game in $($snapshotMismatches.Count) file(s). See snapshot-source-parity.json."
+$exportInventory = @($exportReceipt.outputs)
+Write-ReverseJson (Join-Path $inventoryRoot 'asset-ripper-export-files.json') $exportInventory
+$parity = Get-Content -Raw -LiteralPath (Join-Path $inventoryRoot 'snapshot-source-parity.json') | ConvertFrom-Json
+$inventoryInputs = [ordered]@{ format = 2; snapshot = $snapshotReceipt.outputFingerprint; export = $exportReceipt.outputFingerprint; generatorSha256 = Get-Sha256Hex $PSCommandPath }
+if (($Resume -or $InventoryOnly) -and (Test-ReverseStage $BuildRoot 'inventory' $inventoryInputs $inventoryRoot)) { Write-Host "Capture stages verified and reused: $BuildRoot"; return }
+# Reuse the inventories just verified by their stages; do not hash the same
+# scenes, bundles and managed files again while formatting derived summaries.
+$knownCaptureHashes = @{}
+foreach ($entry in $snapshotInventory) { $knownCaptureHashes[[IO.Path]::GetFullPath((Join-Path $snapshotGameRoot $entry.path))] = $entry.sha256 }
+foreach ($entry in $exportInventory) { $knownCaptureHashes[[IO.Path]::GetFullPath((Join-Path $exportRoot $entry.path))] = $entry.sha256 }
+function Get-KnownCaptureHash {
+    param([string] $Path)
+    $full = [IO.Path]::GetFullPath($Path)
+    if ($knownCaptureHashes.ContainsKey($full)) { return $knownCaptureHashes[$full] }
+    return Get-Sha256Hex $full
 }
-
 $projectRoot = Join-Path $exportRoot 'ExportedProject'
 $sceneRoot = Join-Path $projectRoot 'Assets\Scenes'
 $configRoot = Join-Path $projectRoot 'Assets\Configs\GenDatas'
@@ -501,7 +428,7 @@ if (Test-Path -LiteralPath $sceneRoot -PathType Container) {
         [ordered]@{
             path = ConvertTo-NormalizedRelativePath -Root $projectRoot -Path $_.FullName
             bytes = [long]$_.Length
-            sha256 = Get-Sha256Hex -Path $_.FullName
+            sha256 = Get-KnownCaptureHash -Path $_.FullName
         }
     })
 }
@@ -525,10 +452,10 @@ for ($sceneIndex = 0; $sceneIndex -lt $builtScenePaths.Count; $sceneIndex++) {
         originalPath = $builtScenePaths[$sceneIndex]
         exportedPath = if ($levelFile) { ConvertTo-NormalizedRelativePath -Root $projectRoot -Path $levelFile.FullName } else { $null }
         bytes = if ($levelFile) { [long]$levelFile.Length } else { $null }
-        sha256 = if ($levelFile) { Get-Sha256Hex -Path $levelFile.FullName } else { $null }
+        sha256 = if ($levelFile) { Get-KnownCaptureHash -Path $levelFile.FullName } else { $null }
     }
 }
-Write-Utf8NoBomFile -Path (Join-Path $inventoryRoot 'built-scenes.json') -Text (($builtScenes | ConvertTo-Json -Depth 6) + [Environment]::NewLine)
+Write-ReverseJson (Join-Path $inventoryRoot 'built-scenes.json') @($builtScenes)
 
 $configTables = @()
 if (Test-Path -LiteralPath $configRoot -PathType Container) {
@@ -546,7 +473,7 @@ if (Test-Path -LiteralPath $configRoot -PathType Container) {
             name = $_.Name
             rows = $rowCount
             bytes = [long]$_.Length
-            sha256 = Get-Sha256Hex -Path $_.FullName
+            sha256 = Get-KnownCaptureHash -Path $_.FullName
             parseError = $parseError
         }
     })
@@ -558,7 +485,7 @@ if (Test-Path -LiteralPath $streamingRoot -PathType Container) {
         [ordered]@{
             path = ConvertTo-NormalizedRelativePath -Root $streamingRoot -Path $_.FullName
             bytes = [long]$_.Length
-            sha256 = Get-Sha256Hex -Path $_.FullName
+            sha256 = Get-KnownCaptureHash -Path $_.FullName
         }
     })
 }
@@ -568,7 +495,7 @@ $assemblies = @(Get-ChildItem -LiteralPath $managedRoot -Filter '*.dll' -File | 
     [ordered]@{
         name = $_.Name
         bytes = [long]$_.Length
-        sha256 = Get-Sha256Hex -Path $_.FullName
+        sha256 = Get-KnownCaptureHash -Path $_.FullName
     }
 })
 
@@ -577,7 +504,7 @@ if (Test-Path -LiteralPath $catalogPath -PathType Leaf) {
     $catalogJson = [System.IO.File]::ReadAllText($catalogPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
     $catalog = [ordered]@{
         bytes = (Get-Item -LiteralPath $catalogPath).Length
-        sha256 = Get-Sha256Hex -Path $catalogPath
+        sha256 = Get-KnownCaptureHash -Path $catalogPath
         internalIds = @($catalogJson.m_InternalIds)
         providerIds = @($catalogJson.m_ProviderIds)
         resourceTypes = @($catalogJson.m_resourceTypes)
@@ -663,3 +590,9 @@ Write-Host "Snapshot: $($summary.snapshot.files) files / $($summary.snapshot.byt
 Write-Host "AssetRipper export: $($summary.assetRipper.exportedFiles) files / $($summary.assetRipper.exportedBytes) bytes"
 Write-Host "Recovered: scenes=$($summary.recovered.sceneCount), named build scenes=$($summary.recovered.builtScenePathCount), config tables=$($summary.recovered.configTableCount), bundles=$($summary.recovered.bundleCount), managed assemblies=$($summary.recovered.managedAssemblyCount)"
 Write-Host "AssetRipper error lines: $($summary.assetRipper.errorLines)"
+
+$inventoryOutputs = @('raw-snapshot-files.json', 'asset-ripper-export-files.json', 'snapshot-source-parity.json', 'built-scenes.json', 'summary.json') | ForEach-Object {
+    $file = Get-Item -LiteralPath (Join-Path $inventoryRoot $_)
+    [ordered]@{ path = $_; bytes = $file.Length; sha256 = Get-KnownCaptureHash $file.FullName }
+}
+Complete-ReverseStage $BuildRoot 'inventory' $inventoryInputs $inventoryRoot -Inventory @($inventoryOutputs) -AllowExtra | Out-Null

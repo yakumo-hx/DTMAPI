@@ -12,14 +12,18 @@ if ([string]::IsNullOrWhiteSpace($GameDir)) {
         $GameDir = Resolve-DolocTownGamePath -RepoRoot $repo
     }
     catch {
-        Write-Host '[INVALID] Doloc Town game folder could not be resolved or validated.' -ForegroundColor Red
-        Write-Host ('     ' + [string]$_.Exception.Message)
-        Write-Host '     Set DTMAPI_GAME_DIR to the folder containing DolocTown.exe and DolocTown_Data, then run this check again.'
+        Write-DtmApiInstallerFailure -ErrorRecord $_
         exit 1
     }
 }
 else {
-    $GameDir = [System.IO.Path]::GetFullPath($GameDir)
+    try {
+        $GameDir = Resolve-DtmApiExplicitGamePath -Path $GameDir -Source '-GameDir'
+    }
+    catch {
+        Write-DtmApiInstallerFailure -ErrorRecord $_
+        exit 1
+    }
 }
 
 $stateDir = Resolve-DtmApiStateDir -GameDir $GameDir
@@ -65,6 +69,14 @@ $script:DtmRequiredMissing = 0
 $script:DtmRequiredInvalid = 0
 $script:DtmOptionalMissing = 0
 $script:DtmUpdateRequired = 0
+$script:DtmTransactionStatus = 'Clean'
+try {
+    $transactionClassifications = @(Get-DtmApiRuntimeTransactionClassifications -GameDir $GameDir -StateDir $stateDir -PluginDir $pluginDir)
+}
+catch {
+    Write-DtmApiInstallerFailure -ErrorRecord $_
+    exit 1
+}
 
 function Write-DtmStatusLine {
     param(
@@ -339,6 +351,50 @@ Write-DtmStatusLine -Tag 'INFO' -Message "Game folder: $GameDir" -Color Cyan
 Write-DtmStatusLine -Tag 'INFO' -Message "State folder: $stateDir" -Color Cyan
 Write-Host ""
 
+Write-DtmStatusLine -Tag 'INFO' -Message 'Runtime transaction state (read-only)' -Color Cyan
+if ($transactionClassifications.Count -eq 0) {
+    Write-DtmStatusLine -Tag 'OK' -Message 'No Runtime transaction residue detected.' -Color Green
+}
+else {
+    foreach ($classification in $transactionClassifications) {
+        $path = if (-not [string]::IsNullOrWhiteSpace([string]$classification.RuntimeRoot)) { [string]$classification.RuntimeRoot } else { [string]$classification.StateRoot }
+        switch ([string]$classification.Kind) {
+            'RecoverableReceipt' {
+                if (-not [string]::Equals($script:DtmTransactionStatus, 'Blocked', [System.StringComparison]::Ordinal)) {
+                    $script:DtmTransactionStatus = 'RecoveryPending'
+                }
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-E1302' `
+                    -Chinese '发现可恢复的中断事务；检查器不会修改文件。请运行 1_install_dtmapi.bat 完成恢复。' `
+                    -English 'A recoverable interrupted transaction exists; the checker will not modify files. Run 1_install_dtmapi.bat to recover it.' `
+                    -Detail $path `
+                    -Level Error
+            }
+            'SterileNoReceipt' {
+                if ([string]::Equals($script:DtmTransactionStatus, 'Clean', [System.StringComparison]::Ordinal)) {
+                    $script:DtmTransactionStatus = 'RepairableStale'
+                }
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-W1301' `
+                    -Chinese '发现可安全修复的无凭据事务空壳；检查器保持只读。运行安装或卸载脚本即可精准清理。' `
+                    -English 'A safely repairable receiptless transaction shell exists; the checker remains read-only. Run install or uninstall to remove it precisely.' `
+                    -Detail $path `
+                    -Level Warning
+            }
+            default {
+                $script:DtmTransactionStatus = 'Blocked'
+                Write-DtmApiInstallerMessage `
+                    -Code 'DTM-E1303' `
+                    -Chinese '发现不安全或无法验证的 Runtime 事务残留；检查器不会删除它。' `
+                    -English 'Unsafe or unverifiable Runtime transaction residue exists; the checker will not delete it.' `
+                    -Detail "Kind=$($classification.Kind); Path=$path; $($classification.Detail)" `
+                    -Level Error
+            }
+        }
+    }
+}
+Write-Host ""
+
 Write-DtmStatusLine -Tag 'INFO' -Message 'Required install files' -Color Cyan
 $bepInExRequiredFiles = @(Get-DtmApiBepInExRequiredInstallFiles -GameDir $GameDir)
 $missingBepInExFiles = @($bepInExRequiredFiles | Where-Object { -not (Test-DtmPathPresent -Path $_.Path -PathType $_.PathType) })
@@ -413,12 +469,20 @@ if (Test-Path -LiteralPath $pluginDir -PathType Container) {
     }
 }
 if (Test-Path -LiteralPath $stateDir -PathType Container) {
-    foreach ($entry in @(Get-ChildItem -LiteralPath $stateDir -Recurse -Force | Where-Object {
-        $_.Name -match '^(?i:DTMAPI\.GameBridge\.DolocTown\.QA\.(dll|pdb))$' -or
-        $_.Name -match '^(?i:qa-settings\.json|qa-host.*\.json)$' -or
-        $_.Name.Equals('qa-host', [System.StringComparison]::OrdinalIgnoreCase)
-    })) {
-        $qaHostResidue.Add($entry.FullName) | Out-Null
+    foreach ($rootEntry in @(Get-ChildItem -LiteralPath $stateDir -Force | Where-Object { $_.Name -notlike '.runtime-install-transaction-*' })) {
+        $entries = if ($rootEntry.PSIsContainer -and ($rootEntry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {
+            @($rootEntry) + @(Get-ChildItem -LiteralPath $rootEntry.FullName -Recurse -Force)
+        }
+        else {
+            @($rootEntry)
+        }
+        foreach ($entry in @($entries | Where-Object {
+            $_.Name -match '^(?i:DTMAPI\.GameBridge\.DolocTown\.QA\.(dll|pdb))$' -or
+            $_.Name -match '^(?i:qa-settings\.json|qa-host.*\.json)$' -or
+            $_.Name.Equals('qa-host', [System.StringComparison]::OrdinalIgnoreCase)
+        })) {
+            $qaHostResidue.Add($entry.FullName) | Out-Null
+        }
     }
 }
 if ($qaHostResidue.Count -gt 0) {
@@ -491,18 +555,20 @@ $installedAt = $null
 if (Test-Path -LiteralPath $installStatePath -PathType Leaf) {
     $installState = Read-DtmStatusJson -Path $installStatePath -Required
     if ($installState) {
-        Write-DtmStatusLine -Tag 'INFO' -Message ("Installed DTMAPI version: {0}" -f $installState.DTMAPIVersion) -Color Cyan
-        Write-DtmStatusLine -Tag 'INFO' -Message ("Installed at: {0}" -f $installState.InstalledAt) -Color Cyan
+        $recordedInstallVersion = [string](Get-DtmApiMapValue -Map $installState -Key 'DTMAPIVersion' -Default '')
+        $recordedInstalledAt = [string](Get-DtmApiMapValue -Map $installState -Key 'InstalledAt' -Default '(not recorded by this legacy/partial state)')
+        Write-DtmStatusLine -Tag 'INFO' -Message ("Installed DTMAPI version: {0}" -f $recordedInstallVersion) -Color Cyan
+        Write-DtmStatusLine -Tag 'INFO' -Message ("Installed at: {0}" -f $recordedInstalledAt) -Color Cyan
         Compare-DtmInstalledVersion -Label 'Install-state DTMAPI version' -Actual ([string](Get-DtmApiMapValue -Map $installState -Key 'DTMAPIVersion' -Default '')) -Expected $script:DtmApiReleaseVersion
         Compare-DtmInstalledVersion -Label 'Install-state binary version' -Actual ([string](Get-DtmApiMapValue -Map $installState -Key 'BinaryVersion' -Default '')) -Expected $script:DtmApiBinaryVersion
-        $installedAt = Convert-DtmStatusTimestamp -Value ([string]$installState.InstalledAt)
+        $installedAt = Convert-DtmStatusTimestamp -Value ([string](Get-DtmApiMapValue -Map $installState -Key 'InstalledAt' -Default ''))
     }
 }
 if (Test-Path -LiteralPath $releaseManifestPath -PathType Leaf) {
     $releaseManifest = Read-DtmStatusJson -Path $releaseManifestPath -Required
     if ($releaseManifest) {
-        Write-DtmStatusLine -Tag 'INFO' -Message ("Package kind: {0}" -f $releaseManifest.PackageKind) -Color Cyan
-        Write-DtmStatusLine -Tag 'INFO' -Message ("Package version: {0}" -f $releaseManifest.DTMAPIVersion) -Color Cyan
+        Write-DtmStatusLine -Tag 'INFO' -Message ("Package kind: {0}" -f [string](Get-DtmApiMapValue -Map $releaseManifest -Key 'PackageKind' -Default '(not recorded by this legacy/partial manifest)')) -Color Cyan
+        Write-DtmStatusLine -Tag 'INFO' -Message ("Package version: {0}" -f [string](Get-DtmApiMapValue -Map $releaseManifest -Key 'DTMAPIVersion' -Default '')) -Color Cyan
         Compare-DtmInstalledVersion -Label 'Installed release-manifest DTMAPI version' -Actual ([string](Get-DtmApiMapValue -Map $releaseManifest -Key 'DTMAPIVersion' -Default '')) -Expected $script:DtmApiReleaseVersion
         Compare-DtmInstalledVersion -Label 'Installed release-manifest binary version' -Actual ([string](Get-DtmApiMapValue -Map $releaseManifest -Key 'BinaryVersion' -Default '')) -Expected $script:DtmApiBinaryVersion
     }
@@ -610,7 +676,8 @@ if (Test-Path -LiteralPath $installedPlayerDoctorRoot -PathType Container) {
 $latestInstallFailure = Get-DtmLatestStateFile -Directory $stateDir -Filter 'install-state.failed-*.json'
 if ($latestInstallFailure) {
     $failureState = Read-DtmStatusJson -Path $latestInstallFailure.FullName
-    $failureAt = if ($failureState) { Convert-DtmStatusTimestamp -Value ([string]$failureState.FailedAt) } else { $null }
+    $failureAtText = if ($failureState) { [string](Get-DtmApiMapValue -Map $failureState -Key 'FailedAt' -Default '') } else { '' }
+    $failureAt = if ($failureState) { Convert-DtmStatusTimestamp -Value $failureAtText } else { $null }
     $failureIsOlderThanCurrentInstall = $false
     if ($installedAt -and $failureAt -and $failureAt.UtcDateTime -le $installedAt.UtcDateTime) {
         $failureIsOlderThanCurrentInstall = $true
@@ -625,11 +692,11 @@ if ($latestInstallFailure) {
 
     Write-DtmStatusDetail -Text $latestInstallFailure.FullName
     if ($failureState) {
-        Write-DtmStatusDetail -Text ("FailedAt: {0}" -f $failureState.FailedAt)
+        Write-DtmStatusDetail -Text ("FailedAt: {0}" -f $failureAtText)
         if ($failureIsOlderThanCurrentInstall) {
-            Write-DtmStatusDetail -Text ("Latest successful install: {0}" -f $installState.InstalledAt)
+            Write-DtmStatusDetail -Text ("Latest successful install: {0}" -f [string](Get-DtmApiMapValue -Map $installState -Key 'InstalledAt' -Default ''))
         }
-        Write-DtmStatusDetail -Text ("Error: {0}" -f $failureState.Error)
+        Write-DtmStatusDetail -Text ("Error: {0}" -f [string](Get-DtmApiMapValue -Map $failureState -Key 'Error' -Default '(not recorded)'))
     }
 }
 $latestUninstallState = Get-DtmLatestStateFile -Directory $stateDir -Filter 'uninstall-state-*.json'
@@ -712,11 +779,39 @@ Write-DtmStatusDetail -Text 'Use DTMAPI Settings > Logs > Export Report when ask
 Write-DtmStatusDetail -Text 'If the game crashes before you can export a report, run 4_collect_dtmapi_logs.bat and send the Desktop\DTMAPI-logs folder.'
 Write-DtmStatusDetail -Text 'The player uninstaller removes DTMAPI Runtime only and always preserves official-local/content packages and their enablement state.'
 
+Write-Host ""
+switch ([string]$script:DtmTransactionStatus) {
+    'Blocked' {
+        Write-DtmApiInstallerMessage -Code 'DTM-E1303' -Chinese '最终状态：BLOCKED（事务残留不安全或无法验证）。' -English 'Final state: BLOCKED (transaction residue is unsafe or unverifiable).' -Level Error
+        exit 1
+    }
+    'RecoveryPending' {
+        Write-DtmApiInstallerMessage -Code 'DTM-E1302' -Chinese '最终状态：RECOVERY_PENDING（请先运行安装脚本恢复）。' -English 'Final state: RECOVERY_PENDING (run the installer to recover first).' -Level Error
+        exit 1
+    }
+    'RepairableStale' {
+        Write-DtmApiInstallerMessage -Code 'DTM-W1301' -Chinese '最终状态：REPAIRABLE_STALE（检查器未修改文件）。' -English 'Final state: REPAIRABLE_STALE (the checker did not modify files).' -Level Warning
+        exit 1
+    }
+}
 if ($script:DtmRequiredMissing -gt 0 -or $script:DtmRequiredInvalid -gt 0) {
+    if (-not $hasInstallFootprint) {
+        Write-DtmApiInstallerMessage -Code 'DTM-I3002' -Chinese '最终状态：NOT_INSTALLED（未检测到 DTMAPI 安装痕迹）。' -English 'Final state: NOT_INSTALLED (no DTMAPI install footprint was detected).' -Level Info
+    }
+    else {
+        Write-DtmApiInstallerMessage -Code 'DTM-E3002' -Chinese '最终状态：PARTIAL（必需文件缺失或无效）。' -English 'Final state: PARTIAL (required files are missing or invalid).' -Level Error
+    }
     exit 1
 }
 if ($script:DtmUpdateRequired -gt 0) {
+    Write-DtmApiInstallerMessage -Code 'DTM-W3003' -Chinese '最终状态：UPDATE_REQUIRED（已安装版本或字节与当前 0.6.1 包不一致）。' -English 'Final state: UPDATE_REQUIRED (the installed version or bytes differ from the current 0.6.1 package).' -Level Warning
     exit 2
 }
 
+Write-DtmApiInstallerMessage `
+    -Code 'DTM-S3001' `
+    -Chinese '最终状态：INSTALLED_HEALTHY。DTMAPI 0.6.1、BepInEx/Doorstop、五个 Runtime DLL、兼容组件和安装凭据均通过检查。' `
+    -English 'Final state: INSTALLED_HEALTHY. DTMAPI 0.6.1, BepInEx/Doorstop, all five Runtime DLLs, the compatibility component, and install receipts passed validation.' `
+    -Detail "GameDir=$GameDir" `
+    -Level Success
 exit 0

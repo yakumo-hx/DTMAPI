@@ -1,8 +1,10 @@
-# ISSUE-011 2026-06-23 Short-Run Unity Native Crash And Evidence Gaps
+﻿# ISSUE-011 2026-06-23 Short-Run Unity Native Crash And Evidence Gaps
+
+- State: `verified`
+- Current boundary: Exact 0.6 Local11 candidate passed title/Y-console/Input-System/crash-package/Steam-exit acceptance; the dump-less historical 0.5.2 native owner remains unproven and a fresh recurrence reopens diagnosis.
 
 ## Status
 
-- State: `verified`
 - Verification boundary: current 0.6 candidate gate verified; historical 0.5.2 native owner remains unproven
 - Severity: high
 - Scope: DTMAPI startup/title UI diagnostics, Unity native crash export, third-party mod load failure classification, Y console breadcrumb evidence

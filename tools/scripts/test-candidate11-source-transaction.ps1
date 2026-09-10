@@ -95,12 +95,12 @@ function New-Candidate11TestFixture {
     }
     Write-Candidate11TestJson -Path (Join-Path $gameDir 'DTMAPI\release-manifest.json') -Value $installedManifest
 
-    $trackedCatalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'tools\release\dtmapi-product-catalog.json') | ConvertFrom-Json
+    $trackedCatalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'fixtures/candidate11-product-identities-20260805.json') | ConvertFrom-Json
     $trackedCurrentProducts = @(Get-DtmApiReleaseContractAdvancedProducts -Catalog $trackedCatalog)
     $trackedManbo = @($trackedCatalog.products | Where-Object { [string]$_.catalogId -ceq 'manbo-cardboard-audio' })
     $trackedMoreEquipment = @($trackedCatalog.products | Where-Object { [string]$_.catalogId -ceq 'more-equipment-slots' })
     if ($trackedCurrentProducts.Count -ne 9 -or $trackedManbo.Count -ne 1 -or $trackedMoreEquipment.Count -ne 1) {
-        throw 'Candidate11 fixture requires the tracked nine-source/two-retained authority set.'
+        throw 'Candidate11 fixture requires the frozen nine-source/two-retained authority set.'
     }
     $policyRegistry = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'author-sdk\advanced-reference-policies\registry.json') | ConvertFrom-Json
 
@@ -154,6 +154,9 @@ function New-Candidate11TestFixture {
         if ($isCurrentSourceCandidate) {
             $product['referencePolicyId'] = [string]$trackedProduct.referencePolicyId
             $product['canonicalHarmonyOwner'] = [string]$trackedProduct.canonicalHarmonyOwner
+            # Preserve the frozen selector input in the synthetic Catalog;
+            # membership must not depend on today's publication state.
+            $product['currentPublishedArtifact'] = $trackedProduct.currentPublishedArtifact
         }
 
         $packageRoot = Join-Path $candidateRoot $packageName
@@ -351,7 +354,7 @@ if ($IssueReceiptMode -ne 'Omit') {
     $logPath = Join-Path $issueEvidence 'BepInEx-LogOutput.log'
     $titleClickLine = "$($now.ToString('o')) [Info] DTMAPI title settings button clicked."
     $titleOpenedLine = "$($now.ToString('o')) [Info] DTMAPI title settings menu opened."
-    $searchLine = "$($now.ToString('o')) [Info] Hook status: UI.DebugConsoleItemTooltip = visible. item=fixture_item, source=Vanilla, searchText=fixture."
+    $searchLine = "$($now.ToString('o')) [Info] DebugConsole status UI.DebugConsoleItemTooltip=visible item=fixture_item, source=Vanilla, searchText=fixture."
     Write-FakeText -Path $logPath -Text (($titleClickLine, $titleOpenedLine, $searchLine) -join [Environment]::NewLine)
     $lastGivePath = Join-Path $issueEvidence 'debug-console-last-give.txt'
     Write-FakeText -Path $lastGivePath -Text ($now.ToString('o') + ' status=verified source=YConsole.ButtonLeftClick item=fixture_item requested=1 given=1 rightClick=False failure=reason=none.' + [Environment]::NewLine)
@@ -401,7 +404,7 @@ if ($IssueReceiptMode -ne 'Omit') {
         GameDir = [System.IO.Path]::GetFullPath($GameDir)
         RunStartedAt = $runStarted.ToString('o')
         CompletedAt = $now.ToString('o')
-        SaveSlot = 3
+        SaveSlot = 10
         SaveTestMode = 'NoNativeSave'
         LaunchMode = 'Steam'
         OfficialModProfile = 'Local11'
@@ -424,8 +427,11 @@ if ($IssueReceiptMode -ne 'Omit') {
         DebugConsole = [ordered]@{
             OpenUseClosePassed = $true
             InteractiveObserved = $true
+            TooltipEvidenceCount = 1
+            TooltipLine = $searchLine
             SearchEvidenceCount = 1
             SearchText = 'fixture'
+            SearchEvidenceKind = 'tooltip'
             SearchLine = $searchLine
             LastGiveBaseline = [ordered]@{
                 Path = [System.IO.Path]::GetFullPath((Join-Path $PersistentRoot 'DTMAPI\debug-console-last-give.txt'))
@@ -568,17 +574,17 @@ try {
     Assert-Candidate11Test `
         -Condition ((Get-Candidate11RuntimeAssemblyDigest -Assemblies $runtimeOrderingAssemblies) -ceq 'f6443f95c11cd2386413e9e44704cb7998339174a2a95bf2b8324b10af63b11a') `
         -Message 'Runtime assembly digest no longer uses the frozen cross-host Ordinal order.'
-    $smokeSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'run-game-smoke.ps1')
+    $smokeSource = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/core/evidence.ps1')
     Assert-Candidate11Test `
         -Condition ($smokeSource.Contains("New-Object 'System.Collections.Generic.SortedDictionary[string,object]' ([System.StringComparer]::OrdinalIgnoreCase)")) `
         -Message 'Game smoke retained artifact preflight no longer shares the frozen cross-host OrdinalIgnoreCase order.'
 
-    $trackedCatalogPath = Join-Path $repo 'tools\release\dtmapi-product-catalog.json'
+    $trackedCatalogPath = Join-Path $PSScriptRoot 'fixtures/candidate11-product-identities-20260805.json'
     $trackedCatalog = Get-Content -Raw -Encoding UTF8 -LiteralPath $trackedCatalogPath | ConvertFrom-Json
     $trackedCandidate11 = @($trackedCatalog.products | Where-Object {
         [string]$_.role -ceq 'PublishedProduct' -and [string]$_.distributionState -ceq 'PublicWorkshop'
     })
-    Assert-Candidate11Test -Condition ($trackedCandidate11.Count -eq 11) -Message "Tracked Catalog does not currently select exactly 11 Candidate11 products; found $($trackedCandidate11.Count)."
+    Assert-Candidate11Test -Condition ($trackedCandidate11.Count -eq 11) -Message "Frozen Candidate11 fixture does not select exactly 11 historical products; found $($trackedCandidate11.Count)."
     Assert-Candidate11Test -Condition (@($trackedCandidate11 | Where-Object {
         [string]::IsNullOrWhiteSpace([string]$_.catalogId) -or
         [string]::IsNullOrWhiteSpace([string]$_.uniqueId) -or
@@ -596,14 +602,14 @@ try {
         ($trackedRetainedIds -join '|') -ceq 'manbo-cardboard-audio|more-equipment-slots'
     ) -Message 'Tracked Catalog did not resolve to the exact nine-source/two-retained Candidate11 boundary.'
 
-    $validSmokeContract = @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
+    $validSmokeContract = @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
     Assert-Candidate11SmokeContract -Arguments $validSmokeContract
     foreach ($invalidContract in @(
-        [ordered]@{ Label = 'missing ISSUE-011 receipt gate'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence'); Pattern = 'exactly one -Issue011Acceptance' },
+        [ordered]@{ Label = 'missing ISSUE-011 receipt gate'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence'); Pattern = 'exactly one -Issue011Acceptance' },
         [ordered]@{ Label = 'missing slot'; Arguments = @('-UseSteam','-SkipInstall','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = 'exactly one -SaveSlot' },
-        [ordered]@{ Label = 'wrong slot'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','5','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = '-SaveSlot 3' },
-        [ordered]@{ Label = 'duplicate mode'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-SaveTestMode','ArchiveMutation','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = 'exactly one -SaveTestMode' },
-        [ordered]@{ Label = 'alternate slot form'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot:3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = 'alternate or duplicate' }
+        [ordered]@{ Label = 'wrong slot'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = '-SaveSlot 10' },
+        [ordered]@{ Label = 'duplicate mode'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-SaveTestMode','ArchiveMutation','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = 'exactly one -SaveTestMode' },
+        [ordered]@{ Label = 'alternate slot form'; Arguments = @('-UseSteam','-SkipInstall','-SaveSlot:10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance'); Pattern = 'alternate or duplicate' }
     )) {
         $contractFailure = ''
         try {
@@ -616,7 +622,7 @@ try {
     }
     $badSmokeContract = ''
     try {
-        Assert-Candidate11SmokeContract -Arguments @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Published11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
+        Assert-Candidate11SmokeContract -Arguments @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Published11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance')
     }
     catch {
         $badSmokeContract = [string]$_.Exception.Message
@@ -624,7 +630,7 @@ try {
     Assert-Candidate11Test -Condition ($badSmokeContract -match 'Local11') -Message 'Published11 smoke arguments did not fail the Candidate11 contract.'
     $qaSmokeContract = ''
     try {
-        Assert-Candidate11SmokeContract -Arguments @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance','-StageQaHost')
+        Assert-Candidate11SmokeContract -Arguments @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance','-StageQaHost')
     }
     catch {
         $qaSmokeContract = [string]$_.Exception.Message
@@ -979,7 +985,7 @@ try {
             -FormalEvidenceRoot $badOuterEvidence `
             -Id 'bad-outer-save-contract' `
             -SmokePath $badOuterContract.SmokePath `
-            -SmokeArguments @('-UseSteam','-SkipInstall','-SaveSlot','3','-SaveTestMode','NoNativeSave','-SaveTestMode','ArchiveMutation','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance') `
+            -SmokeArguments @('-UseSteam','-SkipInstall','-SaveSlot','10','-SaveTestMode','NoNativeSave','-SaveTestMode','ArchiveMutation','-OfficialModProfile','Local11','-IsolateAllOfficialMods','-AssertNoQaUiEvidence','-Issue011Acceptance') `
             -SkipRuntimeLockForTest `
             -SkipProcessCheckForTest
     }

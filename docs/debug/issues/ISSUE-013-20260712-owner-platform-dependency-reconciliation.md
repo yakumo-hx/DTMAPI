@@ -1,7 +1,9 @@
-# ISSUE-013: Owner reconciliation treats platform providers as missing ordinary Mod sources
+﻿# ISSUE-013: Owner reconciliation treats platform providers as missing ordinary Mod sources
+
+- State: `verified`
+- Current boundary: Registry-only platform providers survive unchanged title/Workshop refresh; slot-3 owner and no-op reconciliation smokes retain `29/6`, one Entry per code Mod, and zero false restart/cleanup state.
 
 Date: 2026-07-12
-State: verified
 Area: Core owner lifecycle / dependency reconciliation / Workshop refresh
 Related Review: `docs/reviews/manual-qa/2026/20260712-0001-owner-platform-dependency-reconciliation.md`
 Related Update: `docs/updates/2026/20260712-0001-owner-platform-dependency-reconciliation.md`

@@ -7,7 +7,7 @@ namespace DTMAPI.MoreEquipmentSlots
     internal static class MoreEquipmentSlotsProductContract
     {
         internal const int FixedSlotCount = 3;
-        internal const int ExpectedHookCount = 4;
+        internal const int ExpectedHookCount = 5;
         internal const int StorageSchemaVersion = 3;
         internal const string UniqueId = "DTMAPI.MoreEquipmentSlotsMod";
         internal const string HarmonyOwner =

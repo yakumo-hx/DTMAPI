@@ -6,7 +6,7 @@
 
 ## 能力状态
 
-当前已验证的路线：
+以下是本教程建立时的验证样例。当前 AnimalPack 的内容和剩余验收由[产品 Update](../../docs/updates/2026/20260827-0003-unified-animal-pack-economy-and-care-station.md)维护，历史来源与基线见[动物内容知识](../../docs/knowledge/products/animal-content.md)。
 
 - 哈奇：复用原版 `chicken` 动画机和 AI，用 loose PNG 替换每一帧，用 `AnimalVoice` JSON + WAV 替换幼体/成年叫声。已通过 slot 7 自动 smoke 和用户手测，且不污染原版鸡。
 - 抛壳蟹：复用 `goat` 行为，另有 AssetBundle 动画机路线，并已补 `AnimalVoice` JSON + WAV。用户手测确认幼体/成年声音通过，且不污染原版动物。
@@ -157,8 +157,8 @@ MyMirelingPack/
 | --- | --- | --- | --- | --- | --- |
 | 立尾雉 | 小型鸟类、小型宠物 | `chicken` | `PLAY_ANIMAL_PET_CHICKEN_CHILD` | `PLAY_ANIMAL_PET_CHICKEN` | 哈奇已通过 loose PNG、AI、幼体/成年声音、原版鸡不污染测试；最适合从哈奇改第一只新动物 |
 | 角羊驼 | 中型四足动物 | `goat` | `PLAY_ANIMAL_PET_SHEEP_CHILD` | `PLAY_ANIMAL_PET_SHEEP` | 抛壳蟹已验证 AI 模板、AssetBundle 动画机和声音；loose PNG 路线使用同一套映射规则，但新包仍要手测 |
-| 沼泽兽 | 大型低速动物 | `marsh_pangolin` | `PLAY_ANIMAL_PET_PANGOLIN` | `PLAY_ANIMAL_PET_PANGOLIN` | 帧数和模板字段已整理；作为新 loose PNG 包还要完整手测 |
-| 变形蜜虫 | 小型软体/跳跃感动物 | `slime` | `PLAY_ANIMAL_PET_SLIME` | `PLAY_ANIMAL_PET_SLIME` | 帧数静态可对齐；油浮游原型已做静态检查，但仍需要游戏内加载和手测 |
+| 沼泽兽 | 大型低速动物 | `marsh_pangolin` | `PLAY_ANIMAL_PET_PANGOLIN` | `PLAY_ANIMAL_PET_PANGOLIN` | 田鼠采用的模板；新作者包仍需验证自己的 ID、素材和产物 |
+| 变形蜜虫 | 小型软体/跳跃感动物 | `slime` | `PLAY_ANIMAL_PET_SLIME` | `PLAY_ANIMAL_PET_SLIME` | 油浮游采用的模板；新作者包仍需验证自己的 ID、素材和产物 |
 
 表里的声音事件是“按模板推荐”的默认选择，不是 AI/动画模板的硬绑定。真正决定 `AnimalVoice` 是否命中的是：
 
@@ -943,7 +943,7 @@ PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD
 
 `slime` 路线帧数更特殊，`jump` 和 `sleep` 都要 8/4 帧，适合第二轮再做。
 
-换模板时不要只改 `templateSpeciesId`。至少要同步改 `schedule_id`、`aiTemplate`、`templateSpritePrefix`、帧数、两个阶段的 `sound_event`、两个 `nativeSoundEvent`，然后重新手测模板原版动物没有被污染。当前最稳的是 `chicken` 哈奇路线；`slime` 油浮游路线已经能静态对齐 48 张 PNG 和两条 WAV，但仍应先当作需要游戏内验证的原型路线。
+换模板时不要只改 `templateSpeciesId`。至少要同步改 `schedule_id`、`aiTemplate`、`templateSpritePrefix`、帧数、两个阶段的 `sound_event`、两个 `nativeSoundEvent`，然后手测模板原版动物没有被污染。选择与你的动物动作接近的现有模板；其他包的通过记录不能代替新包自己的 ID、素材和行为验证。
 
 ## 用哈奇换一轮配置做模板探针
 
@@ -979,7 +979,16 @@ PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD
 
 ## 手测清单
 
-第一轮至少按这个顺序测：
+首次接入一个新物种时使用下面的完整清单。修正已有包时按变化选择场景：
+
+| 本次变化 | 对应验证 |
+| --- | --- |
+| 简介、翻译或教程文字 | 解析/引用及对应显示检查；不启动完整动物流程 |
+| PNG、WAV 或其路径 | 受影响阶段和动作、模板原版动物不受污染；不保存 |
+| AI 模板、生命周期或生产规则 | 受影响行为及回退；睡眠/成长只有改变相关规则时选入 |
+| 新物种、保存格式或读回/停用恢复 | 完整接入或对应保存场景，fixture 一次准备后复用 |
+
+先完成上面的启动前检查，并确定动物、动作、场景和预期结果。普通检查原地运行，不调用原生保存或玩家睡觉；确需保存、跨日或读回的场景按[产品验证工作流](../../docs/workflows/product-change-validation.md)选择可处置槽位。前提不满足先修前提；选中行为通过且无相关新异常后，退出即结束，不补跑未改变的全套链路。
 
 1. 启用内容包，启动游戏。
 2. 查看日志中是否有你的 `UniqueID` 被 DTMAPI 识别。
@@ -994,7 +1003,7 @@ PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD
 11. 抚摸成年，听到你的成年 WAV。
 12. 攻击/受击成年，确认同一动物声音路径也使用你的 WAV。
 13. 放一只原版模板动物，例如原版沼泽兽/鸡/羊驼，确认它仍播放原版声音、显示原版贴图。
-14. 隔夜，确认自定义动物能睡觉、醒来，不会卡在睡眠状态或夜间站起移动。
+14. 在首次接入或改变睡眠/唤醒规则时验证跨日，确认不会卡在睡眠状态或夜间站起移动。
 15. 检查产物是否进入预期产物路线。
 16. 正常退出游戏，确认没有残留 `DolocTown.exe`。
 

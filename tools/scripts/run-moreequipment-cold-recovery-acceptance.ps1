@@ -101,6 +101,138 @@ function Assert-MoreEquipmentSlotsColdFixture {
     }
 }
 
+function Initialize-MoreEquipmentSlotsColdCompatibilityTrustProjection {
+    param(
+        [Parameter(Mandatory = $true)] [string] $FixtureRoot
+    )
+
+    $gameRoot =
+        [System.IO.Path]::GetFullPath(
+            (Resolve-DolocTownGamePath -RepoRoot $repo)).TrimEnd('\', '/')
+    $sourceManifest =
+        [System.IO.Path]::GetFullPath(
+            (Join-Path $gameRoot 'DTMAPI\release-manifest.json'))
+    if (-not (Test-Path -LiteralPath $sourceManifest -PathType Leaf)) {
+        throw "The installed Runtime release manifest required by cold recovery is missing: $sourceManifest"
+    }
+    $sourceInfo = Get-Item -LiteralPath $sourceManifest -Force
+    if ($sourceInfo.Length -le 0 -or $sourceInfo.Length -gt 1MB) {
+        throw "The installed Runtime release manifest has an invalid bounded length: $($sourceInfo.Length)."
+    }
+
+    try {
+        $manifest =
+            Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifest |
+            ConvertFrom-Json
+    }
+    catch {
+        throw "The installed Runtime release manifest is invalid JSON: $($_.Exception.Message)"
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$manifest.DTMAPIVersion) -or
+        [string]::IsNullOrWhiteSpace([string]$manifest.BuildCommit)) {
+        throw 'The installed Runtime release manifest lacks exact version or build provenance.'
+    }
+
+    $componentReceipts = @(
+        $manifest.OptionalComponents |
+        Where-Object {
+            [string]$_.ComponentId -ceq
+                'gamebridge-compatibility-host'
+        })
+    if ($componentReceipts.Count -ne 1) {
+        throw 'The installed Runtime release manifest must project exactly one frozen Compatibility Host receipt.'
+    }
+    $componentReceipt = $componentReceipts[0]
+    $expectedRelativePath =
+        'DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll'
+    if ([string]$componentReceipt.Distribution -cne 'dormant-shipped' -or
+        [string]$componentReceipt.LoadPolicy -cne 'first-frozen-abi-call' -or
+        [string]$componentReceipt.DefaultLoadState -cne 'dormant' -or
+        -not [bool]$componentReceipt.IncludedInDownloadPackage -or
+        [string]$componentReceipt.RelativePath -cne $expectedRelativePath -or
+        [string]$componentReceipt.AssemblyName -cne
+            'DTMAPI.GameBridge.DolocTown.Compatibility' -or
+        [string]$componentReceipt.AssemblyVersion -cne '0.5.3.0' -or
+        [string]$componentReceipt.TargetFramework -ine 'netstandard2.0') {
+        throw 'The installed Runtime Compatibility Host receipt does not match the frozen dormant-shipped policy.'
+    }
+    if ([int64]$componentReceipt.Length -le 0 -or
+        [string]$componentReceipt.Sha256 -notmatch '^[0-9A-Fa-f]{64}$') {
+        throw 'The installed Runtime Compatibility Host receipt lacks an exact length or SHA-256.'
+    }
+
+    $componentPath =
+        [System.IO.Path]::GetFullPath(
+            (Join-Path $gameRoot (
+                $expectedRelativePath.Replace(
+                    '/',
+                    [System.IO.Path]::DirectorySeparatorChar))))
+    if (-not (Test-MoreEquipmentSlotsColdPathWithin `
+            -Child $componentPath -Parent $gameRoot) -or
+        [string]::Equals(
+            $componentPath,
+            $gameRoot,
+            [System.StringComparison]::OrdinalIgnoreCase) -or
+        -not (Test-Path -LiteralPath $componentPath -PathType Leaf)) {
+        throw 'The installed Runtime Compatibility Host component is missing or escaped the resolved game root.'
+    }
+    $componentInfo = Get-Item -LiteralPath $componentPath -Force
+    $componentHash =
+        Get-FileHash -LiteralPath $componentPath -Algorithm SHA256
+    $componentSha256 = $componentHash.Hash.ToUpperInvariant()
+    if ([int64]$componentInfo.Length -ne
+            [int64]$componentReceipt.Length -or
+        -not [string]::Equals(
+            $componentSha256,
+            [string]$componentReceipt.Sha256,
+            [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The installed Runtime Compatibility Host bytes do not match their release-manifest receipt.'
+    }
+
+    $destination =
+        [System.IO.Path]::GetFullPath(
+            (Join-Path $FixtureRoot 'DTMAPI\release-manifest.json'))
+    $fixtureStateRoot =
+        [System.IO.Path]::GetFullPath(
+            (Join-Path $FixtureRoot 'DTMAPI'))
+    if (-not (Test-MoreEquipmentSlotsColdPathWithin `
+            -Child $destination -Parent $fixtureStateRoot) -or
+        [string]::Equals(
+            $destination,
+            $fixtureStateRoot,
+            [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The compatibility trust projection escaped the disposable fixture DTMAPI directory.'
+    }
+
+    $sourceHash =
+        Get-FileHash -LiteralPath $sourceManifest -Algorithm SHA256
+    $sourceSha256 = $sourceHash.Hash.ToUpperInvariant()
+    [System.IO.File]::Copy($sourceManifest, $destination, $true)
+    $destinationInfo = Get-Item -LiteralPath $destination -Force
+    $destinationHash =
+        Get-FileHash -LiteralPath $destination -Algorithm SHA256
+    $destinationSha256 = $destinationHash.Hash.ToUpperInvariant()
+    if ([int64]$destinationInfo.Length -ne [int64]$sourceInfo.Length -or
+        $destinationSha256 -cne $sourceSha256) {
+        throw 'The disposable compatibility trust projection changed the installed release-manifest bytes.'
+    }
+
+    return [ordered]@{
+        Status = 'projected-exact-installed-release-manifest'
+        SourceAuthority = $sourceManifest
+        Destination = $destination
+        Length = [int64]$sourceInfo.Length
+        Sha256 = $sourceSha256
+        DTMAPIVersion = [string]$manifest.DTMAPIVersion
+        BuildCommit = [string]$manifest.BuildCommit
+        ComponentId = [string]$componentReceipt.ComponentId
+        ComponentRelativePath = $expectedRelativePath
+        ComponentLength = [int64]$componentInfo.Length
+        ComponentSha256 = $componentSha256
+        CopiedComponentBytes = $false
+    }
+}
+
 function Get-MoreEquipmentSlotsColdSmokeEvidencePath {
     param([Parameter(Mandatory = $true)] [object[]] $Output)
 
@@ -254,6 +386,12 @@ $receipt = [ordered]@{
     OfficialModProfile = 'CoreOnly'
     OfficialLocalProductSource = 'Local.DTMAPI_MoreEquipmentSlots'
     ProductEnabled = $false
+    CompatibilityTrustProjection = [ordered]@{
+        Status = 'deferred-until-runtime-lock'
+        Destination = [System.IO.Path]::GetFullPath(
+            (Join-Path $fixtureRoot 'DTMAPI\release-manifest.json'))
+        CopiedComponentBytes = $false
+    }
     PhaseOrder = @($phases | ForEach-Object { $_.Id })
     Phases = @($phases)
     FinalCleanup =
@@ -342,6 +480,9 @@ try {
         throw 'Could not acquire the shared runtime lock.'
     }
     $lockAcquired = $true
+    $receipt['CompatibilityTrustProjection'] =
+        Initialize-MoreEquipmentSlotsColdCompatibilityTrustProjection `
+            -FixtureRoot $fixtureRoot
     $receipt.Status = 'running'
     Write-MoreEquipmentSlotsColdJson -Path $receiptPath -Value $receipt
 

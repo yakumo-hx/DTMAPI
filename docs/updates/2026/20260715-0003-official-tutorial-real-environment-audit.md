@@ -13,7 +13,7 @@
 
 ## Review
 
-- [Official Tutorial Real-Environment Audit](../../reviews/code/2026/20260715-0002-official-tutorial-real-environment-audit.md)
+- [Official Tutorial Real-Environment Audit](../../archive/reviews/code/2026/20260715-0002-official-tutorial-real-environment-audit.md)
 
 ## Scope
 

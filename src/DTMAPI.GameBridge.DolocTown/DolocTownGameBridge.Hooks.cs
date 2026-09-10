@@ -84,6 +84,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     runtime.SetHookStatus("GameLoop.ReturnedToTitle", returnHomePatched ? "experimental" : "pending", "Harmony Postfix: DolocAPI.ReturnHome", returnHomePatched ? "Patched ReturnHome; title lifecycle smoke verifies the button remount." : "Waiting for DolocAPI.ReturnHome to become patchable.");
                 }
 
+                InstallPlatformContextHooks(patcher);
                 InstallGameBridgeFeatureHooks(patcher);
 
                 if (!workshopReloadPatched)

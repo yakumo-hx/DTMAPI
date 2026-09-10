@@ -1,7 +1,7 @@
 {
   "name": "自动收获（DTMAPI）",
   "author": "Yuuka",
-  "version": "1.0.0",
+  "version": "0.1.0-dtmapi",
   "description": "依赖 DTMAPI。\n按配置扫描当前农场和农场房间中的成熟作物，并调用游戏原生收获逻辑；默认关闭。",
   "tags": [
     "Mod",

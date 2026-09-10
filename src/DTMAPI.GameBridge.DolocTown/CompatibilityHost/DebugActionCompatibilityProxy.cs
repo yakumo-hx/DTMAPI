@@ -74,10 +74,6 @@ namespace DTMAPI.GameBridge.DolocTown
             string destinationId) =>
             Invoke<TeleportResult>("Teleport", owner, destinationId);
 
-        public TeleportCsvExportResult ExportDestinationsCsv(
-            IManifest owner) =>
-            Invoke<TeleportCsvExportResult>("ExportDestinationsCsv", owner);
-
         BridgeFeatureStatus ITeleportDebugApi.GetStatus() =>
             Invoke<BridgeFeatureStatus>("DTMAPI.Abstractions.ITeleportDebugApi.GetStatus");
 

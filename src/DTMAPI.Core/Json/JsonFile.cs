@@ -9,6 +9,11 @@ namespace DTMAPI.Core.Json
         public static T Read<T>(string path)
         {
             string json = File.ReadAllText(path, new UTF8Encoding(false, true));
+            return Deserialize<T>(json);
+        }
+
+        internal static T Deserialize<T>(string json)
+        {
             if (json.Length > 0 && json[0] == '\uFEFF')
                 json = json.Substring(1);
 
@@ -36,44 +41,5 @@ namespace DTMAPI.Core.Json
             }
         }
 
-        public static string Prettyish(string json)
-        {
-            // DataContractJsonSerializer writes compact JSON; keep a tiny formatter to make configs editable.
-            var builder = new StringBuilder(json.Length + 32);
-            int indent = 0;
-            bool inString = false;
-            for (int i = 0; i < json.Length; i++)
-            {
-                char c = json[i];
-                if (c == '"' && (i == 0 || json[i - 1] != '\\'))
-                    inString = !inString;
-                if (!inString && (c == '{' || c == '['))
-                {
-                    builder.Append(c).AppendLine();
-                    indent++;
-                    builder.Append(' ', indent * 2);
-                }
-                else if (!inString && (c == '}' || c == ']'))
-                {
-                    builder.AppendLine();
-                    indent--;
-                    builder.Append(' ', indent * 2).Append(c);
-                }
-                else if (!inString && c == ',')
-                {
-                    builder.Append(c).AppendLine();
-                    builder.Append(' ', indent * 2);
-                }
-                else if (!inString && c == ':')
-                {
-                    builder.Append(": ");
-                }
-                else
-                {
-                    builder.Append(c);
-                }
-            }
-            return builder.ToString();
-        }
     }
 }

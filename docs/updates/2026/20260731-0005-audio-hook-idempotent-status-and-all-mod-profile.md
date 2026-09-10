@@ -87,5 +87,5 @@ The source correction is a single transition-publication guard and can be revert
 ## Follow-up
 
 - The user owns the final interactive all-Mod test.
-- The broader audio bridge remains deferred to [`20260731 audio replacement bridge roadmap`](../../planning/20260731-audio-replacement-bridge-roadmap.md).
+- The broader audio bridge remains deferred to [`20260731 audio replacement bridge roadmap`](../../archive/planning/2026/20260731-audio-replacement-bridge-roadmap.md).
 - Keep this Update at `implemented` and ISSUE-016 at `mitigated`; move them to `verified` only after the player's corrected delayed-demand result and expanded combined-feature result.

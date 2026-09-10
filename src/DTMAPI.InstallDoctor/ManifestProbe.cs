@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.InstallDoctor;
 
@@ -20,6 +22,8 @@ internal sealed class ManifestProbe
     public bool HasExplicitType { get; init; }
     public bool HasExplicitCodeModKind { get; init; }
     public string Error { get; init; } = string.Empty;
+    public PackageDependencyManifest? DependencyContract { get; init; }
+    public bool NativeContractSelected { get; init; }
 
     public bool HasStrongDtmApiMarker =>
         UniqueId.Length > 0 &&
@@ -86,6 +90,10 @@ internal sealed class ManifestProbe
             {
                 Path = fullPath,
                 RootPath = root,
+                NativeContractSelected = rootElement.EnumerateObject().Any(property => property.Name.Equals("NativeContractVersion", StringComparison.OrdinalIgnoreCase))
+                    && NativePackageContract.Select(File.ReadAllBytes(fullPath)),
+                DependencyContract = rootElement.EnumerateObject().Any(property => property.Name.Equals("DependencyContractVersion", StringComparison.OrdinalIgnoreCase))
+                    ? PackageDependencyContract.ReadManifest(File.ReadAllBytes(fullPath)) : null,
                 Name = ReadString(rootElement, "Name"),
                 UniqueId = ReadString(rootElement, "UniqueID"),
                 Version = ReadString(rootElement, "Version"),

@@ -1,0 +1,43 @@
+[
+  {
+    "id": "animal_care_station",
+    "menu_type": 1,
+    "scene_asset": { "url": "sprite_equipment_animal_care_station" },
+    "flip_asset": { "url": "" },
+    "animator_asset": { "url": "" },
+    "env_type": 0,
+    "fit_type": 0,
+    "cover_size": { "x": 2, "y": 4 },
+    "base_equipment": "",
+    "display_lock": true,
+    "function": {
+      "$type": "EquipmentFuncGarbageShredder",
+      "worker_renderer_name": 0,
+      "worker_renderer_name_ex": 3,
+      "worker_renderer_name_lowpower": 5,
+      "work_sprites": {
+        "array": [
+          { "url": "sprite_equipment_animal_care_station" }
+        ]
+      },
+      "idle_sprite": { "url": "sprite_equipment_animal_care_station" },
+      "in_farm": true,
+      "gold_cost": 0,
+      "recycle_factor": 0.5,
+      "recipe_group_name": "animal_care_station",
+      "interval": 12
+    },
+    "electronic_component": {
+      "$type": "EComProtoAppliance",
+      "threshold": 1
+    },
+    "processors": [
+      {
+        "$type": "WDP_AcidRain_Worker",
+        "durationTu": 1
+      }
+    ],
+    "fit_slot_datas": [],
+    "contained_slot_datas": []
+  }
+]

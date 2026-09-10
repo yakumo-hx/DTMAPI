@@ -7,16 +7,20 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Runtime.InteropServices;
+using DTMAPI.Internal;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.AuthorSdk;
 
 internal static class AuthorSessionService
 {
-    private const string ProtocolVersion = "dtmapi-author-session/1";
     private const string SnapshotOperation = "get-source-snapshot";
     private const string ReloadOperation = "reload-content";
+    private const string CommandOperation = "execute-command";
     private const int MaximumResponseBytes = 64 * 1024;
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromMinutes(10);
     private static readonly TimeSpan MaximumSessionLifetime = TimeSpan.FromMinutes(15);
@@ -27,13 +31,13 @@ internal static class AuthorSessionService
     public static async Task<CommandReport> ExecuteAsync(ParsedCommand command)
     {
         if (command.Positionals.Count == 0)
-            throw new CommandLineException("session requires prepare, snapshot, reload, or clear.");
+            throw new CommandLineException("session requires prepare, snapshot, reload, command, or clear.");
         string action = command.Positionals[0].ToLowerInvariant();
-        if (action is not ("prepare" or "snapshot" or "reload" or "clear"))
-            throw new CommandLineException("Unknown session operation. Use prepare, snapshot, reload, or clear.");
-        command.RequireOnlyOptions(action is "snapshot" or "reload"
+        if (action is not ("prepare" or "snapshot" or "reload" or "command" or "clear"))
+            throw new CommandLineException("Unknown session operation. Use prepare, snapshot, reload, command, or clear.");
+        command.RequireOnlyOptions(action == "command" ? new[] { "game-root", "timeout-seconds", "command-line" } : action is "snapshot" or "reload"
             ? new[] { "game-root", "timeout-seconds" }
-            : new[] { "game-root" });
+            : action == "prepare" ? new[] { "game-root", "api-target", "commands" } : new[] { "game-root" });
         string gameRoot = RequireGameRoot(command);
         var report = new CommandReport { Command = "session " + action, RootPath = gameRoot };
         try
@@ -67,6 +71,8 @@ internal static class AuthorSessionService
     private static void Prepare(ParsedCommand command, string gameRoot, CommandReport report)
     {
         RequirePositionals(command, 1, "session prepare takes no additional arguments.");
+        if (!bool.TryParse(command.Option("commands", "false"), out bool enableCommands)) throw new CommandLineException("--commands must be true or false.");
+        AuthorApiTarget apiTarget = SdkApiTargets.ForCommand(command.Option("api-target", AuthorApiTargetCatalog.Current.DefaultTarget));
         DateTimeOffset now = DateTimeOffset.UtcNow;
         EnsureSessionSlotAvailable(gameRoot, now);
         string sessionId = Guid.NewGuid().ToString("N");
@@ -74,15 +80,18 @@ internal static class AuthorSessionService
         string pipeName = CreatePipeName(gameRoot, sessionId);
         var secret = new AuthorSessionSecret
         {
-            SchemaVersion = AuthorStatePaths.SchemaVersion,
+            SchemaVersion = AuthorSessionContract.SchemaVersion,
             GameRoot = gameRoot,
-            RuntimeVersion = AuthorSdkContract.TargetRuntimeVersion,
+            ApiTarget = apiTarget.ApiTarget,
+            MinimumRuntimeVersion = Version.Parse(apiTarget.MinimumRuntimeVersion) > Version.Parse(AuthorSessionContract.MinimumRuntimeVersion)
+                ? apiTarget.MinimumRuntimeVersion : AuthorSessionContract.MinimumRuntimeVersion,
             SessionId = sessionId,
             Token = token,
             PipeName = pipeName,
             CreatedAtUtc = now.ToString("O", CultureInfo.InvariantCulture),
             ExpiresAtUtc = now.Add(SessionLifetime).ToString("O", CultureInfo.InvariantCulture)
         };
+        if (enableCommands) secret.OptionalCapabilities = secret.OptionalCapabilities.Append(AuthorSessionContract.CommandCapability).ToArray();
         string clientPath = AuthorStatePaths.AuthorSessionClientPath(gameRoot);
         string descriptorPath = AuthorStatePaths.AuthorSessionDescriptorPath(gameRoot);
         bool clientWritten = false;
@@ -154,20 +163,39 @@ internal static class AuthorSessionService
         int responseTimeoutSeconds = ParseTimeoutSeconds(command.Option("timeout-seconds", "35"));
         int connectTimeoutMilliseconds = Math.Min(5000, checked(responseTimeoutSeconds * 1000));
         string treeSha256 = AuthorFileTreeDigest.Compute(selectedRoot);
-        string operation = action == "snapshot" ? SnapshotOperation : ReloadOperation;
-        var request = new AuthorSessionRequestFrame
+        string operation = action == "snapshot" ? SnapshotOperation : action == "command" ? CommandOperation : ReloadOperation;
+        if (secret.SchemaVersion != AuthorSessionContract.SchemaVersion)
+            throw new SessionCommandException("session-prepare-required", "Clear the legacy credential and prepare a new explicit session; the SDK does not downgrade its protocol.", gameRoot);
+        AuthorSessionRequestFrame hello = CreateRequest(secret, "hello");
+        AuthorSessionResponseFrame helloResponse = await SendAsync(secret, hello, connectTimeoutMilliseconds, responseTimeoutSeconds * 1000).ConfigureAwait(false);
+        ValidateResponse(helloResponse, hello, secret);
+        if (helloResponse.Status != "ok")
         {
-            Protocol = ProtocolVersion,
-            Runtime = AuthorSdkContract.TargetRuntimeVersion,
-            GameRoot = gameRoot,
-            Session = secret.SessionId,
-            Token = secret.Token,
-            RequestId = Guid.NewGuid().ToString("N"),
-            UniqueId = uniqueId,
-            SelectedRoot = selectedRoot,
-            ExpectedTreeSha256 = treeSha256,
-            Operation = operation
-        };
+            bool incompatible = helloResponse.Code is "upgrade-required" or "protocol-major-unsupported" or "protocol-minor-incompatible" or "required-capability-unsupported";
+            throw new SessionCommandException(incompatible ? "upgrade-required" : Redact(helloResponse.Code, secret.Token),
+                "Authenticated Host rejected hello: " + Redact(helloResponse.Message, secret.Token), secret.PipeName);
+        }
+        if (secret.Negotiated == null)
+        {
+            secret.Negotiated = new AuthorSessionNegotiation
+            {
+                HostVersion = helloResponse.HostVersion!, ProtocolMinor = helloResponse.ProtocolMinor!.Value,
+                AcceptedCapabilities = helloResponse.AcceptedCapabilities!.ToArray(),
+                UnsupportedOptionalCapabilities = helloResponse.UnsupportedOptionalCapabilities!.ToArray()
+            };
+            SecureSecretFile.Replace(AuthorStatePaths.AuthorSessionClientPath(gameRoot), secret);
+        }
+        if (!secret.Negotiated.AcceptedCapabilities.Contains(operation + "/1", StringComparer.Ordinal))
+            throw new SessionCommandException("capability-unsupported", "The Host did not enable this optional operation.", secret.PipeName);
+        AuthorSessionRequestFrame request = CreateRequest(secret, operation);
+        request.UniqueId = uniqueId;
+        request.SelectedRoot = selectedRoot;
+        request.ExpectedTreeSha256 = treeSha256;
+        if (action == "command")
+        {
+            request.CommandLine = command.Option("command-line", "help");
+            if (request.CommandLine.Length > 4096) throw new CommandLineException("--command-line is limited to 4096 characters.");
+        }
         AuthorSessionResponseFrame response = await SendAsync(secret, request, connectTimeoutMilliseconds, responseTimeoutSeconds * 1000).ConfigureAwait(false);
         ValidateResponse(response, request, secret);
 
@@ -181,6 +209,11 @@ internal static class AuthorSessionService
         report.Values["sessionId"] = secret.SessionId;
         report.Values["requestId"] = request.RequestId;
         report.Values["operation"] = operation;
+        report.Values["hostVersion"] = secret.Negotiated.HostVersion;
+        report.Values["apiTarget"] = secret.ApiTarget;
+        report.Values["protocol"] = secret.ProtocolMajor + "." + secret.Negotiated.ProtocolMinor;
+        report.Values["acceptedCapabilities"] = string.Join(",", secret.Negotiated.AcceptedCapabilities);
+        report.Values["unsupportedOptionalCapabilities"] = string.Join(",", secret.Negotiated.UnsupportedOptionalCapabilities);
         report.Values["uniqueID"] = uniqueId;
         report.Values["selectedRoot"] = selectedRoot;
         report.Values["expectedTreeSha256"] = treeSha256;
@@ -223,15 +256,15 @@ internal static class AuthorSessionService
         }
         catch (OperationCanceledException ex)
         {
-            throw new SessionCommandException("pipe-connect-timeout", "Timed out connecting to the explicit Runtime session. The SDK did not start or poll the game.", secret.PipeName, ex);
+            throw ConnectionTimeout(secret, ex);
         }
         catch (TimeoutException ex)
         {
-            throw new SessionCommandException("pipe-connect-timeout", "Timed out connecting to the explicit Runtime session. The SDK did not start or poll the game.", secret.PipeName, ex);
+            throw ConnectionTimeout(secret, ex);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new SessionCommandException("pipe-connect-failed", "Could not connect to the explicit Runtime session: " + ex.GetType().Name + ".", secret.PipeName, ex);
+            throw new SessionCommandException("host-unavailable", "Could not connect to the explicit Runtime session. Start the game, check its logs and verify versions: " + ex.GetType().Name + ".", secret.PipeName, ex);
         }
 
         byte[] payload = new UTF8Encoding(false, true).GetBytes(JsonSerializer.Serialize(request, WireJson) + "\n");
@@ -241,18 +274,19 @@ internal static class AuthorSessionService
             await pipe.WriteAsync(payload.AsMemory(), responseCancellation.Token).ConfigureAwait(false);
             await pipe.FlushAsync(responseCancellation.Token).ConfigureAwait(false);
             byte[] responseBytes = await ReadFrameAsync(pipe, responseCancellation.Token).ConfigureAwait(false);
+            AuthorSessionJson.Validate(responseBytes, "response");
             return JsonSerializer.Deserialize<AuthorSessionResponseFrame>(responseBytes, WireJson)
                 ?? throw new SessionCommandException("pipe-response-invalid", "Runtime returned an empty JSON response.", secret.PipeName);
         }
         catch (OperationCanceledException ex)
         {
-            throw new SessionCommandException("pipe-response-timeout", "Timed out waiting for the Runtime response.", secret.PipeName, ex);
+            throw new SessionCommandException(request.Operation == "hello" ? "handshake-timeout" : "pipe-response-timeout", "Timed out waiting for the Runtime response. Check game logs and versions; no Host version was inferred.", secret.PipeName, ex);
         }
         catch (SessionCommandException)
         {
             throw;
         }
-        catch (Exception ex) when (ex is IOException or JsonException or DecoderFallbackException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or DecoderFallbackException or System.Xml.XmlException or FormatException or OverflowException)
         {
             throw new SessionCommandException("pipe-response-invalid", "Runtime response framing/JSON was invalid: " + ex.GetType().Name + ".", secret.PipeName, ex);
         }
@@ -282,8 +316,10 @@ internal static class AuthorSessionService
 
     private static void ValidateResponse(AuthorSessionResponseFrame response, AuthorSessionRequestFrame request, AuthorSessionSecret secret)
     {
-        if (!string.Equals(response.Protocol, ProtocolVersion, StringComparison.Ordinal)
-            || !string.Equals(response.Runtime, AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
+        if (response.SchemaVersion != AuthorSessionContract.SchemaVersion || !string.IsNullOrEmpty(response.Protocol) || !string.IsNullOrEmpty(response.Runtime)
+            || response.ProtocolMajor != secret.ProtocolMajor || !response.ProtocolMinor.HasValue
+            || !PathsEqual(response.GameRoot ?? string.Empty, secret.GameRoot)
+            || response.ApiTarget != secret.ApiTarget || !Version.TryParse(response.HostVersion, out _)
             || !string.Equals(response.Session, secret.SessionId, StringComparison.Ordinal)
             || !string.Equals(response.RequestId, request.RequestId, StringComparison.Ordinal)
             || !string.Equals(response.Operation, request.Operation, StringComparison.Ordinal)
@@ -301,6 +337,25 @@ internal static class AuthorSessionService
             if (value == null || !IsSafeIdentifier(value.Key, 64) || value.Value == null || value.Value.Length > 2048 || !seen.Add(value.Key))
                 throw new SessionCommandException("pipe-response-values-invalid", "Runtime response values contained an invalid or duplicate key/value.", secret.PipeName);
         }
+        string[]? accepted = response.AcceptedCapabilities;
+        string[]? unsupported = response.UnsupportedOptionalCapabilities;
+        if (accepted == null || unsupported == null || accepted.Length > 32 || unsupported.Length > 32 ||
+            accepted.Distinct(StringComparer.Ordinal).Count() != accepted.Length || unsupported.Distinct(StringComparer.Ordinal).Count() != unsupported.Length ||
+            accepted.Any(value => value == null) || unsupported.Any(value => value == null))
+            throw new SessionCommandException("pipe-response-capabilities-invalid", "Host capability response is invalid.", secret.PipeName);
+        if (response.Status == "ok" || request.Operation != "hello")
+        {
+            if (response.ProtocolMinor < secret.MinimumMinor || response.ProtocolMinor > secret.MaximumMinor ||
+                Version.Parse(response.HostVersion!) < Version.Parse(secret.MinimumRuntimeVersion) ||
+                secret.RequiredCapabilities.Except(accepted, StringComparer.Ordinal).Any() ||
+                accepted.Except(secret.RequiredCapabilities.Concat(secret.OptionalCapabilities), StringComparer.Ordinal).Any() ||
+                !unsupported.OrderBy(v => v, StringComparer.Ordinal).SequenceEqual(secret.OptionalCapabilities.Except(accepted, StringComparer.Ordinal).OrderBy(v => v, StringComparer.Ordinal), StringComparer.Ordinal))
+                throw new SessionCommandException("pipe-response-negotiation-invalid", "Host selection does not satisfy the requested protocol and capabilities.", secret.PipeName);
+        }
+        if (secret.Negotiated != null && (response.HostVersion != secret.Negotiated.HostVersion || response.ProtocolMinor != secret.Negotiated.ProtocolMinor ||
+            !accepted.SequenceEqual(secret.Negotiated.AcceptedCapabilities, StringComparer.Ordinal) ||
+            !unsupported.SequenceEqual(secret.Negotiated.UnsupportedOptionalCapabilities, StringComparer.Ordinal)))
+            throw new SessionCommandException("pipe-response-negotiation-mismatch", "Host response changed the established session negotiation.", secret.PipeName);
     }
 
     private static AuthorSessionSecret LoadClientSecret(string gameRoot, DateTimeOffset now)
@@ -311,7 +366,7 @@ internal static class AuthorSessionService
         AuthorSessionSecret secret;
         try
         {
-            secret = AtomicStateFile.ReadStrict<AuthorSessionSecret>(path);
+            secret = ReadSecret(path);
         }
         catch (Exception ex)
         {
@@ -353,7 +408,7 @@ internal static class AuthorSessionService
             return null;
         try
         {
-            AuthorSessionSecret value = AtomicStateFile.ReadStrict<AuthorSessionSecret>(path);
+            AuthorSessionSecret value = ReadSecret(path);
             ValidateSecret(value, gameRoot, now);
             return value;
         }
@@ -369,9 +424,11 @@ internal static class AuthorSessionService
 
     private static DateTimeOffset ValidateSecret(AuthorSessionSecret secret, string gameRoot, DateTimeOffset now)
     {
-        if (secret.SchemaVersion != AuthorStatePaths.SchemaVersion
+        if ((secret.SchemaVersion != 1 && secret.SchemaVersion != AuthorSessionContract.SchemaVersion)
             || !PathsEqual(secret.GameRoot, gameRoot)
-            || !secret.RuntimeVersion.Equals(AuthorSdkContract.TargetRuntimeVersion, StringComparison.Ordinal)
+            || (secret.SchemaVersion == 1 && secret.RuntimeVersion != AuthorSessionContract.LegacyWireVersion)
+            || (secret.SchemaVersion == 2 && (!string.IsNullOrEmpty(secret.RuntimeVersion) || secret.ProtocolMajor < 1 || secret.MinimumMinor < 0 || secret.MaximumMinor < secret.MinimumMinor ||
+                !Version.TryParse(secret.ApiTarget, out _) || !Version.TryParse(secret.MinimumRuntimeVersion, out _) || secret.RequiredCapabilities == null || secret.OptionalCapabilities == null))
             || !Guid.TryParseExact(secret.SessionId, "N", out Guid sessionId)
             || sessionId == Guid.Empty
             || !IsValidToken(secret.Token)
@@ -380,7 +437,7 @@ internal static class AuthorSessionService
         DateTimeOffset created = ParseUtc(secret.CreatedAtUtc, "createdAtUtc");
         DateTimeOffset expires = ParseUtc(secret.ExpiresAtUtc, "expiresAtUtc");
         if (created > now + MaximumFutureClockSkew || expires <= created || expires - created > MaximumSessionLifetime)
-            throw new SessionCommandException("session-time-invalid", "Session credential timestamps are outside the Runtime 0.5.5 short-lived boundary.", AuthorStatePaths.AuthorSessionClientPath(gameRoot));
+            throw new SessionCommandException("session-time-invalid", "Session credential timestamps are outside the short-lived boundary.", AuthorStatePaths.AuthorSessionClientPath(gameRoot));
         return expires;
     }
 
@@ -391,7 +448,7 @@ internal static class AuthorSessionService
             return;
         try
         {
-            AuthorSessionSecret descriptor = AtomicStateFile.ReadStrict<AuthorSessionSecret>(path);
+            AuthorSessionSecret descriptor = ReadSecret(path);
             if (SameSecret(descriptor, secret))
                 File.Delete(path);
         }
@@ -429,7 +486,7 @@ internal static class AuthorSessionService
 
     private static bool IsValidToken(string token)
     {
-        if (token.Length < 43 || token.Length > 128)
+        if (token == null || token.Length < 43 || token.Length > 128)
             return false;
         return token.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_');
     }
@@ -451,7 +508,11 @@ internal static class AuthorSessionService
     private static bool SameSecret(AuthorSessionSecret left, AuthorSessionSecret right) =>
         left.SchemaVersion == right.SchemaVersion
         && PathsEqual(left.GameRoot, right.GameRoot)
-        && left.RuntimeVersion.Equals(right.RuntimeVersion, StringComparison.Ordinal)
+        && string.Equals(left.RuntimeVersion, right.RuntimeVersion, StringComparison.Ordinal)
+        && left.ProtocolMajor == right.ProtocolMajor && left.MinimumMinor == right.MinimumMinor && left.MaximumMinor == right.MaximumMinor
+        && left.ApiTarget == right.ApiTarget && left.MinimumRuntimeVersion == right.MinimumRuntimeVersion
+        && left.RequiredCapabilities.SequenceEqual(right.RequiredCapabilities, StringComparer.Ordinal)
+        && left.OptionalCapabilities.SequenceEqual(right.OptionalCapabilities, StringComparer.Ordinal)
         && left.SessionId.Equals(right.SessionId, StringComparison.Ordinal)
         && left.Token.Equals(right.Token, StringComparison.Ordinal)
         && left.PipeName.Equals(right.PipeName, StringComparison.Ordinal)
@@ -460,9 +521,45 @@ internal static class AuthorSessionService
 
     private static JsonSerializerOptions CreateWireJson()
     {
-        var options = new JsonSerializerOptions(JsonSupport.Tool) { WriteIndented = false };
+        var options = new JsonSerializerOptions(JsonSupport.Tool) { WriteIndented = false, PropertyNameCaseInsensitive = false, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip, MaxDepth = 32 };
         return options;
     }
+
+    private static AuthorSessionSecret ReadSecret(string path)
+    {
+        if (new FileInfo(path).Length > 32 * 1024) throw new InvalidDataException("Session credential exceeds its size limit.");
+        byte[] bytes = File.ReadAllBytes(path);
+        AuthorSessionJson.Validate(bytes, "descriptor");
+        return JsonSerializer.Deserialize<AuthorSessionSecret>(bytes, WireJson) ?? throw new InvalidDataException("Empty credential.");
+    }
+
+    private static AuthorSessionRequestFrame CreateRequest(AuthorSessionSecret secret, string operation) => new()
+    {
+        SchemaVersion = secret.SchemaVersion, ProtocolMajor = secret.ProtocolMajor,
+        MinimumMinor = secret.MinimumMinor, MaximumMinor = secret.MaximumMinor,
+        ApiTarget = secret.ApiTarget, MinimumRuntimeVersion = secret.MinimumRuntimeVersion,
+        RequiredCapabilities = secret.RequiredCapabilities.ToArray(), OptionalCapabilities = secret.OptionalCapabilities.ToArray(),
+        GameRoot = secret.GameRoot, Session = secret.SessionId, Token = secret.Token,
+        RequestId = Guid.NewGuid().ToString("N"), Operation = operation,
+        HostVersion = secret.Negotiated?.HostVersion, ProtocolMinor = secret.Negotiated?.ProtocolMinor
+    };
+
+    private static SessionCommandException ConnectionTimeout(AuthorSessionSecret secret, Exception exception)
+    {
+        bool absent = false;
+        if (OperatingSystem.IsWindows())
+        {
+            bool available = WaitNamedPipe("\\\\.\\pipe\\" + secret.PipeName, 0);
+            int error = Marshal.GetLastWin32Error();
+            absent = !available && (error == 2 || error == 3);
+        }
+        return new SessionCommandException(absent ? "host-unavailable" : "handshake-timeout",
+            "The Host did not answer. Start the game, check its logs and verify versions; no Host version or upgrade requirement was inferred.", secret.PipeName, exception);
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "WaitNamedPipeW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool WaitNamedPipe(string name, uint timeout);
 
     private static bool IsBoundedSingleLine(string? value, int maximum) => value != null && value.Length > 0 && value.Length <= maximum && !value.Any(char.IsControl);
 
@@ -520,7 +617,9 @@ internal static class AuthorSessionService
 
 internal static class SecureSecretFile
 {
-    public static void WriteNew<T>(string path, T value)
+    public static void WriteNew<T>(string path, T value) => Write(path, value, false);
+    public static void Replace<T>(string path, T value) => Write(path, value, true);
+    private static void Write<T>(string path, T value, bool replace)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string temporary = path + ".tmp-" + Guid.NewGuid().ToString("N");
@@ -536,7 +635,7 @@ internal static class SecureSecretFile
                 stream.Write(bytes, 0, bytes.Length);
                 stream.Flush(true);
             }
-            File.Move(temporary, path);
+            File.Move(temporary, path, overwrite: replace);
         }
         finally
         {
@@ -566,22 +665,45 @@ internal static class SecureSecretFile
     }
 }
 
-internal sealed class AuthorSessionSecret
+internal class AuthorSessionOffer
 {
-    public int SchemaVersion { get; set; }
+    public int SchemaVersion { get; set; } = AuthorSessionContract.SchemaVersion;
+    public int ProtocolMajor { get; set; } = AuthorSessionContract.ProtocolMajor;
+    public int MinimumMinor { get; set; } = AuthorSessionContract.MinimumMinor;
+    public int MaximumMinor { get; set; } = AuthorSessionContract.MaximumMinor;
+    public string ApiTarget { get; set; } = AuthorSdkContract.TargetRuntimeVersion;
+    public string MinimumRuntimeVersion { get; set; } = AuthorSessionContract.MinimumRuntimeVersion;
+    public string[] RequiredCapabilities { get; set; } = { AuthorSessionContract.SnapshotCapability };
+    public string[] OptionalCapabilities { get; set; } = { AuthorSessionContract.ReloadCapability };
+}
+
+internal sealed class AuthorSessionSecret : AuthorSessionOffer
+{
     public string GameRoot { get; set; } = string.Empty;
-    public string RuntimeVersion { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? RuntimeVersion { get; set; }
     public string SessionId { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
     public string PipeName { get; set; } = string.Empty;
     public string CreatedAtUtc { get; set; } = string.Empty;
     public string ExpiresAtUtc { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public AuthorSessionNegotiation? Negotiated { get; set; }
 }
 
-internal sealed class AuthorSessionRequestFrame
+internal sealed class AuthorSessionNegotiation
 {
-    public string Protocol { get; set; } = string.Empty;
-    public string Runtime { get; set; } = string.Empty;
+    public string HostVersion { get; set; } = string.Empty;
+    public int ProtocolMinor { get; set; }
+    public string[] AcceptedCapabilities { get; set; } = Array.Empty<string>();
+    public string[] UnsupportedOptionalCapabilities { get; set; } = Array.Empty<string>();
+}
+
+internal sealed class AuthorSessionRequestFrame : AuthorSessionOffer
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? CommandLine { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Protocol { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Runtime { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? HostVersion { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public int? ProtocolMinor { get; set; }
     public string GameRoot { get; set; } = string.Empty;
     public string Session { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
@@ -604,6 +726,14 @@ internal sealed class AuthorSessionResponseFrame
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public List<AuthorSessionResponseValueFrame> Values { get; set; } = new();
+    public int SchemaVersion { get; set; }
+    public int ProtocolMajor { get; set; }
+    public int? ProtocolMinor { get; set; }
+    public string? GameRoot { get; set; }
+    public string? HostVersion { get; set; }
+    public string? ApiTarget { get; set; }
+    public string[]? AcceptedCapabilities { get; set; }
+    public string[]? UnsupportedOptionalCapabilities { get; set; }
 }
 
 internal sealed class AuthorSessionResponseValueFrame

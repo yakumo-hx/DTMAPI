@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
 using DTMAPI.Core.Services;
 using static DTMAPI.GameBridge.DolocTown.GameBridgeNativeHelpers;
@@ -15,6 +16,8 @@ namespace DTMAPI.GameBridge.DolocTown
 {
     internal sealed partial class QaScenarioController
     {
+        private const int TitleConfigUiPageSize = 14;
+        private const int TitleConfigPagerFixtureTargetCount = TitleConfigUiPageSize + 2;
         private object? g4OfficialUiOwnedState;
         private DateTimeOffset g4OfficialUiOpenedAt;
         private string? g4OfficialScreenshotPath;
@@ -43,6 +46,12 @@ namespace DTMAPI.GameBridge.DolocTown
         private string? g4TitleOverlayRequestedConfigId;
         private string? g4TitleScreenshotPath;
         private DateTimeOffset g4TitleScreenshotRequestedAt;
+        private int g4TitleConfigPagerStage;
+        private string g4TitleConfigPagerDetails = string.Empty;
+        private readonly List<string> g4TitleConfigPagerFixtureOwnerIds = new List<string>();
+        private bool g4TitleConfigPagerFixturePrepared;
+        private string g4TitleConfigPagerFixtureDetails = string.Empty;
+        private string g4TitleConfigPagerSelectedId = string.Empty;
         private string? g4DebugScreenshotPath;
         private DateTimeOffset g4DebugScreenshotRequestedAt;
         private bool g4DebugEvidenceCaptured;
@@ -90,6 +99,8 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 if (runtime.UI.IsOpen)
                     return G4FixtureStepResult.Pending("Waiting for the pre-existing DTMAPI overlay to close; QA will not claim or close it.");
+                if (!TryEnsureTitleConfigPagerFixturePages(out string fixtureFailure))
+                    return G4FixtureStepResult.Failed(fixtureFailure);
                 long before = runtime.UI.OverlaySessionSequence;
                 runtime.UI.OpenConfigPage();
                 if (!runtime.UI.IsOpen || runtime.UI.OverlaySessionSequence <= before)
@@ -106,6 +117,12 @@ namespace DTMAPI.GameBridge.DolocTown
                 return G4FixtureStepResult.Failed("The title settings layout receipt was not concrete or its production repair hooks were unavailable. " + FormatNativeUiObservation(layout) + "; hooks={" + repairHooks + "}.");
             g4LastVerifiedNativeUiLayoutObservation = layout;
             g4LastVerifiedNativeUiRepairHooks = repairHooks;
+            IConfigMenuPage[] configPages = runtime.CreateSnapshot().ConfigPages
+                .OrderBy(page => page.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (configPages.Length > TitleConfigUiPageSize)
+                return ObserveTitleConfigPagerForFixture(configPages, screenshotPath, layout!, repairHooks);
+
             G4FixtureStepResult screenshot = ObserveScreenshotForFixture(screenshotPath, ref g4TitleScreenshotPath, ref g4TitleScreenshotRequestedAt);
             if (!screenshot.Completed)
                 return screenshot;
@@ -115,6 +132,213 @@ namespace DTMAPI.GameBridge.DolocTown
             return closed
                 ? G4FixtureStepResult.Verified(FormatNativeUiObservation(layout) + "; hooks={" + repairHooks + "}; overlaySession=exact; observerCallbacks=" + g4UiObservationCount + "; " + screenshot.Details + "; close=owned-only")
                 : G4FixtureStepResult.Failed("The QA-owned title settings overlay could not be closed.");
+        }
+
+        private G4FixtureStepResult ObserveTitleConfigPagerForFixture(
+            IConfigMenuPage[] configPages,
+            string screenshotPath,
+            NativeUiLayoutObservation layout,
+            string repairHooks)
+        {
+            int total = configPages.Length;
+            int secondEnd = Math.Min(total, TitleConfigUiPageSize * 2);
+            string firstRange = "1-" + TitleConfigUiPageSize.ToString(CultureInfo.InvariantCulture) + "/" + total.ToString(CultureInfo.InvariantCulture);
+            string secondRange = (TitleConfigUiPageSize + 1).ToString(CultureInfo.InvariantCulture) + "-" + secondEnd.ToString(CultureInfo.InvariantCulture) + "/" + total.ToString(CultureInfo.InvariantCulture);
+
+            if (g4TitleConfigPagerStage == 0)
+            {
+                if (!TryReadUnityText("DTMAPI.Config.ListPager.Label", out string firstLabel, out string readFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the reflected Config Mod pager label. " + readFailure);
+                if (firstLabel.IndexOf(firstRange, StringComparison.Ordinal) < 0)
+                    return G4FixtureStepResult.Failed("The Config Mod pager did not begin on the expected first range. expected=" + firstRange + "; actual={" + firstLabel + "}.");
+                if (!TryInvokeUnityButton("DTMAPI.Config.ListPager.Next", out string clickFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the reflected Config Mod next-page button. " + clickFailure);
+
+                g4TitleConfigPagerStage = 1;
+                runtime.RuntimeMonitor.Log("Title Config player interaction clicked next page from " + firstLabel + ".");
+                return G4FixtureStepResult.Pending("Config Mod next-page click dispatched; waiting for the page-two render.");
+            }
+
+            if (g4TitleConfigPagerStage == 1)
+            {
+                if (!TryReadUnityText("DTMAPI.Config.ListPager.Label", out string secondLabel, out string readFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the reflected Config Mod page-two label. " + readFailure);
+                if (secondLabel.IndexOf(secondRange, StringComparison.Ordinal) < 0)
+                    return G4FixtureStepResult.Failed("The Config Mod pager snapped back or rendered the wrong second range. expected=" + secondRange + "; actual={" + secondLabel + "}.");
+
+                string firstSecondPageId = configPages[TitleConfigUiPageSize].Manifest.UniqueID;
+                if (FindUnityGameObject("DTMAPI.Config.Mod." + firstSecondPageId) == null)
+                    return G4FixtureStepResult.Pending("The page-two label rendered before its first Config Mod row became visible; id=" + firstSecondPageId + ".");
+                long beforeSelectionSession = runtime.UI.OverlaySessionSequence;
+                if (!TryInvokeUnityButton("DTMAPI.Config.Mod." + firstSecondPageId, out string selectFailure))
+                    return G4FixtureStepResult.Pending("Waiting to select the first Config Mod on page two. " + selectFailure);
+                if (!runtime.UI.IsOpen ||
+                    runtime.UI.OverlaySessionSequence <= beforeSelectionSession ||
+                    !runtime.UI.ActiveMenuId.Equals("DTMAPI.Config", StringComparison.Ordinal) ||
+                    !string.IsNullOrEmpty(runtime.UI.ActiveMenuOwnerId) ||
+                    runtime.UI.CurrentPage != DtmOverlayPage.Config ||
+                    !string.Equals(runtime.UI.RequestedConfigUniqueId, firstSecondPageId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return G4FixtureStepResult.Failed("Selecting the first page-two Config Mod did not synchronously create the expected owned Config request session. expectedId=" + firstSecondPageId + ".");
+                }
+
+                g4TitleConfigPagerSelectedId = firstSecondPageId;
+                CaptureTitleOverlayReceipt();
+                g4TitleConfigPagerStage = 2;
+                runtime.RuntimeMonitor.Log("Title Config player interaction verified second page " + secondLabel + " and selected " + firstSecondPageId + ".");
+                return G4FixtureStepResult.Pending("Config Mod page two rendered and its first row was selected; waiting for the detail page.");
+            }
+
+            if (g4TitleConfigPagerStage == 2)
+            {
+                string firstSecondPageId = configPages[TitleConfigUiPageSize].Manifest.UniqueID;
+                if (!TryReadUnityText("DTMAPI.Config.ListPager.Label", out string secondLabel, out string labelFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the Config Mod pager after selecting a page-two row. " + labelFailure);
+                if (secondLabel.IndexOf(secondRange, StringComparison.Ordinal) < 0)
+                    return G4FixtureStepResult.Failed("Selecting a page-two Config Mod did not preserve its owning list page. expected=" + secondRange + "; actual={" + secondLabel + "}.");
+                if (!TryReadUnityText("DTMAPI.Config.PageTitle", out string selectedTitle, out string titleFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the selected page-two Config Mod detail title. " + titleFailure);
+                if (selectedTitle.IndexOf(firstSecondPageId, StringComparison.OrdinalIgnoreCase) < 0)
+                    return G4FixtureStepResult.Failed("The first page-two Config Mod row did not open its detail page. expectedId=" + firstSecondPageId + "; actualTitle={" + selectedTitle + "}.");
+
+                G4FixtureStepResult screenshot = ObserveScreenshotForFixture(screenshotPath, ref g4TitleScreenshotPath, ref g4TitleScreenshotRequestedAt);
+                if (!screenshot.Completed || !screenshot.Succeeded)
+                    return screenshot;
+                if (!TryInvokeUnityButton("DTMAPI.Config.ListPager.Prev", out string clickFailure))
+                    return G4FixtureStepResult.Pending("Waiting for the reflected Config Mod previous-page button. " + clickFailure);
+
+                g4TitleConfigPagerDetails = "configPages=" + total.ToString(CultureInfo.InvariantCulture) +
+                    "; firstRange={" + firstRange + "}; secondRange={" + secondLabel + "}; secondPageFirstId=" + firstSecondPageId +
+                    "; selectedTitle={" + selectedTitle + "}; interactions=next|mod-row|previous; " + screenshot.Details;
+                g4TitleConfigPagerStage = 3;
+                runtime.RuntimeMonitor.Log("Title Config player interaction verified detail page " + selectedTitle + " and clicked previous page.");
+                return G4FixtureStepResult.Pending("Config Mod page two and screenshot verified; waiting for the previous-page render.");
+            }
+
+            if (!TryReadUnityText("DTMAPI.Config.ListPager.Label", out string returnedLabel, out string returnedReadFailure))
+                return G4FixtureStepResult.Pending("Waiting for the reflected Config Mod first-page return label. " + returnedReadFailure);
+            if (returnedLabel.IndexOf(firstRange, StringComparison.Ordinal) < 0)
+                return G4FixtureStepResult.Failed("The Config Mod previous-page interaction did not return to page one. expected=" + firstRange + "; actual={" + returnedLabel + "}.");
+
+            bool closed = CloseTitleOverlayOwnedByFixture();
+            if (!closed)
+                return G4FixtureStepResult.Failed("The QA-owned title settings overlay could not be closed after Config Mod pager verification.");
+
+            string fixtureCleanup;
+            try
+            {
+                fixtureCleanup = CleanupTitleConfigPagerFixturePages("Config Mod pager verification completed");
+            }
+            catch (Exception ex)
+            {
+                return G4FixtureStepResult.Failed("The Config Mod pager UI passed, but its QA-only page owners did not cleanly deactivate. " + ex.Message);
+            }
+            return G4FixtureStepResult.Verified(
+                FormatNativeUiObservation(layout) + "; hooks={" + repairHooks + "}; overlaySession=exact; observerCallbacks=" +
+                g4UiObservationCount.ToString(CultureInfo.InvariantCulture) + "; " + g4TitleConfigPagerDetails +
+                "; returnedRange={" + returnedLabel + "}; " + g4TitleConfigPagerFixtureDetails + "; " + fixtureCleanup + "; close=owned-only");
+        }
+
+        private bool TryEnsureTitleConfigPagerFixturePages(out string failure)
+        {
+            failure = string.Empty;
+            if (g4TitleConfigPagerFixturePrepared)
+                return true;
+
+            g4TitleConfigPagerFixturePrepared = true;
+            int existingCount = runtime.CreateSnapshot().ConfigPages.Count;
+            if (existingCount > TitleConfigUiPageSize)
+            {
+                g4TitleConfigPagerFixtureDetails = "configPagerFixture=not-needed; existingConfigPages=" + existingCount.ToString(CultureInfo.InvariantCulture);
+                return true;
+            }
+
+            try
+            {
+                int needed = TitleConfigPagerFixtureTargetCount - existingCount;
+                for (int index = 1; index <= needed; index++)
+                {
+                    string ownerId = "DTMAPI.QA.TitleConfigPager." + index.ToString("00", CultureInfo.InvariantCulture);
+                    var manifest = new ManifestModel
+                    {
+                        Name = "QA Config Pager " + index.ToString("00", CultureInfo.InvariantCulture),
+                        Author = "DTMAPI QA",
+                        Version = DtmApiRuntime.ApiVersion,
+                        UniqueID = ownerId,
+                        Type = "CodeMod"
+                    };
+                    g4TitleConfigPagerFixtureOwnerIds.Add(ownerId);
+                    runtime.BeginOwnerEntry(ownerId);
+                    Action ensure = () => runtime.EnsureModOwnerRegistrationAllowed(ownerId);
+                    IModRegistry registry = runtime.ModRegistry.CreateOwnerBoundRegistry(manifest, ensure);
+                    IDtmConfigMenuApi? menu = registry.GetApi<IDtmConfigMenuApi>("DTMAPI.ModConfigMenu");
+                    if (menu == null)
+                        throw new InvalidOperationException("The QA Config pager fixture could not resolve DTMAPI.ModConfigMenu for " + ownerId + ".");
+                    menu.Register(manifest, () => { }, () => { }, titleScreenOnly: true);
+                    menu.SetDisplayName(manifest, () => manifest.Name);
+                    runtime.ActivateOwnerEntry(manifest);
+                }
+
+                int actualCount = runtime.CreateSnapshot().ConfigPages.Count;
+                if (actualCount < TitleConfigPagerFixtureTargetCount)
+                    throw new InvalidOperationException("The QA Config pager fixture expected at least " + TitleConfigPagerFixtureTargetCount.ToString(CultureInfo.InvariantCulture) + " pages after registration but observed " + actualCount.ToString(CultureInfo.InvariantCulture) + ".");
+
+                g4TitleConfigPagerFixtureDetails = "configPagerFixture=qa-only; existingConfigPages=" + existingCount.ToString(CultureInfo.InvariantCulture) +
+                    "; injectedConfigPages=" + g4TitleConfigPagerFixtureOwnerIds.Count.ToString(CultureInfo.InvariantCulture) +
+                    "; observedConfigPages=" + actualCount.ToString(CultureInfo.InvariantCulture);
+                runtime.RuntimeMonitor.Log("Title Config pager QA-only capacity prepared. " + g4TitleConfigPagerFixtureDetails + ".");
+                return true;
+            }
+            catch (Exception setupFailure)
+            {
+                string cleanup;
+                try
+                {
+                    cleanup = CleanupTitleConfigPagerFixturePages("Config Mod pager fixture setup failed");
+                }
+                catch (Exception cleanupFailure)
+                {
+                    cleanup = "cleanupFailure={" + cleanupFailure.Message + "}";
+                }
+                failure = "The QA-only Config Mod pager capacity could not be prepared. setupFailure={" + setupFailure.Message + "}; " + cleanup + ".";
+                return false;
+            }
+        }
+
+        private string CleanupTitleConfigPagerFixturePages(string reason)
+        {
+            if (g4TitleConfigPagerFixtureOwnerIds.Count == 0)
+                return "configPagerFixtureCleanup=not-needed";
+
+            string[] ownerIds = g4TitleConfigPagerFixtureOwnerIds.ToArray();
+            var failures = new List<string>();
+            for (int index = ownerIds.Length - 1; index >= 0; index--)
+            {
+                string ownerId = ownerIds[index];
+                try
+                {
+                    runtime.DeactivateOwner(ownerId, ModOwnerCleanupReason.Unload, shutdown: true, transactionId: string.Empty);
+                }
+                catch (Exception ex)
+                {
+                    failures.Add(ownerId + "={" + ex.Message + "}");
+                }
+            }
+
+            string[] remaining = runtime.CreateSnapshot().ConfigPages
+                .Select(page => page.Manifest.UniqueID)
+                .Where(id => ownerIds.Contains(id, StringComparer.OrdinalIgnoreCase))
+                .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (remaining.Length > 0)
+                failures.Add("remaining=" + string.Join("|", remaining));
+            if (failures.Count > 0)
+                throw new InvalidOperationException("Config Mod pager QA fixture cleanup failed: " + string.Join("; ", failures) + ".");
+
+            g4TitleConfigPagerFixtureOwnerIds.Clear();
+            string details = "configPagerFixtureCleanup=verified; removed=" + ownerIds.Length.ToString(CultureInfo.InvariantCulture) + "; remaining=0; reason={" + reason + "}";
+            runtime.RuntimeMonitor.Log("Title Config pager QA-only capacity cleanup verified. " + details + ".");
+            return details;
         }
 
         internal G4FixtureStepResult ObserveOfficialModUiForFixture(string screenshotPath)
@@ -518,6 +742,37 @@ namespace DTMAPI.GameBridge.DolocTown
             object? current = GetCurrentNativeUiStateForFixture();
             if (stateType == null)
                 return G4FixtureStepResult.Failed("EquipmentBarUiState was not available for read-only observation.");
+            if (moreEquipmentSlots100UiAcceptanceEnabled)
+            {
+                object? productRuntime =
+                    ReadMoreEquipmentSlotsProductRuntime();
+                if (productRuntime == null)
+                {
+                    return G4FixtureStepResult.Pending(
+                        "Waiting for the MoreEquipmentSlots 1.0 Product runtime before its bounded UI acceptance.");
+                }
+                try
+                {
+                    return ObserveMoreEquipmentSlots100UiForFixture(
+                        productRuntime,
+                        stateType,
+                        current,
+                        screenshotPath,
+                        summaryPath);
+                }
+                catch (Exception ex)
+                {
+                    string restoration =
+                        RestoreMoreEquipmentSlots100EnvironmentAfterFailure(
+                            productRuntime);
+                    return G4FixtureStepResult.Failed(
+                        "MoreEquipmentSlots 1.0 UI acceptance failed: " +
+                        ex.GetBaseException().Message +
+                        "; restoration={" +
+                        restoration +
+                        "}.");
+                }
+            }
             if (g4EquipmentSlotsEvidenceCaptured)
             {
                 string postCloseObservation =
@@ -533,6 +788,9 @@ namespace DTMAPI.GameBridge.DolocTown
                         StringComparison.Ordinal) &&
                     postCloseObservation.IndexOf(
                         "rendered=True",
+                        StringComparison.Ordinal) >= 0 &&
+                    postCloseObservation.IndexOf(
+                        "visible=True",
                         StringComparison.Ordinal) >= 0)
                 {
                     return G4FixtureStepResult.Pending("EVIDENCE_CAPTURED_WAITING_ESCAPE; uiOwner=" + postCloseOwner + "; inputOwner=runner; evidenceOwner=qa; observation={" + postCloseObservation + "}.");
@@ -631,18 +889,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static string ReadMoreEquipmentSlotsProductObservation()
         {
-            Assembly? assembly = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(candidate => string.Equals(
-                    candidate.GetName().Name,
-                    "DTMAPI.MoreEquipmentSlots",
-                    StringComparison.Ordinal));
-            Type? callbacks = assembly?.GetType(
-                "DTMAPI.MoreEquipmentSlots.MoreEquipmentSlotsCallbacks",
-                throwOnError: false,
-                ignoreCase: false);
-            object? productRuntime = callbacks?.GetField(
-                "runtime",
-                BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
+            object? productRuntime =
+                ReadMoreEquipmentSlotsProductRuntime();
             if (productRuntime == null)
                 return "runtime=null; rendered=False";
 
@@ -671,6 +919,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 int roots = ReadIntProperty(
                     diagnostics,
                     "RootCount");
+                bool visible =
+                    diagnostics.GetType().GetProperty(
+                        "UiVisible",
+                        BindingFlags.Instance |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic)?.GetValue(
+                            diagnostics) is bool value && value;
                 bool rendered =
                     clones == 3 &&
                     listeners > 0 &&
@@ -684,7 +939,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     "; functions=" +
                     functions +
                     "; roots=" +
-                    roots;
+                    roots +
+                    "; visible=" +
+                    visible;
             }
 
             foreach (string methodName in new[]
@@ -877,6 +1134,7 @@ namespace DTMAPI.GameBridge.DolocTown
         internal string CloseG4Fixtures()
         {
             bool title = CloseTitleOverlayOwnedByFixture();
+            string titleConfigPager = CleanupTitleConfigPagerFixturePages("G4 fixture close");
             bool official = CloseNativeUiOwnedByFixture(ref g4OfficialUiOwnedState);
             bool pause = CloseNativeUiOwnedByFixture(ref g4PauseUiOwnedState);
             bool animal = CloseNativeUiOwnedByFixture(ref g4AnimalUiOwnedState);
@@ -891,7 +1149,7 @@ namespace DTMAPI.GameBridge.DolocTown
             bool moreSavesPostTitle = CloseNativeUiOwnedByFixture(ref g4MoreSavesPostTitleUiState);
             bool hatch = CloseRetainedHatchSession();
             bool camera = CloseRetainedCameraSession();
-            string summary = "title=" + title + "; official=" + official + "; pause=" + pause + "; animal=" + animal + "; debug=" + debug + "; save=" + save + "; moreSavesPostTitle=" + moreSavesPostTitle + "; hatch=" + hatch + "; camera=" + camera;
+            string summary = "title=" + title + "; titleConfigPager={" + titleConfigPager + "}; official=" + official + "; pause=" + pause + "; animal=" + animal + "; debug=" + debug + "; save=" + save + "; moreSavesPostTitle=" + moreSavesPostTitle + "; hatch=" + hatch + "; camera=" + camera;
             if (!title || !official || !pause || !animal || !debug || !save || !moreSavesPostTitle || !hatch || !camera)
                 throw new InvalidOperationException("G4 cleanup receipt failed: " + summary + ".");
             return summary;
@@ -1218,7 +1476,9 @@ namespace DTMAPI.GameBridge.DolocTown
             return g4TitleOverlayMenuId.Equals("DTMAPI.Config", StringComparison.Ordinal) &&
                 string.IsNullOrEmpty(g4TitleOverlayOwnerId) &&
                 g4TitleOverlayPage == DtmOverlayPage.Config &&
-                string.IsNullOrWhiteSpace(g4TitleOverlayRequestedConfigId);
+                (string.IsNullOrWhiteSpace(g4TitleOverlayRequestedConfigId) ||
+                    (!string.IsNullOrWhiteSpace(g4TitleConfigPagerSelectedId) &&
+                        string.Equals(g4TitleOverlayRequestedConfigId, g4TitleConfigPagerSelectedId, StringComparison.OrdinalIgnoreCase)));
         }
 
         private void ClearTitleOverlayReceipt()
@@ -1228,6 +1488,7 @@ namespace DTMAPI.GameBridge.DolocTown
             g4TitleOverlayOwnerId = string.Empty;
             g4TitleOverlayPage = default;
             g4TitleOverlayRequestedConfigId = null;
+            g4TitleConfigPagerSelectedId = string.Empty;
         }
 
         private bool CloseDebugConsoleOwnedByFixture()

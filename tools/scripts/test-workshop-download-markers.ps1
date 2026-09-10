@@ -55,7 +55,7 @@ try {
     New-Item -ItemType Directory -Force -Path $knownRoot | Out-Null
     $knownFile = Join-Path $knownRoot 'payload.dll'
     [System.IO.File]::WriteAllText($knownFile, 'DTMAPI workshop payload')
-    $knownHashBefore = (Get-FileHash -LiteralPath $knownFile -Algorithm SHA256).Hash
+    $knownHashBefore = Get-DtmApiFileSha256 -Path $knownFile
     Set-Content -LiteralPath $knownFile -Stream 'Zone.Identifier' -Encoding ASCII -Value "[ZoneTransfer]`r`nZoneId=3"
 
     $knownStreamsBefore = @(Get-WorkshopTestAlternateStreamNames -Path $knownFile)
@@ -64,7 +64,7 @@ try {
     Remove-DtmApiWorkshopDownloadMarkers -PackageRoot $knownRoot
 
     $knownStreamsAfter = @(Get-WorkshopTestAlternateStreamNames -Path $knownFile)
-    $knownHashAfter = (Get-FileHash -LiteralPath $knownFile -Algorithm SHA256).Hash
+    $knownHashAfter = Get-DtmApiFileSha256 -Path $knownFile
     Assert-WorkshopDownloadMarkerTest -Condition ($knownStreamsAfter.Count -eq 0) -Message 'Zone.Identifier remained after Workshop package normalization.'
     Assert-WorkshopDownloadMarkerTest -Condition ([string]::Equals($knownHashBefore, $knownHashAfter, [System.StringComparison]::Ordinal)) -Message 'Workshop marker normalization changed the payload data stream.'
 

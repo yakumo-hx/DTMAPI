@@ -1,0 +1,729 @@
+{
+  "schemaVersion": 1,
+  "suites": [
+    {
+      "id": "moresaves",
+      "project": "tests/DTMAPI.MoreSaves.Tests/DTMAPI.MoreSaves.Tests.csproj",
+      "default": [
+        "MoreSavesProductTests.RunAll"
+      ],
+      "focuses": {
+        "moresaves-product": [
+          "MoreSavesProductTests.RunAll"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "core",
+      "project": "tests/DTMAPI.Core.Tests/DTMAPI.Core.Tests.csproj",
+      "default": [
+        "DeprecatedApiWarningsAreOwnerBoundAndDoNotChangeLookup",
+        "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+          "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+        "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+        "PackageDependencyPlanBlocksRequiredClosureAndSharesOnlyExactBytes",
+        "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+        "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+        "OwnerTranslationsFormatRefreshAndDetachWithScope",
+        "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+        "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+        "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+        "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+        "PlatformCommandsParseDispatchAndIsolateOwners",
+        "ReflectionUsesExactSignaturesAndPreservesErrors",
+        "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+        "ReflectionScopeClosesBindingsAndReleasesTargetRoots",
+        "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+        "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+        "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+        "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+        "OwnerDataRejectsBadPathsAndLinkedRoots",
+        "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+        "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+        "GlobalDataMigrationFailureWindowsRetainCommittedBytes",
+        "RuntimeStartsWithEmptyMods",
+        "RuntimePathsDoNotCreateOrAdvertiseLegacyDevelopmentRoot",
+        "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides",
+        "PlayerDoctorRuntimeServiceMissingHelperIsBoundedAndIdempotent",
+        "PlayerDoctorRuntimeResultPreservesWarnings",
+        "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+        "RuntimeSubsystemOptionsAllFlagsOffDisablesObservationAndShadowRegistry",
+        "Batch5DemandCoordinatorTests.RunAll",
+        "Batch5EventKernelTests.RunAll",
+        "Batch5ManifestContractTests.Run",
+        "Batch5RuntimeBoundaryTests.RunAll",
+        "HookStatusQueueRecordsSnapshotImmediatelyAndPublishesOnFlush",
+        "EventMainThreadBoundaryQueuesSafeEventsAndRejectsUnsafeEvents",
+        "SaveLoadRequestCoordinatorSuppressesOnlyDtmapiDuplicates",
+        "TitleReturnBoundaryLedgerBuildsObjectGraphDeltas",
+        "LifecycleObservationCountersRecordPhases",
+        "LifecycleBoundaryContractTracksPhaseRegistryAndHookDiagnostics",
+        "LifecycleBoundaryContractAllowsRepeatedSaveLoadedPhases",
+        "ResourceLifecycleLedgerTracksGenerationsOwnershipAndCleanup",
+        "ResourceLifecycleLedgerSkipsDuplicateSkippedRefreshSnapshots",
+        "ResourceLifecycleLedgerAggregatesHighChurnAutoFishingHandles",
+        "RuntimeLifecycleBoundaryContractReportsAndRespectsFlag",
+        "ShadowContentRegistryParsesGoodAndBadContentPacks",
+        "ContentManifestRegistryBuildsAuthoritativeIndexAndCapabilities",
+        "ContentManifestRegistryReportsManifestDependencyAndDuplicateDiagnostics",
+        "ContentManifestRegistryReportsRegistryDiffs",
+        "RuntimeRotatesLatestLogAndRetainsHistory",
+        "RuntimeApiRegistrationIsAtomicAndDynamicProviderReserved",
+        "RuntimeApiCannotClaimLoadedOrdinaryOwner",
+        "BrokenManifestDoesNotCrashDiscovery",
+        "AdvancedCodeModWithoutReceiptFailsClosedBeforeDiscoveryAndAssemblyLoad",
+        "ManifestDependencyIsRequiredAliasSupportsOptionalDependencies",
+        "DependencyVersionApiVersionAndCircularDependencyDiagnostics",
+        "EntryDllMustRemainInsideModRoot",
+        "EntryDllMustBeDllFile",
+        "EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll",
+        "MinimumGameVersionWithoutDetectedGameVersionLogsWarning",
+        "DiagnosticsSnapshotApiExposesRuntimeState",
+        "RuntimeReportContextScansLogHeadAndTailForModFailures",
+        "DiagnosticsServiceCapsErrorsWarningsAndSummary",
+        "DiagnosticsReportIncludesDebugConsoleLastGiveBreadcrumb",
+        "DiagnosticsServiceCrashDumpBudgetWritesMissingDumpReadme",
+        "DiagnosticsServiceCrashDumpPrioritySurvivesFileCountBudget",
+        "DiagnosticsServiceMissingCrashDumpWritesReadme",
+        "DiagnosticsServiceLatestCrashWithoutDumpSurvivesOlderDumpBudget",
+        "DiagnosticsServiceCrashDirectoriesWithSameLeafUseDistinctZipEntries",
+        "DiagnosticsServiceCrashDumpKeepsFollowingTextEvidence",
+        "ManagerViewModelMapsDiagnosticsSnapshot",
+        "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport",
+        "HelperModRegistryBindsApiRegistrationToOwner",
+        "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics",
+        "ModLoadCheckpointsRollbackAllOwnerRoots",
+        "CompletionLogFailureDoesNotReverseSuccessfulEntry",
+        "TransactionDiagnosticFailuresCannotLeakOrReverseSuccessfulLoad",
+        "RegistryAndConfigFacadesEnforceOwnerLifetime",
+        "StructuredOwnerKeysDoNotCollideOrOverClean",
+        "OwnerBoundInputTracksAndCleansPerOwner",
+        "InputKeybindParserCanonicalizesAliasesAndChords",
+        "InputScopeGatesSamplingAndDispatch",
+        "InputSuppressionIsButtonScopedWithinFrame",
+        "InputLegacyWrapperUsesKeybindRegistry",
+        "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+        "InputPressedEdgeDispatchesWhenAlreadyReleased",
+        "InputRapidRetapDispatchesSecondPress",
+        "InputKeybindChordUsesPressedEdge",
+        "InputKeybindChordShortTapDispatchesPressedAndReleased",
+        "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+        "InputGenericModifiersMatchEitherPhysicalSide",
+        "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+        "InputRegistrationUpdatePreservesUnchangedHeldState",
+        "InputOwnerCleanupInvalidatesCachedButtons",
+        "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+        "InputHelperSnapshotMethodsSupportKeybindLists",
+        "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+        "InactiveOwnerBoundInputQueriesCannotRecreateLocalWatch",
+        "InputLocalSnapshotWarmPathDoesNotAllocate",
+        "InputRegisteredKeybindWarmPathDoesNotAllocate",
+        "InputAudienceSteadyStateDoesNotAllocate",
+        "ConfigMenuKeybindDefaultResetRestoresDeclaredValue",
+        "ConfigMenuOwnerCleanupReleasesCallbacksHeldByStalePage",
+        "FailedCodeModCleanupRemovesOwnerBoundRuntimeState",
+        "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries",
+        "CleanupParticipantExceptionsAreIsolated",
+        "CleanupParticipantThrowAndSinkFailuresRetryThroughDeactivation",
+        "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+        "CodeModPreAssemblyFailuresCanRepairInProcess",
+        "FileMonitorSinkFailuresDoNotBlockOwnerReconciliation",
+        "LightweightDefaultRetainsFullErrorEvidence",
+        "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+        "ModMonitorErrorsBecomeRuntimeDiagnostics",
+        "HighFrequencyEventsDisableHandlersAfterConsecutiveFailures",
+        "QuarantinedEventDelegateReleasesCapturedObject",
+        "EventQuarantineOwnerMetadataIsBoundedAndCleanable",
+        "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+        "DiagnosticGraphsAndLogOnceKeysAreBounded",
+        "DiagnosticRetainedStringsAndTrimmedBytesAreBounded",
+        "ConfigPreviewAuditRecordsApplyAndRestore",
+        "ConfigPreviewAuditBoundsRecentFailures",
+        "EventRemoveIsOwnerBound",
+        "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+        "ConfigJsonEscapesRoundTripWithoutRewriting",
+        "ConfigRecoveryFailuresPreserveOriginalBytes",
+        "OffThreadTimerFallbackUpdateDoesNotDispatchOrdinaryModUpdates",
+        "ConfigMenuEditsSaveCancelAndDetectConflicts",
+        "ConfigMenuCallbackFailuresRollbackAndStayInspectable",
+        "ConfigMenuPendingPreviewDrivesConditionalVisibility",
+        "DisabledDiscoveredModLocksConfigPage",
+        "OfficialLocalModPackagesRespectOfficialEnablement",
+        "UnverifiedWorkshopAndGameModsCannotOverrideOfficialLocalState",
+        "AuthorFileTreeDigestMatchesFrozenCrossToolVectors",
+        "NativeWorkshopAuthorityAndAuthorSourceModesSelectDeterministically",
+        "ExplicitAuthorSessionSurvivesInitialStartupTitleBoundary",
+        "DuplicateCodeModSourceIdentityChangeRequiresRestart",
+        "NonCodeContentPackCanDisableAndRepublishInProcess",
+        "WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod",
+        "ReservedRuntimeDependenciesSurviveTitleAndWorkshopRefresh",
+        "RequiredReservedRuntimeProviderLossDeactivatesConsumer",
+        "RequiredReservedRuntimeProviderVersionMismatchDeactivatesConsumer",
+        "OptionalReservedRuntimeProviderLossWarnsWithoutDeactivation",
+        "SourceDisableCascadesRequiredDependentInReverseOrder",
+        "SourceRemovalCascadesRequiredDependentsButKeepsOptionalDependents",
+        "SourceRefreshDependencyDowngradeCascadesRequiredDependent",
+        "SourceRefreshInPlaceUpgradeCannotAuthorizeResidentProviderVersion",
+        "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+        "InputAudienceSnapshotRemainsImmutableForTheFrame",
+        "InputOwnerModalTargetsQueriesAndSettlesRelease",
+        "InputConfigurationUpdateRetainsPressedBindingForRelease",
+        "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+        "Suppress_OneFrame_ClearsAfterUpdate",
+        "FrozenCompatibilityApisPublishSeparateStabilityDispositionAndWarnings",
+        "CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots"
+      ],
+      "focuses": {
+        "prerelease-step1": [
+          "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+          "RuntimeSubsystemOptionsAllFlagsOffDisablesObservationAndShadowRegistry"
+        ],
+        "platform-deprecation": [
+          "DeprecatedApiWarningsAreOwnerBoundAndDoNotChangeLookup",
+          "FrozenCompatibilityApisPublishSeparateStabilityDispositionAndWarnings"
+        ],
+        "prerelease-step2": [
+          "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+          "RuntimeSubsystemOptionsAllFlagsOffDisablesObservationAndShadowRegistry"
+        ],
+        "config-correctness": [
+          "ConfigJsonEscapesRoundTripWithoutRewriting",
+          "ConfigRecoveryFailuresPreserveOriginalBytes",
+          "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+          "RegistryAndConfigFacadesEnforceOwnerLifetime"
+        ],
+        "platform-session-core": [
+          "ExplicitAuthorSessionSurvivesInitialStartupTitleBoundary"
+        ],
+        "platform-package-dependencies": [
+          "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+          "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+          "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+          "PackageDependencyPlanBlocksRequiredClosureAndSharesOnlyExactBytes"
+        ],
+        "platform-reflection-core": [
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "platform-reflection-public": [
+          "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "platform-services-core": [
+          "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+          "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "platform-data-core": [
+          "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+          "OwnerDataRejectsBadPathsAndLinkedRoots",
+          "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+          "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+          "GlobalDataMigrationFailureWindowsRetainCommittedBytes"
+        ],
+        "platform-settings-core": [
+          "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+          "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+          "OwnerTranslationsFormatRefreshAndDetachWithScope",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "platform-runtime-core": [
+          "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+          "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+          "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+          "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+          "PlatformCommandsParseDispatchAndIsolateOwners"
+        ],
+        "moreequipment-product": [
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "debugconsole-product": [
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "api-metadata": [
+          "FrozenCompatibilityApisPublishSeparateStabilityDispositionAndWarnings"
+        ],
+        "phase4-api-cleanup": [
+          "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics"
+        ],
+        "phase1-core-cleanup": [
+          "EventMainThreadBoundaryQueuesSafeEventsAndRejectsUnsafeEvents",
+          "SaveLoadRequestCoordinatorSuppressesOnlyDtmapiDuplicates",
+          "TitleReturnBoundaryLedgerBuildsObjectGraphDeltas",
+          "InputScopeGatesSamplingAndDispatch",
+          "InputSuppressionIsButtonScopedWithinFrame",
+          "InputLegacyWrapperUsesKeybindRegistry",
+          "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+          "InputPressedEdgeDispatchesWhenAlreadyReleased",
+          "InputRapidRetapDispatchesSecondPress",
+          "InputKeybindChordUsesPressedEdge",
+          "InputKeybindChordShortTapDispatchesPressedAndReleased",
+          "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+          "InputGenericModifiersMatchEitherPhysicalSide",
+          "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+          "InputRegistrationUpdatePreservesUnchangedHeldState",
+          "InputOwnerCleanupInvalidatesCachedButtons",
+          "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+          "InputLocalSnapshotWarmPathDoesNotAllocate",
+          "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+          "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+          "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "InputOwnerModalTargetsQueriesAndSettlesRelease",
+          "InputConfigurationUpdateRetainsPressedBindingForRelease",
+          "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+          "InputAudienceSteadyStateDoesNotAllocate",
+          "Suppress_OneFrame_ClearsAfterUpdate"
+        ],
+        "manager-ui": [
+          "ManagerViewModelMapsDiagnosticsSnapshot",
+          "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "runtime-integration",
+      "project": "tests/DTMAPI.RuntimeIntegration.Tests/DTMAPI.RuntimeIntegration.Tests.csproj",
+      "default": [
+        "PlatformSdkTargetRuntimeTests.RunAll",
+        "Batch6AdvancedRuntimeTests.RunAll",
+        "Batch5ContentGenerationTests.Run",
+        "HookInstallSchedulerCoalescesExternalRequests",
+        "TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart", "NativeTitleEntryPreservesOtherActionsAndExit", "RuntimeInputConfigSerializesAndOwnsOnlyItsPage", "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp", "ConfigFocusGraphReachesControlsAcrossRowsAndColumns", "ControllerReconnectRequiresNeutralAndClosesHeldCycles",
+        "ControllerVocabularyPreservesRawAndUnknownBindings",
+        "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+        "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress",
+        "GameBridgeOwnerCleanupRemovesConfiguredFishingPolicy",
+        "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu",
+        "TitleSettingsEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "TitleSettingsConfigPagerPreservesExplicitNavigation",
+        "GameBridgeOwnerRetainingServicesExposeCleanupBoundary",
+        "SaveSavingParticipantFailureCancelsNativeBoundary",
+        "FrameDriverHealthPolicyDistinguishesGlobalPauseAndSingleDriverStall",
+        "OfficialModUiWorkshopRefreshCommitsOnlyAfterSuccessfulCloseSave",
+        "NativeWorkshopBridgeUsesCurrentModManagerStateInsteadOfStaleEnablementFile",
+        "NativeWorkshopOptionalInfoFailureRetainsRequiredAuthorityWithoutInventingEnablement",
+        "NativeWorkshopSubscriptionWithoutInstalledRootDoesNotAuthorizeRawDirectory",
+        "ExplicitAuthorSessionAuthorizesWorkshopValidationAndClosesAtTitle",
+        "ExplicitAuthorSessionClosesAtRuntimeShutdown",
+        "ExplicitAuthorSessionExpiryRevokesWorkshopValidation",
+        "ExplicitAuthorSessionCannotReloadDependencyBlockedContent",
+        "HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics",
+        "HarmonyTargetSignatureSelectsExactOverload",
+        "NativeUiLayoutRepairKeepsExactRepairsAndRetiresGenericHooks",
+        "CustomEntityApisAreExperimentalFrozenAndCoreOwned",
+        "GameBridgeFeatureContractsReflectDemandRouting",
+        "ItemDisplayNameApiCachesOnlySuccessfulMainThreadLookups",
+        "GameBridgeFeatureFinalHealthSnapshotAggregatesCounters",
+        "GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount",
+        "GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess",
+        "GameBridgeFeatureExceptionSummaryUnwrapsTargetInvocation",
+        "GameBridgeEnvironmentResetStepFailuresAreIsolated",
+        "CustomAnimalAnimatorMetadataParsesAssetBundleRegistrations",
+        "CustomAnimalAnimatorMetadataParsesPngSpriteOverrideRegistrations",
+        "CustomAnimalAiTemplateMetadataParsesTemplateMappings",
+        "CustomAnimalSleepWakeDiagnosticsSpeciesAreScopedToRegisteredCustomAnimals",
+        "CustomAnimalSleepTaskBoundaryRulesAreScopedAndConservative",
+        "CustomAnimalSleepWakeFollowUpDiagnosticsTrimStableSleep",
+        "AudioReplacementContentPackMetadataParsesAnimalVoice",
+        "AudioReplacementAnimalVoiceScopeDoesNotPolluteNativeChicken",
+        "AudioReplacementCooldownKeepsNativeSuppressedWhenReady",
+        "AudioReplacementCodeApiStillRejectsUnreviewedEvents",
+        "AudioReplacementExplicitReloadRetainsLastGoodGeneration",
+        "AudioReplacementHookReviewRetainsVerifiedState",
+        "AudioReplacementHookRetryPublishesPhysicalTransition",
+        "AuthorSessionReloadRejectsUnownedFormatsDeterministically",
+        "AuthorSessionReloadRejectsManifestAuthorityDrift",
+        "CustomAnimalAnimatorBridgeUnknownKeyFallsThroughAndMissingBundleDegrades",
+        "QaHostActivationIsOneShotIntegrityBoundAndLifecycleClosed",
+        "QaInitialSaveLoadDispositionRetriesUntilBridgeAccepts",
+        "QaTerminalTitleBoundaryUsesUnifiedQuitPath",
+        "QaParticipantRunDispositionOwnsDeterministicQuitWithoutEmbeddedGate",
+        "QaParticipantFailureStillClosesAndQuitsWithoutEmbeddedScheduler",
+        "QaPreRuntimeOwnerSurvivesPostRuntimeStartupFailureUntilShutdown"
+      ],
+      "focuses": {
+        "platform-sdk-targets": [
+          "PlatformSdkTargetRuntimeTests.RunAll",
+          "Batch6AdvancedRuntimeTests.RunTargetCompatibility"
+        ],
+        "platform-controller": ["TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart", "NativeTitleEntryPreservesOtherActionsAndExit", "RuntimeInputConfigSerializesAndOwnsOnlyItsPage", "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp", "ConfigFocusGraphReachesControlsAcrossRowsAndColumns", "ControllerReconnectRequiresNeutralAndClosesHeldCycles", "ControllerVocabularyPreservesRawAndUnknownBindings", "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce", "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress"],
+        "batch6-advanced-core": [
+          "Batch6AdvancedRuntimeTests.RunAll"
+        ],
+        "prerelease-step1": [
+          "GameBridgeFeatureContractsReflectDemandRouting",
+          "GameBridgeFeatureFinalHealthSnapshotAggregatesCounters"
+        ],
+        "platform-session-core": [
+          "ExplicitAuthorSessionAuthorizesWorkshopValidationAndClosesAtTitle",
+          "ExplicitAuthorSessionClosesAtRuntimeShutdown",
+          "ExplicitAuthorSessionExpiryRevokesWorkshopValidation",
+          "ExplicitAuthorSessionCannotReloadDependencyBlockedContent",
+          "AuthorSessionReloadRejectsUnownedFormatsDeterministically",
+          "AuthorSessionReloadRejectsManifestAuthorityDrift"
+        ],
+        "item-display-name": [
+          "ItemDisplayNameApiCachesOnlySuccessfulMainThreadLookups"
+        ],
+        "audio-hook-publication": [
+          "AudioReplacementHookReviewRetainsVerifiedState",
+          "AudioReplacementHookRetryPublishesPhysicalTransition"
+        ],
+        "moreequipment-product": [
+          "SaveSavingParticipantFailureCancelsNativeBoundary"
+        ],
+        "title-config-pager": [
+          "TitleSettingsConfigPagerPreservesExplicitNavigation"
+        ],
+        "api-metadata": [
+          "CustomEntityApisAreExperimentalFrozenAndCoreOwned"
+        ],
+        "phase4-api-cleanup": [
+          "CustomEntityApisAreExperimentalFrozenAndCoreOwned"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "compatibility",
+      "project": "tests/DTMAPI.Compatibility.Tests/DTMAPI.Compatibility.Tests.csproj",
+      "default": [
+        "Batch5GameBridgeDemandTests.RunAll",
+        "InactiveOwnerCleanupCanBeRetriedUntilZero",
+        "RetiredLampCompatibilityShellIsOwnerBoundAndSideEffectFree",
+        "GameBridgeOwnerCleanupCountsAndReleasesCameraLease",
+        "CameraOwnerCleanupRetainsFailedNativeRestoreForRetry",
+        "CameraLeaseRequestSurvivesSaveAndTitleUntilOwnerDeactivation",
+        "FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned",
+        "LegacyFishingCompatibilityIsObsoleteFrozenAndHasNoProductConsumers",
+        "FishingAnimationMultiplierUsesFullTrajectoryPreservingScale",
+        "LegacyFishingAutomationServiceFailureThrottleRecordsOneDiagnosticPerOperation",
+        "LegacyFishingAutomationServiceFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess",
+        "FishingAutomationSuccessDiagnosticsThrottleRepeatedHookStatus",
+        "FishingAutomationRuntimeStateResetClearsTransientState",
+        "FishingAutomationLifecycleSummaryClassifiesOwnerAndTransientState",
+        "FishingAutomationPendingCastWatchdogPublishesStallAndClearsOnProgress",
+        "FishingAutomationStaleWaitDoesNotConfirmPendingCast",
+        "FishingAutomationHooksNotInstalledDoesNotCreatePendingCast",
+        "FishingAutomationDisableClearsTransientHandles",
+        "ChestLocatorPoliciesMergeEnabledOwners",
+        "SaveSlotsNormalizeToFixedTwelveContract",
+        "ActionSpeedOptionsNormalizeNativeStageDefaults",
+        "ActionSpeedProviderPrecedenceIsDeterministic",
+        "ActionSpeedNativeClassificationCoversAttempts",
+        "EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery",
+        "EquipmentSlotShieldPolicyMirrorsNativeShieldHat",
+        "FishingAutomationOptionsNormalizeNativeStageDefaults",
+        "FishingAutomationBiteActionPrecedence",
+        "FishingAutomationMiniGameInputDecisionMatchesNativeBars",
+        "FishingAutomationSkipMiniGamePreservesNativePullResult",
+        "FishingAutomationMirrorsNativeReelWhenInputEdgeIsAbsent",
+        "FishingAutomationInstantBiteDefersReelUntilWaitPlay",
+        "FishingAutomationAnimationSpeedOnlyRunsOnReadyCastAndPull",
+        "FishingAutomationReadyChargeSpeedTicksNativeCastTimer",
+        "FishingAutomationReadyChargeTargetControlsUseToolRelease",
+        "AnimalViewerLocalizationGuardRecognizesUiLocalizationComponents",
+        "AnimalViewerNativeCloseBoundaryPublishesNeutralLifecycle",
+        "AnimalViewerFeatureResetsCloneLifecycleOnBoundaries"
+      ],
+      "focuses": {
+        "batch5-gamebridge-demand": [
+          "Batch5GameBridgeDemandTests.RunAll"
+        ],
+        "compatibility-host": [
+          "Batch5GameBridgeDemandTests.RunAll",
+          "FishingAutomationApiIsFeatureOwnedNotExperimentalBridgeOwned",
+          "ActionSpeedOptionsNormalizeNativeStageDefaults",
+          "ActionSpeedProviderPrecedenceIsDeterministic",
+          "ActionSpeedNativeClassificationCoversAttempts",
+          "FishingAutomationReadyChargeSpeedTicksNativeCastTimer"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "animalhusbandry",
+      "project": "tests/DTMAPI.AnimalHusbandry.Tests/DTMAPI.AnimalHusbandry.Tests.csproj",
+      "default": [
+        "AnimalHusbandryProductTests.RunAll"
+      ],
+      "focuses": {
+        "animalhusbandry-product": [
+          "AnimalHusbandryProductTests.RunAll"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "autofishing",
+      "project": "tests/DTMAPI.AutoFishing.Tests/DTMAPI.AutoFishing.Tests.csproj",
+      "default": [
+        "AutoFishingProductOwnsExecutableSessionLifetime",
+        "AutoFishingMiniGameInputStateIsCurrentGameBoundedAndFaultClosed",
+        "AutoFishingArchitectureBoundariesRemainIsolated",
+        "AutoFishingModConfigPreservesCustomToggleKey",
+        "AutoFishingDecisionEngineKeepsProductOptionsIndependent",
+        "AutoFishingProductTests.RunAll"
+      ],
+      "focuses": {
+        "autofishing-product": [
+          "AutoFishingProductTests.RunAll",
+          "AutoFishingArchitectureBoundariesRemainIsolated",
+          "AutoFishingProductOwnsExecutableSessionLifetime"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "autoharvest",
+      "project": "tests/DTMAPI.AutoHarvest.Tests/DTMAPI.AutoHarvest.Tests.csproj",
+      "default": [
+        "AutoHarvestUpdaterFollowsOrdinarySaveLifecycle"
+      ],
+      "focuses": {
+        "phase4-api-cleanup": [
+          "AutoHarvestUpdaterFollowsOrdinarySaveLifecycle"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "chestlocator",
+      "project": "tests/DTMAPI.ChestLocator.Tests/DTMAPI.ChestLocator.Tests.csproj",
+      "default": [
+        "ChestLocatorEnhancerProductTests.RunAll",
+        "ChestLocatorCompatibilityHostTests.RunAll"
+      ],
+      "focuses": {
+        "chestlocator-product": [
+          "ChestLocatorEnhancerProductTests.RunAll",
+          "ChestLocatorCompatibilityHostTests.RunAll"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "moreequipment",
+      "project": "tests/DTMAPI.MoreEquipmentSlots.Tests/DTMAPI.MoreEquipmentSlots.Tests.csproj",
+      "default": [
+        "MoreEquipmentSlotsProductTests.RunAll",
+        "EquipmentSlotsCompatibilityHostTests.RunAll"
+      ],
+      "focuses": {
+        "moreequipment-claim-process": [
+          "MoreEquipmentSlotsProductTests.RunCrossProcessClaimActor"
+        ],
+        "moreequipment-product": [
+          "MoreEquipmentSlotsProductTests.RunAll",
+          "EquipmentSlotsCompatibilityHostTests.RunAll"
+        ],
+        "moreequipment-cold-host": [
+          "EquipmentSlotsCompatibilityHostTests.RunProductColdStorageOnly"
+        ],
+        "compatibility-host": [
+          "EquipmentSlotsCompatibilityHostTests.RunAll"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "strongplantinggun",
+      "project": "tests/DTMAPI.StrongPlantingGun.Tests/DTMAPI.StrongPlantingGun.Tests.csproj",
+      "default": [
+        "StrongPlantingGunProductTests.RunAll"
+      ],
+      "focuses": {
+        "strongplantinggun-product": [
+          "StrongPlantingGunProductTests.RunAll"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "zoom",
+      "project": "tests/DTMAPI.Zoom.Tests/DTMAPI.Zoom.Tests.csproj",
+      "default": [
+        "ZoomProductTests.RunAll",
+        "ZoomProductArchitectureBoundariesRemainOrdinary"
+      ],
+      "focuses": {
+        "zoom-product": [
+          "ZoomProductTests.RunAll"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "mine",
+      "project": "tests/DTMAPI.Mine.Tests/DTMAPI.Mine.Tests.csproj",
+      "default": [
+        "MineProductTests.RunAll"
+      ],
+      "focuses": {
+        "mine-product": [
+          "MineProductTests.RunAll"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "debugconsole",
+      "project": "tests/DTMAPI.DebugConsole.Tests/DTMAPI.DebugConsole.Tests.csproj",
+      "default": [
+        "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+        "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+        "DebugConsoleSpawnProductTests.RunAll",
+        "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+        "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+        "DebugConsoleOneHundredCompatibilitySemantics",
+        "DebugConsoleCreativeFlagTransactionRollsBackPartialFailure",
+        "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+        "RuntimeApiCanRegisterBeforeStart",
+        "DebugConsoleHostBindingFollowsOwnerLifetime",
+        "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+        "DebugConsoleEscapeCloseDrainProtectsNativeOwnerBoundary",
+        "DebugConsoleAdvancedAdmissionKeepsProductAndCompatibilityOwnersSeparate",
+        "DebugConsoleEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath",
+        "MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset",
+        "DebugConsoleHarmonyOwnerFixturePasses",
+        "DebugConsoleCompatibilityConstructionOrdersOwnActionsExactlyOnce",
+        "DebugConsoleCompatibilityHookTopologyIsTransactionalAndStable",
+        "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+        "DebugConsolePostWriteFailuresRetainLeaseLedger",
+        "DebugConsoleTitleCleanupRunnerUsesStableProductOwnershipEvidence"
+      ],
+      "focuses": {
+        "debugconsole-product": [
+          "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+          "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+          "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+          "DebugConsoleHarmonyOwnerFixturePasses",
+          "DebugConsoleCompatibilityConstructionOrdersOwnActionsExactlyOnce",
+          "DebugConsoleCompatibilityHookTopologyIsTransactionalAndStable",
+          "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+          "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+          "DebugConsoleOneHundredCompatibilitySemantics",
+          "DebugConsolePostWriteFailuresRetainLeaseLedger",
+          "DebugConsoleCreativeFlagTransactionRollsBackPartialFailure",
+          "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+          "DebugConsoleAdvancedAdmissionKeepsProductAndCompatibilityOwnersSeparate",
+          "DebugConsoleTitleCleanupRunnerUsesStableProductOwnershipEvidence",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": [
+        "BepInExFixture"
+      ]
+    },
+    {
+      "id": "oil-content",
+      "project": "tests/DTMAPI.OilContent.Tests/DTMAPI.OilContent.Tests.csproj",
+      "default": [
+        "OilOfficialJsonOwnershipIsolatedAndProbabilityMatchesTrackedSemantics"
+      ],
+      "focuses": {},
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "source-contracts",
+      "project": "tests/DTMAPI.SourceContracts.Tests/DTMAPI.SourceContracts.Tests.csproj",
+      "default": [
+        "Batch5GcLadderRunnerEvidenceDiscoveryContracts",
+        "PreviewVersionMetadataIsConsistent",
+        "PublicApiStatusMetadataMatchesMatrix",
+        "BootstrapDefersNativeSourceCaptureUntilNativeReadyLifecycle",
+        "ProductOwnerRefreshSmokeReturnsHomeBeforeExit",
+        "Batch2PlayerLikeSmokeGatesAreOrderedAndRecoverable",
+        "Batch4RunnerRoutingMatrixUsesWindowsPowerShell51",
+        "ProductQaNoRodRestorationDoesNotLeakIntoGenericHost",
+        "ZoomAcceptanceRoutingRequiresProductNativeTitleAndExactOwnerCleanup",
+        "MoreSavesAcceptanceRoutingRequiresPostTitlePanelAndSaveProtection",
+        "MoreEquipmentSlotsAcceptanceRoutingRequiresProtectedThirdSaveAndExactOwnerCleanup"
+      ],
+      "focuses": {
+        "prerelease-step5": [
+          "PreviewVersionMetadataIsConsistent"
+        ],
+        "platform-version-projection": [
+          "PreviewVersionMetadataIsConsistent"
+        ],
+        "public-api-status": [
+          "PublicApiStatusMetadataMatchesMatrix"
+        ],
+        "zoom-acceptance-routing": [
+          "ZoomAcceptanceRoutingRequiresProductNativeTitleAndExactOwnerCleanup"
+        ],
+        "moresaves-acceptance-routing": [
+          "MoreSavesAcceptanceRoutingRequiresPostTitlePanelAndSaveProtection"
+        ],
+        "moreequipment-acceptance-routing": [
+          "MoreEquipmentSlotsAcceptanceRoutingRequiresProtectedThirdSaveAndExactOwnerCleanup"
+        ]
+      },
+      "requiresWindows": true,
+      "publicSource": true,
+      "dependencies": []
+    },
+    {
+      "id": "source-arbitration",
+      "project": "tests/DTMAPI.SourceArbitration.Tests/DTMAPI.SourceArbitration.Tests.csproj",
+      "default": [],
+      "focuses": {
+        "official-source-arbitration-once": [
+          "OfficialSourceArbitrationOneOffMatrix"
+        ]
+      },
+      "requiresWindows": false,
+      "publicSource": true,
+      "dependencies": []
+    }
+  ]
+}

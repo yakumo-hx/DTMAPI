@@ -1,8 +1,11 @@
-# ISSUE-019: MoreSaves 1.00 legacy slot-family migration
+﻿# ISSUE-019: MoreSaves 1.00 legacy slot-family migration
+
+- State: `verified`
+- Current boundary: Corrected Local 1.0.1 passed isolated 16-role migration, populated official #7--#12 UI, native index 6 load, cold `0/0` idempotence, native index 11 load and clean exit without player archive writeback.
 
 ## Status
 
-- State: `verified / corrected live migration plus disposable official-UI, extra-slot load, idempotence and clean-exit revalidation passed`
+- Previous status wording: `verified / corrected live migration plus disposable official-UI, extra-slot load, idempotence and clean-exit revalidation passed`
 - Opened: `2026-08-04`
 - Historical resolution: `2026-08-04` (superseded by the `2026-08-05` user correction below)
 - Reopened: `2026-08-05`

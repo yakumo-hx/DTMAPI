@@ -803,7 +803,7 @@ namespace DTMAPI.Core.Services
         public bool IsSettlement => RecipientOwnerIds.Count > 0;
     }
 
-    internal sealed class InputService : IInputHelper
+    internal sealed partial class InputService : IInputHelper
     {
         private const string GlobalOwnerId = "DTMAPI.Legacy.GlobalInput";
         private const int LocalSnapshotDormantFrameRetention = 2;

@@ -1,6 +1,6 @@
 # DebugConsole Input Isolation Hook Map
 
-Last updated: 2026-08-04
+Last updated: 2026-08-30
 
 ## Scope
 
@@ -9,8 +9,11 @@ DTMAPI DebugConsole owner holds the in-save modal input cycle and the guarded
 final-player-speed Postfix used by its movement diagnostic. The current
 ProductNative `DTMAPI.DebugConsoleMod` owns the normal route. The exact retained
 0.3.1 ABI may install the same three guards under a different owner only through
-the optional Compatibility component. Neither route gives Bootstrap or
-mandatory GameBridge authority over ordinary Mod hotkeys.
+the optional Compatibility component. On 2026-08-30 the user confirmed that
+this old product has no remaining users and released its compatibility-retention
+constraint; the route is still described here because its code has not yet been
+physically removed. Neither route gives Bootstrap or mandatory GameBridge
+authority over ordinary Mod hotkeys.
 
 ## Native Owners And Signatures
 
@@ -29,9 +32,15 @@ The current signatures are anchored to the private `24456188_test_E861E0` revers
 
 ## Patch Ownership And Lifecycle
 
-- Current 1.00 repair status: ProductNative `implemented`, pending focused
-  player reacceptance; the prior player evidence remains historical.
-  Compatibility is resident-dormant until a real frozen-ABI consumer.
+- Current published ProductNative input-isolation status: verified for
+  DebugConsole `1.1.1`. The product-owned pre-toggle focus gate passed
+  independent search, chest-rename and ordinary-toggle acceptance, and Steam
+  manifest `6693520158465470410` contains the exact accepted subscription tree.
+  The three native Prefixes, ordinary modal Y/Escape ownership and opener-edge
+  guard remain installed. The earlier `1.1.0` failure was a product typed-dispatch
+  ordering defect, not a native signature or Harmony installation failure.
+  Compatibility remains resident-dormant in current source, but no known
+  `0.3.1` consumer requires retaining it after the 2026-08-30 user decision.
 - Product owner: `dtmapi.mod.dtmapi.debugconsolemod`. Its atomic installer
   owns these three Prefixes, fifteen separate bounded creative/action patches
   and one final-speed Postfix. The input callbacks and active gate live in the Advanced product,
@@ -96,6 +105,39 @@ The current signatures are anchored to the private `24456188_test_E861E0` revers
 
 ## Validation
 
+- Local DebugConsole 1.1.1 checks on 2026-08-23 prove the typed handler calls
+  the unified focus gate before `Toggle`, focused/unfocused selected
+  InputField classification works, and Unity/TMP reflection metadata is
+  cached. The query is a ProductNative Y-edge operation, not a new Harmony
+  target or continuously active hook. Exact double Author SDK builds match at
+  package SHA-256
+  `70FD50874B6227F4D865087206ECA5D2C19146745E4BB386AFFEF7E1D007EA73`.
+- Non-acceptance `GAME-SMOKE/20260823-025619` loads the exact 1.1.1 local DLL
+  (`784FD83E3174F80773926DE937171B1294D8F3E8D21240762492EC5E93B0E050`)
+  and passes the ordinary Y/Escape/held-key/owner/no-fatal/no-save/process
+  submatrix. A visibly focused search field retained the console while `y`
+  entered the Chinese IME; because that edge did not reach Core, it did not
+  emit the focus marker. That smoke's unfinished unrelated UI gates keep its
+  overall result non-acceptance and out of the smoke matrix.
+- The later independent player run closes the exact remaining gate: search Y
+  kept the console open, chest-rename Y did not open it, and unfocused Y
+  toggled normally. Its final log SHA-256 is
+  `F1B3B72A8BCBCF1F786E8E7B716294649FA45BCE8816E484DC70D5CF0380AF32`;
+  `07:01:54.893` contains the owner-modal typed-Y focus-guard marker with no
+  close boundary, followed by normal unfocused close/reopen/close edges.
+  ISSUE-014 and Update `20260823-0003` are therefore verified for `1.1.1`.
+  That Update subsequently closed publication against Steam manifest
+  `6693520158465470410`; `1.1.0` is now historical rather than the current
+  public artifact.
+- The 2026-08-23 player reproduction on public build `24788406` loaded the
+  exact local DebugConsole 1.1.0 DLL and all nineteen ProductNative patches.
+  At `01:58:08.391` and `01:58:12.129`, owner-modal Y was dispatched to the
+  typed toggle and closed the console before the product `UpdateTicked` focus
+  guard could run; no `debug-console-y-input-focus` marker was emitted.
+  Complete-build comparison found no relevant native input/UI signature or
+  module change. This is manual/log evidence, not a new `GAME-SMOKE`; focused
+  text acceptance is regressed while the physical Hook topology remains
+  intact. See the [focused-Y dispatch-order Review](../../archive/reviews/manual-qa/2026/20260823-0002-y-console-focused-y-dispatch-order-regression.md).
 - `GAME-SMOKE/20260715-143510` first proved that a delayed Escape edge is drained before the following Y reopens the console, with `NativeMenuLeakDetected=false`.
 - `GAME-SMOKE/20260715-145818` passed the complete normal-Steam, no-HookProbe external-input matrix: two Escape closes, ten 40 ms Y taps, a 1,800 ms hold, six owner-targeted retained-DLL Y closes, no `PostMessage` fallback, no native-menu leak, successful title cleanup and clean process exit.
 - `GAME-SMOKE/20260715-153336` repeated that matrix after final provenance hardening and is the current acceptance result. It also proved the exact retained Workshop tree/DLL hash and exactly one Core load-source record for Workshop `3742714442`; all input and cleanup counts remained green.
@@ -132,7 +174,7 @@ The current signatures are anchored to the private `24456188_test_E861E0` revers
   aggregate values. The final player test proves 2x/3x/4x remains effective
   after Y-console close and explicit 1x restores normal displacement while the
   native movement Buff remains present.
-- The 2026-08-04 [1.00 native/body Review](../../reviews/code/2026/20260804-0003-debugconsole-100-native-body-review.md) and dual-host `test-dtmapi-060-debugconsole-native-trace.ps1` bind the exact `24456188` assembly, four-parameter cost target, official two-parameter weather command, `LocalWeatherType` verification, unchanged UseTool/UseItem bodies, EnterUICheck clear-owner classification and final-result movement boundary. Focused Unit additionally proves a weather result mismatch fails closed and one technology-category failure does not prevent the exact four-category sequence. These are source/fixture results, not current-byte game acceptance.
+- The 2026-08-04 [1.00 native/body Review](../../archive/reviews/code/2026/20260804-0003-debugconsole-100-native-body-review.md) and dual-host `test-dtmapi-060-debugconsole-native-trace.ps1` bind the exact `24456188` assembly, four-parameter cost target, official two-parameter weather command, `LocalWeatherType` verification, unchanged UseTool/UseItem bodies, EnterUICheck clear-owner classification and final-result movement boundary. Focused Unit additionally proves a weather result mismatch fails closed and one technology-category failure does not prevent the exact four-category sequence. These are source/fixture results, not current-byte game acceptance.
 - `GAME-SMOKE/20260727-104118`/`104214` prove failed-save Working mutation
   cold-reloads the prior committed money. `104302`/`104359` prove a successful
   save cold-reloads the exact new money. All four use a disposable fixture;
@@ -170,6 +212,9 @@ the close Escape into the native pause/menu owner.
 - `docs/updates/2026/20260726-0005-debugconsole-twelfth-advanced-product.md`
 - `docs/reviews/code/2026/20260804-0003-debugconsole-100-native-body-review.md`
 - `docs/reviews/manual-qa/2026/20260712-0002-y-console-close-double-toggle.md`
+- `docs/reviews/manual-qa/2026/20260823-0002-y-console-focused-y-dispatch-order-regression.md`
+- `docs/reviews/manual-qa/2026/20260830-0001-y-console-112-manual-acceptance-retirement-and-space-ship-review.md`
+- `docs/updates/2026/20260830-0003-y-console-112-stackable-fuel-and-maintenance.md`
 - `docs/debug/issues/ISSUE-014-20260712-y-console-close-double-toggle.md`
 - `docs/debug/issues/ISSUE-015-20260727-debugconsole-hook-transactions.md`
 - `docs/debug/regressions/smoke-matrix.md`

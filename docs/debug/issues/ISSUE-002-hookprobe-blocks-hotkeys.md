@@ -1,8 +1,10 @@
-# ISSUE-002: HookProbe left in normal play blocks hotkeys
+﻿# ISSUE-002: HookProbe left in normal play blocks hotkeys
+
+- State: `mitigated`
+- Current boundary: HookProbe/input interaction mitigation retained.
 
 ## Status
 
-- Status: mitigated
 - Last verified: 2026-05-30
 - Severity: medium
 - Area: input / config menu / local install hygiene

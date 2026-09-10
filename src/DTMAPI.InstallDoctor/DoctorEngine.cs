@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DTMAPI.Tooling.Metadata;
+using DTMAPI.Internal.Authoring;
 
 namespace DTMAPI.InstallDoctor;
 
 public sealed class DoctorEngine
 {
-    private const string TrackedAuthorSdkVersion = "0.1.0";
     private const string TrackedAuthorSdkTargetDtmApiVersion = "0.5.5";
     private static readonly HashSet<string> RuntimeAssemblyNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -146,6 +146,28 @@ public sealed class DoctorEngine
             findings.Add(Error("manifest-missing-version", manifest.Path, "The manifest has no non-empty Version.", "Set the package version explicitly."));
 
         DoctorMinimumVersionStatus minimumVersionStatus = EvaluateMinimumVersion(manifest, options.InstalledDtmApiVersion, findings);
+        if (!manifest.CodeModKind.Equals("Advanced", StringComparison.Ordinal) &&
+            (manifest.Type.Equals("ContentPack", StringComparison.Ordinal) || manifest.Type.Equals("CodeMod", StringComparison.Ordinal)))
+        {
+            try
+            {
+                AuthorPackageMarker.ValidateIfPresent(manifest.RootPath, manifest.Path, manifest.UniqueId, manifest.Version,
+                    manifest.Type, manifest.CodeModKind, manifest.EntryDll.Length == 0 ? string.Empty : ResolvePackageRelativePath(manifest.RootPath, manifest.EntryDll),
+                    manifest.MinimumDtmApiVersion, manifest.DependencyContract != null);
+                if (manifest.DependencyContract != null && manifest.Type == "ContentPack")
+                {
+                    var bundle = PackageDependencyBundle.Read(manifest.RootPath, manifest.Path, manifest.UniqueId, manifest.Version, manifest.Type,
+                        manifest.CodeModKind, "", manifest.MinimumDtmApiVersion);
+                    PackageDependencyVerifier.Verify(manifest.RootPath, bundle.Inventory, PackagePortableMetadata.Inspect,
+                        PackageHostReferences.IsStrictHostReference, PackageHostReferences.ReservedFor(bundle.Inventory.Assemblies), bundle.Files, bundle.Native);
+                }
+            }
+            catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is UnauthorizedAccessException)
+            {
+                findings.Add(Error("package-marker-invalid", Path.Combine(manifest.RootPath, AuthorPackageMarker.RelativePath), ex.Message,
+                    "Rebuild using an available SDK API target and regenerate the package marker."));
+            }
+        }
 
         bool inBepInExPlugins = IsBepInExPluginPath(scanRoot, manifest.Path);
         if (manifest.HasExplicitType &&
@@ -405,7 +427,7 @@ public sealed class DoctorEngine
         }
 
         string[] nativeReferences = NonPlatformAssemblyReferences(inspection).ToArray();
-        if (!advanced && !legacyNative && nativeReferences.Length > 0)
+        if (!advanced && !legacyNative && manifest.DependencyContract == null && nativeReferences.Length > 0)
         {
             identity.NativeRisk = DoctorNativeRisk.ForbiddenNativeReference;
             findings.Add(Error(
@@ -440,6 +462,36 @@ public sealed class DoctorEngine
         DoctorIdentityProjection identity,
         ICollection<DoctorFinding> findings)
     {
+        if (manifest.DependencyContract != null)
+        {
+            try
+            {
+                if (!manifest.HasExplicitCodeModKind) throw new InvalidDataException("New dependency packages must explicitly select CodeModKind.");
+                var bundle = PackageDependencyBundle.Read(manifest.RootPath, manifest.Path, manifest.UniqueId, manifest.Version,
+                    manifest.Type, manifest.CodeModKind, entryPath, manifest.MinimumDtmApiVersion);
+                PackageDependencyVerifier.Verify(manifest.RootPath, bundle.Inventory, PackagePortableMetadata.Inspect,
+                    reference => PackageHostReferences.IsStrictHostReference(reference) || (bundle.Native?.AllowsReference(reference) ?? false), PackageHostReferences.ReservedFor(bundle.Inventory.Assemblies), bundle.Files, bundle.Native);
+                if (bundle.Native != null)
+                {
+                    identity.ExpectedHarmonyOwner = bundle.Native.HarmonyOwner;
+                    identity.ProvenanceStatus = DoctorProvenanceStatus.VerifiedNativeContract;
+                    identity.ReferenceCompatibility = DoctorCompatibilityStatus.Compatible;
+                    identity.GameBuildId = bundle.Native.GameBuild;
+                    if (scanContext == DoctorScanContext.InstalledGame)
+                    {
+                        var warnings = bundle.Native.VerifyHost(scanRoot, bytes => NativePackageContract.IdentityString(PackagePortableMetadata.Inspect(bytes).Identity),
+                            (bytes, member) => member.GenericUse != null ? NativeGenericMetadata.Contains(bytes, NativeGenericSignature.Write(member.GenericUse)) : NativeMemberMetadata.Contains(bytes, new NativeMemberDescription { AssemblyIdentity = member.AssemblyIdentity, DeclaringType = member.DeclaringType, Kind = member.Kind, Name = member.Name, IsStatic = member.IsStatic, ReturnType = member.ReturnType, ParameterTypes = member.ParameterTypes }));
+                        identity.GameCompatibility = warnings.Count == 0 ? DoctorCompatibilityStatus.Exact : DoctorCompatibilityStatus.Drift;
+                        foreach (string warning in warnings) findings.Add(new DoctorFinding { Code = "native-unverified-game-version", Severity = DoctorSeverity.Warning, Path = manifest.Path, Message = warning, Guidance = "Rebuild against this installation to verify the new host baseline." });
+                    }
+                    else identity.GameCompatibility = DoctorCompatibilityStatus.NotChecked;
+                }
+                foreach (var record in bundle.Inventory.Assemblies) associatedDlls.Add(PackageDependencyContract.ResolveFile(manifest.RootPath, record.Path));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or BadImageFormatException)
+            { findings.Add(Error("dependency-package-invalid", manifest.Path, ex.Message, "Rebuild a complete schema 3 package with consistent managed references and license materials.")); }
+            return;
+        }
         string receiptPath = ResolvePackageRelativePath(manifest.RootPath, AdvancedReferenceReceiptProbe.RelativePath);
         int findingsBeforePackageEnumeration = findings.Count;
         string[] packageFiles = SafeEnumerateFiles(manifest.RootPath, findings).ToArray();
@@ -839,9 +891,8 @@ public sealed class DoctorEngine
                        !marker.Version.Equals(manifest.Version, StringComparison.Ordinal) ||
                        !marker.PackageKind.Equals("CodeMod", StringComparison.Ordinal) ||
                        !marker.CodeModKind.Equals("Advanced", StringComparison.Ordinal) ||
-                       !marker.AuthorSdkVersion.Equals(TrackedAuthorSdkVersion, StringComparison.Ordinal) ||
                        !marker.TargetDtmApiVersion.Equals(TrackedAuthorSdkTargetDtmApiVersion, StringComparison.Ordinal) ||
-                       !IsPackageApiTargetCompatible(marker.TargetDtmApiVersion, manifest.MinimumDtmApiVersion) ||
+                       !AuthorApiTargetCatalog.Current.TryValidatePackageTarget(marker.TargetDtmApiVersion, marker.AuthorSdkVersion, manifest.MinimumDtmApiVersion, out _, out _) ||
                        !marker.ManifestPath.Equals(receipt.ManifestPath, StringComparison.Ordinal) ||
                        !marker.ManifestSha256.Equals(receipt.ManifestSha256, StringComparison.OrdinalIgnoreCase) ||
                        !marker.EntryDllPath.Equals(receipt.EntryDllPath, StringComparison.Ordinal) ||
@@ -864,13 +915,6 @@ public sealed class DoctorEngine
             "The Advanced package-binding marker is invalid: " + detail + ".",
             "Regenerate the complete package through the Author SDK; unknown fields, stale hashes, and hand-edited bindings fail closed."));
         return false;
-    }
-
-    private static bool IsPackageApiTargetCompatible(string apiTarget, string runtimeFloor)
-    {
-        return TryParseRuntimeVersion(apiTarget, out Version target) &&
-            TryParseRuntimeVersion(runtimeFloor, out Version floor) &&
-            CompareVersions(floor, target) >= 0;
     }
 
     private void ValidateInstalledAdvancedCompatibility(

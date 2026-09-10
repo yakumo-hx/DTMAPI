@@ -162,9 +162,8 @@ Require-MoreSavesToken 'Build 24456188 official backup role destination' $localS
 Require-MoreSavesToken 'Build 24456188 native no-overwrite role guard' $localSave 'if (!FileUtils.Exists(text3) && FileUtils.Exists(text4))'
 Require-MoreSavesToken 'Build 24456188 native role move' $localSave 'FileUtils.Move(text4, text3);'
 
-$batch6Projection = Read-MoreSavesText (Join-Path $repo 'docs\architecture\batch6-managed-mod-identity-contract.md')
-Require-MoreSavesToken 'Batch 6 current MoreSaves live state' $batch6Projection 'MoreSaves 1.00 official-role correction: PLAYER-VERIFIED/RELEASE-REVALIDATED;'
-Require-MoreSavesToken 'Batch 6 current MoreSaves release boundary' $batch6Projection 'cold zero-source idempotence, native index 11 load and clean exit without player archive writeback at GAME-SMOKE/20260806-004819 and 005111'
+$admissionRegistry = Read-MoreSavesText (Join-Path $repo 'docs\architecture\managed-product-admission-registry.md')
+Require-MoreSavesToken 'Current MoreSaves managed-product admission' $admissionRegistry '| `more-saves` | `DTMAPI.MoreSavesMod` | `ProductNative` | `doloctown-24456188-moresaves-v1` | `products/first-party/MoreSaves/manifest.json` |'
 
 if ($failures.Count -gt 0) { foreach ($failure in $failures) { Write-Error $failure }; exit 1 }
 Write-Host ("DTMAPI Batch 6 MoreSaves Advanced product checks: OK (source-files={0}, patches=0, policy-references=1)" -f $productFiles.Count)

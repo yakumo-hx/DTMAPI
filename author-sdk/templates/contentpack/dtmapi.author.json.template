@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "projectKind": "ContentPack",
-  "targetDtmApiVersion": "0.5.5",
+  "targetDtmApiVersion": {{API_TARGET_JSON}},
   "sourceDirectory": "src",
   "contentDirectory": "content",
   "assemblyName": "",

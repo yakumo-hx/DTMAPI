@@ -1,0 +1,59 @@
+name: Public source tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'src/**'
+      - 'products/**'
+      - 'author-sdk/**'
+      - 'tests/**'
+      - 'tools/scripts/**'
+      - 'tools/release/**'
+      - 'tools/portable-reverse-capture/**'
+      - 'tools/reverse-capture/**'
+      - 'tools/native-function-map/**'
+      - 'tools/workspace-history/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - 'DTMAPI.sln'
+  push:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/**'
+      - 'src/**'
+      - 'products/**'
+      - 'author-sdk/**'
+      - 'tests/**'
+      - 'tools/scripts/**'
+      - 'tools/release/**'
+      - 'tools/portable-reverse-capture/**'
+      - 'tools/reverse-capture/**'
+      - 'tools/native-function-map/**'
+      - 'tools/workspace-history/**'
+      - 'Directory.Build.props'
+      - 'global.json'
+      - 'DTMAPI.sln'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build once and run the declared public-source profile
+        shell: pwsh
+        run: ./tools/scripts/test-public-source.ps1

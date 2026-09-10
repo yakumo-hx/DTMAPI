@@ -92,7 +92,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 MoreEquipmentSlotsProductContract.ExpectedHookCount)
             {
                 throw new ArgumentException(
-                    "EquipmentSlots ownership requires exactly four native targets.",
+                    "EquipmentSlots ownership requires exactly five native targets.",
                     parameterName);
             }
         }

@@ -11,6 +11,8 @@ param(
 )
 
 . "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\author-sdk-release-common.ps1"
+. "$PSScriptRoot\author-sdk-preparation.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
 $catalogPath = Join-Path $repo 'tools\release\dtmapi-product-catalog.json'
@@ -50,11 +52,13 @@ $packageFile = ([string]$product.packageName) + '-advanced-pilot.zip'
 $policyPath = Join-Path $repo ('author-sdk\advanced-reference-policies\' + $policyId + '.json')
 $policy = Get-Content -Raw -Encoding UTF8 -LiteralPath $policyPath | ConvertFrom-Json
 $authorSchemaPath = Join-Path $repo 'author-sdk\schemas\dtmapi-author.schema.json'
-$authorSchema = Get-Content -Raw -Encoding UTF8 -LiteralPath $authorSchemaPath | ConvertFrom-Json
-$authorSdkApiTarget = [string]$authorSchema.'$defs'.schema2.properties.targetDtmApiVersion.const
-if ([string]::IsNullOrWhiteSpace($authorSdkApiTarget)) {
-    throw 'Author SDK schema does not declare the frozen targetDtmApiVersion const.'
+$targetCatalog = Get-AuthorSdkTargetCatalog -RepoRoot $repo
+$authorSdkApiTarget = [string]$authorProject.targetDtmApiVersion
+$sdkTargets = @($targetCatalog.targets | Where-Object { $_.apiTarget -ceq $authorSdkApiTarget -and $_.state -ceq 'available' })
+if ($sdkTargets.Count -ne 1) {
+    throw "Author SDK target catalog does not admit API target '$authorSdkApiTarget'."
 }
+$sdkVersion = [string]$sdkTargets[0].sdkVersions[0]
 
 if ([string]$manifest.UniqueID -cne $uniqueId -or
     [string]$manifest.Version -cne [string]$product.sourceVersion -or
@@ -108,13 +112,8 @@ foreach ($required in @($projectRoot, $manifestPath, $authorProjectPath, (Join-P
     }
 }
 
-if (Test-Path -LiteralPath $OutputRoot) {
-    Remove-Item -LiteralPath $OutputRoot -Recurse -Force
-}
-New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
-
 $sdkRoot = if ([string]::IsNullOrWhiteSpace($AuthorSdkRoot)) {
-    Join-Path $OutputRoot 'author-sdk'
+    Join-Path $repo '.tools/author-sdk'
 }
 else {
     if ([IO.Path]::IsPathRooted($AuthorSdkRoot)) {
@@ -124,20 +123,21 @@ else {
         [IO.Path]::GetFullPath((Join-Path $repo $AuthorSdkRoot))
     }
 }
-$sdkExe = Join-Path $sdkRoot 'DTMAPI-Author-SDK-0.1.0-win-x64\dtmapi-author.exe'
+Assert-DtmApiBuildPathsDisjoint -OutputPath $OutputRoot -InputPaths @($projectRoot, $sdkRoot, $GameDir)
+# An explicit prepared SDK is verified before any old product output is removed.
+& "$PSScriptRoot\prepare-author-sdk.ps1" -OutputRoot $sdkRoot -Check:([string]::IsNullOrWhiteSpace($AuthorSdkRoot) -eq $false)
+if (-not $?) { throw "Author SDK preparation failed for '$CatalogId'." }
+$sdkExe = Join-Path $sdkRoot "DTMAPI-Author-SDK-$sdkVersion-win-x64\dtmapi-author.exe"
+if (-not (Test-Path -LiteralPath $sdkExe -PathType Leaf)) {
+    throw "The supplied Author SDK root does not contain the frozen SDK executable for '$CatalogId': $sdkExe"
+}
+if (Test-Path -LiteralPath $OutputRoot) {
+    Remove-Item -LiteralPath $OutputRoot -Recurse -Force
+}
+New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 $buildRoot = Join-Path $OutputRoot 'build'
 $packagePath = Join-Path $OutputRoot $packageFile
 $utf8 = New-Object Text.UTF8Encoding($false)
-
-if ([string]::IsNullOrWhiteSpace($AuthorSdkRoot)) {
-    & "$PSScriptRoot\build-author-sdk.ps1" -Configuration $Configuration -OutputRoot $sdkRoot
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $sdkExe -PathType Leaf)) {
-        throw "The frozen Author SDK release could not be built for '$CatalogId'."
-    }
-}
-elseif (-not (Test-Path -LiteralPath $sdkExe -PathType Leaf)) {
-    throw "The supplied Author SDK root does not contain the frozen SDK executable for '$CatalogId': $sdkExe"
-}
 
 function Invoke-AuthorSdkJson {
     param(
@@ -160,8 +160,7 @@ function Invoke-AuthorSdkJson {
 }
 
 $validate = Invoke-AuthorSdkJson -Name 'validate-report' -Arguments @('validate', $projectRoot)
-$build = Invoke-AuthorSdkJson -Name 'build-report' -Arguments @('build', $projectRoot, '--game-root', $GameDir, '--output', $buildRoot)
-$pack = Invoke-AuthorSdkJson -Name 'pack-report' -Arguments @('pack', $projectRoot, '--game-root', $GameDir, '--output', $packagePath)
+$pack = Invoke-AuthorSdkJson -Name 'pack-report' -Arguments @('pack', $projectRoot, '--game-root', $GameDir, '--build-output', $buildRoot, '--output', $packagePath)
 if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
     throw "Author SDK did not produce the Catalog package: $packagePath"
 }
@@ -249,7 +248,7 @@ finally {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 1
+    schemaVersion = 2
     status = 'Passed'
     catalogId = $CatalogId
     uniqueId = $uniqueId
@@ -264,7 +263,9 @@ $summary = [ordered]@{
     entryDllSha256 = [string]$pack.values.entryDllSha256
     advancedReferenceReceiptSha256 = [string]$pack.values.advancedReferenceReceiptSha256
     bundledNativeDependencies = @()
-    buildOutput = [string]$build.outputPath
+    buildOutput = [string]$pack.values.buildOutputPath
+    buildInputSha256 = [string]$pack.values.buildInputSha256
+    buildReport = 'pack-report.json'
     validateFileCount = [int]$validate.fileCount
 }
 $summaryPath = Join-Path $OutputRoot 'summary.json'

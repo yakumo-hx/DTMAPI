@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "distributionId": "dtmapi-multiplatform",
+  "packageName": "DTMAPI-多平台",
+  "displayName": "DTMAPI-多平台",
+  "installerVersion": "0.1.0-experimental",
+  "runtimeVersion": "0.6.1",
+  "steamAppId": "2285550",
+  "workshopId": "3792681186",
+  "sourceRuntimeWorkshopId": "3743016467",
+  "sourceRuntimeWorkshopManifestId": "918505309011394484",
+  "sourcePlayerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+  "windowsHostPackagePath": "DTMAPI-MultiPlatform-Installer.exe",
+  "linuxHostPackagePath": "Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer",
+  "hostManifestPackagePath": "Content/DTMAPIInstaller/hosts/host-artifacts.json",
+  "runtimePackageManifestPath": "Content/DTMAPIInstaller/multiplatform-package.json",
+  "requiredLinuxLaunchOption": "WINEDLLOVERRIDES=\"winhttp=n,b\" %command%",
+  "requiredSteamDescriptionLead": "DTMAPI-MP是 DTMAPI 多平台安装包，同时支持Steam Deck、普通 Linux x64、Windows x64，并为 macOS CrossOver 提供待实验入口。",
+  "localizedDisclosureMarkers": {
+    "schinese": ["未代码签名", "多洛可小镇的创意工坊"],
+    "tchinese": ["未經程式碼簽署", "Steam 創意工坊"],
+    "english": ["not code-signed", "Doloc Town Steam Workshop"]
+  },
+  "crossOverDllOverride": "winhttp=n,b"
+}

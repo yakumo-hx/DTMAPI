@@ -1,0 +1,9 @@
+# DTMAPI Runtime Smoke Matrix History: 2026-07-31 Through 2026-08-01
+
+These rows were moved unchanged from the active matrix on 2026-08-09 to keep
+the active runtime router within its governed size limit.
+
+| ID | Date | Scope | Result | Runtime evidence | Related issue/update | Remaining gap |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PRERELEASE-055-ALL-FUNCTIONAL-LONG-IDLE-20260731-013049` | 2026-07-31 | frozen `f96c9cc6` + 11 functional products | passed | Exact loads/Manbo WAV; 3,600-second title -> slot 3 for 15 seconds -> title. NoNativeSave/sidecar/Fatal/exit passed. All 120 OS samples responded; trailing 30-minute working/private deltas were `+0.016/+0.008 MiB`, handles/threads bounded. | `ISSUE-010`; Review `20260731-0001` | Bounded route; one recovered startup frame fallback. No long gameplay or memory budget; issue remains open. |
+| `ZOOM-Z1-D4-DEBUGCONSOLE-20260801-033908` | 2026-08-01 | current 12-item player profile; Zoom Z1, D4 modal input/update and DebugConsole cleanup | passed | Runtime `80ae07c85ec5` `GAME-SMOKE/20260801-033908` proves `16.875/33.75/67.5`, `4x -> native refresh -> 2x`, exact three-patch/two-target Zoom ownership, eight Y opens, Escape/Y/ten-short-tap/held-key input, two title-time zero DebugConsole UI graphs and real Loader zero owner roots. Slot-3 archive and committed sidecars are unchanged before cleanup; three logs contain zero Error/Warning records and the process exits. Later changes through installed provenance `4eb2fbe26f25` are QA/test/runner-only. | Update `20260801-0001`; Manual-QA Review `20260801-0001`; Camera map; input lifetime contract | Focused automated candidate only. The final provenance-only rebuild was Doctor-checked but not relaunched. User confirmation of moving-player 4x follow/flicker, immediate item-list redraw, hidden controls and all twelve products remains open; no complete Release was run. |

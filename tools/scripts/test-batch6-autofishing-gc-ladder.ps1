@@ -56,7 +56,12 @@ try {
     . $transaction
     $runnerText = Get-Text $runner
     $transactionText = Get-Text $transaction
-    $smokeText = Get-Text $smoke
+    $smokeQaHostText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/core/qa-host.ps1')
+    $smokeInputText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/scenarios/desktop-input.ps1')
+    $smokeExerciseText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/phases/exercise-session.ps1')
+    $smokeDeployText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/phases/deploy-session.ps1')
+    $smokeRestoreText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/phases/restore-session.ps1')
+    $smokeSessionText = Get-Text (Join-Path $PSScriptRoot 'game-smoke/phases/run-session.ps1')
     $recoveryDriverText = Get-Text $recoveryDriver
     $pilotCoordinatorText = Get-Text $pilotCoordinator
     $pilotSettingsText = Get-Text $pilotSettings
@@ -129,25 +134,25 @@ try {
     foreach ($setting in @('Batch6AutoFishingEnabled','Batch6AutoFishingLevel','Batch6AutoFishingScenario','Batch6AutoFishingMeasureSeconds',
         'Batch6AutoFishingSampleSeconds','Batch6AutoFishingWarmupFish','Batch6AutoFishingTargetFish','Batch6AutoFishingFormal','Batch6AutoFishingMultiplier',
         'Batch6AutoFishingExpectedPackageSha256','Batch6AutoFishingExpectedEntrySha256','Batch6AutoFishingExpectedManifestSha256','Batch6AutoFishingExpectedPolicySha256')) {
-        Assert-True ($smokeText.Contains($setting)) "Smoke runner is missing QA setting $setting."
+        Assert-True ($smokeQaHostText.Contains($setting)) "Smoke QA-host module is missing setting $setting."
     }
-    Assert-True ($smokeText.Contains('Batch6AutoFishingPilot = [ordered]@{') -and
-        $smokeText.Contains('Formal = [bool]$Batch6AutoFishingFormal') -and
-        $smokeText.Contains('ExpectedEntryDllSha256 = $Batch6AutoFishingExpectedEntrySha256') -and
-        $smokeText.Contains('ExpectedReferencePolicySha256 = $Batch6AutoFishingExpectedPolicySha256')) 'QA settings must serialize the exact nested product-owned pilot contract.'
+    Assert-True ($smokeQaHostText.Contains('Batch6AutoFishingPilot = [ordered]@{') -and
+        $smokeQaHostText.Contains('Formal = [bool]$Batch6AutoFishingFormal') -and
+        $smokeQaHostText.Contains('ExpectedEntryDllSha256 = $Batch6AutoFishingExpectedEntrySha256') -and
+        $smokeQaHostText.Contains('ExpectedReferencePolicySha256 = $Batch6AutoFishingExpectedPolicySha256')) 'QA settings must serialize the exact nested product-owned pilot contract.'
     foreach ($hook in @('awaiting-initial-enable-toggle','awaiting-disable-toggle','l4-qa-recovery-active','awaiting-title','awaiting-fifth-save-reentry','awaiting-reentry-enable-toggle','awaiting-final-disable-toggle','Smoke.Batch6.AutoFishingPilot = verified.','Smoke.Batch6.AutoFishingPilot.Cleanup = verified.')) {
-        Assert-True ($smokeText.Contains($hook)) "Smoke runner is missing exact hook handshake $hook."
+        Assert-True ($smokeExerciseText.Contains($hook)) "Smoke exercise phase is missing exact hook handshake $hook."
     }
-    Assert-True ($smokeText.Contains('ForegroundMatchedAtSend') -and $smokeText.Contains('SendInputSucceeded') -and
-        $smokeText.Contains('PostMessageFallbackUsed') -and $smokeText.Contains('batch6-autofishing-runner-input.json') -and
-        $smokeText.Contains("[ValidateSet('F6','F7','A')] [string] `$Key = 'F6'") -and
-        $smokeText.Contains("[ValidateSet('ConfiguredToggle','ManualMovement')] [string] `$Purpose = 'ConfiguredToggle'") -and
-        $smokeText.Contains("PreflightMode = 'DirectReadOnlyNoInput'") -and
-        $smokeText.Contains('PreflightInputCount = [int]$preflightInputs.Count') -and
-        $smokeText.Contains('$batch6AutoFishingDirectNeutralStabilityMilliseconds = 1000') -and
-        $smokeText.Contains('([datetimeoffset]$enableHandshakesForState[0].CompletedAtUtc) -le ([datetimeoffset]$enableInputsForState[0].KeyDownAt)') -and
-        -not $smokeText.Contains("-Purpose 'FacingRightPreflight'") -and
-        -not $smokeText.Contains("-Purpose 'NativeNeutralReset'") -and
+    Assert-True ($smokeInputText.Contains('ForegroundMatchedAtSend') -and $smokeInputText.Contains('SendInputSucceeded') -and
+        $smokeInputText.Contains('PostMessageFallbackUsed') -and $smokeExerciseText.Contains('batch6-autofishing-runner-input.json') -and
+        $smokeInputText.Contains("[ValidateSet('F6','F7','A')] [string] `$Key = 'F6'") -and
+        $smokeInputText.Contains("[ValidateSet('ConfiguredToggle','ManualMovement')] [string] `$Purpose = 'ConfiguredToggle'") -and
+        $smokeExerciseText.Contains("PreflightMode = 'DirectReadOnlyNoInput'") -and
+        $smokeExerciseText.Contains('PreflightInputCount = [int]$preflightInputs.Count') -and
+        $smokeExerciseText.Contains('$batch6AutoFishingDirectNeutralStabilityMilliseconds = 1000') -and
+        $smokeExerciseText.Contains('([datetimeoffset]$enableHandshakesForState[0].CompletedAtUtc) -le ([datetimeoffset]$enableInputsForState[0].KeyDownAt)') -and
+        -not $smokeExerciseText.Contains("-Purpose 'FacingRightPreflight'") -and
+        -not $smokeExerciseText.Contains("-Purpose 'NativeNeutralReset'") -and
         $pilotCoordinatorText.Contains('Batch6AutoFishingDirectNeutralPreflightGate') -and
         $pilotCoordinatorText.Contains('DirectNeutralPreconditionObserved') -and
         $pilotCoordinatorText.Contains('LoadContactPendingObservationCount') -and
@@ -169,8 +174,16 @@ try {
         $nativeEvidenceText.Contains('DataMember(Name = "isTouched"') -and
         $nativeEvidenceText.Contains('DataMember(Name = "groupSpeedX"')) `
         'Batch 6 fifth-save preflight must capture direct read-only native surface/offset evidence, bound same-position load-contact settling, send no D/Escape input, preserve grounded native-parity neutral for 1000 ms, and only then bind the configured toggle to foreground/SendInput/no-fallback provenance.'
-    Assert-True ($smokeText.Contains('$usesAutoFishingConfigSmoke') -and $smokeText.Contains('$Batch6AutoFishingMultiplier') -and
-        $smokeText.Contains("'F6'")) 'Batch 6 must participate in the exact AutoFishing config backup/restore transaction.'
+    Assert-True ($smokeDeployText.Contains('$usesAutoFishingConfigSmoke') -and $smokeDeployText.Contains('$Batch6AutoFishingMultiplier') -and
+        $smokeDeployText.Contains('ToggleKey = $autoFishingToggleKeyEffective') -and
+        $smokeDeployText.Contains('Copy-Item -Force -LiteralPath $autoFishingConfigPath -Destination $autoFishingConfigBackup') -and
+        $smokeRestoreText.Contains('Copy-Item -Force -LiteralPath $autoFishingConfigBackup -Destination $autoFishingConfigPath') -and
+        $smokeRestoreText.Contains('Remove-Item -Force -LiteralPath $autoFishingConfigPath')) 'Batch 6 deployment and restoration phases must preserve the exact AutoFishing config transaction.'
+    $deployCall = $smokeSessionText.IndexOf("'phases/deploy-session.ps1'", [StringComparison]::Ordinal)
+    $exerciseCall = $smokeSessionText.IndexOf("'phases/exercise-session.ps1'", [StringComparison]::Ordinal)
+    $restoreCall = $smokeSessionText.IndexOf("'phases/restore-session.ps1'", [StringComparison]::Ordinal)
+    $finallyStart = $smokeSessionText.IndexOf('finally {', [StringComparison]::Ordinal)
+    Assert-True ($deployCall -ge 0 -and $exerciseCall -gt $deployCall -and $finallyStart -gt $exerciseCall -and $restoreCall -gt $finallyStart) 'The session facade must exercise only after deployment and restore configuration in finally.'
     Assert-True ($recoveryDriverText.Contains('IsNormalGameState()') -and
         $recoveryDriverText.Contains('context.Verified') -and
         $recoveryDriverText.Contains('snapshot.NativeCanCast && snapshot.HasSelectedRod') -and

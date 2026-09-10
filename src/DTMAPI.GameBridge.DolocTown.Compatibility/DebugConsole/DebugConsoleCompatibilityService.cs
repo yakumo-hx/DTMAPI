@@ -58,8 +58,14 @@ namespace DTMAPI.DebugConsole
 
         public void SetLanguage(
             IManifest owner,
-            string language) =>
-            ui.SetLanguage(owner, language);
+            string language)
+        {
+            WarnFrozen();
+            runtime.Monitor.LogOnce(
+                "debug-console-compat-language-ignored",
+                "The frozen DebugConsole SetLanguage call is retained for ABI compatibility but the UI now follows the game language.",
+                LogLevel.Info);
+        }
 
         public void Open(IManifest owner, string reason) =>
             ui.Open(owner, reason);
@@ -119,7 +125,7 @@ namespace DTMAPI.DebugConsole
                 return;
             warningLogged = true;
             runtime.Monitor.Log(
-                "Loaded frozen DebugConsole 0.3.1 compatibility UI. Install/update the SDK-generated 1.0 Advanced product to use ProductNative ownership.",
+                "Loaded frozen DebugConsole 0.3.1 compatibility UI. Install/update the SDK-generated 1.1 Advanced product to use ProductNative ownership.",
                 LogLevel.Warn);
         }
     }

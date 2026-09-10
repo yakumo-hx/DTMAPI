@@ -45,9 +45,8 @@ namespace DTMAPI.DebugConsole
         public IDebugConsoleInputRuntime Input => this;
         public IDebugConsoleModalRuntime UI => this;
         public ITranslationHelper Translation => translation;
-        public string ApiVersion => DtmApiRuntime.ApiVersion;
+        public string ProductVersion => "0.3.1-dtmapi";
         public string DtmApiPath => runtime.Paths.DtmApiPath;
-        public string EvidencePath => runtime.Paths.EvidencePath;
         public bool IsOpen => runtime.UI.IsOpen &&
             runtime.UI.ActiveMenuId.Equals(
                 "DTMAPI.DebugConsole",
@@ -139,6 +138,9 @@ namespace DTMAPI.DebugConsole
 
         public IContentItemInfo? GetIndexedItem(string itemId) =>
             runtime.GetIndexedContentItem(itemId);
+
+        public IReadOnlyList<AnimalContentSource> GetAnimalContentSources() =>
+            Array.Empty<AnimalContentSource>();
 
         public void SetCreativeHookDemand(bool enabled) =>
             hooks.SetCreativeEnabled(enabled);

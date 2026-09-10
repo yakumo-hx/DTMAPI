@@ -42,6 +42,7 @@ internal static class DeploymentService
 
     public static CommandReport Deploy(ParsedCommand command) => ExecutePackageOperation(command, "deploy");
     public static CommandReport Update(ParsedCommand command) => ExecutePackageOperation(command, "update");
+    public static CommandReport OfficialPackage(ParsedCommand command, string operation) => ExecutePackageOperation(command, operation, official: true);
 
     public static CommandReport InstallLocalStatus(ParsedCommand command)
     {
@@ -106,7 +107,7 @@ internal static class DeploymentService
             {
                 throw new InvalidDataException("Committed manifest identity/version does not match the expected local install.");
             }
-            string sourceTreeSha256 = SourceStateService.VerifyLocalInstall(
+            string sourceTreeSha256 = IsOfficial(journal) ? AuthorFileTreeDigest.Compute(journal.DestinationPath) : SourceStateService.VerifyLocalInstall(
                 gameRoot,
                 uniqueId,
                 journal.DestinationPath);
@@ -122,7 +123,8 @@ internal static class DeploymentService
             report.Values["journalPath"] = journalPath;
             report.Values["sourceStatePath"] = AuthorStatePaths.SourceStatePath(gameRoot);
             report.Values["sourceTreeSha256"] = sourceTreeSha256;
-            report.Values["status"] = "CommittedLocalDevelopment";
+            report.Values["status"] = IsOfficial(journal) ? "CommittedOfficialLocal" : "CommittedLocalDevelopment";
+            if (IsOfficial(journal)) OfficialLocalPaths.AddStatus(report, uniqueId);
             report.Diagnostics.Add(Info(
                 "SDK400",
                 "Reconciled the exact committed package, deployment journal and Local Development source without replaying a mutation."));
@@ -514,6 +516,7 @@ internal static class DeploymentService
             using GameOperationLock operationLock = GameOperationLock.Acquire(gameRoot);
             DeploymentJournal journal = LoadRequiredJournal(gameRoot, uniqueId);
             ValidateJournal(journal, gameRoot, uniqueId, null);
+            using ColdGameMutationLease? cold = IsOfficial(journal) ? ColdGameMutationLease.Acquire(gameRoot) : null;
             bool recovered = RecoverLocalInstall(journal, gameRoot);
             if (!recovered)
                 recovered = RecoverPrepared(journal, gameRoot);
@@ -579,6 +582,7 @@ internal static class DeploymentService
             report.Values["journalPath"] = AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId);
             report.Values["treeSha256"] = journal.Committed?.Inventory.TreeSha256 ?? string.Empty;
             report.Values["recoveryArtifacts"] = journal.RecoveryArtifacts.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (IsOfficial(journal)) OfficialLocalPaths.AddStatus(report, uniqueId);
             report.Diagnostics.Add(Info("SDK400", "Deployment status was read without changing the package."));
         }
         catch (Exception ex)
@@ -588,23 +592,39 @@ internal static class DeploymentService
         return Finish(report);
     }
 
-    private static CommandReport ExecutePackageOperation(ParsedCommand command, string operation)
+    private static CommandReport ExecutePackageOperation(ParsedCommand command, string operation, bool official = false)
     {
-        command.RequireOnlyOptions("game-root");
+        if (operation == "install-local") command.RequireOnlyOptions("game-root", "expected-unique-id", "expected-version", "expected-package-sha256");
+        else command.RequireOnlyOptions("game-root");
         if (command.Positionals.Count != 1)
             throw new CommandLineException(operation + " requires one package ZIP and --game-root.");
         string gameRoot = RequireGameRoot(command);
         string packagePath = Path.GetFullPath(command.Positionals[0]);
         var report = NewReport(operation, gameRoot);
         string transactionId = Guid.NewGuid().ToString("N");
-        string modsRoot = EnsureModsRoot(gameRoot);
+        string modsRoot = official ? OfficialLocalPaths.ModsRoot : EnsureModsRoot(gameRoot);
         string stagingPath = Path.Combine(HiddenRoot(modsRoot), "staging", transactionId);
         string uniqueId = string.Empty;
+        ColdGameMutationLease? cold = null;
+        GameOperationLock? operationLock = null;
         try
         {
-            using GameOperationLock operationLock = GameOperationLock.Acquire(gameRoot);
-            StagedDeploymentPackage package = DeploymentPackage.ExtractAndReceipt(packagePath, stagingPath, gameRoot, AuthorStatePaths.GameRootKey(gameRoot), transactionId);
+            operationLock = GameOperationLock.Acquire(gameRoot);
+            cold = official ? ColdGameMutationLease.Acquire(gameRoot) : null;
+            if (Directory.Exists(modsRoot)) PathSafety.RejectReparsePoints(modsRoot, Array.Empty<string>());
+            StagedDeploymentPackage package = DeploymentPackage.ExtractAndReceipt(packagePath, stagingPath, gameRoot, AuthorStatePaths.GameRootKey(gameRoot), transactionId, official);
             uniqueId = package.Manifest.UniqueID;
+            if (operation == "install-local")
+            {
+                if (command.Option("expected-unique-id") != uniqueId || command.Option("expected-version") != package.Manifest.Version ||
+                    !command.Option("expected-package-sha256").Equals(package.PackageSha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Exact expected UniqueID/version/package hash is required and must match.");
+                string existing = AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId);
+                operation = File.Exists(existing) && ReadJournal(existing).Committed != null ? "update" : "deploy";
+            }
+            if (official && File.Exists(AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId)) &&
+                ReadJournal(AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId)).SchemaVersion != AuthorSdkContract.OfficialDeploymentJournalSchemaVersion)
+                throw new InvalidDataException("Historical deployment exists. Recover/withdraw it first; official install cannot adopt or update a legacy journal.");
             AuthorFaultInjector.Hit(operation + ".after-stage");
             if (operation == "deploy")
                 ExecuteDeploy(gameRoot, modsRoot, package, report);
@@ -619,7 +639,8 @@ internal static class DeploymentService
             report.Values["packageKind"] = package.PackageKind;
             report.Values["codeModKind"] = package.CodeModKind;
             report.Values["journalPath"] = AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId);
-            report.Diagnostics.Insert(0, Info("SDK400", operation == "deploy" ? "Published a new receipt-bound package under game/Mods." : "Committed a receipt-bound package update and retained the prior exact tree in recovery."));
+            if (official) OfficialLocalPaths.AddStatus(report, uniqueId);
+            report.Diagnostics.Insert(0, Info("SDK400", "Committed receipt-bound " + operation + (official ? " in official MODS. Enable it in the official game UI." : " in historical game/Mods.")));
         }
         catch (SimulatedAuthorCrashException ex)
         {
@@ -629,19 +650,27 @@ internal static class DeploymentService
         catch (Exception ex)
         {
             report.Diagnostics.Add(Error("SDK404", ex.Message, uniqueId.Length > 0 ? AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId) : stagingPath));
-            if (uniqueId.Length > 0)
+            if (uniqueId.Length > 0 && (!official || cold != null))
                 TryRollbackAfterFailure(gameRoot, uniqueId, report);
             if (Directory.Exists(stagingPath))
                 report.Values["preservedStagingPath"] = stagingPath;
         }
+        finally { cold?.Dispose(); operationLock?.Dispose(); }
         return Finish(report);
     }
 
     private static void ExecuteLocked(CommandReport report, string gameRoot, string uniqueId, Action action)
     {
+        ColdGameMutationLease? cold = null;
+        GameOperationLock? operationLock = null;
+        bool mayRecover = false;
         try
         {
-            using GameOperationLock operationLock = GameOperationLock.Acquire(gameRoot);
+            operationLock = GameOperationLock.Acquire(gameRoot);
+            DeploymentJournal existing = LoadRequiredJournal(gameRoot, uniqueId);
+            ValidateJournal(existing, gameRoot, uniqueId, null);
+            cold = IsOfficial(existing) ? ColdGameMutationLease.Acquire(gameRoot) : null;
+            mayRecover = true;
             action();
             report.Success = true;
         }
@@ -653,8 +682,9 @@ internal static class DeploymentService
         catch (Exception ex)
         {
             report.Diagnostics.Add(Error("SDK405", ex.Message, AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId)));
-            TryRollbackAfterFailure(gameRoot, uniqueId, report);
+            if (mayRecover) TryRollbackAfterFailure(gameRoot, uniqueId, report);
         }
+        finally { cold?.Dispose(); operationLock?.Dispose(); }
     }
 
     private static void ExecuteDeploy(string gameRoot, string modsRoot, StagedDeploymentPackage package, CommandReport report)
@@ -779,7 +809,7 @@ internal static class DeploymentService
             throw new InvalidDataException("Recovered an earlier prepared transaction. Re-run withdraw explicitly.");
         }
         DeploymentRecord previous = VerifyCommitted(journal);
-        string modsRoot = EnsureModsRoot(gameRoot);
+        string modsRoot = IsOfficial(journal) ? OfficialLocalPaths.ModsRoot : EnsureModsRoot(gameRoot);
         string transactionId = Guid.NewGuid().ToString("N");
         string recoveryPath = Path.Combine(HiddenRoot(modsRoot), "recovery", uniqueId + "-" + previous.TransactionId + "-withdraw-" + transactionId);
         EnsureMoveTargetAbsent(recoveryPath);
@@ -1362,7 +1392,7 @@ internal static class DeploymentService
         if (journal.SchemaVersion == LegacyDeploymentSchemaVersion && receipt.SchemaVersion != LegacyDeploymentSchemaVersion)
             throw new InvalidDataException("Legacy schema-1 journal cannot authorize a non-historical schema-2 receipt/package binding.");
         DeploymentTreeInventory payload = DeploymentTree.Create(journal.DestinationPath, excludeReceipt: true);
-        string expectedRelative = "Mods/" + journal.UniqueId;
+        string expectedRelative = (IsOfficial(journal) ? "OfficialLocal/" : "Mods/") + journal.UniqueId;
         bool legacy = receipt.SchemaVersion == LegacyDeploymentSchemaVersion;
         ValidatedPackageBinding binding = DeploymentPackage.ValidateInstalledPackage(
             journal.DestinationPath,
@@ -1467,6 +1497,7 @@ internal static class DeploymentService
             LegacyDeploymentSchemaVersion => LegacyJournalProperties,
             AuthorSdkContract.DeploymentSchemaVersion => CurrentJournalProperties,
             AuthorSdkContract.DeploymentJournalSchemaVersion => CompositeJournalProperties,
+            AuthorSdkContract.OfficialDeploymentJournalSchemaVersion => CompositeJournalProperties,
             _ => throw new InvalidDataException(Path.GetFileName(path) + " has an unsupported deployment journal schemaVersion.")
         };
         string[] actual = document.RootElement.EnumerateObject()
@@ -1525,8 +1556,8 @@ internal static class DeploymentService
     {
         string canonical = AuthorStatePaths.CanonicalGameRoot(gameRoot);
         string key = AuthorStatePaths.GameRootKey(canonical);
-        string destination = Path.Combine(canonical, "Mods", uniqueId);
-        if (journal.SchemaVersion is not (LegacyDeploymentSchemaVersion or AuthorSdkContract.DeploymentSchemaVersion or AuthorSdkContract.DeploymentJournalSchemaVersion)
+        string destination = IsOfficial(journal) ? OfficialLocalPaths.Destination(uniqueId) : Path.Combine(canonical, "Mods", uniqueId);
+        if (journal.SchemaVersion is not (LegacyDeploymentSchemaVersion or AuthorSdkContract.DeploymentSchemaVersion or AuthorSdkContract.DeploymentJournalSchemaVersion or AuthorSdkContract.OfficialDeploymentJournalSchemaVersion)
             || !PathsEqual(journal.GameRoot, canonical)
             || !journal.GameRootKey.Equals(key, StringComparison.Ordinal)
             || !journal.UniqueId.Equals(uniqueId, StringComparison.Ordinal)
@@ -1547,11 +1578,12 @@ internal static class DeploymentService
         if (journal.Active == null && journal.Committed == null && journal.Status is not ("Absent" or "Withdrawn"))
             throw new InvalidDataException("External journal empty record has an invalid status.");
         PathSafety.RejectBepInExPluginDestination(journal.DestinationPath);
+        PathSafety.RejectReparsePoints(Path.GetDirectoryName(journal.DestinationPath)!, new[] { journal.DestinationPath }.Where(path => Directory.Exists(path)));
     }
 
     private static void ValidateActivePaths(DeploymentJournal journal, DeploymentTransaction active, string gameRoot)
     {
-        string modsRoot = Path.Combine(AuthorStatePaths.CanonicalGameRoot(gameRoot), "Mods");
+        string modsRoot = IsOfficial(journal) ? OfficialLocalPaths.ModsRoot : Path.Combine(AuthorStatePaths.CanonicalGameRoot(gameRoot), "Mods");
         string hidden = HiddenRoot(modsRoot);
         string expectedStage = Path.Combine(hidden, "staging", active.TransactionId);
         string expectedFailed = Path.Combine(hidden, "failed", journal.UniqueId + "-" + active.TransactionId);
@@ -1580,7 +1612,7 @@ internal static class DeploymentService
 
     private static DeploymentJournal NewJournal(string gameRoot, string uniqueId, string packageKind, string codeModKind, string destination) => new()
     {
-        SchemaVersion = AuthorSdkContract.DeploymentJournalSchemaVersion,
+        SchemaVersion = PathsEqual(destination, OfficialLocalPaths.Destination(uniqueId)) ? AuthorSdkContract.OfficialDeploymentJournalSchemaVersion : AuthorSdkContract.DeploymentJournalSchemaVersion,
         GameRoot = AuthorStatePaths.CanonicalGameRoot(gameRoot),
         GameRootKey = AuthorStatePaths.GameRootKey(gameRoot),
         UniqueId = uniqueId,
@@ -1614,7 +1646,8 @@ internal static class DeploymentService
 
     private static void WriteJournal(string path, DeploymentJournal journal, string point)
     {
-        journal.SchemaVersion = AuthorSdkContract.DeploymentJournalSchemaVersion;
+        if (journal.SchemaVersion != AuthorSdkContract.OfficialDeploymentJournalSchemaVersion)
+            journal.SchemaVersion = AuthorSdkContract.DeploymentJournalSchemaVersion;
         if (journal.PackageKind == "CodeMod" && journal.CodeModKind is not ("Strict" or "Advanced"))
             throw new InvalidDataException("Cannot write a CodeMod journal without an explicit schema-2 CodeModKind.");
         if (journal.PackageKind == "ContentPack" && journal.CodeModKind.Length != 0)
@@ -1628,7 +1661,8 @@ internal static class DeploymentService
     {
         try
         {
-            using GameOperationLock operationLock = GameOperationLock.Acquire(gameRoot);
+            // Both callers retain their operation lock (and official cold-game
+            // lease) through this rollback. Reacquiring would reject ourselves.
             string path = AuthorStatePaths.DeploymentJournalPath(gameRoot, uniqueId);
             if (!File.Exists(path))
                 return;
@@ -1819,6 +1853,7 @@ internal static class DeploymentService
     }
 
     private static string HiddenRoot(string modsRoot) => Path.Combine(modsRoot, ".dtmapi-author");
+    private static bool IsOfficial(DeploymentJournal journal) => journal.SchemaVersion == AuthorSdkContract.OfficialDeploymentJournalSchemaVersion;
     private static bool PathsEqual(string left, string right) => string.Equals(Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), StringComparison.OrdinalIgnoreCase);
 
     private static CommandReport NewReport(string command, string gameRoot) => new() { Command = command, RootPath = AuthorStatePaths.CanonicalGameRoot(gameRoot) };

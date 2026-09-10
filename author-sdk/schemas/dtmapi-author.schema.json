@@ -3,24 +3,55 @@
   "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/dtmapi-author.schema.json",
   "title": "DTMAPI Author SDK project metadata",
   "oneOf": [
-    { "$ref": "#/$defs/schema1" },
-    { "$ref": "#/$defs/schema2" }
+    {
+      "$ref": "#/$defs/schema1"
+    },
+    {
+      "$ref": "#/$defs/schema2"
+    },
+    {
+      "$ref": "#/$defs/schema3"
+    }
   ],
   "$defs": {
     "publish": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tags", "localizedName", "localizedDescription"],
+      "required": [
+        "tags",
+        "localizedName",
+        "localizedDescription"
+      ],
       "properties": {
-        "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
-        "localizedName": { "type": "object", "additionalProperties": { "type": "string" } },
-        "localizedDescription": { "type": "object", "additionalProperties": { "type": "string" } }
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "localizedName": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "localizedDescription": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
       }
     },
     "advanced": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["referencePolicyId", "references"],
+      "required": [
+        "referencePolicyId",
+        "references"
+      ],
       "properties": {
         "referencePolicyId": {
           "type": "string",
@@ -31,51 +62,375 @@
           "minItems": 2,
           "maxItems": 2,
           "uniqueItems": true,
-          "items": { "enum": ["0Harmony", "Assembly-CSharp"] }
+          "items": {
+            "enum": [
+              "0Harmony",
+              "Assembly-CSharp"
+            ]
+          }
         }
       }
     },
     "schema1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "projectKind", "targetRuntimeVersion", "sourceDirectory", "contentDirectory", "assemblyName", "publish"],
+      "required": [
+        "schemaVersion",
+        "projectKind",
+        "targetRuntimeVersion",
+        "sourceDirectory",
+        "contentDirectory",
+        "assemblyName",
+        "publish"
+      ],
       "properties": {
-        "schemaVersion": { "const": 1 },
-        "projectKind": { "enum": ["CodeMod", "ContentPack"] },
-        "targetRuntimeVersion": { "const": "0.5.5" },
-        "sourceDirectory": { "type": "string", "minLength": 1 },
-        "contentDirectory": { "type": "string", "minLength": 1 },
-        "assemblyName": { "type": "string" },
-        "publish": { "$ref": "#/$defs/publish" }
+        "schemaVersion": {
+          "const": 1
+        },
+        "projectKind": {
+          "enum": [
+            "CodeMod",
+            "ContentPack"
+          ]
+        },
+        "targetRuntimeVersion": {
+          "const": "0.5.5"
+        },
+        "sourceDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assemblyName": {
+          "type": "string"
+        },
+        "publish": {
+          "$ref": "#/$defs/publish"
+        }
       }
     },
     "schema2": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "projectKind", "targetDtmApiVersion", "sourceDirectory", "contentDirectory", "assemblyName", "publish"],
+      "required": [
+        "schemaVersion",
+        "projectKind",
+        "targetDtmApiVersion",
+        "sourceDirectory",
+        "contentDirectory",
+        "assemblyName",
+        "publish"
+      ],
       "properties": {
-        "schemaVersion": { "const": 2 },
-        "projectKind": { "enum": ["CodeMod", "ContentPack"] },
-        "targetDtmApiVersion": { "const": "0.5.5" },
-        "codeModKind": { "enum": ["Strict", "Advanced"] },
-        "sourceDirectory": { "type": "string", "minLength": 1 },
-        "contentDirectory": { "type": "string", "minLength": 1 },
-        "assemblyName": { "type": "string" },
-        "advanced": { "$ref": "#/$defs/advanced" },
-        "publish": { "$ref": "#/$defs/publish" }
+        "schemaVersion": {
+          "const": 2
+        },
+        "projectKind": {
+          "enum": [
+            "CodeMod",
+            "ContentPack"
+          ]
+        },
+        "targetDtmApiVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "API target selected from target-catalog.json. The CLI additionally requires state=available and validates the minimum Runtime; planned targets cannot build or pack."
+        },
+        "codeModKind": {
+          "enum": [
+            "Strict",
+            "Advanced"
+          ]
+        },
+        "sourceDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assemblyName": {
+          "type": "string"
+        },
+        "advanced": {
+          "$ref": "#/$defs/advanced"
+        },
+        "publish": {
+          "$ref": "#/$defs/publish"
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "projectKind": { "const": "ContentPack" } }, "required": ["projectKind"] },
-          "then": { "not": { "anyOf": [{ "required": ["codeModKind"] }, { "required": ["advanced"] }] } }
+          "if": {
+            "properties": {
+              "projectKind": {
+                "const": "ContentPack"
+              }
+            },
+            "required": [
+              "projectKind"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "codeModKind"
+                  ]
+                },
+                {
+                  "required": [
+                    "advanced"
+                  ]
+                }
+              ]
+            }
+          }
         },
         {
-          "if": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] },
-          "then": { "properties": { "projectKind": { "const": "CodeMod" } }, "required": ["advanced"] }
+          "if": {
+            "properties": {
+              "codeModKind": {
+                "const": "Advanced"
+              }
+            },
+            "required": [
+              "codeModKind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "projectKind": {
+                "const": "CodeMod"
+              }
+            },
+            "required": [
+              "advanced"
+            ]
+          }
         },
         {
-          "if": { "not": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] } },
-          "then": { "not": { "required": ["advanced"] } }
+          "if": {
+            "not": {
+              "properties": {
+                "codeModKind": {
+                  "const": "Advanced"
+                }
+              },
+              "required": [
+                "codeModKind"
+              ]
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "advanced"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "schema3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectKind",
+        "targetDtmApiVersion",
+        "sourceDirectory",
+        "contentDirectory",
+        "assemblyName",
+        "publish",
+        "managedReferences"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 3
+        },
+        "projectKind": {
+          "enum": [
+            "CodeMod",
+            "ContentPack"
+          ]
+        },
+        "targetDtmApiVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "API target selected from target-catalog.json. The CLI additionally requires state=available and validates the minimum Runtime; planned targets cannot build or pack."
+        },
+        "codeModKind": {
+          "enum": [
+            "Strict",
+            "Advanced"
+          ]
+        },
+        "sourceDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assemblyName": {
+          "type": "string"
+        },
+        "publish": {
+          "$ref": "#/$defs/publish"
+        },
+        "managedReferences": {
+          "items": {
+            "required": [
+              "path",
+              "role",
+              "distribution",
+              "licenseFiles"
+            ],
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "role": {
+                "enum": [
+                  "shared-contract",
+                  "private-managed"
+                ]
+              },
+              "licenseFiles": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "distribution": {
+                "enum": [
+                  "self-authored",
+                  "licensed-third-party"
+                ]
+              },
+              "path": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          },
+          "type": "array"
+        },
+        "nativeReferences": {
+          "additionalProperties": false,
+          "properties": {
+            "gameRoot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "references": {
+              "uniqueItems": true,
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "requiredMembers": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "dtmapi-native-build.schema.json#/$defs/member"
+                  },
+                  {
+                    "$ref": "dtmapi-native-build.schema.json#/$defs/genericUse"
+                  }
+                ]
+              }
+            },
+            "harmonyOwner": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "gameRoot",
+            "references",
+            "harmonyOwner",
+            "requiredMembers"
+          ],
+          "type": "object"
+        },
+        "build": {
+          "$ref": "dtmapi-build.schema.json"
+        }
+      },
+      "allOf": [
+        {
+          "then": {
+            "required": [
+              "nativeReferences"
+            ],
+            "properties": {
+              "projectKind": {
+                "const": "CodeMod"
+              }
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "nativeReferences"
+              ]
+            }
+          },
+          "if": {
+            "required": [
+              "codeModKind"
+            ],
+            "properties": {
+              "codeModKind": {
+                "const": "Advanced"
+              }
+            }
+          }
+        },
+        {
+          "then": {
+            "not": {
+              "required": [
+                "codeModKind"
+              ]
+            }
+          },
+          "if": {
+            "required": [
+              "projectKind"
+            ],
+            "properties": {
+              "projectKind": {
+                "const": "ContentPack"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "build"
+            ]
+          },
+          "then": {
+            "properties": {
+              "projectKind": {
+                "const": "CodeMod"
+              }
+            }
+          }
         }
       ]
     }

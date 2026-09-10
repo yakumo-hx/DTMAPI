@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>zoom</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/TextAssertions.cs" Link="Shared/TextAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/ZoomConfig.cs" Link="Zoom/ZoomConfig.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/Native/ZoomProductContract.cs" Link="Zoom/ZoomProductContract.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/Native/ZoomHookOwnership.cs" Link="Zoom/ZoomHookOwnership.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/Native/ZoomHookTransaction.cs" Link="Zoom/ZoomHookTransaction.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/Native/ZoomCallbacks.cs" Link="Zoom/ZoomCallbacks.cs" />
+    <Compile Include="../../products/first-party/Zoom/src/Native/ZoomNativeRuntime.cs" Link="Zoom/ZoomNativeRuntime.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.GameBridge.DolocTown/DTMAPI.GameBridge.DolocTown.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/ZoomHarmonyOwnerFixture/ZoomHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

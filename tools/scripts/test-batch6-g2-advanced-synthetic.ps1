@@ -180,6 +180,23 @@ function Get-CSharpTestCaseText([string] $text, [string] $caseName) {
     return ''
 }
 
+function Resolve-CurrentNegativeTestPath([string] $historicalPath, [string] $caseName) {
+    # Frozen G2 paths identify the original evidence. Resolve only the known source
+    # moves here; never rewrite the contract or search/concatenate unrelated suites.
+    $relativePath = Normalize-Path $historicalPath
+    switch -CaseSensitive ($relativePath) {
+        'tests/DTMAPI.UnitTests/Batch6AdvancedRuntimeTests.cs' {
+            return 'tests/DTMAPI.RuntimeIntegration.Tests/Batch6AdvancedRuntimeTests.cs'
+        }
+        'tests/DTMAPI.UnitTests/Program.cs' {
+            if ($caseName -ceq 'AdvancedCodeModWithoutReceiptFailsClosedBeforeDiscoveryAndAssemblyLoad') {
+                return 'tests/DTMAPI.Core.Tests/Program.RuntimeAndOwnershipTests.cs'
+            }
+        }
+    }
+    return $relativePath
+}
+
 function Assert-TrackedAndClean([string] $relativePath) {
     if (-not (Test-GitCommand @('ls-files', '--error-unmatch', '--', (Normalize-Path $relativePath)))) {
         Add-Failure "Passed G2 authority must be tracked: $relativePath"
@@ -346,7 +363,8 @@ if ($null -ne $contract) {
 
     Assert-Contains 'author-sdk/schemas/manifest.schema.json' @('CodeModKind', 'Strict', 'Advanced', 'ContentPack')
     Assert-Contains 'author-sdk/schemas/dtmapi-author.schema.json' @('schemaVersion', 'targetDtmApiVersion', 'codeModKind', 'referencePolicyId')
-    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' @('SDK160', 'Advanced')
+    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' @('ProjectBuildInputs.Validate(context, diagnostics)', 'Advanced')
+    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectBuildInputs.cs' @('SDK160', 'AuthorCodeModKind.Strict')
     Assert-Contains 'src/DTMAPI.Core/Manifesting/ManagedModClassification.cs' @('AdvancedReferencePolicyAuthority', 'Assembly.LoadFrom', 'bundled-native-runtime-dependency')
     Assert-Contains 'src/DTMAPI.Core/Runtime/AdvancedHarmonySupervisor.cs' @('dtmapi.mod.', 'restart', 'late')
     Assert-Contains 'src/DTMAPI.InstallDoctor/AdvancedReferencePolicyAuthority.cs' @('RegistryResourceName', 'policySha256', 'embedded Advanced reference policy')
@@ -356,7 +374,7 @@ if ($null -ne $contract) {
     Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/manifest.json' @('"Type": "CodeMod"', '"CodeModKind": "Advanced"')
     Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/dtmapi.author.json' @('"schemaVersion": 2', '"codeModKind": "Advanced"')
     Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/src/ModEntry.cs' @('Has087DemoData', 'dtmapi.mod.dtmapi.advancedfixture', 'WrongOwner', 'DuplicatePatch', 'EntryFailure', 'LateOwnerDrift')
-    Assert-Contains 'tools/scripts/test.ps1' @('DTMAPI.UnitTests\DTMAPI.UnitTests.csproj', 'DTMAPI.InstallDoctor.Tests\DTMAPI.InstallDoctor.Tests.csproj', 'DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj', 'test-batch6-g2-advanced-synthetic.ps1', '-AllowInProgress')
+    Assert-Contains 'tools/scripts/test.ps1' @('test-unit.ps1', 'DTMAPI.InstallDoctor.Tests\DTMAPI.InstallDoctor.Tests.csproj', 'DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj', 'test-batch6-g2-advanced-synthetic.ps1', '-AllowInProgress')
     foreach ($projectPath in @('src/DTMAPI.AuthorSdk/DTMAPI.AuthorSdk.csproj', 'src/DTMAPI.Core/DTMAPI.Core.csproj', 'src/DTMAPI.InstallDoctor/DTMAPI.InstallDoctor.csproj')) { Assert-Contains $projectPath @('advanced-reference-policies', 'EmbeddedResource') }
 
     Assert-ExactSet 'Failure-code assertion mapping' @($contract.failureCodeAssertions | ForEach-Object { [string]$_.code }) @($contract.requiredFailureCodes)
@@ -366,9 +384,10 @@ if ($null -ne $contract) {
         }
         $productionText = Read-Utf8 (Join-Path $repo (Normalize-Path ([string]$mapping.productionPath)))
         if ($productionText.IndexOf([string]$mapping.code, [StringComparison]::Ordinal) -lt 0) { Add-Failure "Failure code '$($mapping.code)' is absent from mapped $($mapping.component) production file $($mapping.productionPath)." }
-        $testText = Read-Utf8 (Join-Path $repo (Normalize-Path ([string]$mapping.negativeTestPath)))
+        $currentTestPath = Resolve-CurrentNegativeTestPath ([string]$mapping.negativeTestPath) ([string]$mapping.negativeTestCase)
+        $testText = Read-Utf8 (Join-Path $repo $currentTestPath)
         $caseText = Get-CSharpTestCaseText $testText ([string]$mapping.negativeTestCase)
-        if ([string]::IsNullOrWhiteSpace($caseText)) { Add-Failure "Mapped negative test case '$($mapping.negativeTestCase)' was not found in $($mapping.negativeTestPath)." }
+        if ([string]::IsNullOrWhiteSpace($caseText)) { Add-Failure "Mapped negative test case '$($mapping.negativeTestCase)' was not found for historical $($mapping.negativeTestPath) in current source $currentTestPath." }
         elseif ($caseText.IndexOf([string]$mapping.code, [StringComparison]::Ordinal) -lt 0) { Add-Failure "Mapped negative test '$($mapping.negativeTestCase)' has no exact '$($mapping.code)' assertion." }
     }
 

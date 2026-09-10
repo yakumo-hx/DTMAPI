@@ -61,7 +61,7 @@ summary is:
 
 Focused source, production-runtime Unit, SDK/package, Catalog and Doctor
 checks are owned by
-[Update 20260724-0001](../../updates/2026/20260724-0001-strong-planting-gun-ninth-advanced-product.md).
+[Update 20260724-0001](../../archive/updates/2026/20260724-0001-strong-planting-gun-ninth-advanced-product.md).
 `GAME-SMOKE/20260724-101757` is the current-DLL protected third-save evidence
 and proves `3/3/3`, five real owners, Loader deactivation to exact zero, title
 recovery, protected save/config restoration and clean exit. Historical

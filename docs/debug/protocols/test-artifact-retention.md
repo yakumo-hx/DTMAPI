@@ -63,12 +63,14 @@ Formal dumps are evidence, not temp:
 
 ## Validation
 
-Run:
+Run the session/cleanup fixture check when changing that mechanism. Check the evidence allowlist when changing retained-evidence references or its generator; document-only edits use the document check. These are separate triggers:
 
-```powershell
-tools/scripts/check-test-artifact-governance.ps1 -RunCleanupFixture
-tools/scripts/build-evidence-retention-allowlist.ps1 -Check
-tools/scripts/check-doc-governance.ps1
-```
+| Changed boundary | Check |
+| --- | --- |
+| Session ownership, cleanup or retention behavior | `tools/scripts/check-test-artifact-governance.ps1 -RunCleanupFixture` |
+| Retained-evidence references or allowlist generator | `tools/scripts/build-evidence-retention-allowlist.ps1 -Check` |
+| Protocol/record text | `tools/scripts/check-doc-governance.ps1` and changed links |
 
-After a full test run, `tmp/test-runs` should contain no completed session. A second run must not increase the baseline through old GUID trees. A failed retained session must print its exact path and be recoverable after its retention window.
+Ordinary product tests use the existing automatic session lifecycle. They do not require a manual cleanup pass, allowlist regeneration or a second test run merely to prove cleanup again. Inspect a specific session if cleanup reports a failure or a retained tree is needed for diagnosis.
+
+When validating the session/cleanup mechanism itself, `tmp/test-runs` should contain no completed session after success; a second run must not accumulate old GUID trees. A failed retained session must print its exact path and be recoverable after its retention window.

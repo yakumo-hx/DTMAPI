@@ -8,6 +8,7 @@ This root file is a compact router. Hook ownership, signatures, lifecycle, and e
 - [ActionCompletion and retired Oil route](focused/ActionCompletion.md)
 - [ActionSpeed](focused/ActionSpeed.md)
 - [DebugConsole input isolation](focused/DebugConsoleInput.md)
+- [Experimental controller input and title config navigation](focused/ControllerInput.md)
 - [AnimalViewer progress rendering](focused/AnimalViewer.md)
 - [Fish roe title decoration](focused/FishRoeTitle.md)
 - [ChestLocatorEnhancer inventory widening](focused/ChestLocatorEnhancer.md)
@@ -17,6 +18,7 @@ This root file is a compact router. Hook ownership, signatures, lifecycle, and e
 - [Frozen Fishing automation compatibility](focused/FishingAutomationCompatibility.md)
 - [Workshop source authority](focused/WorkshopSourceAuthority.md)
 - [Optional-QA native load continuation](focused/NativeLoadContinuationQa.md)
+- [Runtime lifecycle observations](focused/RuntimeLifecycle.md)
 - [Native title and pause-menu layout repair](focused/NativeUiLayout.md)
 - [Advanced synthetic fixture](focused/AdvancedFixture.md)
 
@@ -24,7 +26,7 @@ Create `focused/<Domain>.md` when a new or changed Hook boundary needs durable o
 
 ## Historical Snapshot
 
-- [Full Hook Map through 2026-07-11](README-history-through-20260711.md)
+- [Full Hook Map through 2026-07-11](../archive/hook-map/2026/README-history-through-20260711.md)
 
 The snapshot preserves all earlier Hook rows and evidence. It is a cutoff record, not the write target for new work.
 

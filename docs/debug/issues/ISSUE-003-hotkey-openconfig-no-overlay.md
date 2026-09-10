@@ -1,8 +1,10 @@
-# ISSUE-003: Hotkey opens DTMAPI UI state but overlay is not visible
+﻿# ISSUE-003: Hotkey opens DTMAPI UI state but overlay is not visible
+
+- State: `deferred`
+- Current boundary: Old overlay path is not active product UI.
 
 ## Status
 
-- Status: deferred
 - Last updated: 2026-05-30
 - Severity: high
 - Area: input / UI overlay / config menu

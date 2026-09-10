@@ -588,11 +588,12 @@ function Get-SemanticBoundaryProjection {
 
 $catalog = Read-JsonFile -Path $catalogPath
 $contracts = Read-JsonFile -Path $contractsPath
+$catalogAuthority = if ($null -eq $catalog) { $null } else { Get-ObjectValue $catalog 'authority' }
 $snapshotAuthorityPath = if ($null -eq $catalog) {
     ''
 }
 else {
-    [string](Get-ObjectValue (Get-ObjectValue $catalog 'authority') 'publicWorkshopSnapshot')
+    [string](Get-ObjectValue $catalogAuthority 'publicWorkshopSnapshot')
 }
 $snapshotPath = if ([string]::IsNullOrWhiteSpace($snapshotAuthorityPath)) {
     Join-Path $repo '__missing_catalog_workshop_snapshot_authority__.json'
@@ -601,7 +602,22 @@ else {
     Join-Path $repo ($snapshotAuthorityPath.Replace('/', '\'))
 }
 $snapshot = Read-JsonFile -Path $snapshotPath
-if ($null -eq $catalog -or $null -eq $contracts -or $null -eq $snapshot) {
+$admissionRegistryAuthorityPath = if ($null -eq $catalog) { '' } else { [string](Get-ObjectValue $catalogAuthority 'managedProductAdmissionRegistry') }
+$admissionRegistryPath = if ([string]::IsNullOrWhiteSpace($admissionRegistryAuthorityPath)) {
+    Join-Path $repo '__missing_managed_product_admission_registry__.md'
+}
+else {
+    Join-Path $repo ($admissionRegistryAuthorityPath.Replace('/', '\'))
+}
+$subscriptionManifestAuthorityPath = if ($null -eq $catalog) { '' } else { [string](Get-ObjectValue $catalogAuthority 'currentSubscriptionManifest') }
+$subscriptionManifestPath = if ([string]::IsNullOrWhiteSpace($subscriptionManifestAuthorityPath)) {
+    Join-Path $repo '__missing_current_subscription_manifest__.json'
+}
+else {
+    Join-Path $repo ($subscriptionManifestAuthorityPath.Replace('/', '\'))
+}
+$subscriptionManifest = Read-JsonFile -Path $subscriptionManifestPath
+if ($null -eq $catalog -or $null -eq $contracts -or $null -eq $snapshot -or $null -eq $subscriptionManifest) {
     foreach ($failure in @($failures.ToArray())) {
         Write-Host "[FAIL] $failure" -ForegroundColor Red
     }
@@ -626,9 +642,46 @@ Assert-CatalogEqual -Label 'Workshop snapshot schemaVersion' -Actual (Get-Object
 Assert-CatalogEqual -Label 'Catalog Workshop snapshot authority path' `
     -Actual (Normalize-RepoPath $snapshotAuthorityPath) `
     -Expected 'tools/release/baselines/workshop-public-metadata-20260728.json'
-Assert-CatalogEqual -Label 'Catalog status date' -Actual (Get-ObjectValue $catalog 'statusDate') -Expected '2026-08-04'
+Assert-CatalogEqual -Label 'Catalog managed-product admission registry path' `
+    -Actual (Normalize-RepoPath $admissionRegistryAuthorityPath) `
+    -Expected 'docs/architecture/managed-product-admission-registry.md'
+Assert-CatalogTrue -Label 'Catalog managed-product admission registry exists.' -Condition (Test-Path -LiteralPath $admissionRegistryPath -PathType Leaf)
+Assert-CatalogEqual -Label 'Catalog current subscription manifest path' `
+    -Actual (Normalize-RepoPath $subscriptionManifestAuthorityPath) `
+    -Expected 'tools/release/current-subscription-manifest.json'
+$catalogStatusDate = [DateTime]::MinValue
+Assert-CatalogTrue -Label 'Catalog status date must be an ISO calendar date.' -Condition (
+    [DateTime]::TryParseExact([string](Get-ObjectValue $catalog 'statusDate'), 'yyyy-MM-dd',
+        [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$catalogStatusDate))
+$admissionRegistryGenerator = Join-Path $repo 'tools\scripts\generate-managed-product-admission-registry.ps1'
+Assert-CatalogTrue -Label 'Managed-product admission registry generator exists.' -Condition (Test-Path -LiteralPath $admissionRegistryGenerator -PathType Leaf)
+if (Test-Path -LiteralPath $admissionRegistryGenerator -PathType Leaf) {
+    & $admissionRegistryGenerator -Check -Quiet -CatalogPath $catalogPath -OutputPath $admissionRegistryPath
+    if ($LASTEXITCODE -ne 0) {
+        Add-CatalogFailure 'Managed-product admission registry does not match the Product Catalog.'
+    }
+}
+$subscriptionAuthority = Get-ObjectValue $subscriptionManifest 'authority'
+Assert-CatalogEqual -Label 'Current subscription manifest schemaVersion' -Actual (Get-ObjectValue $subscriptionManifest 'schemaVersion') -Expected 1
+Assert-CatalogEqual -Label 'Current subscription manifest Steam app id' -Actual (Get-ObjectValue $subscriptionManifest 'steamAppId') -Expected '2285550'
+Assert-CatalogTrue -Label 'Current subscription observation timestamp is normalized UTC.' -Condition (
+    (ConvertTo-CatalogTimestampText (Get-ObjectValue $subscriptionManifest 'observedAtUtc')) -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+Assert-CatalogEqual -Label 'Current subscription manifest Catalog route' `
+    -Actual (Normalize-RepoPath (Get-ObjectValue $subscriptionAuthority 'catalog')) `
+    -Expected 'tools/release/dtmapi-product-catalog.json'
+$subscriptionSource = Get-ObjectValue $subscriptionManifest 'source'
+Assert-CatalogEqual -Label 'Current subscription source kind' -Actual (Get-ObjectValue $subscriptionSource 'kind') -Expected 'SteamAppWorkshopManifest'
+Assert-CatalogEqual -Label 'Current subscription source path convention' `
+    -Actual (Get-ObjectValue $subscriptionSource 'pathConvention') `
+    -Expected '<SteamLibrary>/steamapps/workshop/appworkshop_2285550.acf'
+Assert-CatalogTrue -Label 'Current subscription source SHA-256 is frozen.' -Condition (
+    [string](Get-ObjectValue $subscriptionSource 'sha256') -match '^[0-9a-f]{64}$')
+Assert-CatalogTrue -Label 'Current subscription source item count is positive.' -Condition (
+    [long](Get-ObjectValue $subscriptionSource 'installedItemCount') -gt 0)
 $releaseStop = Get-ObjectValue $catalog 'releaseStop'
-Assert-CatalogEqual -Label 'Release stop state' -Actual (Get-ObjectValue $releaseStop 'state') -Expected 'ActiveWithExactExistingWorkshopUpdateExceptions'
+$releaseStopState = [string](Get-ObjectValue $releaseStop 'state')
+Assert-CatalogTrue -Label 'Release stop state is recognized.' -Condition (
+    $releaseStopState -in @('ActiveNoUploadAuthorization', 'ActiveWithExactExistingWorkshopUpdateExceptions'))
 Compare-ExactSet -Label 'Release stop blocked actions' -Actual @((Get-ObjectValue $releaseStop 'blockedActions')) -Expected @(
     'NewWorkshopUpload',
     'ExistingWorkshopUpdate',
@@ -637,62 +690,55 @@ Compare-ExactSet -Label 'Release stop blocked actions' -Actual @((Get-ObjectValu
     'WorkshopIdReassignment',
     'OfficialFolderMove'
 )
-Assert-CatalogEqual -Label 'Release stop target' -Actual (Get-ObjectValue $releaseStop 'releaseTarget') -Expected 'DTMAPI 0.5.5'
-Assert-CatalogEqual -Label 'Release target artifact existence' -Actual (Get-ObjectValue $releaseStop 'releaseTargetExists') -Expected $true
-Assert-CatalogEqual -Label 'Release authorization Update' `
-    -Actual (Normalize-RepoPath (Get-ObjectValue $releaseStop 'authorizationUpdate')) `
-    -Expected 'docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md'
-Assert-CatalogTrue -Label 'Release authorization Update exists.' -Condition (
-    Test-Path -LiteralPath (Join-Path $repo ((Normalize-RepoPath (Get-ObjectValue $releaseStop 'authorizationUpdate')).Replace('/', '\'))) -PathType Leaf)
+$releaseTarget = [string](Get-ObjectValue $releaseStop 'releaseTarget')
+$releaseTargetExists = Get-ObjectValue $releaseStop 'releaseTargetExists'
+$releaseAuthorizationUpdate = Normalize-RepoPath (Get-ObjectValue $releaseStop 'authorizationUpdate')
+$latestReleaseUpdate = Normalize-RepoPath (Get-ObjectValue $subscriptionAuthority 'latestReleaseUpdate')
+Assert-CatalogTrue -Label 'Current subscription latest release Update is named independently of upload authorization.' -Condition (
+    -not [string]::IsNullOrWhiteSpace($latestReleaseUpdate))
+if (-not [string]::IsNullOrWhiteSpace($latestReleaseUpdate)) {
+    Assert-CatalogTrue -Label 'Current subscription latest release Update exists.' -Condition (
+        Test-Path -LiteralPath (Join-Path $repo $latestReleaseUpdate.Replace('/', '\')) -PathType Leaf)
+}
 Assert-CatalogEqual -Label 'Release exact-tree digest algorithm' `
     -Actual (Get-ObjectValue $releaseStop 'treeDigestAlgorithm') `
     -Expected 'DTMAPI-Retained-SHA256SUMS-v1'
 
-$expectedPublicMutationEntrypoints = @(
-    [pscustomobject]@{ catalogId='runtime'; workshopId='3743016467'; version='0.5.5'; officialFolder='DTMAPI'; treeSha256='9e25425ed4eade8682981301c7a473c4fcc846a8d571efbba2d9bdaef249c1bd' },
-    [pscustomobject]@{ catalogId='auto-fishing'; workshopId='3743799721'; version='1.0.0'; officialFolder='Yuuka_DTMAPI_AutoFishing'; treeSha256='48d8bc81272dfd94daf5b8c90ee7035ec581a2dcaffc7071a75291909483585d' },
-    [pscustomobject]@{ catalogId='action-speed'; workshopId='3742763309'; version='1.0.0'; officialFolder='Yuuka_DTMAPI_ActionSpeed'; treeSha256='9189ec93b3bb32a8d952b2c4995ceec6475a7a3a8115604794739fb08e68e9c1' },
-    [pscustomobject]@{ catalogId='manbo-cardboard-audio'; workshopId='3746319981'; version='0.1.0-dtmapi'; officialFolder='Yuuka_DTMAPI_ManboCardboardAudio'; treeSha256='5468fe3abb7d89cfe6dcc86ddd033f1f3826a2a52cafce80fe78809140151de0' },
-    [pscustomobject]@{ catalogId='fish-roe-info'; workshopId='3742763706'; version='1.0.0'; officialFolder='Yuuka_DTMAPI_FishBreedingAssistant'; treeSha256='718f665ed3ad4aa055803c5e8172f4355337092301bbf6494fab498da6c823d6' },
-    [pscustomobject]@{ catalogId='animal-husbandry-progress'; workshopId='3742763843'; version='1.0.0'; officialFolder='Yuuka_DTMAPI_AnimalHusbandryProgress'; treeSha256='797ffffab3f373f38b2241014f5cbf9664192e62d81ed5d68920d985c8dfc5fd' },
-    [pscustomobject]@{ catalogId='zoom'; workshopId='3742717440'; version='1.0.0'; officialFolder='DTMAPI_Zoom'; treeSha256='b2c8ec6356dd83407141fcf288a36100f09518ce22406d71b08f96fbe2b98933' },
-    [pscustomobject]@{ catalogId='y-console'; workshopId='3742714442'; version='1.0.0'; officialFolder='DTMAPI_YKeyConsole'; treeSha256='a45557882add7682c014599fd7bfd2ead4c9d53e1ec1980de4ce98deacb09125' },
-    [pscustomobject]@{ catalogId='more-saves'; workshopId='3742763050'; version='1.0.0'; officialFolder='DTMAPI_MoreSaves'; treeSha256='90287664730918ec408ac22108445c0a49d86b0f7c89309634bd71cf6ef7cf9d' },
-    [pscustomobject]@{ catalogId='one-action-complete'; workshopId='3742763540'; version='1.0.0'; officialFolder='Yuuka_DTMAPI_OneActionComplete'; treeSha256='cbdf887206740ff51e86110d30ecdc3cfc6ba6f6679033e7bf7d859fed8e2cb1' },
-    [pscustomobject]@{ catalogId='chest-locator-enhancer'; workshopId='3742765514'; version='1.0.0'; officialFolder='DTMAPI_ChestLocatorEnhancer'; treeSha256='470530ddd55e2561220c8d59808eec6c8ce3fe6330b33d806a97646f8464022a' }
-)
 $actualPublicMutationEntrypoints = @((Get-ObjectValue $releaseStop 'publicMutationEntrypoints'))
-Assert-CatalogEqual -Label 'Release exact public mutation entrypoint count' -Actual $actualPublicMutationEntrypoints.Count -Expected $expectedPublicMutationEntrypoints.Count
-$expectedEntrypointsByCatalogId = @{}
-foreach ($expectedEntrypoint in $expectedPublicMutationEntrypoints) {
-    $expectedEntrypointsByCatalogId[[string]$expectedEntrypoint.catalogId] = $expectedEntrypoint
-}
 $observedEntrypointCatalogIds = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 foreach ($entrypoint in $actualPublicMutationEntrypoints) {
     $entrypointCatalogId = [string](Get-ObjectValue $entrypoint 'catalogId')
-    Assert-CatalogTrue -Label "Release entrypoint catalogId '$entrypointCatalogId' is exact and unique." -Condition (
-        $expectedEntrypointsByCatalogId.ContainsKey($entrypointCatalogId) -and $observedEntrypointCatalogIds.Add($entrypointCatalogId))
-    if (-not $expectedEntrypointsByCatalogId.ContainsKey($entrypointCatalogId)) {
-        continue
-    }
-    $expectedEntrypoint = $expectedEntrypointsByCatalogId[$entrypointCatalogId]
+    Assert-CatalogTrue -Label "Release entrypoint catalogId '$entrypointCatalogId' is non-empty and unique." -Condition (
+        -not [string]::IsNullOrWhiteSpace($entrypointCatalogId) -and $observedEntrypointCatalogIds.Add($entrypointCatalogId))
     Assert-CatalogEqual -Label "$entrypointCatalogId release action" -Actual (Get-ObjectValue $entrypoint 'action') -Expected 'ExistingWorkshopUpdate'
-    foreach ($field in @('workshopId', 'version', 'officialFolder', 'treeSha256')) {
-        Assert-CatalogEqual -Label "$entrypointCatalogId release $field" -Actual (Get-ObjectValue $entrypoint $field) -Expected $expectedEntrypoint.$field
+    foreach ($field in @('workshopId', 'version', 'officialFolder')) {
+        Assert-CatalogTrue -Label "$entrypointCatalogId release $field is non-empty." -Condition (
+            -not [string]::IsNullOrWhiteSpace([string](Get-ObjectValue $entrypoint $field)))
     }
+    Assert-CatalogTrue -Label "$entrypointCatalogId release package SHA-256 is frozen." -Condition (
+        [string](Get-ObjectValue $entrypoint 'packageSha256') -match '^[0-9a-f]{64}$')
     Assert-CatalogTrue -Label "$entrypointCatalogId release tree SHA-256 is frozen." -Condition (
         [string](Get-ObjectValue $entrypoint 'treeSha256') -match '^[0-9a-f]{64}$')
 }
-Assert-CatalogEqual -Label 'Release exact public mutation catalogId coverage' -Actual $observedEntrypointCatalogIds.Count -Expected $expectedPublicMutationEntrypoints.Count
 
 $excludedWorkshopUpdates = @((Get-ObjectValue $releaseStop 'explicitlyExcludedExistingWorkshopUpdates'))
-Assert-CatalogEqual -Label 'Release explicitly excluded existing Workshop update count' -Actual $excludedWorkshopUpdates.Count -Expected 1
-if ($excludedWorkshopUpdates.Count -eq 1) {
-    Assert-CatalogEqual -Label 'Release excluded product' -Actual (Get-ObjectValue $excludedWorkshopUpdates[0] 'catalogId') -Expected 'more-equipment-slots'
-    Assert-CatalogEqual -Label 'Release excluded Workshop id' -Actual (Get-ObjectValue $excludedWorkshopUpdates[0] 'workshopId') -Expected '3744059735'
-    Assert-CatalogEqual -Label 'Release excluded retained version' -Actual (Get-ObjectValue $excludedWorkshopUpdates[0] 'retainedVersion') -Expected '0.3.1-dtmapi'
-    Assert-CatalogTrue -Label 'Release excluded ProductNative package remains explicitly publication-deferred.' -Condition (
-        [string](Get-ObjectValue $excludedWorkshopUpdates[0] 'reason') -match 'publication-deferred')
+if ($releaseStopState -eq 'ActiveNoUploadAuthorization') {
+    Assert-CatalogTrue -Label 'No-upload state has no release target.' -Condition ([string]::IsNullOrWhiteSpace($releaseTarget))
+    Assert-CatalogEqual -Label 'No-upload state has no target artifact.' -Actual $releaseTargetExists -Expected $false
+    Assert-CatalogTrue -Label 'No-upload state has no authorization Update.' -Condition ([string]::IsNullOrWhiteSpace($releaseAuthorizationUpdate))
+    Assert-CatalogEqual -Label 'No-upload state has no mutation entrypoints.' -Actual $actualPublicMutationEntrypoints.Count -Expected 0
+    Assert-CatalogEqual -Label 'No-upload state carries no historical exclusions.' -Actual $excludedWorkshopUpdates.Count -Expected 0
+}
+else {
+    Assert-CatalogTrue -Label 'Authorized-upload state names a release target.' -Condition (-not [string]::IsNullOrWhiteSpace($releaseTarget))
+    Assert-CatalogEqual -Label 'Authorized-upload target artifact exists.' -Actual $releaseTargetExists -Expected $true
+    Assert-CatalogTrue -Label 'Authorized-upload state names an Update.' -Condition (-not [string]::IsNullOrWhiteSpace($releaseAuthorizationUpdate))
+    if (-not [string]::IsNullOrWhiteSpace($releaseAuthorizationUpdate)) {
+        Assert-CatalogTrue -Label 'Release authorization Update exists.' -Condition (
+            Test-Path -LiteralPath (Join-Path $repo $releaseAuthorizationUpdate.Replace('/', '\')) -PathType Leaf)
+    }
+    Assert-CatalogTrue -Label 'Authorized-upload state contains at least one exact mutation entrypoint.' -Condition (
+        $actualPublicMutationEntrypoints.Count -gt 0)
 }
 
 $pathConventions = Get-ObjectValue $catalog 'pathConventions'
@@ -705,6 +751,78 @@ $publishedRuntimeBoundary = Get-ObjectValue $runtimeBoundary 'publishedBaseline'
 $currentRuntimeBoundary = Get-ObjectValue $runtimeBoundary 'currentSourceBaseline'
 $currentPublishedRuntimeBoundary = Get-ObjectValue $runtimeBoundary 'currentPublishedArtifact'
 $futureRuntimeBoundary = Get-ObjectValue $runtimeBoundary 'futureTarget'
+$runtimeDistributions = @((Get-ObjectValue $runtimeBoundary 'distributions'))
+Assert-CatalogEqual -Label 'Runtime distribution count' -Actual $runtimeDistributions.Count -Expected 2
+$windowsRuntimeDistribution = @($runtimeDistributions | Where-Object { (Get-ObjectValue $_ 'distributionId') -eq 'dtmapi-windows' })
+$multiPlatformRuntimeDistribution = @($runtimeDistributions | Where-Object { (Get-ObjectValue $_ 'distributionId') -eq 'dtmapi-multiplatform' })
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution row count' -Actual $windowsRuntimeDistribution.Count -Expected 1
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution row count' -Actual $multiPlatformRuntimeDistribution.Count -Expected 1
+$windowsRuntimeDistribution = $windowsRuntimeDistribution[0]
+$multiPlatformRuntimeDistribution = $multiPlatformRuntimeDistribution[0]
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution Workshop ID' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'workshopId') -Expected '3743016467'
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'workshopManifestId') -Expected '918505309011394484'
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution state' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'artifactState') -Expected 'SteamPublishedObservedExact'
+Assert-CatalogNumber -Label 'Published Windows Runtime distribution player payload files' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadFileCount') -Expected 28
+Assert-CatalogNumber -Label 'Published Windows Runtime distribution player payload bytes' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadBytes') -Expected 3866857
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution player payload hash' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
+Assert-CatalogNumber -Label 'Published Windows Runtime distribution PE host count' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'peHostCount') -Expected 0
+Assert-CatalogNumber -Label 'Published Windows Runtime distribution ELF host count' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'elfHostCount') -Expected 0
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution release version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'releaseVersion') -Expected '0.6.1'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution installer version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'installerVersion') -Expected '0.1.0-experimental'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution Workshop ID' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopId') -Expected '3792681186'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopManifestId') -Expected '5128092030483852458'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'artifactState') -Expected 'SteamPublishedObservedExact'
+Assert-CatalogEqual -Label 'Multi-platform Runtime local candidate state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateState') -Expected 'LocalMetadataSuccessorPendingUpload'
+Assert-CatalogEqual -Label 'Multi-platform Runtime upload authorization' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'uploadAuthorization') -Expected 'None'
+Assert-CatalogEqual -Label 'Multi-platform Runtime Workshop control-file state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileState') -Expected 'PresentValidatedLocalUploadOnly'
+Assert-CatalogNumber -Label 'Multi-platform Runtime Workshop control-file bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileBytes') -Expected 33
+Assert-CatalogEqual -Label 'Multi-platform Runtime Workshop control-file hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileSha256') -Expected '5e1ec4ac349bcd1031d5112b1a2608992d620d0098845d26e5c35a28558a9f26'
+Assert-CatalogNumber -Label 'Multi-platform Steam-delivered file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredFileCount') -Expected 36
+Assert-CatalogNumber -Label 'Multi-platform Steam-delivered bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes') -Expected 29770736
+Assert-CatalogEqual -Label 'Multi-platform Steam-delivered tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredTreeSha256') -Expected 'e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4'
+Assert-CatalogEqual -Label 'Multi-platform Steam update time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamTimeUpdatedUtc')) -Expected '2026-08-30T09:50:49Z'
+Assert-CatalogEqual -Label 'Multi-platform observation time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'observedAtUtc')) -Expected '2026-08-30T09:57:14Z'
+Assert-CatalogEqual -Label 'Multi-platform Runtime candidate package root' -Actual (Normalize-RepoPath (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidatePackageRoot')) -Expected 'dist/DTMAPI-MultiPlatform'
+Assert-CatalogEqual -Label 'Multi-platform Runtime source distribution' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceDistributionId') -Expected 'dtmapi-windows'
+Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop ID' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopId') -Expected '3743016467'
+Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopManifestId') -Expected '918505309011394484'
+Assert-CatalogNumber -Label 'Multi-platform Runtime source player payload files' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadFileCount') -Expected 28
+Assert-CatalogNumber -Label 'Multi-platform Runtime source player payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadBytes') -Expected 3866857
+Assert-CatalogEqual -Label 'Multi-platform Runtime source player payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
+Assert-CatalogNumber -Label 'Multi-platform shared payload files' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadFileCount') -Expected 20
+Assert-CatalogNumber -Label 'Multi-platform shared payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadBytes') -Expected 3826337
+Assert-CatalogEqual -Label 'Multi-platform shared payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadTreeSha256') -Expected 'ae80f6661390b82824af424b2006fb28267ec7181b2f98d75df9975c6a1d20c5'
+Assert-CatalogNumber -Label 'Multi-platform candidate file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateFileCount') -Expected 36
+Assert-CatalogNumber -Label 'Multi-platform candidate bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateBytes') -Expected 29770715
+Assert-CatalogEqual -Label 'Multi-platform candidate tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateTreeSha256') -Expected 'f7671fd07dae7664855be37bbd82f29ce23b003f56f4d0818717fa4f2aa2605a'
+Assert-CatalogNumber -Label 'Multi-platform candidate PE host count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'peHostCount') -Expected 1
+Assert-CatalogNumber -Label 'Multi-platform candidate ELF host count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'elfHostCount') -Expected 1
+Assert-CatalogNumber -Label 'Multi-platform installed host artifact count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'installedHostArtifactCount') -Expected 0
+Assert-CatalogEqual -Label 'Multi-platform required Linux launch option' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'requiredLinuxLaunchOption') -Expected 'WINEDLLOVERRIDES="winhttp=n,b" %command%'
+Assert-CatalogEqual -Label 'Multi-platform CrossOver DLL override' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'crossOverDllOverride') -Expected 'winhttp=n,b'
+Assert-CatalogEqual -Label 'Multi-platform code-signing state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'codeSigning') -Expected 'unsigned-experimental'
+$multiPlatformHosts = @((Get-ObjectValue $multiPlatformRuntimeDistribution 'hostArtifacts'))
+Assert-CatalogEqual -Label 'Multi-platform host artifact count' -Actual $multiPlatformHosts.Count -Expected 2
+$multiPlatformWindowsHost = @($multiPlatformHosts | Where-Object { (Get-ObjectValue $_ 'rid') -eq 'win-x64' })
+$multiPlatformLinuxHost = @($multiPlatformHosts | Where-Object { (Get-ObjectValue $_ 'rid') -eq 'linux-x64' })
+Assert-CatalogEqual -Label 'Multi-platform Windows host row count' -Actual $multiPlatformWindowsHost.Count -Expected 1
+Assert-CatalogEqual -Label 'Multi-platform Linux host row count' -Actual $multiPlatformLinuxHost.Count -Expected 1
+Assert-CatalogEqual -Label 'Multi-platform Windows host path' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'relativePath') -Expected 'DTMAPI-MultiPlatform-Installer.exe'
+Assert-CatalogNumber -Label 'Multi-platform Windows host length' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'length') -Expected 11818211
+Assert-CatalogEqual -Label 'Multi-platform Windows host hash' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'sha256') -Expected 'da929a41ab46e2da3a405408fe5f4110b02246862189a8a4becd4cb35e5af09a'
+Assert-CatalogEqual -Label 'Multi-platform Linux host path' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'relativePath') -Expected 'Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer'
+Assert-CatalogNumber -Label 'Multi-platform Linux host length' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'length') -Expected 13211388
+Assert-CatalogEqual -Label 'Multi-platform Linux host hash' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'sha256') -Expected '4210d9f2f22b2358b56a14aa5b0a99a5042f7cb6d956611bbe642f268a7e9dfb'
+$multiPlatformValidation = Get-ObjectValue $multiPlatformRuntimeDistribution 'validation'
+Assert-CatalogEqual -Label 'Multi-platform Windows fake-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'windowsFakeGame') -Expected 'Passed'
+Assert-CatalogEqual -Label 'Multi-platform WSL Linux fake-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'wslLinuxFakeGame') -Expected 'Passed'
+Assert-CatalogEqual -Label 'Multi-platform subscription content parity' -Actual (Get-ObjectValue $multiPlatformValidation 'subscriptionContentParity') -Expected 'PassedForManifest5128092030483852458BeforeLocalMetadataSuccessor'
+Assert-CatalogEqual -Label 'Multi-platform real-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'realGame') -Expected 'NotRun'
+Assert-CatalogEqual -Label 'Multi-platform Steam Deck acceptance' -Actual (Get-ObjectValue $multiPlatformValidation 'steamDeckPlayerAcceptance') -Expected 'Pending'
+Assert-CatalogEqual -Label 'Multi-platform CrossOver acceptance' -Actual (Get-ObjectValue $multiPlatformValidation 'crossOverPlayerAcceptance') -Expected 'Pending'
+$multiPlatformOwningUpdate = Normalize-RepoPath (Get-ObjectValue $multiPlatformRuntimeDistribution 'owningUpdate')
+Assert-CatalogEqual -Label 'Multi-platform Runtime owning Update' -Actual $multiPlatformOwningUpdate -Expected 'docs/updates/2026/20260829-0003-dtmapi-multiplatform-runtime-installer.md'
+Assert-CatalogTrue -Label 'Multi-platform Runtime owning Update exists.' -Condition (Test-Path -LiteralPath (Join-Path $repo $multiPlatformOwningUpdate.Replace('/', '\')) -PathType Leaf)
 Assert-CatalogEqual -Label 'Published Runtime release version' -Actual (Get-ObjectValue $publishedRuntimeBoundary 'releaseVersion') -Expected '0.5.2-alpha'
 Assert-CatalogEqual -Label 'Published Runtime binary version' -Actual (Get-ObjectValue $publishedRuntimeBoundary 'binaryFileVersion') -Expected '0.5.2.0'
 Assert-CatalogEqual -Label 'Published Runtime baseline state' -Actual (Get-ObjectValue $publishedRuntimeBoundary 'state') -Expected 'FrozenRecordWithOwnedPrivateArchive'
@@ -730,42 +848,49 @@ Assert-CatalogTrue -Label 'Published Runtime immutable archive has an explicit r
         ([string](Get-ObjectValue $publishedRuntimeBoundary 'immutableArchiveRetention') -match 'explicit post-release retention decision'))
 Assert-CatalogTrue -Label 'Published Runtime immutable archive verification script exists.' `
     -Condition (Test-Path -LiteralPath (Join-Path $repo 'tools\scripts\freeze-runtime-rollback-archive.ps1') -PathType Leaf)
-Assert-CatalogEqual -Label 'Current Runtime release version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'releaseVersion') -Expected '0.6.1'
-Assert-CatalogEqual -Label 'Current Runtime binary version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'binaryFileVersion') -Expected '0.6.1.0'
+Assert-CatalogEqual -Label 'Current Runtime release version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'releaseVersion') -Expected '0.7.0'
+Assert-CatalogEqual -Label 'Current Runtime binary version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'binaryFileVersion') -Expected '0.7.0.0'
 Assert-CatalogEqual -Label 'Current Runtime assembly compatibility identity' -Actual (Get-ObjectValue $currentRuntimeBoundary 'assemblyCompatibilityIdentity') -Expected '0.5.3.0'
-Assert-CatalogNumber -Label 'Current Runtime candidate info.json bytes' -Actual (Get-ObjectValue $currentRuntimeBoundary 'candidateInfoJsonBytes') -Expected 9192
-Assert-CatalogEqual -Label 'Current Runtime candidate info.json SHA-256' -Actual (Get-ObjectValue $currentRuntimeBoundary 'candidateInfoJsonSha256') -Expected '5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171'
-Assert-CatalogEqual -Label 'Current Runtime candidate info.json state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'candidateInfoJsonState') -Expected 'DeterministicSourceProjectionNotPublishedArtifact'
-Assert-CatalogEqual -Label 'Current Runtime source authority state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'state') -Expected 'ReleaseCandidateSourceAuthority'
-Assert-CatalogEqual -Label 'Published current Runtime release version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion') -Expected '0.5.5'
-Assert-CatalogEqual -Label 'Published current Runtime binary version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'binaryFileVersion') -Expected '0.5.5.0'
+Assert-CatalogNumber -Label 'Current Runtime info.json bytes' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonBytes') -Expected 9192
+Assert-CatalogEqual -Label 'Current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonSha256') -Expected 'ecbc00dccc4ed4834dcfe4e2f374ad786c27f184a70d1c655d794b59f13428cc'
+Assert-CatalogEqual -Label 'Current Runtime info.json state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonState') -Expected 'DeterministicUnpublishedSourceProjection'
+Assert-CatalogEqual -Label 'Current Runtime source authority state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'state') -Expected 'CurrentSourceAuthority'
+Assert-CatalogEqual -Label 'Published current Runtime release version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion') -Expected '0.6.1'
+Assert-CatalogEqual -Label 'Published current Runtime binary version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'binaryFileVersion') -Expected '0.6.1.0'
 Assert-CatalogEqual -Label 'Published current Runtime assembly compatibility identity' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'assemblyCompatibilityIdentity') -Expected '0.5.3.0'
-Assert-CatalogEqual -Label 'Published current Runtime Workshop manifest' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopManifestId') -Expected '1475234683223104244'
+Assert-CatalogEqual -Label 'Published current Runtime Workshop manifest' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopManifestId') -Expected '918505309011394484'
 Assert-CatalogEqual -Label 'Published current Runtime tree digest algorithm' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'treeDigestAlgorithm') -Expected 'DTMAPI-Published-SHA256SUMS-v1'
 Assert-CatalogEqual -Label 'Published current Runtime tree digest normalization' `
     -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'treeDigestNormalization') `
     -Expected 'Exclude subscription-generated Content/.tools/bepinex/extract/**. Sort files by forward-slash relative path using StringComparer.Ordinal. Each row is lowercase file SHA-256, two spaces, then relative path. Join rows with LF and no final LF; hash UTF-8 without BOM using SHA-256.'
-Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredFileCount') -Expected 31
-Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredBytes') -Expected 71593719
-Assert-CatalogEqual -Label 'Published current Runtime Steam-delivered tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredTreeSha256') -Expected 'd7275bccc06207929de4ea62c8976bf20723ed33dd81666149a35289d29d5ebf'
+Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredFileCount') -Expected 29
+Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredBytes') -Expected 3866890
+Assert-CatalogEqual -Label 'Published current Runtime Steam-delivered tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredTreeSha256') -Expected '846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88'
 Assert-CatalogEqual -Label 'Published current Runtime player-payload exclusion' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadExclusion') -Expected 'workshop.json'
-Assert-CatalogNumber -Label 'Published current Runtime player-payload file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadFileCount') -Expected 30
-Assert-CatalogNumber -Label 'Published current Runtime player-payload bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadBytes') -Expected 71593686
-Assert-CatalogEqual -Label 'Published current Runtime player-payload tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadTreeSha256') -Expected '571793091b47d5d2db909059b17c478bdebd60cc53a262bf88ff00e9e4becd63'
+Assert-CatalogNumber -Label 'Published current Runtime player-payload file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadFileCount') -Expected 28
+Assert-CatalogNumber -Label 'Published current Runtime player-payload bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadBytes') -Expected 3866857
+Assert-CatalogEqual -Label 'Published current Runtime player-payload tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
 Assert-CatalogNumber -Label 'Published current Runtime info.json bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonBytes') -Expected 9192
-Assert-CatalogEqual -Label 'Published current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonSha256') -Expected '4ab3d471747a7e2ec37bda01884a604dcc63b0b74b764c6d34412b4dae905144'
+Assert-CatalogEqual -Label 'Published current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonSha256') -Expected '5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171'
 Assert-CatalogNumber -Label 'Published current Runtime workshop control bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopControlFileBytes') -Expected 33
 Assert-CatalogEqual -Label 'Published current Runtime workshop control SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopControlFileSha256') -Expected 'd6d9206a4a58b88cc985ee72832d57f226ff58767ef6e606a2731b0d604ef98d'
-Assert-CatalogEqual -Label 'Published current Runtime native normalization owner' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'nativeNormalizationOwner') -Expected 'DolocTown.Config.ModManager.TryMigrateData/EnsureLocalizedManifestField'
+Assert-CatalogEqual -Label 'Published current Runtime release-manifest build commit' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseManifestBuildCommit') -Expected 'db5e518a6d7f'
+Assert-CatalogEqual -Label 'Published current Runtime Steam update time' `
+    -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamTimeUpdatedUtc')) `
+    -Expected '2026-08-20T00:23:14Z'
+Assert-CatalogEqual -Label 'Published current Runtime observation time' `
+    -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $currentPublishedRuntimeBoundary 'observedAtUtc')) `
+    -Expected '2026-08-20T00:28:08Z'
+Assert-CatalogEqual -Label 'Published current Runtime native normalization owner' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'nativeNormalizationOwner') -Expected 'SourceBuilderStableLocalizedManifestProjection'
 Assert-CatalogEqual -Label 'Published current Runtime state' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'state') -Expected 'SteamPublishedObservedExact'
 $currentPublishedRuntimeUpdate = Normalize-RepoPath (Get-ObjectValue $currentPublishedRuntimeBoundary 'owningUpdate')
-Assert-CatalogEqual -Label 'Published current Runtime owning Update' -Actual $currentPublishedRuntimeUpdate -Expected 'docs/updates/2026/20260801-0003-runtime-published-metadata-authority.md'
+Assert-CatalogEqual -Label 'Published current Runtime owning Update' -Actual $currentPublishedRuntimeUpdate -Expected 'docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md'
 Assert-CatalogTrue -Label 'Published current Runtime owning Update exists.' -Condition (
     Test-Path -LiteralPath (Join-Path $repo $currentPublishedRuntimeUpdate.Replace('/', '\')) -PathType Leaf)
-Assert-CatalogEqual -Label 'Future Runtime release version' -Actual (Get-ObjectValue $futureRuntimeBoundary 'releaseVersion') -Expected '0.6.1'
-Assert-CatalogEqual -Label 'Future Runtime binary version' -Actual (Get-ObjectValue $futureRuntimeBoundary 'binaryFileVersion') -Expected '0.6.1.0'
-Assert-CatalogEqual -Label 'Future Runtime assembly compatibility identity' -Actual (Get-ObjectValue $futureRuntimeBoundary 'assemblyCompatibilityIdentity') -Expected '0.5.3.0'
-Assert-CatalogEqual -Label 'Future target artifact state' -Actual (Get-ObjectValue $futureRuntimeBoundary 'state') -Expected 'NoArtifact'
+Assert-CatalogTrue -Label 'Future Runtime release version is unscheduled.' -Condition ([string]::IsNullOrWhiteSpace([string](Get-ObjectValue $futureRuntimeBoundary 'releaseVersion')))
+Assert-CatalogTrue -Label 'Future Runtime binary version is unscheduled.' -Condition ([string]::IsNullOrWhiteSpace([string](Get-ObjectValue $futureRuntimeBoundary 'binaryFileVersion')))
+Assert-CatalogTrue -Label 'Future Runtime assembly identity is unscheduled.' -Condition ([string]::IsNullOrWhiteSpace([string](Get-ObjectValue $futureRuntimeBoundary 'assemblyCompatibilityIdentity')))
+Assert-CatalogEqual -Label 'Future target artifact state' -Actual (Get-ObjectValue $futureRuntimeBoundary 'state') -Expected 'Unscheduled'
 
 $allowed = Get-ObjectValue $catalog 'allowedValues'
 $allowedRoles = @((Get-ObjectValue $allowed 'role'))
@@ -911,10 +1036,16 @@ foreach ($product in $products) {
         $publicProducts.Add($product) | Out-Null
         Assert-CatalogEqual -Label "$catalogId public distribution" -Actual $distribution -Expected 'PublicWorkshop'
         Assert-CatalogEqual -Label "$catalogId public release eligibility" -Actual $eligibility -Expected 'RebuildBlocked'
-        $expectedTargetVersion = if ($catalogId -ceq 'more-saves') { '1.0.1' } else { '1.0.0' }
-        Assert-CatalogEqual -Label "$catalogId target version" -Actual (Get-ObjectValue $product 'targetVersion') -Expected $expectedTargetVersion
-        $expectedFutureMinimum = if ($catalogId -in @('auto-fishing', 'y-console', 'more-equipment-slots', 'more-saves')) { '0.6.0' } else { '0.5.5' }
-        Assert-CatalogEqual -Label "$catalogId future minimum" -Actual (Get-ObjectValue $product 'targetMinimumDtmApiVersion') -Expected $expectedFutureMinimum
+        # Candidate values belong to the Catalog/source, not checker canaries.
+        # Legacy products may still have a future migration target distinct from source.
+        foreach ($candidateField in @('targetVersion', 'targetMinimumDtmApiVersion')) {
+            Assert-CatalogTrue -Label "$catalogId $candidateField must be a semantic version." -Condition (
+                [string](Get-ObjectValue $product $candidateField) -match '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$')
+        }
+        if ([string](Get-ObjectValue $product 'codeModKind') -ceq 'Advanced') {
+            Assert-CatalogEqual -Label "$catalogId candidate/source version" -Actual (Get-ObjectValue $product 'targetVersion') -Expected (Get-ObjectValue $product 'sourceVersion')
+            Assert-CatalogEqual -Label "$catalogId candidate/source minimum" -Actual (Get-ObjectValue $product 'targetMinimumDtmApiVersion') -Expected (Get-ObjectValue $product 'sourceMinimumDtmApiVersion')
+        }
         foreach ($field in @('uniqueId', 'workshopId', 'officialFolder', 'packageName', 'packageDll', 'sourceRoot', 'sourceManifest', 'project', 'sourceDll', 'sourceVersion', 'publishedVersion', 'publishedMinimumDtmApiVersion')) {
             Assert-CatalogTrue -Label "$catalogId public field '$field' is frozen." -Condition (-not [string]::IsNullOrWhiteSpace([string](Get-ObjectValue $product $field)))
         }
@@ -925,12 +1056,90 @@ foreach ($product in $products) {
     }
 }
 
-foreach ($expectedEntrypoint in $expectedPublicMutationEntrypoints) {
-    $entrypointCatalogId = [string]$expectedEntrypoint.catalogId
+$subscriptionRuntime = Get-ObjectValue $subscriptionManifest 'runtime'
+Assert-CatalogEqual -Label 'Current subscription Runtime catalog id' -Actual (Get-ObjectValue $subscriptionRuntime 'catalogId') -Expected 'runtime'
+Assert-CatalogEqual -Label 'Current subscription Runtime UniqueID' -Actual (Get-ObjectValue $subscriptionRuntime 'uniqueId') -Expected 'DTMAPI.Runtime'
+Assert-CatalogEqual -Label 'Current subscription Runtime WorkshopID' `
+    -Actual (Get-ObjectValue $subscriptionRuntime 'workshopId') `
+    -Expected (Get-ObjectValue $runtimeBoundary 'workshopId')
+Assert-CatalogTrue -Label 'Current subscription Runtime manifest id is numeric.' -Condition (
+    [string](Get-ObjectValue $subscriptionRuntime 'manifestId') -match '^\d+$')
+Assert-CatalogEqual -Label 'Current subscription Runtime manifest matches current published artifact' `
+    -Actual (Get-ObjectValue $subscriptionRuntime 'manifestId') `
+    -Expected (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopManifestId')
+foreach ($field in @('releaseVersion', 'binaryFileVersion', 'steamDeliveredFileCount', 'steamDeliveredTreeSha256', 'playerPayloadFileCount', 'playerPayloadBytes', 'playerPayloadTreeSha256')) {
+    Assert-CatalogEqual -Label "Current subscription Runtime $field matches current published artifact" `
+        -Actual (Get-ObjectValue $subscriptionRuntime $field) `
+        -Expected (Get-ObjectValue $currentPublishedRuntimeBoundary $field)
+}
+Assert-CatalogEqual -Label 'Current subscription Runtime installed bytes match Steam-delivered bytes' `
+    -Actual (Get-ObjectValue $subscriptionRuntime 'installedBytes') `
+    -Expected (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredBytes')
+$subscriptionRuntimeDistributions = @((Get-ObjectValue $subscriptionRuntime 'additionalDistributions'))
+Assert-CatalogEqual -Label 'Current subscription additional Runtime distribution count' -Actual $subscriptionRuntimeDistributions.Count -Expected 1
+if ($subscriptionRuntimeDistributions.Count -eq 1) {
+    $subscriptionMultiPlatform = $subscriptionRuntimeDistributions[0]
+    Assert-CatalogEqual -Label 'Current subscription multi-platform distribution id' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'distributionId') -Expected 'dtmapi-multiplatform'
+    Assert-CatalogEqual -Label 'Current subscription multi-platform Catalog id' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'catalogId') -Expected 'runtime'
+    Assert-CatalogEqual -Label 'Current subscription multi-platform UniqueID' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'uniqueId') -Expected 'DTMAPI.Runtime'
+    Assert-CatalogEqual -Label 'Current subscription multi-platform kind' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'kind') -Expected 'RuntimeDistribution'
+    Assert-CatalogEqual -Label 'Current subscription multi-platform Workshop ID' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'workshopId') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopId')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform manifest' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'manifestId') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopManifestId')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform installed bytes' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'installedBytes') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform delivered file count' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredFileCount') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredFileCount')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform delivered bytes' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredBytes') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform delivered tree' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredTreeSha256') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredTreeSha256')
+    Assert-CatalogEqual -Label 'Current subscription multi-platform excludes uploader control file' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'workshopControlFileDelivered') -Expected $false
+    Assert-CatalogEqual -Label 'Current subscription multi-platform parity state' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'contentParity') -Expected 'RepositoryCandidateAndLocalUploadContentExactBeforeLocalMetadataSuccessor'
+}
+
+$subscriptionProducts = @((Get-ObjectValue $subscriptionManifest 'managedProducts'))
+$subscriptionProductIds = @($subscriptionProducts | ForEach-Object { [string](Get-ObjectValue $_ 'catalogId') })
+$publicProductIds = @($publicProducts.ToArray() | ForEach-Object { [string](Get-ObjectValue $_ 'catalogId') })
+Compare-ExactSet -Label 'Current subscription managed-product set matches Catalog PublishedProduct identities' `
+    -Actual $subscriptionProductIds `
+    -Expected $publicProductIds
+$seenSubscriptionProductIds = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+foreach ($subscriptionProduct in $subscriptionProducts) {
+    $catalogId = [string](Get-ObjectValue $subscriptionProduct 'catalogId')
+    Assert-CatalogTrue -Label "Current subscription product '$catalogId' is unique." -Condition $seenSubscriptionProductIds.Add($catalogId)
+    Assert-CatalogTrue -Label "Current subscription product '$catalogId' maps to the Catalog." -Condition $productsByCatalogId.ContainsKey($catalogId)
+    if (-not $productsByCatalogId.ContainsKey($catalogId)) {
+        continue
+    }
+    $catalogProduct = $productsByCatalogId[$catalogId]
+    Assert-CatalogEqual -Label "$catalogId current subscription UniqueID" `
+        -Actual (Get-ObjectValue $subscriptionProduct 'uniqueId') `
+        -Expected (Get-ObjectValue $catalogProduct 'uniqueId')
+    Assert-CatalogEqual -Label "$catalogId current subscription WorkshopID" `
+        -Actual (Get-ObjectValue $subscriptionProduct 'workshopId') `
+        -Expected (Get-ObjectValue $catalogProduct 'workshopId')
+    Assert-CatalogEqual -Label "$catalogId current subscription kind" -Actual (Get-ObjectValue $subscriptionProduct 'kind') -Expected 'ManagedProduct'
+    Assert-CatalogTrue -Label "$catalogId current subscription manifest id is numeric." -Condition (
+        [string](Get-ObjectValue $subscriptionProduct 'manifestId') -match '^\d+$')
+    Assert-CatalogTrue -Label "$catalogId current subscription installed bytes are positive." -Condition (
+        [long](Get-ObjectValue $subscriptionProduct 'installedBytes') -gt 0)
+    if ($catalogId -in @('more-equipment-slots', 'y-console')) {
+        $subscriptionArtifactLabel = if ($catalogId -eq 'more-equipment-slots') { 'MoreEquipmentSlots' } else { 'YConsole' }
+        $currentPublishedArtifact = Get-ObjectValue $catalogProduct 'currentPublishedArtifact'
+        Assert-CatalogTrue -Label "$subscriptionArtifactLabel current published artifact exists after subscription closeout." -Condition (
+            $null -ne $currentPublishedArtifact)
+        if ($null -ne $currentPublishedArtifact) {
+            Assert-CatalogEqual -Label "$subscriptionArtifactLabel current subscription manifest matches current published artifact" `
+                -Actual (Get-ObjectValue $subscriptionProduct 'manifestId') `
+                -Expected (Get-ObjectValue $currentPublishedArtifact 'workshopManifestId')
+            Assert-CatalogEqual -Label "$subscriptionArtifactLabel current subscription installed bytes match current published artifact" `
+                -Actual (Get-ObjectValue $subscriptionProduct 'installedBytes') `
+                -Expected (Get-ObjectValue $currentPublishedArtifact 'steamDeliveredBytes')
+        }
+    }
+}
+
+foreach ($entrypoint in $actualPublicMutationEntrypoints) {
+    $entrypointCatalogId = [string](Get-ObjectValue $entrypoint 'catalogId')
     if ($entrypointCatalogId -eq 'runtime') {
-        Assert-CatalogEqual -Label 'Runtime release entrypoint Workshop id' -Actual $expectedEntrypoint.workshopId -Expected (Get-ObjectValue $runtimeBoundary 'workshopId')
-        Assert-CatalogEqual -Label 'Runtime release entrypoint version' -Actual $expectedEntrypoint.version -Expected (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion')
-        Assert-CatalogEqual -Label 'Runtime release entrypoint official folder' -Actual $expectedEntrypoint.officialFolder -Expected 'DTMAPI'
+        Assert-CatalogEqual -Label 'Runtime release entrypoint Workshop id' -Actual (Get-ObjectValue $entrypoint 'workshopId') -Expected (Get-ObjectValue $runtimeBoundary 'workshopId')
+        Assert-CatalogEqual -Label 'Runtime release entrypoint official folder' -Actual (Get-ObjectValue $entrypoint 'officialFolder') -Expected 'DTMAPI'
         continue
     }
 
@@ -939,20 +1148,8 @@ foreach ($expectedEntrypoint in $expectedPublicMutationEntrypoints) {
         continue
     }
     $entrypointProduct = $productsByCatalogId[$entrypointCatalogId]
-    Assert-CatalogEqual -Label "$entrypointCatalogId release entrypoint Workshop id projection" -Actual $expectedEntrypoint.workshopId -Expected (Get-ObjectValue $entrypointProduct 'workshopId')
-    $sourceVersion = [string](Get-ObjectValue $entrypointProduct 'sourceVersion')
-    if ([string]$expectedEntrypoint.version -cne $sourceVersion) {
-        Assert-CatalogTrue -Label "$entrypointCatalogId source update remains distinct from the frozen 0.5.5 public mutation entrypoint." -Condition (
-            $entrypointCatalogId -ceq 'more-saves' -and
-            [string]$expectedEntrypoint.version -ceq '1.0.0' -and
-            $sourceVersion -ceq '1.0.1' -and
-            [string](Get-ObjectValue $entrypointProduct 'targetVersion') -ceq $sourceVersion -and
-            [string](Get-ObjectValue $entrypointProduct 'releaseEligibility') -ceq 'RebuildBlocked')
-    }
-    else {
-        Assert-CatalogEqual -Label "$entrypointCatalogId release entrypoint version projection" -Actual $expectedEntrypoint.version -Expected $sourceVersion
-    }
-    Assert-CatalogEqual -Label "$entrypointCatalogId release entrypoint folder projection" -Actual $expectedEntrypoint.officialFolder -Expected (Get-ObjectValue $entrypointProduct 'officialFolder')
+    Assert-CatalogEqual -Label "$entrypointCatalogId release entrypoint Workshop id projection" -Actual (Get-ObjectValue $entrypoint 'workshopId') -Expected (Get-ObjectValue $entrypointProduct 'workshopId')
+    Assert-CatalogEqual -Label "$entrypointCatalogId release entrypoint folder projection" -Actual (Get-ObjectValue $entrypoint 'officialFolder') -Expected (Get-ObjectValue $entrypointProduct 'officialFolder')
 }
 
 $expectedCurrentPublishedProductCatalogIds = @(
@@ -964,8 +1161,21 @@ $expectedCurrentPublishedProductCatalogIds = @(
     'fish-roe-info',
     'animal-husbandry-progress',
     'chest-locator-enhancer',
-    'auto-fishing'
+    'auto-fishing',
+    'more-equipment-slots'
 )
+$expectedCurrentPublishedProductVersions = @{
+    'zoom' = '1.0.0'
+    'y-console' = '1.1.1'
+    'more-saves' = '1.0.0'
+    'action-speed' = '1.0.0'
+    'one-action-complete' = '1.0.0'
+    'fish-roe-info' = '1.0.0'
+    'animal-husbandry-progress' = '1.0.0'
+    'chest-locator-enhancer' = '1.0.0'
+    'auto-fishing' = '1.0.0'
+    'more-equipment-slots' = '1.0.1'
+}
 $observedCurrentPublishedProductCatalogIds = New-Object 'System.Collections.Generic.List[string]'
 foreach ($product in $products) {
     $currentPublishedArtifact = Get-ObjectValue $product 'currentPublishedArtifact'
@@ -991,26 +1201,35 @@ foreach ($catalogId in $expectedCurrentPublishedProductCatalogIds) {
     if ($null -eq $artifact) {
         continue
     }
+    $isMoreEquipmentSlots = $catalogId -eq 'more-equipment-slots'
+    $isYConsole = $catalogId -eq 'y-console'
+    $expectedMinimumDtmApiVersion = if ($isYConsole) { '0.6.1' } elseif ($isMoreEquipmentSlots) { '0.6.0' } else { '0.5.5' }
+    $expectedGameBuildId = if ($isYConsole) { '24788406' } elseif ($isMoreEquipmentSlots) { '24788406' } else { '23762374' }
+    $expectedObservedAtUtc = if ($isYConsole) { '2026-08-22T23:43:44Z' } elseif ($isMoreEquipmentSlots) { '2026-08-30T11:00:19Z' } else { '2026-08-04T15:52:40Z' }
+    $expectedOwningUpdate = if ($isYConsole) {
+        'docs/updates/2026/20260823-0003-y-console-text-input-hotkey-guard.md'
+    }
+    elseif ($isMoreEquipmentSlots) {
+        'docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md'
+    }
+    else {
+        'docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md'
+    }
 
-    $authorizedEntrypoint = $expectedEntrypointsByCatalogId[$catalogId]
-    Assert-CatalogEqual -Label "$catalogId current published Workshop projection" `
-        -Actual (Get-ObjectValue $product 'workshopId') `
-        -Expected $authorizedEntrypoint.workshopId
     Assert-CatalogEqual -Label "$catalogId current published release version" `
         -Actual (Get-ObjectValue $artifact 'releaseVersion') `
-        -Expected $authorizedEntrypoint.version
+        -Expected $expectedCurrentPublishedProductVersions[$catalogId]
     Assert-CatalogEqual -Label "$catalogId current published minimum Runtime" `
         -Actual (Get-ObjectValue $artifact 'minimumDtmApiVersion') `
-        -Expected '0.5.5'
+        -Expected $expectedMinimumDtmApiVersion
     Assert-CatalogEqual -Label "$catalogId current published game build" `
         -Actual (Get-ObjectValue $artifact 'gameBuildId') `
-        -Expected '23762374'
+        -Expected $expectedGameBuildId
     Assert-CatalogEqual -Label "$catalogId current published tree digest algorithm" `
         -Actual (Get-ObjectValue $artifact 'treeDigestAlgorithm') `
         -Expected 'DTMAPI-Published-SHA256SUMS-v1'
-    Assert-CatalogEqual -Label "$catalogId current published tree matches its pre-upload authorization" `
-        -Actual (Get-ObjectValue $artifact 'steamDeliveredTreeSha256') `
-        -Expected $authorizedEntrypoint.treeSha256
+    Assert-CatalogTrue -Label "$catalogId current published tree SHA-256 is frozen." -Condition (
+        [string](Get-ObjectValue $artifact 'steamDeliveredTreeSha256') -match '^[0-9a-f]{64}$')
     Assert-CatalogTrue -Label "$catalogId current published file count is positive." -Condition (
         [long](Get-ObjectValue $artifact 'steamDeliveredFileCount') -gt 0)
     Assert-CatalogTrue -Label "$catalogId current published byte count is positive." -Condition (
@@ -1031,14 +1250,14 @@ foreach ($catalogId in $expectedCurrentPublishedProductCatalogIds) {
         $steamTimeUpdatedUtc -match '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
     Assert-CatalogEqual -Label "$catalogId current published observation time" `
         -Actual $observedAtUtc `
-        -Expected '2026-08-04T15:52:40Z'
+        -Expected $expectedObservedAtUtc
     Assert-CatalogEqual -Label "$catalogId current published state" `
         -Actual (Get-ObjectValue $artifact 'state') `
         -Expected 'SteamPublishedObservedExact'
     $owningUpdate = Normalize-RepoPath (Get-ObjectValue $artifact 'owningUpdate')
     Assert-CatalogEqual -Label "$catalogId current published owning Update" `
         -Actual $owningUpdate `
-        -Expected 'docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md'
+        -Expected $expectedOwningUpdate
     Assert-CatalogTrue -Label "$catalogId current published owning Update exists." -Condition (
         Test-Path -LiteralPath (Join-Path $repo $owningUpdate.Replace('/', '\')) -PathType Leaf)
 
@@ -1063,14 +1282,93 @@ foreach ($catalogId in $expectedCurrentPublishedProductCatalogIds) {
 }
 Assert-CatalogEqual -Label 'Current published ProductNative artifact row count' `
     -Actual $currentPublishedProductRows.Count `
-    -Expected 9
+    -Expected 10
 $currentPublishedProductDigest = Get-CatalogTextSha256 -Text ($currentPublishedProductRows.ToArray() -join "`n")
 Assert-CatalogEqual -Label 'Current published ProductNative artifact frozen digest' `
     -Actual $currentPublishedProductDigest `
-    -Expected 'cbb54977985f3c33be210a78d8bcedad5e83ad718d0b2cd0065ea875743d3587'
+    -Expected '45160a523f7ccec28d763229ea4104ce7109b1b3f596224098bb4351476fcd9a'
 
-Assert-CatalogTrue -Label 'MoreEquipmentSlots is not an authorized exact Workshop update.' -Condition (
-    -not $observedEntrypointCatalogIds.Contains('more-equipment-slots'))
+$moreEquipmentUploadEntrypoints = @($actualPublicMutationEntrypoints | Where-Object {
+    [string](Get-ObjectValue $_ 'catalogId') -eq 'more-equipment-slots'
+})
+if ($releaseTarget -eq 'MoreEquipmentSlots 1.0.0') {
+    Assert-CatalogEqual -Label 'MoreEquipmentSlots upload uses the exact authorized release-stop state.' `
+        -Actual $releaseStopState `
+        -Expected 'ActiveWithExactExistingWorkshopUpdateExceptions'
+    Assert-CatalogEqual -Label 'MoreEquipmentSlots upload authorization Update' `
+        -Actual $releaseAuthorizationUpdate `
+        -Expected 'docs/updates/2026/20260811-0001-moreequipment-slots-100-direct-replacement.md'
+    Assert-CatalogEqual -Label 'MoreEquipmentSlots is the only authorized exact Workshop update.' `
+        -Actual $actualPublicMutationEntrypoints.Count `
+        -Expected 1
+    Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload entry count' `
+        -Actual $moreEquipmentUploadEntrypoints.Count `
+        -Expected 1
+    if ($moreEquipmentUploadEntrypoints.Count -eq 1) {
+        $moreEquipmentUploadEntrypoint = $moreEquipmentUploadEntrypoints[0]
+        Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload Workshop id' `
+            -Actual (Get-ObjectValue $moreEquipmentUploadEntrypoint 'workshopId') `
+            -Expected '3744059735'
+        Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload version' `
+            -Actual (Get-ObjectValue $moreEquipmentUploadEntrypoint 'version') `
+            -Expected '1.0.0'
+        Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload official folder' `
+            -Actual (Get-ObjectValue $moreEquipmentUploadEntrypoint 'officialFolder') `
+            -Expected 'DTMAPI_MoreEquipmentSlots'
+        Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload package SHA-256' `
+            -Actual (Get-ObjectValue $moreEquipmentUploadEntrypoint 'packageSha256') `
+            -Expected 'e2ebf0c34ddb500422e906756b0ba1b1ab6864d820962a738bc34aed8620cfe8'
+        Assert-CatalogEqual -Label 'MoreEquipmentSlots exact upload tree SHA-256' `
+            -Actual (Get-ObjectValue $moreEquipmentUploadEntrypoint 'treeSha256') `
+            -Expected 'bfb01cc9f8965673a9057db969e2a5b0e61e822e17701f6c828066ce08f9b5c0'
+    }
+}
+else {
+    Assert-CatalogEqual -Label 'MoreEquipmentSlots is not incidentally authorized by another release target.' `
+        -Actual $moreEquipmentUploadEntrypoints.Count `
+        -Expected 0
+}
+
+$yConsoleUploadEntrypoints = @($actualPublicMutationEntrypoints | Where-Object {
+    [string](Get-ObjectValue $_ 'catalogId') -eq 'y-console'
+})
+if ($releaseTarget -eq 'YConsole 1.1.0') {
+    Assert-CatalogEqual -Label 'YConsole upload uses the exact authorized release-stop state.' `
+        -Actual $releaseStopState `
+        -Expected 'ActiveWithExactExistingWorkshopUpdateExceptions'
+    Assert-CatalogEqual -Label 'YConsole upload authorization Update' `
+        -Actual $releaseAuthorizationUpdate `
+        -Expected 'docs/updates/2026/20260813-0001-y-console-110-workshop-upload-preparation.md'
+    Assert-CatalogEqual -Label 'YConsole is the only authorized exact Workshop update.' `
+        -Actual $actualPublicMutationEntrypoints.Count `
+        -Expected 1
+    Assert-CatalogEqual -Label 'YConsole exact upload entry count' `
+        -Actual $yConsoleUploadEntrypoints.Count `
+        -Expected 1
+    if ($yConsoleUploadEntrypoints.Count -eq 1) {
+        $yConsoleUploadEntrypoint = $yConsoleUploadEntrypoints[0]
+        Assert-CatalogEqual -Label 'YConsole exact upload Workshop id' `
+            -Actual (Get-ObjectValue $yConsoleUploadEntrypoint 'workshopId') `
+            -Expected '3742714442'
+        Assert-CatalogEqual -Label 'YConsole exact upload version' `
+            -Actual (Get-ObjectValue $yConsoleUploadEntrypoint 'version') `
+            -Expected '1.1.0'
+        Assert-CatalogEqual -Label 'YConsole exact upload official folder' `
+            -Actual (Get-ObjectValue $yConsoleUploadEntrypoint 'officialFolder') `
+            -Expected 'DTMAPI_YKeyConsole'
+        Assert-CatalogEqual -Label 'YConsole exact upload package SHA-256' `
+            -Actual (Get-ObjectValue $yConsoleUploadEntrypoint 'packageSha256') `
+            -Expected 'e5ac82c723fd8ea5371725dc28de2e53d54c5145f46e234935eb932ad714a955'
+        Assert-CatalogEqual -Label 'YConsole exact upload tree SHA-256' `
+            -Actual (Get-ObjectValue $yConsoleUploadEntrypoint 'treeSha256') `
+            -Expected 'b1c384a6ecf8aea23abb3684ea4b326c1f1350ce183798528c2793c9f3b3259c'
+    }
+}
+else {
+    Assert-CatalogEqual -Label 'YConsole is not incidentally authorized by another release target.' `
+        -Actual $yConsoleUploadEntrypoints.Count `
+        -Expected 0
+}
 
 Assert-CatalogEqual -Label 'Published first-party product count' -Actual $publicProducts.Count -Expected 11
 
@@ -1162,7 +1460,7 @@ $expectedNonPublicAxes = @{
     'hello-example' = @('Example', 'Fixture', 'None', 'NeverPublish', 'Experimental')
     'config-menu-example' = @('Example', 'Fixture', 'None', 'NeverPublish', 'Experimental')
     'broken-manifest-negative' = @('NegativeFixture', 'Fixture', 'None', 'NeverPublish', 'Experimental')
-    'animal-pack' = @('PlannedProduct', 'OfficialJsonContent', 'None', 'PrototypeBlocked', 'Prototype')
+    'animal-pack' = @('PlannedProduct', 'OfficialJsonContent', 'LocalDeveloper', 'PrototypeBlocked', 'Prototype')
     'hatch-assets-input' = @('PrototypeInput', 'OfficialJsonContent', 'LocalDeveloper', 'NeverPublish', 'ProtectedCurrent')
     'mole-assets-input' = @('PrototypeInput', 'OfficialJsonContent', 'LocalDeveloper', 'NeverPublish', 'ProtectedCurrent')
     'drecko-assets-input' = @('PrototypeInput', 'OfficialJsonContent', 'LocalDeveloper', 'NeverPublish', 'ProtectedCurrent')
@@ -1187,7 +1485,18 @@ $animalPack = $productsByCatalogId['animal-pack']
 Assert-CatalogEqual -Label 'AnimalPack UniqueID' -Actual (Get-ObjectValue $animalPack 'uniqueId') -Expected 'DTMAPI.AnimalPack'
 Assert-CatalogEqual -Label 'AnimalPack official folder' -Actual (Get-ObjectValue $animalPack 'officialFolder') -Expected 'DTMAPI_AnimalPack'
 Assert-CatalogEqual -Label 'AnimalPack package name' -Actual (Get-ObjectValue $animalPack 'packageName') -Expected 'DTMAPI-AnimalPack'
-Assert-CatalogEqual -Label 'AnimalPack frozen identity state' -Actual (Get-ObjectValue $animalPack 'identityState') -Expected 'FrozenReservedNoArtifact'
+Assert-CatalogEqual -Label 'AnimalPack implementation type' -Actual (Get-ObjectValue $animalPack 'currentImplementationType') -Expected 'OfficialJsonContentPack'
+Assert-CatalogEqual -Label 'AnimalPack canonical source root' -Actual (Get-ObjectValue $animalPack 'sourceRoot') -Expected 'products/first-party/AnimalPack'
+Assert-CatalogEqual -Label 'AnimalPack canonical manifest' -Actual (Get-ObjectValue $animalPack 'sourceManifest') -Expected 'products/first-party/AnimalPack/manifest.json'
+Assert-CatalogEqual -Label 'AnimalPack source version' -Actual (Get-ObjectValue $animalPack 'sourceVersion') -Expected '1.0.0'
+Assert-CatalogEqual -Label 'AnimalPack source minimum DTMAPI version' -Actual (Get-ObjectValue $animalPack 'sourceMinimumDtmApiVersion') -Expected '0.6.0'
+Assert-CatalogEqual -Label 'AnimalPack target minimum DTMAPI version' -Actual (Get-ObjectValue $animalPack 'targetMinimumDtmApiVersion') -Expected '0.6.0'
+Assert-CatalogEqual -Label 'AnimalPack implemented identity state' -Actual (Get-ObjectValue $animalPack 'identityState') -Expected 'CanonicalLocalPrototypeImplemented'
+Compare-ExactSet -Label 'AnimalPack current release blockers' -Actual @((Get-ObjectValue $animalPack 'releaseBlockers')) -Expected @(
+    'AssetProvenance',
+    'OldInputDuplicatePreflight',
+    'GameAcceptancePending'
+)
 $oil = $productsByCatalogId['oil']
 Assert-CatalogEqual -Label 'Oil current implementation type' -Actual (Get-ObjectValue $oil 'currentImplementationType') -Expected 'OfficialJsonContentPack'
 foreach ($field in @('packageDll', 'project', 'sourceDll', 'sourceMinimumDtmApiVersion', 'targetMinimumDtmApiVersion')) {
@@ -1220,7 +1529,18 @@ Assert-CatalogEqual -Label 'Mine excluded source minimum' -Actual (Get-ObjectVal
 Assert-CatalogEqual -Label 'Mine excluded target minimum' -Actual (Get-ObjectValue $mine 'targetMinimumDtmApiVersion') -Expected '0.5.5'
 
 $yConsole = $productsByCatalogId['y-console']
-Compare-ExactSet -Label 'YConsole content sidecars' -Actual @((Get-ObjectValue $yConsole 'contentSidecars')) -Expected @('Content/item_tbitem.json')
+Compare-ExactSet -Label 'YConsole content sidecars' -Actual @((Get-ObjectValue $yConsole 'contentSidecars')) -Expected @(
+    'Content/item_tbitem.json',
+    'Content/localization_tbtextmapperde.json',
+    'Content/localization_tbtextmapperen.json',
+    'Content/localization_tbtextmapperfr.json',
+    'Content/localization_tbtextmapperja.json',
+    'Content/localization_tbtextmapperko.json',
+    'Content/localization_tbtextmapperpt_br.json',
+    'Content/localization_tbtextmapperru.json',
+    'Content/localization_tbtextmapperzh_cn.json',
+    'Content/localization_tbtextmapperzh_tw.json'
+)
 $yConsoleRetainedArtifact = Get-ObjectValue $yConsole 'retainedArtifact'
 Assert-CatalogEqual -Label 'YConsole retained entry DLL' -Actual (Get-ObjectValue $yConsoleRetainedArtifact 'entryDll') -Expected 'DTMAPI.YKeyConsole.dll'
 Assert-CatalogEqual -Label 'YConsole retained entry DLL SHA-256' -Actual (Get-ObjectValue $yConsoleRetainedArtifact 'entryDllSha256') -Expected 'e5a34963c0b66d6168104af27db849d707ee644f07917d8274868f8b8299b41e'
@@ -1308,6 +1628,8 @@ Assert-CatalogEqual -Label 'Retained published artifact row count' -Actual $reta
 Assert-CatalogEqual -Label 'Retained published artifact Catalog digest' -Actual $retainedHash -Expected (Get-ObjectValue $retainedFreeze 'sha256')
 Assert-CatalogEqual -Label 'Retained published artifact frozen digest' -Actual $retainedHash -Expected '2b5d9974a7e3d321c70442fd25457da9d1a91b548360e0f1cd7ffa2dd1c937ff'
 
+# Freeze identity, paths and published evidence. Current source/target versions are
+# validated against manifests above; a routine candidate bump must not rebaseline this freeze.
 $identityRows = New-Object 'System.Collections.Generic.List[string]'
 $identityRows.Add((@(
     'runtime',
@@ -1353,8 +1675,6 @@ foreach ($product in @($publicProducts.ToArray() | Sort-Object { [string](Get-Ob
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'sourceManifest')),
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'project')),
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'sourceDll')),
-        (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'sourceVersion')),
-        (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'sourceMinimumDtmApiVersion')),
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'publishedVersion')),
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'publishedMinimumDtmApiVersion')),
         (ConvertTo-CatalogScalarText (Get-ObjectValue $product 'canonicalConfigPath')),
@@ -1377,7 +1697,7 @@ $identityHash = Get-CatalogTextSha256 -Text ($identityRows.ToArray() -join "`n")
 $identityFreeze = Get-ObjectValue $catalog 'publicIdentityPathFreeze'
 Assert-CatalogEqual -Label 'Public identity/path freeze row count' -Actual $identityRows.Count -Expected (Get-ObjectValue $identityFreeze 'rowCount')
 Assert-CatalogEqual -Label 'Public identity/path Catalog digest' -Actual $identityHash -Expected (Get-ObjectValue $identityFreeze 'sha256')
-Assert-CatalogEqual -Label 'Public identity/path frozen digest' -Actual $identityHash -Expected '129476ff88a2cc3b408c8a8a7ca7d2927a7cf224686af3bc41dee1c3cd9e21d7'
+Assert-CatalogEqual -Label 'Public identity/path frozen digest' -Actual $identityHash -Expected '018b0bc0ee0b5182ecdfce9e12a0c66cc9419ed985c83166113802e73facf631'
 
 $contractFreeze = Get-ObjectValue $catalog 'protectedBehaviorContractFreeze'
 Assert-CatalogEqual -Label 'Protected contract freeze path' -Actual (Normalize-RepoPath (Get-ObjectValue $contractFreeze 'path')) -Expected 'tools/release/contracts/protected-behavior-contracts.json'
@@ -1510,7 +1830,7 @@ foreach ($rootName in @(
         }
     }
 }
-Assert-CatalogEqual -Label 'Active top-level source manifest count' -Actual $activeManifestPaths.Count -Expected 21
+Assert-CatalogEqual -Label 'Active top-level source manifest count' -Actual $activeManifestPaths.Count -Expected 22
 
 $releaseCommonPath = Join-Path $repo 'tools\scripts\release-common.ps1'
 . $releaseCommonPath
@@ -1609,9 +1929,19 @@ foreach ($advancedProduct in $catalogAdvancedProducts) {
         Assert-CatalogEqual -Label "$advancedLabel registry reference-policy projection" `
             -Actual (Get-ObjectValue $advancedProduct 'referencePolicyId') `
             -Expected (Get-ObjectValue $advancedRegistration 'policyId')
-        Assert-CatalogEqual -Label "$advancedLabel registry Runtime-floor projection" `
-            -Actual (Get-ObjectValue $advancedProduct 'sourceMinimumDtmApiVersion') `
-            -Expected (Get-ObjectValue $advancedRegistration 'minimumDtmApiVersion')
+        if ($advancedCatalogId -ceq 'y-console') {
+            Assert-CatalogEqual -Label "$advancedLabel frozen authoring-policy Runtime floor" `
+                -Actual (Get-ObjectValue $advancedRegistration 'minimumDtmApiVersion') `
+                -Expected '0.6.0'
+            Assert-CatalogEqual -Label "$advancedLabel product Runtime floor" `
+                -Actual (Get-ObjectValue $advancedProduct 'sourceMinimumDtmApiVersion') `
+                -Expected '0.6.1'
+        }
+        else {
+            Assert-CatalogEqual -Label "$advancedLabel registry Runtime-floor projection" `
+                -Actual (Get-ObjectValue $advancedProduct 'sourceMinimumDtmApiVersion') `
+                -Expected (Get-ObjectValue $advancedRegistration 'minimumDtmApiVersion')
+        }
     }
     Assert-CatalogTrue -Label "$advancedLabel canonical Harmony owner is present." -Condition (
         -not [string]::IsNullOrWhiteSpace([string](Get-ObjectValue $advancedProduct 'canonicalHarmonyOwner')))
@@ -1879,7 +2209,8 @@ foreach ($definition in $publishedDefinitions) {
 }
 
 $publishTextPath = Join-Path $repo 'tools\release\dtmapi-mod-publish-zh.json'
-$publishText = Read-JsonFile -Path $publishTextPath
+. "$PSScriptRoot/product-projections.ps1"
+$publishText = Get-DtmApiPublishProjection -RepoRoot $repo
 if ($null -ne $publishText) {
     $publishRowsByUniqueId = @{}
     foreach ($row in @((Get-ObjectValue $publishText 'mods'))) {
@@ -1897,6 +2228,34 @@ if ($null -ne $publishText) {
 
         if ($rowUniqueId -ne 'DTMAPI.Runtime' -and -not $productsByUniqueId.ContainsKey($rowUniqueId)) {
             Add-CatalogFailure "Publish-text projection row is missing from Catalog: $rowUniqueId"
+        }
+    }
+
+    Assert-CatalogTrue -Label 'Runtime publish-text projection row exists.' -Condition $publishRowsByUniqueId.ContainsKey('DTMAPI.Runtime')
+    if ($publishRowsByUniqueId.ContainsKey('DTMAPI.Runtime')) {
+        $runtimePublishRow = $publishRowsByUniqueId['DTMAPI.Runtime']
+        $runtimePublishDistributions = @((Get-ObjectValue $runtimePublishRow 'distributions'))
+        Assert-CatalogEqual -Label 'Runtime publish-text distribution route count' -Actual $runtimePublishDistributions.Count -Expected 2
+        $windowsPublishDistribution = @($runtimePublishDistributions | Where-Object { (Get-ObjectValue $_ 'distributionId') -eq 'dtmapi-windows' })
+        $multiPlatformPublishDistribution = @($runtimePublishDistributions | Where-Object { (Get-ObjectValue $_ 'distributionId') -eq 'dtmapi-multiplatform' })
+        Assert-CatalogEqual -Label 'Windows Runtime publish-text distribution row count' -Actual $windowsPublishDistribution.Count -Expected 1
+        Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text distribution row count' -Actual $multiPlatformPublishDistribution.Count -Expected 1
+        Assert-CatalogEqual -Label 'Windows Runtime publish-text metadata source' -Actual (Get-ObjectValue $windowsPublishDistribution[0] 'metadataSource') -Expected 'inline'
+        Assert-CatalogNumber -Label 'Windows Runtime publish-text Workshop ID' -Actual (Get-ObjectValue $windowsPublishDistribution[0] 'workshopId') -Expected 3743016467
+        Assert-CatalogNumber -Label 'Multi-platform Runtime publish-text Workshop ID' -Actual (Get-ObjectValue $multiPlatformPublishDistribution[0] 'workshopId') -Expected 3792681186
+        Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text upload authorization' -Actual (Get-ObjectValue $multiPlatformPublishDistribution[0] 'uploadAuthorization') -Expected 'None'
+        $multiPlatformInfoPath = Normalize-RepoPath (Get-ObjectValue $multiPlatformPublishDistribution[0] 'infoPath')
+        Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text info path' -Actual $multiPlatformInfoPath -Expected 'tools/release/dtmapi-multiplatform/info.json'
+        Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text icon path' -Actual (Normalize-RepoPath (Get-ObjectValue $multiPlatformPublishDistribution[0] 'iconPath')) -Expected 'assets/branding/dtmapi-multiplatform-icon.png'
+        Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text preview path' -Actual (Normalize-RepoPath (Get-ObjectValue $multiPlatformPublishDistribution[0] 'previewPath')) -Expected 'assets/branding/dtmapi-multiplatform-preview.png'
+        $multiPlatformInfo = Read-JsonFile -Path (Join-Path $repo ($multiPlatformInfoPath.Replace('/', '\')))
+        if ($null -ne $multiPlatformInfo) {
+            $expectedMultiPlatformName = 'DTMAPI-' + [char]0x591a + [char]0x5e73 + [char]0x53f0
+            Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text name' -Actual (Get-ObjectValue $multiPlatformInfo 'name') -Expected $expectedMultiPlatformName
+            Assert-CatalogEqual -Label 'Multi-platform Runtime publish-text version' -Actual (Get-ObjectValue $multiPlatformInfo 'version') -Expected '0.6.1'
+            $multiPlatformPackageMetadata = Read-JsonFile -Path (Join-Path $repo 'tools\release\dtmapi-multiplatform\package-metadata.json')
+            $requiredMultiPlatformLead = [string](Get-ObjectValue $multiPlatformPackageMetadata 'requiredSteamDescriptionLead')
+            Assert-CatalogTrue -Label 'Multi-platform Runtime Steam description starts with the exact required product overview.' -Condition ([string](Get-ObjectValue $multiPlatformInfo 'steamDescription')).StartsWith($requiredMultiPlatformLead, [System.StringComparison]::Ordinal)
         }
     }
 
@@ -2740,20 +3099,20 @@ if (-not [string]::IsNullOrWhiteSpace($RuntimePackageRoot)) {
         if ($null -ne $runtimeInfo -and (Test-Path -LiteralPath $runtimeInfoPath -PathType Leaf)) {
             $runtimeInfoItem = Get-Item -LiteralPath $runtimeInfoPath
             $runtimeInfoHash = (Get-FileHash -LiteralPath $runtimeInfoPath -Algorithm SHA256).Hash.ToLowerInvariant()
-            Assert-CatalogEqual -Label 'Built Runtime info.json candidate version' `
+            Assert-CatalogEqual -Label 'Built Runtime info.json current version' `
                 -Actual (Get-ObjectValue $runtimeInfo 'version') `
                 -Expected (Get-ObjectValue $currentRuntimeBoundary 'releaseVersion')
-            Assert-CatalogNumber -Label 'Built Runtime info.json matches current candidate stable-form bytes' `
+            Assert-CatalogNumber -Label 'Built Runtime info.json matches current stable-form bytes' `
                 -Actual $runtimeInfoItem.Length `
-                -Expected (Get-ObjectValue $currentRuntimeBoundary 'candidateInfoJsonBytes')
-            Assert-CatalogEqual -Label 'Built Runtime info.json matches current candidate stable-form SHA-256' `
+                -Expected (Get-ObjectValue $currentRuntimeBoundary 'infoJsonBytes')
+            Assert-CatalogEqual -Label 'Built Runtime info.json matches current stable-form SHA-256' `
                 -Actual $runtimeInfoHash `
-                -Expected (Get-ObjectValue $currentRuntimeBoundary 'candidateInfoJsonSha256')
+                -Expected (Get-ObjectValue $currentRuntimeBoundary 'infoJsonSha256')
             if (-not [string]::Equals(
                     [string](Get-ObjectValue $currentRuntimeBoundary 'releaseVersion'),
                     [string](Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion'),
                     [System.StringComparison]::Ordinal)) {
-                Assert-CatalogTrue -Label 'Unpublished Runtime candidate info.json remains distinct from the frozen published artifact.' `
+                Assert-CatalogTrue -Label 'Unpublished Runtime source info.json remains distinct from the frozen published artifact.' `
                     -Condition (-not [string]::Equals(
                         $runtimeInfoHash,
                         [string](Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonSha256'),
@@ -2837,7 +3196,7 @@ if (-not [string]::IsNullOrWhiteSpace($RuntimePackageRoot)) {
 
 $apiFreeze = Get-ObjectValue $catalog 'publicApiFreeze'
 $knownAbiBlockerText = [string](Get-ObjectValue $apiFreeze 'knownBlocker')
-Assert-CatalogEqual -Label 'Public ABI no-deletion policy' -Actual (Get-ObjectValue $apiFreeze 'abiPolicy') -Expected 'DTMAPI 0.6.1 removes no existing public ABI.'
+Assert-CatalogEqual -Label 'Public ABI no-deletion policy' -Actual (Get-ObjectValue $apiFreeze 'abiPolicy') -Expected 'DTMAPI 0.7.0 candidate source adds open native provenance, package dependencies and optional Experimental services and removes no existing public ABI; unpublished.'
 Assert-CatalogEqual -Label 'Known fishing ABI status' -Actual (Get-ObjectValue $apiFreeze 'knownBlockerState') -Expected 'RetainedBinaryCompatibilityPassed'
 Assert-CatalogTrue -Label 'Known fishing ABI status names the restored option.' -Condition ($knownAbiBlockerText -match 'StopOnManualMove')
 Assert-CatalogTrue -Label 'Known fishing ABI status records the historical Unity Mono pass.' -Condition ($knownAbiBlockerText -match 'historically loaded without recompilation under Unity Mono')

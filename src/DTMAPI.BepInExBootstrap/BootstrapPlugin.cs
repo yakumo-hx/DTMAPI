@@ -52,6 +52,8 @@ namespace DTMAPI.BepInExBootstrap
         private DateTimeOffset lastInputSystemFrameDriverAttempt = DateTimeOffset.MinValue;
         private EventInfo? inputSystemAfterUpdateEvent;
         private Delegate? inputSystemAfterUpdateHandler;
+        private EventInfo? applicationQuittingEvent;
+        private Delegate? applicationQuittingHandler;
         private int lastProcessedUnityFrame = -1;
         private long inputSystemFrameCallbackCount;
         private long playerLoopFrameCallbackCount;
@@ -76,6 +78,7 @@ namespace DTMAPI.BepInExBootstrap
             {
                 Logger.LogInfo("DTMAPI startup segment Bootstrap.Awake begin.");
                 host = new BepInExRuntimeHost(Logger);
+                NativePreloaderOrigins.Capture(host.GamePath, message => Logger.LogInfo(message));
                 ConfigurePersistentRoot();
                 Logger.LogInfo("DTMAPI startup segment BepInEx init elapsedMs=" + startup.ElapsedMilliseconds + ".");
                 var configMenu = new ConfigMenuRegistry();
@@ -124,6 +127,7 @@ namespace DTMAPI.BepInExBootstrap
                 unityContext = SynchronizationContext.Current;
                 diagnosticsHotkey = ResolveDiagnosticsHotkey();
                 startupPrepared = true;
+                SubscribeApplicationQuitting();
                 TryInstallPlayerLoopFrameDriver();
                 Logger.LogInfo("DTMAPI Bootstrap prepared; native source capture and Runtime start are deferred until the first PlayerLoop frame after native Awake initialization.");
                 Logger.LogInfo("DTMAPI startup segment Bootstrap.Awake prepared elapsedMs=" + startup.ElapsedMilliseconds + ".");
@@ -730,8 +734,10 @@ namespace DTMAPI.BepInExBootstrap
                 }
 
                 bool uiCapturingKey = titleSettingsUi != null && titleSettingsUi.IsCapturingKey;
+                bool diagnosticsHandledInput = false;
                 if (allowUnityApi && !uiCapturingKey && IsDiagnosticsHotkeyEnabled() && ReflectedUnityInput.GetKeyDown(diagnosticsHotkey))
                 {
+                    diagnosticsHandledInput = true;
                     bool wasOpen = runtime.UI.IsOpen;
                     runtime.UI.Toggle();
                     runtime.RuntimeMonitor.Log("DTMAPI diagnostics hotkey " + diagnosticsHotkey + " observed. open=" + wasOpen + " -> " + runtime.UI.IsOpen + " context=" + runtime.UI.InputContext + ".");
@@ -746,6 +752,7 @@ namespace DTMAPI.BepInExBootstrap
                 else
                     ReflectedUnityInput.DiscardLatchedEdges();
 
+                if (allowUnityApi && !diagnosticsHandledInput) titleSettingsUi?.ProcessEntryAction();
                 runtime.Update();
             }
             catch (Exception ex)
@@ -847,21 +854,70 @@ namespace DTMAPI.BepInExBootstrap
 
         public void OnApplicationQuit()
         {
+            Shutdown("Unity OnApplicationQuit");
+        }
+
+        private void SubscribeApplicationQuitting()
+        {
+            try
+            {
+                Type? application = Type.GetType("UnityEngine.Application, UnityEngine.CoreModule")
+                    ?? Type.GetType("UnityEngine.Application, UnityEngine");
+                EventInfo? quitting = application?.GetEvent("quitting", BindingFlags.Public | BindingFlags.Static);
+                if (quitting?.EventHandlerType == null)
+                    throw new MissingMemberException("UnityEngine.Application.quitting");
+                MethodInfo callback = GetType().GetMethod(nameof(OnApplicationQuitting), BindingFlags.Instance | BindingFlags.NonPublic)!;
+                Delegate handler = Delegate.CreateDelegate(quitting.EventHandlerType, this, callback);
+                quitting.AddEventHandler(null, handler);
+                applicationQuittingEvent = quitting;
+                applicationQuittingHandler = handler;
+                runtime?.RuntimeMonitor.Log("DTMAPI shutdown subscribed to Unity Application.quitting.");
+            }
+            catch (Exception ex)
+            {
+                runtime?.RuntimeMonitor.Log("Unity Application.quitting subscription failed: " + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
+            }
+        }
+
+        private void OnApplicationQuitting()
+        {
+            Shutdown("Unity Application.quitting");
+        }
+
+        private void Shutdown(string reason)
+        {
             if (Interlocked.Exchange(ref shutdownStarted, 1) != 0)
                 return;
 
             initialized = false;
-            fallbackPump?.Dispose();
+            runtime?.RuntimeMonitor.Log("DTMAPI bootstrap shutdown begin source=" + reason + "; thread=" + Thread.CurrentThread.ManagedThreadId + ".");
+            RunShutdownStage("Application.quitting subscription", () =>
+            {
+                if (applicationQuittingEvent != null && applicationQuittingHandler != null)
+                    applicationQuittingEvent.RemoveEventHandler(null, applicationQuittingHandler);
+            });
+            applicationQuittingEvent = null;
+            applicationQuittingHandler = null;
+            RunShutdownStage("fallback pump", () => fallbackPump?.Dispose());
             fallbackPump = null;
-            RemovePlayerLoopFrameDriver();
-            UnsubscribeInputSystemFrameDriver();
-            ReflectedUnityInput.ClearTransientState();
-            titleSettingsUi?.Shutdown("Unity OnApplicationQuit");
-            debugConsoleCompatibility?.ShutdownIfLoaded(
-                "Unity OnApplicationQuit");
-            bridge?.Shutdown("Unity OnApplicationQuit");
-            runtime?.NotifyRuntimeShutdown("Unity OnApplicationQuit");
-            runtime?.RuntimeMonitor.Log("Unity OnApplicationQuit observed by DTMAPI bootstrap.");
+            RunShutdownStage("PlayerLoop driver", RemovePlayerLoopFrameDriver);
+            RunShutdownStage("InputSystem driver", UnsubscribeInputSystemFrameDriver);
+            RunShutdownStage("input transient state", ReflectedUnityInput.ClearTransientState);
+            RunShutdownStage("title UI", () => titleSettingsUi?.Shutdown(reason));
+            RunShutdownStage("debug compatibility", () => debugConsoleCompatibility?.ShutdownIfLoaded(reason));
+            RunShutdownStage("GameBridge", () => bridge?.Shutdown(reason));
+            RunShutdownStage("Core", () => runtime?.NotifyRuntimeShutdown(reason));
+            runtime?.RuntimeMonitor.Log(reason + " observed by DTMAPI bootstrap.");
+        }
+
+        private void RunShutdownStage(string stage, Action action)
+        {
+            try { action(); }
+            catch (Exception ex)
+            {
+                try { runtime?.RuntimeMonitor.Log("Bootstrap shutdown stage failed stage=" + stage + ": " + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn); }
+                catch { }
+            }
         }
 
 

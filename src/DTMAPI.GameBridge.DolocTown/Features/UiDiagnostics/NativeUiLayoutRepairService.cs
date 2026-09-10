@@ -147,7 +147,7 @@ namespace DTMAPI.GameBridge.DolocTown
             catch { return false; }
         }
 
-        private static object? GetCurrentUiStateObject()
+        internal static object? GetCurrentUiStateObject()
         {
             object? input = ReadStaticMember(ResolveType("DolocAPI, Assembly-CSharp"), "userInput");
             return input == null ? null : ReadMember(input, "CurrentState");

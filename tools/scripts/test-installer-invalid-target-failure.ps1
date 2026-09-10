@@ -37,6 +37,7 @@ function Invoke-InvalidTargetCase {
         [Parameter(Mandatory = $true)] [string] $Name,
         [Parameter(Mandatory = $true)] [string] $GameDir,
         [Parameter(Mandatory = $true)] [string] $ExpectedMessage,
+        [string] $ExpectedCode = '',
         [string[]] $AdditionalArguments = @()
     )
 
@@ -89,9 +90,12 @@ function Invoke-InvalidTargetCase {
     if ($exitCode -eq 0) {
         throw "Installer invalid-target case unexpectedly succeeded: $Name"
     }
-    if ($combined.IndexOf('DTMAPI install failed before the game folder was resolved:', [System.StringComparison]::OrdinalIgnoreCase) -lt 0 -or
-        $combined.IndexOf($ExpectedMessage, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
-        throw "Installer invalid-target case missed its friendly original error: $Name output=$combined"
+    if ($combined.IndexOf($ExpectedMessage, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+        throw "Installer invalid-target case missed its expected diagnostic: $Name output=$combined"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedCode) -and
+        $combined.IndexOf("[$ExpectedCode]", [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+        throw "Installer invalid-target case missed stable message code $ExpectedCode`: $Name output=$combined"
     }
     foreach ($forbidden in @(
         'DtmRuntimeInstallTransaction',
@@ -154,10 +158,9 @@ function Invoke-InvalidStatusTargetCase {
     if ($exitCode -eq 0) {
         throw "Status invalid-target case unexpectedly succeeded: $Name"
     }
-    if ($combined.IndexOf('[INVALID] Doloc Town game folder could not be resolved or validated.', [System.StringComparison]::OrdinalIgnoreCase) -lt 0 -or
-        $combined.IndexOf($ExpectedMessage, [System.StringComparison]::OrdinalIgnoreCase) -lt 0 -or
-        $combined.IndexOf('Set DTMAPI_GAME_DIR to the folder containing DolocTown.exe and DolocTown_Data', [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
-        throw "Status invalid-target case missed its broad friendly diagnostic: $Name output=$combined"
+    if ($combined.IndexOf('[DTM-E1002]', [System.StringComparison]::OrdinalIgnoreCase) -lt 0 -or
+        $combined.IndexOf($ExpectedMessage, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+        throw "Status invalid-target case missed its coded friendly diagnostic: $Name output=$combined"
     }
     foreach ($forbidden in @(
         'InvalidOperation:',
@@ -179,11 +182,13 @@ try {
     Invoke-InvalidTargetCase `
         -Name 'missing-game-dir' `
         -GameDir $missingGameDir `
-        -ExpectedMessage 'DTMAPI_GAME_DIR is set but does not exist'
+        -ExpectedMessage 'The configured game directory does not exist.' `
+        -ExpectedCode 'DTM-E1002'
     Invoke-InvalidTargetCase `
         -Name 'empty-game-dir' `
         -GameDir $emptyGameDir `
-        -ExpectedMessage 'does not point to a valid Doloc Town game folder'
+        -ExpectedMessage 'The game directory is invalid; it must contain both DolocTown.exe and DolocTown_Data.' `
+        -ExpectedCode 'DTM-E1002'
     Invoke-InvalidTargetCase `
         -Name 'conflicting-published-and-all-dev-options' `
         -GameDir $missingGameDir `
@@ -198,11 +203,11 @@ try {
     Invoke-InvalidStatusTargetCase `
         -Name 'status-missing-game-dir' `
         -GameDir $missingGameDir `
-        -ExpectedMessage 'DTMAPI_GAME_DIR is set but does not exist'
+        -ExpectedMessage 'The configured game directory does not exist.'
     Invoke-InvalidStatusTargetCase `
         -Name 'status-empty-game-dir' `
         -GameDir $emptyGameDir `
-        -ExpectedMessage 'does not point to a valid Doloc Town game folder'
+        -ExpectedMessage 'The game directory is invalid; it must contain both DolocTown.exe and DolocTown_Data.'
 
     Write-Host 'Installer/status friendly-failure tests OK: installer-target=2 installer-option-conflict=2 status-target=2.'
 }

@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string] $Configuration = 'Release',
     [switch] $Quiet,
     [switch] $HostMatrixChild,
@@ -463,7 +463,8 @@ function Assert-OilCurrentVersionProjection {
     $stagedManifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $stagedManifestPath | ConvertFrom-Json
     $stagedInfo = Get-Content -Raw -Encoding UTF8 -LiteralPath $stagedInfoPath | ConvertFrom-Json
     $catalog = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'tools\release\dtmapi-product-catalog.json') | ConvertFrom-Json
-    $publishText = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $repo 'tools\release\dtmapi-mod-publish-zh.json') | ConvertFrom-Json
+    . "$PSScriptRoot/product-projections.ps1"
+    $publishText = Get-DtmApiPublishProjection -RepoRoot $repo
     $releaseManifest = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $Fixture.StateDir 'release-manifest.json') | ConvertFrom-Json
 
     $oilCatalog = @($catalog.products | Where-Object { [string]$_.uniqueId -eq 'DTMAPI.OilMod' })
@@ -515,8 +516,8 @@ try {
     $installText = [System.IO.File]::ReadAllText($installScript, [System.Text.Encoding]::UTF8)
     Assert-InstallTransactionTest -Condition ($installText -match 'RollbackRefusedUnknownChanges') -Message 'Installer does not fail closed when a just-published package fingerprint changes.'
     foreach ($requiredPausedAuthorSdkToken in @(
-        'New managed product installation is paused for DTMAPI 0.6.1',
-        'the unpublished Author SDK still targets the retired <game>/Mods root',
+        'Managed product installation through this Runtime installer is unavailable.',
+        'Use Author SDK install-local for an explicit package, or the official MODS release transaction',
         'Existing SDK deployment-status, install-local-status, recover and withdraw commands remain available for old deployments')) {
         Assert-InstallTransactionTest -Condition ($installText.Contains($requiredPausedAuthorSdkToken)) `
             -Message "Managed Author SDK pause boundary is missing: $requiredPausedAuthorSdkToken"

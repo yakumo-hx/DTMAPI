@@ -336,41 +336,195 @@ function Release-DtmApiRuntimeLock {
 
 function Test-DtmApiDotNet8Toolchain {
     param(
-        [Parameter(Mandatory = $true)] [string] $Path
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [string] $RepoRoot = (Get-RepoRoot)
     )
 
     if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         return $false
     }
 
-    $sdks = & $Path --list-sdks 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $sdks) {
-        return $false
+    $policyPath = Join-Path $RepoRoot 'global.json'
+    if (-not (Test-Path -LiteralPath $policyPath -PathType Leaf)) { return $false }
+    try {
+        $policy = Get-Content -LiteralPath $policyPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ([string]$policy.sdk.version -notmatch '^8\.\d+\.\d+$' -or
+            [string]$policy.sdk.rollForward -notin @('patch', 'latestPatch', 'disable') -or
+            $policy.sdk.allowPrerelease -ne $false) { return $false }
+        $required = [version]$policy.sdk.version
+        $resolvedHost = (Resolve-Path -LiteralPath $Path).Path
+        # SDK resolution starts at the invocation directory, not the csproj path.
+        # A host listing an 8.x runtime can still select an incompatible SDK.
+        Push-Location -LiteralPath $RepoRoot
+        try {
+            $selected = @(& $resolvedHost --version 2>$null)
+            if ($LASTEXITCODE -ne 0 -or $selected.Count -ne 1 -or [string]$selected[0] -notmatch '^8\.\d+\.\d+$') { return $false }
+            $actual = [version]([string]$selected[0]).Trim()
+            if ($actual -lt $required -or $actual.Minor -ne $required.Minor -or
+                [math]::Floor($actual.Build / 100) -ne [math]::Floor($required.Build / 100) -or
+                ($policy.sdk.rollForward -eq 'disable' -and $actual -ne $required)) { return $false }
+            $runtimes = @(& $resolvedHost --list-runtimes 2>$null)
+            return [bool]($LASTEXITCODE -eq 0 -and ($runtimes -match '^Microsoft\.NETCore\.App 8\.'))
+        }
+        finally { Pop-Location }
+    }
+    catch { return $false }
+}
+
+function New-DtmApiInstallerException {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Code,
+        [Parameter(Mandatory = $true)] [string] $Chinese,
+        [Parameter(Mandatory = $true)] [string] $English,
+        [string] $Detail = '',
+        [System.Exception] $InnerException = $null
+    )
+
+    $message = "[$Code] $Chinese / $English"
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) {
+        $message += " Detail: $Detail"
+    }
+    $exception = if ($null -eq $InnerException) {
+        New-Object -TypeName System.InvalidOperationException -ArgumentList $message
+    }
+    else {
+        New-Object -TypeName System.InvalidOperationException -ArgumentList @($message, $InnerException)
+    }
+    $exception.Data['DtmApiMessageCode'] = $Code
+    $exception.Data['DtmApiChinese'] = $Chinese
+    $exception.Data['DtmApiEnglish'] = $English
+    $exception.Data['DtmApiDetail'] = $Detail
+    return $exception
+}
+
+function Throw-DtmApiInstallerError {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Code,
+        [Parameter(Mandatory = $true)] [string] $Chinese,
+        [Parameter(Mandatory = $true)] [string] $English,
+        [string] $Detail = '',
+        [System.Exception] $InnerException = $null
+    )
+
+    throw (New-DtmApiInstallerException -Code $Code -Chinese $Chinese -English $English -Detail $Detail -InnerException $InnerException)
+}
+
+function Write-DtmApiInstallerMessage {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Code,
+        [Parameter(Mandatory = $true)] [string] $Chinese,
+        [Parameter(Mandatory = $true)] [string] $English,
+        [string] $Detail = '',
+        [ValidateSet('Info', 'Success', 'Warning', 'Error')] [string] $Level = 'Info'
+    )
+
+    $color = switch ($Level) {
+        'Success' { 'Green' }
+        'Warning' { 'Yellow' }
+        'Error' { 'Red' }
+        default { 'Cyan' }
+    }
+    Write-Host ("[{0}] {1}" -f $Code, $Chinese) -ForegroundColor $color
+    Write-Host ("[{0}] {1}" -f $Code, $English) -ForegroundColor $color
+    if (-not [string]::IsNullOrWhiteSpace($Detail)) {
+        Write-Host ("     {0}" -f $Detail)
+    }
+}
+
+function Get-DtmApiInstallerFailureInfo {
+    param([Parameter(Mandatory = $true)] $ErrorRecord)
+
+    $exception = $ErrorRecord.Exception
+    while ($null -ne $exception) {
+        if ($exception.Data -and $exception.Data.Contains('DtmApiMessageCode')) {
+            return [pscustomobject]@{
+                Code = [string]$exception.Data['DtmApiMessageCode']
+                Chinese = [string]$exception.Data['DtmApiChinese']
+                English = [string]$exception.Data['DtmApiEnglish']
+                Detail = [string]$exception.Data['DtmApiDetail']
+            }
+        }
+        $exception = $exception.InnerException
     }
 
-    $runtimes = & $Path --list-runtimes 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $runtimes) {
-        return $false
+    $exception = $ErrorRecord.Exception
+    while ($null -ne $exception) {
+        if ($exception -is [System.UnauthorizedAccessException] -or $exception -is [System.IO.IOException]) {
+            return [pscustomobject]@{
+                Code = 'DTM-E1102'
+                Chinese = '本地文件被占用或被安全软件拦截；这通常不是 Windows 防火墙问题。请关闭游戏及占用程序，检查杀毒软件或电脑管家的隔离/防护记录后重试。'
+                English = 'A local file is locked or blocked by endpoint security; this is usually not a Windows Firewall issue. Close the game and file users, check antivirus or PC-manager protection history, then retry.'
+                Detail = [string]$ErrorRecord.Exception.Message
+            }
+        }
+        $exception = $exception.InnerException
     }
 
-    return [bool]($runtimes -match '^Microsoft\.NETCore\.App 8\.')
+    $message = [string]$ErrorRecord.Exception.Message
+    if ($message -match '(?i)ConstrainedLanguage|language mode|application control|DotSourceNotSupported') {
+        return [pscustomobject]@{
+            Code = 'DTM-E1101'
+            Chinese = 'PowerShell 受到语言模式或应用控制策略限制，无法安全运行安装器。请修复 Windows 安全策略后重试。'
+            English = 'PowerShell is restricted by language mode or application-control policy and cannot run the installer safely. Repair the Windows security policy, then retry.'
+            Detail = $message
+        }
+    }
+    if ($message -match '(?i)access (?:is )?denied|access to the path .* denied|being used by another process|file target is occupied by a directory|local file .*locked|endpoint security') {
+        return [pscustomobject]@{
+            Code = 'DTM-E1102'
+            Chinese = '本地文件被占用或被安全软件拦截；这通常不是 Windows 防火墙问题。请关闭游戏及占用程序，检查杀毒软件或电脑管家的隔离/防护记录后重试。'
+            English = 'A local file is locked or blocked by endpoint security; this is usually not a Windows Firewall issue. Close the game and file users, check antivirus or PC-manager protection history, then retry.'
+            Detail = $message
+        }
+    }
+    if ($message -match '(?i)package|payload|manifest|managed DLL|assembly|SHA-?256|hash mismatch|binary version') {
+        return [pscustomobject]@{
+            Code = 'DTM-E1201'
+            Chinese = '安装包内容、哈希、清单或托管 DLL 校验失败。请让 Steam 重新下载本项目后重试。'
+            English = 'Package content, hashes, manifest, or managed DLL validation failed. Redownload this Workshop item through Steam, then retry.'
+            Detail = $message
+        }
+    }
+
+    return [pscustomobject]@{
+        Code = 'DTM-E1999'
+        Chinese = '安装器遇到未分类错误。请保留下面的完整错误并运行检查脚本。'
+        English = 'The installer encountered an unclassified error. Keep the complete error below and run the status checker.'
+        Detail = [string]$ErrorRecord.Exception.Message
+    }
+}
+
+function Write-DtmApiInstallerFailure {
+    param([Parameter(Mandatory = $true)] $ErrorRecord)
+
+    $info = Get-DtmApiInstallerFailureInfo -ErrorRecord $ErrorRecord
+    Write-DtmApiInstallerMessage -Code $info.Code -Chinese $info.Chinese -English $info.English -Detail $info.Detail -Level Error
 }
 
 function Get-DotNetExe {
     param(
-        [string] $RepoRoot = (Get-RepoRoot)
+        [string] $RepoRoot = (Get-RepoRoot),
+        [switch] $NoProvision
     )
 
     $localDotnet = Join-Path $RepoRoot '.tools\dotnet\dotnet.exe'
-    if (Test-DtmApiDotNet8Toolchain -Path $localDotnet) {
+    if (Test-DtmApiDotNet8Toolchain -Path $localDotnet -RepoRoot $RepoRoot) {
         return (Resolve-Path -LiteralPath $localDotnet).Path
     }
 
     $systemDotnet = Get-Command dotnet -ErrorAction SilentlyContinue
-    if ($systemDotnet -and (Test-DtmApiDotNet8Toolchain -Path $systemDotnet.Source)) {
+    if ($systemDotnet -and (Test-DtmApiDotNet8Toolchain -Path $systemDotnet.Source -RepoRoot $RepoRoot)) {
         return $systemDotnet.Source
     }
 
+    if ($NoProvision) {
+        throw 'No .NET host can execute the stable SDK selected by this workspace global.json with a .NET 8 runtime. Run tools/scripts/prepare-workspace.ps1 -Dependency DotNet.'
+    }
+
+    $sdkPolicyPath = Join-Path $RepoRoot 'global.json'
+    $sdkPolicy = Get-Content -LiteralPath $sdkPolicyPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $sdkVersion = [string]$sdkPolicy.sdk.version
+    if ($sdkVersion -notmatch '^8\.\d+\.\d+$') { throw "Unsupported .NET SDK policy: $sdkPolicyPath" }
     $toolsDir = Join-Path $RepoRoot '.tools'
     New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
     $installScript = Join-Path $toolsDir 'dotnet-install.ps1'
@@ -384,12 +538,12 @@ function Get-DotNetExe {
     }
 
     $installLog = Join-Path $toolsDir 'dotnet-install.log'
-    & $powershellHost -NoProfile -ExecutionPolicy Bypass -File $installScript -Channel 8.0 -InstallDir (Join-Path $toolsDir 'dotnet') *> $installLog
+    & $powershellHost -NoProfile -ExecutionPolicy Bypass -File $installScript -Version $sdkVersion -InstallDir (Join-Path $toolsDir 'dotnet') *> $installLog
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to install local .NET SDK. See $installLog"
     }
-    if (-not (Test-DtmApiDotNet8Toolchain -Path $localDotnet)) {
-        throw "The local .NET SDK installation completed without a usable Microsoft.NETCore.App 8.x runtime. See $installLog"
+    if (-not (Test-DtmApiDotNet8Toolchain -Path $localDotnet -RepoRoot $RepoRoot)) {
+        throw "The local .NET installation cannot execute the SDK selected by $sdkPolicyPath with a Microsoft.NETCore.App 8.x runtime. See $installLog"
     }
     return (Resolve-Path $localDotnet).Path
 }
@@ -458,19 +612,24 @@ function Test-DtmApiDolocTownGamePath {
         [Parameter(Mandatory = $true)] [string] $Path
     )
 
-    if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
-        return $false
-    }
-
-    $required = @(
-        (Join-Path $Path 'DolocTown.exe'),
-        (Join-Path $Path 'DolocTown_Data')
-    )
-
-    foreach ($item in $required) {
-        if (-not (Test-Path -LiteralPath $item)) {
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
             return $false
         }
+
+        $required = @(
+            (Join-Path $Path 'DolocTown.exe'),
+            (Join-Path $Path 'DolocTown_Data')
+        )
+
+        foreach ($item in $required) {
+            if (-not (Test-Path -LiteralPath $item)) {
+                return $false
+            }
+        }
+    }
+    catch {
+        return $false
     }
 
     return $true
@@ -483,14 +642,55 @@ function Assert-DtmApiDolocTownGamePath {
     )
 
     if (-not (Test-DtmApiDolocTownGamePath -Path $Path)) {
-        throw "$Source does not point to a valid Doloc Town game folder: $Path. Expected DolocTown.exe and DolocTown_Data in this folder."
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1002' `
+            -Chinese '游戏目录无效；目标文件夹必须同时包含 DolocTown.exe 和 DolocTown_Data。' `
+            -English 'The game directory is invalid; it must contain both DolocTown.exe and DolocTown_Data.' `
+            -Detail "$Source`: $Path"
+    }
+}
+
+function Resolve-DtmApiExplicitGamePath {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [Parameter(Mandatory = $true)] [string] $Source
+    )
+
+    try {
+        $full = [System.IO.Path]::GetFullPath($Path)
+        if (-not (Test-Path -LiteralPath $full -PathType Container)) {
+            Throw-DtmApiInstallerError `
+                -Code 'DTM-E1002' `
+                -Chinese '指定的游戏目录不存在。' `
+                -English 'The configured game directory does not exist.' `
+                -Detail "$Source`: $Path"
+        }
+        $resolved = (Resolve-Path -LiteralPath $full).Path
+        Assert-DtmApiDolocTownGamePath -Path $resolved -Source $Source
+        return $resolved
+    }
+    catch {
+        if ((Get-DtmApiInstallerFailureInfo -ErrorRecord $_).Code -eq 'DTM-E1002') {
+            throw
+        }
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1002' `
+            -Chinese '指定的游戏路径包含非法字符或无法解析。' `
+            -English 'The configured game path contains invalid characters or cannot be resolved.' `
+            -Detail "$Source`: $Path; $($_.Exception.Message)" `
+            -InnerException $_.Exception
     }
 }
 
 function Resolve-DtmApiSteamLibraryGamePath {
     param([Parameter(Mandatory = $true)] [string] $LibraryRoot)
 
-    $libraryRootFull = [System.IO.Path]::GetFullPath($LibraryRoot)
+    try {
+        $libraryRootFull = [System.IO.Path]::GetFullPath($LibraryRoot)
+    }
+    catch {
+        return $null
+    }
     $manifest = Join-Path $libraryRootFull 'steamapps\appmanifest_2285550.acf'
     if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
         return $null
@@ -536,23 +736,21 @@ function Resolve-DolocTownGamePath {
     )
 
     if ($env:DTMAPI_GAME_DIR) {
-        if (Test-Path -LiteralPath $env:DTMAPI_GAME_DIR) {
-            $resolved = (Resolve-Path -LiteralPath $env:DTMAPI_GAME_DIR).Path
-            Assert-DtmApiDolocTownGamePath -Path $resolved -Source 'DTMAPI_GAME_DIR'
-            return $resolved
-        }
-        throw "DTMAPI_GAME_DIR is set but does not exist: $env:DTMAPI_GAME_DIR"
+        return Resolve-DtmApiExplicitGamePath -Path $env:DTMAPI_GAME_DIR -Source 'DTMAPI_GAME_DIR'
     }
 
     $settings = Read-LocalSettings -RepoRoot $RepoRoot
     $settingsGameDir = if ($settings) { Get-DtmApiObjectProperty -Object $settings -Name 'GameDir' -Default '' } else { '' }
     if ($settingsGameDir) {
-        if (Test-Path -LiteralPath $settingsGameDir) {
-            $resolved = (Resolve-Path -LiteralPath $settingsGameDir).Path
-            Assert-DtmApiDolocTownGamePath -Path $resolved -Source 'local.settings.json GameDir'
-            return $resolved
+        return Resolve-DtmApiExplicitGamePath -Path ([string]$settingsGameDir) -Source 'local.settings.json GameDir'
+    }
+
+    $repoRootFull = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/')
+    foreach ($colocatedCandidate in @($repoRootFull, (Split-Path -Parent $repoRootFull))) {
+        if (-not [string]::IsNullOrWhiteSpace($colocatedCandidate) -and
+            (Test-DtmApiDolocTownGamePath -Path $colocatedCandidate)) {
+            return (Resolve-Path -LiteralPath $colocatedCandidate).Path
         }
-        throw "local.settings.json GameDir does not exist: $settingsGameDir"
     }
 
     $workshopLibraryRoot = Get-DtmApiWorkshopLibraryRoot -RepoRoot $RepoRoot
@@ -563,45 +761,14 @@ function Resolve-DolocTownGamePath {
         }
     }
 
-    $steamRoots = New-Object System.Collections.Generic.List[string]
-    foreach ($registryPath in @('HKCU:\Software\Valve\Steam', 'HKLM:\SOFTWARE\WOW6432Node\Valve\Steam')) {
-        try {
-            $steamRegistry = Get-ItemProperty -Path $registryPath -ErrorAction Stop
-            $steamPath = if ($steamRegistry.PSObject.Properties['SteamPath']) { [string]$steamRegistry.SteamPath } elseif ($steamRegistry.PSObject.Properties['InstallPath']) { [string]$steamRegistry.InstallPath } else { '' }
-            if ($steamPath -and (Test-Path -LiteralPath $steamPath)) {
-                $steamRoots.Add((Resolve-Path -LiteralPath $steamPath).Path)
-            }
-        }
-        catch {
-        }
-    }
-
-    foreach ($steamRoot in @($steamRoots)) {
-        $libraryFile = Join-Path $steamRoot 'steamapps\libraryfolders.vdf'
-        $libraryRoots = New-Object System.Collections.Generic.List[string]
-        $libraryRoots.Add($steamRoot)
-        if (Test-Path -LiteralPath $libraryFile) {
-            $text = Get-Content -Raw -LiteralPath $libraryFile
-            foreach ($match in [regex]::Matches($text, '"path"\s+"([^"]+)"')) {
-                $path = $match.Groups[1].Value.Replace('\\', '\')
-                if (Test-Path -LiteralPath $path) {
-                    $libraryRoots.Add((Resolve-Path -LiteralPath $path).Path)
-                }
-            }
-        }
-
-        foreach ($libraryRoot in @($libraryRoots)) {
-            $libraryGame = Resolve-DtmApiSteamLibraryGamePath -LibraryRoot $libraryRoot
-            if (-not [string]::IsNullOrWhiteSpace($libraryGame)) {
-                return $libraryGame
-            }
-        }
-    }
-
     if ($AllowMissing) {
         return $null
     }
-    throw "Doloc Town game path not found. Set DTMAPI_GAME_DIR or create local.settings.json with { `"GameDir`": `"C:\\path\\to\\Doloc Town`" }."
+    Throw-DtmApiInstallerError `
+        -Code 'DTM-E1002' `
+        -Chinese '无法定位《多洛可小镇》目录。请把安装包完整复制到 DolocTown.exe 所在文件夹，或设置 DTMAPI_GAME_DIR/local.settings.json。' `
+        -English 'Doloc Town could not be located. Copy the complete installer package beside DolocTown.exe, or set DTMAPI_GAME_DIR/local.settings.json.' `
+        -Detail 'Only an explicit path, a colocated package, or the current Workshop package library appmanifest is considered.'
 }
 
 function Resolve-DtmApiStateDir {
@@ -643,6 +810,375 @@ function Test-DtmApiPathIsSameOrChild {
 
     $parentPrefix = $parentFull + [System.IO.Path]::DirectorySeparatorChar
     return $childFull.StartsWith($parentPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
+function Assert-DtmApiRuntimeTransactionPath {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Actual,
+        [Parameter(Mandatory = $true)] [string] $Expected,
+        [Parameter(Mandatory = $true)] [string] $Label
+    )
+
+    $actualFull = [System.IO.Path]::GetFullPath($Actual)
+    $expectedFull = [System.IO.Path]::GetFullPath($Expected)
+    if (-not [string]::Equals($actualFull, $expectedFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Interrupted DTMAPI Runtime transaction has an unsafe $Label path. Expected=$expectedFull Actual=$actualFull"
+    }
+}
+
+function Assert-DtmApiRuntimeTransactionOwnedPathSafe {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Path,
+        [Parameter(Mandatory = $true)] [string] $Boundary,
+        [Parameter(Mandatory = $true)] [string] $Label
+    )
+
+    $pathFull = [System.IO.Path]::GetFullPath($Path)
+    $boundaryFull = [System.IO.Path]::GetFullPath($Boundary)
+    if (-not (Test-DtmApiPathIsSameOrChild -Child $pathFull -Parent $boundaryFull)) {
+        throw "Interrupted DTMAPI Runtime transaction $Label escaped its validated boundary. Boundary=$boundaryFull Path=$pathFull"
+    }
+
+    $cursor = $pathFull
+    while (Test-DtmApiPathIsSameOrChild -Child $cursor -Parent $boundaryFull) {
+        # The caller owns the boundary itself (game/state root). Only the
+        # transaction-owned path below it must be free of reparse points.
+        if ([string]::Equals($cursor, $boundaryFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        if (Test-Path -LiteralPath $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force -ErrorAction Stop
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "Interrupted DTMAPI Runtime transaction $Label contains a reparse point: $($item.FullName)"
+            }
+        }
+        $parent = [System.IO.Path]::GetDirectoryName($cursor)
+        if ([string]::IsNullOrWhiteSpace($parent) -or [string]::Equals($parent, $cursor, [System.StringComparison]::OrdinalIgnoreCase)) {
+            break
+        }
+        $cursor = $parent
+    }
+}
+
+function Test-DtmApiRuntimeTransactionStamp {
+    param([Parameter(Mandatory = $true)] [string] $Stamp)
+
+    return [regex]::IsMatch($Stamp, '^\d{8}-\d{6}-\d{3}-[0-9a-fA-F]{8}$')
+}
+
+function Read-DtmApiRuntimeTransactionReceipt {
+    param(
+        [Parameter(Mandatory = $true)] [string] $RuntimeTransactionRoot,
+        [Parameter(Mandatory = $true)] [string] $GameDir,
+        [Parameter(Mandatory = $true)] [string] $StateDir,
+        [Parameter(Mandatory = $true)] [string] $PluginDir
+    )
+
+    $receiptPath = Join-Path $RuntimeTransactionRoot 'transaction.json'
+    if (-not (Test-Path -LiteralPath $receiptPath -PathType Leaf)) {
+        throw "Interrupted DTMAPI Runtime transaction has no recovery receipt: $RuntimeTransactionRoot"
+    }
+    try {
+        $receipt = Get-Content -Raw -Encoding UTF8 -LiteralPath $receiptPath | ConvertFrom-Json
+    }
+    catch {
+        throw "Interrupted DTMAPI Runtime transaction receipt is unreadable: $receiptPath. $($_.Exception.Message)"
+    }
+
+    $requiredProperties = @(
+        'SchemaVersion', 'GameDir', 'StateDir', 'PluginDir', 'Phase', 'RuntimeTransactionRoot', 'TransactionRoot',
+        'CandidatePlugin', 'RecoveryPlugin', 'CandidateTools', 'CandidateReleaseManifest', 'CandidateInstallState',
+        'RecoveryState', 'LiveTools', 'LiveReleaseManifest', 'LiveInstallState', 'OldPluginExisted', 'OldPluginMoved',
+        'CandidatePluginPlaced', 'OldToolsExisted', 'OldToolsMoved', 'CandidateToolsPlaced',
+        'OldReleaseManifestExisted', 'OldReleaseManifestMoved', 'CandidateReleaseManifestPlaced',
+        'OldInstallStateExisted', 'OldInstallStateMoved', 'CandidateInstallStatePlaced', 'CommitSucceeded'
+    )
+    foreach ($propertyName in $requiredProperties) {
+        if ($null -eq $receipt.PSObject.Properties[$propertyName]) {
+            throw "Interrupted DTMAPI Runtime transaction receipt is missing ${propertyName}: $receiptPath"
+        }
+    }
+    if ([int]$receipt.SchemaVersion -ne 1) {
+        throw "Interrupted DTMAPI Runtime transaction receipt has unsupported schema $($receipt.SchemaVersion): $receiptPath"
+    }
+
+    $componentReceiptProperties = @(
+        'CandidateComponents', 'LiveComponents', 'OldComponentsExisted', 'OldComponentsMoved', 'CandidateComponentsPlaced'
+    )
+    $componentReceiptPropertyCount = @($componentReceiptProperties | Where-Object { $null -ne $receipt.PSObject.Properties[$_] }).Count
+    if ($componentReceiptPropertyCount -ne 0 -and $componentReceiptPropertyCount -ne $componentReceiptProperties.Count) {
+        throw "Interrupted DTMAPI Runtime transaction receipt has an incomplete optional-component projection: $receiptPath"
+    }
+    $hasComponentReceipt = $componentReceiptPropertyCount -eq $componentReceiptProperties.Count
+
+    $runtimeRootFull = [System.IO.Path]::GetFullPath($RuntimeTransactionRoot)
+    $runtimeRootName = Split-Path -Leaf $runtimeRootFull
+    $runtimePrefix = '.dtmapi-runtime-install-'
+    if (-not $runtimeRootName.StartsWith($runtimePrefix, [System.StringComparison]::Ordinal) -or $runtimeRootName.Length -le $runtimePrefix.Length) {
+        throw "Interrupted DTMAPI Runtime transaction directory has an invalid name: $runtimeRootFull"
+    }
+    $stamp = $runtimeRootName.Substring($runtimePrefix.Length)
+    if (-not (Test-DtmApiRuntimeTransactionStamp -Stamp $stamp)) {
+        throw "Interrupted DTMAPI Runtime transaction directory has an invalid stamp: $runtimeRootFull"
+    }
+
+    $gameFull = [System.IO.Path]::GetFullPath($GameDir)
+    $stateFull = [System.IO.Path]::GetFullPath($StateDir)
+    $pluginFull = [System.IO.Path]::GetFullPath($PluginDir)
+    $expectedStateTransactionRoot = Join-Path $stateFull ('.runtime-install-transaction-' + $stamp)
+    Assert-DtmApiRuntimeTransactionPath -Actual (Split-Path -Parent $runtimeRootFull) -Expected $gameFull -Label 'game-root parent'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.GameDir) -Expected $gameFull -Label 'game directory'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.StateDir) -Expected $stateFull -Label 'state directory'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.PluginDir) -Expected $pluginFull -Label 'live plugin directory'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RuntimeTransactionRoot) -Expected $runtimeRootFull -Label 'runtime transaction root'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.TransactionRoot) -Expected $expectedStateTransactionRoot -Label 'state transaction root'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidatePlugin) -Expected (Join-Path $runtimeRootFull 'candidate-plugin') -Label 'candidate plugin'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RecoveryPlugin) -Expected (Join-Path $runtimeRootFull 'recovery-plugin') -Label 'recovery plugin'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateTools) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\tools') -Label 'candidate tools'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateReleaseManifest) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\release-manifest.json') -Label 'candidate release manifest'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateInstallState) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\install-state.json') -Label 'candidate install state'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.RecoveryState) -Expected (Join-Path $expectedStateTransactionRoot 'recovery') -Label 'state recovery root'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveTools) -Expected (Join-Path $stateFull 'tools') -Label 'live tools'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveReleaseManifest) -Expected (Join-Path $stateFull 'release-manifest.json') -Label 'live release manifest'
+    Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveInstallState) -Expected (Join-Path $stateFull 'install-state.json') -Label 'live install state'
+    if ($hasComponentReceipt) {
+        Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.CandidateComponents) -Expected (Join-Path $expectedStateTransactionRoot 'candidate\components') -Label 'candidate components'
+        Assert-DtmApiRuntimeTransactionPath -Actual ([string]$receipt.LiveComponents) -Expected (Join-Path $stateFull 'components') -Label 'live components'
+    }
+
+    foreach ($ownedPath in @(
+        [pscustomobject]@{ Path = $runtimeRootFull; Boundary = $gameFull; Label = 'Runtime transaction root' },
+        [pscustomobject]@{ Path = [string]$receipt.CandidatePlugin; Boundary = $runtimeRootFull; Label = 'candidate plugin path' },
+        [pscustomobject]@{ Path = [string]$receipt.RecoveryPlugin; Boundary = $runtimeRootFull; Label = 'recovery plugin path' },
+        [pscustomobject]@{ Path = [string]$receipt.TransactionRoot; Boundary = $stateFull; Label = 'state transaction root' },
+        [pscustomobject]@{ Path = [string]$receipt.CandidateTools; Boundary = [string]$receipt.TransactionRoot; Label = 'candidate tools path' },
+        [pscustomobject]@{ Path = $(if ($hasComponentReceipt) { [string]$receipt.CandidateComponents } else { Join-Path ([string]$receipt.TransactionRoot) 'candidate\components' }); Boundary = [string]$receipt.TransactionRoot; Label = 'candidate components path' },
+        [pscustomobject]@{ Path = [string]$receipt.CandidateReleaseManifest; Boundary = [string]$receipt.TransactionRoot; Label = 'candidate release-manifest path' },
+        [pscustomobject]@{ Path = [string]$receipt.CandidateInstallState; Boundary = [string]$receipt.TransactionRoot; Label = 'candidate install-state path' },
+        [pscustomobject]@{ Path = [string]$receipt.RecoveryState; Boundary = [string]$receipt.TransactionRoot; Label = 'state recovery path' }
+    )) {
+        Assert-DtmApiRuntimeTransactionOwnedPathSafe -Path $ownedPath.Path -Boundary $ownedPath.Boundary -Label $ownedPath.Label
+    }
+
+    $rollbackSucceeded = $null
+    if ($null -ne $receipt.PSObject.Properties['RollbackSucceeded'] -and $null -ne $receipt.RollbackSucceeded) {
+        $rollbackSucceeded = [bool]$receipt.RollbackSucceeded
+    }
+    $transaction = [pscustomobject][ordered]@{
+        Phase = [string]$receipt.Phase
+        FailedPhase = if ($null -eq $receipt.PSObject.Properties['FailedPhase']) { '' } else { [string]$receipt.FailedPhase }
+        RuntimeTransactionRoot = $runtimeRootFull
+        ReceiptPath = [System.IO.Path]::GetFullPath($receiptPath)
+        TransactionRoot = [System.IO.Path]::GetFullPath([string]$receipt.TransactionRoot)
+        CandidatePlugin = [System.IO.Path]::GetFullPath([string]$receipt.CandidatePlugin)
+        RecoveryPlugin = [System.IO.Path]::GetFullPath([string]$receipt.RecoveryPlugin)
+        CandidateTools = [System.IO.Path]::GetFullPath([string]$receipt.CandidateTools)
+        CandidateComponents = [System.IO.Path]::GetFullPath($(if ($hasComponentReceipt) { [string]$receipt.CandidateComponents } else { Join-Path ([string]$receipt.TransactionRoot) 'candidate\components' }))
+        CandidateReleaseManifest = [System.IO.Path]::GetFullPath([string]$receipt.CandidateReleaseManifest)
+        CandidateInstallState = [System.IO.Path]::GetFullPath([string]$receipt.CandidateInstallState)
+        RecoveryState = [System.IO.Path]::GetFullPath([string]$receipt.RecoveryState)
+        LiveTools = [System.IO.Path]::GetFullPath([string]$receipt.LiveTools)
+        LiveComponents = [System.IO.Path]::GetFullPath($(if ($hasComponentReceipt) { [string]$receipt.LiveComponents } else { Join-Path $stateFull 'components' }))
+        LiveReleaseManifest = [System.IO.Path]::GetFullPath([string]$receipt.LiveReleaseManifest)
+        LiveInstallState = [System.IO.Path]::GetFullPath([string]$receipt.LiveInstallState)
+        RuntimeMetadata = @()
+        RuntimeFileRecords = @()
+        StateToolRecords = @()
+        OptionalComponentMetadata = @()
+        OptionalComponentFileRecords = @()
+        AssetRecord = $null
+        OldPluginExisted = [bool]$receipt.OldPluginExisted
+        OldPluginMoved = [bool]$receipt.OldPluginMoved
+        CandidatePluginPlaced = [bool]$receipt.CandidatePluginPlaced
+        OldToolsExisted = [bool]$receipt.OldToolsExisted
+        OldToolsMoved = [bool]$receipt.OldToolsMoved
+        CandidateToolsPlaced = [bool]$receipt.CandidateToolsPlaced
+        OldComponentsExisted = if ($hasComponentReceipt) { [bool]$receipt.OldComponentsExisted } else { $false }
+        OldComponentsMoved = if ($hasComponentReceipt) { [bool]$receipt.OldComponentsMoved } else { $false }
+        CandidateComponentsPlaced = if ($hasComponentReceipt) { [bool]$receipt.CandidateComponentsPlaced } else { $false }
+        OldReleaseManifestExisted = [bool]$receipt.OldReleaseManifestExisted
+        OldReleaseManifestMoved = [bool]$receipt.OldReleaseManifestMoved
+        CandidateReleaseManifestPlaced = [bool]$receipt.CandidateReleaseManifestPlaced
+        OldInstallStateExisted = [bool]$receipt.OldInstallStateExisted
+        OldInstallStateMoved = [bool]$receipt.OldInstallStateMoved
+        CandidateInstallStatePlaced = [bool]$receipt.CandidateInstallStatePlaced
+        CommitSucceeded = [bool]$receipt.CommitSucceeded
+        RollbackSucceeded = $rollbackSucceeded
+        RollbackFaultConsumed = $false
+        ReceiptEstablished = $true
+    }
+
+    switch ([string]$transaction.Phase) {
+        'MovingOldRuntime' { if (Test-Path -LiteralPath $transaction.RecoveryPlugin -PathType Container) { $transaction.OldPluginMoved = $true } }
+        'PlacingCandidate' { if (-not (Test-Path -LiteralPath $transaction.CandidatePlugin -PathType Container) -and (Test-Path -LiteralPath $pluginFull -PathType Container)) { $transaction.CandidatePluginPlaced = $true } }
+        'MovingOldTools' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'tools') -PathType Container) { $transaction.OldToolsMoved = $true } }
+        'PlacingTools' { if (-not (Test-Path -LiteralPath $transaction.CandidateTools -PathType Container) -and (Test-Path -LiteralPath $transaction.LiveTools -PathType Container)) { $transaction.CandidateToolsPlaced = $true } }
+        'MovingOldComponents' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'components') -PathType Container) { $transaction.OldComponentsMoved = $true } }
+        'PlacingComponents' { if (-not (Test-Path -LiteralPath $transaction.CandidateComponents -PathType Container) -and (Test-Path -LiteralPath $transaction.LiveComponents -PathType Container)) { $transaction.CandidateComponentsPlaced = $true } }
+        'MovingOldReleaseManifest' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'release-manifest.json') -PathType Leaf) { $transaction.OldReleaseManifestMoved = $true } }
+        'PlacingReleaseManifest' { if (-not (Test-Path -LiteralPath $transaction.CandidateReleaseManifest -PathType Leaf) -and (Test-Path -LiteralPath $transaction.LiveReleaseManifest -PathType Leaf)) { $transaction.CandidateReleaseManifestPlaced = $true } }
+        'MovingOldInstallState' { if (Test-Path -LiteralPath (Join-Path $transaction.RecoveryState 'install-state.json') -PathType Leaf) { $transaction.OldInstallStateMoved = $true } }
+        'PlacingInstallState' { if (-not (Test-Path -LiteralPath $transaction.CandidateInstallState -PathType Leaf) -and (Test-Path -LiteralPath $transaction.LiveInstallState -PathType Leaf)) { $transaction.CandidateInstallStatePlaced = $true } }
+    }
+    return $transaction
+}
+
+function Get-DtmApiRuntimeTransactionClassifications {
+    param(
+        [Parameter(Mandatory = $true)] [string] $GameDir,
+        [Parameter(Mandatory = $true)] [string] $StateDir,
+        [Parameter(Mandatory = $true)] [string] $PluginDir
+    )
+
+    $gameFull = [System.IO.Path]::GetFullPath($GameDir)
+    $stateFull = [System.IO.Path]::GetFullPath($StateDir)
+    $pluginFull = [System.IO.Path]::GetFullPath($PluginDir)
+    $runtimePrefix = '.dtmapi-runtime-install-'
+    $statePrefix = '.runtime-install-transaction-'
+    $runtimeItems = @(Get-ChildItem -LiteralPath $gameFull -Force -Filter ($runtimePrefix + '*') -ErrorAction Stop | Sort-Object Name)
+    $stateItems = if (Test-Path -LiteralPath $stateFull -PathType Container) {
+        @(Get-ChildItem -LiteralPath $stateFull -Force -Filter ($statePrefix + '*') -ErrorAction Stop | Sort-Object Name)
+    }
+    else {
+        @()
+    }
+    $stateByStamp = @{}
+    foreach ($stateItem in $stateItems) {
+        $stateName = [string]$stateItem.Name
+        if ($stateName.StartsWith($statePrefix, [System.StringComparison]::Ordinal) -and $stateName.Length -gt $statePrefix.Length) {
+            $stateByStamp[$stateName.Substring($statePrefix.Length).ToUpperInvariant()] = $stateItem
+        }
+    }
+
+    $results = New-Object System.Collections.Generic.List[object]
+    $pairedStateStamps = @{}
+    foreach ($runtimeItem in $runtimeItems) {
+        $runtimePath = [System.IO.Path]::GetFullPath($runtimeItem.FullName)
+        $runtimeName = [string]$runtimeItem.Name
+        $stamp = if ($runtimeName.StartsWith($runtimePrefix, [System.StringComparison]::Ordinal) -and $runtimeName.Length -gt $runtimePrefix.Length) {
+            $runtimeName.Substring($runtimePrefix.Length)
+        }
+        else {
+            ''
+        }
+        $stampKey = $stamp.ToUpperInvariant()
+        $stateItem = if ($stateByStamp.ContainsKey($stampKey)) { $stateByStamp[$stampKey] } else { $null }
+        if ($null -ne $stateItem) { $pairedStateStamps[$stampKey] = $true }
+        $receiptPath = Join-Path $runtimePath 'transaction.json'
+
+        if (-not $runtimeItem.PSIsContainer -or -not (Test-DtmApiRuntimeTransactionStamp -Stamp $stamp)) {
+            $results.Add([pscustomobject]@{
+                Kind = 'UnsafeNoReceipt'; Stamp = $stamp; RuntimeRoot = $runtimePath; StateRoot = if ($null -eq $stateItem) { '' } else { [string]$stateItem.FullName }
+                ReceiptPath = $receiptPath; ReasonCode = 'invalid-runtime-root'; Detail = 'The Runtime transaction item is not an exact supported transaction directory.'; Transaction = $null
+            }) | Out-Null
+            continue
+        }
+
+        if (Test-Path -LiteralPath $receiptPath -PathType Leaf) {
+            try {
+                $transaction = Read-DtmApiRuntimeTransactionReceipt -RuntimeTransactionRoot $runtimePath -GameDir $gameFull -StateDir $stateFull -PluginDir $pluginFull
+                $results.Add([pscustomobject]@{
+                    Kind = 'RecoverableReceipt'; Stamp = $stamp; RuntimeRoot = $runtimePath; StateRoot = [string]$transaction.TransactionRoot
+                    ReceiptPath = $receiptPath; ReasonCode = 'validated-receipt'; Detail = ''; Transaction = $transaction
+                }) | Out-Null
+            }
+            catch {
+                $results.Add([pscustomobject]@{
+                    Kind = 'InvalidReceipt'; Stamp = $stamp; RuntimeRoot = $runtimePath; StateRoot = if ($null -eq $stateItem) { '' } else { [string]$stateItem.FullName }
+                    ReceiptPath = $receiptPath; ReasonCode = 'invalid-receipt'; Detail = [string]$_.Exception.Message; Transaction = $null
+                }) | Out-Null
+            }
+            continue
+        }
+
+        $sterile = $null -eq $stateItem
+        $sterileReason = if ($sterile) { '' } else { 'A matching state transaction exists.' }
+        if (($runtimeItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            $sterile = $false
+            $sterileReason = 'The Runtime transaction root is a reparse point.'
+        }
+        if ($sterile) {
+            try {
+                foreach ($entry in @(Get-ChildItem -LiteralPath $runtimePath -Force -ErrorAction Stop)) {
+                    $isReparse = ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0
+                    $isKnownReceiptTemp = -not $entry.PSIsContainer -and
+                        [regex]::IsMatch([string]$entry.Name, '^transaction\.json\.(tmp|bak)-[0-9a-fA-F]{32}$')
+                    if ($isReparse -or -not $isKnownReceiptTemp) {
+                        $sterile = $false
+                        $sterileReason = "Unknown or unsafe receiptless entry: $($entry.FullName)"
+                        break
+                    }
+                }
+            }
+            catch {
+                $sterile = $false
+                $sterileReason = "Could not enumerate the receiptless transaction root: $($_.Exception.Message)"
+            }
+        }
+        $results.Add([pscustomobject]@{
+            Kind = if ($sterile) { 'SterileNoReceipt' } else { 'UnsafeNoReceipt' }
+            Stamp = $stamp
+            RuntimeRoot = $runtimePath
+            StateRoot = if ($null -eq $stateItem) { '' } else { [System.IO.Path]::GetFullPath($stateItem.FullName) }
+            ReceiptPath = $receiptPath
+            ReasonCode = if ($sterile) { 'sterile-pre-receipt' } else { 'unsafe-receiptless' }
+            Detail = $sterileReason
+            Transaction = $null
+        }) | Out-Null
+    }
+
+    foreach ($stateItem in $stateItems) {
+        $stateName = [string]$stateItem.Name
+        $stamp = if ($stateName.StartsWith($statePrefix, [System.StringComparison]::Ordinal) -and $stateName.Length -gt $statePrefix.Length) {
+            $stateName.Substring($statePrefix.Length)
+        }
+        else {
+            ''
+        }
+        if (-not $pairedStateStamps.ContainsKey($stamp.ToUpperInvariant())) {
+            $results.Add([pscustomobject]@{
+                Kind = 'OrphanState'; Stamp = $stamp; RuntimeRoot = ''; StateRoot = [System.IO.Path]::GetFullPath($stateItem.FullName)
+                ReceiptPath = ''; ReasonCode = 'orphan-state'; Detail = 'State recovery data has no matching Runtime transaction root.'; Transaction = $null
+            }) | Out-Null
+        }
+    }
+
+    return @($results.ToArray())
+}
+
+function Remove-DtmApiSterileRuntimeTransactionRoot {
+    param(
+        [Parameter(Mandatory = $true)] $Classification,
+        [Parameter(Mandatory = $true)] [string] $GameDir,
+        [Parameter(Mandatory = $true)] [string] $StateDir,
+        [Parameter(Mandatory = $true)] [string] $PluginDir
+    )
+
+    $runtimeRoot = [System.IO.Path]::GetFullPath([string]$Classification.RuntimeRoot)
+    $fresh = @(Get-DtmApiRuntimeTransactionClassifications -GameDir $GameDir -StateDir $StateDir -PluginDir $PluginDir |
+        Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.RuntimeRoot) -and [string]::Equals([System.IO.Path]::GetFullPath([string]$_.RuntimeRoot), $runtimeRoot, [System.StringComparison]::OrdinalIgnoreCase) })
+    if ($fresh.Count -ne 1 -or -not [string]::Equals([string]$fresh[0].Kind, 'SterileNoReceipt', [System.StringComparison]::Ordinal)) {
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1303' `
+            -Chinese '无凭据事务残留在清理前发生变化，已拒绝删除。' `
+            -English 'The receiptless transaction residue changed before cleanup; deletion was refused.' `
+            -Detail $runtimeRoot
+    }
+
+    try {
+        foreach ($entry in @(Get-ChildItem -LiteralPath $runtimeRoot -Force -ErrorAction Stop)) {
+            [System.IO.File]::Delete([System.IO.Path]::GetFullPath($entry.FullName))
+        }
+        [System.IO.Directory]::Delete($runtimeRoot, $false)
+    }
+    catch {
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1102' `
+            -Chinese '安全的事务空壳仍被占用或被安全软件拦截，无法清理。' `
+            -English 'The safe transaction shell is still locked or blocked by endpoint security and could not be removed.' `
+            -Detail "$runtimeRoot; $($_.Exception.Message)" `
+            -InnerException $_.Exception
+    }
 }
 
 function Get-DtmApiFileSha256 {
@@ -1108,7 +1644,11 @@ function Assert-DtmApiGameNotRunning {
     )
 
     if (Test-DtmApiGameProcessRunningForDir -GameDir $GameDir) {
-        throw "DolocTown.exe is running from this game folder. Please close Doloc Town before running DTMAPI $Operation."
+        Throw-DtmApiInstallerError `
+            -Code 'DTM-E1001' `
+            -Chinese '检测到《多洛可小镇》仍在运行。请完全退出游戏；如果 Steam 仍显示“运行中”，也请退出 Steam 后重试。' `
+            -English 'Doloc Town is still running. Fully close the game; if Steam still shows it as running, exit Steam too, then retry.' `
+            -Detail "Operation=$Operation; GameDir=$GameDir"
     }
 }
 
@@ -1152,7 +1692,11 @@ function Enter-DtmApiInstallerMutationLock {
             $acquired = $true
         }
         if (-not $acquired) {
-            throw "Another DTMAPI install or uninstall is already running for this game directory. Wait for it to finish, then try again. GameDir=$gameIdentity"
+            Throw-DtmApiInstallerError `
+                -Code 'DTM-E1302' `
+                -Chinese '同一游戏目录已有另一个 DTMAPI 安装或卸载正在运行，请等待其结束后重试。' `
+                -English 'Another DTMAPI install or uninstall is already running for this game directory. Wait for it to finish, then retry.' `
+                -Detail "GameDir=$gameIdentity"
         }
         return [pscustomobject]@{
             Mutex = $mutex

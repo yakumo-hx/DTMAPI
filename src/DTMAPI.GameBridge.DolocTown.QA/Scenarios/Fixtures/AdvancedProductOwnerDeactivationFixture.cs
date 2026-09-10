@@ -50,9 +50,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private static readonly Batch6HarmonyPatchTarget[] MoreEquipmentSlotsHarmonyTargets =
         {
             new Batch6HarmonyPatchTarget("DolocTown.GameData.AgentEquipmentManager", "ReloadParams", 0),
-            new Batch6HarmonyPatchTarget("DolocTown.BodyController", "OnAttacked", 4),
-            new Batch6HarmonyPatchTarget("DolocTown.UI.AccessoriesBar", "__Init", 0),
-            new Batch6HarmonyPatchTarget("DolocTown.UI.AccessoriesBar", "OnStartShow", 0)
+            new Batch6HarmonyPatchTarget("DolocTown.GameData.AgentEquipmentManager", "TryGetShieldItem", 1),
+            new Batch6HarmonyPatchTarget("DolocTown.UI.AccessoriesBar", "RenderPassiveItems", 1),
+            new Batch6HarmonyPatchTarget("DolocTown.UI.AccessoriesBar", "get_allSelectablesArray", 0),
+            new Batch6HarmonyPatchTarget("DolocTown.UI.AccessoriesBar", "ClearCallBack", 0)
         };
         private static readonly Batch6HarmonyPatchTarget[] MineHarmonyTargets =
         {
@@ -464,14 +465,14 @@ namespace DTMAPI.GameBridge.DolocTown
                         ".");
                 }
                 if (moreEquipmentSlotsRequested && (!moreEquipmentSlotsBefore!.IsComplete ||
-                    moreEquipmentSlotsBefore.ExactOwnerPatchCount != 4 ||
+                    moreEquipmentSlotsBefore.ExactOwnerPatchCount != MoreEquipmentSlotsHarmonyTargets.Length ||
                     !moreEquipmentSlotsCallbackBefore ||
                     !runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) ||
                     moreEquipmentSlotsLoadedBefore != 1 ||
                     moreEquipmentSlotsRootsBefore <= 0))
                 {
                     throw new InvalidOperationException(
-                        "MoreEquipmentSlots did not reach the required four-target ProductNative pre-deactivation owner state. instance=" + runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) +
+                        "MoreEquipmentSlots did not reach the required five-target ProductNative pre-deactivation owner state. instance=" + runtime.HasOwnerInstance(MoreEquipmentSlotsOwnerId) +
                         "; loaded=" + moreEquipmentSlotsLoadedBefore +
                         "; roots=" + moreEquipmentSlotsRootsBefore +
                         "; patches=" + moreEquipmentSlotsBefore.ExactOwnerPatchCount +
@@ -842,7 +843,7 @@ namespace DTMAPI.GameBridge.DolocTown
                             "; lifecycle={" + moreEquipmentSlotsLifecycleAfter + "}" +
                             "; cleanup={" + moreEquipmentSlotsCleanup + "}.");
                     }
-                    detailsParts.Add("MoreEquipmentSlots=actual4+targets4+callback1->instance0+actual0+callback0+clones0+listeners0+functions0+roots0");
+                    detailsParts.Add("MoreEquipmentSlots=actual5+targets5+callback1->instance0+actual0+callback0+clones0+listeners0+functions0+roots0");
                 }
 
                 if (strongPlantingGunRequested)

@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DTMAPI.Core.Runtime
 {
@@ -31,6 +32,7 @@ namespace DTMAPI.Core.Runtime
         private int pendingQueuedCount;
         private bool running;
         private bool closed;
+        private bool helloCompleted;
         private string closeReason = string.Empty;
         private long totalConnections;
         private long totalParsed;
@@ -51,7 +53,7 @@ namespace DTMAPI.Core.Runtime
             int maximumConcurrentRequests,
             TimeSpan runtimeResponseTimeout)
         {
-            this.descriptor = descriptor;
+            this.descriptor = descriptor.CopyForHost();
             this.gameRoot = AuthorSessionProtocol.NormalizePath(gameRoot);
             this.runtimeVersion = runtimeVersion;
             this.utcNow = utcNow;
@@ -70,6 +72,8 @@ namespace DTMAPI.Core.Runtime
         public string PipeName => descriptor.PipeName;
 
         public DateTimeOffset ExpiresAtUtc => descriptor.ExpiresAt;
+        public string HostVersion => runtimeVersion;
+        public int SchemaVersion => descriptor.SchemaVersion;
 
         public static bool TryCreate(
             AuthorSessionDescriptor descriptor,
@@ -229,7 +233,26 @@ namespace DTMAPI.Core.Runtime
                     }
                 }
 
-                Complete(item, CreateOperationResponse(item.Request, operationResult), PendingRequestState.Completed);
+                if (operationResult.DeferredCompletion == null)
+                    Complete(item, CreateOperationResponse(item.Request, operationResult), PendingRequestState.Completed);
+                else
+                {
+                    bool cancelNow;
+                    lock (gate)
+                    {
+                        cancelNow = item.State == PendingRequestState.Canceled || closed;
+                        if (!cancelNow) item.CancelDeferred = operationResult.CancelDeferred;
+                    }
+                    if (cancelNow) operationResult.CancelDeferred?.Invoke();
+                    PendingRequest deferredItem = item;
+                    _ = operationResult.DeferredCompletion.ContinueWith(completed =>
+                    {
+                        AuthorSessionOperationResult response;
+                        try { response = completed.GetAwaiter().GetResult(); }
+                        catch (Exception ex) { response = AuthorSessionOperationResult.Error("handler-exception", "Deferred handler failed: " + ex.GetType().Name); }
+                        Complete(deferredItem, CreateOperationResponse(deferredItem.Request, response), PendingRequestState.Completed);
+                    }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                }
                 handled++;
                 lock (gate)
                     totalProcessed++;
@@ -293,6 +316,8 @@ namespace DTMAPI.Core.Runtime
                     pending.Clear();
                     pendingQueuedCount = 0;
                     replayRequestIds.Clear();
+                    helloCompleted = false;
+                    descriptor.Token = string.Empty;
 
                     foreach (PendingRequest item in active)
                     {
@@ -327,7 +352,12 @@ namespace DTMAPI.Core.Runtime
                 }
 
                 foreach (PendingRequest item in active)
+                {
+                    try { item.CancelDeferred?.Invoke(); }
+                    catch { lock (gate) handlerFailures++; }
+                    item.CancelDeferred = null;
                     item.ResponseReady.Set();
+                }
 
                 foreach (NamedPipeServerStream pipe in pipes)
                 {
@@ -484,6 +514,12 @@ namespace DTMAPI.Core.Runtime
                 return;
             }
 
+            if (request.Operation == AuthorSessionProtocol.HelloOperation)
+            {
+                TryWrite(pipe, AcceptHello(request));
+                request.Token = string.Empty;
+                return;
+            }
             request.NormalizeAuthenticatedValues();
             request.Token = string.Empty;
             if (!TryEnqueue(request, out PendingRequest? item, out AuthorSessionResponse rejection) || item == null)
@@ -511,8 +547,6 @@ namespace DTMAPI.Core.Runtime
 
         private AuthorSessionValidationResult ValidateRequest(AuthorSessionRequest request)
         {
-            if (!string.Equals(request.Protocol, AuthorSessionProtocol.ProtocolVersion, StringComparison.Ordinal))
-                return AuthorSessionValidationResult.Reject("protocol-unsupported", "The request protocol is unsupported.");
             if (utcNow() >= descriptor.ExpiresAt)
                 return AuthorSessionValidationResult.Reject("session-expired", "The author session has expired.");
 
@@ -521,14 +555,50 @@ namespace DTMAPI.Core.Runtime
             if (!sessionMatches || !tokenMatches)
                 return AuthorSessionValidationResult.Reject("authentication-failed", "The request session or token is invalid.");
 
-            if (!string.Equals(request.Runtime, runtimeVersion, StringComparison.Ordinal))
-                return AuthorSessionValidationResult.Reject("runtime-mismatch", "The request Runtime version does not match the running Runtime.");
             if (!AuthorSessionProtocol.PathsEqual(request.GameRoot, gameRoot))
                 return AuthorSessionValidationResult.Reject("game-root-mismatch", "The request gameRoot does not match this Runtime installation.");
             if (!AuthorSessionProtocol.IsValidRequestId(request.RequestId))
                 return AuthorSessionValidationResult.Reject("request-id-invalid", "The requestId must be a non-empty GUID in N format.");
+            if (descriptor.SchemaVersion == AuthorSessionProtocol.LegacySchemaVersion)
+            {
+                if (request.SchemaVersion != 0 && request.SchemaVersion != AuthorSessionProtocol.LegacySchemaVersion)
+                    return AuthorSessionValidationResult.Reject("schema-mismatch", "The request changed the session schema.");
+                if (!string.Equals(request.Protocol, AuthorSessionProtocol.ProtocolVersion, StringComparison.Ordinal))
+                    return AuthorSessionValidationResult.Reject("protocol-unsupported", "The legacy request protocol is unsupported.");
+                if (!string.Equals(request.Runtime, descriptor.RuntimeVersion, StringComparison.Ordinal))
+                    return AuthorSessionValidationResult.Reject("runtime-mismatch", "The request changed the session legacy wire identity.");
+                if (request.ProtocolMajor != 0 || request.HostVersion != null || request.ApiTarget != null)
+                    return AuthorSessionValidationResult.Reject("protocol-mismatch", "A legacy session cannot switch to negotiated protocol fields.");
+            }
+            else
+            {
+                if (request.SchemaVersion != descriptor.SchemaVersion || !string.IsNullOrEmpty(request.Protocol) || !string.IsNullOrEmpty(request.Runtime))
+                    return AuthorSessionValidationResult.Reject("schema-mismatch", "The request changed the session schema or wire identity.");
+                if (request.ProtocolMajor != descriptor.ProtocolMajor || request.MinimumMinor != descriptor.MinimumMinor || request.MaximumMinor != descriptor.MaximumMinor ||
+                    request.ApiTarget != descriptor.ApiTarget || request.MinimumRuntimeVersion != descriptor.MinimumRuntimeVersion || request.RequiredCapabilities == null || request.OptionalCapabilities == null ||
+                    !(request.RequiredCapabilities ?? Array.Empty<string>()).SequenceEqual(descriptor.RequiredCapabilities, StringComparer.Ordinal) ||
+                    !(request.OptionalCapabilities ?? Array.Empty<string>()).SequenceEqual(descriptor.OptionalCapabilities, StringComparer.Ordinal))
+                    return AuthorSessionValidationResult.Reject("negotiation-mismatch", "The request changed the descriptor protocol offer.");
+                if ((request.HostVersion != null && request.HostVersion != runtimeVersion) ||
+                    (request.ProtocolMinor.HasValue && request.ProtocolMinor != descriptor.SelectedMinor))
+                    return AuthorSessionValidationResult.Reject("protocol-mismatch", "The request changed the selected protocol or Host identity.");
+                if (request.Operation == AuthorSessionProtocol.HelloOperation)
+                    return AuthorSessionValidationResult.Accept("hello-authenticated", "The hello request matches the authenticated descriptor.");
+                lock (gate)
+                {
+                    if (!helloCompleted)
+                        return AuthorSessionValidationResult.Reject("hello-required", "Authenticate hello before business requests.");
+                }
+                if (request.ProtocolMinor != descriptor.SelectedMinor || request.HostVersion != runtimeVersion)
+                    return AuthorSessionValidationResult.Reject("protocol-mismatch", "The business request must bind the negotiated protocol and Host.");
+                if (AuthorSessionProtocol.IsSupportedOperation(request.Operation) && !descriptor.AcceptedCapabilities.Contains(request.Operation + "/1", StringComparer.Ordinal))
+                    return AuthorSessionValidationResult.Reject("capability-not-negotiated", "This operation was not enabled by hello.");
+            }
             if (!AuthorSessionProtocol.IsSafeIdentifier(request.UniqueId, 200))
                 return AuthorSessionValidationResult.Reject("unique-id-invalid", "The request UniqueID is invalid.");
+            if (request.Operation == AuthorSessionProtocol.ExecuteCommandOperation &&
+                (descriptor.SchemaVersion == AuthorSessionProtocol.LegacySchemaVersion || request.CommandLine == null || request.CommandLine.Length > 4096))
+                return AuthorSessionValidationResult.Reject("command-invalid", "Commands require a negotiated session and a commandLine of at most 4096 characters.");
             if (!AuthorSessionProtocol.IsSupportedOperation(request.Operation))
             {
                 return AuthorSessionValidationResult.Reject(
@@ -549,6 +619,26 @@ namespace DTMAPI.Core.Runtime
                 return AuthorSessionValidationResult.Reject("tree-hash-invalid", "The expectedTreeSha256 must be a SHA-256 hex digest.");
 
             return AuthorSessionValidationResult.Accept("request-authenticated", "The request passed transport authentication.");
+        }
+
+        private AuthorSessionResponse AcceptHello(AuthorSessionRequest request)
+        {
+            lock (gate)
+            {
+                if (!running || closed || utcNow() >= descriptor.ExpiresAt)
+                    return CreateTransportResponse(request, "rejected", "session-closed", "The author session is closed or expired.");
+                if (replayRequestIds.Contains(request.RequestId))
+                {
+                    replayRejected++;
+                    totalRejected++;
+                    return CreateTransportResponse(request, "rejected", "request-replay", "The requestId was already observed in this session.");
+                }
+                if (replayRequestIds.Count >= AuthorSessionProtocol.MaximumReplayEntries)
+                    return CreateTransportResponse(request, "rejected", "replay-window-full", "The bounded request replay window is full.");
+                replayRequestIds.Add(request.RequestId);
+                helloCompleted = true;
+                return CreateTransportResponse(request, "ok", "hello-accepted", "The authenticated protocol and capabilities are established.");
+            }
         }
 
         private bool TryEnqueue(
@@ -596,7 +686,7 @@ namespace DTMAPI.Core.Runtime
                     rejection = CreateTransportResponse(request, "rejected", "request-concurrency-limit", "The bounded concurrent request limit was reached.");
                     return false;
                 }
-                if (pendingQueuedCount >= MaximumPendingRequests)
+                if (activeByUniqueId.Count >= MaximumPendingRequests)
                 {
                     totalRejected++;
                     queueFullRejected++;
@@ -616,6 +706,7 @@ namespace DTMAPI.Core.Runtime
         private bool CancelQueued(PendingRequest item, AuthorSessionResponse response)
         {
             bool canceled = false;
+            Func<bool>? cancelDeferred = null;
             lock (gate)
             {
                 if (item.State == PendingRequestState.Queued)
@@ -628,10 +719,16 @@ namespace DTMAPI.Core.Runtime
                     totalRejected++;
                     canceled = true;
                 }
+                else if (item.State == PendingRequestState.Processing) cancelDeferred = item.CancelDeferred;
             }
 
             if (canceled)
                 item.ResponseReady.Set();
+            else if (cancelDeferred?.Invoke() == true)
+            {
+                Complete(item, response, PendingRequestState.Canceled);
+                canceled = true;
+            }
             return canceled;
         }
 
@@ -655,6 +752,7 @@ namespace DTMAPI.Core.Runtime
                     return;
                 item.Response = response;
                 item.State = finalState;
+                item.CancelDeferred = null;
                 activeByUniqueId.Remove(item.Request.UniqueId);
                 signal = true;
             }
@@ -670,6 +768,11 @@ namespace DTMAPI.Core.Runtime
                 .OrderBy(value => value.Key, StringComparer.Ordinal)
                 .Select(value => new AuthorSessionResponseValue(value.Key, value.Value))
                 .ToList();
+            if (descriptor.SchemaVersion == AuthorSessionProtocol.LegacySchemaVersion)
+            {
+                response.Values = response.Values.Where(value => value.Key != "hostVersion").Take(31).ToList();
+                response.Values.Add(new AuthorSessionResponseValue("hostVersion", runtimeVersion));
+            }
             return response;
         }
 
@@ -681,16 +784,24 @@ namespace DTMAPI.Core.Runtime
         {
             return new AuthorSessionResponse
             {
-                Protocol = AuthorSessionProtocol.ProtocolVersion,
-                Runtime = runtimeVersion,
+                Protocol = descriptor.SchemaVersion == 1 ? AuthorSessionProtocol.ProtocolVersion : null!,
+                Runtime = descriptor.SchemaVersion == 1 ? descriptor.RuntimeVersion : null!,
                 Session = descriptor.SessionId,
-                RequestId = request?.RequestId ?? string.Empty,
-                Operation = request?.Operation ?? string.Empty,
-                UniqueId = request?.UniqueId ?? string.Empty,
+                RequestId = AuthorSessionProtocol.BoundedSingleLine(request?.RequestId ?? string.Empty, 32),
+                Operation = AuthorSessionProtocol.BoundedSingleLine(request?.Operation ?? string.Empty, 96),
+                UniqueId = AuthorSessionProtocol.BoundedSingleLine(request?.UniqueId ?? string.Empty, 200),
                 Status = status,
                 Code = AuthorSessionProtocol.BoundedSingleLine(code, 96),
                 Message = AuthorSessionProtocol.BoundedSingleLine(message, 512),
-                Values = new List<AuthorSessionResponseValue>()
+                Values = new List<AuthorSessionResponseValue>(),
+                SchemaVersion = descriptor.SchemaVersion == 2 ? 2 : 0,
+                ProtocolMajor = descriptor.SchemaVersion == 2 ? descriptor.ProtocolMajor : 0,
+                ProtocolMinor = descriptor.SchemaVersion == 2 ? (int?)descriptor.SelectedMinor : null,
+                GameRoot = descriptor.SchemaVersion == 2 ? gameRoot : null,
+                HostVersion = descriptor.SchemaVersion == 2 ? runtimeVersion : null,
+                ApiTarget = descriptor.SchemaVersion == 2 ? descriptor.ApiTarget : null,
+                AcceptedCapabilities = descriptor.SchemaVersion == 2 ? descriptor.AcceptedCapabilities.ToArray() : null,
+                UnsupportedOptionalCapabilities = descriptor.SchemaVersion == 2 ? descriptor.UnsupportedOptionalCapabilities.ToArray() : null
             };
         }
 
@@ -722,6 +833,7 @@ namespace DTMAPI.Core.Runtime
             public PendingRequestState State { get; set; }
 
             public AuthorSessionResponse? Response { get; set; }
+            public Func<bool>? CancelDeferred { get; set; }
         }
 
         private enum PendingRequestState

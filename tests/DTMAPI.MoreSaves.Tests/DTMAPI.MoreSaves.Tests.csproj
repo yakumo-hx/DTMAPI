@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>moresaves</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesConfig.cs" Link="MoreSaves/MoreSavesConfig.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesArchiveMigration.cs" Link="MoreSaves/MoreSavesArchiveMigration.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesNativeRuntime.cs" Link="MoreSaves/MoreSavesNativeRuntime.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

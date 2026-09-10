@@ -48,7 +48,9 @@ $runner = Join-Path $PSScriptRoot 'run-batch6-autofishing-behavior-matrix.ps1'
 $smoke = Join-Path $PSScriptRoot 'run-game-smoke.ps1'
 $runnerText = Get-Content -Raw -LiteralPath $runner
 $transactionText = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'batch6-autofishing-runtime-transaction.ps1')
-$smokeText = Get-Content -Raw -LiteralPath $smoke
+$smokeInputText = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/scenarios/desktop-input.ps1')
+$smokeExerciseText = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/exercise-session.ps1')
+$smokePreflightText = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'game-smoke/phases/preflight.ps1')
 $settingsText = Get-Content -Raw -LiteralPath (Join-Path $repo 'products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPilotSettings.cs')
 $observerText = Get-Content -Raw -LiteralPath (Join-Path $repo 'products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingReflectionObserver.cs')
 $coordinatorText = Get-Content -Raw -LiteralPath (Join-Path $repo 'products\first-party\AutoFishing\qa\batch6\Batch6AutoFishingPilotCoordinator.cs')
@@ -85,22 +87,22 @@ Assert-True ($runnerText.Contains("`$expectedKeys = if ([bool]`$Profile.ManualMo
     $runnerText.Contains("[int]`$controlInputs[0].Sequence -ne 1") -and
     $runnerText.Contains("[string]`$controlInputs[0].HandshakeState -cne 'awaiting-initial-enable-toggle'") -and
     $runnerText.Contains("`$movementTargets = @('Ready','Cast','Wait','BiteReady','MiniGame')") -and
-    $smokeText.Contains("[ValidateSet('F6','F7','A')] [string] `$Key = 'F6'") -and
-    $smokeText.Contains("[ValidateSet('ConfiguredToggle','ManualMovement')] [string] `$Purpose = 'ConfiguredToggle'") -and
-    $smokeText.Contains("`$batch6AutoFishingDirectNeutralStabilityMilliseconds = 1000") -and
-    $smokeText.Contains("PreflightMode = 'DirectReadOnlyNoInput'") -and
-    $smokeText.Contains('PreflightInputCount = [int]$preflightInputs.Count') -and
-    $smokeText.Contains("foreach (`$enableState in @('awaiting-initial-enable-toggle','awaiting-reentry-enable-toggle'))") -and
-    $smokeText.Contains("`$enableHandshakesForState[0].CompletedAtUtc") -and
-    $smokeText.Contains("`$enableInputsForState[0].KeyDownAt") -and
-    -not $smokeText.Contains("-Purpose 'FacingRightPreflight'") -and
-    -not $smokeText.Contains("-Purpose 'NativeNeutralReset'") -and
-    $smokeText.Contains("`$movementPhaseSlugs = @('ready','cast','wait','bite-ready','minigame')") -and
-    $smokeText.Contains('-State ("awaiting-manual-movement-$phaseSlug-a") -Key ''A''') -and
-    $smokeText.Contains('-State ("awaiting-manual-movement-$nextPhaseSlug-reenable") -Key $autoFishingToggleKeyEffective') -and
-    $smokeText.Contains('-AutoExerciseAutoFishingMovementCancel is retired because its historical single-session fixture cannot prove exact phases or rebound keybinding') -and
-    $smokeText.Contains('ForegroundMatchedAtSend') -and $smokeText.Contains('SendInputSucceeded') -and
-    $smokeText.Contains('PostMessageFallbackUsed')) `
+    $smokeInputText.Contains("[ValidateSet('F6','F7','A')] [string] `$Key = 'F6'") -and
+    $smokeInputText.Contains("[ValidateSet('ConfiguredToggle','ManualMovement')] [string] `$Purpose = 'ConfiguredToggle'") -and
+    $smokeExerciseText.Contains("`$batch6AutoFishingDirectNeutralStabilityMilliseconds = 1000") -and
+    $smokeExerciseText.Contains("PreflightMode = 'DirectReadOnlyNoInput'") -and
+    $smokeExerciseText.Contains('PreflightInputCount = [int]$preflightInputs.Count') -and
+    $smokeExerciseText.Contains("foreach (`$enableState in @('awaiting-initial-enable-toggle','awaiting-reentry-enable-toggle'))") -and
+    $smokeExerciseText.Contains("`$enableHandshakesForState[0].CompletedAtUtc") -and
+    $smokeExerciseText.Contains("`$enableInputsForState[0].KeyDownAt") -and
+    -not $smokeExerciseText.Contains("-Purpose 'FacingRightPreflight'") -and
+    -not $smokeExerciseText.Contains("-Purpose 'NativeNeutralReset'") -and
+    $smokeExerciseText.Contains("`$movementPhaseSlugs = @('ready','cast','wait','bite-ready','minigame')") -and
+    $smokeExerciseText.Contains('-State ("awaiting-manual-movement-$phaseSlug-a") -Key ''A''') -and
+    $smokeExerciseText.Contains('-State ("awaiting-manual-movement-$nextPhaseSlug-reenable") -Key $autoFishingToggleKeyEffective') -and
+    $smokePreflightText.Contains('-AutoExerciseAutoFishingMovementCancel is retired because its historical single-session fixture cannot prove exact phases or rebound keybinding') -and
+    $smokeInputText.Contains('ForegroundMatchedAtSend') -and $smokeInputText.Contains('SendInputSucceeded') -and
+    $smokeInputText.Contains('PostMessageFallbackUsed')) `
     'AutoFishing must send no D/Escape or other preflight input, wait for the QA-owned direct same-position native-parity-neutral handshake, and only then send the configured toggle; movement cancellation remains physical A after each exact phase handshake with F7 rebound and no PostMessage fallback.'
 Assert-True ($settingsText.Contains('internal const string LongRunContract = "LongRun"') -and
     $settingsText.Contains('internal const string BehaviorContract = "Behavior"') -and
