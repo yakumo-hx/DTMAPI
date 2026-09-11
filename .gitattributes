@@ -1,9 +1,8 @@
 references/doloc-town/official-workshop-docs/feishu-crawl-*/** -whitespace
 author-sdk/advanced-reference-policies/*.json text eol=lf
 author-sdk/advanced-reference-policies/*.txt text eol=lf
-author-sdk/compatibility/**/*.props text eol=lf
-author-sdk/compatibility/0.5.5/source/** text eol=lf
-author-sdk/compatibility/0.5.5/source-build.json text eol=lf
+# Frozen contracts and source recipes bind the original bytes, including mixed newlines.
+author-sdk/compatibility/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Preserve the byte form of the five frozen historical originals on checkout.
 docs/architecture/batch6-managed-mod-identity-contract.md text eol=lf
 docs/updates/2026/20260802-0001-dtmapi-060-aug2-5-authority-roadmap.md text eol=lf

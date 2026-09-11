@@ -34,6 +34,8 @@
 - 远端写入前核对分支最新指向；快照从提交对象生成，不从工作树补文件，也不把内部开发父链推入远端。
 - PASS：公开快照的 marker、Y 修复与 `f3622199` 相同，native facade 签名仍为地图实验前版本；没有新增二进制、reference 材料或凭据模式。GitHub 连接器创建 PR 返回权限不足，随后使用本次成功推送所用的 Git 账户建立草稿；没有修改仓库权限。
 - 原始 Pro 文本首次暂存仍受旧索引换行缓存影响；精确 `--renormalize` 后补齐原字节。最终以提交对象 SHA256 核对两份原始输入，不只检查工作区文件。
+- 远端首轮 [CI 34617772002](https://github.com/yakumo-hx/DTMAPI/actions/runs/34617772002) 在编译前报 `Author SDK target contract hash mismatch: 0.5.5`。冻结契约实际混用 LF、CRLF 和混合换行；其目录改为按原字节保存，并从原工作文件重新归一暂存。没有修改已冻结的 hash、源 recipe 或校验器，保留原字节是修复本次检出退化的必要条件。
+- PASS：使用真实 Git `core.autocrlf=true` 分别检出修复前、后冻结目录，原树复现五个契约不匹配及 90 个源输入不匹配；修复树六个契约与 126 个 source recipe 文件全部匹配，现有 `Get-AuthorSdkTargetCatalog` 接受全部六个 target。源码文件只改变 Git 储存/检出形式，工作区与已验收输入不变。远端完整 CI 仍以对应运行结论为准，不把这项定向检查称为完整 CI PASS。
 
 ## Evidence
 
@@ -41,6 +43,7 @@
 - 原 D7 完整 Release：`artifacts/pn041/full-release-repair-r2-result.json`；独立验收：`artifacts/pn041/independent-d7-acceptance/result.json`。
 - 远端：[0.7.0 源码分支](https://github.com/yakumo-hx/DTMAPI/tree/agent/dtmapi-0.7.0-source)。
 - 同证据目录的 `public-receipt.json` 与 `pr-receipt.json` 记录来源、公开父提交、树、文件边界和 PR；公开父链沿原预览继续，当前开发分支原地保留。
+- `frozen-checkout-result.json` 记录 Windows Git 换行退化的复现及准确冻结输入复核；临时检出只包含所需契约/源码文件，没有创建工作树或操作共享游戏。
 
 ## Rollback Notes
 
