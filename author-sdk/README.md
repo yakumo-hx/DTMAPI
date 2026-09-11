@@ -1,10 +1,17 @@
 # DTMAPI Author SDK
 
-当前 0.7.0 候选的任意作者 Advanced 工作流见 [本机原生引用](NATIVE-REFERENCES.md)。新项目使用 NativeContractVersion=2；旧 V1 与 receipt 包保留各自校验路径。
+Author SDK 通过 `dtmapi-author` 创建、校验、构建、打包、部署和诊断 Mod。SDK 0.7.0 默认使用 M3 API 0.7.0，需要 Runtime 0.7.0；保留的旧 API target 仍按各自目录约束处理。
 
-`dtmapi-author` is the single authoring authority for SDK `0.7.0`. Complete M3 API `0.7.0` is the default and requires Runtime 0.7.0; retained targets keep their own catalog ranges. Runtime `0.7.0` is published in both Windows and multi-platform distributions; exact observations are owned by repository release record `20260911-0001-runtime-070-upload-staging`. The accepted SDK is delivered separately; Runtime publication does not imply SDK publication. The Windows x64 ZIP is self-contained on .NET 8; generated game-loaded CodeMods remain `netstandard2.0`.
+Windows 与多平台 Runtime 0.7.0 已发布，包含 marker 文件开头的 UTF-8 BOM 兼容修复，见[发布确认](../docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md)。Author SDK D7 已完成 Windows 范围验收，独立 GitHub Release 附件尚未发布。SDK 与玩家 Runtime 分开交付；完整 Windows x64 ZIP 的 CLI 基于自包含 .NET 8，包含 .NET SDK 8.0.421，而生成的游戏加载程序集保持 `netstandard2.0`。当前交付范围见[候选说明](../docs/planning/platform-next/release-candidate.md)。
 
-New projects use author schema 4 and standard MSBuild projects. Current targets support [package dependencies and shared DLLs](PACKAGE-DEPENDENCIES.md); old binary/package readers retain their original contracts.
+## 选择作者路线
+
+- 使用 DTMAPI 公共 API 的 DLL Mod 从 Strict CodeMod 开始，先查 [API 状态](API-STATUS.md)。public 不等于 Stable。
+- 需要游戏原生类型时，阅读 [Advanced 本机原生引用](NATIVE-REFERENCES.md)。0.7.0 的 `NativeContractVersion=2` 支持任意合法作者 ID；旧 V1 与 receipt 包保留各自校验路径，不能复制其他产品的凭证。
+- 新项目采用 schema 4 和标准 MSBuild 工程。工程属性、恢复与构建见[工程与恢复](PROJECTS-AND-RESTORE.md)，NuGet 和共享 DLL 见[包依赖](PACKAGE-DEPENDENCIES.md)。
+- 内容包的具体领域说明见[内容包作者指南](../author-docs/README.md)；通用独立 Content Host 尚未完成。
+
+下文保留完整命令与兼容规则。使用 SDK ZIP 时，先按 Commands 一节加载 `Enter-DtmApiEnvironment.ps1`，再创建工程。任何作者路线都不允许将游戏或平台 DLL 随包分发，受管 Mod 也不放入 `BepInEx/plugins`。
 
 ## API target selection
 

@@ -14,7 +14,7 @@
 
 ## 当前约定
 
-- 本目录当前只覆盖 ContentPack 作者路线；Strict / Advanced / ContentPack / External 的规范定义以根目录 [`PROJECT.md`](../PROJECT.md) 为准。G2 只证明 synthetic fixture，当前真实 Advanced 产品也都由各自独立准入和 identity-bound tracked policy 授权；这些第一方策略没有开放通用 Advanced 作者路线。`SDK160` 继续保护 Strict；作者不得手工伪造 `CodeModKind=Advanced`、receipt 或包，也不得把受管 DLL 放进 `BepInEx/plugins`。
+- 本目录当前只覆盖 ContentPack 作者路线；DLL Mod 请从 [Author SDK](../author-sdk/README.md) 开始。Strict / Advanced / ContentPack / External 的规范定义以 [`PROJECT.md`](../PROJECT.md) 为准。Runtime 0.7.0 的 [Advanced 本机原生引用](../author-sdk/NATIVE-REFERENCES.md)支持任意合法作者 ID，由 SDK 生成 `NativeContractVersion=2` 引用及包绑定；旧 V1 与 receipt 包仍按各自规则校验。`SDK160` 继续保护 Strict。作者不得手写准入凭证，也不得把受管 DLL 放进 `BepInEx/plugins`。
 - 以后补充 Strict 文档时，必须同时说明 API stability 与 disposition；`DTMAPI.Abstractions` 中的 public 类型不等于全部 Stable。Diagnostic、Frozen、Disabled、DTMAPI-internal 和 Proposed 表面不能作为新普通 Mod 的推荐依赖，具体以 [`public-api-matrix.md`](../docs/api/public-api-matrix.md) 为准。
 - 普通作者优先写内容包：`info.json`、官方 `Content/*.json`、`Content/DTMAPI/*.json`、PNG、WAV。
 - 普通作者不需要写 DLL，不需要放文件到 `BepInEx/plugins`。
