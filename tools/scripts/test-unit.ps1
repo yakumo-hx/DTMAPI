@@ -74,7 +74,7 @@ if (-not $NoBuild) {
         & "$PSScriptRoot\prepare-unit-test-dependencies.ps1" -Dependency $dependencies
         if ($LASTEXITCODE -ne 0) { throw 'Unit fixture dependency preparation failed.' }
     }
-    Invoke-DtmApiTestProjectBuild -RepoRoot $repo -DotNetExe $dotnet -Projects @($selected | ForEach-Object { $_.Suite.project }) -Configuration $Configuration
+    Invoke-DtmApiProjectBuild -RepoRoot $repo -DotNetExe $dotnet -Projects @($selected | ForEach-Object { $_.Suite.project }) -Configuration $Configuration
 }
 if ($BuildOnly) { exit 0 }
 

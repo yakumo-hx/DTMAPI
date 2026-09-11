@@ -52,15 +52,16 @@ internal static partial class Program
             }
             """);
         string current = Path.Combine(repository, ".tools", "author-sdk-compatibility", "0.7.0");
-        var build = await ExpectSuccess("V2 build checks deliverability", "build", project, "--compatibility-root", current);
+        var build = await ExpectSuccess("V2 standard build", "build", project, "--compatibility-root", current);
         var packed = await ExpectSuccess("V2 public pack", "pack", project, "--compatibility-root", current);
         var repeated = await ExpectSuccess("V2 deterministic pack", "pack", project, "--compatibility-root", current);
         Equal(packed.Sha256, repeated.Sha256, "V2 deterministic package bytes");
         string validSource = File.ReadAllText(sourcePath);
         File.WriteAllText(sourcePath, validSource.Replace("public static int Run(){", "public static int Run(){ Native.Variable(1,__arglist(2));"));
-        var unsupported = await ExpectFailure("vararg rejected during build", "build", project, "--compatibility-root", current);
-        True(unsupported.Diagnostics.Any(d => d.Code == "SDK202" && d.Message.Contains("native-signature-unsupported") && d.Message.Contains("Run") && d.Message.Contains("ModEntry.cs:")), "Unsupported syntax has actual PDB member/source context: " + string.Join(";", unsupported.Diagnostics.Select(d => d.Message)));
-        Equal(build.Sha256, PathSafety.Sha256File(build.OutputPath), "Unsupported native syntax preserves prior DLL");
+        await ExpectSuccess("standard Csc accepts vararg syntax", "build", project, "--compatibility-root", current);
+        var unsupported = await ExpectFailure("vararg refused at package contract boundary", "pack", project, "--compatibility-root", current);
+        True(unsupported.Diagnostics.Any(d => d.Message.Contains("native-signature-unsupported") && d.Message.Contains("Run") && d.Message.Contains("ModEntry.cs:")), "Unsupported syntax has actual PDB member/source context: " + string.Join(";", unsupported.Diagnostics.Select(d => d.Message)));
+        Equal(packed.Sha256, PathSafety.Sha256File(packed.OutputPath), "Unsupported native syntax preserves prior package");
         File.WriteAllText(sourcePath, validSource);
         string package = Path.Combine(root, "package"); ZipFile.ExtractToDirectory(packed.OutputPath, package);
         string nativePath = Path.Combine(package, "dtmapi-native-build.json"), manifestPath = Path.Combine(package, "Content/DTMAPI/manifest.json"), markerPath = Path.Combine(package, "Content/DTMAPI/dtmapi-package.json");

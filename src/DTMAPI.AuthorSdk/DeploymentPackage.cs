@@ -155,7 +155,7 @@ internal static class DeploymentPackage
         return ValidateKindPayload(root, manifest, manifestBytes, kind, codeModKind, gameRoot, legacyDeployment);
     }
 
-    private static void ExtractZip(string packagePath, string stagingPath)
+    internal static void ExtractZip(string packagePath, string stagingPath)
     {
         using ZipArchive archive = ZipFile.OpenRead(packagePath);
         if (archive.Entries.Count > MaximumEntries)

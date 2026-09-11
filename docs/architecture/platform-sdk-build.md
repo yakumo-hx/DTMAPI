@@ -1,6 +1,6 @@
 # SDK 标准构建与交付架构
 
-- Lifecycle: `accepted-design`；实现与切换尚未完成。
+- Lifecycle: `implemented`；标准 MSBuild 单后端已切换，首次公开 SDK 的技术验收归 [0012](../updates/2026/20260910-0012-sdk-msbuild-first-release.md)，发布选择与未测范围归 [候选页](../planning/platform-next/release-candidate.md)。
 - Owner: 普通工程构建、工具链、引用接入、交付边界和后端迁移的目标契约；替代 AD-01/11/12 中继续扩充专用工程子集的方向。
 - Decision: [本次设计审查](../reviews/code/2026/20260910-0004-sdk-msbuild-architecture.md)。[作者交付架构](platform-author-delivery.md)继续拥有会话、调试、安装和长期兼容；[包契约](platform-package-contracts.md)继续拥有玩家包格式。
 - Execution: [PN-041 完整执行包](../planning/platform-next/execution-sdk-msbuild.md)；状态只查 [status](../planning/platform-next/status.md)。本页不是当前 SDK 使用说明。

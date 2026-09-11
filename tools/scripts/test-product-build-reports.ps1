@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([Parameter(Mandatory = $true)] [string] $ArtifactRoot, [Parameter(Mandatory = $true)] [string] $LegacyArtifactRoot)
+param([Parameter(Mandatory = $true)] [string] $ArtifactRoot)
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/common.ps1"
@@ -31,7 +31,7 @@ $arguments = @{
 }
 try {
     New-Item -ItemType Directory -Path $testRoot | Out-Null
-    foreach ($version in @(1, 2)) {
+    foreach ($version in @(3)) {
         $caseRoot = Join-Path $testRoot "schema-$version"
         Copy-Item -LiteralPath $ArtifactRoot -Destination $caseRoot -Recurse
         $summary = Get-Content -Raw -LiteralPath (Join-Path $caseRoot 'summary.json') | ConvertFrom-Json
@@ -41,23 +41,24 @@ try {
         $summary.buildOutput = Join-Path $caseRoot ('build/' + $arguments.EntryDll)
         $pack.outputPath = $summary.packagePath
         $pack.values.buildOutputPath = $summary.buildOutput
-        if ($version -eq 1) {
-            $legacy = Get-Content -Raw -LiteralPath (Join-Path $LegacyArtifactRoot 'build-report.json') | ConvertFrom-Json
-            $legacy.outputPath = $summary.buildOutput
-            Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'build-report.json') -Value ($legacy | ConvertTo-Json -Depth 12)
-        }
         Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'summary.json') -Value ($summary | ConvertTo-Json -Depth 12)
         Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'pack-report.json') -Value ($pack | ConvertTo-Json -Depth 12)
         $script:failures = New-Object 'System.Collections.Generic.List[string]'
         $result = Test-ReleaseContractAuthorSdkArtifact -Label "schema $version" -ArtifactRoot $caseRoot @arguments
         if ($null -eq $result -or $script:failures.Count -gt 0) { throw "Valid schema $version was rejected: $($script:failures -join '; ')" }
-        if ($version -eq 2) {
+        if ($version -eq 3) {
             if (Test-Path -LiteralPath (Join-Path $caseRoot 'build-report.json')) { throw 'New report test accidentally depended on a legacy build report.' }
-            $summary.buildInputSha256 = '0' * 64
+            $summary.buildFactsSha256 = '0' * 64
             Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'summary.json') -Value ($summary | ConvertTo-Json -Depth 12)
             $script:failures.Clear()
             $null = Test-ReleaseContractAuthorSdkArtifact -Label 'wrong input binding' -ArtifactRoot $caseRoot @arguments
-            if ($script:failures.Count -eq 0) { throw 'Mismatched build input identity was accepted.' }
+            if ($script:failures.Count -eq 0) { throw 'Mismatched MSBuild facts identity was accepted.' }
+            $summary.buildFactsSha256 = $original.buildFactsSha256
+            Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'summary.json') -Value ($summary | ConvertTo-Json -Depth 12)
+            Add-Content -LiteralPath (Join-Path $caseRoot 'build-facts.xml') -Value '<!-- modified -->'
+            $script:failures.Clear()
+            $null = Test-ReleaseContractAuthorSdkArtifact -Label 'modified facts file' -ArtifactRoot $caseRoot @arguments
+            if ($script:failures.Count -eq 0) { throw 'Modified MSBuild facts file was accepted.' }
             $summary.schemaVersion = 99
             Write-AuthorSdkUtf8NoBom -Path (Join-Path $caseRoot 'summary.json') -Value ($summary | ConvertTo-Json -Depth 12)
             $script:failures.Clear()
@@ -65,7 +66,7 @@ try {
             if ($script:failures.Count -eq 0) { throw 'Unknown summary schema was accepted.' }
         }
     }
-    Write-Host 'Product build reports: PASS (real package, legacy v1, single-build v2, missing legacy report, invalid identity/schema)'
+    Write-Host 'Product build reports: PASS (real standard-MSBuild package v3, missing legacy report, invalid facts identity/schema)'
 }
 finally {
     $safe = Assert-AuthorSdkChildPath -Root (Join-Path $repo 'temp') -Path $testRoot -Label 'report fixture cleanup'

@@ -17,6 +17,8 @@ Active policy for new work. Routine implementation uses the [Update template](..
 
 Other records link to the owner. The Update explains changes and acceptance; a release-candidate page keeps only candidate selection, remaining gates and evidence links; a roadmap/status page keeps only milestones and next actions. Detailed commands, run outcomes and hashes remain in their evidence owner. Do not copy these between Review, Issue, indexes and Update. Reuse existing Catalog/SDK/ABI/receipt/evidence authorities rather than creating milestone-specific assurance systems.
 
+For dispatched work, messages link to the task/specification and carry changed instructions and the endpoint. Keep temporary batch instructions out of routers. The executor owns implementation evidence; the coordinator owns final acceptance/selection and retires temporary handoff text it introduced when that batch closes. This needs no separate handoff ledger or repository-wide audit.
+
 ## Lifecycle
 
 - Discussion: chat only unless a file is requested. Audit-only: at most one Review; no Update unless project files change.

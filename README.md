@@ -1,7 +1,7 @@
 # DTMAPI
 
-> **0.7.0 预览版 / Developer Preview — source snapshot (2026-09-10).**
-> 本分支提供当前源码预览；SDK 标准构建迁移及现有 Mod／接入方式兼容仍待验收。玩家 Runtime 的已发布版本仍为 0.6.1。当前范围及待办见 [候选说明](docs/planning/platform-next/release-candidate.md)。
+> **Runtime 0.7.0 已发布，包含 UTF-8 BOM 兼容修复。**
+> 本分支汇总 0.7.0 的源码、标准 MSBuild SDK 和相关验收记录。Windows 与多平台玩家包已在 Steam 创意工坊更新；Author SDK D7 已完成 Windows 范围验收，尚未作为 GitHub Release 附件发布。准确发布记录见 [0.7.0 补丁发布确认](docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md)，SDK 交付范围见 [候选说明](docs/planning/platform-next/release-candidate.md)。
 
 DTMAPI is a Doloc Town Modding API. BepInEx starts DTMAPI Core, which provides managed Mod loading, author services and diagnostics. Strict CodeMods use the public contracts according to their individual status and stability; a public assembly does not make every member stable. The current 0.7.0 candidate also provides a self-service Advanced path for any valid author ID through explicit local native references. Older receipt-based Advanced packages retain their registry and compatibility rules. Native ownership and supported Mod identities are defined in [PROJECT.md](PROJECT.md); current publication facts remain in the Product Catalog.
 

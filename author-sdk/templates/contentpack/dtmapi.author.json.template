@@ -1,10 +1,8 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "projectKind": "ContentPack",
   "targetDtmApiVersion": {{API_TARGET_JSON}},
-  "sourceDirectory": "src",
   "contentDirectory": "content",
-  "assemblyName": "",
   "publish": {
     "tags": [
       "Mod",

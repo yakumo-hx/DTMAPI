@@ -10,7 +10,7 @@ dtmapi-author pack .\MyMod
 
 创建命令默认引用该安装的 Assembly-CSharp、UnityEngine.CoreModule 和 0Harmony；可用 `--native-references` 提供以分号分隔的游戏相对路径。`--harmony-owner` 默认是 `<UniqueID>.Native`，必须等于 UniqueID 或以 `UniqueID.` 开头。工程中 `nativeReferences.gameRoot` 是明确的本机安装目录，包中不包含它。
 
-当前 0.7.0 新项目同时声明 `CodeModKind: Advanced`、`NativeContractVersion: 2`、`DependencyContractVersion: 1`，作者工程使用 schema 3，最低 Runtime 为 0.7.0。旧目标继续生成 V1；旧包不自动升级格式。当前游戏引用 netstandard 2.1，与 Mod 的 netstandard2.0 直接编译冲突；SDK 因此使用通用 metadata reference surface。它保留类型/成员元数据，移除原方法体、资源和字段初始数据，仅在编译视图中适配 facade。缓存位于工程 `obj/dtmapi-native`，按原始程序集摘要与生成器版本区分；缓存字节改变会报错。禁止将这些引用或官方、平台 DLL 放入 content 或 managedReferences。
+当前 0.7.0 新项目同时声明 `CodeModKind: Advanced`、`NativeContractVersion: 2`、`DependencyContractVersion: 1`，作者工程使用 schema 4，最低 Runtime 为 0.7.0。旧目标继续生成 V1；旧包不自动升级格式。当前游戏引用 netstandard 2.1，与 Mod 的 netstandard2.0 直接编译冲突；SDK 因此使用通用 metadata reference surface。它保留类型/成员元数据，移除原方法体、资源和字段初始数据，仅在编译视图中适配 facade。缓存位于工程 `obj/dtmapi-native`，按原始程序集摘要与生成器版本区分；缓存字节改变会报错。禁止将这些引用或官方、平台 DLL 放入 内容或运行库清单。
 
 `dtmapi-native-build.json` 记录原始宿主 identity、长度、SHA-256、编译视图摘要、实际输出使用的宿主类型/成员及生成器输入摘要。依赖库也扫描同样的引用闭包。manifest、入口 DLL 和依赖清单先绑定到 native 描述，再由总文件清单绑定 native 描述；不要手写或修改生成物。
 
@@ -20,7 +20,7 @@ dtmapi-author pack .\MyMod
 
 Runtime 在 Entry 前核对包绑定和必需宿主签名。必需签名缺失拒绝该 Mod；同 identity 的宿主字节变化但签名仍匹配会报告“未验证的游戏版本”。宿主 identity 变化或发现后替换文件要求重新验证/重启。Doctor 扫描安装目录时执行同样的宿主核对；单独扫描包只证明包绑定，不能证明游戏兼容。
 
-V2 在上述 V1 保留路径之外支持常用泛型方法、泛型声明类型、嵌套/组合构造类型、作者自己的类型实参以及数组/ref/out 组合，例如 `GetComponent<Transform>()` 和 `GetComponent<AuthorComponent>()`。SDK 从实际输出扫描 MethodSpec、TypeSpec、定义及约束；build 完成前与 pack 使用同一可表达性检查。函数指针、varargs、自定义修饰符和特殊数组边界仍明确拒绝。有关结构化动态必需成员，见 [schema](schemas/dtmapi-native-build.schema.json) 的 `genericUse` 定义；V1 显式成员在 V2 项目中由 SDK 从宿主定义提升，不应手写包产物。
+V2 在上述 V1 保留路径之外支持常用泛型方法、泛型声明类型、嵌套/组合构造类型、作者自己的类型实参以及数组/ref/out 组合，例如 `GetComponent<Transform>()` 和 `GetComponent<AuthorComponent>()`。SDK 从实际输出扫描 MethodSpec、TypeSpec、定义及约束；标准 build 负责编译，pack 对最终产物执行可表达性检查。函数指针、varargs、自定义修饰符和特殊数组边界仍明确拒绝。有关结构化动态必需成员，见 [schema](schemas/dtmapi-native-build.schema.json) 的 `genericUse` 定义；V1 显式成员在 V2 项目中由 SDK 从宿主定义提升，不应手写包产物。
 
 Runtime 比较开放泛型定义、约束与包内类型/引用身份，不在预检中构造闭合泛型或执行作者程序集。BCL 归一仅覆盖已知精确身份；同名未知程序集不因此获准。该检查不承诺验证任意恶意 IL，也不能替代目标游戏 Mono 的实际调用验收。
 
@@ -38,4 +38,4 @@ dtmapi-author build .\HostJson
 dtmapi-author pack .\HostJson
 ```
 
-将 game-root 换成自己完整的游戏安装目录；不要同时把 NuGet 版本作为 managedReferences 打包。作者代码可调用 `Newtonsoft.Json.JsonConvert.DeserializeObject<int[]>("[20,22]")`，并使用返回的两个整数。当前 Windows 游戏 build 25163613 的 Mono 已验证该操作结果为 42；包绑定实际宿主身份与必需泛型签名，其他游戏版本仍需 Doctor 和实际调用验证。这不是所有 Strict JSON 依赖均可共存的承诺。
+将 game-root 换成自己完整的游戏安装目录；不要同时把 NuGet 版本作为运行库打包。作者代码可调用 `Newtonsoft.Json.JsonConvert.DeserializeObject<int[]>("[20,22]")`，并使用返回的两个整数。当前 Windows 游戏 build 25163613 的 Mono 已验证该操作结果为 42；包绑定实际宿主身份与必需泛型签名，其他游戏版本仍需 Doctor 和实际调用验证。这不是所有 Strict JSON 依赖均可共存的承诺。

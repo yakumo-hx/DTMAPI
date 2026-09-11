@@ -560,6 +560,14 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private static InventoryDebugItem? SelectModInventorySmokeItem(IInventoryDebugApi api)
         {
+            string? requiredId = Environment.GetEnvironmentVariable("DTMAPI_QA_DEBUG_INVENTORY_ITEM_ID");
+            if (!string.IsNullOrWhiteSpace(requiredId))
+            {
+                InventoryDebugPage requiredPage = api.GetItems(new InventoryDebugQuery { SearchText = requiredId, ModItemsOnly = true, IncludeUnavailable = true, PageSize = 200 });
+                return requiredPage.Items.FirstOrDefault(i => i.CanGive && i.RuntimeLoaded && i.IsModItem && i.Id.Equals(requiredId, StringComparison.Ordinal))
+                    ?? throw new InvalidOperationException("Required inventory fixture item is unavailable: " + requiredId);
+            }
+
             InventoryDebugPage page = api.GetItems(new InventoryDebugQuery { ModItemsOnly = true, IncludeUnavailable = true, PageSize = 200 });
             InventoryDebugItem? preferredButter = page.Items
                 .Where(i => i.CanGive && i.RuntimeLoaded && i.IsModItem)

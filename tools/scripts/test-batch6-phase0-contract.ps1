@@ -340,8 +340,13 @@ $manifestSchema = Read-Utf8Text (Join-Path $repo 'author-sdk\schemas\manifest.sc
 $authorSchema = Read-Utf8Text (Join-Path $repo 'author-sdk\schemas\dtmapi-author.schema.json') | ConvertFrom-Json
 Assert-ExactSet 'Live author manifest schema Type enum' @($manifestSchema.properties.Type.enum) @('CodeMod', 'ContentPack')
 if ($g2Activated) {
-    Assert-ExactSet 'G2 author project schema-1 kind enum' @($authorSchema.'$defs'.schema1.properties.projectKind.enum) @('CodeMod', 'ContentPack')
-    Assert-ExactSet 'G2 author project schema-2 kind enum' @($authorSchema.'$defs'.schema2.properties.projectKind.enum) @('CodeMod', 'ContentPack')
+    # The passed G2 receipt owns the historical author formats. The first public
+    # SDK now uses schema 4; retiring its old compiler does not rewrite G2.
+    $g2AuthorSchema = Read-GitText ([string]$g2.phaseState.g2ImplementationCommit) 'author-sdk/schemas/dtmapi-author.schema.json' | ConvertFrom-Json
+    Assert-ExactSet 'Historical G2 author project schema-1 kind enum' @($g2AuthorSchema.'$defs'.schema1.properties.projectKind.enum) @('CodeMod', 'ContentPack')
+    Assert-ExactSet 'Historical G2 author project schema-2 kind enum' @($g2AuthorSchema.'$defs'.schema2.properties.projectKind.enum) @('CodeMod', 'ContentPack')
+    Assert-ExactSet 'Live first-release author project kind enum' @($authorSchema.'$defs'.schema4.properties.projectKind.enum) @('CodeMod', 'ContentPack')
+    Assert-ExactValue 'Live first-release author schema version' $authorSchema.'$defs'.schema4.properties.schemaVersion.const '4'
 }
 else {
     Assert-ExactSet 'Live author project schema kind enum' @($authorSchema.properties.projectKind.enum) @('CodeMod', 'ContentPack')
@@ -409,11 +414,12 @@ if (-not $g2Activated) {
         }
     }
 }
-$validatorText = Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectValidator.cs')
-$buildInputsText = Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectBuildInputs.cs')
-if ($validatorText.IndexOf('ProjectBuildInputs.Validate(context, diagnostics)', [StringComparison]::Ordinal) -lt 0 -or
+$validatorText = if ($g2Activated) { Read-GitText ([string]$g2.phaseState.g2ImplementationCommit) 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' } else { Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectValidator.cs') }
+$buildInputsText = if ($g2Activated) { $validatorText } else { Read-Utf8Text (Join-Path $repo 'src\DTMAPI.AuthorSdk\ProjectBuildInputs.cs') }
+$strictCall = if ($g2Activated) { 'ScanForbiddenReferences(context, diagnostics)' } else { 'ProjectBuildInputs.Validate(context, diagnostics)' }
+if ($validatorText.IndexOf($strictCall, [StringComparison]::Ordinal) -lt 0 -or
     $buildInputsText.IndexOf([string]$identity.currentWire.strictSdkDiagnostic, [StringComparison]::Ordinal) -lt 0) {
-    Add-Failure 'The current Strict Author SDK validator must invoke the project-input owner that emits SDK160.'
+    Add-Failure 'The historical G0/G2 Strict Author SDK validator must invoke its project-input owner that emits SDK160.'
 }
 
 $catalogRelativePath = 'tools/release/dtmapi-product-catalog.json'

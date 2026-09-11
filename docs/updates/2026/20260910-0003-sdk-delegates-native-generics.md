@@ -53,4 +53,3 @@ R-Generic 补正：初次有界复盘漏掉最终 AdvancedHarmonySupervisor 仍�
 ## Follow-Up
 
 本卡有界交付已完成。未支持特殊签名、Strict JSON 驻留冲突及新游戏版本仍按 SDK 说明处理；M4 实验另行执行，不扩展本卡。
-

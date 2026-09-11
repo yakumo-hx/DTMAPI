@@ -1,31 +1,15 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props" />
   <PropertyGroup>
     <AssemblyName>{{ASSEMBLY_NAME_XML}}</AssemblyName>
     <RootNamespace>{{ROOT_NAMESPACE}}</RootNamespace>
-  </PropertyGroup>
-  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)\{{PAYLOAD_PATH_XML}}\DTMAPI.Author.props"
-          Condition="Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\{{PAYLOAD_PATH_XML}}\DTMAPI.Author.props')" />
-  <PropertyGroup>
-    <DtmApiUnifiedBuild>1</DtmApiUnifiedBuild>
-    <LangVersion>12.0</LangVersion>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <DefineConstants Condition="'$(Configuration)' == 'Debug'">DEBUG;TRACE</DefineConstants>
-    <DefineConstants Condition="'$(Configuration)' != 'Debug'">TRACE</DefineConstants>
+    <Version>{{VERSION_XML}}</Version>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="{{SOURCE_GLOB_XML}}" />
+    <None Remove="content/**/*" />
+    <Content Include="content/**/*" DtmApiPackagePath="Content/DTMAPI/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <Target Name="RequireDtmApiAuthorSdk" BeforeTargets="PrepareForBuild"
-          Condition="!Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\{{PAYLOAD_PATH_XML}}\DTMAPI.Author.props')">
-    <Error Text="Set DTMAPI_AUTHOR_SDK_ROOT to the extracted DTMAPI Author SDK, or build with dtmapi-author build." />
-  </Target>
-  <Target Name="Build" DependsOnTargets="RequireDtmApiAuthorSdk" Condition="'$(DesignTimeBuild)' != 'true'">
-    <Error Condition="!Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\dtmapi-author.exe')" Text="Set DTMAPI_AUTHOR_SDK_ROOT to the extracted self-contained SDK." />
-    <Exec Command="&quot;$(DTMAPI_AUTHOR_SDK_ROOT)\dtmapi-author.exe&quot; build &quot;$(MSBuildProjectDirectory)&quot; --configuration &quot;$(Configuration)&quot; --compatibility-root &quot;$(DTMAPI_AUTHOR_SDK_ROOT)&quot;" />
-  </Target>
-  <Target Name="Rebuild" DependsOnTargets="Build" />
-  <Target Name="Restore" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.targets" />
 </Project>

@@ -12,3 +12,6 @@ docs/debug/regressions/smoke-matrix-history-20260804-through-20260809.md text eo
 docs/planning/archive/20260601-dtmapi-original-planning-transcript.md -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 docs/planning/archive/20260613-dtmapi-debug-system-planning-transcript.md text eol=lf
 /docs/archive/authoring/** -text
+# Preserve the two original SDK review inputs and their recorded SHA256 values.
+docs/reviews/code/2026/20260910-sdk-build-model-inputs/DTMAPI-SDK-scope-evidence-20260910.md -text -whitespace
+docs/reviews/code/2026/20260910-sdk-build-model-inputs/web-pro-recommendation.md -text -whitespace

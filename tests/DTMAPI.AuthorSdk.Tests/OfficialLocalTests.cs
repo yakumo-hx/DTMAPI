@@ -30,6 +30,7 @@ internal static partial class Program
             string project = Path.Combine(temp, "official stranger");
             const string id = "Unregistered.AuthorJourney";
             await ExpectSuccess("new official stranger", "new", "codemod", "--api-target", "0.5.5", project, "--id", id, "--name", "Stranger", "--author", "Independent");
+            await ExpectSuccess("restore official stranger", "restore", project);
             CommandReport first = await ExpectSuccess("pack official stranger", "pack", project, "--compatibility-root", compatibility);
             async Task<CommandReport> Public(bool success, params string[] args)
             {
@@ -52,6 +53,8 @@ internal static partial class Program
             await Public(true, "install-local-status", id, "--game-root", game, "--expected-version", "0.1.0", "--expected-package-sha256", first.Sha256);
 
             MutateJson(Path.Combine(project, "manifest.json"), json => json["Version"] = "0.2.0");
+            string projectFile = Directory.GetFiles(project, "*.csproj").Single();
+            File.WriteAllText(projectFile, File.ReadAllText(projectFile).Replace("<Version>0.1.0</Version>", "<Version>0.2.0</Version>"));
             CommandReport second = await ExpectSuccess("pack second", "pack", project, "--compatibility-root", compatibility);
             string dll = Path.Combine(destination, "Content", "DTMAPI", id + ".dll");
             string original = Sha256(dll);

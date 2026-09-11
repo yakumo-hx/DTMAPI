@@ -10,50 +10,16 @@ internal sealed record ManagedPackageInput(string SourcePath, PackageAssemblyRec
 
 internal static class ManagedPackageReferences
 {
-    public static bool UsesContract(AuthorProjectContext context) => context.AuthorProject.SchemaVersion == AuthorSdkContract.DependencyAuthorProjectSchemaVersion;
+    public static bool UsesContract(AuthorProjectContext context) => context.ManifestJson.ContainsKey("DependencyContractVersion");
 
     public static IReadOnlyList<ManagedPackageInput> Resolve(AuthorProjectContext context)
     {
-        var result = new List<ManagedPackageInput>();
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (ManagedAuthorReference input in context.AuthorProject.ManagedReferences ?? new List<ManagedAuthorReference>())
-        {
-            if (!UsesContract(context)) throw new InvalidDataException("managedReferences requires author schema 3; explicitly migrate the manifest dependency contract.");
-            if (input.Role is not ("shared-contract" or "private-managed")) throw new InvalidDataException("managedReferences role must be shared-contract or private-managed.");
-            string path = Path.GetFullPath(input.Path, context.RootPath);
-            if (!File.Exists(path)) throw new InvalidDataException("Managed reference missing: " + path);
-            PathSafety.RejectReparsePoints(Path.GetDirectoryName(path)!, new[] { path });
-            var record = PackagePortableMetadata.Inspect(File.ReadAllBytes(path));
-            if (!names.Add(record.Identity.Name) || record.Identity.Name == context.AuthorProject.AssemblyName) throw new InvalidDataException("Managed reference name conflicts: " + record.Identity.Name);
-            if (PackageHostReferences.IsReserved(record.Identity.Name)) throw new InvalidDataException("bundled-native-runtime-dependency: " + record.Identity.Name);
-            if (record.TargetFramework != ".NETStandard,Version=v2.0" || Path.GetFileName(path) != record.Identity.Name + ".dll") throw new InvalidDataException("Managed reference must have its exact AssemblyName filename and target netstandard2.0: " + path);
-            record.Path = (input.Role == "shared-contract" ? "lib/shared/" : "lib/private/") + Path.GetFileName(path);
-            record.Role = input.Role; record.Distribution = input.Distribution; record.Source = "local-reference:" + Path.GetFileName(path);
-            if (input.Distribution is not ("self-authored" or "licensed-third-party")) throw new InvalidDataException("Managed reference distribution is required: " + path);
-            var licenses = new SortedDictionary<string, string>(StringComparer.Ordinal);
-            foreach (string license in input.LicenseFiles)
-            {
-                string source = Path.GetFullPath(license, context.RootPath);
-                PathSafety.RejectReparsePoints(Path.GetDirectoryName(source)!, new[] { source });
-                if (!File.Exists(source) || new FileInfo(source).Length == 0) throw new InvalidDataException("Missing/empty license: " + source);
-                string target = "licenses/" + record.Identity.Name + "/" + Path.GetFileName(source);
-                if (!licenses.TryAdd(target, source)) throw new InvalidDataException("License basename collision: " + source);
-            }
-            if (input.Distribution == "licensed-third-party" && licenses.Count == 0) throw new InvalidDataException("Licensed third-party references require included licenseFiles: " + path);
-            record.LicenseFiles = licenses.Keys.ToArray();
-            result.Add(new ManagedPackageInput(path, record, licenses));
-        }
-        foreach (ManagedPackageInput library in LockedPackageRestore.ReadInputs(context).Concat(context.BuiltLibraries))
-        {
-            if (!names.Add(library.Record.Identity.Name)) throw new InvalidDataException("Project/managed reference name collision: " + library.Record.Identity.Name);
-            result.Add(library);
-        }
-        var records = result.Select(input => input.Record).ToArray();
-        if (context.AuthorProject.Build == null || context.GraphPrepared)
-            RequireClosure(records, NativeProjectReferences.UsesContract(context) ? NativeProjectReferences.Resolve(context) : null);
-        return result.OrderBy(input => input.Record.Path, StringComparer.Ordinal).ToArray();
+        var result = context.BuiltLibraries.OrderBy(input => input.Record.Path, StringComparer.Ordinal).ToArray();
+        if (result.Select(input => input.Record.Identity.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != result.Length)
+            throw new InvalidDataException("Selected runtime libraries have conflicting assembly names.");
+        RequireClosure(result.Select(input => input.Record).ToArray(), NativeProjectReferences.UsesContract(context) ? NativeProjectReferences.Resolve(context) : null);
+        return result;
     }
-
     public static void RequireClosure(IReadOnlyList<PackageAssemblyRecord> records, NativeProjectInput[]? native = null)
     {
         foreach (PackageAssemblyRecord record in records)

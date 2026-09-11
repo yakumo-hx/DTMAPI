@@ -46,15 +46,16 @@ public static class AuthorApplication
             if (command.Name == "session")
                 report = await AuthorSessionService.ExecuteAsync(command).ConfigureAwait(false);
             else if (command.Name == "restore")
-                report = await LockedPackageRestore.Execute(command).ConfigureAwait(false);
+                report = StandardBuildIntegration.RestoreCommand(command);
             else
             {
                 report = command.Name switch
                 {
                     "new" => TemplateCreator.Create(command),
-                    "migrate-build" => TemplateCreator.MigrateBuild(command),
                     "validate" => ProjectValidator.ValidateCommand(command),
                     "build" => CodeModBuilder.BuildCommand(command),
+                    "msbuild-prepare" => StandardBuildIntegration.PrepareCommand(command),
+                    "msbuild-check-references" => StandardBuildIntegration.CheckReferencesCommand(command),
                     "pack" => DeterministicPackager.PackCommand(command),
                     "hash" => DeterministicPackager.HashCommand(command),
                     "symbols" => SymbolInspector.Execute(command),
@@ -127,6 +128,12 @@ public static class AuthorApplication
         await destination.WriteLineAsync("[" + status + "] " + report.Command + (report.RootPath.Length > 0 ? " " + report.RootPath : string.Empty)).ConfigureAwait(false);
         foreach (AuthorDiagnostic diagnostic in report.Diagnostics)
         {
+            if (report.Command.StartsWith("msbuild-", StringComparison.Ordinal) && diagnostic.Severity is DiagnosticSeverity.Error or DiagnosticSeverity.Warning)
+            {
+                string location = diagnostic.Path.Length > 0 ? diagnostic.Path : report.RootPath;
+                await destination.WriteLineAsync(location + ": " + diagnostic.Severity.ToString().ToLowerInvariant() + " " + diagnostic.Code + ": " + diagnostic.Message).ConfigureAwait(false);
+                continue;
+            }
             await destination.WriteLineAsync("[" + diagnostic.Severity.ToString().ToUpperInvariant() + "] " + diagnostic.Code + " " + diagnostic.Message).ConfigureAwait(false);
             if (diagnostic.Path.Length > 0)
                 await destination.WriteLineAsync("  Path: " + diagnostic.Path).ConfigureAwait(false);
@@ -149,7 +156,6 @@ Usage:
   dtmapi-author new codemod <directory> --id Author.Mod --name "Mod" --author "Author" [--code-mod-kind Strict|Advanced] [--api-target <version>] [--game-root <installed-game-for-open-Advanced>] [--native-references <paths-separated-by-semicolons>] [--harmony-owner <owner>] [--json]
   dtmapi-author new contentpack <directory> --id Author.Pack --name "Pack" --author "Author" [--api-target <version>] [--json]
   dtmapi-author validate <directory> [--json]
-  dtmapi-author migrate-build <directory> [--json]
   dtmapi-author build <directory> [--configuration Debug|Release] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--output <directory>] [--json]
   dtmapi-author pack <directory> [--configuration Debug|Release] [--symbols true|false] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--build-output <directory>] [--output <zip>] [--json]
   dtmapi-author hash <file-or-directory> [--json]
@@ -169,13 +175,12 @@ Usage:
   dtmapi-author session prepare --game-root <directory> [--api-target <version>] [--commands true|false] [--json]
   dtmapi-author session snapshot <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
   dtmapi-author session reload <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
-  dtmapi-author new library <directory> --id <Assembly.Name> [--api-target <version>] [--role shared-contract|private-managed] [--json]
   dtmapi-author restore <project-directory> [--offline true|false] [--json]
-    Explicit NuGet lock verification/download; build and pack never access package feeds.
+    Standard NuGet restore; --offline limits DTMAPI restore to local inputs. Pack requires a reviewed lock.
   dtmapi-author session command <UniqueID> <selectedRoot> --game-root <directory> [--command-line <text>] [--timeout-seconds <1..60>] [--json]
     Prepare with --commands true to offer execute-command/1; the Host must accept it. Default command-line is help.
   dtmapi-author session clear --game-root <directory> [--json]
-  dtmapi-author doctor <directory> [--json]
+  dtmapi-author doctor <directory-or-zip> [--json]
   dtmapi-author symbols <DLL> [--pdb <path>] [--json]
   dtmapi-author version
 

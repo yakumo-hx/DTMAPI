@@ -97,6 +97,31 @@ try {
     Copy-Item -LiteralPath (Join-Path $dotnetRoot 'LICENSE.txt') -Destination (Join-Path $licensesRoot 'dotnet-LICENSE.txt') -Force
     Copy-Item -LiteralPath (Join-Path $dotnetRoot 'ThirdPartyNotices.txt') -Destination (Join-Path $licensesRoot 'dotnet-ThirdPartyNotices.txt') -Force
 
+    # The first public SDK includes the full standard build host, targeting packs,
+    # SDK tasks/targets and templates. The self-contained CLI alone is insufficient.
+    $toolchainRoot = Join-Path $stageRoot 'toolchain'
+    New-Item -ItemType Directory -Path $toolchainRoot -Force | Out-Null
+    Copy-Item -LiteralPath $dotnetRoot -Destination (Join-Path $toolchainRoot 'dotnet') -Recurse
+    # Only the actual selected analyzer project's package graph enters the offline
+    # feed: it includes NETStandard.Library and a working Roslyn generator basis.
+    # Never enumerate or ship the user's entire NuGet cache.
+    $offlineRoot = Join-Path $stageRoot 'offline-packages'
+    New-Item -ItemType Directory -Path $offlineRoot -Force | Out-Null
+    $analyzerAssets = Get-Content -Raw -LiteralPath (Join-Path $repo 'src/DTMAPI.Author.Analyzers/obj/project.assets.json') | ConvertFrom-Json
+    foreach ($entry in $analyzerAssets.libraries.PSObject.Properties) {
+        if ([string]$entry.Value.type -ne 'package') { continue }
+        $packageRelative = [string]$entry.Value.path
+        $parts = $packageRelative.Split('/')
+        $archiveName = $parts[0] + '.' + $parts[1] + '.nupkg'
+        $archive = $null
+        foreach ($folder in $analyzerAssets.packageFolders.PSObject.Properties.Name) {
+            $candidate = Join-Path (Join-Path $folder $packageRelative) $archiveName
+            if (Test-Path -LiteralPath $candidate -PathType Leaf) { $archive = $candidate; break }
+        }
+        if ($null -eq $archive) { throw "Selected offline package archive is missing: $packageRelative" }
+        Copy-Item -LiteralPath $archive -Destination (Join-Path $offlineRoot $archiveName)
+    }
+
     $inventory = New-AuthorSdkReleaseInventory -StageRoot $stageRoot -DotNetSdkVersion $dotnetSdkVersion -SdkVersion $sdkVersion -TargetCatalog $targetCatalog
     Write-AuthorSdkUtf8NoBom -Path (Join-Path $stageRoot 'author-sdk-release.json') -Value (($inventory | ConvertTo-Json -Depth 10) + "`n")
     New-AuthorSdkDeterministicZip -SourceRoot $stageRoot -ZipPath $zipPath | Out-Null

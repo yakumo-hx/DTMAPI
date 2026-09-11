@@ -1,6 +1,6 @@
 # AutoFishing QA boundary
 
-This directory is the product-owned QA authority for AutoFishing. It is deliberately outside the production `src/` tree. `dtmapi.author.json` keeps `sourceDirectory` set to `src`, and the product project has no explicit QA source include; the authoritative Author SDK compilation/package path enumerates only that declared source directory, so the shipped Advanced package excludes every file in this directory.
+This directory is the product-owned QA authority for AutoFishing. It is deliberately outside the production `src/` tree. The standard product project disables default compile items and declares `Compile Include="src/**/*.cs"`; `dtmapi.author.json` selects that project. The production compilation therefore excludes this directory, while the QA projects explicitly link the required files below.
 
 ## Historical Batch 5 fixtures
 

@@ -1,4 +1,4 @@
-# Development test-entry helpers; not part of the player installer/runtime.
+# Development build/test-entry helpers; not part of the player installer/runtime.
 function Get-DtmApiReleaseTestSelection {
     param([string] $Stage = 'All', [string] $StartAt = 'FromStart')
     $stages = @('BuildAndUnit', 'RuntimeInstaller', 'ScriptContracts', 'AuthorSdk',
@@ -57,21 +57,23 @@ function Assert-DtmApiFullTestEnvironment {
     }
 }
 
-function Invoke-DtmApiTestProjectBuild {
+function Invoke-DtmApiProjectBuild {
     param(
         [Parameter(Mandatory = $true)] [string] $RepoRoot,
         [Parameter(Mandatory = $true)] [string] $DotNetExe,
         [Parameter(Mandatory = $true)] [string[]] $Projects,
-        [string] $Configuration = 'Release'
+        [string] $Configuration = 'Release',
+        [switch] $Rebuild
     )
     $selectedProjects = @($Projects | Select-Object -Unique)
-    if ($selectedProjects.Count -eq 0) { throw 'No test projects were selected for building.' }
+    if ($selectedProjects.Count -eq 0) { throw 'No projects were selected for building.' }
     foreach ($project in $selectedProjects) {
-        if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $project) -PathType Leaf)) { throw "Test project is missing: $project" }
+        if ([string]::IsNullOrWhiteSpace($project) -or -not (Test-Path -LiteralPath (Join-Path $RepoRoot $project) -PathType Leaf)) { throw "Selected project is missing: $project" }
     }
+    $buildTarget = if ($Rebuild) { 'Rebuild' } else { 'Build' }
     if ($selectedProjects.Count -eq 1) {
-        & $DotNetExe build (Join-Path $RepoRoot $selectedProjects[0]) -c $Configuration --nologo -m:1
-        if ($LASTEXITCODE -ne 0) { throw "Test project build failed: $($selectedProjects[0])" }
+        & $DotNetExe build (Join-Path $RepoRoot $selectedProjects[0]) -c $Configuration --nologo -m:1 "-t:$buildTarget"
+        if ($LASTEXITCODE -ne 0) { throw "Selected project build failed: $($selectedProjects[0])" }
         return
     }
 
@@ -84,8 +86,8 @@ function Invoke-DtmApiTestProjectBuild {
         $filter = @{ solution = @{ path = (Join-Path $RepoRoot 'DTMAPI.sln'); projects = @($selectedProjects | ForEach-Object { $_.Replace('/', '\') }) } }
         $encoding = New-Object System.Text.UTF8Encoding($false)
         [IO.File]::WriteAllText($filterPath, ($filter | ConvertTo-Json -Depth 5), $encoding)
-        & $DotNetExe build $filterPath -c $Configuration --nologo -m:1
-        if ($LASTEXITCODE -ne 0) { throw 'Selected test solution-filter build failed.' }
+        & $DotNetExe build $filterPath -c $Configuration --nologo -m:1 "-t:$buildTarget"
+        if ($LASTEXITCODE -ne 0) { throw 'Selected solution-filter build failed.' }
     }
     finally { if (Test-Path -LiteralPath $filterPath) { Remove-Item -LiteralPath $filterPath -Force } }
 }

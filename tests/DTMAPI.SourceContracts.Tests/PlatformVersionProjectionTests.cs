@@ -64,7 +64,7 @@ namespace DTMAPI.UnitTests
             // The frozen compiler payload is independently owned; it is not a Host wire version.
             JsonNode schema = ReadJson(repo, "author-sdk/schemas/dtmapi-author.schema.json");
             JsonNode targets = ReadJson(repo, "author-sdk/target-catalog.json");
-            ValidateAuthorTargetProjection(schema, targets, AuthorSdkContract.SdkVersion, AuthorSdkContract.TargetRuntimeVersion);
+            ValidateAuthorTargetProjection(schema, targets, AuthorSdkContract.SdkVersion);
             using Stream embedded = typeof(DtmApiRuntime).Assembly.GetManifestResourceStream(AuthorApiTargetCatalog.ResourceName)!;
             Require(JsonNode.DeepEquals(targets, JsonNode.Parse(embedded)), "Compiled Core target catalog must match its tracked source.");
             AuthorApiTarget selected = AuthorApiTargetCatalog.Current.GetAvailable(Text(targets, "defaultTarget"));
@@ -109,11 +109,13 @@ namespace DTMAPI.UnitTests
                 !string.IsNullOrWhiteSpace(Text(publish, "steamDescription")), "Independent Steam copy must be present.");
         }
 
-        private static void ValidateAuthorTargetProjection(JsonNode schema, JsonNode catalog, string sdkVersion, string legacyTarget)
+        private static void ValidateAuthorTargetProjection(JsonNode schema, JsonNode catalog, string sdkVersion)
         {
-            JsonNode legacy = schema["$defs"]!["schema1"]!["properties"]!["targetRuntimeVersion"]!;
-            Equal(Text(legacy, "const"), legacyTarget, "Legacy SDK compiler target");
-            JsonNode current = schema["$defs"]!["schema2"]!["properties"]!["targetDtmApiVersion"]!;
+            JsonNode project = schema["$defs"]?["schema4"] ?? throw new InvalidOperationException("SDK author schema 4 is missing.");
+            Require(project["properties"]?["schemaVersion"]?["const"]?.GetValue<int>() == 4,
+                "SDK author schema must select the first-release format.");
+            JsonNode current = project["properties"]?["targetDtmApiVersion"] ??
+                throw new InvalidOperationException("SDK target shape is missing.");
             Equal(Text(current, "type"), "string", "SDK target shape");
             Require(current["const"] == null && current["enum"] == null, "SDK target shape must route selection through the catalog.");
             string pattern = Text(current, "pattern");
@@ -162,24 +164,24 @@ namespace DTMAPI.UnitTests
             changedOfficial["version"] = "7.3.0";
             Reject(() => ValidateProductProjection(product, manifest, changedOfficial, publish), "Official product version");
 
-            JsonNode targetSchema = JsonNode.Parse("{\"$defs\":{\"schema1\":{\"properties\":{\"targetRuntimeVersion\":{\"const\":\"1.2.3\"}}},\"schema2\":{\"properties\":{\"targetDtmApiVersion\":{\"type\":\"string\",\"pattern\":\"^[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\"}}}}}")!;
+            JsonNode targetSchema = JsonNode.Parse("{\"$defs\":{\"schema4\":{\"properties\":{\"schemaVersion\":{\"const\":4},\"targetDtmApiVersion\":{\"type\":\"string\",\"pattern\":\"^[0-9]+\\\\.[0-9]+\\\\.[0-9]+$\"}}}}}")!;
             JsonNode targetCatalog = JsonNode.Parse("{\"defaultTarget\":\"1.2.3\",\"targets\":[{\"apiTarget\":\"1.2.3\",\"state\":\"available\",\"sdkVersions\":[\"4.5.6\"]},{\"apiTarget\":\"2.0.0\",\"state\":\"planned\",\"sdkVersions\":[\"4.5.6\"]}]}")!;
-            ValidateAuthorTargetProjection(targetSchema, targetCatalog, "4.5.6", "1.2.3");
+            ValidateAuthorTargetProjection(targetSchema, targetCatalog, "4.5.6");
             foreach (string defaultTarget in new[] { "2.0.0", "9.9.9" })
             {
                 JsonNode changed = targetCatalog.DeepClone();
                 changed["defaultTarget"] = defaultTarget;
-                Reject(() => ValidateAuthorTargetProjection(targetSchema, changed, "4.5.6", "1.2.3"), "SDK target default");
+                Reject(() => ValidateAuthorTargetProjection(targetSchema, changed, "4.5.6"), "SDK target default");
             }
-            Reject(() => ValidateAuthorTargetProjection(targetSchema, targetCatalog, "4.5.7", "1.2.3"), "SDK target default");
+            Reject(() => ValidateAuthorTargetProjection(targetSchema, targetCatalog, "4.5.7"), "SDK target default");
             JsonNode changedSchema = targetSchema.DeepClone();
-            changedSchema["$defs"]!["schema1"]!["properties"]!["targetRuntimeVersion"]!["const"] = "2.0.0";
-            Reject(() => ValidateAuthorTargetProjection(changedSchema, targetCatalog, "4.5.6", "1.2.3"), "Legacy SDK compiler target");
+            changedSchema["$defs"]!["schema4"]!["properties"]!["schemaVersion"]!["const"] = 3;
+            Reject(() => ValidateAuthorTargetProjection(changedSchema, targetCatalog, "4.5.6"), "SDK author schema");
             foreach ((string Field, string Value) mutation in new[] { ("type", "number"), ("pattern", ".*") })
             {
                 changedSchema = targetSchema.DeepClone();
-                changedSchema["$defs"]!["schema2"]!["properties"]!["targetDtmApiVersion"]![mutation.Field] = mutation.Value;
-                Reject(() => ValidateAuthorTargetProjection(changedSchema, targetCatalog, "4.5.6", "1.2.3"), "SDK target shape");
+                changedSchema["$defs"]!["schema4"]!["properties"]!["targetDtmApiVersion"]![mutation.Field] = mutation.Value;
+                Reject(() => ValidateAuthorTargetProjection(changedSchema, targetCatalog, "4.5.6"), "SDK target shape");
             }
         }
 

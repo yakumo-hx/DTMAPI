@@ -32,7 +32,7 @@ internal static partial class Program
     {
         bool requireExactAdvancedReference = ParseArguments(args, out string? requestedFocus);
         string focus = requestedFocus ?? Environment.GetEnvironmentVariable("DTMAPI_AUTHOR_SDK_TEST_FOCUS") ?? string.Empty;
-        if ((requestedFocus != null || focus.Length != 0) && focus is not ("platform-session-handshake" or "platform-sdk-targets" or "pack-build" or "official-local" or "platform-package-dependencies" or "platform-native-contract" or "platform-project-graph"))
+        if ((requestedFocus != null || focus.Length != 0) && focus is not ("author-basics" or "advanced-policy" or "standard-layout" or "standard-field-assets" or "standard-final-assets" or "standard-ordinary" or "standard-assets" or "standard-build" or "platform-session-handshake" or "platform-sdk-targets" or "pack-build" or "official-local" or "platform-package-dependencies" or "platform-native-contract" or "platform-project-graph"))
         {
             Console.Error.WriteLine("Unknown DTMAPI Author SDK test focus: " + focus + ". Default tests were not run.");
             return 1;
@@ -45,6 +45,16 @@ internal static partial class Program
         try
         {
             Environment.SetEnvironmentVariable("DTMAPI_AUTHOR_STATE_ROOT", Path.Combine(temporaryRoot, "author-state"));
+            if (focus.Length == 0 || focus == "standard-layout") await TestStandardProjectLayouts(temporaryRoot);
+            if (focus == "standard-layout") { testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-layout)"); return 0; }
+            if (focus.Length == 0 || focus == "standard-field-assets") await TestFinalFieldAssets(temporaryRoot);
+            if (focus == "standard-field-assets") { testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-field-assets)"); return 0; }
+            if (focus == "standard-final-assets") { await TestFinalManagedAssets(temporaryRoot); testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-final-assets)"); return 0; }
+            if (focus == "standard-ordinary") { await TestOrdinaryProjects(temporaryRoot); testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-ordinary)"); return 0; }
+            if (focus.Length == 0 || focus == "standard-assets") await TestStandardAssets(temporaryRoot);
+            if (focus == "standard-assets") { testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-assets)"); return 0; }
+            if (focus.Length == 0 || focus == "standard-build") await TestStandardBuild(temporaryRoot);
+            if (focus == "standard-build") { testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (standard-build)"); return 0; }
             if (focus.Length == 0 || focus == "platform-session-handshake")
                 await TestPlatformSessionHandshake(temporaryRoot).ConfigureAwait(false);
             if (focus == "platform-session-handshake")
@@ -54,11 +64,23 @@ internal static partial class Program
                 return 0;
             }
             string compatibility = CreateCompatibilityPayload(repository, temporaryRoot);
+            if (focus == "author-basics")
+            {
+                await TestCodeModRoundTripAndDeterminism(temporaryRoot, compatibility);
+                await TestContentPackRoundTripAndDeterminism(temporaryRoot);
+                await TestValidationFailures(temporaryRoot, compatibility);
+                testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (author-basics)"); return 0;
+            }
+            if (focus == "advanced-policy")
+            {
+                await TestAdvancedCodeModReferencePackageAndDeploy(temporaryRoot, compatibility, repository, requireExactAdvancedReference: true);
+                testSession.MarkSucceeded(); Console.WriteLine("DTMAPI Author SDK tests: OK (advanced-policy)"); return 0;
+            }
             if (focus.Length == 0 || focus == "platform-project-graph")
             {
                 await TestProjectGraph(temporaryRoot, compatibility);
                 await TestOrdinaryProjects(temporaryRoot);
-                await TestLockedRestore(temporaryRoot);
+                await TestFinalManagedAssets(temporaryRoot);
             }
             if (focus == "platform-project-graph")
             {
@@ -356,6 +378,11 @@ internal static partial class Program
         string two = Path.Combine(temp, "code-two");
         await ExpectSuccess("new code one", "new", "codemod", "--api-target", "0.5.5", one, "--id", "Tests.Code", "--name", "Tests Code", "--author", "Tests").ConfigureAwait(false);
         await ExpectSuccess("new code two", "new", "codemod", "--api-target", "0.5.5", two, "--id", "Tests.Code", "--name", "Tests Code", "--author", "Tests").ConfigureAwait(false);
+        foreach (string projectRoot in new[] { one, two })
+        {
+            File.WriteAllText(Path.Combine(projectRoot, "Directory.Build.props"), "<Project><PropertyGroup><PathMap>" + System.Security.SecurityElement.Escape(projectRoot) + "=/_/mod</PathMap></PropertyGroup></Project>");
+            await ExpectSuccess("restore round-trip fixture", "restore", projectRoot);
+        }
         JsonObject strictManifest = JsonNode.Parse(File.ReadAllText(Path.Combine(one, "manifest.json"), Encoding.UTF8))!.AsObject();
         JsonObject strictAuthor = JsonNode.Parse(File.ReadAllText(Path.Combine(one, "dtmapi.author.json"), Encoding.UTF8))!.AsObject();
         Equal("Strict", strictManifest["CodeModKind"]!.GetValue<string>(), "new schema-2 Strict manifest declares its Runtime identity");
@@ -399,9 +426,6 @@ internal static partial class Program
         JsonObject forbiddenEntryManifest = JsonNode.Parse(File.ReadAllText(Path.Combine(forbiddenEntry, "manifest.json"), Encoding.UTF8))!.AsObject();
         forbiddenEntryManifest["EntryDll"] = "HarmonyStrictFixture.dll";
         WriteJson(Path.Combine(forbiddenEntry, "manifest.json"), forbiddenEntryManifest);
-        JsonObject forbiddenEntryAuthor = JsonNode.Parse(File.ReadAllText(Path.Combine(forbiddenEntry, "dtmapi.author.json"), Encoding.UTF8))!.AsObject();
-        forbiddenEntryAuthor["assemblyName"] = "HarmonyStrictFixture";
-        WriteJson(Path.Combine(forbiddenEntry, "dtmapi.author.json"), forbiddenEntryAuthor);
         string forbiddenStrictProjectPath = Directory.GetFiles(forbiddenEntry, "*.csproj").Single();
         var forbiddenStrictProject = System.Xml.Linq.XDocument.Load(forbiddenStrictProjectPath);
         forbiddenStrictProject.Descendants().Single(element => element.Name.LocalName == "AssemblyName").Value = "HarmonyStrictFixture";
@@ -485,7 +509,7 @@ internal static partial class Program
         JsonObject manifest = JsonNode.Parse(File.ReadAllText(Path.Combine(project, "manifest.json"), Encoding.UTF8))!.AsObject();
         Equal("Advanced", manifest["CodeModKind"]!.GetValue<string>(), "Advanced template manifest identity");
         JsonObject author = JsonNode.Parse(File.ReadAllText(Path.Combine(project, "dtmapi.author.json"), Encoding.UTF8))!.AsObject();
-        Equal("2", author["schemaVersion"]!.GetValue<int>().ToString(System.Globalization.CultureInfo.InvariantCulture), "Advanced author schema version");
+        Equal("4", author["schemaVersion"]!.GetValue<int>().ToString(System.Globalization.CultureInfo.InvariantCulture), "Advanced author schema version");
         Equal("0.5.5", author["targetDtmApiVersion"]!.GetValue<string>(), "Advanced explicit DTMAPI API target");
         Equal("doloctown-23762374-g2-v1", author["advanced"]!["referencePolicyId"]!.GetValue<string>(), "Advanced tracked reference policy intent");
 
@@ -519,7 +543,7 @@ public sealed class ModEntry : DtmMod
 
         await ExpectSuccess("validate Advanced fixture", "validate", project).ConfigureAwait(false);
         CommandReport missingGame = await ExpectFailure("Advanced build requires explicit game root", "build", project, "--compatibility-root", compatibility).ConfigureAwait(false);
-        HasCode(missingGame, "SDK202", "Advanced missing game-root failure");
+        HasCode(missingGame, "SDK204", "Advanced missing game-root failure");
         True(missingGame.Diagnostics.Any(value => value.Message.Contains("--game-root", StringComparison.Ordinal)), "Advanced missing game-root guidance");
 
         CommandReport build = await ExpectSuccess(
@@ -864,9 +888,6 @@ public sealed class ModEntry : DtmMod
         JsonObject forbiddenAdvancedManifest = JsonNode.Parse(File.ReadAllText(Path.Combine(forbiddenAdvancedEntryProject, "manifest.json"), Encoding.UTF8))!.AsObject();
         forbiddenAdvancedManifest["EntryDll"] = "BepInExAdvancedFixture.dll";
         WriteJson(Path.Combine(forbiddenAdvancedEntryProject, "manifest.json"), forbiddenAdvancedManifest);
-        JsonObject forbiddenAdvancedAuthor = JsonNode.Parse(File.ReadAllText(Path.Combine(forbiddenAdvancedEntryProject, "dtmapi.author.json"), Encoding.UTF8))!.AsObject();
-        forbiddenAdvancedAuthor["assemblyName"] = "BepInExAdvancedFixture";
-        WriteJson(Path.Combine(forbiddenAdvancedEntryProject, "dtmapi.author.json"), forbiddenAdvancedAuthor);
         string forbiddenAdvancedProjectPath = Directory.GetFiles(forbiddenAdvancedEntryProject, "*.csproj").Single();
         var forbiddenAdvancedProject = System.Xml.Linq.XDocument.Load(forbiddenAdvancedProjectPath);
         forbiddenAdvancedProject.Descendants().Single(element => element.Name.LocalName == "AssemblyName").Value = "BepInExAdvancedFixture";
@@ -1080,12 +1101,17 @@ public sealed class ModEntry : DtmMod
         File.AppendAllText(Path.Combine(forbidden, "src", "ModEntry.cs"), "\n// BepInEx direct reference\n", Encoding.UTF8);
         await ExpectSuccess("comment is not a reference", "validate", forbidden).ConfigureAwait(false);
         string csproj = Directory.GetFiles(forbidden, "*.csproj").Single();
-        File.WriteAllText(csproj, File.ReadAllText(csproj).Replace("</Project>", "<ItemGroup><Reference Include=\"BepInEx\" /></ItemGroup></Project>", StringComparison.Ordinal));
-        CommandReport forbiddenFailure = await ExpectFailure("forbidden reference", "validate", forbidden).ConfigureAwait(false);
-        HasCode(forbiddenFailure, "SDK160", "Direct BepInEx reference rejection");
+        string forbiddenDll = Path.Combine(forbidden, "BepInEx.dll");
+        using (var fixture = Mono.Cecil.AssemblyDefinition.CreateAssembly(new Mono.Cecil.AssemblyNameDefinition("BepInEx", new Version(1, 0, 0, 0)), "BepInEx", Mono.Cecil.ModuleKind.Dll))
+            fixture.Write(forbiddenDll);
+        File.WriteAllText(csproj, File.ReadAllText(csproj).Replace("</Project>", "<ItemGroup><Reference Include=\"BepInEx\" HintPath=\"BepInEx.dll\" /></ItemGroup></Project>", StringComparison.Ordinal));
+        CommandReport forbiddenFailure = await ExpectFailure("forbidden reference", "build", forbidden, "--compatibility-root", compatibility).ConfigureAwait(false);
+        HasCode(forbiddenFailure, "SDK204", "Actual Csc BepInEx reference rejection");
+        True(forbiddenFailure.Diagnostics.Any(d => d.Message.Contains("Unadmitted compiler reference BepInEx", StringComparison.Ordinal)), "Reject the actual host reference, not csproj spelling");
 
         string reservedKind = Path.Combine(temp, "reserved-code-mod-kind");
         await ExpectSuccess("new reserved kind fixture", "new", "codemod", "--api-target", "0.5.5", reservedKind, "--id", "Tests.ReservedKind", "--name", "Reserved Kind", "--author", "Tests").ConfigureAwait(false);
+        await ExpectSuccess("restore reserved kind fixture", "restore", reservedKind);
         CommandReport validReservedPackage = await ExpectSuccess(
             "pack reserved kind baseline",
             "pack",
@@ -1125,8 +1151,8 @@ public sealed class ModEntry : DtmMod
             Path.Combine(retiredLamp, "src", "ModEntry.cs"),
             "\n// DTO-only migration scan: LampManualToggleOptions LampManualToggleRegisterResult LampManualToggleState\n",
             Encoding.UTF8);
-        CommandReport retiredLampValidation = await ExpectSuccess("retired Lamp DTO warning", "validate", retiredLamp).ConfigureAwait(false);
-        HasCode(retiredLampValidation, "SDK170", "Retired Lamp DTO-only migration warning");
+        CommandReport retiredLampValidation = await ExpectSuccess("comments have no API semantics", "validate", retiredLamp).ConfigureAwait(false);
+        True(retiredLampValidation.Diagnostics.All(d => d.Code != "SDK170"), "Validation does not guess symbol usage from comments.");
 
         string future = Path.Combine(temp, "runtime-floor-ahead-of-api-target");
         await ExpectSuccess("new future fixture", "new", "contentpack", "--api-target", "0.5.5", future, "--id", "Tests.Future", "--name", "Future", "--author", "Tests").ConfigureAwait(false);
@@ -1191,7 +1217,7 @@ public sealed class ModEntry : DtmMod
         propsEntry["sha256"] = Sha256(props);
         WriteJson(Path.Combine(compatibility, "compatibility.json"), compatibilityManifest);
         CommandReport failure = await ExpectFailure("compatibility tamper", "build", project, "--compatibility-root", compatibility).ConfigureAwait(false);
-        HasCode(failure, "SDK202", "Embedded compatibility contract rejects jointly replaced manifest and payload");
+        HasCode(failure, "SDK204", "Embedded compatibility contract rejects jointly replaced manifest and payload");
     }
 
     private static async Task TestUnsafeCommandsRefuse(string temp)
@@ -1252,9 +1278,12 @@ public sealed class ModEntry : DtmMod
         True(File.Exists(Path.Combine(executableRoot, "DTMAPI.InstallDoctor.dll")) && File.Exists(Path.Combine(executableRoot, "DTMAPI.Tooling.Metadata.dll")), "Self-contained CLI carries Doctor support libraries");
         True(!File.Exists(Path.Combine(executableRoot, "dtmapi-doctor.exe")) && !File.Exists(Path.Combine(executableRoot, "dtmapi-doctor.runtimeconfig.json")), "Self-contained SDK has one CLI and no Doctor apphost");
         await RunExternal(executable, isolated, "doctor", doctorRoot, "--json").ConfigureAwait(false);
-        await RunExternal(executable, isolated, "new", "codemod", "--api-target", "0.5.5", project, "--id", "Tests.Offline", "--name", "Offline", "--author", "Tests", "--json").ConfigureAwait(false);
-        await RunExternal(executable, isolated, "build", project, "--compatibility-root", Path.Combine(temp, "compatibility", "0.5.5"), "--json").ConfigureAwait(false);
-        True(File.Exists(Path.Combine(project, "bin", "dtmapi-author", "Release", "Tests.Offline.dll")), "Self-contained empty-PATH CodeMod build output");
+        await RunExternal(executable, isolated, "new", "codemod", project, "--id", "Tests.Offline", "--name", "Offline", "--author", "Tests", "--json").ConfigureAwait(false);
+        await RunExternal(executable, isolated, "restore", project, "--offline", "true", "--json").ConfigureAwait(false);
+        await RunExternal(executable, isolated, "build", project, "--offline", "true", "--json").ConfigureAwait(false);
+        True(File.Exists(Path.Combine(project, "bin", "Release", "netstandard2.0", "Tests.Offline.dll")), "Bundled toolchain empty-PATH CodeMod build output");
+        await RunExternal(executable, isolated, "pack", project, "--offline", "true", "--json").ConfigureAwait(false);
+        await RunExternal(executable, isolated, "doctor", Path.Combine(project, "dist", "Tests.Offline-0.1.0.zip"), "--json").ConfigureAwait(false);
     }
 
     private static async Task<DeploymentPackages> CreateDeploymentPackages(string temp, string compatibility)
@@ -1267,6 +1296,7 @@ public sealed class ModEntry : DtmMod
         await ExpectSuccess("new deploy content v1", "new", "contentpack", "--api-target", "0.5.5", contentOne, "--id", "Tests.Deployment", "--name", "Deployment", "--author", "Tests", "--version", "1.0.0").ConfigureAwait(false);
         await ExpectSuccess("new deploy content v2", "new", "contentpack", "--api-target", "0.5.5", contentTwo, "--id", "Tests.Deployment", "--name", "Deployment", "--author", "Tests", "--version", "1.1.0").ConfigureAwait(false);
         await ExpectSuccess("new deploy code v2", "new", "codemod", "--api-target", "0.5.5", codeTwo, "--id", "Tests.Deployment", "--name", "Deployment", "--author", "Tests", "--version", "2.0.0").ConfigureAwait(false);
+        await ExpectSuccess("restore deployment CodeMod", "restore", codeTwo);
         await ExpectSuccess("new other package", "new", "contentpack", "--api-target", "0.5.5", other, "--id", "Tests.Other", "--name", "Other", "--author", "Tests", "--version", "1.0.0").ConfigureAwait(false);
         CommandReport contentOnePack = await ExpectSuccess("pack deploy content v1", "pack", contentOne, "--output", Path.Combine(root, "dist-v1")).ConfigureAwait(false);
         CommandReport contentTwoPack = await ExpectSuccess("pack deploy content v2", "pack", contentTwo, "--output", Path.Combine(root, "dist-v2")).ConfigureAwait(false);
@@ -3403,6 +3433,11 @@ public sealed class ModEntry : DtmMod
         start.Environment["PATH"] = string.Empty;
         start.Environment["DOTNET_ROOT"] = string.Empty;
         start.Environment["DOTNET_ROOT_X64"] = string.Empty;
+        start.Environment.Remove("DTMAPI_AUTHOR_DOTNET");
+        start.Environment.Remove("DTMAPI_AUTHOR_SDK_ROOT");
+        start.Environment.Remove("DTMAPI_AUTHOR_COMPAT_ROOT");
+        start.Environment.Remove("DOTNET_HOST_PATH");
+        start.Environment["DOTNET_CLI_HOME"] = isolated;
         start.Environment["NUGET_PACKAGES"] = Path.Combine(isolated, "empty-nuget");
         start.Environment["USERPROFILE"] = isolated;
         using Process process = Process.Start(start) ?? throw new InvalidOperationException("Failed to start self-contained CLI.");

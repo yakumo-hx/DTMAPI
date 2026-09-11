@@ -4806,7 +4806,9 @@ namespace DTMAPI.QaUnitTests
             string productProject = File.ReadAllText(Path.Combine(productRoot, "Yuuka.DTMAPI.AutoFishing.csproj"));
             string qaTestsProject = File.ReadAllText(Path.Combine(root, "tests", "DTMAPI.QaUnitTests", "DTMAPI.QaUnitTests.csproj"));
             string genericQaProject = File.ReadAllText(Path.Combine(root, "src", "DTMAPI.GameBridge.DolocTown.QA", "DTMAPI.GameBridge.DolocTown.QA.csproj"));
-            Assert(authorSettings.Contains("\"sourceDirectory\": \"src\"", StringComparison.Ordinal) &&
+            Assert(authorSettings.Contains("\"projectFile\": \"Yuuka.DTMAPI.AutoFishing.csproj\"", StringComparison.Ordinal) &&
+                productProject.Contains("<EnableDefaultCompileItems>false</EnableDefaultCompileItems>", StringComparison.Ordinal) &&
+                productProject.Contains("Compile Include=\"src/**/*.cs\"", StringComparison.Ordinal) &&
                 !productProject.Contains("qa", StringComparison.OrdinalIgnoreCase),
                 "The production AutoFishing Author SDK project must compile only its declared src directory.");
             Assert(qaTestsProject.Contains("products\\first-party\\AutoFishing\\qa", StringComparison.Ordinal) &&
@@ -4817,7 +4819,7 @@ namespace DTMAPI.QaUnitTests
             string qaReadme = File.ReadAllText(Path.Combine(productRoot, "qa", "README.md"));
             Assert(Directory.EnumerateFiles(Path.Combine(productRoot, "qa"), "*.cs", SearchOption.AllDirectories).Any() &&
                 qaReadme.Contains("Batch6AutoFishingPilot", StringComparison.Ordinal) &&
-                qaReadme.Contains("sourceDirectory", StringComparison.Ordinal) &&
+                qaReadme.Contains("Compile Include", StringComparison.Ordinal) &&
                 qaReadme.Contains("CompatibilityNativeControl", StringComparison.Ordinal) &&
                 qaReadme.Contains("AUTO-FISHING-PERF", StringComparison.Ordinal),
                 "Product QA authority must document the live linked Batch6 pilot, its production exclusion, independent L0 driver, and exact evidence root.");

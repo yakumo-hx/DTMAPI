@@ -297,51 +297,10 @@ function Get-ReleaseContractSha256 {
 }
 
 function Get-ReleaseContractSourceTreeSha256 {
-    param(
-        [Parameter(Mandatory = $true)] [string] $SourceRoot
-    )
-
-    if (-not (Test-Path -LiteralPath $SourceRoot -PathType Container)) {
-        Add-ReleaseContractFailure "Author SDK source root is missing: $SourceRoot"
-        return ''
-    }
-    try {
-        $root = [System.IO.Path]::GetFullPath($SourceRoot).TrimEnd('\', '/')
-        $files = [string[]]@(Get-ChildItem -LiteralPath $root -Recurse -Filter '*.cs' -File | ForEach-Object {
-            $_.FullName.Substring($root.Length + 1).Replace('\', '/')
-        })
-        [System.Array]::Sort($files, [System.StringComparer]::Ordinal)
-        $aggregate = [System.Security.Cryptography.IncrementalHash]::CreateHash(
-            [System.Security.Cryptography.HashAlgorithmName]::SHA256)
-        try {
-            foreach ($relative in $files) {
-                $file = Join-Path $root $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
-                $lengthText = ([System.IO.FileInfo]$file).Length.ToString([System.Globalization.CultureInfo]::InvariantCulture)
-                $header = [System.Text.Encoding]::UTF8.GetBytes($relative + [char]0 + $lengthText + [char]0)
-                $aggregate.AppendData($header)
-                $stream = [System.IO.File]::OpenRead($file)
-                try {
-                    $buffer = New-Object byte[] 81920
-                    while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
-                        $aggregate.AppendData($buffer, 0, $read)
-                    }
-                }
-                finally {
-                    $stream.Dispose()
-                }
-            }
-            return ([System.BitConverter]::ToString($aggregate.GetHashAndReset())).Replace('-', '').ToLowerInvariant()
-        }
-        finally {
-            $aggregate.Dispose()
-        }
-    }
-    catch {
-        Add-ReleaseContractFailure ("Author SDK source-tree SHA-256 failed for {0}: {1}" -f $SourceRoot, $_.Exception.Message)
-        return ''
-    }
+    param([Parameter(Mandatory = $true)] [string] $SourceRoot)
+    try { return Get-AuthorProductSourceTreeSha256 -SourceRoot $SourceRoot }
+    catch { Add-ReleaseContractFailure $_.Exception.Message; return '' }
 }
-
 function Read-ReleaseContractZipEntryBytes {
     param(
         [Parameter(Mandatory = $true)] $Archive,
@@ -472,7 +431,7 @@ function Test-ReleaseContractAuthorSdkArtifact {
         return $null
     }
     $summaryVersion = [int](Get-ReleaseContractValue $summary 'schemaVersion')
-    if ($summaryVersion -notin @(1, 2)) {
+    if ($summaryVersion -notin @(1, 2, 3)) {
         Add-ReleaseContractFailure "$Label has an unsupported product summary schema: $summaryVersion"
         return $null
     }
@@ -496,18 +455,32 @@ function Test-ReleaseContractAuthorSdkArtifact {
     }
 
     $packValues = Get-ReleaseContractValue $packReport 'values'
-    $buildValues = if ($summaryVersion -eq 2) { $packValues } else { Get-ReleaseContractValue $buildReport 'values' }
-    $reportedBuildPath = if ($summaryVersion -eq 2) { Get-ReleaseContractValue $packValues 'buildOutputPath' } else { Get-ReleaseContractValue $buildReport 'outputPath' }
-    $reportedBuildHash = if ($summaryVersion -eq 2) { Get-ReleaseContractValue $packValues 'buildOutputSha256' } else { Get-ReleaseContractValue $buildReport 'sha256' }
+    $buildValues = if ($summaryVersion -ge 2) { $packValues } else { Get-ReleaseContractValue $buildReport 'values' }
+    $reportedBuildPath = if ($summaryVersion -ge 2) { Get-ReleaseContractValue $packValues 'buildOutputPath' } else { Get-ReleaseContractValue $buildReport 'outputPath' }
+    $reportedBuildHash = if ($summaryVersion -ge 2) { Get-ReleaseContractValue $packValues 'buildOutputSha256' } else { Get-ReleaseContractValue $buildReport 'sha256' }
     if ($summaryVersion -eq 2) {
         $inputHash = [string](Get-ReleaseContractValue $packValues 'buildInputSha256')
         if ($inputHash -cnotmatch '^[a-f0-9]{64}$') { Add-ReleaseContractFailure "$Label pack report has no valid build input identity." }
         Assert-ReleaseContractEqual -Label "$Label summary build identity" -Actual (Get-ReleaseContractValue $summary 'buildInputSha256') -Expected $inputHash
         Assert-ReleaseContractEqual -Label "$Label summary build report" -Actual (Get-ReleaseContractValue $summary 'buildReport') -Expected 'pack-report.json'
     }
+    if ($summaryVersion -eq 3) {
+        Assert-ReleaseContractEqual -Label "$Label product source scope" -Actual (Get-ReleaseContractValue $summary 'sourceTreeScope') -Expected 'product-src-csharp'
+        Assert-ReleaseContractEqual -Label "$Label summary build report" -Actual (Get-ReleaseContractValue $summary 'buildReport') -Expected 'pack-report.json'
+        Assert-ReleaseContractEqual -Label "$Label SDK backend" -Actual (Get-ReleaseContractValue $packValues 'buildBackend') -Expected 'MSBuild'
+        Assert-ReleaseContractEqual -Label "$Label summary backend" -Actual (Get-ReleaseContractValue $summary 'buildBackend') -Expected 'MSBuild'
+        Assert-ReleaseContractEqual -Label "$Label facts filename" -Actual (Get-ReleaseContractValue $summary 'buildFactsFile') -Expected 'build-facts.xml'
+        $factsHash = Get-ReleaseContractSha256 -Label "$Label MSBuild facts" -Path (Join-Path $root 'build-facts.xml')
+        Assert-ReleaseContractEqual -Label "$Label SDK facts binding" -Actual (Get-ReleaseContractValue $packValues 'buildFactsSha256') -Expected $factsHash
+        Assert-ReleaseContractEqual -Label "$Label summary facts binding" -Actual (Get-ReleaseContractValue $summary 'buildFactsSha256') -Expected $factsHash
+        $compilerHash = [string](Get-ReleaseContractValue $packValues 'compilerSha256')
+        if ($compilerHash -cnotmatch '^[a-f0-9]{64}$') { Add-ReleaseContractFailure "$Label has no actual compiler SHA-256." }
+        Assert-ReleaseContractEqual -Label "$Label compiler binding" -Actual (Get-ReleaseContractValue $summary 'compilerSha256') -Expected $compilerHash
+    }
     $currentSourceTreeSha256 = Get-ReleaseContractSourceTreeSha256 -SourceRoot (Join-Path $ProjectRoot 'src')
+    $sourceValues = if ($summaryVersion -eq 3) { $summary } else { $buildValues }
     Assert-ReleaseContractEqual -Label "$Label SDK build/current source-tree SHA-256" `
-        -Actual ([string](Get-ReleaseContractValue $buildValues 'sourceTreeSha256')).ToLowerInvariant() `
+        -Actual ([string](Get-ReleaseContractValue $sourceValues 'sourceTreeSha256')).ToLowerInvariant() `
         -Expected $currentSourceTreeSha256
     Assert-ReleaseContractEqual -Label "$Label SDK TargetFramework" -Actual (Get-ReleaseContractValue $buildValues 'targetFramework') -Expected 'netstandard2.0'
     Assert-ReleaseContractEqual -Label "$Label SDK assembly name" -Actual (Get-ReleaseContractValue $buildValues 'assemblyName') -Expected $AssemblyName
@@ -906,12 +879,11 @@ foreach ($product in $publicProducts) {
         try {
             [xml]$authorProjectDocument = [System.IO.File]::ReadAllText($projectPath, [System.Text.Encoding]::UTF8)
             $authorityImports = @($authorProjectDocument.SelectNodes('/Project/Import') | Where-Object {
-                [string]$_.Project -eq '$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props'
+                ([string]$_.Project).Replace('\', '/') -eq '$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props'
             })
             Assert-ReleaseContractEqual -Label "$catalogId Author SDK props import count" -Actual $authorityImports.Count -Expected 1
-            foreach ($rawAuthorityNode in @('TargetFramework', 'Version', 'InformationalVersion', 'AssemblyVersion', 'FileVersion', 'IncludeSourceRevisionInInformationalVersion')) {
-                Assert-ReleaseContractEqual -Label "$catalogId raw csproj $rawAuthorityNode declaration count" -Actual @($authorProjectDocument.SelectNodes("/Project/PropertyGroup/$rawAuthorityNode")).Count -Expected 0
-            }
+            Assert-ReleaseContractEqual -Label "$catalogId csproj Version" -Actual ([string]$authorProjectDocument.SelectSingleNode('/Project/PropertyGroup/Version').InnerText) -Expected $sourceVersion
+            Assert-ReleaseContractEqual -Label "$catalogId csproj assembly name" -Actual ([string]$authorProjectDocument.SelectSingleNode('/Project/PropertyGroup/AssemblyName').InnerText) -Expected ([System.IO.Path]::GetFileNameWithoutExtension($sourceDll))
         }
         catch {
             Add-ReleaseContractFailure ("{0} Author SDK project authority validation failed for {1}: {2}" -f $catalogId, $projectPath, $_.Exception.Message)
@@ -920,10 +892,10 @@ foreach ($product in $publicProducts) {
         $authorProjectPath = Join-Path (Join-Path $repo $sourceRoot.Replace('/', '\')) 'dtmapi.author.json'
         $authorProject = Read-ReleaseContractJson -Path $authorProjectPath
         if ($null -ne $authorProject) {
-            Assert-ReleaseContractEqual -Label "$catalogId Author SDK schema" -Actual (Get-ReleaseContractValue $authorProject 'schemaVersion') -Expected '2'
+            Assert-ReleaseContractEqual -Label "$catalogId Author SDK schema" -Actual (Get-ReleaseContractValue $authorProject 'schemaVersion') -Expected '4'
             Assert-ReleaseContractEqual -Label "$catalogId Author SDK project kind" -Actual (Get-ReleaseContractValue $authorProject 'projectKind') -Expected 'CodeMod'
             Assert-ReleaseContractEqual -Label "$catalogId Author SDK public-API target" -Actual (Get-ReleaseContractValue $authorProject 'targetDtmApiVersion') -Expected $authorSdkApiTarget
-            Assert-ReleaseContractEqual -Label "$catalogId Author SDK assembly name" -Actual (Get-ReleaseContractValue $authorProject 'assemblyName') -Expected ([System.IO.Path]::GetFileNameWithoutExtension($sourceDll))
+            Assert-ReleaseContractEqual -Label "$catalogId Author SDK project file" -Actual (Get-ReleaseContractValue $authorProject 'projectFile') -Expected ([System.IO.Path]::GetFileName($projectPath))
             Assert-ReleaseContractEqual -Label "$catalogId Author SDK CodeModKind" -Actual (Get-ReleaseContractValue $authorProject 'codeModKind') -Expected 'Advanced'
             $advancedIntent = Get-ReleaseContractValue $authorProject 'advanced'
             Assert-ReleaseContractEqual -Label "$catalogId Author SDK reference policy" -Actual (Get-ReleaseContractValue $advancedIntent 'referencePolicyId') -Expected $referencePolicyId

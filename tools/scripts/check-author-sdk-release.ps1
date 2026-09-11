@@ -140,7 +140,10 @@ try {
         'dtmapi-author.exe', 'dtmapi-author.dll', 'DTMAPI.InstallDoctor.dll', 'DTMAPI.Tooling.Metadata.dll',
         'README.md', 'SESSION-PROTOCOL.md', 'THIRD-PARTY-NOTICES.md', 'licenses/dotnet-LICENSE.txt',
         'licenses/dotnet-ThirdPartyNotices.txt', 'target-catalog.json', 'Mono.Cecil.dll', 'licenses/Mono.Cecil-0.11.6-LICENSE.txt',
-        'NuGet.Protocol.dll', 'NuGet.Packaging.dll', 'licenses/NuGet-7.9.0-LICENSE.txt', 'licenses/Newtonsoft.Json-13.0.3-LICENSE.txt', 'PROJECTS-AND-RESTORE.md', 'ci/verify-project.ps1'
+        'NuGet.Protocol.dll', 'NuGet.Packaging.dll', 'licenses/NuGet-7.9.0-LICENSE.txt', 'licenses/Newtonsoft.Json-13.0.3-LICENSE.txt', 'PROJECTS-AND-RESTORE.md', 'ci/verify-project.ps1',
+        'Enter-DtmApiEnvironment.ps1', 'build/DTMAPI.Author.props', 'build/DTMAPI.Author.targets', 'build/DTMAPI.Author.Build.dll', 'analyzers/DTMAPI.Author.Analyzers.dll',
+        'toolchain/dotnet/dotnet.exe', 'toolchain/dotnet/sdk/8.0.421/MSBuild.dll', 'toolchain/dotnet/sdk/8.0.421/Roslyn/bincore/csc.dll',
+        'offline-packages/netstandard.library.2.0.3.nupkg', 'offline-packages/microsoft.codeanalysis.csharp.4.11.0.nupkg'
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $stageRoot $required.Replace('/', [System.IO.Path]::DirectorySeparatorChar)) -PathType Leaf)) {
             throw "Author SDK release support file is missing: $required"
@@ -366,13 +369,16 @@ try {
     if ($abstractionsCopies.Count -ne $allExpectedAbstractions.Count -or @(Compare-Object -ReferenceObject $allExpectedAbstractions.ToArray() -DifferenceObject @($abstractionsCopies | ForEach-Object { $_.FullName })).Count -ne 0) {
         throw 'Author SDK release must carry exactly one frozen Abstractions DLL per available target, only in its declared compatibility directory.'
     }
-    $forbiddenBuildArtifacts = @(Get-ChildItem -LiteralPath $stageRoot -File -Recurse | Where-Object { $_.Extension -in @('.pdb', '.nupkg') })
+    $forbiddenBuildArtifacts = @(Get-ChildItem -LiteralPath $stageRoot -File -Recurse | Where-Object {
+        $relative = Get-AuthorSdkRelativePath -Root $stageRoot -Path $_.FullName
+        $_.Extension -in @('.pdb', '.nupkg') -and -not $relative.StartsWith('toolchain/', [StringComparison]::Ordinal) -and -not ($_.Extension -eq '.nupkg' -and $relative.StartsWith('offline-packages/', [StringComparison]::Ordinal))
+    })
     if ($forbiddenBuildArtifacts.Count -ne 0) {
-        throw 'Author SDK release must not contain PDBs or NuGet packages.'
+        throw 'PDBs/NuGet archives outside the inventoried toolchain/offline source are not permitted.'
     }
     foreach ($entry in @(Get-ChildItem -LiteralPath $stageRoot -File -Recurse)) {
         $relative = Get-AuthorSdkRelativePath -Root $stageRoot -Path $entry.FullName
-        if ($relative.IndexOf('BepInEx/', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $relative.IndexOf('Workshop', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $relative.EndsWith('.bat', [System.StringComparison]::OrdinalIgnoreCase)) {
+        if ($relative.IndexOf('BepInEx/', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $relative.IndexOf('Workshop', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or ($relative.EndsWith('.bat', [System.StringComparison]::OrdinalIgnoreCase) -and -not $relative.StartsWith('toolchain/dotnet/', [StringComparison]::Ordinal))) {
             throw "Author SDK ZIP contains a player installer/Workshop path: $relative"
         }
     }

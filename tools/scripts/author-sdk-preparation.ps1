@@ -35,12 +35,16 @@ function Get-DtmApiAuthorSdkInput {
         $project = [IO.Path]::GetFullPath($queue.Dequeue())
         if (-not $projects.Add($project)) { continue }
         $files.Add($project) | Out-Null
-        $raw = @(& $DotNetExe msbuild $project -nologo '-getItem:Compile,EmbeddedResource,Content,ProjectReference,Reference' '-getProperty:MSBuildAllProjects,NETCoreSdkVersion' '-p:Configuration=Release' '-p:RuntimeIdentifier=win-x64')
+        $raw = @(& $DotNetExe msbuild $project -nologo '-getItem:Compile,EmbeddedResource,AdditionalFiles,Content,ProjectReference,Reference' '-getProperty:MSBuildAllProjects,NETCoreSdkVersion' '-p:Configuration=Release' '-p:RuntimeIdentifier=win-x64')
         if ($LASTEXITCODE -ne 0) { throw "SDK input evaluation failed before build: $project" }
         $evaluation = ([string]::Join("`n", $raw)) | ConvertFrom-Json
         $sdkVersion = [string]$evaluation.Properties.NETCoreSdkVersion
-        foreach ($kind in @('Compile', 'EmbeddedResource', 'Content')) {
+        foreach ($kind in @('Compile', 'EmbeddedResource', 'AdditionalFiles', 'Content')) {
             foreach ($item in @($evaluation.Items.$kind)) {
+                # Generated integration assemblies are owned by their traversed
+                # ProjectReference source graph and the final release inventory.
+                $generated = $item.PSObject.Properties['DtmApiGeneratedBuildAsset']
+                if ($kind -eq 'Content' -and $null -ne $generated -and [string]$generated.Value -eq 'true') { continue }
                 $path = [IO.Path]::GetFullPath([string]$item.FullPath)
                 if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "SDK input is missing: $path" }
                 $files.Add($path) | Out-Null
@@ -91,8 +95,9 @@ function Get-DtmApiAuthorSdkInput {
             }
         }
     }
-    $files.Add([IO.Path]::GetFullPath($DotNetExe)) | Out-Null
-    foreach ($name in @('LICENSE.txt', 'ThirdPartyNotices.txt')) { $files.Add((Join-Path (Split-Path -Parent $DotNetExe) $name)) | Out-Null }
+    foreach ($toolchainFile in Get-ChildItem -LiteralPath (Split-Path -Parent $DotNetExe) -File -Recurse) {
+        $files.Add($toolchainFile.FullName) | Out-Null
+    }
     $rows = @($files | Sort-Object -CaseSensitive | ForEach-Object {
         [ordered]@{ path = $_; sha256 = Get-AuthorSdkSha256 -Path $_ }
     })

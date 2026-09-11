@@ -40,9 +40,9 @@ internal static partial class Program
                     arguments.AddRange(new[] { "--api-target", "0.5.5" });
                 await ExpectSuccess(name, arguments.ToArray()).ConfigureAwait(false);
                 JsonObject author = ReadTargetAuthor(project);
-                True(author["schemaVersion"]!.GetValue<int>() == (explicitTarget ? 2 : 3), "Explicit old targets retain schema 2; the new target selects dependency schema 3.");
+                True(author["schemaVersion"]!.GetValue<int>() == 4, "The first SDK uses standard MSBuild author inputs for every frozen API target.");
                 Equal(explicitTarget ? "0.5.5" : "0.7.0", author["targetDtmApiVersion"]!.GetValue<string>(), "Default and explicit targets select their own frozen API.");
-                True(!author.ContainsKey("targetRuntimeVersion"), "Schema 2 does not write the legacy target field.");
+                True(!author.ContainsKey("targetRuntimeVersion"), "Author inputs have one API target field.");
                 await ExpectSuccess("validate " + name, "validate", project).ConfigureAwait(false);
                 AssertJsonMatchesSchema(JsonSerializer.SerializeToElement(author),
                     Path.Combine(repository, "author-sdk", "schemas", "dtmapi-author.schema.json"), name);
@@ -69,7 +69,6 @@ internal static partial class Program
             packages.Add(project, await AssertTargetPackage(project, compatibility,
                 Path.Combine(root, Path.GetFileName(project) + "-packages"), "0.5.5").ConfigureAwait(false));
 
-        await TestLegacySdkTargetProject(root, codeProject, compatibility).ConfigureAwait(false);
         await TestUnsupportedSdkTargets(root, codeProject, contentProject, compatibility).ConfigureAwait(false);
         await TestSdkTargetMinimumRuntime(root, codeProject, compatibility).ConfigureAwait(false);
         await TestReadableHistoricalSdkTargetPackages(root, packages).ConfigureAwait(false);
@@ -82,11 +81,13 @@ internal static partial class Program
             "Target tests do not add or remove frozen compatibility contract files.");
         foreach (KeyValuePair<string, string> file in frozenBefore)
             Equal(file.Value, Sha256(file.Key), "Frozen compatibility contract remains byte-exact: " + Path.GetFileName(file.Key));
-        Console.WriteLine("SDK target matrix: OK (CLI selection, schema 1/2, real build/pack, Runtime floors, frozen payload binding).");
+        Console.WriteLine("SDK target matrix: OK (CLI selection, standard project, real build/pack, Runtime floors, frozen payload binding).");
     }
 
     private static async Task<string> AssertTargetPackage(string project, string compatibility, string output, string minimumRuntime, string apiTarget = "0.5.5")
     {
+        if (ReadTargetAuthor(project)["projectKind"]!.GetValue<string>() == "CodeMod")
+            await ExpectSuccess("restore selected target", "restore", project);
         CommandReport packed = await ExpectSuccess("selected target package", "pack", project,
             "--compatibility-root", compatibility, "--output", output).ConfigureAwait(false);
         using ZipArchive archive = ZipFile.OpenRead(packed.OutputPath);
@@ -101,37 +102,6 @@ internal static partial class Program
         else
             True(archive.Entries.All(entry => !entry.FullName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)), "ContentPack target selection never adds a code payload.");
         return packed.OutputPath;
-    }
-
-    private static async Task TestLegacySdkTargetProject(string root, string codeProject, string compatibility)
-    {
-        string legacy = Path.Combine(root, "legacy-schema1");
-        CopyDirectory(codeProject, legacy);
-        MutateJson(Path.Combine(legacy, "dtmapi.author.json"), author =>
-        {
-            author["schemaVersion"] = 1;
-            author["targetRuntimeVersion"] = "0.5.5";
-            author.Remove("targetDtmApiVersion");
-            author.Remove("codeModKind");
-        });
-        string authorHash = Sha256(Path.Combine(legacy, "dtmapi.author.json"));
-        await ExpectSuccess("legacy schema 1 target", "validate", legacy).ConfigureAwait(false);
-        await AssertTargetPackage(legacy, compatibility, Path.Combine(root, "legacy-package"), "0.5.5").ConfigureAwait(false);
-        Equal(authorHash, Sha256(Path.Combine(legacy, "dtmapi.author.json")), "Reading and packaging schema 1 does not silently rewrite the author's project.");
-
-        MutateJson(Path.Combine(legacy, "dtmapi.author.json"), author => author["targetRuntimeVersion"] = "0.6.1");
-        HasCode(await ExpectFailure("schema 1 cannot select a release as its API target", "validate", legacy).ConfigureAwait(false), "SDK108", "Legacy target remains frozen");
-        MutateJson(Path.Combine(legacy, "dtmapi.author.json"), author =>
-        {
-            author["targetRuntimeVersion"] = "0.5.5";
-            author["targetDtmApiVersion"] = "0.5.5";
-        });
-        HasCode(await ExpectFailure("schema 1 rejects mixed target fields", "validate", legacy).ConfigureAwait(false), "SDK108", "Legacy schema rejects a second target authority");
-
-        string mixedSchema2 = Path.Combine(root, "schema2-mixed-target-fields");
-        CopyDirectory(codeProject, mixedSchema2);
-        MutateJson(Path.Combine(mixedSchema2, "dtmapi.author.json"), author => author["targetRuntimeVersion"] = "0.5.5");
-        HasCode(await ExpectFailure("schema 2 rejects legacy target field", "validate", mixedSchema2).ConfigureAwait(false), "SDK108", "Current schema has exactly one target authority");
     }
 
     private static async Task TestUnsupportedSdkTargets(string root, string codeProject, string contentProject, string compatibility)
@@ -299,7 +269,7 @@ internal static partial class Program
     {
         string projectBefore = AuthorFileTreeDigest.Compute(project);
         CommandReport rejected = await ExpectFailure(label, "build", project, "--compatibility-root", compatibility).ConfigureAwait(false);
-        HasCode(rejected, "SDK202", "Selected compatibility payload fails closed: " + label);
+        HasCode(rejected, "SDK204", "Selected compatibility payload fails closed: " + label);
         Equal(projectBefore, AuthorFileTreeDigest.Compute(project), "Rejected payload cannot replace a previously built author artifact.");
     }
 

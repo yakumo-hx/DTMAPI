@@ -1,0 +1,91 @@
+<Project>
+  <UsingTask TaskName="DTMAPI.Author.Build.WriteBuildFacts" AssemblyFile="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.Build.dll" />
+  <!-- Only reference preparation and output observation: no Build/Restore replacement or CLI build callback. -->
+  <PropertyGroup>
+    <DtmApiDotNet Condition="'$(DtmApiDotNet)' == '' and '$(DTMAPI_AUTHOR_DOTNET)' != ''">$(DTMAPI_AUTHOR_DOTNET)</DtmApiDotNet>
+    <DtmApiDotNet Condition="'$(DtmApiDotNet)' == '' and Exists('$(DTMAPI_AUTHOR_SDK_ROOT)/toolchain/dotnet/dotnet.exe')">$(DTMAPI_AUTHOR_SDK_ROOT)/toolchain/dotnet/dotnet.exe</DtmApiDotNet>
+    <DtmApiDotNet Condition="'$(DtmApiDotNet)' == ''">$(DotNetHostPath)</DtmApiDotNet>
+    <DtmApiToolCommand>&quot;$(DtmApiDotNet)&quot; &quot;$(DTMAPI_AUTHOR_SDK_ROOT)/dtmapi-author.dll&quot;</DtmApiToolCommand>
+    <DtmApiBuildTarget>Build</DtmApiBuildTarget>
+    <!-- A pack always executes required analysis on a real standard compilation. -->
+    <DtmApiBuildTarget Condition="'$(DtmApiPackaging)' == 'true'">Rebuild</DtmApiBuildTarget>
+    <ErrorLog Condition="'$(DtmApiErrorLog)' != ''">$(DtmApiErrorLog)</ErrorLog>
+    <ProvideCommandLineArgs>true</ProvideCommandLineArgs>
+  </PropertyGroup>
+  <ItemGroup><Analyzer Include="$(DTMAPI_AUTHOR_SDK_ROOT)/analyzers/DTMAPI.Author.Analyzers.dll" /></ItemGroup>
+  <Target Name="DtmApiRequirePackageLock" BeforeTargets="_GenerateRestoreGraphProjectEntry" Condition="'$(DtmApiPackaging)' == 'true'">
+    <PropertyGroup><_DtmApiLockFile>$(NuGetLockFilePath)</_DtmApiLockFile><_DtmApiLockFile Condition="'$(_DtmApiLockFile)' == ''">$(MSBuildProjectDirectory)/packages.lock.json</_DtmApiLockFile></PropertyGroup>
+    <Error Condition="!Exists('$(_DtmApiLockFile)')" Code="SDK206" Text="Pack requires a standard NuGet lock file. Run dtmapi-author restore to create/update it, then pack again." />
+  </Target>
+  <Target Name="DtmApiPrepareReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(DtmApiAuthorProjectRoot)' == ''" Code="SDK204" Text="No dtmapi.author.json was found in this project directory or its ancestors. Set DtmApiAuthorProjectRoot to the author metadata directory." />
+    <Error Condition="'$(TargetFramework)' != 'netstandard2.0'" Code="SDK204" Text="The selected Mod game target must be netstandard2.0; ordinary tool projects keep their own framework." />
+    <Error Condition="!Exists('$(DtmApiDotNet)')" Code="SDK204" Text="Set DTMAPI_AUTHOR_DOTNET to the supported dotnet executable, or use the SDK development environment." />
+    <Error Condition="'$(NETCoreSdkVersion)' != '8.0.421'" Code="SDK204" Text="Use the SDK development environment with .NET SDK 8.0.421; check ancestor global.json." />
+    <PropertyGroup>
+      <DtmApiAuthorProjectRoot>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(DtmApiAuthorProjectRoot)'))</DtmApiAuthorProjectRoot>
+      <DtmApiIntermediate>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'dtmapi'))</DtmApiIntermediate>
+      <_DtmApiAssetsFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(ProjectAssetsFile)'))</_DtmApiAssetsFile>
+    </PropertyGroup>
+    <MakeDir Directories="$(DtmApiIntermediate)" />
+    <Exec Command="$(DtmApiToolCommand) msbuild-prepare &quot;$(DtmApiAuthorProjectRoot)&quot; --project-file &quot;$(MSBuildProjectFullPath)&quot; --compatibility-root &quot;$(DtmApiCompatibilityRoot)&quot; --game-root &quot;$(DtmApiGameRoot)&quot; --output &quot;$(DtmApiIntermediate)references.txt&quot;" />
+    <ReadLinesFromFile File="$(DtmApiIntermediate)references.txt">
+      <Output TaskParameter="Lines" ItemName="_DtmApiFrozenReference" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <Reference Include="@(_DtmApiFrozenReference)">
+        <Private>false</Private>
+        <DtmApiHostReference>true</DtmApiHostReference>
+      </Reference>
+    </ItemGroup>
+  </Target>
+  <Target Name="DtmApiCheckResolvedReferences" BeforeTargets="CoreCompile" DependsOnTargets="DtmApiPrepareReferences">
+    <Error Condition="'$(DtmApiPackaging)' == 'true' and ('$(RunAnalyzers)' == 'false' or '$(RunAnalyzersDuringBuild)' == 'false' or '$(SkipCompilerExecution)' == 'true')" Code="SDK203" Text="Pack requires an actual compilation with the required SDK analyzer enabled." />
+    <ItemGroup><_DtmApiActualCscReference Include="@(ReferencePathWithRefAssemblies)" /></ItemGroup>
+    <ItemGroup Condition="'@(_DtmApiActualCscReference)' == ''"><_DtmApiActualCscReference Include="@(ReferencePath)" /></ItemGroup>
+    <WriteLinesToFile File="$(DtmApiIntermediate)resolved-references.txt" Lines="@(_DtmApiActualCscReference->'%(FullPath)')" Overwrite="true" Encoding="UTF-8" />
+    <WriteLinesToFile File="$(DtmApiIntermediate)resolved-analyzers.txt" Lines="@(Analyzer->'%(FullPath)')" Overwrite="true" Encoding="UTF-8" />
+    <Exec Command="$(DtmApiToolCommand) msbuild-check-references &quot;$(DtmApiAuthorProjectRoot)&quot; --project-file &quot;$(MSBuildProjectFullPath)&quot; --compatibility-root &quot;$(DtmApiCompatibilityRoot)&quot; --game-root &quot;$(DtmApiGameRoot)&quot; --references &quot;$(DtmApiIntermediate)resolved-references.txt&quot; --assets &quot;$(_DtmApiAssetsFile)&quot;" />
+  </Target>
+  <Target Name="DtmApiCheckCompilerArguments" AfterTargets="CoreCompile">
+    <Error Condition="'$(DtmApiPackaging)' == 'true' and '@(CscCommandLineArgs)' == ''" Code="SDK203" Text="Pack requires command-line evidence from the actual standard Csc task." />
+    <WriteLinesToFile Condition="'@(CscCommandLineArgs)' != ''" File="$(DtmApiIntermediate)compiler-arguments.txt" Lines="@(CscCommandLineArgs)" Overwrite="true" Encoding="UTF-8" />
+    <Exec Condition="'@(CscCommandLineArgs)' != ''" Command="$(DtmApiToolCommand) msbuild-check-references &quot;$(DtmApiAuthorProjectRoot)&quot; --project-file &quot;$(MSBuildProjectFullPath)&quot; --compatibility-root &quot;$(DtmApiCompatibilityRoot)&quot; --game-root &quot;$(DtmApiGameRoot)&quot; --compiler-arguments &quot;$(DtmApiIntermediate)compiler-arguments.txt&quot;" />
+  </Target>
+  <Target Name="DtmApiCollect" DependsOnTargets="$(DtmApiBuildTarget);$(DtmApiPreparePackageDependsOn)">
+    <PropertyGroup><DtmApiFactsFile Condition="'$(DtmApiFactsFile)' == ''">$(DtmApiIntermediate)build-facts.xml</DtmApiFactsFile></PropertyGroup>
+    <PropertyGroup><DtmApiFactsFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(DtmApiFactsFile)'))</DtmApiFactsFile></PropertyGroup>
+    <ItemGroup>
+      <_DtmApiProperty Include="ProjectDirectory"><Value>$(MSBuildProjectDirectory)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="ProjectPath"><Value>$(MSBuildProjectFullPath)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="AuthorProjectRoot"><Value>$(DtmApiAuthorProjectRoot)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="TargetPath"><Value>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(TargetPath)'))</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="TargetFramework"><Value>$(TargetFramework)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="Configuration"><Value>$(Configuration)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="MSBuildVersion"><Value>$(MSBuildVersion)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="MSBuildSDKsPath"><Value>$(MSBuildSDKsPath)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="NETCoreSdkVersion"><Value>$(NETCoreSdkVersion)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="ProjectAssetsFile"><Value>$(_DtmApiAssetsFile)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="DocumentationFile">
+        <Value Condition="'$(DocumentationFile)' != ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(TargetDir)', $([System.IO.Path]::GetFileName('$(DocumentationFile)'))))</Value>
+        <Value Condition="'$(DocumentationFile)' != '' and '$(CopyDocumentationFileToOutputDirectory)' == 'false'">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(DocumentationFile)'))</Value>
+      </_DtmApiProperty>
+      <_DtmApiProperty Include="DebugType"><Value>$(DebugType)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="IntermediateOutputPath"><Value>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)'))</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="CscToolPath"><Value>$(CscToolPath)</Value></_DtmApiProperty>
+      <_DtmApiProperty Include="CscToolExe"><Value>$(CscToolExe)</Value></_DtmApiProperty>
+      <_DtmApiItem Include="@(ReferenceCopyLocalPaths)"><DtmApiFactKind>Runtime</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(ReferencePath)"><DtmApiFactKind>Reference</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(ProjectReference)"><DtmApiFactKind>ProjectReference</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(PackageReference)"><DtmApiFactKind>PackageReference</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(Reference)"><DtmApiFactKind>DeclaredReference</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(Content)" Condition="'%(Content.DtmApiPackagePath)' != ''"><DtmApiFactKind>Content</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(None)" Condition="'%(None.DtmApiPackagePath)' != ''"><DtmApiFactKind>Content</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(Compile)"><DtmApiFactKind>Compile</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(CscCommandLineArgs)"><DtmApiFactKind>CompilerArgument</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(Analyzer)"><DtmApiFactKind>Analyzer</DtmApiFactKind></_DtmApiItem>
+      <_DtmApiItem Include="@(AdditionalFiles);@(EmbeddedResource);@(EditorConfigFiles)"><DtmApiFactKind>Input</DtmApiFactKind></_DtmApiItem>
+    </ItemGroup>
+    <DTMAPI.Author.Build.WriteBuildFacts OutputFile="$(DtmApiFactsFile)" Properties="@(_DtmApiProperty)" Items="@(_DtmApiItem)" />
+  </Target>
+</Project>

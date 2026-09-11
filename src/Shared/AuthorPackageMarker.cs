@@ -28,7 +28,9 @@ namespace DTMAPI.Internal.Authoring
             {
                 byte[] bytes = File.ReadAllBytes(markerPath);
                 if (bytes.Length > 65536) throw new InvalidDataException("Package marker exceeds its size limit.");
-                using (XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(bytes,
+                int offset = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+                if (offset == bytes.Length) throw new InvalidDataException("Package marker is empty.");
+                using (XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(bytes, offset, bytes.Length - offset,
                     new XmlDictionaryReaderQuotas { MaxDepth = 4, MaxStringContentLength = 65536, MaxArrayLength = 65536 }))
                 {
                     XElement json = XElement.Load(reader);
@@ -40,6 +42,10 @@ namespace DTMAPI.Internal.Authoring
                         if (fields.ContainsKey(name)) throw new InvalidDataException("Duplicate package marker field: " + name);
                         fields.Add(name, field);
                     }
+                    // This filename predates the Author SDK. Existing installer/content/third-party
+                    // metadata is not an SDK binding or an ownership receipt. Recognize only that
+                    // bounded vocabulary; schema fields or any SDK binding field never fall back.
+                    if (!fields.ContainsKey("schemaVersion") && IsLegacyMetadata(fields, uniqueId, version)) return;
                     if (!fields.TryGetValue("schemaVersion", out XElement? schema) || (string?)schema.Attribute("type") != "number" ||
                         (schema.Value != "1" && schema.Value != "2")) throw new InvalidDataException("Unsupported package marker schemaVersion.");
                     bool legacy = schema.Value == "1";
@@ -78,6 +84,23 @@ namespace DTMAPI.Internal.Authoring
             }
             catch (Exception ex) when (ex is XmlException || ex is System.Runtime.Serialization.SerializationException || ex is ArgumentException)
             { throw new InvalidDataException("Package marker could not be read: " + ex.Message, ex); }
+        }
+
+        private static bool IsLegacyMetadata(Dictionary<string, XElement> fields, string uniqueId, string version)
+        {
+            string[] allowed = { "owner", "packageKind", "uniqueId", "generatedBy", "updatedAt", "contentRoot", "version" };
+            if (fields.Keys.Any(name => !allowed.Contains(name, StringComparer.Ordinal)) ||
+                fields.Values.Any(field => (string?)field.Attribute("type") != "string") ||
+                !fields.TryGetValue("uniqueId", out XElement? id) || id.Value != uniqueId) return false;
+            if (fields.TryGetValue("version", out XElement? modVersion) && modVersion.Value != version) return false;
+            if (fields.TryGetValue("owner", out XElement? owner) && owner.Value != "DTMAPI") return false;
+            if (fields.TryGetValue("packageKind", out XElement? kind) && kind.Value != "workshop-mod" && kind.Value != "content-pack") return false;
+            if (fields.TryGetValue("contentRoot", out XElement? content) && content.Value != "Content") return false;
+            if (fields.TryGetValue("updatedAt", out XElement? updated) &&
+                !DateTimeOffset.TryParse(updated.Value, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out _)) return false;
+            return fields.TryGetValue("generatedBy", out XElement? generator) && !string.IsNullOrWhiteSpace(generator.Value) ||
+                fields.Count == 2 && modVersion != null;
         }
 
         private static void RequireFile(string root, string relative, string hash, string expected)

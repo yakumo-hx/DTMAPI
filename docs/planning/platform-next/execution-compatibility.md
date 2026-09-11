@@ -1,6 +1,6 @@
 # 0.7.0 现有 Mod 与接入方式兼容执行包
 
-- Lifecycle: `accepted-design`；PN-042.a–c 尚未实施、未验收。
+- Lifecycle: `implemented`；PN-042.a–c 已完成：准确 0.6.1 差分、旧 marker 退化修正、r6/r2 与新旧作者组合及完整 Release 接受，结果归 [0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)。以下保留原执行规格，未公开发布。
 - Role: 0.7.0 首发兼容门的详细规格；与 [PN-041 SDK 迁移](execution-sdk-msbuild.md)共同交付，不增加第二套发布流程或证据账本。
 - Scope: 以准确已发布 0.6.1、已保留的更早消费者及当前受支持接入方式为基线。队列归 [status](status.md)，候选选择归 [release-candidate](release-candidate.md)。
 

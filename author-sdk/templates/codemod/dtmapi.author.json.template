@@ -1,11 +1,9 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "projectKind": "CodeMod",
   "codeModKind": "Strict",
   "targetDtmApiVersion": {{API_TARGET_JSON}},
-  "sourceDirectory": "src",
-  "contentDirectory": "content",
-  "assemblyName": {{ASSEMBLY_NAME_JSON}},
+  "projectFile": {{PROJECT_FILE_JSON}},
   "publish": {
     "tags": [
       "Mod",

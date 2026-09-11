@@ -12,6 +12,7 @@ This is a command reference, not a reading or execution checklist. Search for th
 | Default Unit/product source coverage | `test-unit.ps1`; builds only the default test graphs and their dependencies |
 | Public source CI | `test-public-source.ps1`; source/redistributable inputs, without private game or Release package evidence |
 | Compile the framework/example/test solution | `build.ps1 -Configuration Release -SkipTests`; no tests |
+| Compile selected project roots and their dependencies | `build.ps1 -Projects <paths> -SkipTests`; one build graph, no implicit suite |
 | Compile plus all source suites | `build.ps1 -Configuration Release`; broader than a focused fix |
 | Complete Release/integration boundary | `test.ps1 -Configuration Release`; includes its build and package/ABI checks; do not prepend `build.ps1` |
 | Release failure diagnosis | `test.ps1 -List`; `-Stage <name>` runs one stage, `-StartAt <name>` runs its tail; neither establishes full acceptance |
@@ -32,6 +33,14 @@ From the repository root:
 
 Release diagnostic stages reuse the prepared build and SDK outputs. Rebuild changed inputs with the relevant project/build entry first; `BuildAndUnit` includes its build. `PostRuntimeInstaller` remains an alias for the `ScriptContracts` tail. Use the supported selectors rather than copying/slicing the driver. Real runs check conflicting tests/game processes first. The full run checks evidence-retention freshness before building; diagnostic selections check it only when they include `ScriptContracts`. `-List` only prints the selection. Product/QA/ABI gates run before the long installer transaction matrices. Keep the candidate and evidence-bearing records unchanged during a complete run. Repair an affected stage first, then perform the required final complete run once.
 
+## Observe a long-running command
+
+Prefer the tracked entry in a tool-owned process session. Retain its returned session ID and wait once per observation interval. With `functions.exec`, set its outer yield longer than the inner wait: for example, `// @exec: {"yield_time_ms": 60000}` around `write_stdin` with `yield_time_ms: 45000`. This avoids a routine second `functions.wait` just because the outer default is shorter. Keep user progress updates within the conversation's required interval.
+
+If output is written to a file, combine the bounded session wait and a needed short log read in the same call. Prefer new output or a changed phase; do not split each observation into separate time, PID, sleep and unchanged-tail calls. Reuse the running process instead of launching another copy to obtain status.
+
+When file capture needs a wrapper, Windows PowerShell 5.1 can turn redirected native stderr into `NativeCommandError` under `ErrorActionPreference=Stop`. Capture stdout/stderr separately at the process boundary and retain the actual exit result; a stderr warning alone is not a failed test. Reuse existing entrypoint error handling. Fix capture/host prerequisites with the affected diagnostic stage before another full run.
+
 ## Script reference
 
 Expected script surface:
@@ -45,8 +54,9 @@ Expected script surface:
 - `prepare-unit-test-dependencies.ps1`: stage selected public test fixture dependencies under `.tools`; the test entry invokes it only for selected graphs that need them and only when building.
 - `prepare-author-sdk-compatibility.ps1`: rebuild the frozen API payload from its tracked DTMAPI source inputs. Public CI prepares this small payload before its SDK focuses; `-NoBuild` only checks the existing payload. Source provenance and byte identity live beside the frozen contract, without requiring old packages or Git history.
 - `build-batch6-advanced-product.ps1`: ordinary Advanced product packaging uses validation followed by one `pack --build-output` compilation; `pack-report.json` owns compilation/package evidence.
-- `build.ps1`: build `DTMAPI.sln` once and, unless `-SkipTests`, run the default split Unit suites plus QA, Doctor, installer and SDK tests. The solution owns ordinary project membership; Advanced product packages use the Catalog/Author SDK route. Non-Release runs also build the fixed Release compatibility assembly required by SDK tests.
-- `test.ps1`: build once, run complete source/package/ABI validation, then document checks. `-StartAt PostRuntimeInstaller` is a diagnostic tail, never a full PASS.
+- `build.ps1`: build `DTMAPI.sln` once and, unless `-SkipTests`, run the default split Unit suites plus QA, Doctor, installer and SDK tests. `-Projects` requires `-SkipTests` and builds only selected roots plus dependencies in one invocation; `-Rebuild` also applies to that graph. The solution owns ordinary project membership; Advanced product packages use the Catalog/Author SDK route. Non-Release SDK tests also require the fixed Release compatibility assembly.
+- `test.ps1`: build the solution, run complete source/package/ABI validation, then document checks. The RuntimeOnly package stage separately rebuilds Bootstrap, Catalog optional components and dependencies from proven committed inputs; it does not rebuild unrelated SDK/product/test projects. `-StartAt PostRuntimeInstaller` is a diagnostic tail, never a full PASS.
+- `test-runtime-build-source.ps1`: real source/build fixtures check selected roots/shared dependencies, forced replacement of stale output, failure propagation, temporary-filter cleanup and committed-input protections; run for Runtime source/build-route changes.
 - `install-to-game.ps1`: install local DTMAPI build into the configured Doloc Town game directory.
 - `run-game-smoke.ps1`: launch through Steam by default, write `startup-timeline.json`, wait for startup/save evidence, collect only runtime evidence created or updated since this run began, verify process exit, and fail on the fatal instance popup even if the process has already exited. Automated fixture scenarios additionally require the receipt-bound optional QA host with `-StageQaHost`; direct game evidence does not. The runner never writes a player-side automation settings file. Direct `DolocTown.exe` launch is opt-in with `-DirectExe` because the game calls Steam restart logic and can show `Fatal error: Another instance is already running` before the title menu.
 - Historical CameraView compatibility validation uses `-AutoExerciseZoom` and the QA-owned `CameraPlayable` fixture. Current Zoom ProductNative validation uses `-AutoExerciseZoomProductNative` plus `-AssertAdvancedProductOwnerDeactivation -AdvancedProductOwnerDeactivationOwnerIds DTMAPI.ZoomMod`; the old Strict `ZoomOwnerLifetime` seam has been removed.

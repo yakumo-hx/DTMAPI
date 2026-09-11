@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "DTMAPI.Batch0",
-  "statusDate": "2026-08-30",
+  "statusDate": "2026-09-11",
   "authority": {
     "purpose": "Authoritative multi-axis identity and release-boundary catalog. It records facts and blocks drift; exact upload authorization must originate in a linked Update and is only enforced here through bounded mutation entrypoints.",
     "constructionMap": "docs/reviews/code/2026/20260712-0003-dtmapi-full-boundary-audit.md",
@@ -31,7 +31,7 @@
     "treeDigestAlgorithm": "DTMAPI-Retained-SHA256SUMS-v1",
     "publicMutationEntrypoints": [],
     "explicitlyExcludedExistingWorkshopUpdates": [],
-    "note": "The global stop remains active with zero future upload authorization. The user-submitted Y-console 1.1.1 update is observed at Steam manifest 6693520158465470410 with the exact 27-file delivered tree. The user-created DTMAPI multi-platform item 3792681186 is observed at Steam manifest 5128092030483852458 with the exact 36-file delivered tree. The user-submitted MoreEquipmentSlots 1.0.1 update is observed at Steam manifest 3792342317410441560 with the exact eight-file delivered tree. These observations do not authorize another upload."
+    "note": "Windows and multi-platform Runtime 0.7.0 BOM repair and Y Console 1.1.3 were published by the user and verified against exact Steam subscriptions. Current receipts belong to docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md. No future upload authorization is granted by this observation."
   },
   "runtime": {
     "catalogId": "runtime",
@@ -42,57 +42,90 @@
     "distributions": [
       {
         "distributionId": "dtmapi-windows",
+        "localUploadSuccessor": {
+          "state": "SteamPublishedObservedExact",
+          "releaseVersion": "0.7.0",
+          "buildCommit": "7d26482a2a95",
+          "packageRoot": "artifacts/runtime-070-bom-fix/windows/DTMAPI",
+          "contentFileCount": 28,
+          "contentBytes": 4225850,
+          "contentTreeSha256": "b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b",
+          "receiptAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+          "owningUpdate": "docs/updates/2026/20260911-0009-runtime-070-package-marker-bom.md",
+          "note": "User publication confirmed by public metadata and exact native subscription / candidate / upload content parity.",
+          "publicationUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+          "workshopManifestId": "8011095289886758879"
+        },
         "displayName": "DTMAPI",
         "audience": "Windows x64",
-        "releaseVersion": "0.6.1",
+        "releaseVersion": "0.7.0",
         "workshopId": "3743016467",
-        "workshopManifestId": "918505309011394484",
+        "workshopManifestId": "8011095289886758879",
         "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI",
         "artifactState": "SteamPublishedObservedExact",
         "playerPayloadFileCount": 28,
-        "playerPayloadBytes": 3866857,
-        "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+        "playerPayloadBytes": 4225850,
+        "playerPayloadTreeSha256": "b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b",
         "peHostCount": 0,
         "elfHostCount": 0,
-        "owningUpdate": "docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md",
+        "owningUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
         "publishMetadata": {
           "metadataSource": "inline",
           "sourcePath": "tools/scripts/build-release-workshop-packages.ps1 runtime package"
-        }
+        },
+        "steamDeliveredFileCount": 29,
+        "steamDeliveredBytes": 4225883,
+        "steamDeliveredTreeSha256": "a142e9ff623fd58c15f9d3c7532ecf65213c39f93aa8c23f5b16269ba1a8c491",
+        "steamTimeUpdatedUtc": "2026-09-11T14:56:51Z",
+        "observedAtUtc": "2026-09-11T15:05:47Z"
       },
       {
         "distributionId": "dtmapi-multiplatform",
+        "localUploadSuccessor": {
+          "state": "SteamPublishedObservedExact",
+          "releaseVersion": "0.7.0",
+          "buildCommit": "7d26482a2a95",
+          "packageRoot": "artifacts/runtime-070-bom-fix/multiplatform/DTMAPI-MultiPlatform",
+          "contentFileCount": 37,
+          "contentBytes": 30186688,
+          "contentTreeSha256": "bf89edc133d38f463be4ab79e53585d1a0b8ca2159791306a9dec93eef487033",
+          "receiptAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
+          "owningUpdate": "docs/updates/2026/20260911-0009-runtime-070-package-marker-bom.md",
+          "note": "User publication confirmed by public metadata and exact native subscription / candidate / upload content parity.",
+          "publicationUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+          "workshopManifestId": "6229085302177299134"
+        },
         "displayName": "DTMAPI-多平台",
         "audience": "Steam Deck / SteamOS / Linux x64 first; Windows x64; macOS CrossOver",
-        "releaseVersion": "0.6.1",
-        "installerVersion": "0.1.0-experimental",
+        "releaseVersion": "0.7.0",
+        "installerVersion": "0.2.0-experimental",
         "workshopId": "3792681186",
-        "workshopManifestId": "5128092030483852458",
+        "workshopManifestId": "6229085302177299134",
         "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI_MultiPlatform",
-        "candidatePackageRoot": "dist/DTMAPI-MultiPlatform",
+        "candidatePackageRoot": "artifacts/runtime-070-bom-fix/multiplatform/DTMAPI-MultiPlatform",
         "artifactState": "SteamPublishedObservedExact",
-        "candidateState": "LocalMetadataSuccessorPendingUpload",
+        "candidateState": "PublishedMetadataSuccessor",
         "uploadAuthorization": "None",
         "workshopControlFileState": "PresentValidatedLocalUploadOnly",
         "workshopControlFileBytes": 33,
         "workshopControlFileSha256": "5e1ec4ac349bcd1031d5112b1a2608992d620d0098845d26e5c35a28558a9f26",
-        "steamDeliveredFileCount": 36,
-        "steamDeliveredBytes": 29770736,
-        "steamDeliveredTreeSha256": "e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4",
-        "steamTimeUpdatedUtc": "2026-08-30T09:50:49Z",
-        "observedAtUtc": "2026-08-30T09:57:14Z",
+        "steamDeliveredFileCount": 38,
+        "steamDeliveredBytes": 30186721,
+        "steamDeliveredTreeSha256": "cacf19e7b952e19d479ce5f73095d188474e584de7246fc9373df9cf672f6c57",
+        "steamTimeUpdatedUtc": "2026-09-11T14:57:05Z",
+        "observedAtUtc": "2026-09-11T15:05:47Z",
         "sourceDistributionId": "dtmapi-windows",
-        "sourceWorkshopId": "3743016467",
-        "sourceWorkshopManifestId": "918505309011394484",
+        "sourceWorkshopId": "",
+        "sourceWorkshopManifestId": "",
         "sourcePlayerPayloadFileCount": 28,
-        "sourcePlayerPayloadBytes": 3866857,
-        "sourcePlayerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
-        "sharedPayloadFileCount": 20,
-        "sharedPayloadBytes": 3826337,
-        "sharedPayloadTreeSha256": "ae80f6661390b82824af424b2006fb28267ec7181b2f98d75df9975c6a1d20c5",
-        "candidateFileCount": 36,
-        "candidateBytes": 29770715,
-        "candidateTreeSha256": "f7671fd07dae7664855be37bbd82f29ce23b003f56f4d0818717fa4f2aa2605a",
+        "sourcePlayerPayloadBytes": 4225850,
+        "sourcePlayerPayloadTreeSha256": "b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b",
+        "sharedPayloadFileCount": 21,
+        "sharedPayloadBytes": 4191861,
+        "sharedPayloadTreeSha256": "604ad1e31930cd8af9cd0286d90abf8ef3a98e032704c9a0433241e7e7dfa924",
+        "candidateFileCount": 37,
+        "candidateBytes": 30186688,
+        "candidateTreeSha256": "bf89edc133d38f463be4ab79e53585d1a0b8ca2159791306a9dec93eef487033",
         "peHostCount": 1,
         "elfHostCount": 1,
         "installedHostArtifactCount": 0,
@@ -104,32 +137,109 @@
             "rid": "win-x64",
             "format": "PE32+",
             "relativePath": "DTMAPI-MultiPlatform-Installer.exe",
-            "length": 11818211,
-            "sha256": "da929a41ab46e2da3a405408fe5f4110b02246862189a8a4becd4cb35e5af09a"
+            "length": 11827769,
+            "sha256": "a3634d195273479e44b2ddd326d095d9418f71ed00f4fbb71e79a4f35ec5366a"
           },
           {
             "rid": "linux-x64",
             "format": "ELF64",
             "relativePath": "Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer",
-            "length": 13211388,
-            "sha256": "4210d9f2f22b2358b56a14aa5b0a99a5042f7cb6d956611bbe642f268a7e9dfb"
+            "length": 13235451,
+            "sha256": "588d72868559e4dd7da90cf9ee0a43bfb57a4121274ca86ed223771a31d9113f"
           }
         ],
         "validation": {
           "windowsFakeGame": "Passed",
           "wslLinuxFakeGame": "Passed",
-          "subscriptionContentParity": "PassedForManifest5128092030483852458BeforeLocalMetadataSuccessor",
+          "subscriptionContentParity": "PassedForManifest6229085302177299134",
           "realGame": "NotRun",
           "steamDeckPlayerAcceptance": "Pending",
           "crossOverPlayerAcceptance": "Pending"
         },
-        "owningUpdate": "docs/updates/2026/20260829-0003-dtmapi-multiplatform-runtime-installer.md",
+        "owningUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
         "publishMetadata": {
           "metadataSource": "tools/release/dtmapi-multiplatform/info.json",
           "infoPath": "tools/release/dtmapi-multiplatform/info.json",
           "iconPath": "assets/branding/dtmapi-multiplatform-icon.png",
           "previewPath": "assets/branding/dtmapi-multiplatform-preview.png",
           "sourcePath": "tools/scripts/build-dtmapi-multiplatform-package.ps1"
+        },
+        "sourceKind": "Candidate",
+        "workshopControlFileDelivered": true,
+        "playerPayloadFileCount": 37,
+        "playerPayloadBytes": 30186688,
+        "playerPayloadTreeSha256": "bf89edc133d38f463be4ab79e53585d1a0b8ca2159791306a9dec93eef487033",
+        "observed061Baseline": {
+          "distributionId": "dtmapi-multiplatform",
+          "displayName": "DTMAPI-多平台",
+          "audience": "Steam Deck / SteamOS / Linux x64 first; Windows x64; macOS CrossOver",
+          "releaseVersion": "0.6.1",
+          "installerVersion": "0.1.0-experimental",
+          "workshopId": "3792681186",
+          "workshopManifestId": "5128092030483852458",
+          "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI_MultiPlatform",
+          "candidatePackageRoot": "dist/DTMAPI-MultiPlatform",
+          "artifactState": "SteamPublishedObservedExact",
+          "candidateState": "LocalMetadataSuccessorPendingUpload",
+          "uploadAuthorization": "None",
+          "workshopControlFileState": "PresentValidatedLocalUploadOnly",
+          "workshopControlFileBytes": 33,
+          "workshopControlFileSha256": "5e1ec4ac349bcd1031d5112b1a2608992d620d0098845d26e5c35a28558a9f26",
+          "steamDeliveredFileCount": 36,
+          "steamDeliveredBytes": 29770736,
+          "steamDeliveredTreeSha256": "e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4",
+          "steamTimeUpdatedUtc": "2026-08-30T09:50:49Z",
+          "observedAtUtc": "2026-08-30T09:57:14Z",
+          "sourceDistributionId": "dtmapi-windows",
+          "sourceWorkshopId": "3743016467",
+          "sourceWorkshopManifestId": "918505309011394484",
+          "sourcePlayerPayloadFileCount": 28,
+          "sourcePlayerPayloadBytes": 3866857,
+          "sourcePlayerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+          "sharedPayloadFileCount": 20,
+          "sharedPayloadBytes": 3826337,
+          "sharedPayloadTreeSha256": "ae80f6661390b82824af424b2006fb28267ec7181b2f98d75df9975c6a1d20c5",
+          "candidateFileCount": 36,
+          "candidateBytes": 29770715,
+          "candidateTreeSha256": "f7671fd07dae7664855be37bbd82f29ce23b003f56f4d0818717fa4f2aa2605a",
+          "peHostCount": 1,
+          "elfHostCount": 1,
+          "installedHostArtifactCount": 0,
+          "requiredLinuxLaunchOption": "WINEDLLOVERRIDES=\"winhttp=n,b\" %command%",
+          "crossOverDllOverride": "winhttp=n,b",
+          "codeSigning": "unsigned-experimental",
+          "hostArtifacts": [
+            {
+              "rid": "win-x64",
+              "format": "PE32+",
+              "relativePath": "DTMAPI-MultiPlatform-Installer.exe",
+              "length": 11818211,
+              "sha256": "da929a41ab46e2da3a405408fe5f4110b02246862189a8a4becd4cb35e5af09a"
+            },
+            {
+              "rid": "linux-x64",
+              "format": "ELF64",
+              "relativePath": "Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer",
+              "length": 13211388,
+              "sha256": "4210d9f2f22b2358b56a14aa5b0a99a5042f7cb6d956611bbe642f268a7e9dfb"
+            }
+          ],
+          "validation": {
+            "windowsFakeGame": "Passed",
+            "wslLinuxFakeGame": "Passed",
+            "subscriptionContentParity": "PassedForManifest5128092030483852458BeforeLocalMetadataSuccessor",
+            "realGame": "NotRun",
+            "steamDeckPlayerAcceptance": "Pending",
+            "crossOverPlayerAcceptance": "Pending"
+          },
+          "owningUpdate": "docs/updates/2026/20260829-0003-dtmapi-multiplatform-runtime-installer.md",
+          "publishMetadata": {
+            "metadataSource": "tools/release/dtmapi-multiplatform/info.json",
+            "infoPath": "tools/release/dtmapi-multiplatform/info.json",
+            "iconPath": "assets/branding/dtmapi-multiplatform-icon.png",
+            "previewPath": "assets/branding/dtmapi-multiplatform-preview.png",
+            "sourcePath": "tools/scripts/build-dtmapi-multiplatform-package.ps1"
+          }
         }
       }
     ],
@@ -156,34 +266,34 @@
       "releaseVersion": "0.7.0",
       "binaryFileVersion": "0.7.0.0",
       "assemblyCompatibilityIdentity": "0.5.3.0",
-      "infoJsonBytes": 9192,
-      "infoJsonSha256": "ecbc00dccc4ed4834dcfe4e2f374ad786c27f184a70d1c655d794b59f13428cc",
-      "infoJsonState": "DeterministicUnpublishedSourceProjection",
+      "infoJsonBytes": 9277,
+      "infoJsonSha256": "18eefaca436e74a40da8863e9952e344a6614cfec44cd22d612c87d9bb6fac10",
+      "infoJsonState": "DeterministicPublishedSourceProjection",
       "state": "CurrentSourceAuthority"
     },
     "currentPublishedArtifact": {
-      "releaseVersion": "0.6.1",
-      "binaryFileVersion": "0.6.1.0",
+      "releaseVersion": "0.7.0",
+      "binaryFileVersion": "0.7.0.0",
       "assemblyCompatibilityIdentity": "0.5.3.0",
-      "workshopManifestId": "918505309011394484",
+      "workshopManifestId": "8011095289886758879",
       "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
       "treeDigestNormalization": "Exclude subscription-generated Content/.tools/bepinex/extract/**. Sort files by forward-slash relative path using StringComparer.Ordinal. Each row is lowercase file SHA-256, two spaces, then relative path. Join rows with LF and no final LF; hash UTF-8 without BOM using SHA-256.",
       "steamDeliveredFileCount": 29,
-      "steamDeliveredBytes": 3866890,
-      "steamDeliveredTreeSha256": "846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88",
+      "steamDeliveredBytes": 4225883,
+      "steamDeliveredTreeSha256": "a142e9ff623fd58c15f9d3c7532ecf65213c39f93aa8c23f5b16269ba1a8c491",
       "playerPayloadExclusion": "workshop.json",
       "playerPayloadFileCount": 28,
-      "playerPayloadBytes": 3866857,
-      "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
-      "infoJsonBytes": 9192,
-      "infoJsonSha256": "5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171",
+      "playerPayloadBytes": 4225850,
+      "playerPayloadTreeSha256": "b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b",
+      "infoJsonBytes": 9277,
+      "infoJsonSha256": "18eefaca436e74a40da8863e9952e344a6614cfec44cd22d612c87d9bb6fac10",
       "workshopControlFileBytes": 33,
       "workshopControlFileSha256": "d6d9206a4a58b88cc985ee72832d57f226ff58767ef6e606a2731b0d604ef98d",
-      "releaseManifestBuildCommit": "db5e518a6d7f",
-      "steamTimeUpdatedUtc": "2026-08-20T00:23:14Z",
-      "observedAtUtc": "2026-08-20T00:28:08Z",
+      "releaseManifestBuildCommit": "7d26482a2a95",
+      "steamTimeUpdatedUtc": "2026-09-11T14:56:51Z",
+      "observedAtUtc": "2026-09-11T15:05:47Z",
       "nativeNormalizationOwner": "SourceBuilderStableLocalizedManifestProjection",
-      "owningUpdate": "docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md",
+      "owningUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
       "state": "SteamPublishedObservedExact"
     },
     "futureTarget": {
@@ -573,7 +683,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 463988, "treeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef", "archiveSubdirectory": "zoom-0.4.2-dtmapi-workshop-3742717440" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 463988,
+        "treeSha256": "7159b9c3de4095eb922a855584f737af51c33e0d2ffcfafa31f4ff6566af22ef",
+        "archiveSubdirectory": "zoom-0.4.2-dtmapi-workshop-3742717440"
+      }
     },
     {
       "catalogId": "y-console",
@@ -593,7 +708,7 @@
       "sourceManifest": "products/first-party/DebugConsole/manifest.json",
       "project": "DTMAPI.DebugConsole",
       "sourceDll": "DTMAPI.DebugConsole.dll",
-      "sourceVersion": "1.1.2",
+      "sourceVersion": "1.1.3",
       "sourceMinimumDtmApiVersion": "0.6.1",
       "codeModKind": "Advanced",
       "referencePolicyId": "doloctown-24456188-debugconsole-v1",
@@ -637,7 +752,7 @@
       },
       "publishedVersion": "0.3.1-dtmapi",
       "publishedMinimumDtmApiVersion": "0.5.2-alpha",
-      "targetVersion": "1.1.2",
+      "targetVersion": "1.1.3",
       "targetMinimumDtmApiVersion": "0.6.1",
       "canonicalConfigPath": null,
       "contentSidecars": [
@@ -662,23 +777,61 @@
           "state": "DuplicateShadowRiskDoNotCombineWithOfficialPackage"
         }
       ],
-      "currentPublishedArtifact": {
-        "releaseVersion": "1.1.1",
+      "localUploadSuccessor": {
+        "state": "SteamPublishedObservedExact",
+        "releaseVersion": "1.1.3",
         "minimumDtmApiVersion": "0.6.1",
-        "gameBuildId": "24788406",
-        "workshopManifestId": "6693520158465470410",
+        "localUploadPath": "%USERPROFILE%/AppData/LocalLow/RedSawGames/DolocTown/MODS/DTMAPI_YKeyConsole",
+        "packageRoot": "artifacts/y-console-113-item-id-case/package",
+        "packageSha256": "22a11f7d6f483643b4ce809b6f15d480e2d46ecc030a469aa1385324b4bc4ad9",
+        "entryDllSha256": "7916c413133c062a0641e9f8a7dca786f7a6e005305d68bd07a151ee0997f9b1",
+        "owningUpdate": "docs/updates/2026/20260911-0010-y-console-113-item-id-case.md",
+        "note": "User-published 1.1.3; exact Steam subscription matches the SDK package and preserved upload control file.",
+        "publicationUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+        "workshopManifestId": "2560240081132681960"
+      },
+      "latestPublicationObservation": {
+        "releaseVersion": "1.1.3",
+        "workshopId": "3742714442",
+        "state": "SteamPublishedObservedExact",
+        "versionEvidence": "UserConfirmedRelease",
+        "publicMetadataSource": "ISteamRemoteStorage/GetPublishedFileDetails/v1",
+        "steamContentHandle": "2560240081132681960",
+        "steamFileSize": 629035,
+        "steamTimeUpdatedUtc": "2026-09-11T14:57:18Z",
+        "observedAtUtc": "2026-09-11T15:05:47Z",
+        "visibility": 0,
+        "banned": false,
+        "owningUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+        "artifactVerification": "Native ACF proves installed manifest membership independently of the public content handle; every delivered content file matches the tested SDK package and upload folder."
+      },
+      "currentPublishedArtifact": {
+        "releaseVersion": "1.1.3",
+        "minimumDtmApiVersion": "0.6.1",
+        "gameBuildId": "25163613",
+        "workshopManifestId": "2560240081132681960",
         "treeDigestAlgorithm": "DTMAPI-Published-SHA256SUMS-v1",
         "steamDeliveredFileCount": 27,
-        "steamDeliveredBytes": 610335,
-        "steamDeliveredTreeSha256": "050c8e33f267d3d16b5c847c721c9220a3031ec7c54d9a11f2c39a1fb4f0d172",
-        "entryDllBytes": 221696,
-        "entryDllSha256": "784fd83e3174f80773926de937171b1294d8f3e8d21240762492ec5e93b0e050",
-        "steamTimeUpdatedUtc": "2026-08-22T23:22:03Z",
-        "observedAtUtc": "2026-08-22T23:43:44Z",
+        "steamDeliveredBytes": 629035,
+        "steamDeliveredTreeSha256": "38a3e7241c39c55e516bb978e57b8cb9b50b80d299f65417e39ffc666184c784",
+        "entryDllBytes": 243200,
+        "entryDllSha256": "7916c413133c062a0641e9f8a7dca786f7a6e005305d68bd07a151ee0997f9b1",
+        "steamTimeUpdatedUtc": "2026-09-11T14:57:18Z",
+        "observedAtUtc": "2026-09-11T15:05:47Z",
         "state": "SteamPublishedObservedExact",
-        "owningUpdate": "docs/updates/2026/20260823-0003-y-console-text-input-hotkey-guard.md"
+        "owningUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+        "playerPayloadFileCount": 26,
+        "playerPayloadBytes": 629002,
+        "playerPayloadTreeSha256": "b7ccd5e66b71fe3de51f622a9554b915e0d9cac05ece4eff81b4409619517757"
       },
-      "retainedArtifact": { "fileCount": 10, "bytes": 303759, "treeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60", "entryDll": "DTMAPI.YKeyConsole.dll", "entryDllSha256": "e5a34963c0b66d6168104af27db849d707ee644f07917d8274868f8b8299b41e", "archiveSubdirectory": "y-console-0.3.1-dtmapi-workshop-3742714442" }
+      "retainedArtifact": {
+        "fileCount": 10,
+        "bytes": 303759,
+        "treeSha256": "c4e6eda7f131fcffebe14b1784b9b487f3ff07edb8ad7f600fea0e32063b7d60",
+        "entryDll": "DTMAPI.YKeyConsole.dll",
+        "entryDllSha256": "e5a34963c0b66d6168104af27db849d707ee644f07917d8274868f8b8299b41e",
+        "archiveSubdirectory": "y-console-0.3.1-dtmapi-workshop-3742714442"
+      }
     },
     {
       "catalogId": "more-saves",
@@ -754,7 +907,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 140622, "treeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad", "archiveSubdirectory": "more-saves-0.3.1-dtmapi-workshop-3742763050" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 140622,
+        "treeSha256": "d64985a88e88e956b826f430f3e62fe8719d7e086ece639c8817edd23b3109ad",
+        "archiveSubdirectory": "more-saves-0.3.1-dtmapi-workshop-3742763050"
+      }
     },
     {
       "catalogId": "action-speed",
@@ -810,7 +968,9 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.ActionSpeed.json",
-      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.ActionSpeed.json"],
+      "observedLegacyConfigResidue": [
+        "DTMAPI/config/Yuuka.ActionSpeed.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "currentPublishedArtifact": {
@@ -829,7 +989,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 325618, "treeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c", "archiveSubdirectory": "action-speed-1.3.4-dtmapi-workshop-3742763309" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 325618,
+        "treeSha256": "d1c949f167354f9700cb1d6f923c01bc5f2f5e4c8b421ca3e6f42bfebb526a4c",
+        "archiveSubdirectory": "action-speed-1.3.4-dtmapi-workshop-3742763309"
+      }
     },
     {
       "catalogId": "one-action-complete",
@@ -886,7 +1051,9 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.OneActionComplete.json",
-      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.OneActionComplete.json"],
+      "observedLegacyConfigResidue": [
+        "DTMAPI/config/Yuuka.OneActionComplete.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "currentPublishedArtifact": {
@@ -905,7 +1072,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 214265, "treeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895", "archiveSubdirectory": "one-action-complete-1.1.2-dtmapi-workshop-3742763540" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 214265,
+        "treeSha256": "e2b232849abceafd827be6fb0d8f9a350c9a4e1bcc5aaf92f638a510ef775895",
+        "archiveSubdirectory": "one-action-complete-1.1.2-dtmapi-workshop-3742763540"
+      }
     },
     {
       "catalogId": "fish-roe-info",
@@ -960,7 +1132,9 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.FishBreedingAssistant.json",
-      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.FishBreedingAssistant.json"],
+      "observedLegacyConfigResidue": [
+        "DTMAPI/config/Yuuka.FishBreedingAssistant.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "currentPublishedArtifact": {
@@ -979,7 +1153,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 99872, "treeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba", "archiveSubdirectory": "fish-roe-info-1.1.3-dtmapi-workshop-3742763706" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 99872,
+        "treeSha256": "3674a55170d3d3274723bea9fbdd79a5fa564b9cbaff8887f2b15fed18619fba",
+        "archiveSubdirectory": "fish-roe-info-1.1.3-dtmapi-workshop-3742763706"
+      }
     },
     {
       "catalogId": "animal-husbandry-progress",
@@ -1034,7 +1213,9 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AnimalHusbandryProgress.json",
-      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.AnimalHusbandryProgress.json"],
+      "observedLegacyConfigResidue": [
+        "DTMAPI/config/Yuuka.AnimalHusbandryProgress.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "currentPublishedArtifact": {
@@ -1053,7 +1234,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 71627, "treeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536", "archiveSubdirectory": "animal-husbandry-progress-1.0.1-dtmapi-workshop-3742763843" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 71627,
+        "treeSha256": "6f4581e40aa9d765901e5b8220ca83671b54f639d8a8cfa41132bce833d96536",
+        "archiveSubdirectory": "animal-husbandry-progress-1.0.1-dtmapi-workshop-3742763843"
+      }
     },
     {
       "catalogId": "chest-locator-enhancer",
@@ -1126,7 +1312,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 39848, "treeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3", "archiveSubdirectory": "chest-locator-enhancer-0.3.1-dtmapi-workshop-3742765514" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 39848,
+        "treeSha256": "f4832ca2e35717d60c6689350b4f60cf46b653803e893c03e0118ee052ddacc3",
+        "archiveSubdirectory": "chest-locator-enhancer-0.3.1-dtmapi-workshop-3742765514"
+      }
     },
     {
       "catalogId": "auto-fishing",
@@ -1186,7 +1377,9 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.6.0",
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AutoFishing.json",
-      "observedLegacyConfigResidue": ["DTMAPI/config/Yuuka.AutoFishing.json"],
+      "observedLegacyConfigResidue": [
+        "DTMAPI/config/Yuuka.AutoFishing.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
       "protectedBehaviorContractId": "auto-fishing-current-behavior",
@@ -1206,7 +1399,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260801-0002-workshop-upload-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 217099, "treeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6", "archiveSubdirectory": "auto-fishing-1.4.3-dtmapi-workshop-3743799721" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 217099,
+        "treeSha256": "25be5ae18b3a9ddff6729c33d039358e7245aa4c2540ebd4659e9da410649fc6",
+        "archiveSubdirectory": "auto-fishing-1.4.3-dtmapi-workshop-3743799721"
+      }
     },
     {
       "catalogId": "more-equipment-slots",
@@ -1312,7 +1510,12 @@
         "state": "SteamPublishedObservedExact",
         "owningUpdate": "docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md"
       },
-      "retainedArtifact": { "fileCount": 9, "bytes": 539565, "treeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6", "archiveSubdirectory": "more-equipment-slots-0.3.1-dtmapi-workshop-3744059735" }
+      "retainedArtifact": {
+        "fileCount": 9,
+        "bytes": 539565,
+        "treeSha256": "e0854cee94969d98b916a3f6085fd03773c67bcd35c7bc83dc2894f8156e0ca6",
+        "archiveSubdirectory": "more-equipment-slots-0.3.1-dtmapi-workshop-3744059735"
+      }
     },
     {
       "catalogId": "manbo-cardboard-audio",
@@ -1339,11 +1542,22 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": null,
-      "currentContentSidecars": ["Content/DTMAPI/assets/manbo.wav"],
-      "targetContentSidecars": ["Content/DTMAPI/audio-replacements.json", "Content/DTMAPI/assets/manbo.wav"],
+      "currentContentSidecars": [
+        "Content/DTMAPI/assets/manbo.wav"
+      ],
+      "targetContentSidecars": [
+        "Content/DTMAPI/audio-replacements.json",
+        "Content/DTMAPI/assets/manbo.wav"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "PublishedBuilder",
-      "retainedArtifact": { "fileCount": 7, "bytes": 229384, "entryDll": "Yuuka.DTMAPI.ManboCardboardAudio.dll", "entryDllSha256": "ab85c0bab39702e7fe2689bb4d528b6ef3726f0bb272f6f172cffe8a57a17ec4", "treeSha256": "23a3209e75788b68041f4e1eecfe81550f87d6579893272af67711b2c0bfc40e" }
+      "retainedArtifact": {
+        "fileCount": 7,
+        "bytes": 229384,
+        "entryDll": "Yuuka.DTMAPI.ManboCardboardAudio.dll",
+        "entryDllSha256": "ab85c0bab39702e7fe2689bb4d528b6ef3726f0bb272f6f172cffe8a57a17ec4",
+        "treeSha256": "23a3209e75788b68041f4e1eecfe81550f87d6579893272af67711b2c0bfc40e"
+      }
     },
     {
       "catalogId": "strong-planting-gun",
@@ -1437,7 +1651,10 @@
       "targetMinimumDtmApiVersion": null,
       "promotionTargetRole": "PlannedProduct",
       "canonicalConfigPath": null,
-      "contentSidecars": ["Content/item_tbitem.json", "Content/mod_tbmoditemspawnextension.json"],
+      "contentSidecars": [
+        "Content/item_tbitem.json",
+        "Content/mod_tbmoditemspawnextension.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "DeveloperInstallOnly"
     },
@@ -1505,7 +1722,12 @@
       "targetVersion": "1.0.0",
       "targetMinimumDtmApiVersion": "0.5.5",
       "canonicalConfigPath": "DTMAPI/config/DTMAPI.MineMod.json",
-      "contentSidecars": ["Content/equipment_tbequipment.json", "Content/item_tbitem.json", "Content/mod_tbmodrecipegroupextension.json", "Content/recipe_tbrecipe.json"],
+      "contentSidecars": [
+        "Content/equipment_tbequipment.json",
+        "Content/item_tbitem.json",
+        "Content/mod_tbmodrecipegroupextension.json",
+        "Content/recipe_tbrecipe.json"
+      ],
       "saveSidecars": [],
       "legacyReleaseLane": "DeveloperInstallOnly"
     },
@@ -1532,7 +1754,10 @@
       "targetMinimumDtmApiVersion": null,
       "canonicalConfigPath": "DTMAPI/config/Yuuka.DTMAPI.AutoHarvest.json",
       "saveSidecars": [],
-      "legacyWorkshopIdentityMustNotMerge": { "uniqueId": "None.AutoHarvest", "workshopId": "3742771572" },
+      "legacyWorkshopIdentityMustNotMerge": {
+        "uniqueId": "None.AutoHarvest",
+        "workshopId": "3742771572"
+      },
       "legacyReleaseLane": null
     },
     {
@@ -1712,7 +1937,11 @@
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "releaseBlockers": ["AssetProvenance", "OldInputDuplicatePreflight", "GameAcceptancePending"]
+      "releaseBlockers": [
+        "AssetProvenance",
+        "OldInputDuplicatePreflight",
+        "GameAcceptancePending"
+      ]
     },
     {
       "catalogId": "hatch-assets-input",
@@ -1724,7 +1953,11 @@
       "releaseEligibility": "NeverPublish",
       "maturity": "ProtectedCurrent",
       "uniqueId": "DTMAPI.HatchAssets",
-      "observedLocalPrototype": { "version": "1.0.0", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "observedLocalPrototype": {
+        "version": "1.0.0",
+        "minimumDtmApiVersion": "0.5.2-alpha",
+        "authority": "MutableLocalEvidenceOnly"
+      },
       "workshopId": null,
       "officialFolder": "DTMAPI_HatchAssets",
       "packageName": null,
@@ -1735,7 +1968,11 @@
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "migrationContentIds": ["hatch", "sack_hatch", "hatch_produce"]
+      "migrationContentIds": [
+        "hatch",
+        "sack_hatch",
+        "hatch_produce"
+      ]
     },
     {
       "catalogId": "mole-assets-input",
@@ -1747,7 +1984,11 @@
       "releaseEligibility": "NeverPublish",
       "maturity": "ProtectedCurrent",
       "uniqueId": "DTMAPI.MoleAssets",
-      "observedLocalPrototype": { "version": "0.5.3-alpha-oni-png-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "observedLocalPrototype": {
+        "version": "0.5.3-alpha-oni-png-prototype",
+        "minimumDtmApiVersion": "0.5.2-alpha",
+        "authority": "MutableLocalEvidenceOnly"
+      },
       "workshopId": null,
       "officialFolder": "DTMAPI_MoleAssets",
       "packageName": null,
@@ -1758,7 +1999,11 @@
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "migrationContentIds": ["mole", "sack_mole", "mole_produce"]
+      "migrationContentIds": [
+        "mole",
+        "sack_mole",
+        "mole_produce"
+      ]
     },
     {
       "catalogId": "drecko-assets-input",
@@ -1770,7 +2015,11 @@
       "releaseEligibility": "NeverPublish",
       "maturity": "ProtectedCurrent",
       "uniqueId": "DTMAPI.DreckoAssets",
-      "observedLocalPrototype": { "version": "0.1.0", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "observedLocalPrototype": {
+        "version": "0.1.0",
+        "minimumDtmApiVersion": "0.5.2-alpha",
+        "authority": "MutableLocalEvidenceOnly"
+      },
       "workshopId": null,
       "officialFolder": "DTMAPI_DreckoAssets",
       "packageName": null,
@@ -1781,7 +2030,11 @@
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "migrationContentIds": ["drecko", "sack_drecko", "drecko_produce"]
+      "migrationContentIds": [
+        "drecko",
+        "sack_drecko",
+        "drecko_produce"
+      ]
     },
     {
       "catalogId": "oilfloater-assets-input",
@@ -1793,7 +2046,11 @@
       "releaseEligibility": "NeverPublish",
       "maturity": "ProtectedCurrent",
       "uniqueId": "DTMAPI.OilfloaterAssets",
-      "observedLocalPrototype": { "version": "0.5.3-alpha-oni-png-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "observedLocalPrototype": {
+        "version": "0.5.3-alpha-oni-png-prototype",
+        "minimumDtmApiVersion": "0.5.2-alpha",
+        "authority": "MutableLocalEvidenceOnly"
+      },
       "workshopId": null,
       "officialFolder": "DTMAPI_OilfloaterAssets",
       "packageName": null,
@@ -1804,7 +2061,11 @@
       "canonicalConfigPath": null,
       "saveSidecars": [],
       "protectedBehaviorContractId": "custom-animals-json-png-wav",
-      "migrationContentIds": ["oilfloater", "sack_oilfloater", "oilfloater_produce"]
+      "migrationContentIds": [
+        "oilfloater",
+        "sack_oilfloater",
+        "oilfloater_produce"
+      ]
     },
     {
       "catalogId": "shell-crab",
@@ -1816,7 +2077,11 @@
       "releaseEligibility": "PrototypeBlocked",
       "maturity": "Prototype",
       "uniqueId": "DTMAPI.ShellCrabMod",
-      "observedLocalPrototype": { "version": "0.5.3-alpha-shell-crab-prototype", "minimumDtmApiVersion": "0.5.2-alpha", "authority": "MutableLocalEvidenceOnly" },
+      "observedLocalPrototype": {
+        "version": "0.5.3-alpha-shell-crab-prototype",
+        "minimumDtmApiVersion": "0.5.2-alpha",
+        "authority": "MutableLocalEvidenceOnly"
+      },
       "workshopId": null,
       "officialFolder": "DTMAPI_ShellCrab",
       "packageName": null,
@@ -1943,9 +2208,21 @@
     }
   ],
   "pendingClassifications": [
-    { "observedUniqueId": "DTMAPI.ExtraVehicle", "state": "PendingFocusedReview", "releaseEligibility": "Blocked" },
-    { "observedUniqueId": "Yuuka.DTMAPI.ChickenPetBag", "state": "PendingFocusedReview", "releaseEligibility": "Blocked" },
-    { "observedName": "PuftAssets", "state": "ExplicitlyExcludedFromAnimalPack", "releaseEligibility": "Blocked" }
+    {
+      "observedUniqueId": "DTMAPI.ExtraVehicle",
+      "state": "PendingFocusedReview",
+      "releaseEligibility": "Blocked"
+    },
+    {
+      "observedUniqueId": "Yuuka.DTMAPI.ChickenPetBag",
+      "state": "PendingFocusedReview",
+      "releaseEligibility": "Blocked"
+    },
+    {
+      "observedName": "PuftAssets",
+      "state": "ExplicitlyExcludedFromAnimalPack",
+      "releaseEligibility": "Blocked"
+    }
   ],
   "knownProjectionDrift": {
     "publishedBuilderMissingPublicProducts": [],

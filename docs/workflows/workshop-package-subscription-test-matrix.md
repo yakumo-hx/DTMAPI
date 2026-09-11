@@ -7,7 +7,7 @@ Use this matrix before asking players to reinstall DTMAPI Runtime, after changin
 - Source root: repository working tree.
 - Published Windows local upload root: `%USERPROFILE%\AppData\LocalLow\RedSawGames\DolocTown\MODS\DTMAPI`.
 - Published Windows Steam subscription root: `...\steamapps\workshop\content\2285550\3743016467`.
-- Multi-platform candidate: repository `dist\DTMAPI-MultiPlatform`.
+- Multi-platform candidate: the exact artifact selected by Catalog / the current release record; historical `dist\DTMAPI-MultiPlatform` is not the current 0.7.0 input.
 - Multi-platform local upload root: `%USERPROFILE%\AppData\LocalLow\RedSawGames\DolocTown\MODS\DTMAPI_MultiPlatform`.
 - Multi-platform Steam subscription root: `...\steamapps\workshop\content\2285550\3792681186`.
 
@@ -50,12 +50,18 @@ For the multi-platform package, run
 candidate without a control-file allowance and against the official local
 upload leaf with `-AllowWorkshopControlFile`. Its one root `workshop.json` must
 contain only `workshop_id=3792681186`, remain byte-preserved across rebuilds,
-and be excluded from content receipts; no repository candidate or Steam
-download may contain it. When source metadata still represents the subscribed
+and be excluded from content receipts; repository candidates may not contain
+it. The observed 0.7.0 Steam download includes this root control file, unlike
+the historical 0.6.1 download. Use `-AllowDeliveredWorkshopControlFile` only
+for an exact observed subscription: the auditor requires the current Catalog
+content and control receipts, while the complete delivered receipt includes
+the file. This is separate from the local-upload allowance. When source
+metadata still represents the subscribed
 revision, the same complete audit may run against that subscription. When a
 new local metadata successor already exists, calculate the subscription's
 normalized content receipt read-only and compare it to the frozen
-`steamDelivered*` Catalog fields instead; do not require old subscribed
+Catalog content receipt (or the complete `steamDelivered*` receipt when
+including the delivered control file) instead; do not require old subscribed
 metadata to match the new source projection. If local metadata is changed
 after observation, preserve the last published receipt and mark the new local
 receipt pending upload instead of claiming current subscription parity.
@@ -65,7 +71,7 @@ receipt pending upload instead of claiming current subscription parity.
 | Lane | Scope | Required Result |
 | --- | --- | --- |
 | Shared Runtime provenance | Select the explicit source branch of `test-dtmapi-multiplatform-package.ps1`. | Default ObservedPublished retains the exact 0.6.1 source: 20 shared paths, source 28 files / 3,866,857 bytes / `b4ec6a44...e4aa`. `-SourceKind Candidate -AcceptedPackageRoot <exact Windows candidate>` checks schema 2 / 0.7.0, its real build identity and all 21 imported paths against that artifact. Candidate source is never labeled as a Steam observation. |
-| Host/package boundary | Audit `DTMAPI-MultiPlatform-Installer.exe`, the internal Linux host, both host manifests, all eight public action shims, metadata and branding. | Exactly one x64 PE and one x64 ELF; four BAT shims pass `--pause`; four LF/no-BOM shell shims preserve the host exit and explain `noexec`; repository/subscription contain zero `workshop.json`, while the official upload leaf may contain exactly one validated root control file for `3792681186`; no QA or Player Doctor payload. All localized descriptions retain install/check/log, unsigned-tool and platform guidance. |
+| Host/package boundary | Audit `DTMAPI-MultiPlatform-Installer.exe`, the internal Linux host, both host manifests, all eight public action shims, metadata and branding. | Exactly one x64 PE and one x64 ELF; four BAT shims pass `--pause`; four LF/no-BOM shell shims preserve the host exit and explain `noexec`; repository candidates contain zero `workshop.json`. Local upload and exact observed subscription allowances accept one validated root control file for `3792681186`, with the subscription additionally bound to frozen Catalog receipts; no QA or Player Doctor payload. All localized descriptions retain install/check/log, unsigned-tool and platform guidance. |
 | Windows + Linux lifecycle | Run `tools/scripts/test-multiplatform-runtime-installer.ps1` against a bounded package candidate. | Real Windows host and, when WSL is available, real Linux host each pass install, read-only status, two log collections, uninstall and repeated no-op uninstall on independent fake games. |
 | 0.7.0 version transition | Supply `-PreviousPackageRoot <exact schema-1 multi-platform package>` to the same lifecycle test. | Each executed host lane covers original 0.6.1 install, new-host old-package reading, upgrade to 0.7.0, withdrawal/reinstall, and rejection of downgrade, old-reader/new-schema and eight invalid candidate-provenance variants. |
 | Ownership | Seed external BepInEx plugin/config/log, DTMAPI config/history logs, Mods and ContentPacks sentinels. Inspect install/uninstall receipts. | All sentinels remain byte-identical; host binaries/manifests never enter the game; uninstall removes only receipt-owned Runtime targets and preserves BepInEx. |

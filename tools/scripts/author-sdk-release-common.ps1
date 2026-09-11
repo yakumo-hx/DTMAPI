@@ -257,6 +257,9 @@ function Get-AuthorSdkReleaseFileKind {
 
     $path = $RelativePath.Replace('\', '/')
     $name = [System.IO.Path]::GetFileName($path)
+    if ($path.StartsWith('toolchain/', [System.StringComparison]::Ordinal)) { return 'toolchain' }
+    if ($path.StartsWith('offline-packages/', [System.StringComparison]::Ordinal)) { return 'offline-package' }
+    if ($path.StartsWith('build/', [System.StringComparison]::Ordinal) -or $path.StartsWith('analyzers/', [System.StringComparison]::Ordinal)) { return 'build-integration' }
     if ($path.StartsWith('compatibility/', [System.StringComparison]::Ordinal)) { return 'compatibility' }
     if ($path.StartsWith('templates/', [System.StringComparison]::Ordinal) -or $path.StartsWith('schemas/', [System.StringComparison]::Ordinal)) { return 'asset' }
     if ($path.StartsWith('licenses/', [System.StringComparison]::Ordinal) -or $name.IndexOf('LICENSE', [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -or $name.IndexOf('NOTICE', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { return 'license' }
@@ -281,10 +284,10 @@ function New-AuthorSdkReleaseInventory {
     }
     $availableTargets = @(Get-AuthorSdkAvailableTargets -Catalog $TargetCatalog -SdkVersion $SdkVersion)
     $items = New-Object 'System.Collections.Generic.List[object]'
-    [string[]]$files = @(Get-ChildItem -LiteralPath $stageFull -File -Recurse | Where-Object { $_.Name -ne 'author-sdk-release.json' } | ForEach-Object { $_.FullName })
+    [string[]]$files = @(Get-ChildItem -LiteralPath $stageFull -File -Recurse | Where-Object { $_.Name -ne 'author-sdk-release.json' } | ForEach-Object { Get-AuthorSdkRelativePath -Root $stageFull -Path $_.FullName })
     [Array]::Sort($files, [System.StringComparer]::Ordinal)
-    foreach ($file in $files) {
-        $relative = Get-AuthorSdkRelativePath -Root $stageFull -Path $file
+    foreach ($relative in $files) {
+        $file = Join-Path $stageFull $relative
         $items.Add([ordered]@{
             path = $relative
             length = [Int64](Get-Item -LiteralPath $file).Length
@@ -308,6 +311,7 @@ function New-AuthorSdkReleaseInventory {
         targetCatalogSha256 = Get-AuthorSdkSha256 -Path (Join-Path $stageFull 'target-catalog.json')
         availableTargets = @($availableTargets | ForEach-Object { [string]$_.apiTarget })
         buildDotNetSdkVersion = $DotNetSdkVersion
+        standardBuild = [ordered]@{ backend = 'MSBuild'; sdkVersion = $DotNetSdkVersion; dotnetPath = 'toolchain/dotnet/dotnet.exe'; compilerPath = "toolchain/dotnet/sdk/$DotNetSdkVersion/Roslyn/bincore/csc.dll" }
         runtimeIdentifier = 'win-x64'
         packageKind = 'self-contained-portable-author-sdk'
         pathMap = '/_/DTMAPI'
@@ -338,18 +342,15 @@ function New-AuthorSdkDeterministicZip {
         New-Item -ItemType Directory -Path $zipParent -Force | Out-Null
     }
 
-    [string[]]$files = @(Get-ChildItem -LiteralPath $sourceFull -File -Recurse | ForEach-Object { $_.FullName })
-    [Array]::Sort($files, [System.Collections.Generic.Comparer[string]]::Create([System.Comparison[string]]{
-        param($left, $right)
-        return [System.StringComparer]::Ordinal.Compare((Get-AuthorSdkRelativePath -Root $sourceFull -Path $left), (Get-AuthorSdkRelativePath -Root $sourceFull -Path $right))
-    }))
+    [string[]]$files = @(Get-ChildItem -LiteralPath $sourceFull -File -Recurse | ForEach-Object { Get-AuthorSdkRelativePath -Root $sourceFull -Path $_.FullName })
+    [Array]::Sort($files, [System.StringComparer]::Ordinal)
     $fileStream = New-Object System.IO.FileStream($zipFull, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
     try {
         $archive = New-Object System.IO.Compression.ZipArchive($fileStream, [System.IO.Compression.ZipArchiveMode]::Create, $true)
         try {
             $timestamp = New-Object System.DateTimeOffset(2000, 1, 1, 0, 0, 0, [System.TimeSpan]::Zero)
-            foreach ($file in $files) {
-                $relative = Get-AuthorSdkRelativePath -Root $sourceFull -Path $file
+            foreach ($relative in $files) {
+                $file = Join-Path $sourceFull $relative
                 $entry = $archive.CreateEntry($relative, [System.IO.Compression.CompressionLevel]::NoCompression)
                 $entry.LastWriteTime = $timestamp
                 $entry.ExternalAttributes = 0
@@ -407,4 +408,50 @@ function Expand-AuthorSdkZipSafely {
     }
     finally { $stream.Dispose() }
     return $destinationFull
+}
+
+function Get-AuthorProductSourceTreeSha256 {
+    param(
+        [Parameter(Mandatory = $true)] [string] $SourceRoot
+    )
+
+    if (-not (Test-Path -LiteralPath $SourceRoot -PathType Container)) {
+        throw "Author SDK source root is missing: $SourceRoot"
+        return ''
+    }
+    try {
+        $root = [System.IO.Path]::GetFullPath($SourceRoot).TrimEnd('\', '/')
+        $files = [string[]]@(Get-ChildItem -LiteralPath $root -Recurse -Filter '*.cs' -File | ForEach-Object {
+            $_.FullName.Substring($root.Length + 1).Replace('\', '/')
+        })
+        [System.Array]::Sort($files, [System.StringComparer]::Ordinal)
+        $aggregate = [System.Security.Cryptography.IncrementalHash]::CreateHash(
+            [System.Security.Cryptography.HashAlgorithmName]::SHA256)
+        try {
+            foreach ($relative in $files) {
+                $file = Join-Path $root $relative.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+                $lengthText = ([System.IO.FileInfo]$file).Length.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+                $header = [System.Text.Encoding]::UTF8.GetBytes($relative + [char]0 + $lengthText + [char]0)
+                $aggregate.AppendData($header)
+                $stream = [System.IO.File]::OpenRead($file)
+                try {
+                    $buffer = New-Object byte[] 81920
+                    while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                        $aggregate.AppendData($buffer, 0, $read)
+                    }
+                }
+                finally {
+                    $stream.Dispose()
+                }
+            }
+            return ([System.BitConverter]::ToString($aggregate.GetHashAndReset())).Replace('-', '').ToLowerInvariant()
+        }
+        finally {
+            $aggregate.Dispose()
+        }
+    }
+    catch {
+        throw ("Author SDK source-tree SHA-256 failed for {0}: {1}" -f $SourceRoot, $_.Exception.Message)
+        return ''
+    }
 }

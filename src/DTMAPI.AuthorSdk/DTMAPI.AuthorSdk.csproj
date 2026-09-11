@@ -26,6 +26,8 @@
     <EmbeddedResource Include="..\..\author-sdk\target-catalog.json" LogicalName="DTMAPI.Authoring.target-catalog.json" />
     <Content Include="..\..\author-sdk\target-catalog.json" Link="target-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <ProjectReference Include="..\DTMAPI.Authoring.Contracts\DTMAPI.Authoring.Contracts.csproj" />
+    <ProjectReference Include="../DTMAPI.Author.Analyzers/DTMAPI.Author.Analyzers.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.Author.Build/DTMAPI.Author.Build.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\DTMAPI.InstallDoctor\DTMAPI.InstallDoctor.csproj" />
     <Reference Include="Microsoft.CodeAnalysis">
       <HintPath>$(MSBuildSDKsPath)\..\Roslyn\bincore\Microsoft.CodeAnalysis.dll</HintPath>
@@ -36,8 +38,14 @@
       <Private>true</Private>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../DTMAPI.Author.Analyzers/bin/$(Configuration)/netstandard2.0/DTMAPI.Author.Analyzers.dll" DtmApiGeneratedBuildAsset="true" Link="analyzers/DTMAPI.Author.Analyzers.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../DTMAPI.Author.Build/bin/$(Configuration)/netstandard2.0/DTMAPI.Author.Build.dll" DtmApiGeneratedBuildAsset="true" Link="build/DTMAPI.Author.Build.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
+    <Content Include="../../author-sdk/build/**/*" Link="build/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/Enter-DtmApiEnvironment.ps1" Link="Enter-DtmApiEnvironment.ps1" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\..\author-sdk\templates\**\*">
       <Link>templates\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

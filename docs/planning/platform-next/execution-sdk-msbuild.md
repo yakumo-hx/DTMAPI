@@ -1,6 +1,6 @@
 # 0.7.0 SDK 标准 MSBuild 完整执行包
 
-- Lifecycle: `accepted-design`；尚未开始生产迁移。
+- Lifecycle: `verified`；PN-041.a–f与同批F1–F4已完成，[D7独立复核](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/independent-acceptance.md)通过，归 [0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)。以下保留已执行规格；既定Windows Developer Preview技术接受，未公开发布。
 - Role: PN-041 的完整近期规格，包含原 PN-040.b 的不同 ref/lib 配对部分；不是可选后端小原型。
 - Design: [AB-01–09](../../architecture/platform-sdk-build.md)、[本次审查](../../reviews/code/2026/20260910-0004-sdk-msbuild-architecture.md)。任务状态归 [status](status.md)，候选选择归 [release-candidate](release-candidate.md)。
 - Previous: [execution-sdk](execution-sdk.md)的 PN-038/039/040.a/031.a 已验收，作为旧实现及反例的历史规格保留，不继续给旧工程解释器添加语法。
@@ -119,6 +119,39 @@
 | B12 发行/裁剪 | 一个正式后端；完整离线包/指南/许可/inventory；最后准确候选完整 Release | 当前产物及完整运行；无上传事实、无新增设备支持推断 |
 
 B01–B10、B12 任一必要正例失败或关键拒绝退化，均不能放行新默认后端。B11 的符号/排错路径必须可用，实际 throw 行、回调行、不可用分别记录；r5 既有 Entry 精确行和事件仅 callback closing line 的 Mono 限制不被偷换成所有 throw 精确行承诺。新后端仍须真实重验可用位置。有事实证明的 debugger 限制只限制断点宣传。某个未承诺 IDE/作者 OS 缺条件不扩为整个 SDK 停止；至少一个实际 IDE 是门。真实外部条件不齐时先完成其他独立项，最后准确列明未验项目，不把 implemented 记 verified。
+
+## 独立验收返修
+
+执行结果（2026-09-11）：F1–F4实施及补验已完成，交回SDK D7、原Runtime r6/多平台r2。准确ZIP反例/外部CLI/实际IDE/CI、完整Release repair-r2和新字节Mono均通过；原D6与环境/探针失败保留。详见[0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)及[D7补验证据](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/README.md)。以下步骤保留为本轮执行规格，不表示仍待实施；未公开发布。
+
+协调方已完成[D7独立复核](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/independent-acceptance.md)，关闭R01–R03，本批无剩余返修步骤。后续M4或公开上传需要各自任务，不因本卡完成自动执行。
+
+来源：[独立验收0007](../../reviews/code/2026/20260910-0007-sdk-d6-independent-acceptance.md)。这是PN-041原批次的返修；不新建任务/实施Update，不重做标准MSBuild架构比较。沿用同一任务、当前工作区和Astra high，完成以下四步后统一交回。原D6及失败证据保留。
+
+### F1：阻断实际字段访问与最终实现不匹配
+
+1. 从 `artifacts/pn041/independent-acceptance/probe-field-final-pair.ps1` 及仓库外FieldSurface复制源码/步骤到新的隔离路径和输出目录，再选择当前SDK复现R01；原脚本带准确D6及原证据路径，不直接重跑以覆盖原JSON。将正反例纳入现有标准资产/最终产物suite，原失败包和结果保留。
+2. 在 `ManagedRuntimeSurface` 读取实际运行程序集的各方法IL（含嵌套类型），解析被使用的FieldReference：`ldsfld/stsfld/ldsflda`要求最终字段static，`ldfld/stfld/ldflda`要求instance。`ldtoken`不因字段任意一种static形态而误拒绝。复用现有Cecil resolver、泛型/继承与程序集身份规则，不再加载或执行陌生库，不建立全API相等要求。
+3. 拒绝信息使用现有pack诊断通路，并明确调用程序集/方法、字段及实际实现的static/instance冲突；失败报告也保留已解析的真实API target，不能回到默认0.5.5。覆盖两个错配方向、正确static/instance及地址访问、继承/泛型合法字段；保留不同ref/lib、普通委托、最终DLL/PDB配对和旧ZIP保全正例。错误必须在最终包发布前失败，不能靠符号错误或usage错误代替预期判据。
+4. 本步限SDK最终交付校验；Doctor不新增完整IL验证产品，不改变Runtime/公共格式。记录Doctor与可运行性证明的区别。无新Runtime代码输入时不重建r6/r2。
+
+### F2：统一工程布局的路径基准
+
+1. 区分作者根（manifest/author JSON）、csproj根、标准输出路径及包内相对路径。保留根目录布局，同时支持 `projectFile=src/Mod.csproj`；采用Review R02决定的最近祖先元数据默认值和显式根优先规则。错误显式根、元数据指向其他csproj时给具体错误，不能静默换一个owner。
+2. 由标准MSBuild按csproj根计算references/resolved references/analyzers/compiler arguments/assets/facts等文件的绝对路径，再传内部CLI；在facts记录实际project directory和绝对intermediate/documentation/output路径。修正StandardBuildIntegration读取这些路径的基准，不能只修第一次manifest查找。SDK专有的许可/Native/输出选项各自基准保持明确并写入指南，普通Content/Compile/HintPath仍由MSBuild求值。
+3. 使用全新外部工程证明根目录、src子目录、中文/空格路径和不同工作目录均可restore/build/pack；不得依赖父级已有obj/reference文件。检查两种Configuration、Clean/Rebuild、XML/PDB、普通库、生成输入及显式内容的准确输出，未使用路径不产生杂散中间文件。CLI、直接标准构建、实际IDE和随包CI使用同一所选工程/配置；实际Csc冻结引用及最终DLL/PDB/XML按有效PathMap比对。至少将子目录复现和无陈旧父obj控制加入当前suite。
+4. 设计时只做现有引用接入，不触发打包/安装或递归build；普通库不新增manifest/SDK描述要求。缺元数据/错根/错projectFile应在正确阶段解释，validate静态元数据成功不冒充完整MSBuild求值成功。
+
+### F3：交付资料与准确SDK包
+
+修正README的in-process描述，准确说明首次公开SDK、随包8.0.421、标准MSBuild、恢复/离线和F2路径规则；保留真实旧包/安装状态恢复说明与API迁移边界。说明Doctor的只读检查范围，不承诺证明任意包可运行。使用现行builder/preparation生成独立新SDK候选，核对准确ZIP的本地链接、示例、inventory/许可及便携入口；SDK不放进玩家Runtime安装包，不覆盖D6历史产物。
+
+### F4：一次收口并交回
+
+1. 先完成F1/F2的focused检查，修好具名失败后冻结输入；执行一次实际完整 `tools/scripts/test.ps1 -Configuration Release`，已含build，不先重复全量build。保留D6原完整PASS与本轮反例；新完整PASS不得拼接诊断阶段结果。
+2. 对最终准确ZIP，复核F1错误包拒绝、F2外部作者工程、随包CI及实际IDE。把最终DLL/PDB/内容与预验游戏输入比对：相关字节完全相同时按原范围复用；有新作者程序集/符号则在r6上补一次相应的真实Mono作者/源码行及关闭清理观察，沿锁、NoNativeSave和原资产恢复流程。无需仅因SDK修正重跑未变的所有玩法或两个安装器矩阵。
+3. PN-042原样包/来源/安装结果继续有效；只有共有reader/Runtime确有变化才重建相应Runtime投影和重验具名兼容门。CSV精确删除、已发布0.6.1事实及旧SDK未发布边界保持。
+4. 在0012/evidence记录本轮修复及未测范围，将status、候选选择和本页路由收口；全部详细项完成后统一交回。不在F1/F2单项完成后停工，不自动开始M4或上传。只有真实外部阻碍或必须改变长期公共承诺且独立可做工作已完成时才停。
 
 ## 验证入口与证据复用
 

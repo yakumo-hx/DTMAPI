@@ -20,6 +20,8 @@ Save coverage accounts for rollback, consume/break without duplication, native-s
 
 Tests should distinguish a defect or broken contract from correct behavior. A CLI negative case checks the invoked command, intended exit category and specific diagnostic; a usage/internal error cannot stand in for an expected rejection. Do not add tests that merely restate a low-impact reversible text, formatting or implementation change.
 
+For shared build, package-format or loader changes, exercise the affected boundary with representative actual inputs before expensive final integration: an ordinary external project/layout, an existing package or a matching ABI counterexample, as applicable. Local component success does not prove the complete build/pack/load path. If the task already requires independent review, run its inexpensive boundary probes before final full-suite and IDE/game acceptance; exact final-artifact checks still use the delivered candidate. This orders required checks, not a new review gate for every fix.
+
 ## Reuse and invalidation
 
 A result is reusable when its relevant code, dependencies, package bytes, configuration, game build and fixture assumptions are unchanged. Record the existing evidence and a short reuse reason in the Update; no new cache/receipt or exhaustive file-hash ledger is needed.
@@ -28,6 +30,20 @@ A result is reusable when its relevant code, dependencies, package bytes, config
 - A source or dependency change rebuilds its affected project/package and reruns its affected checks.
 - A new game build, source selection, config, save fixture or runtime failure invalidates the corresponding behavioral evidence.
 - At a required full-suite boundary, repair failures with the affected focused check or named diagnostic stage. After the known failures are resolved, run the complete required suite once on the final candidate; do not restart it after each individual correction. Diagnostic results cannot be spliced into a full PASS. A local failure does not create a new full-Release requirement.
+
+### When a test fails
+
+Use the first actionable failure and the child's actual exit result to choose the next step. Keep the command, selected scope and unresolved cause in the same Update; do not create a separate failure ledger.
+
+| Failure layer | Next step; stop condition |
+| --- | --- |
+| Product/ABI/compatibility behavior | Reproduce with the affected input and a discriminating regression; fix until the intended behavior passes. Keep representative existing-package and end-to-end cases |
+| Stale test expectations after an authorized contract change | Compare with the current owner; replace obsolete implementation assertions with behavior checks. Preserve historical frozen evidence. Do not change expected values merely to obtain PASS |
+| Host, invocation or output capture | Check the selected .NET host, supported focus, actual path and child exit result; fix the invocation and rerun that entry. A stderr warning alone is not a failed product assertion |
+| Access/locking/temp environment | Preserve the failure and check active owners/selected temp root. Verify the affected entry after one justified prerequisite change; repeated unexplained failures return to diagnosis, not full-suite retries or weakened permissions |
+| Fast metadata/evidence guard | Correct the owning fact and its generated projection, then rerun that guard. Keep the guard; this does not invalidate unchanged game evidence |
+
+If an expensive suite reaches a known prerequisite failure, fix that prerequisite before starting it again. Remove duplicated compilation or obsolete assertions where they add no independent coverage; retain source provenance, save/recovery, ABI and package-integrity checks. The full-suite trigger remains the named task boundary above, regardless of failure count.
 
 ## Before entering the game
 
@@ -57,5 +73,7 @@ Record required results and remaining gaps, not a list of every unrelated test s
 ## Commands
 
 Use [the existing script entrypoints and focused example](../../tools/scripts/README.md#choose-validation). Check the actual runner's supported focus before use. A full Release invocation includes its build; do not prepend another full build/test cycle.
+
+For long commands, use [bounded session waits and output capture](../../tools/scripts/README.md#observe-a-long-running-command). A capture or toolchain setup failure is repaired and checked locally before retrying the required suite.
 
 For the shared game runner and MoreSaves three-phase acceptance, use the [runner responsibilities and commands](../../tools/scripts/game-smoke/README.md). `SaveSlot` is the UI position starting at 1; collectors and repair tools use native `SlotIndex` starting at 0.

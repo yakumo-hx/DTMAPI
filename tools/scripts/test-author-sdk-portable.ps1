@@ -47,6 +47,10 @@ function Invoke-PortableAuthor {
     $start.EnvironmentVariables['DTMAPI_GAME_DIR'] = $FakeGameRoot
     $start.EnvironmentVariables['DTMAPI_DOLOC_PERSISTENT_ROOT'] = (Join-Path $ProfileRoot 'DolocTown-persistent')
     $start.EnvironmentVariables.Remove('DTMAPI_AUTHOR_COMPAT_ROOT') | Out-Null
+    $start.EnvironmentVariables.Remove('DTMAPI_AUTHOR_DOTNET') | Out-Null
+    $start.EnvironmentVariables.Remove('DTMAPI_AUTHOR_SDK_ROOT') | Out-Null
+    $start.EnvironmentVariables.Remove('DOTNET_HOST_PATH') | Out-Null
+    $start.EnvironmentVariables['DOTNET_CLI_HOME'] = $ProfileRoot
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $start
     if (-not $process.Start()) { throw 'Failed to start the self-contained Author SDK CLI.' }
@@ -311,7 +315,9 @@ try {
     $validate = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('validate', $project, '--json')
     Assert-PortableSuccess -Label 'Portable validate' -Result $validate
     $null = $validate.StdOut | ConvertFrom-Json
-    $build = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('build', $project, '--json')
+    $restore = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('restore', $project, '--offline', 'true', '--json')
+    Assert-PortableSuccess -Label 'Portable standard restore' -Result $restore
+    $build = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('build', $project, '--offline', 'true', '--json')
     Assert-PortableSuccess -Label 'Portable build' -Result $build
     $buildReport = $build.StdOut | ConvertFrom-Json
     $buildOutputPath = [string]$buildReport.outputPath
@@ -323,7 +329,7 @@ try {
     }
 
     $packageOutput = Join-Path $working $packageOutputLabel
-    $pack = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('pack', $project, '--output', $packageOutput, '--json')
+    $pack = Invoke-PortableAuthor -Executable $exe -WorkingDirectory $working -ProfileRoot $profile -NuGetRoot $nuget -FakeGameRoot $fakeGame -Arguments @('pack', $project, '--offline', 'true', '--output', $packageOutput, '--json')
     Assert-PortableSuccess -Label 'Portable pack' -Result $pack
     $packReport = $pack.StdOut | ConvertFrom-Json
     $modZip = [string]$packReport.outputPath
@@ -352,8 +358,9 @@ try {
     if ((Get-AuthorSdkSha256 -Path $playerDll) -ne $playerDllHash -or (Get-Item -LiteralPath $playerDll).LastWriteTimeUtc -ne $playerDllWriteTime) {
         throw 'Portable Author SDK modified the decoy player-install DTMAPI.Abstractions.dll.'
     }
-    if (@(Get-ChildItem -LiteralPath $nuget -Force -Recurse).Count -ne 0) {
-        throw 'Portable Author SDK wrote into the isolated empty NuGet cache; the offline compiler is not self-contained.'
+    if ([string]$buildReport.values.buildBackend -cne 'MSBuild' -or
+        -not ([IO.Path]::GetFullPath([string]$buildReport.values.compilerPath)).StartsWith([IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $exe) 'toolchain')), [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Portable compilation did not use the delivered standard toolchain.'
     }
 
     Write-Host 'Author SDK portable gate: PASS'

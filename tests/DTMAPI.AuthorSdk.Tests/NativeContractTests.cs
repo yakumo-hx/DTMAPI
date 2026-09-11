@@ -34,6 +34,7 @@ internal static partial class Program
         string authorPath = Path.Combine(project, "dtmapi.author.json"), manifestPath = Path.Combine(project, "manifest.json");
         File.WriteAllText(Path.Combine(project, "src", "ModEntry.cs"), "using DTMAPI.Abstractions; namespace Meadow.IndependentNative; public sealed class ModEntry:DtmMod { public override void Entry(IDtmHelper helper){int x=NativeFixture.Echo(1);NativeFixture.Ref(ref x);int[] a=NativeFixture.Matrix(new int[1,1]);helper.Monitor.Log(NativeFixture.Value.ToString());} }");
         string current = Path.Combine(repository, ".tools", "author-sdk-compatibility", "0.6.4");
+        await ExpectSuccess("restore standard native author", "restore", project, "--offline", "true");
         var packed = await ExpectSuccess("native provenance pack", "pack", project, "--compatibility-root", current);
         var again = await ExpectSuccess("native provenance deterministic pack", "pack", project, "--compatibility-root", current);
         Equal(packed.Sha256, again.Sha256, "Native provenance and bundle bytes are deterministic.");
@@ -144,6 +145,7 @@ internal static partial class Program
             string memoryProject = Path.Combine(root, "memory-author");
             await ExpectSuccess("new memory-host author", "new", "codemod", memoryProject, "--id", "Meadow.MemoryAuthor", "--name", "Memory", "--author", "Meadow", "--api-target", "0.6.4", "--code-mod-kind", "Advanced", "--game-root", game, "--native-references", "DolocTown_Data/Managed/Meadow.MemoryHost.dll");
             File.WriteAllText(Path.Combine(memoryProject, "src", "ModEntry.cs"), "using DTMAPI.Abstractions; namespace Meadow.MemoryAuthor; public sealed class ModEntry:DtmMod { public override void Entry(IDtmHelper h){NativeFixture.Echo(1);} }");
+            await ExpectSuccess("restore standard memory author", "restore", memoryProject, "--offline", "true");
             var memoryPack = (await Run("pack", memoryProject, "--compatibility-root", current)).Report;
             True(memoryPack.Success, "Memory origin corpus publicly packs: " + string.Join(";", memoryPack.Diagnostics.Select(item => item.Message)));
             string memoryPackage = Path.Combine(root, "memory-package");

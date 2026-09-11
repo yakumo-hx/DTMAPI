@@ -12,12 +12,12 @@ internal static class DeterministicPackager
 
     public static CommandReport PackCommand(ParsedCommand command)
     {
-        command.RequireOnlyOptions("compatibility-root", "output", "game-root", "build-output", "configuration", "symbols");
+        command.RequireOnlyOptions("compatibility-root", "output", "game-root", "build-output", "configuration", "symbols", "offline");
         if (command.Positionals.Count != 1)
             throw new CommandLineException("pack requires one project directory.");
         string symbols = command.Option("symbols", "false");
         if (!bool.TryParse(symbols, out bool includeSymbols)) throw new CommandLineException("--symbols requires true or false.");
-        return Pack(PathSafety.FullPath(command.Positionals[0]), command.Option("compatibility-root"), command.Option("output"), command.Option("game-root"), command.Option("build-output"), command.Option("configuration", "Release"), includeSymbols);
+        return Pack(PathSafety.FullPath(command.Positionals[0]), command.Option("compatibility-root"), command.Option("output"), command.Option("game-root"), command.Option("build-output"), command.Option("configuration", "Release"), includeSymbols, StandardBuildIntegration.BooleanOption(command, "offline"));
     }
 
     public static CommandReport HashCommand(ParsedCommand command)
@@ -49,13 +49,14 @@ internal static class DeterministicPackager
         return Finish(report);
     }
 
-    public static CommandReport Pack(string root, string compatibilityRoot, string requestedOutput, string gameRoot = "", string buildOutput = "", string configuration = "Release", bool symbols = false)
+    public static CommandReport Pack(string root, string compatibilityRoot, string requestedOutput, string gameRoot = "", string buildOutput = "", string configuration = "Release", bool symbols = false, bool offline = false)
     {
         var report = new CommandReport { Command = "pack", RootPath = Path.GetFullPath(root) };
         AuthorProjectContext context;
         try
         {
             context = ProjectValidator.LoadValidated(root, report.Diagnostics);
+            report.TargetRuntimeVersion = context.ApiTarget;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
         {
@@ -64,27 +65,25 @@ internal static class DeterministicPackager
         }
         if (report.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error))
             return Finish(report);
-        if (context.IsLibrary)
-        {
-            report.Diagnostics.Add(Error("SDK303", "A library is a build product, not a Mod package. Reference it from a CodeMod project.", context.RootPath));
-            return Finish(report);
-        }
         if (context.Kind != AuthorProjectKind.CodeMod && !string.IsNullOrWhiteSpace(buildOutput))
         {
             report.Diagnostics.Add(Error("SDK303", "--build-output is only valid for CodeMod projects.", context.RootPath));
             return Finish(report);
         }
 
+        StandardPackageSnapshot? standardSnapshot = null;
         try
         {
             string builtDll = string.Empty;
             if (context.Kind == AuthorProjectKind.CodeMod)
             {
-                CommandReport build = CodeModBuilder.Build(context.RootPath, compatibilityRoot, buildOutput, gameRoot, configuration, context);
+                CommandReport build = StandardBuildIntegration.Build(context.RootPath, compatibilityRoot, buildOutput, gameRoot, configuration, context, packaging: true, offline: offline);
                 report.Diagnostics.AddRange(build.Diagnostics.Where(diagnostic => diagnostic.Severity != DiagnosticSeverity.Info));
                 if (!build.Success)
                     return Finish(report);
-                builtDll = build.OutputPath;
+                if (context.AuthorProject.SchemaVersion == StandardBuildIntegration.SchemaVersion)
+                    standardSnapshot = StandardPackageSnapshot.Capture(context, build, gameRoot);
+                builtDll = standardSnapshot?.EntryPath ?? build.OutputPath;
                 foreach (KeyValuePair<string, string> value in build.Values)
                     report.Values[value.Key] = value.Value;
                 report.Values["buildOutputPath"] = build.OutputPath;
@@ -106,10 +105,10 @@ internal static class DeterministicPackager
                 entryDllPath = "Content/DTMAPI/" + Path.GetFileName(builtDll);
                 entryDllBytes = File.ReadAllBytes(builtDll);
                 Add(payload, entryDllPath, entryDllBytes);
-                if (symbols || BuildPlan.NormalizeConfiguration(configuration) == "Debug")
+                if (symbols || configuration.Equals("Debug", StringComparison.OrdinalIgnoreCase))
                     Add(payload, Path.ChangeExtension(entryDllPath, ".pdb"), File.ReadAllBytes(Path.ChangeExtension(builtDll, ".pdb")));
                 if (report.Values.ContainsKey("documentationPath"))
-                    Add(payload, Path.ChangeExtension(entryDllPath, ".xml"), File.ReadAllBytes(report.Values["documentationPath"]));
+                    Add(payload, Path.ChangeExtension(entryDllPath, ".xml"), File.ReadAllBytes(standardSnapshot?.DocumentationPath ?? report.Values["documentationPath"]));
             }
 
             string advancedReceiptSha256 = string.Empty;
@@ -128,20 +127,17 @@ internal static class DeterministicPackager
                 Add(payload, AuthorSdkContract.AdvancedReferenceReceiptPath, receiptBytes);
             }
 
-            AddContentDirectory(context, payload);
-            foreach (var file in (context.BuildSnapshot?.Content ?? Array.Empty<ProjectGraph.FileInput>()).Concat(context.GraphContent))
-                Add(payload, file.Name, file.Bytes);
+            if (standardSnapshot == null) AddContentDirectory(context, payload);
+            foreach (var file in standardSnapshot?.Content ?? new List<StandardPackageSnapshot.ContentFile>()) Add(payload, file.Name, file.Bytes);
             AddOptionalDirectory(context.RootPath, "i18n", "i18n", payload);
             AddOptionalRootFile(context.RootPath, "icon.png", payload);
             AddOptionalRootFile(context.RootPath, "preview.png", payload);
             byte[] dependencyInventory = Array.Empty<byte>();
-            if (ManagedPackageReferences.UsesContract(context)) dependencyInventory = ManagedPackageReferences.AddInventory(context, payload, manifestBytes, entryDllPath, symbols || BuildPlan.NormalizeConfiguration(configuration) == "Debug");
+            if (ManagedPackageReferences.UsesContract(context)) dependencyInventory = ManagedPackageReferences.AddInventory(context, payload, manifestBytes, entryDllPath, symbols || configuration.Equals("Debug", StringComparison.OrdinalIgnoreCase));
             else ManagedAssemblyInspector.ValidateNoBundledNativePayloads(payload, entryDllPath);
             if (NativeProjectReferences.UsesContract(context))
             {
-                Add(payload, DTMAPI.Internal.Authoring.NativePackageContract.FileName, NativeProjectReferences.BuildProvenance(context, payload, manifestBytes, entryDllPath, dependencyInventory, gameRoot, report.Values["nativeReferenceInputSha256"]));
-                if (context.BuildSnapshot?.Identity != ProjectGraph.Snapshot(context).Identity)
-                    throw new InvalidDataException("native-author-input-changed: Source/resources changed between build and pack; retry with stable inputs.");
+                Add(payload, DTMAPI.Internal.Authoring.NativePackageContract.FileName, NativeProjectReferences.BuildProvenance(context, payload, manifestBytes, entryDllPath, dependencyInventory, gameRoot, report.Values["nativeReferenceInputSha256"], standardSnapshot?.DiagnosticSymbols));
             }
             Add(payload, "Content/DTMAPI/dtmapi-package.json", SerializePackageMarker(
                 context,
@@ -154,6 +150,8 @@ internal static class DeterministicPackager
             string outputPath = ResolveOutput(context.RootPath, requestedOutput, defaultName);
             PathSafety.RejectBepInExPluginDestination(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+            // Keep the lock pathname stable: deleting it would let a third writer bypass an existing lease.
+            using var publicationLease = new FileStream(outputPath + ".publish.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             string temporary = outputPath + ".tmp-" + Guid.NewGuid().ToString("N");
             try
             {
@@ -219,6 +217,7 @@ internal static class DeterministicPackager
         {
             report.Diagnostics.Add(Error("SDK302", ex.Message, report.RootPath));
         }
+        finally { standardSnapshot?.Dispose(); }
         return Finish(report);
     }
 

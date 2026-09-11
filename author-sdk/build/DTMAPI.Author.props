@@ -1,0 +1,19 @@
+<Project>
+  <!-- Import after the standard Sdk.props. This integration never imports the SDK itself. -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">netstandard2.0</TargetFramework>
+    <LangVersion Condition="'$(LangVersion)' == ''">latest</LangVersion>
+    <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+    <CheckForOverflowUnderflow Condition="'$(CheckForOverflowUnderflow)' == ''">true</CheckForOverflowUnderflow>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <CopyLocalLockFileAssemblies Condition="'$(CopyLocalLockFileAssemblies)' == ''">true</CopyLocalLockFileAssemblies>
+    <OutDir Condition="'$(DtmApiRequestedOutput)' != ''">$(DtmApiRequestedOutput)</OutDir>
+    <DTMAPI_AUTHOR_SDK_ROOT Condition="'$(DTMAPI_AUTHOR_SDK_ROOT)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</DTMAPI_AUTHOR_SDK_ROOT>
+    <DtmApiCompatibilityRoot Condition="'$(DtmApiCompatibilityRoot)' == ''">$(DTMAPI_AUTHOR_SDK_ROOT)</DtmApiCompatibilityRoot>
+    <DtmApiAuthorProjectRoot Condition="'$(DtmApiAuthorProjectRoot)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildProjectDirectory)', 'dtmapi.author.json'))</DtmApiAuthorProjectRoot>
+  </PropertyGroup>
+</Project>

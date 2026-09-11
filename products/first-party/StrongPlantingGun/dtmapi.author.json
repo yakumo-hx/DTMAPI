@@ -1,10 +1,7 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "projectKind": "CodeMod",
   "targetDtmApiVersion": "0.5.5",
-  "sourceDirectory": "src",
-  "contentDirectory": "content",
-  "assemblyName": "DTMAPI.StrongPlantingGun",
   "publish": {
     "tags": [
       "Mod",
@@ -32,5 +29,6 @@
       "0Harmony",
       "Assembly-CSharp"
     ]
-  }
+  },
+  "projectFile": "DTMAPI.StrongPlantingGun.csproj"
 }

@@ -35,7 +35,7 @@ try {
         -c $Configuration `
         --no-build `
         -- `
-        --require-exact-advanced-reference 2>&1 | Out-String
+        --focus advanced-policy --require-exact-advanced-reference 2>&1 | Out-String
     $exitCode = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     if ($exitCode -eq 0) {

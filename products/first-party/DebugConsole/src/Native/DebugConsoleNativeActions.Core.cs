@@ -373,17 +373,25 @@ namespace DTMAPI.DebugConsole
                     null,
                     new[] { typeof(string), typeof(bool) },
                     null);
+                MethodInfo? generate = api.GetMethod(
+                    "GenerateItem",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string), typeof(int) },
+                    null);
+                if (generate == null)
+                    return Fail(result, "missing-native-generation", "Native item generation is unavailable.");
                 MethodInfo? canPlace = api.GetMethod(
                     "CanPlaceItem",
                     BindingFlags.Public | BindingFlags.Static,
                     null,
-                    new[] { typeof(string), typeof(int) },
+                    new[] { generate.ReturnType },
                     null);
                 MethodInfo? place = api.GetMethod(
                     "TryPlaceInBackpack",
                     BindingFlags.Public | BindingFlags.Static,
                     null,
-                    new[] { typeof(string), typeof(int), typeof(bool) },
+                    new[] { generate.ReturnType, typeof(bool) },
                     null);
                 if (canPlace == null || place == null)
                     return Fail(result, "missing-native-placement", "Native backpack placement is unavailable.");
@@ -395,10 +403,17 @@ namespace DTMAPI.DebugConsole
                 while (remaining > 0)
                 {
                     int chunk = Math.Min(stack, remaining);
-                    if (!(canPlace.Invoke(null, new object[] { itemId, chunk }) is bool capacity) ||
+                    // String backpack placement lowercases IDs; native generation preserves them.
+                    object? item = generate.Invoke(null, new object[] { itemId, chunk });
+                    if (item == null)
+                    {
+                        result.AfterCount = InvokeInt(countItem, itemId, result.BeforeCount + result.GivenCount);
+                        return Fail(result, "native-item-generation-failed", "Native item generation returned no item.");
+                    }
+                    if (!(canPlace.Invoke(null, new[] { item }) is bool capacity) ||
                         !capacity)
                         break;
-                    if (!(place.Invoke(null, new object[] { itemId, chunk, false }) is bool placed) ||
+                    if (!(place.Invoke(null, new object[] { item, false }) is bool placed) ||
                         !placed)
                         break;
                     result.GivenCount += chunk;
@@ -427,8 +442,9 @@ namespace DTMAPI.DebugConsole
             }
             catch (Exception error)
             {
-                runtime.Error("item-give", error);
-                return Fail(result, error.GetType().Name, error.Message);
+                Exception cause = Unwrap(error);
+                runtime.Error("item-give", cause);
+                return Fail(result, cause.GetType().Name, cause.Message);
             }
         }
 

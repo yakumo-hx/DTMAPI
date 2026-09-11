@@ -41,4 +41,3 @@ csproj 拥有常量和 XML 文档输出；普通 SDK-style netstandard2.0 Librar
 ## Follow-Up
 
 本卡完成；完整 MSBuild、自定义 targets/生成器等范围留 PN-041，不阻塞 M4 有界实验。
-

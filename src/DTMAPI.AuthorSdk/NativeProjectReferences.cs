@@ -17,7 +17,7 @@ internal static class NativeProjectReferences
     public static void ValidateSettings(AuthorProjectContext context)
     {
         NativeAuthorReferences settings = context.AuthorProject.NativeReferences ?? throw new InvalidDataException("nativeReferences is required for NativeContractVersion=1.");
-        if (context.AuthorProject.SchemaVersion != 3 || context.AuthorProject.CodeModKind != "Advanced" || context.AuthorProject.Advanced != null)
+        if (context.AuthorProject.SchemaVersion is not (3 or 4) || context.AuthorProject.CodeModKind != "Advanced" || context.AuthorProject.Advanced != null)
             throw new InvalidDataException("Native V1 requires author schema 3, explicit Advanced and nativeReferences; old advanced policy inputs cannot be mixed.");
         if (!AuthorApiTargetCatalog.Current.GetAvailable(context.ApiTarget).Capabilities.Contains("native-contract/1", StringComparer.Ordinal))
             throw new InvalidDataException("The API target must support native-contract/1 (first internal target 0.6.4).");
@@ -147,13 +147,14 @@ internal static class NativeProjectReferences
         return new JsonArray(members.Values.ToArray());
     }
 
-    public static byte[] BuildProvenance(AuthorProjectContext context, SortedDictionary<string, byte[]> payload, byte[] manifest, string entryPath, byte[] dependencies, string requestedGameRoot, string compiledInputSha256)
+    public static byte[] BuildProvenance(AuthorProjectContext context, SortedDictionary<string, byte[]> payload, byte[] manifest, string entryPath, byte[] dependencies, string requestedGameRoot, string compiledInputSha256, IReadOnlyDictionary<string, byte[]>? diagnosticSymbols = null)
     {
         NativeProjectInput[] inputs = Resolve(context, requestedGameRoot);
         NativeCompilerInputs compiler = CompilerPaths(context, inputs);
         if (compiler.InputSha256 != compiledInputSha256) throw new InvalidDataException("native-metadata-input-changed: Host inputs changed between compilation and package provenance.");
         var inventory = PackageDependencyContract.ReadInventory(dependencies);
-        var members = RequiredMembers(context, inventory.Assemblies.Select(a => (payload[a.Path], (byte[]?)null)), inputs);
+        var members = RequiredMembers(context, inventory.Assemblies.Select(a => (payload[a.Path],
+            diagnosticSymbols != null && diagnosticSymbols.TryGetValue(a.Path, out var symbols) ? symbols : payload.GetValueOrDefault(Path.ChangeExtension(a.Path, ".pdb")))), inputs);
         var document = new JsonObject
         {
             ["schemaVersion"] = context.Manifest.NativeContractVersion!.Value, ["ownerId"] = context.Manifest.UniqueID, ["apiTarget"] = context.ApiTarget, ["targetFramework"] = "netstandard2.0",

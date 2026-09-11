@@ -58,7 +58,10 @@ $sdkTargets = @($targetCatalog.targets | Where-Object { $_.apiTarget -ceq $autho
 if ($sdkTargets.Count -ne 1) {
     throw "Author SDK target catalog does not admit API target '$authorSdkApiTarget'."
 }
-$sdkVersion = [string]$sdkTargets[0].sdkVersions[0]
+$sdkVersion = Get-AuthorSdkReleaseVersion -RepoRoot $repo
+if (@($sdkTargets[0].sdkVersions) -cnotcontains $sdkVersion) {
+    throw "Current Author SDK $sdkVersion does not admit API target '$authorSdkApiTarget'."
+}
 
 if ([string]$manifest.UniqueID -cne $uniqueId -or
     [string]$manifest.Version -cne [string]$product.sourceVersion -or
@@ -69,11 +72,11 @@ if ([string]$manifest.UniqueID -cne $uniqueId -or
     [string]::IsNullOrWhiteSpace($entryType)) {
     throw "Catalog/source manifest drift for Advanced product '$CatalogId'."
 }
-if ([string]$authorProject.schemaVersion -cne '2' -or
+if ([string]$authorProject.schemaVersion -cne '4' -or
     [string]$authorProject.projectKind -cne 'CodeMod' -or
     [string]$authorProject.codeModKind -cne 'Advanced' -or
     [string]$authorProject.targetDtmApiVersion -cne $authorSdkApiTarget -or
-    [string]$authorProject.assemblyName -cne [IO.Path]::GetFileNameWithoutExtension($entryDll) -or
+    [string]::IsNullOrWhiteSpace([string]$authorProject.projectFile) -or
     [string]$authorProject.advanced.referencePolicyId -cne $policyId) {
     throw "Catalog/source Author SDK intent drift for Advanced product '$CatalogId'."
 }
@@ -160,7 +163,17 @@ function Invoke-AuthorSdkJson {
 }
 
 $validate = Invoke-AuthorSdkJson -Name 'validate-report' -Arguments @('validate', $projectRoot)
+$restore = Invoke-AuthorSdkJson -Name 'restore-report' -Arguments @('restore', $projectRoot, '--offline', 'true')
+$sourceTreeSha256 = Get-AuthorProductSourceTreeSha256 -SourceRoot (Join-Path $projectRoot 'src')
 $pack = Invoke-AuthorSdkJson -Name 'pack-report' -Arguments @('pack', $projectRoot, '--game-root', $GameDir, '--build-output', $buildRoot, '--output', $packagePath)
+if ((Get-AuthorProductSourceTreeSha256 -SourceRoot (Join-Path $projectRoot 'src')) -cne $sourceTreeSha256) {
+    throw 'Product source files changed during pack; rerun from stable inputs.'
+}
+$factsPath = Join-Path $OutputRoot 'build-facts.xml'
+Copy-Item -LiteralPath ([string]$pack.values.buildFactsPath) -Destination $factsPath
+if ((Get-FileHash -LiteralPath $factsPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne [string]$pack.values.buildFactsSha256) {
+    throw 'MSBuild facts changed after the SDK build report was produced.'
+}
 if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) {
     throw "Author SDK did not produce the Catalog package: $packagePath"
 }
@@ -248,7 +261,7 @@ finally {
 }
 
 $summary = [ordered]@{
-    schemaVersion = 2
+    schemaVersion = 3
     status = 'Passed'
     catalogId = $CatalogId
     uniqueId = $uniqueId
@@ -264,7 +277,12 @@ $summary = [ordered]@{
     advancedReferenceReceiptSha256 = [string]$pack.values.advancedReferenceReceiptSha256
     bundledNativeDependencies = @()
     buildOutput = [string]$pack.values.buildOutputPath
-    buildInputSha256 = [string]$pack.values.buildInputSha256
+    sourceTreeSha256 = $sourceTreeSha256
+    sourceTreeScope = 'product-src-csharp'
+    buildFactsFile = 'build-facts.xml'
+    buildFactsSha256 = [string]$pack.values.buildFactsSha256
+    buildBackend = [string]$pack.values.buildBackend
+    compilerSha256 = [string]$pack.values.compilerSha256
     buildReport = 'pack-report.json'
     validateFileCount = [int]$validate.fileCount
 }

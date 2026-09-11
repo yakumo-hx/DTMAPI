@@ -244,6 +244,11 @@ if ($workshopDownloadMarkerExitCode -ne 0) {
 }
 
 if ($selection.Stages -contains 'AuthorSdk') {
+$previousAuthorDotnet = $env:DTMAPI_AUTHOR_DOTNET
+try {
+    # In-process SDK tests must select the same supported host as their runner.
+    # The distributed portable test explicitly clears this inherited override.
+    $env:DTMAPI_AUTHOR_DOTNET = $dotnet
 if ($Configuration -eq 'Release') {
     & "$PSScriptRoot\build-author-sdk.ps1" -Configuration Release
     if (-not $?) {
@@ -282,6 +287,10 @@ else {
     }
 }
 
+}
+finally {
+    $env:DTMAPI_AUTHOR_DOTNET = $previousAuthorDotnet
+}
 }
 
 if ($selection.Stages -contains 'ProductContracts') {

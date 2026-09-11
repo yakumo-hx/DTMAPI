@@ -1,6 +1,7 @@
 using DTMAPI.Authoring.Contracts;
 using System.IO.Compression;
 using System.Text;
+using System.Xml.Linq;
 
 namespace DTMAPI.AuthorSdk.Tests;
 
@@ -8,174 +9,156 @@ internal static partial class Program
 {
     private static async Task TestPackBuildOutputAndIdentity(string temp, string compatibility)
     {
-        // Regression: a misplaced diagnostic code used to invoke an unknown
-        // command and pass merely because its usage error returned nonzero.
         var wrongCommand = await RunPublic("SDK191", "symbols", "missing.dll");
         bool invocationRejected = false;
         try { AssertValidationFailure("misrouted symbols", new[] { "symbols" }, wrongCommand.ExitCode, wrongCommand.Report); }
         catch (InvalidOperationException) { invocationRejected = true; }
         True(invocationRejected, "A usage error cannot satisfy a symbols validation test");
-        await TestUnifiedBuildInputs(temp, compatibility).ConfigureAwait(false);
-        await TestMigrationProjection(temp, compatibility).ConfigureAwait(false);
-        string project = Path.Combine(temp, "编译项目 one");
-        string other = Path.Combine(temp, "编译项目 two");
-        foreach (string root in new[] { project, other })
-            await ExpectSuccess("create pack-build project", "new", "codemod", "--api-target", "0.5.5", root, "--id", "Tests.PackBuild", "--name", "Pack build", "--author", "Tests").ConfigureAwait(false);
+        string one = Path.Combine(temp, "编译项目 one"), two = Path.Combine(temp, "移动目录 two");
         string output = Path.Combine(temp, "实际编译 output");
+        foreach (string root in new[] { one, two })
+        {
+            await ExpectSuccess("create standard pack project", "new", "codemod", root, "--api-target", "0.5.5", "--id", "Tests.PackBuild", "--name", "Pack build", "--author", "Tests");
+            string project = Path.Combine(root, "Tests.PackBuild.csproj");
+            var document = XDocument.Load(project);
+            document.Root!.Elements("Import").First(e => (string?)e.Attribute("Project") == "Sdk.targets").AddBeforeSelf(
+                new XElement("PropertyGroup", new XElement("PathMap", root + "=/_/Author," + output + "=/_/Author/bin/Release/netstandard2.0"), new XElement("GenerateDocumentationFile", "true")));
+            document.Save(project);
+            Directory.CreateDirectory(Path.Combine(root, "content", "nested"));
+            File.WriteAllText(Path.Combine(root, "content", "nested", "data.json"), "{\"value\":42}");
+            await ExpectSuccess("restore standard pack project", "restore", root, "--offline", "true");
+        }
         Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(output, "Tests.PackBuild.dll"), "stale output must be overwritten");
-        CommandReport pack = await ExpectSuccess("pack compiles to explicit output", "pack", project, "--compatibility-root", compatibility,
-            "--build-output", output, "--output", Path.Combine(temp, "pack-build-one.zip")).ConfigureAwait(false);
-        Equal(Path.Combine(output, "Tests.PackBuild.dll"), pack.Values["buildOutputPath"], "Pack reports the actual build path");
-        Equal(Sha256(pack.Values["buildOutputPath"]), pack.Values["buildOutputSha256"], "Build output hash names the actual file");
-        Equal(pack.Values["buildOutputSha256"], pack.Values["entryDllSha256"], "Pack consumes the DLL from this compilation");
-        True(!Directory.Exists(Path.Combine(project, "bin")), "Explicit pack output leaves no second default compilation directory");
-        True(File.Exists(Path.Combine(output, "Tests.PackBuild.pdb")), "Symbols are emitted alongside the actual compilation");
+        File.WriteAllText(Path.Combine(output, "unrelated.txt"), "preserve me");
+        CommandReport pack = await ExpectSuccess("pack explicit standard output", "pack", one, "--compatibility-root", compatibility,
+            "--build-output", output, "--output", Path.Combine(temp, "pack-build-one.zip"), "--symbols", "true");
+        Equal(Path.Combine(output, "Tests.PackBuild.dll"), pack.Values["buildOutputPath"], "actual standard TargetPath");
+        Equal(Sha256(pack.Values["buildOutputPath"]), pack.Values["buildOutputSha256"], "actual DLL hash");
+        Equal(pack.Values["buildOutputSha256"], pack.Values["entryDllSha256"], "package consumes this build");
+        Equal("preserve me", File.ReadAllText(Path.Combine(output, "unrelated.txt")), "Build preserves non SDK output");
         await AssertPublicSymbols(pack.Values["buildOutputPath"], Path.ChangeExtension(pack.Values["buildOutputPath"], ".pdb"), true);
         await AssertPublicSymbols(pack.Values["buildOutputPath"], Path.Combine(output, "missing.pdb"), false);
-        using (ZipArchive archive = ZipFile.OpenRead(pack.OutputPath))
+        using (var zip = ZipFile.OpenRead(pack.OutputPath))
         {
-            using var bytes = new MemoryStream();
-            using Stream entry = archive.GetEntry("Content/DTMAPI/Tests.PackBuild.dll")!.Open();
-            entry.CopyTo(bytes);
-            True(bytes.ToArray().SequenceEqual(File.ReadAllBytes(pack.Values["buildOutputPath"])), "Pack contains the exact emitted bytes");
+            True(zip.GetEntry("Content/DTMAPI/nested/data.json") != null, "template preserves nested official content path");
+            True(!zip.Entries.Any(e => e.Name == "unrelated.txt"), "no output directory scan");
         }
-        CommandReport same = await ExpectSuccess("pack equal inputs in another directory", "pack", other, "--compatibility-root", compatibility,
-            "--output", Path.Combine(temp, "pack-build-two.zip")).ConfigureAwait(false);
-        Equal(pack.Values["buildInputSha256"], same.Values["buildInputSha256"], "Input identity excludes machine-local output/source roots");
-        Equal(pack.Sha256, same.Sha256, "Build-output selection preserves deterministic package bytes");
-        string source = Directory.EnumerateFiles(Path.Combine(other, "src"), "*.cs").First();
-        File.AppendAllText(source, "\n// changed source input\n", Encoding.UTF8);
-        CommandReport changed = await ExpectSuccess("pack after source changed", "pack", other, "--compatibility-root", compatibility,
-            "--output", Path.Combine(temp, "pack-build-changed.zip")).ConfigureAwait(false);
-        True(changed.Values["buildInputSha256"] != pack.Values["buildInputSha256"], "Source changes invalidate compilation input identity");
+        var moved = await ExpectSuccess("same inputs in second absolute directory", "pack", two, "--compatibility-root", compatibility,
+            "--output", Path.Combine(temp, "pack-build-two.zip"), "--symbols", "true");
+        if (pack.Values["buildOutputSha256"] != moved.Values["buildOutputSha256"])
+        {
+            string evidence = Path.Combine(FindRepository(), "artifacts", "pn041", "sdk-msbuild-evidence", "repro-diagnostic"); Directory.CreateDirectory(evidence);
+            File.Copy(pack.Values["buildFactsPath"], Path.Combine(evidence, "one-facts.xml"), true);
+            File.Copy(moved.Values["buildFactsPath"], Path.Combine(evidence, "two-facts.xml"), true);
+            foreach (var pair in new[] { ("one", one, pack.Values["buildOutputPath"]), ("two", two, moved.Values["buildOutputPath"]) })
+            {
+                File.Copy(pair.Item3, Path.Combine(evidence, pair.Item1 + ".dll"), true);
+                File.Copy(Path.ChangeExtension(pair.Item3, ".pdb"), Path.Combine(evidence, pair.Item1 + ".pdb"), true);
+                string config = Directory.EnumerateFiles(Path.Combine(pair.Item2, "obj"), "Tests.PackBuild.GeneratedMSBuildEditorConfig.editorconfig", SearchOption.AllDirectories).Single();
+                File.Copy(config, Path.Combine(evidence, pair.Item1 + ".editorconfig"), true);
+            }
+        }
+        foreach (string key in new[] { "buildOutputSha256", "symbolsSha256", "documentationSha256" }) Equal(pack.Values[key], moved.Values[key], "mapped two directory " + key);
+        Equal(pack.Sha256, moved.Sha256, "mapped two directory ZIP determinism");
+        var release = await ExpectSuccess("standard Release", "build", two, "--compatibility-root", compatibility);
+        var debug = await ExpectSuccess("standard Debug", "build", two, "--configuration", "Debug", "--compatibility-root", compatibility);
+        True(debug.OutputPath != release.OutputPath, "configurations own different target paths");
+        Equal(release.Sha256, Sha256(release.OutputPath), "Debug preserves Release");
+        await AssertPublicSymbols(debug.OutputPath, Path.ChangeExtension(release.OutputPath, ".pdb"), false);
+        var repeat = await ExpectSuccess("repeat Debug", "build", two, "--configuration", "Debug", "--compatibility-root", compatibility);
+        Equal(debug.Sha256, repeat.Sha256, "repeat Debug DLL");
+        Equal(debug.Values["symbolsSha256"], repeat.Values["symbolsSha256"], "repeat Debug PDB");
+        var concurrent = await Task.WhenAll(new[] { "Debug", "Release" }.Select(configuration => Task.Run(() =>
+            ExpectSuccess("concurrent " + configuration, "pack", two, "--configuration", configuration,
+                "--compatibility-root", compatibility, "--output", Path.Combine(temp, "parallel-" + configuration + ".zip")))));
+        True(concurrent[0].Values["buildOutputPath"] != concurrent[1].Values["buildOutputPath"], "Concurrent configurations own distinct DLL outputs");
+        foreach (var result in concurrent)
+        {
+            Equal(result.Values["buildOutputSha256"], Sha256(result.Values["buildOutputPath"]), "Concurrent publication captures its actual DLL");
+            using var archive = ZipFile.OpenRead(result.OutputPath);
+            using var entry = archive.GetEntry("Content/DTMAPI/Tests.PackBuild.dll")!.Open();
+            Equal(result.Values["buildOutputSha256"], Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(entry)).ToLowerInvariant(), "Concurrent ZIP contains its configuration output");
+        }
+        string projectPath = Path.Combine(one, "Tests.PackBuild.csproj"), original = File.ReadAllText(projectPath);
+        string sourcePath = Path.Combine(one, "src", "ModEntry.cs"), source = File.ReadAllText(sourcePath);
+        File.AppendAllText(sourcePath, "\nusing broken syntax");
+        var broken = await ExpectFailure("compile failure refuses stale output", "pack", one, "--compatibility-root", compatibility, "--output", pack.OutputPath);
+        True(broken.Diagnostics.Any(d => d.Code.StartsWith("CS", StringComparison.Ordinal)), "actual compiler diagnostic");
+        Equal(pack.Sha256, Sha256(pack.OutputPath), "compile failure preserves published package");
+        File.WriteAllText(sourcePath, source);
+        string tampered = Path.Combine(one, "assets", "DTMAPI.Abstractions.dll");
+        Directory.CreateDirectory(Path.GetDirectoryName(tampered)!);
+        File.WriteAllBytes(tampered, File.ReadAllBytes(CompatibilityAssets.Resolve(compatibility, "0.5.5").AbstractionsPath).Concat(new byte[] { 0 }).ToArray());
+        string Xml(string value) => System.Security.SecurityElement.Escape(value)!;
+        string frozen = CompatibilityAssets.Resolve(compatibility, "0.5.5").AbstractionsPath;
+        foreach (string fault in new[] { "wrong-pdb", "late-api", "content-escape", "content-case-collision", "host-content" })
+        {
+            string extension = fault switch
+            {
+                "wrong-pdb" => $"<Target Name=\"ReplacePdb\" AfterTargets=\"Build\"><Copy SourceFiles=\"{Xml(debug.Values["symbolsPath"])}\" DestinationFiles=\"$(TargetDir)$(TargetName).pdb\" /></Target>",
+                "late-api" => $"<Target Name=\"LateReference\" AfterTargets=\"DtmApiCheckResolvedReferences\" BeforeTargets=\"CoreCompile\"><ItemGroup><ReferencePathWithRefAssemblies Remove=\"{Xml(frozen)}\" /><ReferencePathWithRefAssemblies Include=\"{Xml(tampered)}\" /></ItemGroup></Target>",
+                "content-escape" => "<ItemGroup><None Include=\"manifest.json\" DtmApiPackagePath=\"../escape.json\" /></ItemGroup>",
+                "content-case-collision" => "<ItemGroup><None Include=\"manifest.json\" DtmApiPackagePath=\"content/dtmapi/NESTED/DATA.JSON\" /></ItemGroup>",
+                _ => $"<ItemGroup><None Include=\"{Xml(tampered)}\" DtmApiPackagePath=\"Content/Host.data\" /></ItemGroup>"
+            };
+            File.WriteAllText(projectPath, original.Replace("</Project>", extension + "</Project>"));
+            var refused = await ExpectFailure(fault, "pack", one, "--compatibility-root", compatibility, "--output", pack.OutputPath);
+            True(refused.Diagnostics.All(d => d.Code != "SDK999"), fault + " gives a validation failure");
+            if (fault == "late-api") True(refused.Diagnostics.Any(d => d.Message.Contains("Resolved Csc reference differs")), "actual Csc task arguments expose late frozen API replacement");
+            Equal(pack.Sha256, Sha256(pack.OutputPath), fault + " preserves old package");
+        }
+        File.WriteAllText(projectPath, original.Replace("</Project>", "<Target Name=\"FinalXml\" AfterTargets=\"Build\"><WriteLinesToFile File=\"$(TargetDir)$(TargetName).xml\" Lines=\"FINAL-XML\" Overwrite=\"true\" /></Target></Project>"));
+        var finalXml = await ExpectSuccess("capture after full Build", "pack", one, "--compatibility-root", compatibility, "--output", Path.Combine(temp, "postprocess.zip"));
+        using (var zip = ZipFile.OpenRead(finalXml.OutputPath))
+        using (var reader = new StreamReader(zip.GetEntry("Content/DTMAPI/Tests.PackBuild.xml")!.Open())) Equal("FINAL-XML", reader.ReadToEnd().Trim(), "final XML output captured");
+        File.WriteAllText(projectPath, original);
         string content = Path.Combine(temp, "content no compilation");
-        await ExpectSuccess("create content pack", "new", "contentpack", "--api-target", "0.5.5", content, "--id", "Tests.NoBuild", "--name", "Content", "--author", "Tests").ConfigureAwait(false);
-        CommandReport refused = await ExpectFailure("content pack rejects build output", "pack", content, "--build-output", output).ConfigureAwait(false);
-        True(refused.Diagnostics.Any(value => value.Code == "SDK303"), "Inapplicable build option is diagnosed");
+        await ExpectSuccess("create content pack", "new", "contentpack", content, "--api-target", "0.5.5", "--id", "Tests.NoBuild", "--name", "Content", "--author", "Tests");
+        string? previousDotnet = Environment.GetEnvironmentVariable("DTMAPI_AUTHOR_DOTNET");
+        try
+        {
+            Environment.SetEnvironmentVariable("DTMAPI_AUTHOR_DOTNET", Path.Combine(temp, "missing-dotnet.exe"));
+            var contentPack = await ExpectSuccess("ContentPack without compiler", "pack", content);
+            using (var lease = new FileStream(contentPack.OutputPath + ".publish.lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            {
+                var conflict = await ExpectFailure("same output publication conflict", "pack", content);
+                HasCode(conflict, "SDK302", "Concurrent publication fails explicitly");
+                Equal(contentPack.Sha256, Sha256(contentPack.OutputPath), "Concurrent publication preserves the previous ZIP");
+            }
+            await ExpectSuccess("publication lease released", "pack", content);
+            using var doctorOutput = new StringWriter();
+            int doctorExit = await AuthorApplication.RunAsync(new[] { "doctor", contentPack.OutputPath, "--json" }, doctorOutput);
+            True(doctorExit == 0 && doctorOutput.ToString().Contains("Tests.NoBuild"), "ContentPack ZIP Doctor without compiler");
+            True(!doctorOutput.ToString().Contains("DTMAPI-Doctor-", StringComparison.Ordinal), "ZIP report does not expose deleted staging paths");
+            string maliciousZip = Path.Combine(temp, "untrusted-build.zip"), sentinel = Path.Combine(temp, "doctor-executed-build.txt");
+            File.Copy(contentPack.OutputPath, maliciousZip);
+            using (var zip = ZipFile.Open(maliciousZip, ZipArchiveMode.Update))
+            using (var writer = new StreamWriter(zip.CreateEntry("untrusted.csproj").Open()))
+                writer.Write("<Project DefaultTargets=\"Build\"><Target Name=\"Build\"><WriteLinesToFile File=\"" + Xml(sentinel) + "\" Lines=\"EXECUTED\" /></Target></Project>");
+            using var untrustedOutput = new StringWriter();
+            int untrustedExit = await AuthorApplication.RunAsync(new[] { "doctor", maliciousZip, "--json" }, untrustedOutput);
+            True(untrustedExit is 0 or 2 && !File.Exists(sentinel), "Doctor never executes archive MSBuild targets");
+            string traversalZip = Path.Combine(temp, "unsafe-members.zip");
+            using (var zip = ZipFile.Open(traversalZip, ZipArchiveMode.Create))
+            using (var writer = new StreamWriter(zip.CreateEntry("../doctor-executed-build.txt").Open())) writer.Write("escaped");
+            using var traversalOutput = new StringWriter();
+            True(await AuthorApplication.RunAsync(new[] { "doctor", traversalZip, "--json" }, traversalOutput) == 2 && !File.Exists(sentinel), "Doctor rejects traversal ZIP before extraction outside staging");
+        }
+        finally { Environment.SetEnvironmentVariable("DTMAPI_AUTHOR_DOTNET", previousDotnet); }
+        var inapplicable = await ExpectFailure("ContentPack rejects build output", "pack", content, "--build-output", output);
+        HasCode(inapplicable, "SDK303", "inapplicable compiler option");
     }
 
     private static async Task AssertPublicSymbols(string dll, string pdb, bool matched)
     {
         var result = await RunPublic("symbols", dll, "--pdb", pdb);
-        True(result.ExitCode == (matched ? 0 : 1), "Symbols use the expected success/validation exit category, never usage or internal failure.");
-        Equal("symbols", result.Report.Command, "The actual symbols command ran");
+        True(result.ExitCode == (matched ? 0 : 1), "Symbols use expected success/validation exit, never usage/internal failure");
+        Equal("symbols", result.Report.Command, "actual symbols command");
         True(result.Report.Success == matched, "Symbols pair outcome");
         HasCode(result.Report, matched ? "SDK190" : "SDK191", "Specific symbol diagnosis");
-        Equal(Path.GetFullPath(dll), result.Report.RootPath, "Symbol DLL identity retained");
-        Equal(Path.GetFullPath(pdb), result.Report.OutputPath, "Symbol PDB identity retained");
-        if (!matched) True(result.Report.Diagnostics.Single(d => d.Code == "SDK191").Guidance.Contains("same build", StringComparison.Ordinal), "Symbol failure has actionable repair guidance.");
-    }
-
-    private static async Task TestMigrationProjection(string temp, string compatibility)
-    {
-        string root = Path.Combine(temp, "legacy projection 中文");
-        await ExpectSuccess("new migration fixture", "new", "codemod", "--api-target", "0.5.5", root, "--id", "Tests.LegacyProjection", "--name", "Legacy", "--author", "Tests");
-        string authorPath = Path.Combine(root, "dtmapi.author.json");
-        var author = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(authorPath))!;
-        author["sourceDirectory"] = "code 中文";
-        author["assemblyName"] = "Independent.Assembly";
-        WriteJson(authorPath, author);
-        string manifestPath = Path.Combine(root, "manifest.json");
-        var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(manifestPath))!;
-        manifest["EntryDll"] = "Independent.Assembly.dll";
-        WriteJson(manifestPath, manifest);
-        Directory.CreateDirectory(Path.Combine(root, "code 中文"));
-        foreach (string source in Directory.GetFiles(Path.Combine(root, "src"), "*.cs"))
-            File.Copy(source, Path.Combine(root, "code 中文", Path.GetFileName(source)));
-        string project = Directory.GetFiles(root, "*.csproj").Single();
-        File.WriteAllText(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><AssemblyName>Independent.Assembly</AssemblyName><RootNamespace>Unrelated.Namespace</RootNamespace></PropertyGroup></Project>");
-        byte[] legacy = File.ReadAllBytes(project);
-        CommandReport before = await ExpectSuccess("custom legacy source build", "build", root, "--compatibility-root", compatibility);
-        CommandReport beforePack = await ExpectSuccess("custom legacy source pack", "pack", root, "--compatibility-root", compatibility, "--output", Path.Combine(temp, "legacy-before.zip"));
-        CommandReport migrated = await ExpectSuccess("custom source migration", "migrate-build", root);
-        True(File.ReadAllBytes(migrated.Values["backupPath"]).SequenceEqual(legacy), "Migration preserves original bytes");
-        string current = File.ReadAllText(project);
-        True(current.Contains("code 中文\\**\\*.cs", StringComparison.Ordinal), "Migration uses author sourceDirectory");
-        True(current.Contains("<RootNamespace>Unrelated.Namespace</RootNamespace>", StringComparison.Ordinal), "Literal IDE namespace remains independent of assembly and mod identity");
-        CommandReport after = await ExpectSuccess("migrated custom source build", "build", root, "--compatibility-root", compatibility);
-        Equal(before.Values["buildInputSha256"], after.Values["buildInputSha256"], "Migration retains effective compilation inputs");
-        Equal(before.Sha256, after.Sha256, "Migration retains emitted DLL");
-        Equal(before.Values["symbolsSha256"], after.Values["symbolsSha256"], "Migration retains emitted PDB");
-        CommandReport afterPack = await ExpectSuccess("migrated custom source pack", "pack", root, "--compatibility-root", compatibility, "--output", Path.Combine(temp, "legacy-after.zip"));
-        Equal(beforePack.Sha256, afterPack.Sha256, "Migration retains package bytes");
-        await ExpectSuccess("migration is idempotent", "migrate-build", root);
-        Equal(current, File.ReadAllText(project), "Repeated migration keeps project bytes");
-        foreach (string item in new[] { "Content", "None", "CustomCopiedAsset" })
-        {
-            string extra = "<ItemGroup><" + item + " Include=\"asset.txt\"><CopyToOutputDirectory>Always</CopyToOutputDirectory></" + item + "></ItemGroup>";
-            File.WriteAllText(project, current.Replace("</Project>", extra + "</Project>", StringComparison.Ordinal));
-            foreach (string command in new[] { "build", "pack", "migrate-build" })
-            {
-                var result = await RunPublic(command, root);
-                Equal(command, result.Report.Command, "Requested project command executed");
-                True(result.ExitCode == 1 && !result.Report.Success, "Unsupported items use validation failure");
-                True(result.Report.Diagnostics.Any(d => d.Code == "SDK180" && d.Message.Contains("'" + item + "'", StringComparison.Ordinal)), "Specific unsupported item is identified");
-            }
-            True(File.ReadAllText(project).Contains(extra, StringComparison.Ordinal), "Rejected migration retains original project");
-        }
-        File.WriteAllText(project, current.Replace("<AssemblyName>Independent.Assembly</AssemblyName>", "<AssemblyName>Conflicting.Assembly</AssemblyName>", StringComparison.Ordinal));
-        foreach (string command in new[] { "build", "pack" })
-        {
-            var result = await RunPublic(command, root);
-            Equal(command, result.Report.Command, "Assembly conflict command executed");
-            True(result.ExitCode == 1 && result.Report.Diagnostics.Any(d => d.Code == "SDK180" && d.Message.Contains("'AssemblyName'", StringComparison.Ordinal)), "Assembly conflicts are diagnosed against author JSON");
-        }
-        File.WriteAllText(project, current);
-        await ExpectSuccess("restored supported projection", "build", root, "--compatibility-root", compatibility);
-    }
-
-    private static async Task TestUnifiedBuildInputs(string temp, string compatibility)
-    {
-        string root = Path.Combine(temp, "陌生 Build plan");
-        await ExpectSuccess("new build plan", "new", "codemod", "--api-target", "0.5.5", root, "--id", "Visitor.BuildPlan", "--name", "Build plan", "--author", "Visitor");
-        string source = Path.Combine(root, "src", "Symbols.cs");
-        File.WriteAllText(source, "namespace Visitor { public class UnityEngine { public const string Text = \"BepInEx HarmonyLib Assembly-CSharp UnityEngine\"; } public class Probe { public static string Text = UnityEngine.Text; } } // UnityEngine.Object\n");
-        CommandReport release = await ExpectSuccess("benign words build", "build", root, "--compatibility-root", compatibility);
-        CommandReport debug = await ExpectSuccess("debug build", "build", root, "--configuration", "Debug", "--compatibility-root", compatibility);
-        True(release.OutputPath != debug.OutputPath && File.Exists(release.OutputPath), "Debug preserves Release outputs");
-        await AssertPublicSymbols(debug.OutputPath, Path.ChangeExtension(release.OutputPath, ".pdb"), false);
-        True(release.Values["buildInputSha256"] != debug.Values["buildInputSha256"], "Configuration participates in input identity");
-        CommandReport repeated = await ExpectSuccess("repeat Debug", "build", root, "--configuration", "Debug", "--compatibility-root", compatibility);
-        Equal(debug.Sha256, repeated.Sha256, "Repeated Debug is deterministic");
-        Equal(debug.Values["symbolsSha256"], repeated.Values["symbolsSha256"], "Symbols are deterministic too");
-        File.AppendAllText(source, "\nusing broken syntax");
-        CommandReport broken = await ExpectFailure("compile error", "build", root, "--compatibility-root", compatibility);
-        True(broken.Diagnostics.Any(d => d.Code.StartsWith("CS", StringComparison.Ordinal)), "Unresolved source is a compiler error, not guessed SDK160");
-        File.WriteAllText(source, "using Alias = global::UnityEngine.Object; namespace Visitor { public class Probe { public Alias Value; } }");
-        await ExpectFailure("real unbound host alias", "build", root, "--compatibility-root", compatibility);
-        File.WriteAllText(source, "// no host reference\n");
-        string project = Directory.GetFiles(root, "*.csproj").Single();
-        string original = File.ReadAllText(project);
-        foreach (string input in new[] { "<ItemGroup><Reference Include=\"UnityEngine.CoreModule\" /></ItemGroup>", "<ItemGroup><PackageReference Include=\"Some.Package\" Version=\"1.0\" /></ItemGroup>", "<PropertyGroup><DefineConstants>INVALID-CONSTANT</DefineConstants></PropertyGroup>" })
-        {
-            File.WriteAllText(project, original.Replace("</Project>", input + "</Project>", StringComparison.Ordinal));
-            CommandReport rejected = await ExpectFailure("unsupported or host project input", "build", root, "--compatibility-root", compatibility);
-            HasCode(rejected, input.Contains("UnityEngine", StringComparison.Ordinal) ? "SDK160" : "SDK180", "Structured project diagnostic");
-        }
-        File.WriteAllText(project, original);
-        string native = Path.Combine(temp, "BepInEx.dll");
-        string bridge = Path.Combine(temp, "Bridge.dll");
-        void Emit(string name, string code, string path, params string[] refs)
-        {
-            var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create(name,
-                new[] { Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(code) },
-                refs.Prepend(typeof(object).Assembly.Location).Select(path => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(path)),
-                new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
-            using var output = File.Create(path);
-            True(compilation.Emit(output).Success, "Reference fixture compiled");
-        }
-        Emit("BepInEx", "public class Host {}", native);
-        Emit("Bridge", "public class Indirect : Host {}", bridge, native);
-        File.WriteAllText(project, original.Replace("</Project>", "<ItemGroup><Reference Include=\"Bridge\"><HintPath>" + bridge + "</HintPath></Reference></ItemGroup></Project>", StringComparison.Ordinal));
-        HasCode(await ExpectFailure("indirect host closure", "validate", root), "SDK160", "Actual PE dependency closure rejected");
-        File.WriteAllText(project, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><AssemblyName>Visitor.BuildPlan</AssemblyName><RootNamespace>Visitor.BuildPlan</RootNamespace></PropertyGroup></Project>");
-        byte[] legacy = File.ReadAllBytes(project);
-        CommandReport migrated = await ExpectSuccess("explicit old template migration", "migrate-build", root);
-        True(File.ReadAllBytes(migrated.Values["backupPath"]).SequenceEqual(legacy), "Migration preserves exact old project bytes");
-        await ExpectSuccess("migrated build", "build", root, "--compatibility-root", compatibility);
-        CommandReport symbolsPack = await ExpectSuccess("Debug package symbols", "pack", root, "--configuration", "Debug", "--compatibility-root", compatibility);
-        using var zip = ZipFile.OpenRead(symbolsPack.OutputPath);
-        True(zip.GetEntry("Content/DTMAPI/Visitor.BuildPlan.pdb") != null, "Debug package includes its matching emitted symbols");
+        Equal(Path.GetFullPath(dll), result.Report.RootPath, "Symbol DLL identity");
+        Equal(Path.GetFullPath(pdb), result.Report.OutputPath, "Symbol PDB identity");
+        if (!matched) True(result.Report.Diagnostics.Single(d => d.Code == "SDK191").Guidance.Contains("same build", StringComparison.Ordinal), "Actionable symbol repair guidance");
     }
 }

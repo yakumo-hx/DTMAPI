@@ -16,7 +16,7 @@ DTMAPI 是 Doloc Town ModdingAPI。BepInEx 负责注入/启动，DTMAPI 提供�
 | 身份 | 契约 |
 | --- | --- |
 | Strict CodeMod | 默认受管 DLL Mod，只引用获准稳定作者契约（当前为 `DTMAPI.Abstractions`），不直接引用 Unity、Harmony、BepInEx 或游戏程序集。 |
-| Advanced CodeMod | 显式受管高级 DLL Mod，可为自身产品引用原生类型并拥有 ProductNative；接受来源、版本、依赖、排序、诊断、Owner 生命周期和重启管理。旧 receipt 通道的精确准入由 [生成的 registry](docs/architecture/managed-product-admission-registry.md)拥有。当前未发布 0.7.0 的 [NativeContractVersion=2 通道（保留 V1）](author-sdk/NATIVE-REFERENCES.md)允许任意合法作者 ID，由 SDK 从本机宿主元数据生成引用、必需签名及包绑定，Core/Doctor 加载前校验；无需第一方 Catalog 行。两个通道均禁止手写准入凭证或把原生/平台 DLL 打包，不绕过 Strict 的 SDK160。 |
+| Advanced CodeMod | 显式受管高级 DLL Mod，可为自身产品引用原生类型并拥有 ProductNative；接受来源、版本、依赖、排序、诊断、Owner 生命周期和重启管理。旧 receipt 通道的精确准入由 [生成的 registry](docs/architecture/managed-product-admission-registry.md)拥有。当前 Runtime 0.7.0 的 [NativeContractVersion=2 通道（保留 V1）](author-sdk/NATIVE-REFERENCES.md)允许任意合法作者 ID，由 SDK 从本机宿主元数据生成引用、必需签名及包绑定，Core/Doctor 加载前校验；无需第一方 Catalog 行。两个通道均禁止手写准入凭证或把原生/平台 DLL 打包，不绕过 Strict 的 SDK160。 |
 | ContentPack | 不含代码 DLL 的声明式内容，由可选 Content Host 发现、校验和管理；通用声明/加载绑定仍待相应任务实现。 |
 | External BepInEx Plugin | 第三方直接置于 `BepInEx/plugins`，不受 DTMAPI Owner、依赖排序和启停承诺管理，只作只读诊断。 |
 

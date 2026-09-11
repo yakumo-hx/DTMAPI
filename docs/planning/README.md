@@ -4,6 +4,11 @@
 
 - [Platform-next implementation handoff](platform-next/README.md): `active` long-term capability map, M1–M6 roadmap, product acceptance, accepted architecture and continuous implementation tasks. One task-status queue separates code completion from product evidence; current Runtime/API and release facts remain in their canonical owners.
 
+## Contributor support proposal
+
+- [其他开发者支持计划](contributor-support.md): `proposed` independent plan for the accepted 0.7.0 public source handoff and bounded 0.7.1 Linux source build/test work. It does not change the platform-next API/content roadmap or authorize publication; implementation has not started.
+- [0.7.0 公开源码交付具体设计](../reviews/code/2026/20260911-0003-public-source-delivery-design.md): `proposed` path rules, license and build dependencies, exact-commit export, E/P/N PR synchronization and Windows source acceptance for item 2. Includes a non-executable policy draft; no publication or Linux implementation.
+
 ## Earlier plans and domain routes
 
 This folder also stores the user's original prompts and earlier or domain-specific plans. These remain reference material for the new platform sequence:

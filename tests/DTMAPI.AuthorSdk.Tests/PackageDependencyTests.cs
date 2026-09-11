@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using DTMAPI.InstallDoctor;
@@ -18,10 +19,20 @@ internal static partial class Program
         True(emitted.Success, "Independent pure contract compiles: " + string.Join(";", emitted.Diagnostics));
         string project = Path.Combine(root, "consumer");
         await ExpectSuccess("new dependency consumer", "new", "codemod", project, "--id", "Independent.Consumer", "--name", "Consumer", "--author", "Independent", "--api-target", "0.6.3");
-        JsonObject author = JsonNode.Parse(File.ReadAllText(Path.Combine(project, "dtmapi.author.json")))!.AsObject();
-        author["schemaVersion"] = 3;
-        author["managedReferences"] = new JsonArray(new JsonObject { ["path"] = library, ["role"] = "shared-contract", ["distribution"] = "self-authored", ["licenseFiles"] = new JsonArray() });
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), author.ToJsonString());
+        void SetReferences(string directory, string id, string distribution = "self-authored", string? extra = null, string? contract = null)
+        {
+            string path = Path.Combine(directory, id + ".csproj");
+            var document = XDocument.Load(path);
+            document.Root!.Elements("ItemGroup").Where(g => (string?)g.Attribute("Label") == "FixtureReferences").Remove();
+            var group = new XElement("ItemGroup", new XAttribute("Label", "FixtureReferences"));
+            group.Add(new XElement("Reference", new XAttribute("Include", "Independent.Contract"), new XElement("HintPath", contract ?? library),
+                new XElement("Private", "true"), new XElement("DtmApiRole", "shared-contract"), new XElement("DtmApiDistribution", distribution)));
+            if (extra != null) group.Add(new XElement("Reference", new XAttribute("Include", Path.GetFileNameWithoutExtension(extra)), new XElement("HintPath", extra),
+                new XElement("Private", "true"), new XElement("DtmApiDistribution", "self-authored")));
+            document.Root.Add(group); document.Save(path);
+        }
+        SetReferences(project, "Independent.Consumer");
+        await ExpectSuccess("restore standard dependency consumer", "restore", project, "--offline", "true");
         JsonObject manifest = JsonNode.Parse(File.ReadAllText(Path.Combine(project, "manifest.json")))!.AsObject();
         manifest["DependencyContractVersion"] = 1;
         manifest["Version"] = "1.0.0+build";
@@ -35,7 +46,7 @@ internal static partial class Program
         string current = Path.Combine(repository, ".tools", "author-sdk-compatibility", "0.6.3");
         var pack = await ExpectSuccess("dependency pack", "pack", project, "--compatibility-root", current);
         var repeat = await ExpectSuccess("dependency pack deterministic", "pack", project, "--compatibility-root", current);
-        Equal(pack.Sha256, repeat.Sha256, "Schema 3 deterministic package bytes.");
+        Equal(pack.Sha256, repeat.Sha256, "Standard project preserves deterministic dependency package bytes.");
         string package = Path.Combine(root, "package"); ZipFile.ExtractToDirectory(pack.OutputPath, package);
         void Classify(string directory)
         {
@@ -60,10 +71,8 @@ internal static partial class Program
         {
             string peer = Path.Combine(root, name);
             await ExpectSuccess("new " + name, "new", "codemod", peer, "--id", "Independent." + name, "--name", name, "--author", "Independent", "--api-target", "0.6.3");
-            var peerAuthor = JsonNode.Parse(File.ReadAllText(Path.Combine(peer, "dtmapi.author.json")))!.AsObject();
-            peerAuthor["schemaVersion"] = 3;
-            peerAuthor["managedReferences"] = name == "Provider" ? author["managedReferences"]!.DeepClone() : new JsonArray();
-            File.WriteAllText(Path.Combine(peer, "dtmapi.author.json"), peerAuthor.ToJsonString());
+            if (name == "Provider") SetReferences(peer, "Independent.Provider");
+            await ExpectSuccess("restore standard " + name, "restore", peer, "--offline", "true");
             var peerManifest = JsonNode.Parse(File.ReadAllText(Path.Combine(peer, "manifest.json")))!.AsObject();
             peerManifest["DependencyContractVersion"] = 1; peerManifest["Version"] = "1.0.0";
             File.WriteAllText(Path.Combine(peer, "manifest.json"), peerManifest.ToJsonString());
@@ -98,9 +107,7 @@ internal static partial class Program
             foreach (string name in new[] { "Consumer", "Provider" })
             {
                 string ownerProject = name == "Consumer" ? project : Path.Combine(root, name);
-                var updateAuthor = JsonNode.Parse(File.ReadAllText(Path.Combine(ownerProject, "dtmapi.author.json")))!.AsObject();
-                updateAuthor["managedReferences"]![0]!["path"] = updatedLibrary;
-                File.WriteAllText(Path.Combine(ownerProject, "dtmapi.author.json"), updateAuthor.ToJsonString());
+                SetReferences(ownerProject, "Independent." + name, contract: updatedLibrary);
                 var updateManifest = JsonNode.Parse(File.ReadAllText(Path.Combine(ownerProject, "manifest.json")))!.AsObject();
                 updateManifest["Version"] = "1.0.1";
                 File.WriteAllText(Path.Combine(ownerProject, "manifest.json"), updateManifest.ToJsonString());
@@ -130,16 +137,10 @@ internal static partial class Program
             True(rejected, "Core rejects " + fault + " before assembly execution.");
             True(new DoctorEngine().Inspect(bad, new DoctorOptions { ScanContext = DoctorScanContext.PackageArtifact }).ErrorCount > 0, "Doctor rejects " + fault + " with the same inventory contract.");
         }
-        author["managedReferences"]![0]!["distribution"] = "licensed-third-party";
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), author.ToJsonString());
-        await ExpectFailure("missing license material", "validate", project);
-        author["managedReferences"]![0]!["distribution"] = "self-authored";
-        string validAuthor = author.ToJsonString();
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), validAuthor.Replace("\"role\":", "\"Role\":\"private-managed\",\"role\":"));
-        await ExpectFailure("duplicate nested reference field", "validate", project);
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), validAuthor.Replace("\"role\":", "\"Role\":"));
-        await ExpectFailure("mis-cased nested reference field", "validate", project);
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), validAuthor);
+        SetReferences(project, "Independent.Consumer", "licensed-third-party");
+        var missingLicense = await ExpectFailure("missing license material", "pack", project, "--compatibility-root", current);
+        True(missingLicense.Diagnostics.Any(d => d.Message.Contains("DtmApiLicenseFiles")), "Actual runtime library license refusal");
+        SetReferences(project, "Independent.Consumer");
         string CompileLibrary(string name, string source, params string[] additionalReferences)
         {
             string path = Path.Combine(root, name + ".dll");
@@ -152,16 +153,16 @@ internal static partial class Program
         }
         string leaf = CompileLibrary("Independent.Leaf", "namespace Leaf {public class Value {}}");
         string transitive = CompileLibrary("Independent.Transitive", "public class Transitive {public Leaf.Value Value=null!;}", leaf);
+        File.Delete(leaf);
         string native = CompileLibrary("UnityEngine.CoreModule", "namespace UnityEngine {public class FixtureNative {}}");
         string indirectNative = CompileLibrary("Independent.IndirectNative", "public class IndirectNative {public UnityEngine.FixtureNative Value=null!;}", native);
         string disguised = Path.Combine(root, "Disguised.dll"); File.Copy(native, disguised);
         foreach (var fault in new[] { ("missing transitive library", transitive), ("Strict indirect native reference", indirectNative), ("renamed host assembly", disguised) })
         {
-            author["managedReferences"]![0]!["path"] = fault.Item2;
-            File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), author.ToJsonString());
-            await ExpectFailure(fault.Item1, "validate", project);
+            SetReferences(project, "Independent.Consumer", extra: fault.Item2);
+            await ExpectFailure(fault.Item1, "pack", project, "--compatibility-root", current);
         }
-        File.WriteAllText(Path.Combine(project, "dtmapi.author.json"), validAuthor);
+        SetReferences(project, "Independent.Consumer");
     }
 
     private sealed class DependencyHost(string path) : DTMAPI.Core.Runtime.IRuntimeHost, DTMAPI.Core.Runtime.ILegacyDevelopmentModSourceTestHost

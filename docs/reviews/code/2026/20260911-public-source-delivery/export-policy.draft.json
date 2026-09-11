@@ -1,0 +1,545 @@
+{
+  "schemaVersion": 1,
+  "lifecycle": "draft",
+  "intendedPath": "tools/public-source/export-policy.json",
+  "description": "Content ownership only. Project dependencies belong to MSBuild; test scope belongs to tests/DTMAPI.UnitTests/suites.json.",
+  "matching": {
+    "pathSeparator": "/",
+    "caseSensitive": true,
+    "precedence": [
+      "pathSafety",
+      "reservedOutput",
+      "exactFileOrMapping",
+      "longestOwnedTree",
+      "unknownIsError"
+    ],
+    "unknownRoot": "error",
+    "unknownComponent": "error",
+    "unknownIncludedFileType": "error",
+    "newDescendantWithinOwnedComponent": "inherit",
+    "unknownWithinExcludedTree": "exclude",
+    "duplicateOrConflictingRules": "error"
+  },
+  "pathSafety": {
+    "allowedGitModes": [
+      "100644",
+      "100755"
+    ],
+    "reject": [
+      "absolute-or-parent-path",
+      "windows-device-or-ads-or-trailing-dot-space",
+      "casefold-or-unicode-normalization-collision",
+      "symlink-or-gitlink",
+      "git-admin-path",
+      "lfs-pointer",
+      "unresolved-private-payload-or-secret"
+    ],
+    "reservedSegments": [
+      ".git",
+      ".tools",
+      "bin",
+      "obj",
+      "artifacts",
+      "dist",
+      "tmp",
+      "temp"
+    ],
+    "privateFileNames": [
+      "local.settings.json",
+      ".env"
+    ]
+  },
+  "ownedTrees": [
+    {
+      "id": "implementation",
+      "paths": [
+        "src/DTMAPI.Abstractions",
+        "src/DTMAPI.Authoring.Contracts",
+        "src/DTMAPI.AuthorSdk",
+        "src/DTMAPI.Author.Build",
+        "src/DTMAPI.Author.Analyzers",
+        "src/DTMAPI.BepInExBootstrap",
+        "src/DTMAPI.BepInExStubs",
+        "src/DTMAPI.Core",
+        "src/DTMAPI.GameBridge.DolocTown",
+        "src/DTMAPI.GameBridge.DolocTown.Compatibility",
+        "src/DTMAPI.GameBridge.DolocTown.QA",
+        "src/DTMAPI.InstallDoctor",
+        "src/DTMAPI.ModConfigMenu",
+        "src/DTMAPI.MultiPlatformInstaller",
+        "src/DTMAPI.PlayerDoctor",
+        "src/DTMAPI.Tooling.Metadata",
+        "src/Shared"
+      ],
+      "action": "include",
+      "extensions": [
+        ".cs",
+        ".csproj",
+        ".props",
+        ".targets",
+        ".json",
+        ".resx",
+        ".md"
+      ],
+      "reason": "Current implementation and MSBuild-linked shared code; documentation must pass public-link review."
+    },
+    {
+      "id": "tests",
+      "paths": [
+        "tests/DTMAPI.AbiCompatibilityHarness",
+        "tests/DTMAPI.AnimalHusbandry.Tests",
+        "tests/DTMAPI.AuthorSdk.Tests",
+        "tests/DTMAPI.AutoFishing.Tests",
+        "tests/DTMAPI.AutoHarvest.Tests",
+        "tests/DTMAPI.ChestLocator.Tests",
+        "tests/DTMAPI.Compatibility.Tests",
+        "tests/DTMAPI.Core.Tests",
+        "tests/DTMAPI.DebugConsole.Tests",
+        "tests/DTMAPI.InstallDoctor.Tests",
+        "tests/DTMAPI.IntegrationTests",
+        "tests/DTMAPI.Mine.Tests",
+        "tests/DTMAPI.MoreEquipmentSlots.Tests",
+        "tests/DTMAPI.MoreSaves.Tests",
+        "tests/DTMAPI.MultiPlatformInstaller.Tests",
+        "tests/DTMAPI.OilContent.Tests",
+        "tests/DTMAPI.QaUnitTests",
+        "tests/DTMAPI.RuntimeIntegration.Tests",
+        "tests/DTMAPI.SourceArbitration.Tests",
+        "tests/DTMAPI.SourceContracts.Tests",
+        "tests/DTMAPI.StrongPlantingGun.Tests",
+        "tests/DTMAPI.UnitTests",
+        "tests/DTMAPI.Zoom.Tests",
+        "tests/mod-fixtures",
+        "tests/Shared"
+      ],
+      "action": "include",
+      "extensions": [
+        ".cs",
+        ".csproj",
+        ".props",
+        ".targets",
+        ".json",
+        ".txt",
+        ".md"
+      ],
+      "reason": "Test and fixture source. Publication of source does not select an execution scope."
+    },
+    {
+      "id": "products",
+      "paths": [
+        "products/first-party/ActionSpeed",
+        "products/first-party/AnimalHusbandryProgress",
+        "products/first-party/AnimalPack",
+        "products/first-party/AutoFishing",
+        "products/first-party/ChestLocatorEnhancer",
+        "products/first-party/DebugConsole",
+        "products/first-party/FishBreedingAssistant",
+        "products/first-party/ManboCardboardAudio",
+        "products/first-party/Mine",
+        "products/first-party/MoreEquipmentSlots",
+        "products/first-party/MoreSaves",
+        "products/first-party/Oil",
+        "products/first-party/OneActionComplete",
+        "products/first-party/StrongPlantingGun",
+        "products/first-party/Zoom"
+      ],
+      "action": "include",
+      "extensions": [
+        ".cs",
+        ".csproj",
+        ".json",
+        ".ps1",
+        ".md"
+      ],
+      "reason": "Linked product/QA source and authored content. Media requires exact disposition."
+    },
+    {
+      "id": "sdk",
+      "paths": [
+        "author-sdk"
+      ],
+      "action": "include",
+      "extensions": [
+        ".cs",
+        ".csproj",
+        ".json",
+        ".props",
+        ".targets",
+        ".ps1",
+        ".template",
+        ".txt",
+        ".md"
+      ],
+      "reason": "Templates, contracts, available frozen targets and guide/notice source; internal snapshot has a more specific exclusion."
+    },
+    {
+      "id": "sdk-internal-snapshots",
+      "paths": [
+        "author-sdk/internal-snapshots"
+      ],
+      "action": "exclude",
+      "reason": "Retired internal candidate recipes; not current target-catalog inputs."
+    },
+    {
+      "id": "source-text-support",
+      "paths": [
+        "tools/scripts/game-smoke"
+      ],
+      "action": "include",
+      "extensions": [
+        ".ps1"
+      ],
+      "reason": "Unmodified source modules consumed by public C# source/synthetic tests; live game execution is outside PublicWindows."
+    },
+    {
+      "id": "public-tooling",
+      "paths": [
+        "tools/public-source"
+      ],
+      "action": "include",
+      "extensions": [
+        ".ps1",
+        ".json",
+        ".md"
+      ],
+      "reason": "Shared policy, boundary/link checks and Git-object export tooling proposed by this design."
+    },
+    {
+      "id": "public-guides",
+      "paths": [
+        "docs/zh-CN"
+      ],
+      "action": "include",
+      "extensions": [
+        ".md"
+      ],
+      "reason": "One canonical source for the small contributor/player navigation."
+    },
+    {
+      "id": "public-issue-templates",
+      "paths": [
+        ".github/ISSUE_TEMPLATE"
+      ],
+      "action": "include",
+      "extensions": [
+        ".md",
+        ".yml",
+        ".yaml"
+      ],
+      "reason": "Contributor templates only; other new workflows require an explicit rule."
+    },
+    {
+      "id": "third-party-license-material",
+      "paths": [
+        "licenses"
+      ],
+      "action": "include",
+      "extensions": [
+        ".txt",
+        ".md",
+        ".json"
+      ],
+      "reason": "Corresponding-source archives additionally require exact binary-input records."
+    },
+    {
+      "id": "root-document-sources",
+      "paths": [
+        "docs/public-root"
+      ],
+      "action": "exclude",
+      "reason": "Only the four exact mappings export these files."
+    },
+    {
+      "id": "internal-governance",
+      "paths": [
+        ".agents",
+        ".codex",
+        "docs",
+        "archive",
+        "author-docs"
+      ],
+      "action": "exclude",
+      "reason": "Internal plans, evidence and history; exact shared public-document exception is listed separately."
+    },
+    {
+      "id": "reference-copies",
+      "paths": [
+        "references/doloc-town/official-workshop-docs"
+      ],
+      "action": "exclude",
+      "reason": "Official copies, crawls, tables and media lack an established redistribution grant."
+    },
+    {
+      "id": "reference-notes",
+      "paths": [
+        "references/doloc-town/research-notes"
+      ],
+      "action": "exclude",
+      "reason": "Authored research is distinct from copied content but not a declared public build input."
+    },
+    {
+      "id": "private-reference-inputs",
+      "paths": [
+        "references/doloc-town/reverse",
+        "references/doloc-town/own-mod-sources",
+        "references/third-party-mods",
+        "references/stardew-smapi"
+      ],
+      "action": "exclude",
+      "reason": "Game bytes, decompiled/extracted content, old implementation and unlicensed third-party samples."
+    },
+    {
+      "id": "remaining-internal-reference-and-tooling",
+      "paths": [
+        "references",
+        "tools/scripts",
+        "tools/release",
+        "tools/workspace-history",
+        "tools/portable-reverse-capture",
+        "tools/reverse-capture",
+        "tools/native-function-map",
+        "assets",
+        "src/DTMAPI.ConsoleCommands",
+        "src/DTMAPI.ContentPatcher",
+        "src/DTMAPI.TemplateMod"
+      ],
+      "action": "exclude",
+      "reason": "Not required by the declared public scope; exact dependency exceptions override this directory disposition."
+    }
+  ],
+  "exactFiles": [
+    {
+      "id": "root-build-and-license",
+      "action": "include",
+      "required": true,
+      "paths": [
+        "DTMAPI.sln",
+        "Directory.Build.props",
+        "global.json",
+        ".gitattributes",
+        ".gitignore",
+        "LICENSE",
+        "NOTICE.md"
+      ],
+      "reason": "Root MSBuild/toolchain and legal source."
+    },
+    {
+      "id": "optional-root-build-config",
+      "action": "include",
+      "required": false,
+      "paths": [
+        "Directory.Build.targets",
+        "NuGet.Config"
+      ],
+      "reason": "If introduced, retain shared build configuration without transformation."
+    },
+    {
+      "id": "public-ci",
+      "action": "include",
+      "required": true,
+      "paths": [
+        ".github/workflows/public-source.yml"
+      ],
+      "reason": "The one Windows public CI entry, updated in source to use PublicWindows."
+    },
+    {
+      "id": "optional-pr-template",
+      "action": "include",
+      "required": false,
+      "paths": [
+        ".github/PULL_REQUEST_TEMPLATE.md"
+      ],
+      "reason": "Plain contributor PR instructions."
+    },
+    {
+      "id": "internal-root",
+      "action": "exclude",
+      "paths": [
+        "AGENTS.md",
+        "PROJECT.md",
+        "README.md"
+      ],
+      "reason": "Internal entry/agent policy; public README uses a mapping."
+    },
+    {
+      "id": "source-navigation",
+      "action": "include",
+      "required": true,
+      "paths": [
+        "src/README.md",
+        "tests/README.md",
+        "products/first-party/README.md"
+      ],
+      "reason": "Same-source public navigation, after one-time link/scope corrections."
+    },
+    {
+      "id": "shared-build-inputs",
+      "action": "include",
+      "required": true,
+      "paths": [
+        "docs/api/public-api-matrix.md",
+        "tools/release/dtmapi-runtime-version.props",
+        "tools/release/dtmapi-product-catalog.json",
+        "tools/release/dtmapi-mod-publish-zh.json"
+      ],
+      "reason": "Actual SDK Content, Core/Doctor resources and product source-test inputs; provenance targets are not loaded."
+    },
+    {
+      "id": "public-build-and-test-tools",
+      "action": "include",
+      "required": true,
+      "paths": [
+        "tools/scripts/build.ps1",
+        "tools/scripts/common.ps1",
+        "tools/scripts/test-common.ps1",
+        "tools/scripts/test-public-source.ps1",
+        "tools/scripts/test-unit.ps1",
+        "tools/scripts/prepare-unit-test-dependencies.ps1",
+        "tools/scripts/prepare-author-sdk-compatibility.ps1",
+        "tools/scripts/author-sdk-compatibility.ps1",
+        "tools/scripts/prepare-author-sdk.ps1",
+        "tools/scripts/author-sdk-preparation.ps1",
+        "tools/scripts/build-author-sdk.ps1",
+        "tools/scripts/author-sdk-release-common.ps1",
+        "tools/scripts/check-author-sdk-release.ps1",
+        "tools/scripts/release-common.ps1",
+        "tools/scripts/product-projections.ps1",
+        "tools/scripts/workspace-preflight.ps1",
+        "tools/scripts/preflight-workspace.ps1",
+        "tools/scripts/prepare-workspace.ps1",
+        "tools/scripts/probe-powershell-host.ps1",
+        "tools/scripts/test-dotnet-toolchain.ps1",
+        "tools/scripts/test-unit-routing.ps1",
+        "tools/scripts/test-author-sdk-compatibility.ps1",
+        "tools/scripts/test-author-sdk-preparation.ps1",
+        "tools/scripts/test-workspace-preflight.ps1",
+        "tools/scripts/test-product-projections.ps1"
+      ],
+      "reason": "Public entry/preparation/helpers and selected PowerShell tests. Execution membership is not defined by this allow rule."
+    },
+    {
+      "id": "unmodified-script-fixtures",
+      "action": "include",
+      "required": true,
+      "paths": [
+        "tools/scripts/run-game-smoke.ps1",
+        "tools/scripts/dump-governance.ps1",
+        "tools/scripts/install-to-game.ps1",
+        "tools/scripts/check-product-catalog.ps1",
+        "tools/scripts/analyze-startup-evidence.ps1",
+        "tools/scripts/run-batch5-gc-ladder.ps1",
+        "tools/scripts/test-batch5-gc-ladder.ps1",
+        "tools/scripts/candidate11-source-transaction.ps1",
+        "tools/scripts/run-moreequipment-cold-recovery-acceptance.ps1",
+        "tools/scripts/run-batch6-autofishing-behavior-matrix.ps1",
+        "tools/scripts/run-batch6-autofishing-manager-lifecycle.ps1"
+      ],
+      "reason": "C# test consumers inspect source and exercise early synthetic argument gates; not a public live-game capability."
+    },
+    {
+      "id": "internal-runner-guide",
+      "action": "exclude",
+      "paths": [
+        "tools/scripts/game-smoke/README.md"
+      ],
+      "reason": "Internal live-run protocol documentation is not consumed by the source fixture tests."
+    },
+    {
+      "id": "unlicensed-optional-product-media",
+      "action": "exclude",
+      "paths": [
+        "products/first-party/ActionSpeed/icon.png",
+        "products/first-party/ActionSpeed/preview.png",
+        "products/first-party/AnimalPack/icon.png",
+        "products/first-party/AnimalPack/preview.png",
+        "products/first-party/AutoFishing/icon.png",
+        "products/first-party/AutoFishing/preview.png",
+        "products/first-party/DebugConsole/icon.png",
+        "products/first-party/DebugConsole/preview.png",
+        "products/first-party/ManboCardboardAudio/icon.png",
+        "products/first-party/ManboCardboardAudio/preview.png",
+        "products/first-party/OneActionComplete/icon.png",
+        "products/first-party/OneActionComplete/preview.png",
+        "products/first-party/Zoom/icon.png",
+        "products/first-party/Zoom/preview.png",
+        "products/first-party/ManboCardboardAudio/assets/manbo.wav"
+      ],
+      "reason": "No redistribution record established in this design. PublicWindows must not select a consuming asset/project."
+    }
+  ],
+  "rootMappings": [
+    {
+      "source": "docs/public-root/README.md",
+      "target": "README.md",
+      "required": true,
+      "reverse": true,
+      "replaceInternalSource": "README.md"
+    },
+    {
+      "source": "docs/public-root/README.en.md",
+      "target": "README.en.md",
+      "required": true,
+      "reverse": true,
+      "replaceInternalSource": null
+    },
+    {
+      "source": "docs/public-root/CONTRIBUTING.md",
+      "target": "CONTRIBUTING.md",
+      "required": true,
+      "reverse": true,
+      "replaceInternalSource": null
+    },
+    {
+      "source": "docs/public-root/CHANGELOG.md",
+      "target": "CHANGELOG.md",
+      "required": true,
+      "reverse": true,
+      "replaceInternalSource": null
+    }
+  ],
+  "binaryInputs": [
+    {
+      "id": "bepinex-fixture",
+      "path": "tools/release/bootstrap/BepInEx_win_x64_5.4.23.5.zip",
+      "action": "include",
+      "required": true,
+      "sha256": "82f9878551030f54657792c0740d9d51a09500eeae1fba21106b0c441e6732c4",
+      "reviewState": "hold",
+      "reason": "Required Harmony fixture; original archive includes Doorstop and currently has no license texts.",
+      "sourceUrl": "https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5",
+      "requiredCompanionPaths": [
+        "licenses/BepInEx-5.4.23.5/NOTICE.md",
+        "licenses/BepInEx-5.4.23.5/BepInEx-LICENSE.txt",
+        "licenses/BepInEx-5.4.23.5/HarmonyX-LICENSE.txt",
+        "licenses/BepInEx-5.4.23.5/MonoMod-LICENSE.txt",
+        "licenses/BepInEx-5.4.23.5/Cecil-LICENSE.txt",
+        "licenses/BepInEx-5.4.23.5/UnityDoorstop-LICENSE.txt",
+        "licenses/BepInEx-5.4.23.5/UnityDoorstop-corresponding-source.tar.gz"
+      ],
+      "pending": [
+        "Match actual ZIP and every redistributed member to upstream identities, including 0Harmony20 and HarmonyXInterop.",
+        "Provide exact notices and complete corresponding Doorstop source/build inputs; review any bundled dependency notice."
+      ]
+    },
+    {
+      "id": "doorstop-corresponding-source",
+      "path": "licenses/BepInEx-5.4.23.5/UnityDoorstop-corresponding-source.tar.gz",
+      "action": "include",
+      "required": true,
+      "sha256": null,
+      "reviewState": "hold",
+      "reason": "A draft placeholder, not existing material or approval. Resolve exact complete source and digest before activating policy.",
+      "requiredCompanionPaths": [
+        "licenses/BepInEx-5.4.23.5/NOTICE.md",
+        "licenses/BepInEx-5.4.23.5/UnityDoorstop-LICENSE.txt"
+      ]
+    }
+  ],
+  "activationRequirements": [
+    "Implement and test schema/path/binary validation before changing lifecycle to active.",
+    "Commit accepted MSBuild sources and public entry changes in the chosen source commit.",
+    "Complete finite native declaration-stub provenance and public-document review.",
+    "Resolve every binary hold and companion file; null digests are forbidden in an active policy.",
+    "Verify PublicWindows on a clean tree, with all selected inputs satisfied and no private/environment/history fallback."
+  ]
+}

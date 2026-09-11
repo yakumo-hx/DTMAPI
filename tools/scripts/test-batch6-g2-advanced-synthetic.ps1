@@ -127,6 +127,18 @@ function Read-GitText([string] $commit, [string] $relativePath) {
     return ($lines -join "`n") + "`n"
 }
 
+function Assert-HistoricalAuthorContains([string] $relativePath, [string[]] $tokens) {
+    # G2's retained proof refers to its original compiler/fixture, not the first
+    # public SDK's standard MSBuild implementation. Current behavior is exercised
+    # by the SDK suite; the existing Runtime/Doctor checks below stay current.
+    $text = Read-GitText ([string]$contract.phaseState.g2ImplementationCommit) $relativePath
+    foreach ($token in @($tokens)) {
+        if ($text.IndexOf($token, [StringComparison]::Ordinal) -lt 0) {
+            Add-Failure "Historical G2 $relativePath is missing required token: $token"
+        }
+    }
+}
+
 function Test-GitCommand([string[]] $arguments) {
     $previousErrorAction = $ErrorActionPreference
     try {
@@ -363,8 +375,9 @@ if ($null -ne $contract) {
 
     Assert-Contains 'author-sdk/schemas/manifest.schema.json' @('CodeModKind', 'Strict', 'Advanced', 'ContentPack')
     Assert-Contains 'author-sdk/schemas/dtmapi-author.schema.json' @('schemaVersion', 'targetDtmApiVersion', 'codeModKind', 'referencePolicyId')
-    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' @('ProjectBuildInputs.Validate(context, diagnostics)', 'Advanced')
-    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectBuildInputs.cs' @('SDK160', 'AuthorCodeModKind.Strict')
+    Assert-HistoricalAuthorContains 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' @('ScanForbiddenReferences(context, diagnostics)', 'Advanced', 'SDK160', 'AuthorCodeModKind.Strict')
+    Assert-Contains 'src/DTMAPI.AuthorSdk/ProjectValidator.cs' @('StandardBuildIntegration.ValidateAuthorInput', 'Advanced')
+    Assert-Contains 'src/DTMAPI.AuthorSdk/CodeModBuilder.cs' @('StandardBuildIntegration.Build')
     Assert-Contains 'src/DTMAPI.Core/Manifesting/ManagedModClassification.cs' @('AdvancedReferencePolicyAuthority', 'Assembly.LoadFrom', 'bundled-native-runtime-dependency')
     Assert-Contains 'src/DTMAPI.Core/Runtime/AdvancedHarmonySupervisor.cs' @('dtmapi.mod.', 'restart', 'late')
     Assert-Contains 'src/DTMAPI.InstallDoctor/AdvancedReferencePolicyAuthority.cs' @('RegistryResourceName', 'policySha256', 'embedded Advanced reference policy')
@@ -372,7 +385,8 @@ if ($null -ne $contract) {
     Assert-Contains 'author-sdk/schemas/doctor-report.schema.json' @('managedIdentity', 'provenanceStatus', 'nativeRisk', 'referenceCompatibility', 'gameCompatibility', 'expectedHarmonyOwner', 'restartPolicy')
     Assert-Contains 'src/DTMAPI.Core/Manager/ManagerPageRowFormatter.cs' @('identity=', 'provenance=', 'nativeRisk=', 'gameCompatibility=', 'restart=')
     Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/manifest.json' @('"Type": "CodeMod"', '"CodeModKind": "Advanced"')
-    Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/dtmapi.author.json' @('"schemaVersion": 2', '"codeModKind": "Advanced"')
+    Assert-HistoricalAuthorContains 'testmods/DTMAPI.AdvancedFixture/dtmapi.author.json' @('"schemaVersion": 2', '"codeModKind": "Advanced"')
+    Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/dtmapi.author.json' @('"schemaVersion": 4', '"codeModKind": "Advanced"', '"projectFile"')
     Assert-Contains 'tests/mod-fixtures/qa/AdvancedCodeMod/src/ModEntry.cs' @('Has087DemoData', 'dtmapi.mod.dtmapi.advancedfixture', 'WrongOwner', 'DuplicatePatch', 'EntryFailure', 'LateOwnerDrift')
     Assert-Contains 'tools/scripts/test.ps1' @('test-unit.ps1', 'DTMAPI.InstallDoctor.Tests\DTMAPI.InstallDoctor.Tests.csproj', 'DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj', 'test-batch6-g2-advanced-synthetic.ps1', '-AllowInProgress')
     foreach ($projectPath in @('src/DTMAPI.AuthorSdk/DTMAPI.AuthorSdk.csproj', 'src/DTMAPI.Core/DTMAPI.Core.csproj', 'src/DTMAPI.InstallDoctor/DTMAPI.InstallDoctor.csproj')) { Assert-Contains $projectPath @('advanced-reference-policies', 'EmbeddedResource') }

@@ -1,12 +1,15 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "projectKind": "CodeMod",
   "targetDtmApiVersion": "0.5.5",
-  "sourceDirectory": "src",
-  "contentDirectory": "content",
-  "assemblyName": "Yuuka.DTMAPI.AnimalHusbandryProgress",
   "publish": {
-    "tags": ["Mod", "Gameplay", "Functional", "DTMAPI", "Chinese"],
+    "tags": [
+      "Mod",
+      "Gameplay",
+      "Functional",
+      "DTMAPI",
+      "Chinese"
+    ],
     "localizedName": {
       "schinese": "DTMAPI牧铃隐藏产物进度",
       "tchinese": "DTMAPI牧鈴隱藏產物進度",
@@ -21,6 +24,10 @@
   "codeModKind": "Advanced",
   "advanced": {
     "referencePolicyId": "doloctown-23762374-animalhusbandryprogress-v1",
-    "references": ["0Harmony", "Assembly-CSharp"]
-  }
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  },
+  "projectFile": "Yuuka.DTMAPI.AnimalHusbandryProgress.csproj"
 }

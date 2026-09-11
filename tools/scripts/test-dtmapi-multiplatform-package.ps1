@@ -8,6 +8,7 @@ param(
     [string] $PreviewPath = '',
     [string] $EvidencePath = '',
     [switch] $AllowWorkshopControlFile,
+    [switch] $AllowDeliveredWorkshopControlFile,
     [switch] $SkipPowerShell51Syntax,
     [switch] $SkipBashSyntax,
     [switch] $Quiet
@@ -119,6 +120,9 @@ function Test-DtmApiMultiPlatformBashSyntax {
 
 $repo = Get-DtmApiMultiPlatformRepoRoot
 $package = [System.IO.Path]::GetFullPath($PackageRoot)
+if ($AllowWorkshopControlFile -and $AllowDeliveredWorkshopControlFile) {
+    throw 'Select either the local upload control-file allowance or the observed subscription allowance.'
+}
 if ([string]::IsNullOrWhiteSpace($AcceptedPackageRoot)) {
     $AcceptedPackageRoot = Get-DtmApiMultiPlatformDefaultAcceptedPackageRoot
 }
@@ -173,7 +177,7 @@ foreach ($relative in @(
     ([string]$packageMetadata.hostManifestPackagePath).Replace('\', '/'),
     ([string]$packageMetadata.runtimePackageManifestPath).Replace('\', '/')
 )) { $expectedPaths.Add($relative) | Out-Null }
-if ($AllowWorkshopControlFile) {
+if ($AllowWorkshopControlFile -or $AllowDeliveredWorkshopControlFile) {
     $expectedPaths.Add('workshop.json') | Out-Null
 }
 $expected = [string[]]$expectedPaths.ToArray()
@@ -187,14 +191,14 @@ Assert-DtmApiMultiPlatformAudit -Condition ($difference.Count -eq 0 -and $actual
 
 $workshopControlFiles = @(Get-ChildItem -LiteralPath $package -Filter 'workshop.json' -File -Force -Recurse)
 $workshopControlReceipt = $null
-if ($AllowWorkshopControlFile) {
-    Assert-DtmApiMultiPlatformAudit -Condition ($workshopControlFiles.Count -eq 1 -and [string]::Equals($workshopControlFiles[0].FullName, (Join-Path $package 'workshop.json'), [System.StringComparison]::OrdinalIgnoreCase)) -Message 'official local upload must contain exactly one root workshop.json.'
+if ($AllowWorkshopControlFile -or $AllowDeliveredWorkshopControlFile) {
+    Assert-DtmApiMultiPlatformAudit -Condition ($workshopControlFiles.Count -eq 1 -and [string]::Equals($workshopControlFiles[0].FullName, (Join-Path $package 'workshop.json'), [System.StringComparison]::OrdinalIgnoreCase)) -Message 'control-file allowance requires exactly one root workshop.json.'
     $workshopControlReceipt = Assert-DtmApiMultiPlatformWorkshopControlFile `
         -Path $workshopControlFiles[0].FullName `
         -ExpectedWorkshopId ([string]$packageMetadata.workshopId)
 }
 else {
-    Assert-DtmApiMultiPlatformAudit -Condition ($workshopControlFiles.Count -eq 0) -Message 'repository candidate and Steam-delivered package must not contain workshop.json.'
+    Assert-DtmApiMultiPlatformAudit -Condition ($workshopControlFiles.Count -eq 0) -Message 'workshop.json requires an explicit local upload or exact observed subscription allowance.'
 }
 $zipPaths = @($actual | Where-Object { $_.EndsWith('.zip', [System.StringComparison]::OrdinalIgnoreCase) })
 Assert-DtmApiMultiPlatformAudit -Condition ($zipPaths.Count -eq 1 -and [string]::Equals($zipPaths[0], 'Content/.tools/bepinex/BepInEx_win_x64_5.4.23.5.zip', [System.StringComparison]::Ordinal)) -Message 'candidate must contain only the accepted internal BepInEx ZIP and no outer/manual-extraction archive.'
@@ -396,8 +400,16 @@ $catalogRows = @($catalog.runtime.distributions | Where-Object { [string]::Equal
 Assert-DtmApiMultiPlatformAudit -Condition ($catalogRows.Count -eq 1) -Message 'Product Catalog must contain exactly one dtmapi-multiplatform Runtime distribution row.'
 $catalogRow = $catalogRows[0]
 Assert-DtmApiMultiPlatformAudit -Condition ($null -eq $catalogRow.PSObject.Properties['uniqueId']) -Message 'Distribution rows must not invent a second Runtime UniqueID.'
-Assert-DtmApiMultiPlatformAudit -Condition ([string]::Equals([string]$catalogRow.workshopId, $script:DtmApiMultiPlatformWorkshopId, [System.StringComparison]::Ordinal) -and [string]::Equals([string]$catalogRow.workshopManifestId, '5128092030483852458', [System.StringComparison]::Ordinal)) -Message 'Multi-platform Catalog Workshop identity is invalid.'
-Assert-DtmApiMultiPlatformAudit -Condition ([string]::Equals([string]$catalogRow.artifactState, 'SteamPublishedObservedExact', [System.StringComparison]::Ordinal) -and [string]::Equals([string]$catalogRow.candidateState, 'LocalMetadataSuccessorPendingUpload', [System.StringComparison]::Ordinal) -and [string]::Equals([string]$catalogRow.uploadAuthorization, 'None', [System.StringComparison]::Ordinal)) -Message 'Multi-platform Catalog publication/candidate state is invalid.'
+if ($AllowDeliveredWorkshopControlFile) {
+    Assert-DtmApiMultiPlatformAudit -Condition ($SourceKind -eq 'Candidate' -and $catalogRow.workshopControlFileDelivered -eq $true -and $info.version -ceq $catalogRow.releaseVersion) -Message 'The delivered control file requires the current observed schema-2 release.'
+    Assert-DtmApiMultiPlatformAudit -Condition ($packageReceipt.FileCount -eq $catalogRow.playerPayloadFileCount -and $packageReceipt.Bytes -eq $catalogRow.playerPayloadBytes -and $packageReceipt.TreeSha256 -ceq $catalogRow.playerPayloadTreeSha256 -and $workshopControlReceipt.Bytes -eq $catalogRow.workshopControlFileBytes -and $workshopControlReceipt.Sha256 -ceq $catalogRow.workshopControlFileSha256) -Message 'Delivered subscription bytes differ from the frozen content/control receipts.'
+}
+if ($SourceKind -eq 'ObservedPublished' -and $catalogRow.PSObject.Properties['observed061Baseline']) {
+    # Schema 1 retains its original publication provenance after the current release advances.
+    $catalogRow = $catalogRow.observed061Baseline
+}
+Assert-DtmApiMultiPlatformAudit -Condition ([string]::Equals([string]$catalogRow.workshopId, $script:DtmApiMultiPlatformWorkshopId, [System.StringComparison]::Ordinal) -and [string]$catalogRow.workshopManifestId -match '^\d+$') -Message 'Multi-platform Catalog Workshop identity is invalid.'
+Assert-DtmApiMultiPlatformAudit -Condition ([string]::Equals([string]$catalogRow.artifactState, 'SteamPublishedObservedExact', [System.StringComparison]::Ordinal) -and [string]$catalogRow.candidateState -cin @('LocalMetadataSuccessorPendingUpload', 'PublishedMetadataSuccessor') -and [string]::Equals([string]$catalogRow.uploadAuthorization, 'None', [System.StringComparison]::Ordinal)) -Message 'Multi-platform Catalog publication/candidate state is invalid.'
 if ($SourceKind -eq 'ObservedPublished') {
 Assert-DtmApiMultiPlatformAudit -Condition ([int]$catalogRow.candidateFileCount -eq [int]$packageReceipt.FileCount -and [long]$catalogRow.candidateBytes -eq [long]$packageReceipt.Bytes -and [string]::Equals([string]$catalogRow.candidateTreeSha256, [string]$packageReceipt.TreeSha256, [System.StringComparison]::OrdinalIgnoreCase)) -Message 'Multi-platform Catalog candidate receipt does not match this package.'
 Assert-DtmApiMultiPlatformAudit -Condition ([string]::Equals([string]$catalogRow.sourcePlayerPayloadTreeSha256, $script:DtmApiMultiPlatformPublishedPayloadTreeSha256, [System.StringComparison]::OrdinalIgnoreCase) -and [string]::Equals([string]$catalogRow.sharedPayloadTreeSha256, $script:DtmApiMultiPlatformSharedTreeSha256, [System.StringComparison]::OrdinalIgnoreCase)) -Message 'Multi-platform Catalog source/shared Runtime receipts are invalid.'

@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "manifestId": "dtmapi-managed-subscription-20260830T110019Z",
-  "observedAtUtc": "2026-08-30T11:00:19Z",
+  "manifestId": "dtmapi-managed-subscription-20260911T150547Z",
+  "observedAtUtc": "2026-09-11T15:05:47Z",
   "steamAppId": "2285550",
   "source": {
     "kind": "SteamAppWorkshopManifest",
     "pathConvention": "<SteamLibrary>/steamapps/workshop/appworkshop_2285550.acf",
-    "lastWriteUtc": "2026-08-30T10:51:39.0095695Z",
-    "sha256": "f757f6afb21c42eea0909ea17f86a7c8b6b68648864396888e09f4d29fbe6f66",
-    "installedItemCount": 53,
-    "sizeOnDisk": 116721449,
+    "lastWriteUtc": "2026-09-11T14:59:50.2643823Z",
+    "sha256": "b62ab9b0625c762581c0ef927e3fc3d859f826d1a343dd1de30f42cbf9cbdf99",
+    "installedItemCount": 52,
+    "sizeOnDisk": 117258189,
     "needsUpdate": false,
     "needsDownload": false
   },
   "authority": {
     "catalog": "tools/release/dtmapi-product-catalog.json",
-    "latestReleaseUpdate": "docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md",
+    "latestReleaseUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
     "selection": "The published Windows Runtime distribution, additional Runtime distributions listed below, plus Catalog rows whose role is PublishedProduct and whose WorkshopID occurs in both WorkshopItemsInstalled and WorkshopItemDetails in the captured native Steam manifest.",
     "meaning": "This is a local Steam subscription-membership and installed-manifest observation. It is not an admission registry and does not prove public visibility, DTMAPI enablement, source selection, assembly loading or behavior.",
     "cacheWarning": "The Workshop content directory is Steam-managed mutable cache. Directory bytes may be locally staged or newer than remote publication; membership and installed manifest IDs remain distinct from public release authorization."
@@ -25,16 +25,16 @@
     "uniqueId": "DTMAPI.Runtime",
     "kind": "Runtime",
     "workshopId": "3743016467",
-    "manifestId": "918505309011394484",
-    "installedBytes": 3866890,
-    "steamTimeUpdated": 1787185394,
-    "releaseVersion": "0.6.1",
-    "binaryFileVersion": "0.6.1.0",
+    "manifestId": "8011095289886758879",
+    "installedBytes": 4225883,
+    "steamTimeUpdated": 1789138611,
+    "releaseVersion": "0.7.0",
+    "binaryFileVersion": "0.7.0.0",
     "steamDeliveredFileCount": 29,
-    "steamDeliveredTreeSha256": "846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88",
+    "steamDeliveredTreeSha256": "a142e9ff623fd58c15f9d3c7532ecf65213c39f93aa8c23f5b16269ba1a8c491",
     "playerPayloadFileCount": 28,
-    "playerPayloadBytes": 3866857,
-    "playerPayloadTreeSha256": "b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa",
+    "playerPayloadBytes": 4225850,
+    "playerPayloadTreeSha256": "b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b",
     "additionalDistributions": [
       {
         "distributionId": "dtmapi-multiplatform",
@@ -42,16 +42,21 @@
         "uniqueId": "DTMAPI.Runtime",
         "kind": "RuntimeDistribution",
         "workshopId": "3792681186",
-        "manifestId": "5128092030483852458",
-        "installedBytes": 29770736,
-        "steamTimeUpdated": 1788083449,
-        "steamDeliveredFileCount": 36,
-        "steamDeliveredBytes": 29770736,
-        "steamDeliveredTreeSha256": "e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4",
-        "workshopControlFileDelivered": false,
-        "contentParity": "RepositoryCandidateAndLocalUploadContentExactBeforeLocalMetadataSuccessor"
+        "manifestId": "6229085302177299134",
+        "installedBytes": 30186721,
+        "steamTimeUpdated": 1789138625,
+        "steamDeliveredFileCount": 38,
+        "steamDeliveredBytes": 30186721,
+        "steamDeliveredTreeSha256": "cacf19e7b952e19d479ce5f73095d188474e584de7246fc9373df9cf672f6c57",
+        "workshopControlFileDelivered": true,
+        "contentParity": "ExactTestedCandidateAndLocalUpload",
+        "releaseVersion": "0.7.0",
+        "playerPayloadFileCount": 37,
+        "playerPayloadBytes": 30186688,
+        "playerPayloadTreeSha256": "bf89edc133d38f463be4ab79e53585d1a0b8ca2159791306a9dec93eef487033"
       }
-    ]
+    ],
+    "steamDeliveredBytes": 4225883
   },
   "managedProducts": [
     {
@@ -68,9 +73,20 @@
       "uniqueId": "DTMAPI.DebugConsoleMod",
       "kind": "ManagedProduct",
       "workshopId": "3742714442",
-      "manifestId": "6693520158465470410",
-      "installedBytes": 610335,
-      "steamTimeUpdated": 1787440923
+      "installedReleaseVersion": "1.1.3",
+      "reobservedAtUtc": "2026-09-11T15:05:47Z",
+      "publicationUpdate": "docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md",
+      "note": "Exact current 1.1.3 native subscription, matching the tested SDK package; previous 1.1.1/1.1.2 observations remain in their original Updates.",
+      "manifestId": "2560240081132681960",
+      "installedBytes": 629035,
+      "steamTimeUpdated": 1789138638,
+      "releaseVersion": "1.1.3",
+      "steamDeliveredFileCount": 27,
+      "steamDeliveredBytes": 629035,
+      "steamDeliveredTreeSha256": "38a3e7241c39c55e516bb978e57b8cb9b50b80d299f65417e39ffc666184c784",
+      "playerPayloadFileCount": 26,
+      "playerPayloadBytes": 629002,
+      "playerPayloadTreeSha256": "b7ccd5e66b71fe3de51f622a9554b915e0d9cac05ece4eff81b4409619517757"
     },
     {
       "catalogId": "more-saves",
@@ -86,9 +102,9 @@
       "uniqueId": "Yuuka.DTMAPI.ActionSpeed",
       "kind": "ManagedProduct",
       "workshopId": "3742763309",
-      "manifestId": "1425556175612683122",
-      "installedBytes": 368423,
-      "steamTimeUpdated": 1786000698
+      "manifestId": "7366189912593910042",
+      "installedBytes": 369405,
+      "steamTimeUpdated": 1786032196
     },
     {
       "catalogId": "one-action-complete",

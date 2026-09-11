@@ -15,6 +15,7 @@ Use the public CLI to create an ordinary project, then replace its generated Ent
 
 ```text
 dtmapi-author new codemod LampMigration --id Linden.OldLampConsumer --name "Lamp migration" --author Linden --api-target 0.6.4
+dtmapi-author restore LampMigration --json
 dtmapi-author pack LampMigration --json
 ```
 

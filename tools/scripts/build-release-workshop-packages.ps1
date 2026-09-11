@@ -219,7 +219,11 @@ if (-not $ModsOnly) {
     $runtimeBuildSource = Assert-DtmApiRuntimeBuildSource -RepoRoot $repo -DotNetExe $runtimeDotNet -Projects $runtimeProjects -Configuration $Configuration -SkipBuild:$SkipBuild
 }
 if (-not $SkipBuild) {
-    & "$PSScriptRoot\build.ps1" -Configuration $Configuration -SkipTests -Rebuild:(!$ModsOnly)
+    $buildArguments = @{ Configuration = $Configuration; SkipTests = $true; Rebuild = (!$ModsOnly) }
+    # The source proof and the build use the same roots. Rebuild their dependency
+    # graph once; a Runtime-only package has no SDK/product/test project outputs.
+    if ($RuntimeOnly) { $buildArguments.Projects = $runtimeProjects }
+    & "$PSScriptRoot\build.ps1" @buildArguments
     if (-not $?) { throw 'Workshop source build failed.' }
 }
 if ($null -ne $runtimeBuildSource) {

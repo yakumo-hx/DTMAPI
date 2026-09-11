@@ -1,9 +1,9 @@
 # Runtime Workshop Installer Boundary
 
-Status: canonical source boundary for the published 0.6.1 distributions and the independent 0.7.0 multi-platform candidate. Publication observations remain in Catalog; candidate execution belongs to [Update 20260910-0008](../updates/2026/20260910-0008-multiplatform-070-candidate.md).
+Status: canonical source boundary for both published 0.7.0 distributions, retaining the observed 0.6.1 provenance branch. Current publication observations belong to Catalog and [Update 20260911-0011](../updates/2026/20260911-0011-runtime-y-hotfix-publication.md); candidate execution belongs to [Update 20260910-0008](../updates/2026/20260910-0008-multiplatform-070-candidate.md).
 
 Both published physical distributions install the same `DTMAPI.Runtime` product and the
-same accepted 0.6.1 Runtime DLL, compatibility-component and installed-tool
+same accepted 0.7.0 Runtime DLL, compatibility-component and installed-tool
 bytes; their outer package layouts and installer hosts differ. A distribution
 ID is package provenance, not another Mod `UniqueID`, product row, or
 managed-admission identity. The
@@ -126,16 +126,21 @@ that Bottle's `winhttp` library override to `Native, then Builtin`.
 
 The multi-platform distribution remains experimental until a real Steam Deck
 run proves the launch option, fresh BepInEx/DTMAPI startup log and clean
-restart. Steam subscription manifest `5128092030483852458` has already proved
+restart. The historical 0.6.1 subscription manifest `5128092030483852458` proved
 that the first 36-file download was byte-identical to both the repository
 candidate and local upload content: 29,770,736 bytes with normalized tree
 SHA-256 `e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4`.
-That proves delivery, not injection or behavior.
+The current 0.7.0 BOM-patch subscription observation is owned by [Update 20260911-0011](../updates/2026/20260911-0011-runtime-y-hotfix-publication.md); Update 20260911-0001 retains the first 0.7.0 release.
+These observations prove delivery, not injection or behavior.
 
 Steam's uploader owns one root `workshop.json` in the official local upload
 leaf. It must contain only `workshop_id=3792681186`; it is update-control state,
-not player content, and Steam does not deliver it in the subscription. The
-repository candidate and subscribed tree must remain free of `workshop.json`.
+not Runtime payload. The 0.6.1 subscription omitted it, but the observed 0.7.0
+subscription delivered the exact same root control file. Record the complete
+download and the content receipt excluding that file separately. Repository
+candidates remain free of `workshop.json`; a subscription audit can accept it
+only with `-AllowDeliveredWorkshopControlFile` and the current frozen Catalog
+content/control receipts. This allowance does not change installed ownership.
 When rebuilding the already-bound official local upload leaf, the package
 builder may preserve this exact validated file byte-for-byte, excludes it from
 the content receipt, and fails closed on a missing/other ID, nested copy,

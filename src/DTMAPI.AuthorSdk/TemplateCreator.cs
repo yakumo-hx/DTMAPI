@@ -10,90 +10,11 @@ namespace DTMAPI.AuthorSdk;
 
 internal static class TemplateCreator
 {
-    public static CommandReport MigrateBuild(ParsedCommand command)
-    {
-        command.RequireOnlyOptions();
-        if (command.Positionals.Count != 1) throw new CommandLineException("migrate-build requires one project directory.");
-        string root = PathSafety.FullPath(command.Positionals[0]);
-        CommandReport report = ProjectValidator.ValidateRoot(root, "migrate-build");
-        if (!report.Success) return report;
-        var context = ProjectValidator.LoadValidated(root, report.Diagnostics);
-        if (context.Kind != AuthorProjectKind.CodeMod) throw new CommandLineException("migrate-build requires a CodeMod.");
-        string[] projects = Directory.GetFiles(root, "*.csproj");
-        if (projects.Length != 1) throw new CommandLineException("migrate-build requires exactly one existing csproj.");
-        string path = projects[0];
-        var document = System.Xml.Linq.XDocument.Load(path);
-        string rootNamespace = document.Descendants("RootNamespace").LastOrDefault()?.Value ?? ToNamespace(context.Manifest.UniqueID);
-        string text = BuildProjectText(context, rootNamespace);
-        var projection = XDocument.Parse(text);
-        // Preserve author-owned compiler choices and their order/conditions when
-        // replacing the build delegation. Repeated migration stays idempotent.
-        var optionGroups = new List<XElement>();
-        foreach (var group in projection.Root!.Elements("PropertyGroup"))
-        {
-            var defaults = group.Elements().Where(p => ProjectCompilerSettings.IsOption(p.Name.LocalName) && !document.Descendants(p.Name).Any()).ToArray();
-            if (defaults.Length != 0) optionGroups.Add(new XElement("PropertyGroup", group.Attributes().Select(a => new XAttribute(a)), defaults.Select(p => new XElement(p))));
-        }
-        foreach (var group in document.Root!.Elements("PropertyGroup"))
-        {
-            var options = group.Elements().Where(p => ProjectCompilerSettings.IsOption(p.Name.LocalName)).ToArray();
-            if (options.Length != 0) optionGroups.Add(new XElement("PropertyGroup", group.Attributes().Select(a => new XAttribute(a)), options.Select(p => new XElement(p))));
-        }
-        projection.Descendants().Where(p => ProjectCompilerSettings.IsOption(p.Name.LocalName)).Remove();
-        projection.Root!.Add(optionGroups);
-        if (context.AuthorProject.Build is { } build)
-        {
-            var items = new XElement("ItemGroup");
-            foreach (var reference in build.ProjectReferences) items.Add(new XElement("ProjectReference", new XAttribute("Include", reference)));
-            foreach (var source in build.GeneratedSourceFiles) items.Add(new XElement("Compile", new XAttribute("Include", source)));
-            foreach (var resource in build.EmbeddedResources) items.Add(new XElement("EmbeddedResource", new XAttribute("Include", resource.Path), new XElement("LogicalName", resource.LogicalName)));
-            if (items.HasElements) projection.Root!.Add(items);
-        }
-        text = projection.ToString() + "\n";
-        try { ProjectBuildInputs.ValidateDocument(context, XDocument.Parse(text), path, report.Diagnostics); }
-        catch (System.Xml.XmlException ex) { report.Diagnostics.Add(new AuthorDiagnostic { Code = "SDK180", Severity = DiagnosticSeverity.Error, Path = path, Message = "Candidate build project is invalid XML: " + ex.Message }); }
-        if (report.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error))
-        {
-            report.Success = false;
-            return report;
-        }
-        if (XNode.DeepEquals(document, XDocument.Parse(text))) return report;
-        string backup = path + ".pre-unified-" + Guid.NewGuid().ToString("N") + ".bak";
-        string candidate = path + ".tmp-" + Guid.NewGuid().ToString("N");
-        try
-        {
-            File.Copy(path, backup, false);
-            File.WriteAllText(candidate, text, new UTF8Encoding(false));
-            File.Move(candidate, path, true);
-        }
-        finally { if (File.Exists(candidate)) File.Delete(candidate); }
-        report.OutputPath = path;
-        report.Values["backupPath"] = backup;
-        report.Diagnostics.Add(new AuthorDiagnostic { Code = "SDK000", Severity = DiagnosticSeverity.Info, Message = "Migrated IDE Build to the SDK CLI. Original csproj retained at backupPath; manifest and frozen target unchanged." });
-        return report;
-    }
-
-    internal static string SourceGlob(string sourceDirectory)
-    {
-        // MSBuild escapes literals before the recursive glob; XML escaping is separate.
-        string value = sourceDirectory.TrimEnd('/', '\\').Replace('/', '\\');
-        foreach (char special in new[] { '%', '$', '@', ';', '\'', '(', ')', '*', '?' })
-            value = value.Replace(special.ToString(), "%" + ((int)special).ToString("X2"), StringComparison.Ordinal);
-        return value + "\\**\\*.cs";
-    }
-
-    internal static string BuildProjectText(AuthorProjectContext context, string rootNamespace) =>
-        File.ReadAllText(Path.Combine(FindTemplateRoot("codemod"), "__UNIQUE_ID__.csproj.template"), Encoding.UTF8)
-            .Replace("{{ASSEMBLY_NAME_XML}}", Xml(context.AuthorProject.AssemblyName), StringComparison.Ordinal)
-            .Replace("{{ROOT_NAMESPACE}}", Xml(rootNamespace), StringComparison.Ordinal)
-            .Replace("{{SOURCE_GLOB_XML}}", Xml(SourceGlob(context.AuthorProject.SourceDirectory)), StringComparison.Ordinal)
-            .Replace("{{PAYLOAD_PATH_XML}}", AuthorApiTargetCatalog.Current.GetAvailable(context.ApiTarget).PayloadPath.Replace('/', '\\'), StringComparison.Ordinal);
-
     private static string Xml(string value) => System.Security.SecurityElement.Escape(value) ?? string.Empty;
 
     public static CommandReport Create(ParsedCommand command)
     {
-        if (command.Positionals.FirstOrDefault()?.Equals("library", StringComparison.OrdinalIgnoreCase) == true) return ProjectGraph.CreateLibrary(command);
+
         command.RequireOnlyOptions("id", "name", "author", "description", "version", "code-mod-kind", "api-target", "game-root", "native-references", "harmony-owner");
         if (command.Positionals.Count != 2)
             throw new CommandLineException("new requires a template kind and a new destination directory.");
@@ -149,10 +70,11 @@ internal static class TemplateCreator
                 ["{{AUTHOR_JSON}}"] = JsonSerializer.Serialize(author),
                 ["{{DESCRIPTION_JSON}}"] = JsonSerializer.Serialize(description),
                 ["{{VERSION_JSON}}"] = JsonSerializer.Serialize(version),
+                ["{{VERSION_XML}}"] = Xml(version),
                 ["{{ASSEMBLY_NAME_JSON}}"] = JsonSerializer.Serialize(uniqueId),
+                ["{{PROJECT_FILE_JSON}}"] = JsonSerializer.Serialize(uniqueId + ".csproj"),
                 ["{{ASSEMBLY_DLL_JSON}}"] = JsonSerializer.Serialize(uniqueId + ".dll"),
                 ["{{ASSEMBLY_NAME_XML}}"] = uniqueId,
-                ["{{SOURCE_GLOB_XML}}"] = SourceGlob("src"),
                 ["{{ROOT_NAMESPACE}}"] = ToNamespace(uniqueId),
                 ["{{ENTRY_TYPE_JSON}}"] = JsonSerializer.Serialize(ToNamespace(uniqueId) + ".ModEntry")
             };
@@ -180,14 +102,21 @@ internal static class TemplateCreator
             {
                 string authorPath = Path.Combine(staging, "dtmapi.author.json"), manifestPath = Path.Combine(staging, "manifest.json");
                 JsonObject authorDocument = JsonNode.Parse(File.ReadAllText(authorPath))!.AsObject();
-                authorDocument["schemaVersion"] = AuthorSdkContract.DependencyAuthorProjectSchemaVersion;
-                authorDocument["managedReferences"] = new JsonArray();
+                authorDocument["schemaVersion"] = StandardBuildIntegration.SchemaVersion;
                 JsonObject manifestDocument = JsonNode.Parse(File.ReadAllText(manifestPath))!.AsObject();
                 manifestDocument["DependencyContractVersion"] = 1;
                 File.WriteAllText(authorPath, authorDocument.ToJsonString(JsonSupport.StrictToolContract) + "\n", new UTF8Encoding(false));
                 File.WriteAllText(manifestPath, manifestDocument.ToJsonString(JsonSupport.RuntimeManifest) + "\n", new UTF8Encoding(false));
             }
 
+            if (kind == AuthorProjectKind.CodeMod)
+            {
+                bool hasGlobalJson = false;
+                for (DirectoryInfo? ancestor = new DirectoryInfo(parent); ancestor != null; ancestor = ancestor.Parent)
+                    if (File.Exists(Path.Combine(ancestor.FullName, "global.json"))) { hasGlobalJson = true; break; }
+                if (!hasGlobalJson)
+                    File.WriteAllText(Path.Combine(staging, "global.json"), "{\"sdk\":{\"version\":\"" + StandardBuildIntegration.SdkVersion + "\",\"rollForward\":\"disable\"}}\n", new UTF8Encoding(false));
+            }
             CommandReport validation = ProjectValidator.ValidateRoot(staging, "new");
             if (!validation.Success)
                 return validation;

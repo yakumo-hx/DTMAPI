@@ -1,23 +1,31 @@
 param(
     [string] $Configuration = 'Release',
     [switch] $SkipTests,
-    [switch] $Rebuild
+    [switch] $Rebuild,
+    [string[]] $Projects
 )
 
 . "$PSScriptRoot\common.ps1"
 . "$PSScriptRoot\test-common.ps1"
 $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
+$selectedBuild = $PSBoundParameters.ContainsKey('Projects')
+if ($selectedBuild -and (-not $SkipTests -or @($Projects).Count -eq 0 -or @($Projects | Where-Object { [string]::IsNullOrWhiteSpace($_) }).Count -gt 0)) {
+    throw '-Projects requires a non-empty selection and -SkipTests. Run the relevant test entry separately.'
+}
 if (-not $SkipTests) { Assert-DtmApiFullTestEnvironment }
 $dotnet = Get-DotNetExe -RepoRoot $repo
 
 # Keep ordinary project membership in the solution, alongside its dependency graph.
 # One MSBuild invocation reuses common projects. Keep serial nodes while fixture
 # targets share project output directories.
-$buildTarget = if ($Rebuild) { 'Rebuild' } else { 'Build' }
-& $dotnet build (Join-Path $repo 'DTMAPI.sln') -c $Configuration --nologo -m:1 "-t:$buildTarget"
-if ($LASTEXITCODE -ne 0) {
-    throw 'Solution build failed: DTMAPI.sln'
+if ($selectedBuild) {
+    Invoke-DtmApiProjectBuild -RepoRoot $repo -DotNetExe $dotnet -Projects $Projects -Configuration $Configuration -Rebuild:$Rebuild
+}
+else {
+    $buildTarget = if ($Rebuild) { 'Rebuild' } else { 'Build' }
+    & $dotnet build (Join-Path $repo 'DTMAPI.sln') -c $Configuration --nologo -m:1 "-t:$buildTarget"
+    if ($LASTEXITCODE -ne 0) { throw 'Solution build failed: DTMAPI.sln' }
 }
 
 if (-not $SkipTests) {

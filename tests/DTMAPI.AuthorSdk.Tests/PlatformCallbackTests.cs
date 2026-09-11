@@ -1,6 +1,9 @@
 using DTMAPI.AuthorSdk;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Immutable;
+using DTMAPI.Author.Analyzers;
 
 namespace DTMAPI.AuthorSdk.Tests;
 
@@ -34,8 +37,9 @@ internal static partial class Program
             references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         var errors = compilation.GetDiagnostics().Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error).ToArray();
         if (errors.Length != 0) throw new InvalidOperationException("The semantic probe must really compile: " + string.Join(";", errors.Select(d => d.ToString())));
-        var findings = SynchronousCallbackInspector.Inspect(compilation).ToArray();
-        if (findings.Length != 5 || findings.Any(d => d.Code != "SDK203" || !d.Path.StartsWith("Program.cs:", StringComparison.Ordinal)))
+        var findings = compilation.WithAnalyzers(ImmutableArray.Create<DiagnosticAnalyzer>(new SynchronousCallbackAnalyzer()))
+            .GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult();
+        if (findings.Length != 5 || findings.Any(d => d.Id != "SDK203" || d.Location.GetLineSpan().Path != "Program.cs"))
             throw new InvalidOperationException("Only the five actual platform async-void callbacks should be diagnosed, including named method-group arguments.");
     }
 }

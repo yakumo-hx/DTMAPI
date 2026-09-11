@@ -760,41 +760,41 @@ Assert-CatalogEqual -Label 'Multi-platform Runtime distribution row count' -Actu
 $windowsRuntimeDistribution = $windowsRuntimeDistribution[0]
 $multiPlatformRuntimeDistribution = $multiPlatformRuntimeDistribution[0]
 Assert-CatalogEqual -Label 'Published Windows Runtime distribution Workshop ID' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'workshopId') -Expected '3743016467'
-Assert-CatalogEqual -Label 'Published Windows Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'workshopManifestId') -Expected '918505309011394484'
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'workshopManifestId') -Expected '8011095289886758879'
 Assert-CatalogEqual -Label 'Published Windows Runtime distribution state' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'artifactState') -Expected 'SteamPublishedObservedExact'
 Assert-CatalogNumber -Label 'Published Windows Runtime distribution player payload files' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadFileCount') -Expected 28
-Assert-CatalogNumber -Label 'Published Windows Runtime distribution player payload bytes' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadBytes') -Expected 3866857
-Assert-CatalogEqual -Label 'Published Windows Runtime distribution player payload hash' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
+Assert-CatalogNumber -Label 'Published Windows Runtime distribution player payload bytes' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadBytes') -Expected 4225850
+Assert-CatalogEqual -Label 'Published Windows Runtime distribution player payload hash' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'playerPayloadTreeSha256') -Expected 'b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b'
 Assert-CatalogNumber -Label 'Published Windows Runtime distribution PE host count' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'peHostCount') -Expected 0
 Assert-CatalogNumber -Label 'Published Windows Runtime distribution ELF host count' -Actual (Get-ObjectValue $windowsRuntimeDistribution 'elfHostCount') -Expected 0
-Assert-CatalogEqual -Label 'Multi-platform Runtime distribution release version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'releaseVersion') -Expected '0.6.1'
-Assert-CatalogEqual -Label 'Multi-platform Runtime distribution installer version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'installerVersion') -Expected '0.1.0-experimental'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution release version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'releaseVersion') -Expected '0.7.0'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution installer version' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'installerVersion') -Expected '0.2.0-experimental'
 Assert-CatalogEqual -Label 'Multi-platform Runtime distribution Workshop ID' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopId') -Expected '3792681186'
-Assert-CatalogEqual -Label 'Multi-platform Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopManifestId') -Expected '5128092030483852458'
+Assert-CatalogEqual -Label 'Multi-platform Runtime distribution Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopManifestId') -Expected '6229085302177299134'
 Assert-CatalogEqual -Label 'Multi-platform Runtime distribution state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'artifactState') -Expected 'SteamPublishedObservedExact'
-Assert-CatalogEqual -Label 'Multi-platform Runtime local candidate state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateState') -Expected 'LocalMetadataSuccessorPendingUpload'
+Assert-CatalogEqual -Label 'Multi-platform Runtime local candidate state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateState') -Expected 'PublishedMetadataSuccessor'
 Assert-CatalogEqual -Label 'Multi-platform Runtime upload authorization' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'uploadAuthorization') -Expected 'None'
 Assert-CatalogEqual -Label 'Multi-platform Runtime Workshop control-file state' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileState') -Expected 'PresentValidatedLocalUploadOnly'
 Assert-CatalogNumber -Label 'Multi-platform Runtime Workshop control-file bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileBytes') -Expected 33
 Assert-CatalogEqual -Label 'Multi-platform Runtime Workshop control-file hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'workshopControlFileSha256') -Expected '5e1ec4ac349bcd1031d5112b1a2608992d620d0098845d26e5c35a28558a9f26'
-Assert-CatalogNumber -Label 'Multi-platform Steam-delivered file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredFileCount') -Expected 36
-Assert-CatalogNumber -Label 'Multi-platform Steam-delivered bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes') -Expected 29770736
-Assert-CatalogEqual -Label 'Multi-platform Steam-delivered tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredTreeSha256') -Expected 'e7b011d9e183e2da386f8e9c84c415f225e5ae41df8fd75c6b0481f9c56492a4'
-Assert-CatalogEqual -Label 'Multi-platform Steam update time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamTimeUpdatedUtc')) -Expected '2026-08-30T09:50:49Z'
-Assert-CatalogEqual -Label 'Multi-platform observation time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'observedAtUtc')) -Expected '2026-08-30T09:57:14Z'
-Assert-CatalogEqual -Label 'Multi-platform Runtime candidate package root' -Actual (Normalize-RepoPath (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidatePackageRoot')) -Expected 'dist/DTMAPI-MultiPlatform'
+Assert-CatalogNumber -Label 'Multi-platform Steam-delivered file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredFileCount') -Expected 38
+Assert-CatalogNumber -Label 'Multi-platform Steam-delivered bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes') -Expected 30186721
+Assert-CatalogEqual -Label 'Multi-platform Steam-delivered tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredTreeSha256') -Expected 'cacf19e7b952e19d479ce5f73095d188474e584de7246fc9373df9cf672f6c57'
+Assert-CatalogEqual -Label 'Multi-platform Steam update time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamTimeUpdatedUtc')) -Expected '2026-09-11T14:57:05Z'
+Assert-CatalogEqual -Label 'Multi-platform observation time' -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $multiPlatformRuntimeDistribution 'observedAtUtc')) -Expected '2026-09-11T15:05:47Z'
+Assert-CatalogEqual -Label 'Multi-platform Runtime candidate package root' -Actual (Normalize-RepoPath (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidatePackageRoot')) -Expected 'artifacts/runtime-070-bom-fix/multiplatform/DTMAPI-MultiPlatform'
 Assert-CatalogEqual -Label 'Multi-platform Runtime source distribution' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceDistributionId') -Expected 'dtmapi-windows'
-Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop ID' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopId') -Expected '3743016467'
-Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopManifestId') -Expected '918505309011394484'
+Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop ID' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopId') -Expected ''
+Assert-CatalogEqual -Label 'Multi-platform Runtime source Workshop manifest' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourceWorkshopManifestId') -Expected ''
 Assert-CatalogNumber -Label 'Multi-platform Runtime source player payload files' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadFileCount') -Expected 28
-Assert-CatalogNumber -Label 'Multi-platform Runtime source player payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadBytes') -Expected 3866857
-Assert-CatalogEqual -Label 'Multi-platform Runtime source player payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
-Assert-CatalogNumber -Label 'Multi-platform shared payload files' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadFileCount') -Expected 20
-Assert-CatalogNumber -Label 'Multi-platform shared payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadBytes') -Expected 3826337
-Assert-CatalogEqual -Label 'Multi-platform shared payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadTreeSha256') -Expected 'ae80f6661390b82824af424b2006fb28267ec7181b2f98d75df9975c6a1d20c5'
-Assert-CatalogNumber -Label 'Multi-platform candidate file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateFileCount') -Expected 36
-Assert-CatalogNumber -Label 'Multi-platform candidate bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateBytes') -Expected 29770715
-Assert-CatalogEqual -Label 'Multi-platform candidate tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateTreeSha256') -Expected 'f7671fd07dae7664855be37bbd82f29ce23b003f56f4d0818717fa4f2aa2605a'
+Assert-CatalogNumber -Label 'Multi-platform Runtime source player payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadBytes') -Expected 4225850
+Assert-CatalogEqual -Label 'Multi-platform Runtime source player payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sourcePlayerPayloadTreeSha256') -Expected 'b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b'
+Assert-CatalogNumber -Label 'Multi-platform shared payload files' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadFileCount') -Expected 21
+Assert-CatalogNumber -Label 'Multi-platform shared payload bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadBytes') -Expected 4191861
+Assert-CatalogEqual -Label 'Multi-platform shared payload hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'sharedPayloadTreeSha256') -Expected '604ad1e31930cd8af9cd0286d90abf8ef3a98e032704c9a0433241e7e7dfa924'
+Assert-CatalogNumber -Label 'Multi-platform candidate file count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateFileCount') -Expected 37
+Assert-CatalogNumber -Label 'Multi-platform candidate bytes' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateBytes') -Expected 30186688
+Assert-CatalogEqual -Label 'Multi-platform candidate tree hash' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'candidateTreeSha256') -Expected 'bf89edc133d38f463be4ab79e53585d1a0b8ca2159791306a9dec93eef487033'
 Assert-CatalogNumber -Label 'Multi-platform candidate PE host count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'peHostCount') -Expected 1
 Assert-CatalogNumber -Label 'Multi-platform candidate ELF host count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'elfHostCount') -Expected 1
 Assert-CatalogNumber -Label 'Multi-platform installed host artifact count' -Actual (Get-ObjectValue $multiPlatformRuntimeDistribution 'installedHostArtifactCount') -Expected 0
@@ -808,20 +808,20 @@ $multiPlatformLinuxHost = @($multiPlatformHosts | Where-Object { (Get-ObjectValu
 Assert-CatalogEqual -Label 'Multi-platform Windows host row count' -Actual $multiPlatformWindowsHost.Count -Expected 1
 Assert-CatalogEqual -Label 'Multi-platform Linux host row count' -Actual $multiPlatformLinuxHost.Count -Expected 1
 Assert-CatalogEqual -Label 'Multi-platform Windows host path' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'relativePath') -Expected 'DTMAPI-MultiPlatform-Installer.exe'
-Assert-CatalogNumber -Label 'Multi-platform Windows host length' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'length') -Expected 11818211
-Assert-CatalogEqual -Label 'Multi-platform Windows host hash' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'sha256') -Expected 'da929a41ab46e2da3a405408fe5f4110b02246862189a8a4becd4cb35e5af09a'
+Assert-CatalogNumber -Label 'Multi-platform Windows host length' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'length') -Expected 11827769
+Assert-CatalogEqual -Label 'Multi-platform Windows host hash' -Actual (Get-ObjectValue $multiPlatformWindowsHost[0] 'sha256') -Expected 'a3634d195273479e44b2ddd326d095d9418f71ed00f4fbb71e79a4f35ec5366a'
 Assert-CatalogEqual -Label 'Multi-platform Linux host path' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'relativePath') -Expected 'Content/DTMAPIInstaller/hosts/linux-x64/dtmapi-installer'
-Assert-CatalogNumber -Label 'Multi-platform Linux host length' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'length') -Expected 13211388
-Assert-CatalogEqual -Label 'Multi-platform Linux host hash' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'sha256') -Expected '4210d9f2f22b2358b56a14aa5b0a99a5042f7cb6d956611bbe642f268a7e9dfb'
+Assert-CatalogNumber -Label 'Multi-platform Linux host length' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'length') -Expected 13235451
+Assert-CatalogEqual -Label 'Multi-platform Linux host hash' -Actual (Get-ObjectValue $multiPlatformLinuxHost[0] 'sha256') -Expected '588d72868559e4dd7da90cf9ee0a43bfb57a4121274ca86ed223771a31d9113f'
 $multiPlatformValidation = Get-ObjectValue $multiPlatformRuntimeDistribution 'validation'
 Assert-CatalogEqual -Label 'Multi-platform Windows fake-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'windowsFakeGame') -Expected 'Passed'
 Assert-CatalogEqual -Label 'Multi-platform WSL Linux fake-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'wslLinuxFakeGame') -Expected 'Passed'
-Assert-CatalogEqual -Label 'Multi-platform subscription content parity' -Actual (Get-ObjectValue $multiPlatformValidation 'subscriptionContentParity') -Expected 'PassedForManifest5128092030483852458BeforeLocalMetadataSuccessor'
+Assert-CatalogEqual -Label 'Multi-platform subscription content parity' -Actual (Get-ObjectValue $multiPlatformValidation 'subscriptionContentParity') -Expected 'PassedForManifest6229085302177299134'
 Assert-CatalogEqual -Label 'Multi-platform real-game validation' -Actual (Get-ObjectValue $multiPlatformValidation 'realGame') -Expected 'NotRun'
 Assert-CatalogEqual -Label 'Multi-platform Steam Deck acceptance' -Actual (Get-ObjectValue $multiPlatformValidation 'steamDeckPlayerAcceptance') -Expected 'Pending'
 Assert-CatalogEqual -Label 'Multi-platform CrossOver acceptance' -Actual (Get-ObjectValue $multiPlatformValidation 'crossOverPlayerAcceptance') -Expected 'Pending'
 $multiPlatformOwningUpdate = Normalize-RepoPath (Get-ObjectValue $multiPlatformRuntimeDistribution 'owningUpdate')
-Assert-CatalogEqual -Label 'Multi-platform Runtime owning Update' -Actual $multiPlatformOwningUpdate -Expected 'docs/updates/2026/20260829-0003-dtmapi-multiplatform-runtime-installer.md'
+Assert-CatalogEqual -Label 'Multi-platform Runtime owning Update' -Actual $multiPlatformOwningUpdate -Expected 'docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md'
 Assert-CatalogTrue -Label 'Multi-platform Runtime owning Update exists.' -Condition (Test-Path -LiteralPath (Join-Path $repo $multiPlatformOwningUpdate.Replace('/', '\')) -PathType Leaf)
 Assert-CatalogEqual -Label 'Published Runtime release version' -Actual (Get-ObjectValue $publishedRuntimeBoundary 'releaseVersion') -Expected '0.5.2-alpha'
 Assert-CatalogEqual -Label 'Published Runtime binary version' -Actual (Get-ObjectValue $publishedRuntimeBoundary 'binaryFileVersion') -Expected '0.5.2.0'
@@ -851,40 +851,40 @@ Assert-CatalogTrue -Label 'Published Runtime immutable archive verification scri
 Assert-CatalogEqual -Label 'Current Runtime release version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'releaseVersion') -Expected '0.7.0'
 Assert-CatalogEqual -Label 'Current Runtime binary version' -Actual (Get-ObjectValue $currentRuntimeBoundary 'binaryFileVersion') -Expected '0.7.0.0'
 Assert-CatalogEqual -Label 'Current Runtime assembly compatibility identity' -Actual (Get-ObjectValue $currentRuntimeBoundary 'assemblyCompatibilityIdentity') -Expected '0.5.3.0'
-Assert-CatalogNumber -Label 'Current Runtime info.json bytes' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonBytes') -Expected 9192
-Assert-CatalogEqual -Label 'Current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonSha256') -Expected 'ecbc00dccc4ed4834dcfe4e2f374ad786c27f184a70d1c655d794b59f13428cc'
-Assert-CatalogEqual -Label 'Current Runtime info.json state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonState') -Expected 'DeterministicUnpublishedSourceProjection'
+Assert-CatalogNumber -Label 'Current Runtime info.json bytes' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonBytes') -Expected 9277
+Assert-CatalogEqual -Label 'Current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonSha256') -Expected '18eefaca436e74a40da8863e9952e344a6614cfec44cd22d612c87d9bb6fac10'
+Assert-CatalogEqual -Label 'Current Runtime info.json state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'infoJsonState') -Expected 'DeterministicPublishedSourceProjection'
 Assert-CatalogEqual -Label 'Current Runtime source authority state' -Actual (Get-ObjectValue $currentRuntimeBoundary 'state') -Expected 'CurrentSourceAuthority'
-Assert-CatalogEqual -Label 'Published current Runtime release version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion') -Expected '0.6.1'
-Assert-CatalogEqual -Label 'Published current Runtime binary version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'binaryFileVersion') -Expected '0.6.1.0'
+Assert-CatalogEqual -Label 'Published current Runtime release version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseVersion') -Expected '0.7.0'
+Assert-CatalogEqual -Label 'Published current Runtime binary version' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'binaryFileVersion') -Expected '0.7.0.0'
 Assert-CatalogEqual -Label 'Published current Runtime assembly compatibility identity' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'assemblyCompatibilityIdentity') -Expected '0.5.3.0'
-Assert-CatalogEqual -Label 'Published current Runtime Workshop manifest' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopManifestId') -Expected '918505309011394484'
+Assert-CatalogEqual -Label 'Published current Runtime Workshop manifest' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopManifestId') -Expected '8011095289886758879'
 Assert-CatalogEqual -Label 'Published current Runtime tree digest algorithm' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'treeDigestAlgorithm') -Expected 'DTMAPI-Published-SHA256SUMS-v1'
 Assert-CatalogEqual -Label 'Published current Runtime tree digest normalization' `
     -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'treeDigestNormalization') `
     -Expected 'Exclude subscription-generated Content/.tools/bepinex/extract/**. Sort files by forward-slash relative path using StringComparer.Ordinal. Each row is lowercase file SHA-256, two spaces, then relative path. Join rows with LF and no final LF; hash UTF-8 without BOM using SHA-256.'
 Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredFileCount') -Expected 29
-Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredBytes') -Expected 3866890
-Assert-CatalogEqual -Label 'Published current Runtime Steam-delivered tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredTreeSha256') -Expected '846665a979e17aada210b3960441312a403c72b3c198a0fba91af08972801f88'
+Assert-CatalogNumber -Label 'Published current Runtime Steam-delivered bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredBytes') -Expected 4225883
+Assert-CatalogEqual -Label 'Published current Runtime Steam-delivered tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamDeliveredTreeSha256') -Expected 'a142e9ff623fd58c15f9d3c7532ecf65213c39f93aa8c23f5b16269ba1a8c491'
 Assert-CatalogEqual -Label 'Published current Runtime player-payload exclusion' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadExclusion') -Expected 'workshop.json'
 Assert-CatalogNumber -Label 'Published current Runtime player-payload file count' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadFileCount') -Expected 28
-Assert-CatalogNumber -Label 'Published current Runtime player-payload bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadBytes') -Expected 3866857
-Assert-CatalogEqual -Label 'Published current Runtime player-payload tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadTreeSha256') -Expected 'b4ec6a441b4930b5174d4caed8799748fb4e4701ac0d8e72fc6bf6bd48eee4aa'
-Assert-CatalogNumber -Label 'Published current Runtime info.json bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonBytes') -Expected 9192
-Assert-CatalogEqual -Label 'Published current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonSha256') -Expected '5d7e4538d34621efffa91b190535e2e274e237c97070aeaf2f46ea2ab17f1171'
+Assert-CatalogNumber -Label 'Published current Runtime player-payload bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadBytes') -Expected 4225850
+Assert-CatalogEqual -Label 'Published current Runtime player-payload tree SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'playerPayloadTreeSha256') -Expected 'b0a2ea0742d48addd0f897b4b4d424bc8f6e667ed8ebb73176211938fb9a320b'
+Assert-CatalogNumber -Label 'Published current Runtime info.json bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonBytes') -Expected 9277
+Assert-CatalogEqual -Label 'Published current Runtime info.json SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'infoJsonSha256') -Expected '18eefaca436e74a40da8863e9952e344a6614cfec44cd22d612c87d9bb6fac10'
 Assert-CatalogNumber -Label 'Published current Runtime workshop control bytes' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopControlFileBytes') -Expected 33
 Assert-CatalogEqual -Label 'Published current Runtime workshop control SHA-256' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'workshopControlFileSha256') -Expected 'd6d9206a4a58b88cc985ee72832d57f226ff58767ef6e606a2731b0d604ef98d'
-Assert-CatalogEqual -Label 'Published current Runtime release-manifest build commit' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseManifestBuildCommit') -Expected 'db5e518a6d7f'
+Assert-CatalogEqual -Label 'Published current Runtime release-manifest build commit' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'releaseManifestBuildCommit') -Expected '7d26482a2a95'
 Assert-CatalogEqual -Label 'Published current Runtime Steam update time' `
     -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $currentPublishedRuntimeBoundary 'steamTimeUpdatedUtc')) `
-    -Expected '2026-08-20T00:23:14Z'
+    -Expected '2026-09-11T14:56:51Z'
 Assert-CatalogEqual -Label 'Published current Runtime observation time' `
     -Actual (ConvertTo-CatalogTimestampText (Get-ObjectValue $currentPublishedRuntimeBoundary 'observedAtUtc')) `
-    -Expected '2026-08-20T00:28:08Z'
+    -Expected '2026-09-11T15:05:47Z'
 Assert-CatalogEqual -Label 'Published current Runtime native normalization owner' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'nativeNormalizationOwner') -Expected 'SourceBuilderStableLocalizedManifestProjection'
 Assert-CatalogEqual -Label 'Published current Runtime state' -Actual (Get-ObjectValue $currentPublishedRuntimeBoundary 'state') -Expected 'SteamPublishedObservedExact'
 $currentPublishedRuntimeUpdate = Normalize-RepoPath (Get-ObjectValue $currentPublishedRuntimeBoundary 'owningUpdate')
-Assert-CatalogEqual -Label 'Published current Runtime owning Update' -Actual $currentPublishedRuntimeUpdate -Expected 'docs/updates/2026/20260820-0001-runtime-installer-061-reliability-ux.md'
+Assert-CatalogEqual -Label 'Published current Runtime owning Update' -Actual $currentPublishedRuntimeUpdate -Expected 'docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md'
 Assert-CatalogTrue -Label 'Published current Runtime owning Update exists.' -Condition (
     Test-Path -LiteralPath (Join-Path $repo $currentPublishedRuntimeUpdate.Replace('/', '\')) -PathType Leaf)
 Assert-CatalogTrue -Label 'Future Runtime release version is unscheduled.' -Condition ([string]::IsNullOrWhiteSpace([string](Get-ObjectValue $futureRuntimeBoundary 'releaseVersion')))
@@ -1089,8 +1089,8 @@ if ($subscriptionRuntimeDistributions.Count -eq 1) {
     Assert-CatalogEqual -Label 'Current subscription multi-platform delivered file count' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredFileCount') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredFileCount')
     Assert-CatalogEqual -Label 'Current subscription multi-platform delivered bytes' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredBytes') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredBytes')
     Assert-CatalogEqual -Label 'Current subscription multi-platform delivered tree' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'steamDeliveredTreeSha256') -Expected (Get-ObjectValue $multiPlatformRuntimeDistribution 'steamDeliveredTreeSha256')
-    Assert-CatalogEqual -Label 'Current subscription multi-platform excludes uploader control file' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'workshopControlFileDelivered') -Expected $false
-    Assert-CatalogEqual -Label 'Current subscription multi-platform parity state' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'contentParity') -Expected 'RepositoryCandidateAndLocalUploadContentExactBeforeLocalMetadataSuccessor'
+    Assert-CatalogEqual -Label 'Current subscription multi-platform delivered control-file observation' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'workshopControlFileDelivered') -Expected $true
+    Assert-CatalogEqual -Label 'Current subscription multi-platform parity state' -Actual (Get-ObjectValue $subscriptionMultiPlatform 'contentParity') -Expected 'ExactTestedCandidateAndLocalUpload'
 }
 
 $subscriptionProducts = @((Get-ObjectValue $subscriptionManifest 'managedProducts'))
@@ -1166,7 +1166,7 @@ $expectedCurrentPublishedProductCatalogIds = @(
 )
 $expectedCurrentPublishedProductVersions = @{
     'zoom' = '1.0.0'
-    'y-console' = '1.1.1'
+    'y-console' = '1.1.3'
     'more-saves' = '1.0.0'
     'action-speed' = '1.0.0'
     'one-action-complete' = '1.0.0'
@@ -1204,10 +1204,10 @@ foreach ($catalogId in $expectedCurrentPublishedProductCatalogIds) {
     $isMoreEquipmentSlots = $catalogId -eq 'more-equipment-slots'
     $isYConsole = $catalogId -eq 'y-console'
     $expectedMinimumDtmApiVersion = if ($isYConsole) { '0.6.1' } elseif ($isMoreEquipmentSlots) { '0.6.0' } else { '0.5.5' }
-    $expectedGameBuildId = if ($isYConsole) { '24788406' } elseif ($isMoreEquipmentSlots) { '24788406' } else { '23762374' }
-    $expectedObservedAtUtc = if ($isYConsole) { '2026-08-22T23:43:44Z' } elseif ($isMoreEquipmentSlots) { '2026-08-30T11:00:19Z' } else { '2026-08-04T15:52:40Z' }
+    $expectedGameBuildId = if ($isYConsole) { '25163613' } elseif ($isMoreEquipmentSlots) { '24788406' } else { '23762374' }
+    $expectedObservedAtUtc = if ($isYConsole) { '2026-09-11T15:05:47Z' } elseif ($isMoreEquipmentSlots) { '2026-08-30T11:00:19Z' } else { '2026-08-04T15:52:40Z' }
     $expectedOwningUpdate = if ($isYConsole) {
-        'docs/updates/2026/20260823-0003-y-console-text-input-hotkey-guard.md'
+        'docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md'
     }
     elseif ($isMoreEquipmentSlots) {
         'docs/updates/2026/20260830-0002-moreequipment-101-workshop-release-closeout.md'
@@ -1286,7 +1286,7 @@ Assert-CatalogEqual -Label 'Current published ProductNative artifact row count' 
 $currentPublishedProductDigest = Get-CatalogTextSha256 -Text ($currentPublishedProductRows.ToArray() -join "`n")
 Assert-CatalogEqual -Label 'Current published ProductNative artifact frozen digest' `
     -Actual $currentPublishedProductDigest `
-    -Expected '45160a523f7ccec28d763229ea4104ce7109b1b3f596224098bb4351476fcd9a'
+    -Expected 'ca72483f535e4efbb5b9ce9c60cbcea3e71765bb1655659a0d71b4241f5f7a5b'
 
 $moreEquipmentUploadEntrypoints = @($actualPublicMutationEntrypoints | Where-Object {
     [string](Get-ObjectValue $_ 'catalogId') -eq 'more-equipment-slots'

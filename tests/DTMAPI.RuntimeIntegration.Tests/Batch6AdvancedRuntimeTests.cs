@@ -309,7 +309,7 @@ namespace DTMAPI.UnitTests
             EnsureAssemblyLoaded(harmonySource, "0Harmony");
             EnsureAssemblyLoaded(gameSource, "Assembly-CSharp");
 
-            WriteLegacyNativePackage(
+            string validRoot = WriteLegacyNativePackage(
                 root,
                 "Valid",
                 validOwner,
@@ -324,12 +324,31 @@ namespace DTMAPI.UnitTests
                 failingEntrySource,
                 helperSource);
 
+            string markerDirectory = Path.Combine(validRoot, "Content", "DTMAPI");
+            Directory.CreateDirectory(markerDirectory);
+            string markerPath = Path.Combine(markerDirectory, "dtmapi-package.json");
+            string marker = "{\"uniqueId\":\"" + validOwner + "\",\"version\":\"1.0.0\"}";
+            string manifestPath = Path.Combine(validRoot, "manifest.json");
+            ManifestModel manifest = new ManifestReader().Read(manifestPath);
+            foreach (bool bom in new[] { false, true })
+            {
+                File.WriteAllText(markerPath, marker, new UTF8Encoding(bom));
+                ManagedModClassification classified = new ManagedModClassifier(root)
+                    .Classify(manifest, validRoot, manifestPath, "Local", true, null);
+                Assert(classified.IsLegacyNativeCompatibility,
+                    "The same legacy CodeMod metadata must classify with or without a UTF-8 BOM.");
+            }
+            byte[] markerBefore = File.ReadAllBytes(markerPath);
+
             string? previousPersistentRoot = Environment.GetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT");
             Environment.SetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT", Path.Combine(root, "Persistent"));
             try
             {
                 var runtime = new DtmApiRuntime(new Batch6Host(root));
                 runtime.Start();
+
+                Assert(File.ReadAllBytes(markerPath).SequenceEqual(markerBefore),
+                    "Cold loading a BOM-prefixed legacy package must not rewrite its metadata.");
 
                 DiscoveredMod loaded = runtime.LoadedMods.Single(mod => mod.Manifest.UniqueID == validOwner);
                 Assert(

@@ -43,7 +43,7 @@ if (-not $NoBuild) {
         & "$PSScriptRoot\prepare-unit-test-dependencies.ps1" -Dependency $dependencies
         if ($LASTEXITCODE -ne 0) { throw 'Public Unit fixture preparation failed.' }
     }
-    Invoke-DtmApiTestProjectBuild -RepoRoot $repo -DotNetExe $dotnet -Projects $projects -Configuration $Configuration
+    Invoke-DtmApiProjectBuild -RepoRoot $repo -DotNetExe $dotnet -Projects $projects -Configuration $Configuration
 }
 
 $previousTestRoot = $env:DTMAPI_TEST_TEMP_ROOT

@@ -10,13 +10,6 @@ using System.Text;
 
 namespace DTMAPI.AuthorSdk;
 
-internal sealed class AdvancedCompilationReferenceSet
-{
-    public required IReadOnlyList<MetadataReference> References { get; init; }
-    public required string SurfaceSha256 { get; init; }
-    public required IReadOnlyDictionary<MetadataReference, string> InMemoryReferenceIdentities { get; init; }
-}
-
 internal static class AdvancedCompilationReferences
 {
     private const string SurfaceResourcePrefix = "DTMAPI.AuthorSdk.advanced-reference-surface.";
@@ -25,43 +18,9 @@ internal static class AdvancedCompilationReferences
     private const string MoreEquipmentUniqueId = "DTMAPI.MoreEquipmentSlotsMod";
     private const string MoreEquipmentSurfaceSha256 = "70D65F0BCB013C16E7232B91D3F232E2663072D6C8C661550519F1E8A806AEB0";
 
-    public static AdvancedCompilationReferenceSet Create(
-        CompatibilityAssets compatibility,
-        ResolvedAdvancedReferenceSet resolved)
-    {
-        if (!resolved.Registration.PolicyId.Equals(resolved.Policy.PolicyId, StringComparison.Ordinal))
-            throw new InvalidDataException("Advanced compiler reference registration/policy identity mismatch.");
-
-        AdvancedReferencePolicyEntry gameAssembly = resolved.Policy.References.Single(reference =>
-            reference.AssemblyName.Equals("Assembly-CSharp", StringComparison.Ordinal));
-        string gameAssemblyPath = resolved.ReferencePaths.Single(path =>
-            Path.GetFullPath(path).Equals(
-                PathSafety.ResolveUnderRoot(resolved.GameRoot, gameAssembly.GameRelativePath, "Advanced game reference"),
-                StringComparison.OrdinalIgnoreCase));
-        VerifyAssemblyIdentity(gameAssemblyPath, gameAssembly.AssemblyName, new Version(0, 0, 0, 0));
-
-        string? harmonyPath = resolved.ReferencePaths.SingleOrDefault(path =>
-            AssemblyName.GetAssemblyName(path).Name?.Equals("0Harmony", StringComparison.Ordinal) == true);
-        var references = compatibility.ReferencePaths
-            .Append(compatibility.AbstractionsPath)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(path => MetadataReference.CreateFromFile(path))
-            .ToList<MetadataReference>();
-        if (harmonyPath != null)
-            references.Add(MetadataReference.CreateFromFile(harmonyPath));
-        MetadataReference surface = CreateAssemblyCSharpSurface(compatibility, resolved.Registration, out string imageSha256);
-        references.Add(surface);
-        return new AdvancedCompilationReferenceSet
-        {
-            References = references,
-            SurfaceSha256 = resolved.Registration.CompilerSurfaceSha256.ToLowerInvariant(),
-            InMemoryReferenceIdentities = new Dictionary<MetadataReference, string> { [surface] = "Assembly-CSharp.dll=" + imageSha256 }
-        };
-    }
-
     private static MetadataReference CreateAssemblyCSharpSurface(
         CompatibilityAssets compatibility,
-        AdvancedReferencePolicyRegistration registration, out string imageSha256)
+        AdvancedReferencePolicyRegistration registration, out string imageSha256, string? destination = null)
     {
         byte[] sourceBytes;
         string resourceName = SurfaceResourcePrefix + registration.PolicyId + SurfaceResourceSuffix;
@@ -115,7 +74,22 @@ internal static class AdvancedCompilationReferences
         ImmutableArray<byte> image = ImmutableArray.Create(output.ToArray());
         imageSha256 = PathSafety.Sha256Bytes(image.AsSpan());
         VerifyReferenceSurface(image, registration);
+        if (destination != null)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            if (File.Exists(destination) && PathSafety.Sha256File(destination) != imageSha256)
+                throw new InvalidDataException("Advanced reference cache changed: " + destination);
+            if (!File.Exists(destination)) File.WriteAllBytes(destination, image.ToArray());
+        }
         return MetadataReference.CreateFromImage(image);
+    }
+
+    internal static string[] PreparePaths(CompatibilityAssets compatibility, ResolvedAdvancedReferenceSet resolved, string root)
+    {
+        string destination = Path.Combine(root, "obj", "dtmapi-advanced", resolved.Registration.CompilerSurfaceSha256, "Assembly-CSharp.dll");
+        CreateAssemblyCSharpSurface(compatibility, resolved.Registration, out _, destination);
+        return compatibility.ReferencePaths.Append(compatibility.AbstractionsPath).Append(destination)
+            .Concat(resolved.ReferencePaths.Where(path => AssemblyName.GetAssemblyName(path).Name == "0Harmony")).ToArray();
     }
 
     private static void VerifyReferenceSurface(

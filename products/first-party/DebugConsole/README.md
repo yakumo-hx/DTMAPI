@@ -1,8 +1,16 @@
 # Y-Key Console Mod
 
 ProductNative in-save Y-key diagnostic console. Current public release is
-`1.1.1`; source candidate `1.1.2` requires DTMAPI `0.6.1` and retains the
-exact `doloctown-24456188-debugconsole-v1` Author policy.
+`1.1.3`, confirmed by the user, public Steam metadata and exact subscription
+parity on 2026-09-11. It requires DTMAPI `0.6.1` and retains the exact
+`doloctown-24456188-debugconsole-v1` Author policy. See the
+[publication record](../../../docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md).
+
+The `1.1.3` release preserves item ID casing during native generation and
+uses the object overload for backpack placement. It retains partial
+capacity results and checks failed generation before placement. Build and
+native validation are tracked in the
+[1.1.3 Update](../../../docs/updates/2026/20260911-0010-y-console-113-item-id-case.md).
 
 - Press `Y` after `SaveLoaded` to open or close the console.
 - Press `Escape` while the console is open to close it.
@@ -24,11 +32,11 @@ exact `doloctown-24456188-debugconsole-v1` Author policy.
   is not an ordinary player install path. It must not be installed under
   `BepInEx/plugins`.
 
-The `1.1.2` source candidate recognizes the official Old City Guardian
+The `1.1.2` implementation recognizes the official Old City Guardian
 (`space_ship`) as one root plus two synchronously created
 `space_ship_bastion` entities. Monster and animal batches keep the existing
 left-click `1` / right-click `10` controls, use sequential official calls, stop
 the current batch at its first failure, retain every entity already added and
 show requested roots, successful roots and actual additions. There is no
 spawn rollback, shared circuit, Guardian-specific disable path or extra
-confirmation. The immutable public `1.1.1` artifact still predates this fix.
+confirmation. The previously published `1.1.1` artifact predates this fix.

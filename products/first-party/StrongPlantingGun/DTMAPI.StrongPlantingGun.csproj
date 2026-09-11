@@ -1,12 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props" />
   <PropertyGroup>
     <AssemblyName>DTMAPI.StrongPlantingGun</AssemblyName>
     <RootNamespace>DTMAPI.StrongPlantingGun</RootNamespace>
+    <Version>1.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
-  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props"
-          Condition="Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props')" />
-  <Target Name="RequireDtmApiAuthorSdk" BeforeTargets="PrepareForBuild"
-          Condition="!Exists('$(DTMAPI_AUTHOR_SDK_ROOT)\compatibility\0.5.5\DTMAPI.Author.props')">
-    <Error Text="Set DTMAPI_AUTHOR_SDK_ROOT to the extracted DTMAPI Author SDK, or build with dtmapi-author build." />
-  </Target>
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <None Remove="content/**/*" />
+    <Content Include="content/**/*" DtmApiPackagePath="Content/DTMAPI/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.targets" />
 </Project>
