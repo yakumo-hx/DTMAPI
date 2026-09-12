@@ -3,7 +3,7 @@
 当前玩家发布（2026-09-11）：Windows 和多平台均已更新为保持 0.7.0 的 BOM 修复包，准确订阅与已测试候选、上传目录一致，见 [Update 0011](../../updates/2026/20260911-0011-runtime-y-hotfix-publication.md)；修复与同版本更新方式见 [0009](../../updates/2026/20260911-0009-runtime-070-package-marker-bom.md)。原候选验收保留为当时输入的历史证据。
 
 - Role: 仅维护候选选择、发布边界、剩余范围和入口；任务状态归 [status](status.md)。
-- Disposition: **Windows 0.7.0 Developer Preview 技术验收通过，选择 D7/r6/r2；两个 Runtime 分发已由用户公开发布并核实订阅，SDK 独立交付。**
+- Disposition: **Windows 0.7.0 Developer Preview 技术验收通过，选择 D7/r6/r2；两个 Runtime 分发已公开并核实订阅；SDK 0.7.0 已于 2026-09-12 独立发布，首发包吸收 Doctor BOM 修复与中文指南。**
 - Evidence owner: [PN-041/042 Update 0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)及[统一验收索引](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/README.md)拥有逐项结果、命令、hash、失败和复用范围；[D7 独立复核](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/independent-acceptance.md)拥有返修接受结论。本页不复制这些明细。
 
 ## 候选选择
@@ -14,11 +14,11 @@
 | 当前本地上传叶 | Windows / 多平台均为 [0009 BOM 修复包](../../updates/2026/20260911-0009-runtime-070-package-marker-bom.md)，保持 0.7.0，已发布并核实订阅。工坊绑定和描述不变；多平台同版本更新需先卸载 Runtime 再安装 |
 | 原 Windows 验收包 | `artifacts/pn041/runtime-070-candidate-r6/DTMAPI-0.7.0-candidate-r6.zip` |
 | 原多平台验收包 | `artifacts/pn041/multiplatform-070-candidate-r2/DTMAPI-MultiPlatform-0.7.0-candidate-r2.zip`；载荷为 r6，两个 host 沿用[PN-031.multi](../../updates/2026/20260910-0008-multiplatform-070-candidate.md)的准确构建 |
-| 首发 SDK | `artifacts/pn041/sdk-msbuild-distribution-d7/DTMAPI-Author-SDK-0.7.0-win-x64.zip`；D6 留作历史反例基线 |
+| 已发布 SDK | [0.7.0 Windows x64 Developer Preview](https://github.com/yakumo-hx/DTMAPI/releases/tag/v0.7.0)；准确包归[首次交付记录](../../updates/2026/20260912-0001-sdk-publication-chinese-guides.md)。原 D7 保留作技术验收基准，D6 保留作历史反例 |
 | 冻结 API / 兼容范围 | 0.7.0 Abstractions 原字节及 0.5.5、0.6.2–0.6.5 target 各自身份保留；准确范围归 0012 和 API 契约，不构造兼容超集 |
 | 历史控制组 | Runtime r5、多平台 r1、SDK r5、D1–D6 等原字节与当时结果保留；入口归[迁移前 0019](../../updates/2026/20260909-0019-platform-release-preparation.md)及 0012，不重新标成当前候选 |
 
-SDK 沿[独立附件流程](../../workflows/author-sdk-release.md)交付作者，不进入玩家 Runtime 包。旧 SDK 从未公开；首次交付及 CSV 精确删除范围由[计划更正 0011](../../updates/2026/20260910-0011-sdk-first-release-plan-correction.md)负责，不新增历史客户端支持或清退授权。
+SDK 已沿[独立附件流程](../../workflows/author-sdk-release.md)首次交付作者，不进入玩家 Runtime 包。此次以前的 SDK 候选从未公开；原首次交付计划及 CSV 精确删除范围仍由[计划更正 0011](../../updates/2026/20260910-0011-sdk-first-release-plan-correction.md)负责，不新增历史客户端支持或清退授权。
 
 ## 技术门与接受范围
 

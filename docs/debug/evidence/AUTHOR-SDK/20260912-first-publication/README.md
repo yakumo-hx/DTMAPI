@@ -15,7 +15,7 @@ Owner：[20260912-0001](../../../../updates/2026/20260912-0001-sdk-publication-c
 | 工具 / 宿主 | SDK 0.7.0；Windows x64；自包含 .NET 8 CLI 与 .NET SDK 8.0.421 |
 | API | 默认 0.7.0；可选 0.5.5、0.6.2、0.6.3、0.6.4、0.6.5、0.7.0，各自 Runtime 范围由 target-catalog 维护 |
 | 构建源码 | 公开主线 `73aaffce50d9105cfabd18e787b3f3160467b322`；最终中文文档单独汇入 |
-| 公开状态 | 待附件上传及公开下载核对；不能把本地构建当作已发布 |
+| 公开状态 | [0.7.0 Windows x64 Developer Preview](https://github.com/yakumo-hx/DTMAPI/releases/tag/v0.7.0)；Release ID `387439618`，ZIP 与 SHA-256 已匿名下载验证 |
 
 ## 与 D7 的关系
 
@@ -29,8 +29,8 @@ Owner：[20260912-0001](../../../../updates/2026/20260912-0001-sdk-publication-c
 
 - 既有 package-target 矩阵直接引用准确最终 Doctor：83 项通过，保留 BOM、目标范围、身份、哈希及损坏包的正反例。原 D7 对照出现 14 个合法 BOM 拒绝及空文件异常；没有把旧 PASS 扩大到后来新增的矩阵。
 - 标准 builder、原包/技术包/最终包的完整 release checker 与确定性 ZIP 重放通过；新包仅在同一原始技术包上应用明确中文指南，再用现有 inventory/ZIP 函数生成最终清单和附件。
-- 最终 SDK 在仓库外新中文/空格路径、空缓存完成 new、离线 restore、Release pack 和 Doctor；SHA 与报告一致。
+- 最终 SDK 在仓库外新中文/空格路径、空缓存完成 new、离线 restore、Release pack 和 Doctor；SHA 与报告一致。公开后重新匿名下载两个附件并比对长度/哈希，再从该 ZIP 的全新解压目录重复最小作者流程，全部通过。
 - 主要随包使用指南已中文化，自动生成的 API 状态参考仍保留原文；所有包内链接和锚点通过。未翻译或改写第三方许可证正文。
 - 不重跑输入未变的 Mono/完整 Release；原 D7 接受范围仍为 Windows Developer Preview，不增加设备、任意依赖或断点调试承诺。
 
-细项日志、原始失败及探针归 `tmp/sdk-release-root-20260912/`：`d7-audit.json`、`technical-build.log`、`technical-payload-delta.json`、`helper-il-comparison.json`、`doctor-matrix-technical/result.json`、`doctor-matrix-d7/result.json`、`final-package-check.log`、`final-author-probe-r2.log`。仅 BOM 的新依赖 marker 仍沿既有 SDK999/exit 3 路径拒绝；这是与本次旧 marker BOM 修复不同的边界。
+细项日志、原始失败及探针归 `tmp/sdk-release-root-20260912/`：`d7-audit.json`、`technical-build.log`、`technical-payload-delta.json`、`helper-il-comparison.json`、`doctor-matrix-technical/result.json`、`doctor-matrix-d7/result.json`、`final-package-check.log`、`final-author-probe-r2.log`、`public-download-result.json`、`public-author-probe.log`。仅 BOM 的新依赖 marker 仍沿既有 SDK999/exit 3 路径拒绝；这是与本次旧 marker BOM 修复不同的边界。

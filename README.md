@@ -4,7 +4,7 @@ DTMAPI 是 Doloc Town 的 Mod 框架。BepInEx 负责启动，DTMAPI 提供受�
 
 Windows 与多平台 Runtime **0.7.0 已在 Steam 创意工坊发布**，包含 marker 文件开头的 UTF-8 BOM 兼容修复；Y 控制台 **1.1.3** 也已发布。已发布 Runtime 包的构建来源仍为 `7d26482a2a95`，本分支后续的源码或文档提交不改变这一记录。详见[发布确认](docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md)。
 
-Author SDK D7 已完成 Windows 范围验收，**独立 GitHub Release 附件尚未发布**。SDK 与玩家安装包分开交付，具体范围见[SDK 候选交付说明](docs/planning/platform-next/release-candidate.md)。
+Author SDK **0.7.0 已通过 GitHub Release 独立发布**，面向 Windows x64 的 Mod 作者。[下载完整 SDK ZIP](https://github.com/yakumo-hx/DTMAPI/releases/download/v0.7.0/DTMAPI-Author-SDK-0.7.0-win-x64.zip)，从包内中文 README 开始；同名 SHA-256 文件与交付范围见[发行说明](https://github.com/yakumo-hx/DTMAPI/releases/tag/v0.7.0)。SDK 与玩家安装包分开交付。
 
 ## 玩家：安装与使用
 
@@ -28,7 +28,7 @@ Author SDK D7 已完成 Windows 范围验收，**独立 GitHub Release 附件尚
 | 制作内容包 | 阅读[内容包作者指南](author-docs/README.md)。现有指南面向具体内容领域，通用独立 Content Host 尚未完成。 |
 | 配置工程、NuGet 或共享 DLL | 阅读[工程与恢复](author-sdk/PROJECTS-AND-RESTORE.md)及[包依赖](author-sdk/PACKAGE-DEPENDENCIES.md)。 |
 
-Advanced 包不能携带游戏或平台 DLL，也不能手写准入凭证。Mod 身份、原生代码归属和存档提交规则由 [PROJECT.md](PROJECT.md)定义。SDK 的打包与分发规则见[交付流程](docs/workflows/author-sdk-release.md)；仓库说明更新不会替换已验收的 D7 ZIP。
+Advanced 包不能携带游戏或平台 DLL，也不能手写准入凭证。Mod 身份、原生代码归属和存档提交规则由 [PROJECT.md](PROJECT.md)定义。SDK 的打包与分发规则见[交付流程](docs/workflows/author-sdk-release.md)，首发准确包及核对结果见[SDK 交付记录](docs/updates/2026/20260912-0001-sdk-publication-chinese-guides.md)。
 
 ## 源码贡献者：构建与验证
 

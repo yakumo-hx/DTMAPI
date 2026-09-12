@@ -7,13 +7,13 @@
 
 ## 当前接手位置
 
-**PN-041/042已完成，SDK D7/Runtime r6/多平台r2通过既定Windows Developer Preview技术验收。** [D7独立复核](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/independent-acceptance.md)重新验证准确包及原字段/工程根反例，并核对实际IDE/CLI/CI、完整Release和新字节Mono；[0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)已转verified，本批详细实现项全部收口。D6和所有失败证据保留，PN-042原范围有效。未发布、未启动M4，发布操作另行授权。旧SDK从未公开，不建通用迁移器；第一方临时CSV保持精确删除。
+**PN-041/042已完成，SDK D7/Runtime r6/多平台r2通过既定Windows Developer Preview技术验收。** [D7独立复核](../../debug/evidence/GAME-SMOKE/20260910-sdk-msbuild-070/repair-d7/independent-acceptance.md)重新验证准确包及原字段/工程根反例，并核对实际IDE/CLI/CI、完整Release和新字节Mono；[0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)已转verified，本批详细实现项全部收口。D6和所有失败证据保留，PN-042原范围有效。两个 Runtime 0.7.0 BOM 修复包已发布；SDK 0.7.0 于 2026-09-12 首次公开，含 Doctor BOM 修复和中文指南，见[交付记录](../../updates/2026/20260912-0001-sdk-publication-chinese-guides.md)。不因发布启动M4或新增通用迁移器；第一方临时CSV保持精确删除。
 
-2026-09-10 PN-038、PN-039、PN-040.a 与 PN-031.a 的 Windows Developer Preview 技术验收完成；本轮独立 SDK 功能复核和指南修正见 [0007](../../updates/2026/20260910-0007-sdk-acceptance-distribution.md)。2026-09-11 两个 Runtime 0.7.0 分发已由用户公开发布并核实订阅，见[发布记录 0001](../../updates/2026/20260911-0001-runtime-070-upload-staging.md)；SDK 独立交付。准确产物由[候选选择](release-candidate.md)及各 Update 拥有，旧候选与失败证据保留。
+2026-09-10 PN-038、PN-039、PN-040.a 与 PN-031.a 的 Windows Developer Preview 技术验收完成；本轮独立 SDK 功能复核和指南修正见 [0007](../../updates/2026/20260910-0007-sdk-acceptance-distribution.md)。2026-09-11 两个 Runtime 0.7.0 分发已由用户公开发布并核实订阅，见[发布记录 0001](../../updates/2026/20260911-0001-runtime-070-upload-staging.md)；SDK 已独立公开，准确首发包与下载验收归[20260912-0001](../../updates/2026/20260912-0001-sdk-publication-chinese-guides.md)。准确产物由[候选选择](release-candidate.md)及各 Update 拥有，旧候选与失败证据保留。
 
 [M4 实验](m4-experiments.md)已按当前 build 准备，本轮增加 [方法对照](method-validation.md)：先同档/侧车、官方内容/薄适配比较，再实现选中方案；没有新实测 PASS。PN-024 / PN-013 仍 ready，PN-041/042 完成不自动启动这些任务。Host 只依只读包输入，原生持久家族不强依 SaveData；设备、新平台、低 TFM 不因此晋级。
 
-本轮 [SDK 独立验收](../../reviews/code/2026/20260910-0003-sdk-acceptance-distribution.md)接受功能，补正交付说明；SDK 走独立 GitHub 附件。**PN-031.multi done**：[0008](../../updates/2026/20260910-0008-multiplatform-070-candidate.md)已生成独立 0.7.0 多平台候选，Windows/WSL 安装、升级与恢复通过；实际 Steam Deck/Proton/CrossOver 游戏启动仍未验收，未发布。与 M4 实验独立。
+本轮 [SDK 独立验收](../../reviews/code/2026/20260910-0003-sdk-acceptance-distribution.md)接受功能，补正交付说明；SDK 走独立 GitHub 附件。**PN-031.multi done**：[0008](../../updates/2026/20260910-0008-multiplatform-070-candidate.md)已生成独立 0.7.0 多平台候选，Windows/WSL 安装、升级与恢复通过；实际 Steam Deck/Proton/CrossOver 游戏启动仍未验收；两个 Runtime 分发已发布，当前 BOM 修复包归[发布记录 0011](../../updates/2026/20260911-0011-runtime-y-hotfix-publication.md)。与 M4 实验独立。
 
 用户决定：首发前内部 0.6.X；完成 M3 后最早公开 0.7.0，必要时吸收后续修复；随后 0.7.X，0.8.0 起逐族清退。详细版本/发布门由 roadmap 拥有。缺设备不阻塞手柄实验实现，但不记实体手柄 PASS。
 
@@ -52,7 +52,7 @@
 | PN-040.a 所选资产判定 | 0.7 首发增量 | done | 资产正反例、准确包与 Mono 通过 | [0005](../../updates/2026/20260910-0005-sdk-selected-package-assets.md)；R05 整体未完成 |
 | PN-031.a 首发候选/升级/支持 | 0.7 首发前 | done | 本批新候选完整 Release、外部作者、实机与恢复通过 | [0019](../../updates/2026/20260909-0019-platform-release-preparation.md)；Windows Developer Preview 技术接受，未上传 |
 | PN-040.b 运行资产兼容 | 后续 0.7.X | waiting | PN-041；真实低 TFM/facade 与 Mono/BCL 输入，R-Assets | 不同 ref/lib 已吸入 PN-041；剩余运行能力扩展不是 M4 前置 |
-| PN-041 标准构建完整迁移 | 0.7.0 首发前 | done | a–f、F1–F4及D7独立复核通过 | [0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)：准确D7/外部反例与正常作者、实际IDE/CI、完整Release和Mono支持技术接受；D6失败保留，未发布 |
+| PN-041 标准构建完整迁移 | 0.7.0 首发前 | done | a–f、F1–F4及D7独立复核通过 | [0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)：准确D7/外部反例与正常作者、实际IDE/CI、完整Release和Mono支持技术接受；D6失败保留；SDK首次公开归[20260912-0001](../../updates/2026/20260912-0001-sdk-publication-chinese-guides.md) |
 | PN-042 现有 Mod/接入兼容 | 0.7.0 首发前 | done | a–c、C01–C10 与 PN-041 合并接受 | [0012](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)：准确0.6.1/原DLL/既有来源，真实旧marker退化修正，r6/r2安装恢复及Steam组合；CSV精确20项删除保留 |
 | PN-037.a 实验控制器绑定 | 0.7 系列 | done | PN-019 | [0017](../../updates/2026/20260909-0017-platform-controller-bindings.md)：代码/无设备/键盘入口配置/冷启动/恢复通过；实体设备 pending-player |
 | PN-037.b 菜单方向导航 | 0.7 系列 | done | PN-037.a；验收 A1 | [0018](../../updates/2026/20260909-0018-platform-config-navigation.md)：原生方向入口、Enter/Tab/事务、可选入口冷启撤回、动态分辨率及恢复通过；实体设备归 PN-037.c |
@@ -88,7 +88,7 @@
 | M0 | 原 PN-001–003 source/package 验收 | 未据此新增公开版本 |
 | M1 | [作者闭环](../../updates/2026/20260908-0015-platform-author-journey.md)及最终 R1；A1–A3 修复保留 | 日志/源行出口接受，断点未证；历史启用恢复声明已有纠正 |
 | M2 | [PN-020](../../updates/2026/20260909-0007-platform-m2-author-validation.md)/R2 有界接受 | 原内部冻结未发布；PN-036 归位，不否定原候选事实 |
-| M3 | [PN-023](../../updates/2026/20260909-0015-platform-m3-composition.md)证明既有组合；[PN-031.a](../../updates/2026/20260909-0019-platform-release-preparation.md)拥有原候选实测；[PN-041/042](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)拥有标准 SDK 与兼容最终验收 | 原子集接受保留；完整 0.7.0 Windows Developer Preview 技术门接受，未发布 |
+| M3 | [PN-023](../../updates/2026/20260909-0015-platform-m3-composition.md)证明既有组合；[PN-031.a](../../updates/2026/20260909-0019-platform-release-preparation.md)拥有原候选实测；[PN-041/042](../../updates/2026/20260910-0012-sdk-msbuild-first-release.md)拥有标准 SDK 与兼容最终验收 | 原子集接受保留；完整 0.7.0 Windows Developer Preview 技术门接受；Runtime 与 SDK 的公开结果分别归当前发布记录 |
 | M4 | native 保存与内容生效两分支 pending | 没有新增通用保存/内容承诺 |
 | M5 | 所选领域全旅程 pending | Frozen/blocked 壳不算平台能力 |
 | M6 | 两代维护/支持/稳定证明 pending | 0.7 准备和 0.8 清退有路线，尚无新公开公告/删除事实 |

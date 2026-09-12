@@ -4,7 +4,7 @@
 
 - Update ID: `20260912-0001`
 - Date: `2026-09-12`
-- Lifecycle Status: `in-progress`
+- Lifecycle Status: `verified`
 - Validation Level: `docs, source, unit`
 - Runtime Validation: `not-required`
 - Related Issue State: `none`
@@ -33,7 +33,7 @@ D7 的完整 ZIP 与原验收完全一致。进一步核对发现它早于 [BOM 
 - PASS：9 份随包指南完成中文校对，25 个包内链接/锚点通过；最终 ZIP 执行完整 release checker 与确定性重放通过，保持 6,177 个文件。API 状态的自动投影及许可正文未改。
 - PASS：在仓库外的新中文/空格路径，以最终 SDK 和空 NuGet 缓存完成 new、离线 restore、Release pack 与只读 Doctor，输出 ZIP 与报告 SHA 一致。首轮探针在清单尚未生成时并行启动，按预期被 SDK204 拒绝；待最终包完成后重做成功，未修改校验逻辑。
 - 观察：新 schema 4 依赖 marker 的普通/BOM 正例通过，重复 BOM/非法 schema 拒绝；仅 BOM 的损坏 marker 在原 D7 和本次包均返回 SDK999/exit 3，保留原拒绝行为，不声称本次修改了这条独立 reader。
-- not-run：公开附件上传、重新下载及从该下载包执行最小作者命令。
+- PASS：GitHub 0.7.0 预览 Release 已公开，ZIP 与同名 SHA-256 附件上传后再次匿名下载，两份附件长度和哈希均一致；从公开下载 ZIP 的全新解压目录完成中文/空格路径 new、离线 restore、Release pack 和只读 Doctor。
 - 既有公开源码 CI 的 Core 用例 `RuntimeApiRegistrationIsAtomicAndDynamicProviderReserved` 仍失败；本次不将它记为已修复或全仓 CI 通过。
 
 ## Evidence
@@ -49,4 +49,4 @@ D7 的完整 ZIP 与原验收完全一致。进一步核对发现它早于 [BOM 
 
 ## Follow-Up
 
-完成准确技术包、中文指南和最小验证后发布，下载核对通过后记录最终链接与提交。
+SDK 首次公开交付、中文指南、准确包及公开下载后的作者验证已完成：[0.7.0 Release](https://github.com/yakumo-hx/DTMAPI/releases/tag/v0.7.0)。既有公开源码 Core CI 失败及新依赖 reader 的损坏输入诊断仍按原记录保留，不扩大本次范围。
