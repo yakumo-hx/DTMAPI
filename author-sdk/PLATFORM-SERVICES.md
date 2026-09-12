@@ -1,109 +1,37 @@
-# Platform services for internal API 0.6.2
+# API 0.6.2 引入的平台服务
 
-SDK 0.6.2 includes API 0.6.2 as its default internal candidate, combining the previously validated M2 and reflection slices.
-These services remain Experimental; SDK and Runtime 0.6.2 have not been published.
-Explicit API 0.5.5 projects retain their original payload and cannot call these services.
-Use the normal SDK build and its matching payload; never reference installed Runtime
-DLLs to make an author project compile. The target catalog owns availability.
+这些平台服务在内部 API 0.6.2 中合并了此前验证的 M2 与反射能力，仍为 Experimental。SDK 0.7.0 保留 0.6.2 target，默认 target 为 0.7.0；target 是否可选及对应 Runtime 范围以 [target catalog](target-catalog.json) 为准。显式选择 API 0.5.5 的工程保持原载荷，不能调用这些服务。请使用正常 SDK 构建及匹配的引用载荷，不要为了编译通过而引用已安装的 Runtime DLL。
 
-## Service acquisition and lifetime
+## 获取服务与生命周期
 
-During `Entry`, use `helper.GetRequiredService<T>("0.6.2", "0.6.2")`, or
-`helper.GetOptionalService<T>()` when the service is optional. Service acquisition requires
-the Runtime thread and an active owner. The exact contract Type determines lookup;
-there is no name-based lookup or Mod API registry fallback.
+在 `Entry` 中使用 `helper.GetRequiredService<T>("0.6.2", "0.6.2")` 获取必需服务，可选服务使用 `helper.GetOptionalService<T>()`。获取服务要求位于 Runtime 线程且 owner 处于活动状态。查找依据准确契约 Type，不按名称查找，也不会退回 Mod API registry。
 
-`IDtmRuntimeContext.Snapshot` is immutable and may be read from a background thread;
-it contains no native object. `IsMainThread` describes the calling thread. Snapshot
-publication precedes synchronous `Subscribe` notifications. A failed load attempt
-still consumes a save epoch, and a room transition invalidates the world epoch
-before publishing the next ready world. `SaveLoaded` remains the old load callback;
-it does not imply `WorldReady`. Neither epoch is a persistent save ID.
+`IDtmRuntimeContext.Snapshot` 是不可变快照，不包含原生对象，可在后台线程读取。`IsMainThread` 描述当前调用线程。快照先发布，再同步通知 `Subscribe` 订阅者。加载失败也会消耗一个 save epoch；房间切换会先使 world epoch 失效，再发布下一个就绪世界。`SaveLoaded` 仍是原有加载回调，不表示 `WorldReady`；这两种 epoch 都不是持久存档 ID。
 
-## Scheduling and owned resources
+## 调度与受管资源
 
-`IDtmScheduler.Post`, `NextTick` and `Delay` accept synchronous Actions from any
-thread. Choose `CurrentWorld` for native world work, `CurrentSaveSession` for work
-bound to one load attempt, and `ModOwner` for owner-wide work. Enqueue captures the
-current epoch. Unavailable scopes reject immediately; a scope change cancels work
-that has not started. `NextTick` starts after the current Core tick; work submitted
-inside a callback cannot run in that same drain. Delay and queue timeout measure
-monotonic elapsed time. Timeout limits waiting to start, not callback duration.
+`IDtmScheduler.Post`、`NextTick` 和 `Delay` 可从任意线程接收同步 Action。原生世界工作选择 `CurrentWorld`，绑定某一次读档尝试的工作选择 `CurrentSaveSession`，属于整个 owner 的工作选择 `ModOwner`。入队时捕获当前 epoch；范围不可用立即拒绝，范围变化会取消尚未开始的工作。`NextTick` 在当前 Core tick 之后开始，回调内提交的工作不会在同一次队列处理期间执行。Delay 和排队超时按单调经过时间计量；超时限制等待开始的时间，不限制回调执行时长。
 
-Each handle has one terminal result. Cancellation cannot interrupt a running Action.
-Callbacks share the Runtime frame budget, so keep them short. Completion Tasks run
-continuations asynchronously and do not marshal back to Unity's thread. Finish
-background work first, then Post the result. Do not use `async void`: SDK203 catches
-directly recognizable async lambdas/method groups passed to scheduler, context,
-command and language callbacks. It does not trace delegates stored in variables.
+每个 handle 只有一个终态结果。取消无法中断已运行的 Action。回调共享 Runtime 每帧预算，应尽量简短。完成 Task 的 continuation 异步运行，不会自动回到 Unity 线程；先完成后台工作，再用 Post 提交结果。不要使用 `async void`：SDK203 会识别直接传给 scheduler、context、command 和 language 回调的 async lambda/method group，但不会追踪存入变量的委托。
 
-`IDtmOwnedResources.Register` registers an `IDisposable` on the Runtime thread and
-returns a token. `Unregister` detaches without disposing; token `Dispose` requests
-cleanup. Background disposal waits for the Runtime drain. Scope invalidation and
-owner closure dispose in reverse registration order, isolate exceptions and retain
-failed resources for retry. Make disposal idempotent. A closed owner/token never
-becomes active when a Mod with the same ID is loaded again.
+`IDtmOwnedResources.Register` 在 Runtime 线程上注册一个 `IDisposable` 并返回 token。`Unregister` 只解除注册，不 dispose；token 的 `Dispose` 请求清理。后台调用 Dispose 会等待 Runtime 处理队列。范围失效或 owner 关闭时，资源按注册顺序倒序 dispose，异常相互隔离，清理失败的资源保留以供重试。dispose 应可重复执行而不产生额外副作用。已关闭 owner/token 不会因同 ID Mod 再次加载而恢复活动。
 
-## Commands
+## 命令
 
-`IDtmCommands.Register("status", handler, scope, description, parameters, alias)`
-owns the canonical `UniqueID/status` name. Names and aliases compare without case;
-alias conflicts fail without overwriting the first registration. `GetHelp` is a
-read-only snapshot. `Execute` uses the same scheduler and scope checks as other
-work. Handlers receive a request ID, owner ID, read-only arguments and `WriteLine`.
-Output is bounded to 32 lines/4096 characters. The parser supports quoted arguments,
-backslash escapes and empty quoted arguments; input is not a shell or script.
+`IDtmCommands.Register("status", handler, scope, description, parameters, alias)` 注册规范名称 `UniqueID/status`。名称和别名比较不区分大小写；别名冲突会失败，不覆盖先前注册。`GetHelp` 返回只读快照。`Execute` 与其他工作使用同一 scheduler 和范围检查。handler 收到 request ID、owner ID、只读参数及 `WriteLine`。输出最多 32 行/4096 字符。解析器支持带引号参数、反斜杠转义和空引号参数；输入不是 shell 命令或脚本。
 
-The existing title Status page shows a command field when commands are registered.
-Use `help` for names; visible output is short and full output goes to the log.
-For an authenticated author session, prepare with `--commands true`, then use
-`session command <UniqueID> <selectedRoot> --game-root <path> --command-line "UniqueID/status"`.
-This optionally negotiates `execute-command/1`. Existing selected-source, tree,
-owner and request-ID checks remain required. A command cannot target another owner
-through that session. Queued timeout/session close cancels unstarted work; already
-running work is not rolled back.
+存在注册命令时，标题界面的 Status 页会显示命令输入框。用 `help` 查看名称；界面显示简短输出，完整输出写入日志。认证作者会话先通过 `--commands true` 准备，再使用 `session command <UniqueID> <selectedRoot> --game-root <path> --command-line "UniqueID/status"`。该选项协商可选 `execute-command/1`，仍需通过选定来源、文件树、owner 和 request-ID 检查；不能借会话执行另一个 owner 的命令。排队超时或会话关闭会取消未开始的工作，已经运行的工作不回滚。
 
-## Versioned configuration
+## 带版本的配置
 
-`IVersionedConfigHelper` is Runtime-thread and owner bound. `Read<T>(schema, validate)`
-returns `Missing` for a new configuration; explicitly write defaults with
-`Write(defaults, schema, validate)`. Register each `n → n+1` step with
-`RegisterMigration<T>(n, value => migratedValue)`. Versions start at 1. The same
-serializable model type is used across the chain; preserve fields needed for migration.
+`IVersionedConfigHelper` 绑定 Runtime 线程和 owner。`Read<T>(schema, validate)` 对新配置返回 `Missing`；需要默认值时显式调用 `Write(defaults, schema, validate)`。通过 `RegisterMigration<T>(n, value => migratedValue)` 注册每个 `n → n+1` 步骤，版本从 1 开始。整个迁移链使用相同的可序列化模型类型，应保留迁移所需字段。
 
-Migrations work on a candidate, which is validated before one atomic commit.
-Validation returns null/empty for success or an error string. Validation receives
-an isolated value and must be a pure check; mutations are not committed. A successful
-read at the already committed version does not repeat migration. `Corrupt`,
-`UnsupportedSchema`, `MigrationRequired`, `MigrationFailed`, `ValidationFailed`,
-`AccessDenied` and `IoError` preserve existing bytes and are distinct from `Missing`.
-Do not treat them as permission to write defaults. No automatic repair overwrites
-bad or future data. Owner closure releases migration callbacks.
+迁移先作用于候选值，校验后一次原子提交。校验返回 null/空字符串表示成功，错误字符串表示失败。校验接收隔离值，必须只做检查，校验中修改的值不会提交。读取已提交版本成功后，不会再次迁移。`Corrupt`、`UnsupportedSchema`、`MigrationRequired`、`MigrationFailed`、`ValidationFailed`、`AccessDenied` 和 `IoError` 都会保留现有字节，且与 `Missing` 不同；不能把它们当作写入默认值的许可。不会自动修复并覆盖损坏或未来版本数据。owner 关闭时释放迁移回调。
 
-Versioned config lives in the Runtime's configuration area, separately from legacy
-`ReadConfig` files. Adopting it does not silently import or rewrite the legacy file.
-An author can explicitly read a legacy model, validate it and write the new config
-only when the versioned result is `Missing`. Old migration Actions retain their old
-per-read behavior. Configuration is independent of gameplay save/rollback semantics.
+带版本配置位于 Runtime 配置区，与旧 `ReadConfig` 文件分开；采用它不会静默导入或改写旧文件。作者可显式读取旧模型、校验，并且只在版本化读取结果为 `Missing` 时写入新配置。旧 migration Actions 仍保留原来的每次读取行为。配置独立于玩法存档的提交/回滚语义。
 
-## Input and translations
+## 输入与翻译
 
-Keep using the existing owner `Input` registrations, scopes and suppression API.
-`IDtmInputDiagnostics.Snapshot` describes the most recently frozen input audience.
-`GetRegistrations` returns only this owner's immutable binding descriptions;
-`FindConflicts` returns potentially overlapping bindings with owner/name/scope.
-Conflict information does not choose a winner. Shared modifiers alone are not a
-conflict; generic Control/Shift/Alt include physical left/right variants. Scope,
-platform/owner UI focus, suppression and physical-neutral rearming still govern
-delivery. Controller coverage is limited to backend paths actually supported and
-tested; these DTOs do not add a device driver.
+继续使用现有 owner 的 `Input` 注册、范围及抑制 API。`IDtmInputDiagnostics.Snapshot` 描述最近一次冻结的输入接收状态。`GetRegistrations` 只返回当前 owner 的不可变绑定描述；`FindConflicts` 返回可能重叠的绑定及 owner/name/scope，但不会决定谁优先。仅共享修饰键不算冲突；通用 Control/Shift/Alt 包含左右物理键。范围、平台/owner UI 焦点、抑制和物理输入回到中立状态后重新启用的规则，仍共同决定事件是否送达。控制器覆盖仅限实际支持并测试的后端路径，这些 DTO 不会增加设备驱动。
 
-`IDtmTranslations.Get` uses this package's catalogs and the existing locale →
-English → explicit fallback/key behavior. Parameters use `{name}`; `{{` and `}}`
-emit literal braces. Replacement is a single pass; missing parameters remain visible
-and are listed in `MissingParameters`. Names are case-sensitive. Subscribe with
-`SubscribeLanguageChanged` and refresh visible author UI in that synchronous
-Runtime-thread callback. There is no initial notification. Regional language changes
-are distinct even when English fallback is shared. Dispose the subscription or close
-the owner to detach it. Reads also require the Runtime thread, because locale selection
-may sample native language state.
+`IDtmTranslations.Get` 使用当前包的语言目录，沿用 locale → English → 显式 fallback/key 的查找顺序。参数写作 `{name}`，`{{` 和 `}}` 输出字面花括号。替换只执行一遍；缺失参数保留在文本中，并列入 `MissingParameters`，参数名区分大小写。使用 `SubscribeLanguageChanged` 订阅，在其同步 Runtime 线程回调中刷新可见作者 UI。订阅时没有初始通知。即使共享英文回退，区域语言变化也分别处理。dispose 订阅或关闭 owner 会解除订阅。读取也要求 Runtime 线程，因为选择 locale 可能读取原生语言状态。

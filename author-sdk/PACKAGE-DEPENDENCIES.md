@@ -1,6 +1,6 @@
 # 包依赖与共享契约 DLL
 
-0.7.0 是首次公开 SDK 候选，尚未发布。作者工程统一使用 schema 4 与标准 MSBuild；当前 API 目标生成 manifest `DependencyContractVersion=1`。旧二进制、包格式与安装恢复继续由各自 reader 检查。
+SDK 0.7.0 的作者工程统一使用 schema 4 与标准 MSBuild；当前 API 目标生成 manifest `DependencyContractVersion=1`。旧二进制、包格式与安装恢复继续由各自 reader 检查。
 
 `manifest.json` 的 Dependencies 是 Mod 身份依赖权威。新项必须包含 UniqueID、Required、VersionRange；VersionRange 包含 minimumInclusive、可选 maximumExclusive、必填 includePrerelease。完整 SemVer 2 区间下界包含、上界排除；false 排除所有 prerelease，build metadata 不参与优先级。不要在新项中混写 MinimumVersion 或 IsRequired。Runtime 最低版本和游戏版本继续使用原比较规则。
 
@@ -27,4 +27,4 @@ required provider 缺失、版本不符或 Entry 失败时，consumer 不进入 
 ## 普通契约库
 
 在 SDK 开发环境中用 `dotnet new classlib -f netstandard2.0` 创建库。程序集版本由该库的 csproj 拥有；Provider 和 Consumer 分别引用同一库，并在各自包中携带其完整闭包。标准 restore/build 选择实际资产，pack 按 CLR identity、hash 和依赖检查最终运行库。生成器、不同 ref/lib、许可元数据和离线恢复见[工程与恢复](PROJECTS-AND-RESTORE.md)。
-Generated shapes are described by `schemas/dtmapi-dependencies.schema.json` and `schemas/dtmapi-package-v3.schema.json`; hashes, intervals and cross-file consistency are validated by the tools. The installation-owned `.dtmapi-author-receipt.json` is outside immutable package payload inventory and cannot contain an executable.
+生成格式见 `schemas/dtmapi-dependencies.schema.json` 和 `schemas/dtmapi-package-v3.schema.json`；工具负责校验哈希、版本区间及跨文件一致性。安装器拥有的 `.dtmapi-author-receipt.json` 不属于不可变包载荷清单，也不能包含可执行文件。

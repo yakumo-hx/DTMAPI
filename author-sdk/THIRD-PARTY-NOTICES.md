@@ -1,13 +1,13 @@
-# Author SDK third-party payload notice
+# Author SDK 第三方载荷说明
 
-The desktop SDK includes NuGet.Protocol, NuGet.Packaging, NuGet.Configuration, NuGet.Common, NuGet.Frameworks and NuGet.Versioning 7.9.0, copyright Microsoft Corporation, under Apache-2.0. The exact upstream NuGet.Client commit is `977537e19c6be57fead1411e6cf05f936bf1baf4`; its license is `licenses/NuGet-7.9.0-LICENSE.txt`. These desktop-only components supply NuGet version/framework parsing and package content/signature validation. Restore is performed by the bundled standard .NET SDK. They are not game Runtime dependencies.
+桌面 SDK 包含 NuGet.Protocol、NuGet.Packaging、NuGet.Configuration、NuGet.Common、NuGet.Frameworks 和 NuGet.Versioning 7.9.0，copyright Microsoft Corporation，采用 Apache-2.0。准确上游 NuGet.Client 提交为 `977537e19c6be57fead1411e6cf05f936bf1baf4`，许可证位于 `licenses/NuGet-7.9.0-LICENSE.txt`。这些仅供桌面使用的组件负责 NuGet 版本/框架解析及包内容/签名验证；restore 由随包标准 .NET SDK 执行。它们不是游戏 Runtime 依赖。
 
-NuGet's desktop dependency Newtonsoft.Json 13.0.3 is included under the MIT license in `licenses/Newtonsoft.Json-13.0.3-LICENSE.txt`. Microsoft System.Security.Cryptography.Pkcs 8.0.1 and ProtectedData 8.0.0 are covered by the SDK's distributed .NET license and third-party notices. These support the desktop tooling, not ordinary Mod payloads. Restored author dependencies must include their own explicitly selected license material; tool notices do not license arbitrary author libraries.
+NuGet 的桌面依赖 Newtonsoft.Json 13.0.3 采用 MIT 许可，许可证位于 `licenses/Newtonsoft.Json-13.0.3-LICENSE.txt`。Microsoft System.Security.Cryptography.Pkcs 8.0.1 和 ProtectedData 8.0.0 由随 SDK 分发的 .NET 许可及第三方声明覆盖。它们用于桌面工具，不是普通 Mod 载荷。作者恢复的依赖必须附带自己明确选择的许可材料，工具声明不授予任意作者类库的分发许可。
 
-The SDK's .NET 8 metadata tools include Mono.Cecil 0.11.6, licensed under MIT/X11 by Jb Evain and contributors. The SDK carries the upstream license in `licenses/Mono.Cecil-0.11.6-LICENSE.txt`. It is used only by author tooling and Doctor; the five game-loaded Runtime assemblies do not depend on Mono.Cecil. Locally generated game reference surfaces remain on the author's machine and are excluded from Mod and SDK distributions.
+SDK 的 .NET 8 元数据工具包含 Mono.Cecil 0.11.6，由 Jb Evain and contributors 以 MIT/X11 许可提供。上游许可证位于 `licenses/Mono.Cecil-0.11.6-LICENSE.txt`。它仅用于作者工具和 Doctor，五个游戏加载的 Runtime 程序集不依赖 Mono.Cecil。本机生成的游戏引用视图留在作者电脑上，不进入 Mod 或 SDK 分发。
 
-This first-public-release SDK candidate includes the reference assemblies from Microsoft's `NETStandard.Library` package version `2.0.3` solely as offline compiler references. The release payload must carry that package's `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT`, and both files must be covered by `compatibility.json` hashes. Earlier SDK builds were internal and unpublished.
+SDK 包含 Microsoft `NETStandard.Library` 2.0.3 的引用程序集，仅用作离线编译引用。发行载荷必须保留该包的 `LICENSE.TXT` 和 `THIRD-PARTY-NOTICES.TXT`，并将两者纳入 `compatibility.json` 哈希。此前的 SDK 构建均为内部版本，未公开发布。
 
-The source tree does not track the `.nupkg` or reference DLL binaries. Release staging must use the pinned package version, preserve its notices, and never source `DTMAPI.Abstractions.dll` from a player game installation.
+源码树不跟踪这些 `.nupkg` 或引用 DLL 二进制。发行暂存必须使用固定包版本并保留声明，不能从玩家游戏安装目录获取 `DTMAPI.Abstractions.dll`。
 
-The complete SDK also carries the unmodified .NET SDK 8.0.421 toolchain under toolchain/dotnet, including MSBuild, Roslyn and their supplied licenses/notices. The selected base/analyzer development nupkgs in offline-packages preserve their upstream license metadata. The SDK203 analyzer targets Roslyn 4.11.0; the MSBuild adapter uses the host MSBuild task API. These are author build tools, not Mod runtime dependencies.
+完整 SDK 还在 `toolchain/dotnet` 中包含未经修改的 .NET SDK 8.0.421 工具链，包括 MSBuild、Roslyn 及其随附许可/声明。`offline-packages` 中选定的基础及 analyzer 开发 nupkg 保留上游许可元数据。SDK203 analyzer 面向 Roslyn 4.11.0，MSBuild 适配器使用宿主 MSBuild task API。这些是作者构建工具，不是 Mod 运行依赖。

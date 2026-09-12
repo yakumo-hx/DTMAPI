@@ -32,7 +32,7 @@ Advanced 包不能携带游戏或平台 DLL，也不能手写准入凭证。Mod 
 
 ## 源码贡献者：构建与验证
 
-本分支汇总 0.7.0 源码、标准 MSBuild SDK 和相关记录，仍通过草稿 PR 整理公开交付。正式公开目录、许可补件及干净公开源码验收尚未完成，见[公开交付设计](docs/reviews/code/2026/20260911-0003-public-source-delivery-design.md)。Linux 贡献者构建属于[后续支持计划](docs/planning/contributor-support.md)，目前不承诺 Linux 全仓构建或测试通过。
+main 已更新为 0.7.0 源码主线，包含标准 MSBuild SDK 和相关记录；原源码 PR #3 已合并。正式公开目录、许可补件及干净公开源码验收尚未完成，见[公开交付设计](docs/reviews/code/2026/20260911-0003-public-source-delivery-design.md)。Linux 贡献者构建属于[后续支持计划](docs/planning/contributor-support.md)，目前不承诺 Linux 全仓构建或测试通过。
 
 现有公开源码测试入口面向 Windows，需要 Python 3、Node.js 和 Windows PowerShell 5.1；脚本通过 `Get-DotNetExe` 选择兼容的 .NET 8 工具链。先阅读[脚本说明](tools/scripts/README.md)，再按修改范围选择检查：
 

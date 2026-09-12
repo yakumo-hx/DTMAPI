@@ -1,4 +1,4 @@
-# 本机原生引用与开放 Advanced（未发布候选 0.7.0）
+# 本机原生引用与开放 Advanced（0.7.0）
 
 任意合法作者 ID 可以创建 Advanced 工程，无需第一方 Catalog 注册。Mod 仍是官方 MODS 下的受管 CodeMod，目标框架固定为 netstandard2.0。
 
@@ -10,7 +10,7 @@ dtmapi-author pack .\MyMod
 
 创建命令默认引用该安装的 Assembly-CSharp、UnityEngine.CoreModule 和 0Harmony；可用 `--native-references` 提供以分号分隔的游戏相对路径。`--harmony-owner` 默认是 `<UniqueID>.Native`，必须等于 UniqueID 或以 `UniqueID.` 开头。工程中 `nativeReferences.gameRoot` 是明确的本机安装目录，包中不包含它。
 
-当前 0.7.0 新项目同时声明 `CodeModKind: Advanced`、`NativeContractVersion: 2`、`DependencyContractVersion: 1`，作者工程使用 schema 4，最低 Runtime 为 0.7.0。旧目标继续生成 V1；旧包不自动升级格式。当前游戏引用 netstandard 2.1，与 Mod 的 netstandard2.0 直接编译冲突；SDK 因此使用通用 metadata reference surface。它保留类型/成员元数据，移除原方法体、资源和字段初始数据，仅在编译视图中适配 facade。缓存位于工程 `obj/dtmapi-native`，按原始程序集摘要与生成器版本区分；缓存字节改变会报错。禁止将这些引用或官方、平台 DLL 放入 内容或运行库清单。
+当前 0.7.0 新项目同时声明 `CodeModKind: Advanced`、`NativeContractVersion: 2`、`DependencyContractVersion: 1`，作者工程使用 schema 4，最低 Runtime 为 0.7.0。旧目标继续生成 V1；旧包不自动升级格式。当前游戏引用 netstandard 2.1，与 Mod 的 netstandard2.0 直接编译冲突；SDK 因此使用通用 metadata reference surface。它保留类型/成员元数据，移除原方法体、资源和字段初始数据，仅在编译视图中适配 facade。缓存位于工程 `obj/dtmapi-native`，按原始程序集摘要与生成器版本区分；缓存字节改变会报错。禁止将这些引用或官方、平台 DLL 放入内容或运行库清单。
 
 `dtmapi-native-build.json` 记录原始宿主 identity、长度、SHA-256、编译视图摘要、实际输出使用的宿主类型/成员及生成器输入摘要。依赖库也扫描同样的引用闭包。manifest、入口 DLL 和依赖清单先绑定到 native 描述，再由总文件清单绑定 native 描述；不要手写或修改生成物。
 

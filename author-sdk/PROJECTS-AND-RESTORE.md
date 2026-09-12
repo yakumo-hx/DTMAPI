@@ -1,32 +1,43 @@
-# Standard projects, resources and restore
+# 标准工程、资源与依赖恢复
 
-The first public SDK uses .NET SDK 8.0.421 and standard MSBuild/Csc for CLI and IDE builds. `dtmapi.author.json` schema 4 selects one Mod `projectFile`, API target, Strict/Advanced identity, native intent and publish metadata. Compiler properties, project/package references, resources, conditions and targets belong to the csproj and its standard imports. Ordinary libraries need only their own csproj.
+SDK 使用 .NET SDK 8.0.421 和标准 MSBuild/Csc 完成 CLI 与 IDE 构建。`dtmapi.author.json` schema 4 选择一个 Mod 的 `projectFile`、API target、Strict/Advanced 身份、原生引用意图和发布元数据。编译器属性、工程及包引用、资源、条件和 targets 由 csproj 及其标准导入管理；普通类库只需自己的 csproj。
 
-## Development environment
+## 开发环境
 
-Extract the complete Windows x64 SDK and dot-source `Enter-DtmApiEnvironment.ps1` in PowerShell. It sets the toolchain and SDK paths for that process; launch your IDE or CI from that shell. It changes no system environment variables. CLI build/restore/pack can locate the bundled toolchain without this shell; direct dotnet and IDE use the environment. An explicit invalid `DTMAPI_AUTHOR_DOTNET`, incompatible ancestor `global.json`, or missing toolchain is an error. ContentPack and read-only Doctor do not require a compiler.
+完整解压 Windows x64 SDK，在 PowerShell 中以点调用方式加载 `Enter-DtmApiEnvironment.ps1`，再从同一窗口启动 IDE 或 CI。脚本只设置当前进程及其子进程使用的工具链和 SDK 路径，不修改系统环境变量。CLI 的 build/restore/pack 能自行定位随包工具链；直接使用 dotnet 和 IDE 时需要加载环境。显式指定的 `DTMAPI_AUTHOR_DOTNET` 无效、上级目录的 `global.json` 不兼容或工具链缺失时都会报错。ContentPack 和只读 Doctor 不需要编译器。
 
-Keep the template import order: Microsoft.NET.Sdk props, DTMAPI.Author.props, author properties/items, Microsoft.NET.Sdk targets, DTMAPI.Author.targets. The thin integration prepares frozen references and observes evaluated outputs; it does not replace Build, Restore or Clean. Game-loaded entry and runtime libraries remain netstandard2.0. Tool/generator projects may target net8.0; multi-target libraries use the standard project-reference selection.
+保留模板的导入顺序：Microsoft.NET.Sdk props、DTMAPI.Author.props、作者属性及 items、Microsoft.NET.Sdk targets、DTMAPI.Author.targets。DTMAPI 接入层负责准备冻结引用、读取求值后的输出，不替代 Build、Restore 或 Clean。游戏加载的入口和运行库保持 netstandard2.0；工具、生成器工程可以使用 net8.0，多目标类库遵循标准工程引用选择规则。
 
-The Mod template enables checked arithmetic, nullable annotations, deterministic portable PDB and standard framework/configuration constants. `Version` initially matches the new manifest; subsequent assembly version properties belong to the csproj. Manifest Version remains the Mod/package version. AssemblyName/TargetFileName must produce the manifest EntryDll. For reproducibility across absolute roots, provide a stable standard `PathMap`, including generated input locations as needed. Arbitrary external targets may have their own nondeterministic inputs.
+Mod 模板启用 checked 算术、nullable 注解、确定性 portable PDB，以及标准框架和配置常量。`Version` 初始值与新 manifest 一致，此后程序集版本属性由 csproj 管理，manifest 的 Version 仍是 Mod/包版本。AssemblyName/TargetFileName 必须生成 manifest 的 EntryDll 所指定的文件。需要在不同绝对目录下重现产物时，请设置稳定的标准 `PathMap`，必要时也映射生成输入的路径；外部 targets 可能仍有自己的非确定性输入。
 
-PathMap matches the compiler's actual path spelling, including drive-letter case. In the tested VS Code workspace the IDE supplied `e:\...` while CLI supplied `E:\...`; mapping both observed prefixes to the same stable source prefix made the final Release DLL and PDB identical across CLI, IDE and CI. Inspect compiler arguments and portable PDB documents when comparing outputs. Keep properties such as GenerateDocumentationFile before the Microsoft.NET.Sdk targets import so standard defaults observe them.
+PathMap 匹配编译器实际使用的路径拼写，包括盘符大小写。已测试的 VS Code 工作区中，IDE 使用 `e:\...`，CLI 使用 `E:\...`；将这两个实际前缀映射到相同源码前缀后，CLI、IDE 和 CI 的最终 Release DLL、PDB 相同。比较输出时应检查编译参数和 portable PDB 的文档路径。GenerateDocumentationFile 等属性放在 Microsoft.NET.Sdk targets 导入之前，让标准默认值能读取到它们。
 
-The tested IDE was VS Code 1.107.1 with C# Dev Kit 3.20.199 and C# 2.140.9 on Windows. Design-time frozen references, F12, generated source, error navigation and standard Debug/Release builds were exercised. PDB support is separate from a debugger connection: the installed coreclr attach flow did not expose managed frames, locals or stepping in the tested Unity shipping Mono process. No breakpoint support is claimed for that setup. Unity describes Player managed debugging with a compatible adapter and a Development Build with Script Debugging in its [managed debugging guide](https://docs.unity.cn/2020.3/Documentation/Manual/ManagedCodeDebugging.html); preparing a different game debugging host is a separate task.
+已测试的 IDE 环境是 Windows 上的 VS Code 1.107.1、C# Dev Kit 3.20.199 和 C# 2.140.9，覆盖设计时冻结引用、F12、生成源码、错误导航及标准 Debug/Release 构建。PDB 可用不等于调试器可以连接：当时的 coreclr attach 流程未能在 Unity shipping Mono 进程中取得受管栈、locals 或单步能力，因此不承诺该环境支持断点。Unity 的[受管调试指南](https://docs.unity.cn/2020.3/Documentation/Manual/ManagedCodeDebugging.html)说明了兼容适配器与开启 Script Debugging 的 Development Build；准备其他游戏调试宿主属于独立工作。
 
-## Author root, project directory and outputs
+## 作者根目录、工程目录与输出
 
-The CLI directory argument is the **author root**, containing `dtmapi.author.json` and `manifest.json`. `projectFile` is relative to that directory and may name `src/MyMod.csproj`. Do not copy the metadata into `src`. CLI restore/build/pack invoke the selected project from its own directory so ancestor toolchain selection follows the same project as the IDE.
+CLI 的目录参数是包含 `dtmapi.author.json` 和 `manifest.json` 的**作者根目录**。`projectFile` 相对于这个目录，可以指向 `src/MyMod.csproj`；不要因此把元数据复制到 `src`。CLI restore/build/pack 从所选 csproj 自己的目录调用工程，使上级工具链选择与 IDE 针对同一工程的选择一致。
 
-In direct MSBuild and IDE builds, `DtmApiAuthorProjectRoot` defaults to the nearest ancestor directory containing `dtmapi.author.json`, starting at the csproj directory. An explicit value takes precedence; a relative value is relative to the csproj directory. A missing or wrong explicit owner is an error, with no fallback. The selected metadata's `projectFile` must name the project being built. This lookup does not search sibling workspaces or the game. Static `validate` checks metadata; it does not execute imports or prove a successful MSBuild evaluation.
+直接使用 MSBuild 或 IDE 时，`DtmApiAuthorProjectRoot` 默认从 csproj 目录向上寻找最近的、含有 `dtmapi.author.json` 的目录。显式值优先；相对值以 csproj 目录为基准。显式指定的归属目录不存在或不正确会报错，不再退回自动查找。所选元数据的 `projectFile` 必须指向正在构建的工程。查找不会扫描相邻工作区或游戏。静态 `validate` 只检查元数据，不执行 imports，也不能证明 MSBuild 求值成功。
 
-Ordinary `Compile`, `Content`, `HintPath`, `ProjectReference`, output and intermediate properties retain standard MSBuild semantics. References, assets, analyzer lists, compiler arguments and build-facts filenames passed between MSBuild and the SDK are absolute. Facts include the actual project directory and absolute output, intermediate and documentation paths. SDK build reports/staging live under the selected project's `obj/dtmapi-author`, not a second parent `obj` for subdirectory projects. Ordinary libraries need no author metadata or DTMAPI imports.
+普通 `Compile`、`Content`、`HintPath`、`ProjectReference`、输出及中间目录属性保持标准 MSBuild 语义。MSBuild 与 SDK 之间传递的引用、资产、analyzer 列表、编译参数和 build-facts 文件名使用绝对路径。facts 记录实际工程目录及输出、中间目录、文档的绝对路径。SDK 构建报告和暂存内容位于所选工程的 `obj/dtmapi-author`，子目录工程不会另在父目录建立第二份 `obj`。普通类库无需作者元数据或 DTMAPI imports。
 
-SDK-specific `DtmApiLicenseFiles` paths remain relative to the author root. Native-contract `nativeReferences.gameRoot` remains an explicit absolute installed-game path; SDK reference preparation keeps its author-owned native cache. `DtmApiCompatibilityRoot` in MSBuild follows the csproj directory when relative; CLI `--compatibility-root` follows the invoking shell. CLI `build --output` / `pack --build-output` paths are relative to the author root; default package output is the author's `dist`. `DtmApiPackagePath` is a package-relative destination, independent of all filesystem roots. These rules do not change ordinary MSBuild item evaluation.
+各类路径的基准如下：
 
-## Libraries and package metadata
+| 字段或参数 | 相对路径的基准或要求 |
+| --- | --- |
+| `DtmApiLicenseFiles` | 作者根目录 |
+| `nativeReferences.gameRoot` | 必须显式填写本机游戏安装目录的绝对路径；引用准备使用作者工程自己的原生缓存 |
+| MSBuild `DtmApiCompatibilityRoot` | csproj 目录 |
+| CLI `--compatibility-root` | 调用命令的 shell 当前目录 |
+| CLI `build --output` / `pack --build-output` | 作者根目录；默认包输出在作者根目录的 `dist` |
+| `DtmApiPackagePath` | 包内目标路径，与本机目录无关 |
 
-Use standard ProjectReference, Reference/HintPath and PackageReference. For example:
+这些 SDK 规则不改变普通 MSBuild item 的求值方式。
+
+## 类库与包元数据
+
+使用标准 ProjectReference、Reference/HintPath 和 PackageReference，例如：
 
 ```xml
 <ItemGroup>
@@ -37,15 +48,15 @@ Use standard ProjectReference, Reference/HintPath and PackageReference. For exam
 </ItemGroup>
 ```
 
-The package name/version above is illustrative. Use dependencies you have actually selected and licensed. `DtmApiRole` defaults to `private-managed`; `shared-contract` is explicit. `DtmApiDistribution` is required for every packaged library. Third-party distribution requires nonempty `DtmApiLicenseFiles` (semicolon-separated paths relative to the Mod project). When transitive libraries have no direct declaration, attach the same metadata to their evaluated ReferenceCopyLocalPaths items with a standard target before DtmApiCollect. Conflicting metadata is rejected. PrivateAssets controls standard reference propagation; it does not by itself remove a selected runtime dependency from the Mod package.
+示例中的包名和版本只是占位，请替换为实际选择且有权分发的依赖。`DtmApiRole` 默认为 `private-managed`，共享契约必须显式声明 `shared-contract`。每个入包类库都需要 `DtmApiDistribution`。第三方分发还需要非空 `DtmApiLicenseFiles`，多个路径用分号分隔，以作者根目录为基准。没有直接声明的传递依赖，可在 DtmApiCollect 之前通过标准 target，给求值后的 ReferenceCopyLocalPaths items 补上相同元数据；冲突声明会被拒绝。PrivateAssets 控制标准引用传播，本身不会从 Mod 包中移除已选中的运行依赖。
 
-NuGet may select different ref and lib assemblies. Compilation uses the selected references; packaging uses the final runtime implementations and checks their actual type/member surface, identities and dependency closure. Actual field reads, writes and address instructions must match static/instance storage in the final implementation; unused API differences do not require whole-DLL equality. Build tasks, generators and analyzers are compiler inputs, not runtime payloads. Runtime assemblies must be pure managed netstandard2.0 with exact filenames. Native/RID and satellite runtime assets are currently rejected. Standard build support for a package does not imply that its runtime assets are supported by Unity Mono.
+NuGet 可能分别选择 ref 和 lib 程序集。编译使用选定的引用，打包检查最终运行实现的实际类型、成员、身份及依赖闭包。实际字段读写和取地址指令必须与最终实现的 static/instance 存储方式一致；未使用的 API 差异不要求整个 DLL 相同。构建任务、生成器和 analyzers 是编译输入，不是运行载荷。运行程序集必须是纯托管 netstandard2.0，文件名必须精确匹配。当前拒绝 native/RID 和 satellite 运行资产；某个包能参与标准构建，不代表其运行资产受到 Unity Mono 支持。
 
-## Generated code, resources and content
+## 生成代码、资源与内容
 
-Standard Directory.Build.props/targets, Directory.Packages.props, conditions, Compile Include/Remove/Link, source generators, analyzers, AdditionalFiles, EditorConfig and resx/embedded resources run through MSBuild. Required SDK203 analysis rejects direct async-void platform callbacks, including generated code. Pack refuses disabled required analysis or skipped compilation.
+标准 Directory.Build.props/targets、Directory.Packages.props、条件、Compile Include/Remove/Link、源码生成器、analyzers、AdditionalFiles、EditorConfig 和 resx/嵌入资源均由 MSBuild 处理。必需的 SDK203 分析会拒绝直接可识别的 async-void 平台回调，包括生成代码；关闭必需分析或跳过编译时，pack 会拒绝出包。
 
-Select package content explicitly:
+显式选择入包内容：
 
 ```xml
 <ItemGroup>
@@ -53,9 +64,9 @@ Select package content explicitly:
 </ItemGroup>
 ```
 
-Content paths cannot traverse, collide by case, replace generated metadata or disguise managed/native host binaries. `GenerateDocumentationFile=true` packages the final XML beside its assembly. Debug packages include matching portable PDB; Release includes them only with `--symbols true`. AfterBuild post-processing and `DtmApiPreparePackageDependsOn` finish before output collection. The SDK does not recursively collect stale DLLs from bin.
+内容路径不能越出包目录、出现大小写冲突、替换生成元数据，或把托管/原生宿主二进制伪装为普通内容。`GenerateDocumentationFile=true` 会将最终 XML 放在程序集旁边。Debug 包包含匹配的 portable PDB；Release 仅在指定 `--symbols true` 时包含。AfterBuild 后处理及 `DtmApiPreparePackageDependsOn` 完成后才采集输出；SDK 不会递归收集 bin 中的陈旧 DLL。
 
-## Standard restore and offline work
+## 标准恢复与离线使用
 
 ```powershell
 dtmapi-author restore MyMod --json
@@ -64,16 +75,16 @@ dtmapi-author build MyMod --configuration Debug --json
 dtmapi-author pack MyMod --offline true --json
 ```
 
-Restore and ordinary build use NuGet's normal sources, credentials, project graph and lock format. Templates request `packages.lock.json`; run restore explicitly and review the lock before publication. Pack requires an existing lock and uses locked restore. Missing locks or changed declarations fail with guidance to restore; pack does not silently choose new dependency versions. Keep credentials in normal NuGet configuration/provider storage, outside source and package content.
+restore 和普通 build 使用 NuGet 的正常源、凭据、工程图及锁文件格式。模板要求 `packages.lock.json`；发布前显式运行 restore 并检查锁文件。pack 要求锁文件已存在，使用 locked restore；缺少锁文件或依赖声明改变时会失败并提示恢复，不会悄悄选择新依赖版本。凭据放在正常的 NuGet 配置或 credential provider 存储中，不进入源码或包内容。
 
-Offline mode supplies only the SDK's local feed plus already available package cache; DTMAPI does not download in that mode. The complete SDK includes the pinned toolchain, base netstandard package and analyzer development dependencies, not arbitrary author dependencies or the maintainer's entire cache. Prepare selected extension packages/tools first for offline use. Author-defined targets can perform I/O, so offline mode is not a network sandbox.
+离线模式只使用 SDK 本地源和已有包缓存，DTMAPI 在该模式下不下载。完整 SDK 包含固定工具链、基础 netstandard 包和 analyzer 开发依赖，不包含任意作者依赖或维护者的整个缓存。需要离线使用其他扩展包、工具时，先准备它们。作者自定义 targets 可以自行进行 I/O，因此离线模式不是网络沙箱。
 
-NuGet archive hashes/signatures and extracted payload bytes are rechecked. Final runtime libraries also pass PE/method, dependency, license and reserved-host checks. Valid CLR delegates are supported; P/Invoke, unmanaged/internal-call methods and non-IL-only runtime DLLs are rejected. A restored private Newtonsoft.Json library may conflict with the game's resident copy; use the explicitly supported Advanced host reference when appropriate.
+NuGet 归档哈希、签名和提取后的文件字节会再次检查。最终运行库还需通过 PE/方法、依赖、许可及保留宿主检查。支持合法 CLR 委托，拒绝 P/Invoke、unmanaged/internal-call 方法和非 IL-only 运行 DLL。已恢复的私有 Newtonsoft.Json 可能与游戏驻留版本冲突；适用时使用明确支持的 [Advanced 宿主引用](NATIVE-REFERENCES.md)。
 
-## Reports, failure and CI
+## 报告、失败处理与 CI
 
-Pack builds once, then captures final DLL/PDB/XML and selected runtime/content into a private snapshot. `--build-output` selects the standard OutDir for that invocation. Reports bind the actual output, MSBuild facts, toolchain/compiler and frozen references by hash; they do not claim a universal source/target identity for arbitrary MSBuild. Same-path publication uses an exclusive lock. A failed or cancelled pack retains the prior successful ZIP; standard MSBuild bin/obj are not a transactional store. Ctrl+C stops the SDK's MSBuild process tree.
+pack 只构建一次，然后将最终 DLL/PDB/XML、选定运行库及内容收集为私有快照。`--build-output` 选择这次构建的标准 OutDir。报告用哈希绑定实际输出、MSBuild facts、工具链/编译器和冻结引用，不为任意 MSBuild 工程承诺统一的源码/target 身份。同路径发布使用独占锁。pack 失败或取消会保留此前成功的 ZIP，但标准 MSBuild 的 bin/obj 不是事务存储。Ctrl+C 会停止 SDK 启动的 MSBuild 进程树。
 
-`ci/verify-project.ps1` uses the same packaged SDK, validates, optionally restores, packs once and runs read-only Doctor on the resulting ZIP. An explicit author logic-test script may inspect the extracted artifact. Strict CI needs no game files. Advanced builds need the author's licensed game references. Actual Mono loading, source lines, owner cleanup, restart and resident assembly behavior require separate game validation.
+`ci/verify-project.ps1` 使用同一随包 SDK，执行 validate、可选 restore、一次 pack，再对生成的 ZIP 运行只读 Doctor。显式提供的作者逻辑测试脚本可以检查解压产物。Strict CI 不需要游戏文件；Advanced 构建需要作者有权使用的游戏引用。实际 Mono 加载、源码行、owner 清理、重启及驻留程序集行为仍需另做游戏验证。
 
-Doctor inspects the existing package/metadata contract without executing build targets or author IL. It is not a complete IL verifier, and a clean report does not prove runtime behavior. Pack's final-output checks and actual game validation have distinct responsibilities.
+Doctor 只检查已有包及元数据契约，不执行 build targets 或作者 IL。它不是完整 IL 验证器，报告无错误也不能证明游戏行为正确。pack 的最终输出检查与实际游戏验证各有自己的职责。

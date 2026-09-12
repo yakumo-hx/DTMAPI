@@ -1,122 +1,156 @@
 # DTMAPI Author SDK
 
-Author SDK 通过 `dtmapi-author` 创建、校验、构建、打包、部署和诊断 Mod。SDK 0.7.0 默认使用 M3 API 0.7.0，需要 Runtime 0.7.0；保留的旧 API target 仍按各自目录约束处理。
+Author SDK 通过 `dtmapi-author` 创建、校验、构建、打包、部署和诊断 Mod。SDK 工具版本为 0.7.0，默认使用完整 M3 API 0.7.0，需要 Runtime 0.7.0；保留的旧 target 按各自目录范围使用。Windows x64 完整 ZIP 包含自包含 .NET 8 CLI 和 .NET SDK 8.0.421 工具链，生成的游戏加载程序集保持 `netstandard2.0`。
 
-Windows 与多平台 Runtime 0.7.0 已发布，包含 marker 文件开头的 UTF-8 BOM 兼容修复，见[发布确认](../docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md)。Author SDK D7 已完成 Windows 范围验收，独立 GitHub Release 附件尚未发布。SDK 与玩家 Runtime 分开交付；完整 Windows x64 ZIP 的 CLI 基于自包含 .NET 8，包含 .NET SDK 8.0.421，而生成的游戏加载程序集保持 `netstandard2.0`。当前交付范围见[候选说明](../docs/planning/platform-next/release-candidate.md)。
+Windows 与多平台 Runtime 0.7.0 已在工坊发布，包含 marker 文件开头的 UTF-8 BOM 兼容修复，见[玩家包发布记录](https://github.com/yakumo-hx/DTMAPI/blob/main/docs/updates/2026/20260911-0011-runtime-y-hotfix-publication.md)。本工具包基于已验收的 D7，随包 Doctor 纳入主线的 UTF-8 BOM marker 修复；开发工具的支持范围为 Windows Developer Preview。SDK 下载与 SHA-256 见[0.7.0 发行说明](https://github.com/yakumo-hx/DTMAPI/releases/tag/v0.7.0)。SDK 是作者开发工具，不能代替玩家 Runtime，也不安装到 `BepInEx/plugins`。
 
-## 选择作者路线
+新工程使用 author schema 4 和标准 MSBuild。普通 DLL Mod 从 Strict CodeMod 开始；需要本机游戏原生类型时，阅读 [Advanced 原生引用](NATIVE-REFERENCES.md)。0.7.0 新项目使用 `NativeContractVersion=2`，支持任意合法作者 ID；旧 V1 与 receipt 包保留各自校验路径。[包依赖与共享 DLL](PACKAGE-DEPENDENCIES.md)说明当前依赖格式，旧二进制和包 reader 仍遵循原契约。
 
-- 使用 DTMAPI 公共 API 的 DLL Mod 从 Strict CodeMod 开始，先查 [API 状态](API-STATUS.md)。public 不等于 Stable。
-- 需要游戏原生类型时，阅读 [Advanced 本机原生引用](NATIVE-REFERENCES.md)。0.7.0 的 `NativeContractVersion=2` 支持任意合法作者 ID；旧 V1 与 receipt 包保留各自校验路径，不能复制其他产品的凭证。
-- 新项目采用 schema 4 和标准 MSBuild 工程。工程属性、恢复与构建见[工程与恢复](PROJECTS-AND-RESTORE.md)，NuGet 和共享 DLL 见[包依赖](PACKAGE-DEPENDENCIES.md)。
-- 内容包的具体领域说明见[内容包作者指南](../author-docs/README.md)；通用独立 Content Host 尚未完成。
+## 从解压到第一个包
 
-下文保留完整命令与兼容规则。使用 SDK ZIP 时，先按 Commands 一节加载 `Enter-DtmApiEnvironment.ps1`，再创建工程。任何作者路线都不允许将游戏或平台 DLL 随包分发，受管 Mod 也不放入 `BepInEx/plugins`。
+1. 将完整 SDK ZIP 解压到独立开发目录，不要在压缩包内运行，也不要放入游戏目录。确认同一 SDK 根目录下有 `dtmapi-author.exe`、`Enter-DtmApiEnvironment.ps1` 和 `toolchain`。
+2. 在 SDK 根目录打开 PowerShell，点调用环境脚本。开头的点和后面的空格都要保留。
+3. 切换到准备存放源码的目录，创建工程、恢复依赖并打包。下面的目录仅为示例，请换成自己的开发目录。
 
-## API target selection
+```powershell
+# 当前目录是完整解压后的 SDK 根目录。
+. .\Enter-DtmApiEnvironment.ps1
 
-[target-catalog.json](target-catalog.json) defines the default and available API targets, each payload's immutable contract, and its supported package Runtime range. `new --api-target 0.5.5` selects the retained target explicitly; omission uses `0.7.0`. Available means buildable, not published. `build` and `pack` use the project's `targetDtmApiVersion`; they do not infer it from the installed game or Runtime version. The first public SDK accepts one author input format; API target selection is independent of the author schema.
-
-The retained internal `0.6.2` contract combines the Experimental [platform services](PLATFORM-SERVICES.md) and [reflection](REFLECTION.md). Save-bound data remains outside the current API. Earlier unpublished M2 and reflection candidates remain repository history and are not distributed SDK targets. Old hashes and packages are never relabeled.
-
-New packages must declare a minimum Runtime within the selected target's catalog range; promising a version below the compiled API target is now an error. Readers retain the lower-minimum behavior of previously issued SDK 0.1.0 / API 0.5.5 Strict and ContentPack packages, including existing receipt recovery; Advanced policy requirements remain enforced. This does not alter frozen payload bytes. An explicit `--compatibility-root` or `DTMAPI_AUTHOR_COMPAT_ROOT` is authoritative: missing, mismatched or modified payloads fail instead of silently falling back to another directory. The executable embeds the catalog and original compatibility contract; editing the distributed JSON cannot authorize another target.
-
-`session prepare --api-target <version>` requests that same available API target while negotiating the session protocol independently. Existing Advanced reference policies remain bound to their original target and receipts.
-
-Use **Strict CodeMod** for public DTMAPI/BCL and supported managed dependencies. Any valid author ID can use the current **Advanced CodeMod** native-contract path with explicit local game references. The older receipt path remains identity-specific; copying another product's policy or receipt fails closed. Neither path permits redistributing game/platform DLLs.
-
-Strict compiler references and final PE dependency closure reject unadmitted host assemblies. Standard MSBuild owns project evaluation and diagnostics; comments and same-named user types are not guessed references. See [projects and restore](PROJECTS-AND-RESTORE.md) for standard extension points, runtime asset limits and publication checks.
-
-`DTMAPI.Abstractions` is a public assembly, not a promise that every public type is Stable. Before adopting a surface, check both stability and disposition in the bundled [API status](API-STATUS.md), generated from the repository's authoritative matrix. Diagnostic, Frozen, Disabled, DTMAPI-internal, and Proposed contracts are not ordinary new-mod dependencies. See [migration](MIGRATION.md), including the historical CSV removal exception.
-
-Existing frozen consumers can follow [the migration guide](MIGRATION.md). It distinguishes player-product alternatives, unavailable capabilities and retained ABI/data, without announcing a removal date.
-
-## Commands
-
-Dot-source `Enter-DtmApiEnvironment.ps1` and launch your IDE from that shell. The full ZIP includes .NET SDK 8.0.421. Generated projects import thin DTMAPI props/targets and use standard Build/Restore/Clean; CLI build invokes the same MSBuild backend. See [projects and restore](PROJECTS-AND-RESTORE.md) for project properties, generators, libraries, offline restore, output reports and failure behavior. Game-loaded assemblies remain netstandard2.0; assembly versions belong to the csproj and the manifest owns Mod version.
-
-Debug packages include portable symbols; Release requires `--symbols true` to include them. New standard-build author packages have been exercised on Windows shipping Mono; symbol generation does not establish breakpoint support. The tested IDE and debugging limits are recorded in [projects and restore](PROJECTS-AND-RESTORE.md).
-
-```text
+# 换成自己已有的源码目录。
+Set-Location 'D:\ModProjects'
 dtmapi-author new codemod MyMod --id Author.MyMod --name "My Mod" --author Author
-dtmapi-author new codemod NativeObserver --id Pine.NativeObserver --name "Native Observer" --author Pine --code-mod-kind Advanced --game-root "D:\Games\Doloc Town"
-dtmapi-author new contentpack MyPack --id Author.MyPack --name "My Pack" --author Author
 dtmapi-author validate MyMod
-dtmapi-author restore MyMod
-dtmapi-author build MyMod
-dtmapi-author pack MyMod
-dtmapi-author hash MyMod/dist/Author.MyMod-0.1.0.zip
-dtmapi-author deploy MyMod/dist/Author.MyMod-0.1.0.zip --game-root "D:\\Games\\DolocTown"
-dtmapi-author update MyMod/dist/Author.MyMod-0.2.0.zip --game-root "D:\\Games\\DolocTown"
-dtmapi-author withdraw Author.MyMod --game-root "D:\\Games\\DolocTown"
-dtmapi-author recover Author.MyMod --game-root "D:\\Games\\DolocTown"
-dtmapi-author deployment-status Author.MyMod --game-root "D:\\Games\\DolocTown"
-dtmapi-author session prepare --game-root "D:\\Games\\DolocTown"
-dtmapi-author session snapshot Author.MyMod "%USERPROFILE%\\AppData\\LocalLow\\RedSawGames\\DolocTown\\MODS\\Author.MyMod" --game-root "D:\\Games\\DolocTown"
-dtmapi-author session reload Author.MyMod "%USERPROFILE%\\AppData\\LocalLow\\RedSawGames\\DolocTown\\MODS\\Author.MyMod" --game-root "D:\\Games\\DolocTown"
-dtmapi-author session clear --game-root "D:\\Games\\DolocTown"
-dtmapi-author doctor "D:\\Games\\DolocTown"
+dtmapi-author restore MyMod --json
+dtmapi-author pack MyMod --json
 ```
 
-Add `--json` for a machine-readable report. Strict `build` starts standard MSBuild/Csc using the complete SDK's bundled .NET SDK 8.0.421 and hash-fixed API/BCL references; it needs no system SDK or game directory. Ordinary restore, build and pack may contact the author's configured NuGet sources. Use `--offline true` for the bundled local feed and already prepared cache; arbitrary author targets are not network-sandboxed. See [project paths and restore](PROJECTS-AND-RESTORE.md) when `projectFile` is in a subdirectory: metadata stays at the author root, while ordinary items and intermediate outputs follow the csproj directory. Advanced uses the explicit local game root saved by `new --game-root` or supplied to the command. The current native-contract path records the exact host identities, paths and hashes and derives required signatures from the compiled output; legacy receipt projects retain their tracked policy/build restrictions. The CLI does not search ambient game installs or unrelated workspaces for native assemblies. Tested game compatibility and remaining limitations are described in [native references](NATIVE-REFERENCES.md).
+`MyMod` 是作者根目录，保存 `dtmapi.author.json`、`manifest.json` 和新建工程。修改生成的入口源码即可开始写 Mod。默认版本的包输出为 `MyMod/dist/Author.MyMod-0.1.0.zip`，准确路径和哈希以 pack 报告为准。`pack` 已经编译一次，不必先重复运行 build；只想检查编译时，可单独运行 `dtmapi-author build MyMod`。
 
-Doctor reads package and assembly metadata without building or executing author code. Its success is not proof that arbitrary IL or a package will run in the game. Pack checks the final runtime implementations against the actual referenced members and field-access instructions; actual loading, behavior and debugging still need representative game validation.
+Debug 与 Release、离线恢复分别使用下列命令。它们是不同用途的示例，不要求依次执行：
 
-`pack` already compiles a CodeMod once. Use `pack MyMod --build-output path/to/compiled --json` when the calling build also needs that DLL and PDB; do not precede it with a duplicate `build`. The report keeps `outputPath`/`sha256` for the ZIP and adds `values.buildOutputPath`, `buildOutputSha256`, `buildFactsPath`, `buildFactsSha256`, `buildBackend` and `compilerSha256` for the actual compilation. ContentPack does not accept `--build-output`.
+```powershell
+dtmapi-author build MyMod --configuration Debug --json
+dtmapi-author pack MyMod --configuration Release --symbols true --json
+dtmapi-author restore MyMod --offline true --json
+dtmapi-author pack MyMod --offline true --json
+```
 
-Repository product wrappers use `prepare-author-sdk.ps1` once, then reuse its explicit output through `-AuthorSdkRoot`. Preparation checks the SDK source/dependency graph, compiler, build properties and packaging inputs; a normal product-source change does not rebuild the SDK. `preflight-workspace.ps1 -Operation BuildProduct -CatalogId more-saves` reports missing setup and the separate compile-reference/test-game paths without creating output. Formal release verification still packs twice for determinism.
+Debug 包包含 portable PDB；Release 需要 `--symbols true` 才包含。离线模式仅使用随包本地源和已有缓存，其他作者依赖应提前准备。新工程需要先 restore 生成并核对 `packages.lock.json`，pack 不会替你静默选择新依赖版本。
 
-`pack` emits the official package shape:
+从加载了 SDK 环境的 PowerShell 启动 IDE，例如已安装 VS Code 时运行 `code MyMod`。CLI 与 IDE 使用同一 MSBuild 后端。工具链、子目录工程、普通库、生成器、输出报告及已测 IDE 限制见[工程与恢复](PROJECTS-AND-RESTORE.md)。生成符号不代表游戏 shipping Mono 支持断点。
+
+## 选择 API target
+
+[target-catalog.json](target-catalog.json)定义默认及可选 target、每份载荷的不可变契约和支持的包 Runtime 范围。省略 target 使用 0.7.0；`new --api-target 0.5.5` 显式选择保留目标。目录中“可用”表示可构建，不表示该历史版本单独公开过。`build` 和 `pack` 读取工程的 `targetDtmApiVersion`，不从已安装游戏或 Runtime 推断 target。作者输入 schema 与 API target 相互独立，首发 SDK 只接受一种作者输入格式。
+
+保留的内部 0.6.2 契约合并 Experimental [平台服务](PLATFORM-SERVICES.md)与[反射](REFLECTION.md)。当前 API 不提供绑定玩法存档的数据能力。更早未发布的 M2/反射候选只保留为仓库历史，不是随 SDK 分发的 target；旧哈希和包不会重新标记身份。
+
+新包声明的最低 Runtime 必须位于所选 target 的目录范围，低于编译 API target 会报错。reader 继续兼容此前 SDK 0.1.0 / API 0.5.5 Strict、ContentPack 包的旧最低版本行为及 receipt 恢复；Advanced 策略要求仍生效。这不会改变冻结载荷。显式 `--compatibility-root` 或 `DTMAPI_AUTHOR_COMPAT_ROOT` 指定的目录是唯一选定来源；文件缺失、不匹配或被修改会失败，不会暗中改用其他目录。可执行文件内嵌目录及原始兼容契约，修改分发 JSON 不能授权新 target。
+
+`session prepare --api-target <version>` 请求同一个可用 API target，同时独立协商会话协议。旧 Advanced 引用策略仍绑定原 target 和 receipt。
+
+Strict 用于公共 DTMAPI/BCL 与受支持的托管依赖。任意合法作者 ID 都可通过显式本机游戏引用使用当前 Advanced 原生契约路线；旧 receipt 路线仍与产品身份绑定，复制其他产品策略或 receipt 会被拒绝。两条路线都不允许分发游戏/平台 DLL。
+
+Strict 编译引用及最终 PE 依赖闭包会拒绝未获准的宿主程序集。工程求值和诊断由标准 MSBuild 负责，不会根据注释或同名用户类型猜测引用。[工程与恢复](PROJECTS-AND-RESTORE.md)说明标准扩展点、运行资产限制和发布检查。
+
+`DTMAPI.Abstractions` 是公共程序集，不代表每个 public 类型都 Stable。使用前请同时查看随包 [API 状态](API-STATUS.md)中的 stability 和 disposition，它由仓库权威矩阵生成。Diagnostic、Frozen、Disabled、DTMAPI-internal 和 Proposed 契约不应作为新普通 Mod 的依赖。已有冻结 API 使用者请看[迁移指南](MIGRATION.md)，其中区分玩家产品替代、不可用能力和保留 ABI/数据，也记录历史 CSV 删除例外，没有宣布新移除日期。
+
+## 构建、打包与诊断命令
+
+更多创建方式：
+
+```powershell
+dtmapi-author new codemod NativeObserver --id Pine.NativeObserver --name "Native Observer" --author Pine --code-mod-kind Advanced --game-root 'D:\Games\Doloc Town'
+dtmapi-author new contentpack MyPack --id Author.MyPack --name "My Pack" --author Author
+dtmapi-author hash MyMod/dist/Author.MyMod-0.1.0.zip
+dtmapi-author doctor MyMod/dist/Author.MyMod-0.1.0.zip --json
+```
+
+`--json` 输出机器可读报告。Strict build 使用完整 SDK 自带 .NET SDK 8.0.421 的标准 MSBuild/Csc 和哈希固定的 API/BCL 引用，不要求系统 SDK 或游戏目录。普通 restore/build/pack 可能访问作者配置的 NuGet 源；`--offline true` 只使用本地源和已准备缓存，但不能限制任意作者 target 自行访问网络。
+
+当 `projectFile` 在子目录时，元数据留在作者根目录，普通 items 和中间输出遵循 csproj 目录，详见[工程路径](PROJECTS-AND-RESTORE.md)。Advanced 使用 `new --game-root` 保存或命令中显式提供的本机游戏根目录。原生契约记录准确宿主身份、路径和哈希，并从编译输出推导必需签名；旧 receipt 工程保留 tracked policy/构建限制。CLI 不扫描其他游戏安装或无关工作区来寻找原生程序集。已测游戏兼容范围见[原生引用](NATIVE-REFERENCES.md)。
+
+Doctor 不构建、不执行作者代码，只读取包及程序集元数据；成功不证明任意 IL 或包可以在游戏运行。pack 根据实际引用成员及字段访问指令检查最终运行实现，实际加载、行为和调试仍需代表性游戏验证。
+
+调用方同时需要 DLL/PDB 时，使用 `pack MyMod --build-output path/to/compiled --json`，不要先重复 build。报告保留 ZIP 的 `outputPath`/`sha256`，并提供 `values.buildOutputPath`、`buildOutputSha256`、`buildFactsPath`、`buildFactsSha256`、`buildBackend` 和 `compilerSha256`，对应实际编译。ContentPack 不接受 `--build-output`。
+
+仓库产品 wrapper 先运行一次 `prepare-author-sdk.ps1`，再通过 `-AuthorSdkRoot` 复用明确输出。准备过程检查 SDK 源码/依赖图、编译器、构建属性及打包输入；普通产品源码改变不重建 SDK。`preflight-workspace.ps1 -Operation BuildProduct -CatalogId more-saves` 只报告缺失环境及分开的编译引用/测试游戏路径，不创建输出。正式发行验证仍会打包两次检查确定性；这些维护者脚本不属于随包 CLI。
+
+## 包结构与身份
+
+`pack` 生成官方包结构：
 
 ```text
 Package/
   info.json
-  dtmapi-dependencies.json   # current dependency-contract packages
-  dtmapi-native-build.json   # current Advanced V1/V2 packages
+  dtmapi-dependencies.json   # 当前依赖契约包
+  dtmapi-native-build.json   # 当前 Advanced V1/V2 包
   Content/DTMAPI/
     manifest.json
-    Author.Mod.dll       # CodeMod only
-    dtmapi-package.json  # metadata only; never an ownership receipt
+    Author.Mod.dll          # 仅 CodeMod
+    dtmapi-package.json     # 仅元数据，不是所有权收据
     ...content files
 ```
 
-Generated dependency/native metadata paths are relative to the package root and are recorded in `dtmapi-package.json`. Legacy receipt packages retain their original layout; use the marker's actual path instead of moving generated files by hand.
+生成的依赖/原生元数据路径相对于包根目录，并记录在 `dtmapi-package.json`。旧 receipt 包保留原布局，应读取 marker 中的实际路径，不要手动移动生成文件。
 
-The marker filename also existed before the SDK. Runtime and Doctor recognize the bounded historical installer/content metadata and third-party ID/version forms without granting them SDK binding or installation ownership. Those existing packages need no rewritten marker. A schema-bearing SDK marker, dependency/native contract or malformed binding still uses its exact verifier; it cannot fall back to historical metadata.
+marker 文件名早于 SDK 就存在。Runtime 和 Doctor 能识别有界历史安装器/内容元数据及第三方 ID/版本形式，但不会授予 SDK 绑定或安装所有权；这些旧包不需重写 marker。带 schema 的 SDK marker、依赖/原生契约或损坏绑定仍使用准确校验器，不能退回历史格式。
 
-`manifest.json` remains authoritative for Mod identity, Mod version, dependencies, and minimum Runtime. `dtmapi.author.json` is an SDK-only pre-1.0 build/publish input and does not replace the Runtime manifest. The package's `info.json` is generated from both inputs and must not be hand-maintained in the author project.
+`manifest.json` 拥有 Mod 身份、Mod 版本、依赖及最低 Runtime。`dtmapi.author.json` 只是 SDK 专用的 pre-1.0 构建/发布输入，不替代 Runtime manifest。包内 `info.json` 从两者生成，不要在作者工程中手工维护。
 
-Current Advanced projects accept any valid author ID through the [native-contract workflow](NATIVE-REFERENCES.md); no first-party registry row is required. Their generated provenance binds the package, exact local host references, required signatures, `netstandard2.0`, Harmony owner and minimum Runtime. Supported private/shared managed libraries are described by the dependency inventory. Game, Unity, Harmony, BepInEx and DTMAPI platform DLLs are never bundled as author dependencies; generated metadata reference surfaces are compile-only inputs.
+当前 Advanced 工程无需第一方 registry 行。生成的来源绑定覆盖包、准确本机宿主引用、必需签名、`netstandard2.0`、Harmony owner 和最低 Runtime；受支持私有/共享托管库由依赖清单描述。游戏、Unity、Harmony、BepInEx 和 DTMAPI 平台 DLL 不能作为作者依赖入包，生成的元数据引用视图只用于编译。
 
-Legacy receipt-based Advanced projects keep their exact tracked policy and live authoring registry. Core and Doctor also retain the historical acceptance registry for already-issued receipts; those historical rows cannot authorize a new receipt. These identity-specific compatibility rules do not restrict the current self-service native-contract path.
+旧 receipt Advanced 工程保持准确 tracked policy 和现行作者 registry；Core/Doctor 也保留已发 receipt 的历史接受 registry，但历史行不能授权新 receipt。这些身份专属规则不限制当前自助原生契约路线。SDK 没有 upload、credential、force 或 adopt 操作。受管 Strict/Advanced Mod 不得在 `BepInEx/plugins` 下创建、构建、打包或部署；直接放在那里的是 DTMAPI 所有权范围外的 External BepInEx Plugin。
 
-The SDK has no upload, credential, force, or adopt operation. DTMAPI-managed Strict or Advanced CodeMods must never be created, built, packaged, or deployed under `BepInEx/plugins`; third-party plugins placed there are External BepInEx Plugins outside DTMAPI ownership.
+## 部署到游戏与撤回
 
-## Legacy receipt-bound deployment recovery
+先按玩家渠道安装 Runtime，构建 Mod 包后退出游戏，再部署。下面的 `$gameRoot` 是示例游戏安装路径，应替换为本机实际路径：
 
-Official installation derives the profile root using the same `DTMAPI_DOLOC_PERSISTENT_ROOT` override and Windows LocalLow default as Runtime. SDK never edits `SAVE/mod_infos.json`: enable/disable the Mod in the game's official Mod UI. `install-local` requires expected ID, version and ZIP SHA-256; `deploy` creates a new owned package and `update` requires an existing exact receipt. `deployment-status` reports disk inventory separately from official enabled state; selected source and resident DLL need a live `session snapshot` and are otherwise unavailable. A disk update never proves that a process loaded it.
+```powershell
+$gameRoot = 'D:\Games\Doloc Town'
+dtmapi-author deploy MyMod/dist/Author.MyMod-0.1.0.zip --game-root $gameRoot
+dtmapi-author deployment-status Author.MyMod --game-root $gameRoot
+```
 
-Official journal schema 4 uses the existing transaction/inventory fields, no compound historical `localInstall`, and binds its receipt to `OfficialLocal/<UniqueID>`. Readers enforce the current resolved official root, retained complete inventory and exact prior transaction. Unknown files, wrong roots, access failures and mismatched journals are preserved and rejected. Staging and recovery remain on the official MODS volume. Windows cold mutations hold the SDK operation lock and an exclusive game executable handle through commit or rollback, rejecting a running or concurrently starting game. Restart after changing code. Non-Windows mutation is currently unsupported; no platform support is inferred from netstandard2.0.
+部署后从 Steam 正常启动游戏，在官方 Mod 界面启用该 Mod。SDK 不编辑 `SAVE/mod_infos.json`。磁盘文件存在或部署成功不证明当前进程已加载；代码更新后应重启，再核对实际加载来源和版本。
 
-DTMAPI 0.6.0 no longer discovers the historical `game/Mods/<UniqueID>` development root. The current source candidate routes `deploy`, `update` and `install-local` to official profile `MODS/<UniqueID>`, recognized as `Local.<UniqueID>`. It accepts any valid author ID without Catalog registration. `source local select` remains paused with `SDK003` for the historical source. Do not use that directory as player-load or release evidence.
+更新时先修改 manifest 版本、restore/pack 新包，退出游戏，再运行：
 
-Existing receipt-bound deployments remain recoverable. `deployment-status` and `install-local-status` are read-only; `recover` restores an interrupted prepared transaction; `withdraw` moves an exactly verified committed package into retained same-volume recovery; and `source local clear` may remove a stale historical selection without moving package files. These compatibility commands do not make `game/Mods` a Runtime source.
+```powershell
+dtmapi-author update MyMod/dist/Author.MyMod-0.2.0.zip --game-root $gameRoot
+dtmapi-author withdraw Author.MyMod --game-root $gameRoot
+# 仅在恢复已准备但中断的事务时使用：
+dtmapi-author recover Author.MyMod --game-root $gameRoot
+dtmapi-author doctor $gameRoot --json
+```
 
-The historical package-local `.dtmapi-author-receipt.json`, package-external journal, and complete deployment inventory must agree exactly:
+这些是独立管理操作，不应依次全部执行。`deploy` 创建新的受管包；`update` 要求已有准确 receipt。`install-local` 另要求预期 ID、版本和 ZIP SHA-256。官方安装与 Runtime 使用同一 `DTMAPI_DOLOC_PERSISTENT_ROOT` 覆盖及 Windows LocalLow 默认值解析 profile 根目录。`deployment-status` 分开报告磁盘清单和官方启用状态；选定来源、驻留 DLL 需要活动 `session snapshot`，否则不可用。
 
-- the package-local receipt;
-- the package-external committed journal;
-- the complete current deployment inventory, including unknown files and empty directories.
+官方 journal schema 4 使用已有事务/清单字段，不带历史复合 `localInstall`，receipt 绑定 `OfficialLocal/<UniqueID>`。reader 核对当前解析的官方根目录、保留完整清单及准确前置事务；未知文件、错误根目录、访问失败或 journal 不匹配都会保留现场并拒绝。暂存与恢复留在官方 MODS 卷。Windows 冷态修改在提交/回滚期间持有 SDK 操作锁和游戏可执行文件独占句柄，拒绝游戏运行中或同时启动的情况。当前不支持非 Windows 修改操作，不能由 netstandard2.0 推断平台支持。
 
-Each game root has an exclusive operation lock. Historical staging, destination, failed, and recovery directories stay on the `Mods` volume so an already prepared transaction can be recovered with its original atomic-move semantics. A mismatch preserves evidence and fails closed. Missing, forged, wrong-root, wrong-path, wrong-ID, wrong-kind, drifted, concurrent, receipt-only, and journal-only states are never adopted.
+0.6.0 起不再发现历史 `game/Mods/<UniqueID>` 开发目录。当前 `deploy`、`update` 和 `install-local` 写入官方 profile 的 `MODS/<UniqueID>`，识别为 `Local.<UniqueID>`；任意合法作者 ID 均可使用，无需 Catalog 注册。历史来源的 `source local select` 仍暂停并返回 `SDK003`，不能把旧目录当作玩家加载或发布证据。
 
-Current journal writes performed by legacy recovery/withdraw use schema 3. Schema 3 retains the schema-2 deployment identity and inventory fields and adds the nullable `localInstall` transaction which owns the exact journal/source-state preimage and SDK-owned paths of an already prepared compound local install. Package-local receipts and package markers remain schema 2.
+## 旧 receipt 部署恢复
 
-The reader retains narrow upgrade paths for exact SDK `0.1.0` schema-1 and prior schema-2 journals already present on a player's machine. A historical schema-1 `CodeMod` is always interpreted as `Strict`, while a historical `ContentPack` remains code-free. Its journal, package-local receipt, legacy package marker, identity, destination, package hash, payload hash and complete inventory must all agree. `deployment-status` is read-only and does not rewrite historical state; `recover` and `withdraw` may write a schema-3 journal while preserving the old receipt authority. Historical journals cannot authorize official updates: recover/withdraw the old deployment first. Schema 1 can never declare or upgrade itself into `Advanced`, and unknown or mixed-version fields fail closed.
+已有 receipt 绑定部署仍可恢复。`deployment-status`、`install-local-status` 只读；`recover` 恢复已准备但中断的事务；`withdraw` 将精确核验的已提交包移入同卷保留恢复区；`source local clear` 可移除陈旧的历史选择，但不移动包文件。这些兼容命令不会让 `game/Mods` 重新成为 Runtime 来源。
 
-`DTMAPI_AUTHOR_STATE_ROOT` may relocate package-external test/CI state. Without it, state is stored under `%LOCALAPPDATA%/DTMAPI/AuthorSdk/state/installations/<game-root-key>`. The key is the lowercase first 16 bytes of SHA-256 over the canonical, uppercase game-root path.
+历史包内 `.dtmapi-author-receipt.json`、包外已提交 journal 和完整部署清单必须完全一致；清单包括未知文件和空目录。每个游戏根目录有独占操作锁。历史 staging、destination、failed 和 recovery 目录保持在 `Mods` 卷，使已准备事务能按原原子移动语义恢复。不匹配会保留证据并拒绝；缺失、伪造、错根、错路径、错 ID、错 kind、漂移、并发、仅 receipt 或仅 journal 的状态都不会被接管。
 
-## Source modes
+Current journal writes performed by legacy recovery/withdraw use schema 3.
+
+旧恢复/撤回写入 schema 3 journal，保留 schema-2 的部署身份和清单字段，并新增可空 `localInstall` 事务，记录已准备复合本地安装的准确 journal/source-state 前像及 SDK 所有路径。
+
+Package-local receipts and package markers remain schema 2.
+
+包内 receipt 和 package marker 仍是 schema 2，不随 journal 写入版本改变。
+
+reader 只为玩家机器上已存在的准确 SDK 0.1.0 schema-1 及此前 schema-2 journal 保留有限升级路径。历史 schema-1 CodeMod 一律解释为 Strict，ContentPack 仍不含代码。journal、包内 receipt、旧 marker、身份、目标路径、包哈希、载荷哈希和完整清单必须一致。`deployment-status` 不改写历史状态；`recover`/`withdraw` 可写 schema-3 journal，同时保留旧 receipt 权威。历史 journal 不能授权官方更新，先恢复/撤回旧部署。schema 1 不能声明或升级自身为 Advanced；未知或混合版本字段拒绝处理。
+
+`DTMAPI_AUTHOR_STATE_ROOT` 可迁移包外测试/CI 状态。未指定时，状态位于 `%LOCALAPPDATA%/DTMAPI/AuthorSdk/state/installations/<game-root-key>`。key 为规范化并转大写的游戏根路径之 SHA-256 前 16 字节的小写表示。
+
+## 来源模式
+
+以下是参数形式说明，尖括号和方括号不是要原样输入的路径：
 
 ```text
 dtmapi-author source local select Author.MyMod <game/Mods/Author.MyMod> --game-root <game>
@@ -128,41 +162,55 @@ dtmapi-author source reproduction restore <snapshotId> --game-root <game>
 dtmapi-author source status [Author.MyMod] --game-root <game>
 ```
 
-Historical Local Development state records an exact `DTMAPI-FileTree-SHA256-v1` digest in external `source-state.json`; it is recovery-only in 0.6.0 and grants neither file ownership nor player source selection. New local selection is paused, while status and clear remain available. Player Reproduction first writes an external snapshot, then atomically clears every override and refuses new selections until the exact snapshot is explicitly restored. Workshop Validation only prepares state and reports Runtime-captured native snapshot availability. Offline directory presence is never reported as native Workshop success.
+历史 Local Development 在外部 `source-state.json` 记录准确 `DTMAPI-FileTree-SHA256-v1` 摘要；0.6.0 起仅用于恢复，不授予文件所有权或玩家来源选择。新 local select 暂停，status/clear 仍可用。Player Reproduction 先写外部快照，再原子清除所有 override；直到显式恢复准确快照前，拒绝新选择。Workshop Validation 只准备状态并报告 Runtime 捕获的原生快照是否可用；离线目录存在不等于原生 Workshop 验证成功。
 
-## Explicit Runtime session
+## 显式 Runtime 会话
 
-`session prepare` must run before the user starts the game. Current source writes a one-shot schema 2 `author-session.json` and a protected `author-session-client.json`, then negotiates protocol/capabilities through authenticated `hello`. The API compilation target is independent of the actual Host version returned by hello. The bounded schema 1 adapter retains the known old SDK wire value. See the [session protocol](SESSION-PROTOCOL.md) for fields, compatibility, lifecycle and unavailable/timeout diagnostics; published availability remains with the release records.
+`session prepare` 必须在启动游戏前运行。它写一次性 schema 2 `author-session.json` 和受保护 `author-session-client.json`，再通过认证 hello 协商协议/能力。编译 target 与 hello 返回的实际 Host 版本相互独立；有界 schema-1 适配器保留已知旧 SDK 线路值。字段、兼容、生命周期和超时诊断见[会话协议](SESSION-PROTOCOL.md)。
 
-Runtime atomically consumes the startup descriptor once. The client credential remains available for explicit `snapshot` and `reload` requests until expiry or `session clear`. Expired matching state is cleared on the next prepare/request; malformed or mismatched state is preserved and requires explicit clear. Tokens are sent only inside authenticated JSONL pipe requests and are redacted from human/JSON reports, Runtime messages, and response values.
+```powershell
+# 在启动游戏前执行；gameRoot 沿用前面设置的本机安装目录。
+dtmapi-author session prepare --game-root $gameRoot
+# 然后从 Steam 启动游戏。下面使用默认官方 profile 路径；
+# 如设置了 DTMAPI_DOLOC_PERSISTENT_ROOT，请改为实际选定的 Mod 根目录。
+$selectedRoot = Join-Path $env:USERPROFILE 'AppData\LocalLow\RedSawGames\DolocTown\MODS\Author.MyMod'
+dtmapi-author session snapshot Author.MyMod $selectedRoot --game-root $gameRoot
+# 仅支持的非代码内容可重载；代码包可能返回 restart-required。
+dtmapi-author session reload Author.MyMod $selectedRoot --game-root $gameRoot
+dtmapi-author session clear --game-root $gameRoot
+```
 
-Each business request includes the exact UniqueID, absolute selected root, a fresh request ID, and the current `DTMAPI-FileTree-SHA256-v1` hash. Response protocol/Host/session/request/operation/owner identities must match the negotiated session. Transport failures report stable codes such as `host-unavailable`, `handshake-timeout`, `pipe-response-timeout`, and `pipe-response-identity-mismatch`; absence alone never implies an upgrade requirement. Runtime outcomes remain `ok`, `rejected`, `restart-required`, or `error`. A valid `restart-required` response carries an explicit warning and still requires a game restart.
+Runtime 只原子消费一次启动描述符。客户端凭据在到期或 `session clear` 前用于显式 snapshot/reload。到期且匹配的状态在下次 prepare/request 清除；格式错误或不匹配的状态保留，需显式 clear。token 只在认证 JSONL 管道请求中传送，并从人类/JSON 报告、Runtime 消息及响应值中脱敏。
 
-The CLI never launches the game, installs a watcher, polls for Runtime startup, uploads DLL/native data, or sends a request without an unexpired protected token. Custom Animals, CodeMod DLLs, official-native JSON, and unknown formats remain restart-required; Runtime owns the only reviewed reload implementation.
+每个业务请求都包含准确 UniqueID、选定根目录绝对路径、新 request ID 和当前文件树哈希。响应的协议/Host/会话/请求/操作/owner 身份必须匹配协商会话。传输失败报告 `host-unavailable`、`handshake-timeout`、`pipe-response-timeout`、`pipe-response-identity-mismatch` 等稳定代码；仅缺少 listener 不意味着必须升级。Runtime 结果仍为 `ok`、`rejected`、`restart-required` 或 `error`；有效 `restart-required` 带明确警告，仍需重启。
 
-## Read-only Doctor
+CLI 不启动游戏、不安装 watcher、不轮询 Runtime 启动、不上传 DLL/原生数据，也不在缺少有效受保护 token 时发送请求。Custom Animals、CodeMod DLL、官方原生 JSON 和未知格式仍需重启；只有 Runtime 拥有经审查的 reload 实现。
 
-`dtmapi-author symbols <DLL> [--pdb <path>] --json` verifies the portable PDB identity against the DLL's CodeView GUID/stamp and reports both hashes, resident-comparable module MVID and source document names. Missing or mismatched symbols return SDK191. This proves a matching artifact pair, not debugger attach. Source paths follow standard compilation and the author's PathMap; keep the exact source/build report with the DLL and PDB. Debug packages include symbols; for Release use `--symbols true` when packing.
+## Doctor、符号与实际加载状态
 
-With the standard MSBuild backend on the tested Windows shipping Mono, the Entry fixture identified its exact throw line (`ModEntry.cs:6`) and the event fixture identified its exact throw line (`ModEntry.cs:13`). An earlier internal SDK fixture reported the callback's closing line despite matching symbols; these observations do not promise exact throw-line accuracy for arbitrary callbacks or builds. Use the owner, event name, error message and paired source together. Event errors are retained by `helper.Diagnostics.GetErrors()` and the existing `ExportLogs()` report; they are not necessarily repeated in the text log. Inspect the Errors page or export while that process is still running. Exported reports are local and can contain identifiable machine paths, historical logs and crash dumps with memory contents; inspect the ZIP before sharing. Reports are not automatically uploaded. No archive, complete Mod configuration or session credential file entries were found in the earlier tested export; this is not a privacy guarantee for dump contents. Breakpoint attach is a separate host capability and is not promised by PDB generation.
+`dtmapi-author symbols <DLL> [--pdb <path>] --json` 对照 DLL 的 CodeView GUID/stamp 核验 portable PDB，报告双方哈希、可与驻留模块比较的 MVID 和源码文档名。符号缺失或不匹配返回 SDK191；它证明产物配对，不证明调试器能连接。源码路径遵循标准编译和作者 PathMap，应把准确源码、构建报告与 DLL/PDB 一起保存。
 
-Live `session snapshot` separates `officialEnabled`, `ownerActive`, `diskEntrySha256`, `diskEntryMvid` and `residentEntryMvid`. `residentMatchesDiskMvid` compares module identities, not a hash of Mono memory; an unavailable resident observation is reported explicitly. A failed Entry can leave a resident assembly even though its owner is inactive. Code updates and symbol replacement require a restart.
+已测 Windows shipping Mono 标准 MSBuild 产物中，Entry fixture 定位到实际抛出行 `ModEntry.cs:6`，事件 fixture 定位到 `ModEntry.cs:13`。更早内部 SDK fixture 即使符号匹配也曾报告回调结束行，因此不承诺任意回调/构建都能精确定位抛出行。结合 owner、事件名、错误信息和配套源码判断。事件错误保留在 `helper.Diagnostics.GetErrors()` 和既有 `ExportLogs()` 报告中，不一定重复写入文本日志，应在进程仍运行时查看 Errors 页或导出。
 
-Packages include all current native upload localization fields in `info.json` so native discovery does not migrate the file and invalidate exact receipts. If a pre-fix candidate was already rewritten by the game, status/update correctly refuses the drift; do not force/adopt it. Preserve evidence and restore the exact known test asset only within its original authorization before recovery. Newly generated packages need no such repair.
+导出报告保存在本机，可能含可识别机器路径、历史日志及包含内存的 crash dump，分享前检查 ZIP；不会自动上传。早期受测导出未发现 archive、完整 Mod 配置或会话凭据文件条目，但这不是对 dump 内容的隐私保证。PDB 生成不承诺断点连接能力。
 
-`dtmapi-author doctor <path>` prints a human report; add `--json` for the Doctor report schema. Doctor is a `0.1.0` support library inside the single Author SDK CLI, not a second apphost. It uses `PEReader` and shared-read file streams, never `Assembly.Load`, and never moves, deletes, adopts, enables, disables, or executes inspected binaries.
+活动 `session snapshot` 分开显示 `officialEnabled`、`ownerActive`、`diskEntrySha256`、`diskEntryMvid` 和 `residentEntryMvid`。`residentMatchesDiskMvid` 比较模块身份，不是 Mono 内存哈希；无法观察驻留状态时会明确报告。Entry 失败后，即使 owner 不活动，程序集也可能仍驻留。代码或符号替换需要重启。
 
-## Fixed compatibility payload
+生成包的 `info.json` 包含当前原生上传的全部本地化字段，避免原生发现过程迁移文件而破坏准确 receipt。若旧候选已被游戏改写，status/update 正确拒绝这种漂移；不要 force/adopt。保留证据，只在原授权范围内恢复准确已知测试资产后再恢复事务。新生成包无需此项修复。
 
-The release pipeline stages these files next to the self-contained CLI under `compatibility/0.5.5`:
+`dtmapi-author doctor <path>` 默认输出人类可读报告，`--json` 使用 Doctor 报告 schema。Doctor 是单一 Author SDK CLI 内的 0.1.0 支持库，不是第二个 apphost。它用 PEReader 和共享读取文件流，不使用 Assembly.Load，也不移动、删除、接管、启停或执行被检查二进制。
 
-- `compatibility.json`, containing an exact relative-path/SHA-256 inventory;
-- the DTMAPI-authored `DTMAPI.Abstractions.dll` built for Runtime 0.5.5, not copied from a player install;
-- `DTMAPI.Author.props`;
-- the `NETStandard.Library 2.0.3` `netstandard2.0` reference assemblies and their license/notice files.
+## 冻结兼容载荷
 
-The CLI embeds `compatibility.contract.json` as its independent trust anchor. It verifies the fixed Abstractions, props, license, notice, exact 114-file reference inventory, every release-manifest hash, all required kinds, and the complete no-extras tree. Replacing both `compatibility.json` and its payload cannot replace the embedded contract. A missing or modified compatibility payload fails closed.
+发行流程在自包含 CLI 旁的 `compatibility/0.5.5` 放置以下内容：
 
-Runtime source may advance while this 0.5.5 authoring payload remains frozen. Run `tools/scripts/prepare-author-sdk-compatibility.ps1` to build its exact DLL from the frozen DTMAPI-owned source inputs in the repository (`author-sdk/compatibility/0.5.5/source-build.json`) and prepare the complete payload under `.tools/author-sdk-compatibility/0.5.5`. A shallow checkout or source archive is sufficient. The recipe fixes the original 16 compilation inputs, Release settings, PathMap and exact .NET SDK `8.0.421`; every resulting DLL must match the existing contract SHA-256. It does not compile the current Runtime interfaces as the old target.
+- 带准确相对路径/SHA-256 清单的 `compatibility.json`；
+- 由 DTMAPI 自有源码为 Runtime 0.5.5 构建的 `DTMAPI.Abstractions.dll`，不从玩家安装复制；
+- `DTMAPI.Author.props`；
+- `NETStandard.Library 2.0.3` 的 netstandard2.0 引用程序集及许可/声明文件。
 
-The full SDK release builder calls this same preparation step and reuses a verified payload. An explicit `-FrozenAbstractionsDll`/`DTMAPI_AUTHOR_SDK_FROZEN_ABSTRACTIONS_DLL` remains available, with exact SHA verification; there is no implicit search of `dist`, sibling retained artifacts or player installations. `-Check` verifies preparation without building or downloading. For focused source tests, prepare this payload first; `DTMAPI_AUTHOR_COMPAT_ROOT` may select another explicit output root. NETStandard.Library `2.0.3` is obtained from the public NuGet source into the local cache and checked against the existing reference/license/notice hashes. No third-party binary or game material is tracked in the frozen source directory.
+CLI 内嵌 `compatibility.contract.json` 作为独立信任依据，校验固定 Abstractions、props、许可、声明、准确 114 文件引用清单、每个 release-manifest 哈希、必需 kind 和没有多余内容的完整文件树。即使同时替换 `compatibility.json` 和载荷，也不能替换内嵌契约；缺失或修改过的兼容载荷会被拒绝。
+
+以下仅供源码维护者使用，随包使用者无需重建引用。Runtime 源码继续演进时，0.5.5 作者载荷保持冻结。仓库 `tools/scripts/prepare-author-sdk-compatibility.ps1` 根据 `author-sdk/compatibility/0.5.5/source-build.json` 的冻结 DTMAPI 自有输入构建准确 DLL，在 `.tools/author-sdk-compatibility/0.5.5` 准备完整载荷，浅克隆或源码归档即可使用。recipe 固定原 16 项编译输入、Release 设置、PathMap 和 .NET SDK 8.0.421，结果必须匹配既有契约 SHA-256；不会把当前 Runtime 接口重新编译后冒充旧 target。
+
+完整 SDK builder 调用同一准备步骤并复用已验证载荷。显式 `-FrozenAbstractionsDll`/`DTMAPI_AUTHOR_SDK_FROZEN_ABSTRACTIONS_DLL` 仍接受准确 SHA 校验，不隐式搜索 dist、相邻历史产物或玩家安装。`-Check` 只检查，不构建或下载。定向源码测试先准备载荷，可用 `DTMAPI_AUTHOR_COMPAT_ROOT` 指定另一明确输出根。NETStandard.Library 2.0.3 从公共 NuGet 源进入本机缓存，按既有引用/许可/声明哈希核验；冻结源码目录不跟踪第三方二进制或游戏材料。

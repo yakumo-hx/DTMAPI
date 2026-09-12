@@ -1,6 +1,6 @@
-# 精确反射 V1 候选
+# 精确反射 V1
 
-当前接口属于内部 API/SDK/Runtime 0.6.2 候选，已进入普通 SDK 构建路径；不是公开发行。首次公开版本须等 M3/首发验收。旧 API 0.5.5 及历史 M2 0.7 快照无这些类型；PN-021 原 0.8 隔离候选保持历史身份。
+这些接口由内部 API 0.6.2 引入，已进入普通 SDK 构建路径。SDK 0.7.0 默认使用 0.7.0 target，也保留 0.6.2 target。旧 API 0.5.5 及历史 M2 0.7 快照没有这些类型；PN-021 原 0.8 隔离候选保持历史身份。
 
 解压当前 SDK，使用公开 `new codemod`、`build`、`pack`、`install-local` 和 `withdraw`。当前默认目标为 0.7.0；可显式选择保留的 0.6.2。版本范围见 [目标目录](target-catalog.json)，采用前查看 [API 状态](API-STATUS.md) 和 [迁移](MIGRATION.md)。
 
@@ -17,7 +17,7 @@ using (IReflectedField<int> value = reflection.GetField<int>(state, "value"))
 using (IReflectedMethod method = reflection.GetMethod(state, "Describe", new[] { typeof(int) }))
     helper.Monitor.Log(method.Invoke<string>(3));
 
-// Place this type alongside your ModEntry class.
+// 将此类型与 ModEntry 类并列放置。
 sealed class AuthorState
 {
     private int value = 7;
@@ -31,4 +31,4 @@ sealed class AuthorState
 
 及时 Dispose 包装器会释放其目标。owner 失败、停用或 Runtime 关闭后，保留的服务/包装器拒绝新调用；仍存活的包装器会被清除目标，即使不再调用它也能回收。已获准开始的调用使用局部引用完成，关闭不回滚它的副作用。缓存只留有界元数据，owner 用弱登记跟踪包装器。
 
-Strict 可反射作者自己的托管对象，这不构成安全沙箱，也不保证原生字段写入具有正确玩法语义。共享契约 DLL、自助 Advanced 和 native 引用属于另外的 M3 工作包。
+Strict 可反射作者自己的托管对象，这不构成安全沙箱，也不保证原生字段写入具有正确玩法语义。共享契约 DLL、自助 Advanced 和 native 引用有各自的契约，分别见[包依赖](PACKAGE-DEPENDENCIES.md)和[原生引用](NATIVE-REFERENCES.md)。
