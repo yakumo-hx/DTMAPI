@@ -1,0 +1,11 @@
+using DTMAPI.Abstractions;
+
+namespace {{ROOT_NAMESPACE}};
+
+public sealed class ModEntry : DtmMod
+{
+    public override void Entry(IDtmHelper helper)
+    {
+        helper.Monitor.Log("{{ROOT_NAMESPACE}} loaded through DTMAPI.");
+    }
+}

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>dtmapi-author</AssemblyName>
+    <RootNamespace>DTMAPI.AuthorSdk</RootNamespace>
+    <Version>0.7.5</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs;GlobalUsings.cs;AssemblyInfo.cs;AuthorApplication.cs;CommandLine.cs;OptionalTools.cs;JsonSupport.cs;PathSafety.cs;OfficialLocalPaths.cs;AuthorStateInfrastructure.cs;AuthorSessionService.cs;SourceStateService.cs;AuthorFileTreeDigest.cs;AudioPrepareCommand.cs;SymbolInspector.cs;DoctorCommandService.cs" />
+    <Compile Include="../Shared/AuthorSessionJson.cs;../Shared/AuthorTreeDigest.cs" />
+    <Compile Include="../Shared/PackageDocumentFacts.cs" Link="PackageDocumentFacts.cs" />
+    <ProjectReference Include="../DTMAPI.Authoring.Contracts/DTMAPI.Authoring.Contracts.csproj" />
+    <ProjectReference Include="../DTMAPI.Tooling.Metadata/DTMAPI.Tooling.Metadata.csproj" />
+    <ProjectReference Include="../DTMAPI.AudioPreparation/DTMAPI.AudioPreparation.csproj" />
+    <ProjectReference Include="../DTMAPI.InstallDoctor/DTMAPI.InstallDoctor.csproj" />
+    <Content Include="../../author-sdk/*.md;../../author-sdk/Enter-DtmApiEnvironment.ps1" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/schemas/manifest.schema.json" Link="schemas/manifest.schema.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/examples/HelloDtm/*.cs;../../author-sdk/examples/HelloDtm/*.csproj;../../author-sdk/examples/HelloDtm/*.json" Link="examples/HelloDtm/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/examples/ConfigMenu/*.cs;../../author-sdk/examples/ConfigMenu/*.csproj;../../author-sdk/examples/ConfigMenu/*.json" Link="examples/ConfigMenu/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../author-sdk/build/*.props;../../author-sdk/build/*.targets" Link="build/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "farm_1",
+    "event_list": ["PLAY_BGM_23", "PLAY_BGM_15", "DTMAPI_MUSIC_BAD_APPLE", "DTMAPI_MUSIC_IROHA", "DTMAPI_MUSIC_TSUKI"],
+    "idle_time": { "x": 48, "y": 48 },
+    "fade_in_delay": -1,
+    "fade_out_delay": -1
+  }
+]

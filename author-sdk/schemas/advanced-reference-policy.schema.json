@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/advanced-reference-policy.schema.json",
+  "title": "DTMAPI tracked Advanced CodeMod native-reference policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyId",
+    "policyVersion",
+    "gameBuildId",
+    "gameAssemblyRelativePath",
+    "gameAssemblySha256",
+    "references"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "policyId": { "type": "string", "minLength": 1 },
+    "policyVersion": { "type": "integer", "minimum": 1 },
+    "gameBuildId": { "type": "string", "pattern": "^[0-9]+$" },
+    "gameAssemblyRelativePath": { "$ref": "#/$defs/relativeDllPath" },
+    "gameAssemblySha256": { "$ref": "#/$defs/sha256" },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/reference" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+    "relativeDllPath": {
+      "type": "string",
+      "pattern": "^(?:(?!\\.{1,2}(?:/|$))[^/\\\\:]+/)*(?!\\.{1,2}$)[^/\\\\:]+\\.dll$"
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gameRelativePath", "assemblyName", "length", "sha256", "copyLocal"],
+      "properties": {
+        "gameRelativePath": { "$ref": "#/$defs/relativeDllPath" },
+        "assemblyName": { "type": "string", "minLength": 1 },
+        "length": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "copyLocal": { "const": false }
+      }
+    }
+  }
+}

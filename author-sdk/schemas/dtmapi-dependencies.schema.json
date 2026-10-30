@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTMAPI generated dependency inventory V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "ownerId", "apiTarget", "entryPath", "dependencies", "assemblies"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "ownerId": {"type": "string", "minLength": 1},
+    "apiTarget": {"type": "string", "minLength": 1},
+    "entryPath": {"type": "string"},
+    "dependencies": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["uniqueId", "required", "versionRange"],
+      "properties": {
+        "uniqueId": {"type": "string", "minLength": 1},
+        "required": {"type": "boolean"},
+        "versionRange": {
+          "type": "object", "additionalProperties": false,
+          "required": ["minimumInclusive", "includePrerelease"],
+          "properties": {
+            "minimumInclusive": {"$ref": "#/$defs/semver"},
+            "maximumExclusive": {"$ref": "#/$defs/semver"},
+            "includePrerelease": {"type": "boolean"}
+          }
+        }
+      }
+    }},
+    "assemblies": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "role", "name", "assemblyVersion", "culture", "publicKeyToken", "length", "sha256", "targetFramework", "references", "distribution", "licenseFiles", "source"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "role": {"enum": ["entry", "shared-contract", "private-managed"]},
+        "name": {"type": "string", "minLength": 1},
+        "assemblyVersion": {"$ref": "#/$defs/clrVersion"},
+        "culture": {"type": "string"},
+        "publicKeyToken": {"$ref": "#/$defs/token"},
+        "length": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "targetFramework": {"const": ".NETStandard,Version=v2.0"},
+        "references": {"type": "array", "items": {"$ref": "#/$defs/identity"}},
+        "distribution": {"enum": ["self-authored", "licensed-third-party"]},
+        "licenseFiles": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "source": {"type": "string", "minLength": 1}
+      },
+      "allOf": [{"if": {"properties": {"distribution": {"const": "licensed-third-party"}}}, "then": {"properties": {"licenseFiles": {"minItems": 1}}}}]
+    }}
+  },
+  "$defs": {
+    "semver": {"type": "string", "maxLength": 4096, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"},
+    "clrVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "token": {"type": "string", "pattern": "^(?:[a-f0-9]{16})?$"},
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "assemblyVersion", "culture", "publicKeyToken"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "assemblyVersion": {"$ref": "#/$defs/clrVersion"},
+        "culture": {"type": "string"},
+        "publicKeyToken": {"$ref": "#/$defs/token"}
+      }
+    }
+  },
+  "$comment": "SDK generates this file from PE metadata. Runtime additionally verifies normalized paths, IDs, duplicates, intervals, identity/reference equality, hashes, licensing inventory and complete package closure. JSON parsers must reject duplicate properties before schema validation."
+}

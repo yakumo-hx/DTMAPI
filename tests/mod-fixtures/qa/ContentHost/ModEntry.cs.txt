@@ -1,0 +1,96 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using DTMAPI.Abstractions;
+using UnityEngine;
+
+namespace Independent.ContentHost
+{
+    public sealed class Settings { public bool FailFirstCleanup { get; set; } = true; }
+    public sealed class ModEntry : DtmMod, IDisposable
+    {
+        private readonly Dictionary<string, Activation> active = new Dictionary<string, Activation>();
+        private IDtmHelper helper = null!;
+        public override void Entry(IDtmHelper helper)
+        {
+            this.helper = helper;
+            bool failCleanup = helper.ReadConfig<Settings>().FailFirstCleanup;
+            helper.GetContentHost().Register("1.0.0", pack =>
+            {
+                if (pack.Schema != "independent.badges/1" && pack.Schema != "independent.badges/0")
+                    throw new InvalidOperationException("BadgeSchemaUnsupported: " + pack.Schema);
+                string text = pack.Files.ReadText("message.txt").Value ?? throw new InvalidOperationException("BadgeMessageMissing");
+                byte[] image = pack.Resources.ReadBytes("icon_item_stone.png").Value ?? throw new InvalidOperationException("BadgeImageMissing");
+                if (text == "bad-data") throw new InvalidOperationException("BadgeDataInvalid");
+                string label = pack.Translation.Get("label", text);
+                // A schema-0 migration is Host-owned and only changes this in-memory candidate.
+                if (pack.Schema.EndsWith("/0", StringComparison.Ordinal)) label = "Migrated: " + label;
+                return new Activation(this, pack.Manifest.UniqueID, text, image, label, failCleanup && text == "A");
+            });
+            helper.GetRequiredService<IDtmCommands>("0.7.3", "0.7.3").Register("host-evidence", c =>
+            {
+                if (c.Arguments.Count == 2 && c.Arguments[0] == "screenshot")
+                {
+                    var capture = Type.GetType("UnityEngine.ScreenCapture, UnityEngine.ScreenCaptureModule", true)!;
+                    capture.GetMethod("CaptureScreenshot", new[] { typeof(string) })!.Invoke(null, new object[] { c.Arguments[1] });
+                    c.WriteLine("screenshot-requested=" + c.Arguments[1]);
+                }
+                foreach (var pair in active.OrderBy(p => p.Key))
+                    c.WriteLine("badge=" + pair.Key + " visible=" + (pair.Value.View != null && pair.Value.View.enabled) + " texture=" + (pair.Value.Texture != null) + " label=" + pair.Value.Label);
+                c.WriteLine("retained=" + active.Count);
+            });
+        }
+        public void Dispose() { helper.Monitor.Log("VHOST provider-closed retained=" + active.Count); }
+
+        private sealed class Activation : IContentPackActivation
+        {
+            private readonly ModEntry host;
+            private readonly string owner, text;
+            private byte[]? image;
+            private bool failCleanup;
+            internal Texture2D? Texture;
+            private GameObject? root;
+            internal BadgeView? View;
+            internal readonly string Label;
+            internal Activation(ModEntry host, string owner, string text, byte[] image, string label, bool failCleanup)
+            { this.host = host; this.owner = owner; this.text = text; this.image = image; Label = label; this.failCleanup = failCleanup; }
+            public void Activate()
+            {
+                Texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                Texture.name = "VHostTexture:" + owner;
+                if (!ImageConversion.LoadImage(Texture, image!, false)) throw new InvalidOperationException("BadgeImageInvalid");
+                image = null;
+                root = new GameObject("VHostView:" + owner);
+                UnityEngine.Object.DontDestroyOnLoad(root);
+                View = root.AddComponent<BadgeView>();
+                View.Icon = Texture; View.Label = Label; View.Row = host.active.Count;
+                host.active.Add(owner, this);
+                host.helper.Monitor.Log("VHOST active=" + owner + " image=" + Texture.width + "x" + Texture.height + " label=" + Label);
+                if (text == "fail-activate") throw new InvalidOperationException("BadgeActivationInjected");
+            }
+            public void Dispose()
+            {
+                if (View != null) View.enabled = false;
+                if (failCleanup) { failCleanup = false; host.helper.Monitor.Log("VHOST cleanup-pending=" + owner + " retainedTexture=" + (Texture != null)); throw new InvalidOperationException("BadgeCleanupInjected"); }
+                if (root != null) UnityEngine.Object.Destroy(root);
+                if (Texture != null) UnityEngine.Object.Destroy(Texture);
+                View = null; root = null; Texture = null; image = null;
+                host.active.Remove(owner);
+                host.helper.Monitor.Log("VHOST withdrawn=" + owner);
+            }
+        }
+    }
+    public sealed class BadgeView : MonoBehaviour
+    {
+        public Texture2D Icon = null!;
+        public string Label = "";
+        public int Row;
+        private void OnGUI()
+        {
+            float x = Screen.width - 305, y = 32 + Row * 78;
+            GUI.Box(new Rect(x, y, 285, 72), "");
+            GUI.DrawTexture(new Rect(x + 7, y + 7, 58, 58), Icon);
+            GUI.Label(new Rect(x + 76, y + 18, 195, 40), Label);
+        }
+    }
+}

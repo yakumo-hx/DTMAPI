@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>MineHarmonyOwnerFixture</AssemblyName>
+    <RootNamespace>DTMAPI.MineHarmonyOwnerFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\..\products\first-party\Mine\src\MineConfig.cs"
+             Link="Mine\MineConfig.cs" />
+    <Compile Include="..\..\..\..\products\first-party\Mine\src\Native\*.cs"
+             Link="Mine\%(Filename)%(Extension)" />
+    <ProjectReference Include="..\MineNativeFixture\MineNativeFixture.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\.tools\bepinex\extract\BepInEx\core\0Harmony.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\HarmonyXInterop.dll"
+          Link="HarmonyXInterop.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.dll"
+          Link="Mono.Cecil.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Mdb.dll"
+          Link="Mono.Cecil.Mdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Pdb.dll"
+          Link="Mono.Cecil.Pdb.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\Mono.Cecil.Rocks.dll"
+          Link="Mono.Cecil.Rocks.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.RuntimeDetour.dll"
+          Link="MonoMod.RuntimeDetour.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\.tools\bepinex\extract\BepInEx\core\MonoMod.Utils.dll"
+          Link="MonoMod.Utils.dll"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

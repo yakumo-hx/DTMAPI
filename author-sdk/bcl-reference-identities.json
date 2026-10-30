@@ -1,0 +1,680 @@
+[
+  {
+    "name": "Microsoft.Win32.Primitives",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "mscorlib",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "netstandard",
+    "assemblyVersion": "2.0.0.0",
+    "culture": "",
+    "publicKeyToken": "cc7b13ffcd2ddd51"
+  },
+  {
+    "name": "System.AppContext",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Collections.Concurrent",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Collections",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Collections.NonGeneric",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Collections.Specialized",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.ComponentModel.Composition",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.ComponentModel",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.ComponentModel.EventBasedAsync",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.ComponentModel.Primitives",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.ComponentModel.TypeConverter",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Console",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Core",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Data.Common",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Data",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Diagnostics.Contracts",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.Debug",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.FileVersionInfo",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.Process",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.StackTrace",
+    "assemblyVersion": "4.0.4.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.TextWriterTraceListener",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.Tools",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.TraceSource",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Diagnostics.Tracing",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Drawing",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Drawing.Primitives",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Dynamic.Runtime",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Globalization.Calendars",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Globalization",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Globalization.Extensions",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.Compression",
+    "assemblyVersion": "4.1.3.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.IO.Compression.FileSystem",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.IO.Compression.ZipFile",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.IO",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.FileSystem",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.FileSystem.DriveInfo",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.FileSystem.Primitives",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.FileSystem.Watcher",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.IsolatedStorage",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.MemoryMappedFiles",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.Pipes",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.IO.UnmanagedMemoryStream",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Linq",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Linq.Expressions",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Linq.Parallel",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Linq.Queryable",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Http",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.NameResolution",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.NetworkInformation",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Ping",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Primitives",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Requests",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Security",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.Sockets",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.WebHeaderCollection",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.WebSockets.Client",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Net.WebSockets",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Numerics",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.ObjectModel",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Reflection",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Reflection.Extensions",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Reflection.Primitives",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Resources.Reader",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Resources.ResourceManager",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Resources.Writer",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.CompilerServices.VisualC",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Extensions",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Handles",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.InteropServices",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.InteropServices.RuntimeInformation",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Numerics",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Serialization",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Runtime.Serialization.Formatters",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Serialization.Json",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Serialization.Primitives",
+    "assemblyVersion": "4.1.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Runtime.Serialization.Xml",
+    "assemblyVersion": "4.1.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Claims",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Cryptography.Algorithms",
+    "assemblyVersion": "4.2.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Cryptography.Csp",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Cryptography.Encoding",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Cryptography.Primitives",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Cryptography.X509Certificates",
+    "assemblyVersion": "4.1.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.Principal",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Security.SecureString",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.ServiceModel.Web",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "31bf3856ad364e35"
+  },
+  {
+    "name": "System.Text.Encoding",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Text.Encoding.Extensions",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Text.RegularExpressions",
+    "assemblyVersion": "4.1.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.Overlapped",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.Tasks",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.Tasks.Parallel",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.Thread",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.ThreadPool",
+    "assemblyVersion": "4.0.12.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Threading.Timer",
+    "assemblyVersion": "4.0.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Transactions",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.ValueTuple",
+    "assemblyVersion": "4.0.2.0",
+    "culture": "",
+    "publicKeyToken": "cc7b13ffcd2ddd51"
+  },
+  {
+    "name": "System.Web",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Windows",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Xml.Linq",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Xml.ReaderWriter",
+    "assemblyVersion": "4.1.1.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml.Serialization",
+    "assemblyVersion": "4.0.0.0",
+    "culture": "",
+    "publicKeyToken": "b77a5c561934e089"
+  },
+  {
+    "name": "System.Xml.XDocument",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml.XmlDocument",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml.XmlSerializer",
+    "assemblyVersion": "4.0.11.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml.XPath",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  },
+  {
+    "name": "System.Xml.XPath.XDocument",
+    "assemblyVersion": "4.0.3.0",
+    "culture": "",
+    "publicKeyToken": "b03f5f7f11d50a3a"
+  }
+]

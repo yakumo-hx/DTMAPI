@@ -1,0 +1,37 @@
+[
+  {
+    "id": "dtmapi_mine",
+    "default_unlock": false,
+    "title": {
+      "key": "",
+      "text": ""
+    },
+    "cost_time": 0,
+    "output_item": {
+      "item_name": "dtmapi_mine",
+      "min_count": 1,
+      "max_count": 1
+    },
+    "input_items": [
+      {
+        "item_name": "metal_framework",
+        "item_count": 15
+      },
+      {
+        "item_name": "engine_core",
+        "item_count": 10
+      },
+      {
+        "item_name": "steel_ingot",
+        "item_count": 20
+      },
+      {
+        "item_name": "coal",
+        "item_count": 100
+      }
+    ],
+    "recipe_sub_type": "none",
+    "tech_point": 1,
+    "show_in_handbook": true
+  }
+]

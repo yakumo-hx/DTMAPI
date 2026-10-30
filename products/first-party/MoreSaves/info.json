@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 更多存档",
+  "author": "Yuuka",
+  "version": "1.1.2",
+  "description": "未发布的60槽分页与文件操作候选。五页，每页12张原生卡片；复制保全源档，以无覆盖提交创建副本；删除核对原生结果和同槽备份。官方停用恢复六槽并保留额外文件。改名与MES运行组合尚未验收。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "Functional",
+    "DTMAPI",
+    "Save",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多存档",
+    "tchinese": "DTMAPI 更多存檔",
+    "english": "DTMAPI More Saves"
+  },
+  "localized_description": {
+    "tchinese": "未發布的60槽分頁與檔案操作候選。五頁，每頁12張原生卡片；複製保全來源存檔，以無覆蓋提交建立副本；刪除核對原生結果和同槽備份。官方停用恢復六槽並保留額外檔案。改名與MES執行組合尚未驗收。",
+    "schinese": "未发布的60槽分页与文件操作候选。五页，每页12张原生卡片；复制保全源档，以无覆盖提交创建副本；删除核对原生结果和同槽备份。官方停用恢复六槽并保留额外文件。改名与MES运行组合尚未验收。",
+    "english": "Unpublished 60-slot paging and file-operation candidate. Five pages of 12 native cards; copying preserves the source and commits without overwriting a destination; deletion verifies the native result and same-slot backup. Official disable restores six visible slots and preserves additional files. Rename and MES runtime composition are not accepted."
+  }
+}

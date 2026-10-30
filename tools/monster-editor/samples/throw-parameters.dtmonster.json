@@ -1,0 +1,114 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterScatteringThrowParametersPack",
+    "name": "原生散投参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "fan",
+      "templateId": "seed_carrier",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 17,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "scatteringThrow": {
+            "windupEnabled": true,
+            "sectorAngleDegrees": 90,
+            "projectileSpeed": 4,
+            "projectileLifetimeGameSeconds": 3,
+            "minBulletCount": 3,
+            "maxBulletCount": 3,
+            "recoveryGameSeconds": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "id": "rise",
+      "templateId": "seed_carrier",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "scatteringThrow": {
+            "windupEnabled": false,
+            "sectorAngleDegrees": 360,
+            "projectileSpeed": 10,
+            "projectileLifetimeGameSeconds": 1,
+            "minBulletCount": 1,
+            "maxBulletCount": 1,
+            "recoveryGameSeconds": 0.15
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "fan",
+      "targetId": "seed_carrier",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkNormal",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.6,
+            "scatteringThrow": {
+              "windupEnabled": false,
+              "sectorAngleDegrees": 180,
+              "projectileSpeed": 5,
+              "projectileLifetimeGameSeconds": 2,
+              "minBulletCount": 5,
+              "maxBulletCount": 5,
+              "recoveryGameSeconds": 0.3
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

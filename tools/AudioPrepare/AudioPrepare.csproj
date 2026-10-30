@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>DTMAPI.AudioPrepare</AssemblyName><RuntimeIdentifier>win-x64</RuntimeIdentifier><SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed><Version>0.7.5</Version>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.AudioPreparation/DTMAPI.AudioPreparation.csproj" /></ItemGroup>
+</Project>

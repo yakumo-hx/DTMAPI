@@ -1,0 +1,13 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterNativeGroupsPack", "name": "原生协同无人机示例", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "drone", "templateId": "fwb_drone",
+      "overrides": {}, "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    }
+  ],
+  "nativeOverrides": [], "dropPools": [], "spawnRules": [], "assets": [], "dependencies": []
+}

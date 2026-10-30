@@ -1,0 +1,90 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterMimicryParametersPack",
+    "name": "原生拟态参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "lasting",
+      "templateId": "chomper",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "chomperMimicry": {
+            "minDecoyGameSeconds": 6,
+            "maxDecoyGameSeconds": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "chomper",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "chomperMimicry": {
+            "minDecoyGameSeconds": 0.25,
+            "maxDecoyGameSeconds": 0.25
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "lasting",
+      "targetId": "chomper",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "chomperMimicry": {
+              "minDecoyGameSeconds": 9,
+              "maxDecoyGameSeconds": 9
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

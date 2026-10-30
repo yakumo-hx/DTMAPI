@@ -1,0 +1,92 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterAnimation",
+    "name": "单动作动画",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "display": {
+          "name": "动画配置",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "fan",
+            "kind": "scatter",
+            "scatter": {
+              "projectileAttackId": "AtkNormal",
+              "bulletCount": 1,
+              "spreadDegrees": 0,
+              "bulletSpeed": 4,
+              "bulletLifetimeGameSeconds": 2,
+              "damage": 7,
+              "range": 12,
+              "windupGameSeconds": 1.2,
+              "recoveryGameSeconds": 0.6,
+              "cooldownGameSeconds": 5
+            },
+            "animation": {
+              "assetId": "charge",
+              "frameWidth": 32,
+              "frameHeight": 32,
+              "pivotX": 0.5,
+              "pivotY": 0.5,
+              "pixelsPerUnit": 16,
+              "windupFrames": [
+                0,
+                1,
+                2
+              ],
+              "recoveryFrames": [
+                3,
+                4,
+                5
+              ]
+            }
+          }
+        ],
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "fan"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [
+    {
+      "id": "charge",
+      "name": "原创充能图集",
+      "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAgCAYAAABEmHeFAAACQUlEQVR4nO2bsW0DMQxFbwzPkBFSZY8MliFSZIoUGcdF6gtcOMDpKIkUSVHSfQKqYt/7Iv+XZcDZNtS0td8/9seK1oFChRQCgLp0IQCoSxcCEFS3l9edWuCDvyw/B+0lBnzww/jpw98/v8nlJQJ82fBX339XPgdcEgK+Hf+5nnf/dHmEYKT9d+fnwD/3X3LlhICv49eMXwvC7PsP4VPwHLgkpFXEyPzclcODLzW/VQhG7r87n/rY4cJTES1DGJn/b8ivt8PKhUDLbzG/NgSc/ufCv8L8T+mTwnMiLPm1AXjwKeNTQbDia8xPhcCi/9wDwHv+nv4LFzDiADjmT0OwWgB6HwAh/uPCOSdwiwjORy+n+Zb8XOhKOlpDYGn+lhDUDh9JADzm7+q/9KG1lQ6cuzR8rvms+Vzzc3Rw+R4B0PTfYu/a+Xv6TySgxXgIwJlfMqtHANK/zRoAD/+FC0AAEIBpAnDDFQhXoNWuQBvxJSS30odyX1+EM/ilQdTe18pvNYCG7xUATf+5B5Dn/L39JxLBXSI4YwjUIDjv0fClAbDgW4RAYv5a/1sDYDn/Hv4LF8DhS06AWQ0wWgAiD6CQAFiI0AxgRL7UAFq+JgTpcyz7zz2AZpz/QUT39E3AT4dvefql/NYQtJqfs//o/vfgm4hQwcEf9ufQV+n/QYREiEXzwT/za0GgXrvS/iP4JxGSe6EJHHz8S2QwnxTRq/nggz8CnyXGFQo++IPwUYMU9XseFOoyhQCgLl0IAOrShQDo6w+YFJQcMnM/1AAAAABJRU5ErkJggg==",
+      "width": 192,
+      "height": 32
+    }
+  ],
+  "dependencies": [],
+  "catalog": null
+}

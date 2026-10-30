@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI一键完成",
+  "author": "Yuuka",
+  "version": "1.1.0",
+  "description": "依赖 DTMAPI。\n在 DTMAPI 配置菜单中分别开启树木、矿石、垃圾、杂草、燃料和饲料的一键完成；默认全部关闭。正常命中后继续采集并消耗相应体力，正常投料后继续消耗材料，满容量或材料耗尽即停止。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI一键完成",
+    "tchinese": "DTMAPI一鍵完成",
+    "english": "DTMAPI One Action Complete"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI。\n在 DTMAPI 配置菜单中分别开启树木、矿石、垃圾、杂草、燃料和饲料的一键完成；默认全部关闭。正常命中后继续采集并消耗相应体力，正常投料后继续消耗材料，满容量或材料耗尽即停止。",
+    "tchinese": "依賴 DTMAPI。\n在 DTMAPI 設定選單中分別開啟樹木、礦石、垃圾、雜草、燃料與飼料的一鍵完成；預設全部關閉。正常命中後繼續採集並消耗相應體力，正常投料後繼續消耗材料，滿容量或材料用盡即停止。",
+    "english": "Requires DTMAPI.\nEnable trees, ore, garbage, weeds, fuel and feed individually in the DTMAPI configuration menu; all are off by default. Accepted hits continue with normal energy costs. Accepted filling continues until full or out of material."
+  }
+}

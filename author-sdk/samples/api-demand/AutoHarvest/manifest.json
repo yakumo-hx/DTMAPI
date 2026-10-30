@@ -1,0 +1,22 @@
+{
+  "Name": "Auto Harvest",
+  "Author": "Yuuka",
+  "Version": "0.1.0-dtmapi",
+  "Description": "DTMAPI sample auto-harvest mod that uses ICropHarvestingApi instead of raw Doloc Town crop types.",
+  "UniqueID": "Yuuka.DTMAPI.AutoHarvest",
+  "EntryDll": "AutoHarvestMod.dll",
+  "MinimumDTMApiVersion": "0.5.1-alpha",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.5.1-alpha",
+      "Required": true
+    },
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.1-alpha",
+      "Required": true
+    }
+  ]
+}

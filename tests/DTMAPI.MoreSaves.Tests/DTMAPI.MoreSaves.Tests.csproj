@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>moresaves</DtmApiTestSuite>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesConfig.cs" Link="MoreSaves/MoreSavesConfig.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesArchiveMigration.cs" Link="MoreSaves/MoreSavesArchiveMigration.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesNativeRuntime.cs" Link="MoreSaves/MoreSavesNativeRuntime.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesPageSession.cs" Link="MoreSaves/MoreSavesPageSession.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesFileIdentity.cs" Link="MoreSaves/MoreSavesFileIdentity.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesArchiveDocument.cs" Link="MoreSaves/MoreSavesArchiveDocument.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesArchiveStorage.cs" Link="MoreSaves/MoreSavesArchiveStorage.cs" />
+    <Compile Include="../../products/first-party/MoreSaves/src/MoreSavesArchiveRename.cs" Link="MoreSaves/MoreSavesArchiveRename.cs" />
+    <Reference Include="Newtonsoft.Json" Condition="'$(NewtonsoftJsonPath)' != ''"><HintPath>$(NewtonsoftJsonPath)</HintPath></Reference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" Condition="'$(NewtonsoftJsonPath)' == ''" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" Condition="'$(FrozenAbstractions)' == ''" />
+    <Reference Include="DTMAPI.Abstractions" Condition="'$(FrozenAbstractions)' != ''"><HintPath>$(FrozenAbstractions)</HintPath></Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,60 @@
+[
+  {
+    "id": "dtmapi_cassette_evening_star",
+    "sub_type": "special_cd",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 100,
+    "buying_price": 100,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_cd_23"
+    },
+    "title": {
+      "key": "",
+      "text": "磁带：夜が降りてくる ～ Evening Star"
+    },
+    "description_basic": {
+      "key": "",
+      "text": "使用后可在播放器中选择《夜が降りてくる ～ Evening Star》。"
+    },
+    "function": {
+      "$type": "ItemFunctionCD",
+      "cd_id": "dtmapi_evening_star"
+    }
+  },
+  {
+    "id": "dtmapi_cassette_necro_fantasia",
+    "sub_type": "special_cd",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 100,
+    "buying_price": 100,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_cd_23"
+    },
+    "title": {
+      "key": "",
+      "text": "磁带：ネクロファンタジア"
+    },
+    "description_basic": {
+      "key": "",
+      "text": "使用后可在播放器中选择《ネクロファンタジア》。"
+    },
+    "function": {
+      "$type": "ItemFunctionCD",
+      "cd_id": "dtmapi_necro_fantasia"
+    }
+  }
+]

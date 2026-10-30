@@ -1,0 +1,12 @@
+[
+  {
+    "type": 1,
+    "spawn_id": "samples_monsterwilds_royal_beacon_blueprint",
+    "global_limit": 1,
+    "default_locked": false,
+    "viewable": false,
+    "active_count": 0,
+    "should_consume_guarantee": false,
+    "guarantee_threshold": 0
+  }
+]

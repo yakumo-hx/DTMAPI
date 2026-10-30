@@ -1,0 +1,3693 @@
+{
+  "schemaVersion": 2,
+  "suites": [
+    {
+      "id": "script-test-npc-offline",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-npc-offline.ps1",
+      "project": "tests/DTMAPI.NpcAuthoring.Tests/DTMAPI.NpcAuthoring.Tests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "NPC-1 typed/declarative compilation, real PNG/ZIP boundaries, frame/schedule/Yarn replay and atomic output preservation; no game inputs.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-story-offline",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-story-offline.ps1",
+      "project": "tests/DTMAPI.StoryAuthoring.Tests/DTMAPI.StoryAuthoring.Tests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "S1 public Yarn 2.4.2 compiler, actual merged Program/VM, joint preflight and CLI output preservation; no game inputs.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-map-offline",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-map-offline.ps1",
+      "project": "tests/DTMAPI.MapData.Tests/DTMAPI.MapData.Tests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Node 22+ editor and C# offline map corpus, original HeartLayout and CLI preservation; no game or native assets.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-monster-allocation-evidence",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-monster-allocation-evidence.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Synthetic seven-group allocation evidence and malformed receipt rejection; no game launch.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-monster-authoring",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-monster-authoring.ps1",
+      "project": "tools/MonsterContent.Compiler/MonsterContent.Compiler.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Monster authoring CLI determinism and diagnostics-only rejection checks; no game launch.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-mes-storage-migration",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-mes-storage-migration.ps1",
+      "project": "tests/DTMAPI.MoreEquipmentSlots.Tests/StorageProbe/MigrationChecks.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Explicit MES experiment evidence checks; requires its existing EvidenceRoot and writes migration fixtures there.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-game-smoke-final-health",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-game-smoke-final-health.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Synthetic final-health classification for expected Advanced owner restart; no game launch.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-monster-content-live-matrix",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-monster-content-live-matrix.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Explicit live monster matrix; requires a held Runtime lock, authenticated session and running NoNativeSave QA fixture.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-monster-content",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-monster-content.ps1",
+      "project": "tests/DTMAPI.MonsterContent.Tests/DTMAPI.MonsterContent.Tests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Experimental monster demand, owner, definition generation and failure contracts.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "moresaves",
+      "project": "tests/DTMAPI.MoreSaves.Tests/DTMAPI.MoreSaves.Tests.csproj",
+      "default": [
+        "MoreSavesProductTests.RunAll"
+      ],
+      "focuses": {
+        "moresaves-product": [
+          "MoreSavesProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.MoreSaves.Tests/DTMAPI.MoreSaves.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing moresaves rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/MoreSaves/src/",
+        "products/first-party/MoreSaves/*.json"
+      ]
+    },
+    {
+      "id": "core",
+      "project": "tests/DTMAPI.Core.Tests/DTMAPI.Core.Tests.csproj",
+      "default": [
+        "RetiredPublicApiIsAbsentAndCurrentContractsRemain",
+        "ModResourcesUseBoundedIndependentSnapshotsAndOwnerPaths",
+        "ModuleScopesRetainFailedChildrenAndIsolateSiblings",
+        "BuiltinProviderOriginSurvivesUnavailableComponents",
+        "ContentHostBindingsRequireExplicitVersionedDependencyAndSafeLayout",
+        "ContentHostsIsolatePacksAndRetainFailedActivationCleanup",
+        "ContentHostsRejectMissingVersionAndHandleReentrantClosure",
+        "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+        "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+        "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+        "PackageDependencyPlanOrdersDeclaredRelationships",
+        "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+        "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+        "OwnerTranslationsFormatRefreshAndDetachWithScope",
+        "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+        "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+        "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+        "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+        "PlatformCommandsParseDispatchAndIsolateOwners",
+        "ReflectionUsesExactSignaturesAndPreservesErrors",
+        "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+        "ReflectionScopeClosesBindingsAndReleasesTargetRoots",
+        "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+        "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+        "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+        "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+        "OwnerDataRejectsBadPathsAndLinkedRoots",
+        "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+        "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+        "GlobalDataMigrationFailureWindowsRetainCommittedBytes",
+        "RuntimeStartsWithEmptyMods",
+        "RuntimePathsDoNotCreateOrAdvertiseLegacyDevelopmentRoot",
+        "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides",
+        "PlayerDoctorRuntimeServiceMissingHelperIsBoundedAndIdempotent",
+        "PlayerDoctorRuntimeResultPreservesWarnings",
+        "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+        "RuntimeSubsystemOptionsAllFlagsOffDisablesObservation",
+        "Batch5DemandCoordinatorTests.RunAll",
+        "Batch5EventKernelTests.RunAll",
+        "Batch5ManifestContractTests.Run",
+        "Batch5RuntimeBoundaryTests.RunAll",
+        "HookStatusQueueRecordsSnapshotImmediatelyAndPublishesOnFlush",
+        "EventMainThreadBoundaryQueuesSafeEventsAndRejectsUnsafeEvents",
+        "SaveLoadRequestCoordinatorSuppressesOnlyDtmapiDuplicates",
+        "TitleReturnBoundaryLedgerBuildsObjectGraphDeltas",
+        "LifecycleObservationCountersRecordPhases",
+        "LifecycleBoundaryContractTracksPhaseRegistryAndHookDiagnostics",
+        "LifecycleBoundaryContractAllowsRepeatedSaveLoadedPhases",
+        "ResourceLifecycleLedgerTracksGenerationsOwnershipAndCleanup",
+        "ResourceLifecycleLedgerSkipsDuplicateSkippedRefreshSnapshots",
+        "ResourceLifecycleLedgerAggregatesHighChurnAutoFishingHandles",
+        "RuntimeLifecycleBoundaryContractReportsAndRespectsFlag",
+        "RuntimeDiscoveryIgnoresUnconsumedContent",
+        "ContentManifestRegistryBuildsAuthoritativeIndexAndCapabilities",
+        "ContentManifestRegistryReportsManifestDependencyAndDuplicateDiagnostics",
+        "ContentManifestRegistryReportsRegistryDiffs",
+        "RuntimeRotatesLatestLogAndRetainsHistory",
+        "RuntimeApiRegistrationIsAtomicAndDynamicProviderReserved",
+        "RuntimeApiCannotClaimLoadedOrdinaryOwner",
+        "BrokenManifestDoesNotCrashDiscovery",
+        "ManifestDependencyIsRequiredAliasSupportsOptionalDependencies",
+        "DependencyVersionApiVersionAndCircularDependencyDiagnostics",
+        "EntryDllMustRemainInsideModRoot",
+        "EntryPathUsesActualAssemblyRegardlessOfSuffix",
+        "EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll",
+        "MinimumGameVersionWithoutDetectedGameVersionLogsWarning",
+        "DiagnosticsSnapshotApiExposesRuntimeState",
+        "RuntimeReportContextScansLogHeadAndTailForModFailures",
+        "DiagnosticsServiceCapsErrorsWarningsAndSummary",
+        "DiagnosticsReportIncludesDebugConsoleLastGiveBreadcrumb",
+        "DiagnosticsServiceCrashDumpBudgetWritesMissingDumpReadme",
+        "DiagnosticsServiceCrashDumpPrioritySurvivesFileCountBudget",
+        "DiagnosticsServiceMissingCrashDumpWritesReadme",
+        "DiagnosticsServiceLatestCrashWithoutDumpSurvivesOlderDumpBudget",
+        "DiagnosticsServiceCrashDirectoriesWithSameLeafUseDistinctZipEntries",
+        "DiagnosticsServiceCrashDumpKeepsFollowingTextEvidence",
+        "ManagerViewModelMapsDiagnosticsSnapshot",
+        "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport",
+        "HelperModRegistryBindsApiRegistrationToOwner",
+        "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics",
+        "ModLoadCheckpointsRollbackAllOwnerRoots",
+        "CompletionLogFailureDoesNotReverseSuccessfulEntry",
+        "TransactionDiagnosticFailuresCannotLeakOrReverseSuccessfulLoad",
+        "RegistryAndConfigFacadesEnforceOwnerLifetime",
+        "StructuredOwnerKeysDoNotCollideOrOverClean",
+        "OwnerBoundInputTracksAndCleansPerOwner",
+        "InputKeybindParserCanonicalizesAliasesAndChords",
+        "InputScopeGatesSamplingAndDispatch",
+        "InputSuppressionIsButtonScopedWithinFrame",
+        "InputLegacyWrapperUsesKeybindRegistry",
+        "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+        "InputPressedEdgeDispatchesWhenAlreadyReleased",
+        "InputRapidRetapDispatchesSecondPress",
+        "InputKeybindChordUsesPressedEdge",
+        "InputKeybindChordShortTapDispatchesPressedAndReleased",
+        "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+        "InputGenericModifiersMatchEitherPhysicalSide",
+        "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+        "InputRegistrationUpdatePreservesUnchangedHeldState",
+        "InputOwnerCleanupInvalidatesCachedButtons",
+        "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+        "InputHelperSnapshotMethodsSupportKeybindLists",
+        "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+        "InactiveOwnerBoundInputQueriesCannotRecreateLocalWatch",
+        "InputLocalSnapshotWarmPathDoesNotAllocate",
+        "InputRegisteredKeybindWarmPathDoesNotAllocate",
+        "InputAudienceSteadyStateDoesNotAllocate",
+        "ConfigMenuKeybindDefaultResetRestoresDeclaredValue",
+        "ConfigMenuOwnerCleanupReleasesCallbacksHeldByStalePage",
+        "FailedCodeModCleanupRemovesOwnerBoundRuntimeState",
+        "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries",
+        "CleanupParticipantExceptionsAreIsolated",
+        "CleanupParticipantThrowAndSinkFailuresRetryThroughDeactivation",
+        "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+        "CodeModPreAssemblyFailuresCanRepairInProcess",
+        "FileMonitorSinkFailuresDoNotBlockOwnerReconciliation",
+        "LightweightDefaultRetainsFullErrorEvidence",
+        "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+        "ModMonitorErrorsBecomeRuntimeDiagnostics",
+        "HighFrequencyEventsDisableHandlersAfterConsecutiveFailures",
+        "QuarantinedEventDelegateReleasesCapturedObject",
+        "EventQuarantineOwnerMetadataIsBoundedAndCleanable",
+        "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+        "DiagnosticGraphsAndLogOnceKeysAreBounded",
+        "DiagnosticRetainedStringsAndTrimmedBytesAreBounded",
+        "ConfigPreviewAuditRecordsApplyAndRestore",
+        "ConfigPreviewAuditBoundsRecentFailures",
+        "EventRemoveIsOwnerBound",
+        "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+        "ConfigJsonEscapesRoundTripWithoutRewriting",
+        "ConfigRecoveryFailuresPreserveOriginalBytes",
+        "OffThreadTimerFallbackUpdateDoesNotDispatchOrdinaryModUpdates",
+        "ConfigMenuEditsSaveCancelAndDetectConflicts",
+        "ConfigMenuCallbackFailuresRollbackAndStayInspectable",
+        "ConfigMenuPendingPreviewDrivesConditionalVisibility",
+        "DisabledDiscoveredModLocksConfigPage",
+        "OfficialLocalModPackagesRespectOfficialEnablement",
+        "UnverifiedWorkshopAndGameModsCannotOverrideOfficialLocalState",
+        "AuthorFileTreeDigestMatchesFrozenCrossToolVectors",
+        "NativeWorkshopAuthorityAndAuthorSourceModesSelectDeterministically",
+        "ExplicitAuthorSessionSurvivesInitialStartupTitleBoundary",
+        "DuplicateCodeModSourceIdentityChangeRequiresRestart",
+        "NonCodeContentPackCanDisableAndRepublishInProcess",
+        "WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod",
+        "ReservedRuntimeDependenciesSurviveTitleAndWorkshopRefresh",
+        "RequiredReservedRuntimeProviderLossDeactivatesConsumer",
+        "RequiredReservedRuntimeProviderVersionMismatchDeactivatesConsumer",
+        "OptionalReservedRuntimeProviderLossWarnsWithoutDeactivation",
+        "SourceDisableCascadesRequiredDependentInReverseOrder",
+        "SourceRemovalCascadesRequiredDependentsButKeepsOptionalDependents",
+        "SourceRefreshDependencyDowngradeCascadesRequiredDependent",
+        "SourceRefreshInPlaceUpgradeCannotAuthorizeResidentProviderVersion",
+        "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+        "ConfigDialogsPreserveParentsAndReleaseOwnerCallbacks",
+        "ConfigDialogsHandleReentryFailureAndBoundaries",
+        "ConfigRestartRemindersAggregateSuccessfulSaves",
+        "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+        "InputAudienceSnapshotRemainsImmutableForTheFrame",
+        "InputOwnerModalTargetsQueriesAndSettlesRelease",
+        "InputConfigurationUpdateRetainsPressedBindingForRelease",
+        "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+        "Suppress_OneFrame_ClearsAfterUpdate"
+      ],
+      "focuses": {
+        "api-retirement": [
+          "RetiredPublicApiIsAbsentAndCurrentContractsRemain"
+        ],
+        "prerelease-step1": [
+          "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+          "RuntimeSubsystemOptionsAllFlagsOffDisablesObservation"
+        ],
+        "lifecycle-registry-cycle": [
+          "LifecycleBoundaryContractTracksPhaseRegistryAndHookDiagnostics",
+          "LifecycleBoundaryContractAllowsRepeatedSaveLoadedPhases",
+          "RuntimeLifecycleBoundaryContractReportsAndRespectsFlag"
+        ],
+        "audio-runtime": [
+          "RuntimeAudioRegistersInternalCapabilityWithoutPlayback"
+        ],
+        "content-host": [
+          "ModuleScopesRetainFailedChildrenAndIsolateSiblings",
+          "BuiltinProviderOriginSurvivesUnavailableComponents",
+          "ModResourcesUseBoundedIndependentSnapshotsAndOwnerPaths",
+          "ContentHostBindingsRequireExplicitVersionedDependencyAndSafeLayout",
+          "ContentHostsIsolatePacksAndRetainFailedActivationCleanup",
+          "ContentHostsRejectMissingVersionAndHandleReentrantClosure"
+        ],
+        "platform-deprecation": [],
+        "prerelease-step2": [
+          "RuntimeSubsystemOptionsDefaultAndEnvironmentOverride",
+          "RuntimeSubsystemOptionsAllFlagsOffDisablesObservation"
+        ],
+        "config-correctness": [
+          "ConfigJsonEscapesRoundTripWithoutRewriting",
+          "ConfigRecoveryFailuresPreserveOriginalBytes",
+          "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+          "RegistryAndConfigFacadesEnforceOwnerLifetime"
+        ],
+        "config-dialogs": [
+          "ConfigDialogsPreserveParentsAndReleaseOwnerCallbacks",
+          "ConfigDialogsHandleReentryFailureAndBoundaries",
+          "ConfigRestartRemindersAggregateSuccessfulSaves",
+          "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+          "ConfigMenuEditsSaveCancelAndDetectConflicts",
+          "ManagerViewModelMapsDiagnosticsSnapshot"
+        ],
+        "g10-modal-core": [
+          "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+          "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "InputOwnerModalTargetsQueriesAndSettlesRelease",
+          "InputConfigurationUpdateRetainsPressedBindingForRelease",
+          "InputSuppressionPreservesPhysicalCycleAndOwedRelease"
+        ],
+        "platform-session-core": [
+          "ExplicitAuthorSessionSurvivesInitialStartupTitleBoundary"
+        ],
+        "platform-package-dependencies": [
+          "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+          "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+          "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+          "PackageDependencyPlanOrdersDeclaredRelationships"
+        ],
+        "monster-fixed-load-plan": [
+          "ColdFixedPlansIgnoreDisabledOptionalSources",
+          "LegacyColdPlanKeepsRequiredDependencyRejection",
+          "PackagePlanSelectsOfficialReadyCandidates",
+          "LegacyFixedPlanUsesOfficialSourcesAndKeepsLifetime",
+          "LegacyLoadPlanKeepsOptionalCycleAdmission",
+          "DependencyVersionApiVersionAndCircularDependencyDiagnostics"
+        ],
+        "startup-load-binding": [
+          "ModLoadCheckpointsRollbackAllOwnerRoots",
+          "CompletionLogFailureDoesNotReverseSuccessfulEntry",
+          "TransactionDiagnosticFailuresCannotLeakOrReverseSuccessfulLoad",
+          "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+          "CodeModPreAssemblyFailuresCanRepairInProcess",
+          "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+          "WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod"
+        ],
+        "runtime-hash-boundaries": [
+          "ModLoadCheckpointsRollbackAllOwnerRoots",
+          "CompletionLogFailureDoesNotReverseSuccessfulEntry",
+          "TransactionDiagnosticFailuresCannotLeakOrReverseSuccessfulLoad",
+          "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+          "CodeModPreAssemblyFailuresCanRepairInProcess",
+          "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+          "WorkshopReloadHotLoadsNewlyEnabledCodeModOnceAndLocksDisabledLoadedMod",
+          "ColdFixedPlansIgnoreDisabledOptionalSources",
+          "LegacyColdPlanKeepsRequiredDependencyRejection",
+          "PackagePlanSelectsOfficialReadyCandidates",
+          "LegacyFixedPlanUsesOfficialSourcesAndKeepsLifetime",
+          "LegacyLoadPlanKeepsOptionalCycleAdmission",
+          "DependencyVersionApiVersionAndCircularDependencyDiagnostics",
+          "PlayerDoctorRuntimeServiceMissingHelperIsBoundedAndIdempotent"
+        ],
+        "sdk-optional-runtime": [
+          "RuntimeCandidatePriorityUsesVisiblePathsAndReportsOnlyRequestedAmbiguity",
+          "RuntimeProviderVisibilityAndAmbiguityStayRequestScoped",
+          "RuntimeMissingRequesterRetainsNestedCallerDirectory",
+          "RuntimeExplicitEntryIgnoresUnresolvableTypesAndReleasesAfterStop",
+          "RuntimeDeclaredProviderCanExportItsRenamedEntryAssembly",
+          "RuntimeDynamicRequestSelectsOnlyDemandedDll",
+          "RuntimeCandidatesIgnoreUnusedDllsAndBrokenProofs",
+          "RuntimeSelectedBytesStillProtectClrBinding",
+          "RuntimeManifestUsesInfoAndOptionalDependencies",
+          "RuntimeCandidateTransactionEndsWithoutPersistentCertificate",
+          "RuntimeDeferredModulesBindOnlyOnActivationAndDetectResidentConflict"
+        ],
+        "platform-reflection-core": [
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "platform-reflection-public": [
+          "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedConcurrentCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "mes-protected-sources": [
+          "ProtectedSourcesEnforceFileBoundaries",
+          "ProtectedSourcesEnforceOwnerScope"
+        ],
+        "platform-services-core": [
+          "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+          "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "platform-data-core": [
+          "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+          "OwnerDataRejectsBadPathsAndLinkedRoots",
+          "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+          "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+          "GlobalDataMigrationFailureWindowsRetainCommittedBytes"
+        ],
+        "platform-settings-core": [
+          "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+          "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+          "OwnerTranslationsFormatRefreshAndDetachWithScope",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "platform-runtime-core": [
+          "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+          "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+          "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+          "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+          "PlatformCommandsParseDispatchAndIsolateOwners"
+        ],
+        "moreequipment-product": [
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "debugconsole-product": [
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "api-metadata": [],
+        "content-query": [
+          "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics"
+        ],
+        "phase4-api-cleanup": [
+          "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics"
+        ],
+        "phase1-core-cleanup": [
+          "EventMainThreadBoundaryQueuesSafeEventsAndRejectsUnsafeEvents",
+          "SaveLoadRequestCoordinatorSuppressesOnlyDtmapiDuplicates",
+          "TitleReturnBoundaryLedgerBuildsObjectGraphDeltas",
+          "InputScopeGatesSamplingAndDispatch",
+          "InputSuppressionIsButtonScopedWithinFrame",
+          "InputLegacyWrapperUsesKeybindRegistry",
+          "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+          "InputPressedEdgeDispatchesWhenAlreadyReleased",
+          "InputRapidRetapDispatchesSecondPress",
+          "InputKeybindChordUsesPressedEdge",
+          "InputKeybindChordShortTapDispatchesPressedAndReleased",
+          "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+          "InputGenericModifiersMatchEitherPhysicalSide",
+          "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+          "InputRegistrationUpdatePreservesUnchangedHeldState",
+          "InputOwnerCleanupInvalidatesCachedButtons",
+          "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+          "InputLocalSnapshotWarmPathDoesNotAllocate",
+          "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+          "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+          "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "InputOwnerModalTargetsQueriesAndSettlesRelease",
+          "InputConfigurationUpdateRetainsPressedBindingForRelease",
+          "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+          "InputAudienceSteadyStateDoesNotAllocate",
+          "Suppress_OneFrame_ClearsAfterUpdate"
+        ],
+        "manager-ui": [
+          "ManagerViewModelMapsDiagnosticsSnapshot",
+          "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Core.Tests/DTMAPI.Core.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing core rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "runtime-integration",
+      "project": "tests/DTMAPI.RuntimeIntegration.Tests/DTMAPI.RuntimeIntegration.Tests.csproj",
+      "default": [
+        "PlatformSdkTargetRuntimeTests.RunAll",
+        "Batch6AdvancedRuntimeTests.RunAll",
+        "Batch5ContentGenerationTests.Run",
+        "AnimalModuleTests.Run",
+        "HookInstallSchedulerCoalescesExternalRequests",
+        "TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart",
+        "NativeTitleEntryPreservesOtherActionsAndExit",
+        "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+        "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp",
+        "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+        "ControllerReconnectRequiresNeutralAndClosesHeldCycles",
+        "ControllerVocabularyPreservesRawAndUnknownBindings",
+        "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+        "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress",
+        "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu",
+        "TitleSettingsEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "TitleSettingsConfigPagerPreservesExplicitNavigation",
+        "TitleSettingsPresentationPreservesOrderAndDrafts",
+        "TitleSettingsDetailsRetainLongDiagnosticText",
+        "GameBridgeOwnerRetainingServicesExposeCleanupBoundary",
+        "SaveSavingParticipantFailureCancelsNativeBoundary",
+        "FrameDriverHealthPolicyDistinguishesGlobalPauseAndSingleDriverStall",
+        "OfficialModUiWorkshopRefreshCommitsOnlyAfterSuccessfulCloseSave",
+        "NativeWorkshopBridgeUsesCurrentModManagerStateInsteadOfStaleEnablementFile",
+        "NativeWorkshopOptionalInfoFailureRetainsRequiredAuthorityWithoutInventingEnablement",
+        "NativeWorkshopSubscriptionWithoutInstalledRootDoesNotAuthorizeRawDirectory",
+        "ExplicitAuthorSessionAuthorizesWorkshopValidationAndClosesAtTitle",
+        "ExplicitAuthorSessionClosesAtRuntimeShutdown",
+        "ExplicitAuthorSessionExpiryRevokesWorkshopValidation",
+        "ExplicitAuthorSessionCannotReloadDependencyBlockedContent",
+        "HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics",
+        "HarmonyTargetSignatureSelectsExactOverload",
+        "NativeUiLayoutRepairKeepsExactRepairsAndRetiresGenericHooks",
+        "GameBridgeFeatureContractsReflectDemandRouting",
+        "ItemDisplayNameApiCachesOnlySuccessfulMainThreadLookups",
+        "GameBridgeFeatureFinalHealthSnapshotAggregatesCounters",
+        "GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount",
+        "GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess",
+        "GameBridgeFeatureExceptionSummaryUnwrapsTargetInvocation",
+        "GameBridgeEnvironmentResetStepFailuresAreIsolated",
+        "AuthorSessionReloadRequiresRestartWithoutReadingContent",
+        "QaHostActivationIsOneShotIntegrityBoundAndLifecycleClosed",
+        "QaInitialSaveLoadDispositionRetriesUntilBridgeAccepts",
+        "QaTerminalTitleBoundaryUsesUnifiedQuitPath",
+        "QaParticipantRunDispositionOwnsDeterministicQuitWithoutEmbeddedGate",
+        "QaParticipantFailureStillClosesAndQuitsWithoutEmbeddedScheduler",
+        "QaPreRuntimeOwnerSurvivesPostRuntimeStartupFailureUntilShutdown"
+      ],
+      "focuses": {
+        "title-presentation": [
+          "TitleSettingsRestartNoticeFollowsSuccessfulSwitchChanges",
+          "TitleSettingsPresentationPreservesOrderAndDrafts",
+          "TitleSettingsDetailsRetainLongDiagnosticText",
+          "TitleSettingsConfigPagerPreservesExplicitNavigation",
+          "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+          "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+          "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu"
+        ],
+        "config-dialogs": [
+          "TitleSettingsRestartNoticeFollowsSuccessfulSwitchChanges",
+          "TitleSettingsPresentationPreservesOrderAndDrafts",
+          "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu"
+        ],
+        "platform-sdk-targets": [
+          "PlatformSdkTargetRuntimeTests.RunAll"
+        ],
+        "input-latch": [
+          "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+          "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress"
+        ],
+        "platform-controller": [
+          "TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart",
+          "NativeTitleEntryPreservesOtherActionsAndExit",
+          "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+          "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp",
+          "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+          "ControllerReconnectRequiresNeutralAndClosesHeldCycles",
+          "ControllerVocabularyPreservesRawAndUnknownBindings",
+          "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+          "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress"
+        ],
+        "batch6-advanced-core": [
+          "Batch6AdvancedRuntimeTests.RunAll"
+        ],
+        "audio-e21-supervision": [
+          "AudioE21DeferredHooksTests.Run",
+          "Batch6AdvancedRuntimeTests.RunHarmonySupervision"
+        ],
+        "prerelease-step1": [
+          "GameBridgeFeatureContractsReflectDemandRouting",
+          "GameBridgeFeatureFinalHealthSnapshotAggregatesCounters"
+        ],
+        "platform-session-core": [
+          "ExplicitAuthorSessionAuthorizesWorkshopValidationAndClosesAtTitle",
+          "ExplicitAuthorSessionClosesAtRuntimeShutdown",
+          "ExplicitAuthorSessionExpiryRevokesWorkshopValidation",
+          "ExplicitAuthorSessionCannotReloadDependencyBlockedContent",
+          "AuthorSessionReloadRequiresRestartWithoutReadingContent"
+        ],
+        "item-display-name": [
+          "ItemDisplayNameApiCachesOnlySuccessfulMainThreadLookups"
+        ],
+        "animal-modules": [
+          "AnimalModuleTests.Run"
+        ],
+        "content-query": [
+          "Batch5ContentGenerationTests.RunContentQuery"
+        ],
+        "content-generation": [
+          "Batch5ContentGenerationTests.Run"
+        ],
+        "moreequipment-product": [
+          "SaveSavingParticipantFailureCancelsNativeBoundary"
+        ],
+        "title-config-pager": [
+          "TitleSettingsConfigPagerPreservesExplicitNavigation"
+        ],
+        "api-metadata": [],
+        "phase4-api-cleanup": []
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.RuntimeIntegration.Tests/DTMAPI.RuntimeIntegration.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing runtime-integration rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "compatibility",
+      "project": "tests/DTMAPI.Compatibility.Tests/DTMAPI.Compatibility.Tests.csproj",
+      "default": [
+        "Batch5GameBridgeDemandTests.RunAll",
+        "InactiveOwnerCleanupCanBeRetriedUntilZero",
+        "EquipmentSlotProtectedStoragePolicyUsesPerSaveTailRecovery"
+      ],
+      "focuses": {
+        "batch5-gamebridge-demand": [
+          "Batch5GameBridgeDemandTests.RunAll"
+        ],
+        "compatibility-host": [
+          "Batch5GameBridgeDemandTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Compatibility.Tests/DTMAPI.Compatibility.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing compatibility rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "fishbreeding",
+      "project": "tests/DTMAPI.FishBreeding.Tests/DTMAPI.FishBreeding.Tests.csproj",
+      "default": [
+        "FishBreedingProductTests.RunAll"
+      ],
+      "focuses": {
+        "fishbreeding-product": [
+          "FishBreedingProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.FishBreeding.Tests/DTMAPI.FishBreeding.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Fish roe title, fallback and owner callback behavior.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/FishRoe/src/",
+        "products/first-party/FishRoe/*.json"
+      ]
+    },
+    {
+      "id": "animalhusbandry",
+      "project": "tests/DTMAPI.AnimalHusbandry.Tests/DTMAPI.AnimalHusbandry.Tests.csproj",
+      "default": [
+        "AnimalHusbandryProductTests.RunAll"
+      ],
+      "focuses": {
+        "animalhusbandry-product": [
+          "AnimalHusbandryProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.AnimalHusbandry.Tests/DTMAPI.AnimalHusbandry.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing animalhusbandry rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "autofishing",
+      "project": "tests/DTMAPI.AutoFishing.Tests/DTMAPI.AutoFishing.Tests.csproj",
+      "default": [
+        "RebuildTests.RunAll"
+      ],
+      "focuses": {
+        "autofishing-product": [
+          "RebuildTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.AutoFishing.Tests/DTMAPI.AutoFishing.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing autofishing rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "autoharvest",
+      "project": "tests/DTMAPI.AutoHarvest.Tests/DTMAPI.AutoHarvest.Tests.csproj",
+      "default": [
+        "AutoHarvestUpdaterFollowsOrdinarySaveLifecycle"
+      ],
+      "focuses": {
+        "phase4-api-cleanup": [
+          "AutoHarvestUpdaterFollowsOrdinarySaveLifecycle"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.AutoHarvest.Tests/DTMAPI.AutoHarvest.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing autoharvest rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "chestlocator",
+      "project": "tests/DTMAPI.ChestLocator.Tests/DTMAPI.ChestLocator.Tests.csproj",
+      "default": [
+        "ChestLocatorEnhancerProductTests.RunAll"
+      ],
+      "focuses": {
+        "chestlocator-product": [
+          "ChestLocatorEnhancerProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.ChestLocator.Tests/DTMAPI.ChestLocator.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing chestlocator rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "moreequipment",
+      "project": "tests/DTMAPI.MoreEquipmentSlots.Tests/DTMAPI.MoreEquipmentSlots.Tests.csproj",
+      "default": [
+        "MoreEquipmentSlotsProductTests.RunAll",
+        "EquipmentSlotsCompatibilityHostTests.RunAll"
+      ],
+      "focuses": {
+        "moreequipment-claim-process": [
+          "MoreEquipmentSlotsProductTests.RunCrossProcessClaimActor"
+        ],
+        "moreequipment-product": [
+          "MoreEquipmentSlotsProductTests.RunAll",
+          "EquipmentSlotsCompatibilityHostTests.RunAll"
+        ],
+        "moreequipment-cold-host": [
+          "EquipmentSlotsCompatibilityHostTests.RunProductColdStorageOnly"
+        ],
+        "compatibility-host": [
+          "EquipmentSlotsCompatibilityHostTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.MoreEquipmentSlots.Tests/DTMAPI.MoreEquipmentSlots.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing moreequipment rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "strongplantinggun",
+      "project": "tests/DTMAPI.StrongPlantingGun.Tests/DTMAPI.StrongPlantingGun.Tests.csproj",
+      "default": [
+        "StrongPlantingGunProductTests.RunAll"
+      ],
+      "focuses": {
+        "strongplantinggun-product": [
+          "StrongPlantingGunProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.StrongPlantingGun.Tests/DTMAPI.StrongPlantingGun.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing strongplantinggun rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/StrongPlantingGun/src/",
+        "products/first-party/StrongPlantingGun/*.json"
+      ]
+    },
+    {
+      "id": "zoom",
+      "project": "tests/DTMAPI.Zoom.Tests/DTMAPI.Zoom.Tests.csproj",
+      "default": [
+        "ZoomProductTests.RunAll",
+        "ZoomProductArchitectureBoundariesRemainOrdinary"
+      ],
+      "focuses": {
+        "zoom-product": [
+          "ZoomProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Zoom.Tests/DTMAPI.Zoom.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing zoom rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/Zoom/src/",
+        "products/first-party/Zoom/*.json"
+      ]
+    },
+    {
+      "id": "mine",
+      "project": "tests/DTMAPI.Mine.Tests/DTMAPI.Mine.Tests.csproj",
+      "default": [
+        "MineProductTests.RunAll"
+      ],
+      "focuses": {
+        "mine-product": [
+          "MineProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Mine.Tests/DTMAPI.Mine.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing mine rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/Mine/src/",
+        "products/first-party/Mine/*.json"
+      ]
+    },
+    {
+      "id": "debugconsole",
+      "project": "tests/DTMAPI.DebugConsole.Tests/DTMAPI.DebugConsole.Tests.csproj",
+      "default": [
+        "DebugConsoleSelectedStackDeleteIdentityAndContents",
+        "DebugConsoleSelectedStackDeleteNotificationAndUiLifetime",
+        "DebugConsoleCropCircleAndFamilies",
+        "DebugConsoleCropPartialAndIdentity",
+        "DebugConsoleCatalogCountDispatchAndPartialResults",
+        "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+        "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+        "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+        "DebugConsoleSpawnProductTests.RunAll",
+        "DebugConsoleInventoryProductTests.RunAll",
+        "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+        "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+        "DebugConsoleOneHundredCompatibilitySemantics",
+        "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+        "DebugConsoleHostBindingFollowsOwnerLifetime",
+        "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+        "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+        "DebugConsoleEscapeCloseDrainProtectsNativeOwnerBoundary",
+        "DebugConsoleEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath",
+        "MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset",
+        "DebugConsoleHarmonyOwnerFixturePasses",
+        "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+        "DebugConsoleCatalogPagingPreservesQueriesAndSnapshots",
+        "DebugConsoleCatalogSourcesAvoidItemTraversalAndRetry"
+      ],
+      "focuses": {
+        "debugconsole-product": [
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+          "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+          "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+          "DebugConsoleHarmonyOwnerFixturePasses",
+          "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+          "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+          "DebugConsoleOneHundredCompatibilitySemantics",
+          "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath"
+        ],
+        "y-simplification": [
+          "DebugConsoleCatalogPagingPreservesQueriesAndSnapshots",
+          "DebugConsoleCatalogSourcesAvoidItemTraversalAndRetry",
+          "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+          "DebugConsoleEscapeCloseDrainProtectsNativeOwnerBoundary",
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+          "DebugConsoleCatalogCountDispatchAndPartialResults",
+          "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll"
+        ],
+        "y-owner-boundary-diagnostic": [
+          "DebugConsoleFrozenCoreOwnerBoundaryDiagnostic"
+        ],
+        "y-selected-delete": [
+          "DebugConsoleSelectedStackDeleteIdentityAndContents",
+          "DebugConsoleSelectedStackDeleteNotificationAndUiLifetime",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "y-crop-maturity": [
+          "DebugConsoleCropCircleAndFamilies",
+          "DebugConsoleCropPartialAndIdentity",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "y-catalog-count": [
+          "DebugConsoleCatalogCountDispatchAndPartialResults",
+          "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath"
+        ],
+        "y-session-modes": [
+          "DebugConsoleCustomTimeIsBoundedAndIndependent",
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleHarmonyOwnerFixturePasses",
+          "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "debugconsole-compatibility-owner": [
+          "DebugConsoleHarmonyOwnerFixturePasses"
+        ],
+        "debugconsole-inventory": [
+          "DebugConsoleInventoryProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.DebugConsole.Tests/DTMAPI.DebugConsole.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing debugconsole rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/DebugConsole/src/",
+        "products/first-party/DebugConsole/*.json"
+      ]
+    },
+    {
+      "id": "oil-content",
+      "project": "tests/DTMAPI.OilContent.Tests/DTMAPI.OilContent.Tests.csproj",
+      "default": [
+        "OilOfficialJsonOwnershipIsolatedAndProbabilityMatchesTrackedSemantics"
+      ],
+      "focuses": {},
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.OilContent.Tests/DTMAPI.OilContent.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing oil-content rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/Oil/",
+        "tests/mod-fixtures/qa/OilBehaviorFixture/",
+        "src/DTMAPI.GameBridge.DolocTown/",
+        "DTMAPI.sln",
+        "tools/scripts/build.ps1"
+      ]
+    },
+    {
+      "id": "source-contracts",
+      "project": "tests/DTMAPI.SourceContracts.Tests/DTMAPI.SourceContracts.Tests.csproj",
+      "default": [
+        "PreviewVersionMetadataIsConsistent",
+        "PublicApiStatusMetadataMatchesMatrix"
+      ],
+      "focuses": {
+        "prerelease-step5": [
+          "PreviewVersionMetadataIsConsistent"
+        ],
+        "platform-version-projection": [
+          "PreviewVersionMetadataIsConsistent"
+        ],
+        "public-api-status": [
+          "PublicApiStatusMetadataMatchesMatrix"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.SourceContracts.Tests/DTMAPI.SourceContracts.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing source-contracts rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/*/manifest.json",
+        "products/first-party/*/official-info.json",
+        "author-sdk/schemas/dtmapi-author.schema.json",
+        "author-sdk/target-catalog.json"
+      ]
+    },
+    {
+      "id": "source-arbitration",
+      "project": "tests/DTMAPI.SourceArbitration.Tests/DTMAPI.SourceArbitration.Tests.csproj",
+      "default": [],
+      "focuses": {
+        "official-source-arbitration-once": [
+          "OfficialSourceArbitrationOneOffMatrix"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.SourceArbitration.Tests/DTMAPI.SourceArbitration.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing source-arbitration rule and product contracts.",
+      "enabledByDefault": false
+    },
+    {
+      "id": "actionspeed",
+      "project": "tests/DTMAPI.ActionSpeed.Tests/DTMAPI.ActionSpeed.Tests.csproj",
+      "default": [
+        "RebuildTests.RunAll"
+      ],
+      "focuses": {
+        "actionspeed-product": [
+          "RebuildTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.ActionSpeed.Tests/DTMAPI.ActionSpeed.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing actionspeed rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/ActionSpeed/src/",
+        "products/first-party/ActionSpeed/*.json"
+      ]
+    },
+    {
+      "id": "DTMAPI.QaUnitTests",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.QaUnitTests/DTMAPI.QaUnitTests.csproj",
+      "project": "tests/DTMAPI.QaUnitTests/DTMAPI.QaUnitTests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "DTMAPI.QaUnitTests contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "DTMAPI.InstallDoctor.Tests",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.InstallDoctor.Tests/DTMAPI.InstallDoctor.Tests.csproj",
+      "project": "tests/DTMAPI.InstallDoctor.Tests/DTMAPI.InstallDoctor.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "DTMAPI.InstallDoctor.Tests contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "DTMAPI.MultiPlatformInstaller.Tests",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.MultiPlatformInstaller.Tests/DTMAPI.MultiPlatformInstaller.Tests.csproj",
+      "project": "tests/DTMAPI.MultiPlatformInstaller.Tests/DTMAPI.MultiPlatformInstaller.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "DTMAPI.MultiPlatformInstaller.Tests contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-advanced-reference-game-fixture",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-advanced-reference-game-fixture.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-advanced-reference-game-fixture contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-audit-output-boundaries",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-audit-output-boundaries.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-audit-output-boundaries contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-author-sdk-portable",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-author-sdk-portable.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-author-sdk-portable contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-author-sdk-required-reference",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-author-sdk-required-reference.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch4-qa-semantic-inventory",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch4-qa-semantic-inventory.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch4-qa-semantic-inventory contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch5-gc-ladder",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch5-gc-ladder.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch5-gc-ladder contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch5-no-demand-profile",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch5-no-demand-profile.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch5-no-demand-profile contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-actionspeed-advanced-product",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-actionspeed-advanced-product.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-actionspeed-advanced-product contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-animalhusbandryprogress-advanced-product",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-animalhusbandryprogress-advanced-product.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-animalhusbandryprogress-advanced-product contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-autofishing-behavior-matrix",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-autofishing-behavior-matrix.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-autofishing-behavior-matrix contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-autofishing-gc-ladder",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-autofishing-gc-ladder.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-autofishing-gc-ladder contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-autofishing-manager-lifecycle",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-autofishing-manager-lifecycle.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-autofishing-manager-lifecycle contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-fishbreedingassistant-advanced-product",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-fishbreedingassistant-advanced-product.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-fishbreedingassistant-advanced-product contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-g2-advanced-synthetic",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-g2-advanced-synthetic.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-g2-advanced-synthetic contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-g2-authority-paths",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-g2-authority-paths.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-g2-authority-paths contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-g2-runtime-matrix-receipt",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-g2-runtime-matrix-receipt.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-g2-runtime-matrix-receipt contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-moresaves-advanced-product",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-moresaves-advanced-product.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-moresaves-advanced-product contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-oneactioncomplete-advanced-product",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-oneactioncomplete-advanced-product.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-oneactioncomplete-advanced-product contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-batch6-phase0-contract",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-batch6-phase0-contract.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-batch6-phase0-contract contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-candidate11-source-transaction",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-candidate11-source-transaction.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-candidate11-source-transaction contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-common",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-common.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-common contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-developer-official-local-install-transaction",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-developer-official-local-install-transaction.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-developer-official-local-install-transaction contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-document-archive-tools",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-document-archive-tools.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-document-archive-tools contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dotnet-toolchain",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dotnet-toolchain.ps1",
+      "project": "",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dotnet-toolchain contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-060-autofishing-native-trace",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-060-autofishing-native-trace.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dtmapi-060-autofishing-native-trace contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-060-chestlocator-native-trace",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-060-chestlocator-native-trace.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dtmapi-060-chestlocator-native-trace contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-060-debugconsole-native-trace",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-060-debugconsole-native-trace.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dtmapi-060-debugconsole-native-trace contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-060-release-artifact-set",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-060-release-artifact-set.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dtmapi-060-release-artifact-set contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-060-runtime-floor-compatibility",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-060-runtime-floor-compatibility.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-dtmapi-multiplatform-package",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-dtmapi-multiplatform-package.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-dtmapi-multiplatform-package contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-game-smoke-modules",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-game-smoke-modules.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-game-smoke-modules contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-game-smoke-process-boundaries",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-game-smoke-process-boundaries.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-game-smoke-process-boundaries contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-game-smoke-save-modes",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-game-smoke-save-modes.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-game-smoke-save-modes contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-heart-map",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-heart-map.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-heart-map contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-helper-retained-abi",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-helper-retained-abi.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-uninstall-runtime",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-uninstall-runtime.ps1",
+      "project": "",
+      "distribution": "public",
+      "platforms": ["Windows"],
+      "requires": ["DotNet8", "PowerShell51"],
+      "arguments": [],
+      "purpose": "Complete uninstall, legacy cleanup and data-loss confirmation under both PowerShell hosts and the managed engine.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-installer-invalid-target-failure",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-installer-invalid-target-failure.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-installer-invalid-target-failure contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-issue-index",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-issue-index.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-issue-index contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-multiplatform-runtime-installer",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-multiplatform-runtime-installer.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-multiplatform-runtime-installer contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-noqa-deadline",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-noqa-deadline.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-noqa-deadline contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-doctor-portable",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-doctor-portable.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-doctor-portable contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-runtime-only-uninstall",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-runtime-only-uninstall.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-runtime-only-uninstall contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-save-collector-slots",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-save-collector-slots.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-save-collector-slots contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-save-crash-collector",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-save-crash-collector.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-save-crash-collector contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-save-repair",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-save-repair.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-save-repair contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-player-slot0-recovery",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-slot0-recovery.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-player-slot0-recovery contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-portable-reverse-capture-path-safety",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-portable-reverse-capture-path-safety.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-portable-reverse-capture-path-safety contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-prerelease-active-gc-focus",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-prerelease-active-gc-focus.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-prerelease-active-gc-focus contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-private-reverse-conformance",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-private-reverse-conformance.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-private-reverse-conformance contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-product-build-reports",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-product-build-reports.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-product-build-reports contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-product-catalog-scopes",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-product-catalog-scopes.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-product-catalog-scopes contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-product-maintenance-tools",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-product-maintenance-tools.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-product-maintenance-tools contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-product-projections",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-product-projections.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "script-test-product-projections contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-doc-governance-scope",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-doc-governance-scope.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Selected document, monthly projection and explicit full-audit boundaries.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-release-routing",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-release-routing.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-release-routing contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-retained-abi-input-resolution",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-retained-abi-input-resolution.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-retained-autofishing-abi",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-retained-autofishing-abi.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-retained-release-abi",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-retained-release-abi.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-reverse-baseline-path-safety",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-reverse-baseline-path-safety.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-reverse-baseline-path-safety contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-reverse-capture-stages",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-reverse-capture-stages.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-reverse-capture-stages contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-build-source",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-build-source.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-build-source contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-candidate-published-info-boundary",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-candidate-published-info-boundary.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-candidate-published-info-boundary contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-evidence-retention",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-evidence-retention.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-evidence-retention contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-rollback-archive",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-rollback-archive.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-rollback-archive contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-upgrade-transaction",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-upgrade-transaction.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-upgrade-transaction contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-runtime-workshop-installer-061",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-runtime-workshop-installer-061.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-runtime-workshop-installer-061 contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-smoke-evidence-contracts",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-smoke-evidence-contracts.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-smoke-evidence-contracts contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-steam-appmanifest-identity",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-steam-appmanifest-identity.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-steam-appmanifest-identity contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-synthetic-retained-abi",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-synthetic-retained-abi.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Retired pre-0.6 compatibility check; excluded from current acceptance.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-test-focus-routing",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-test-focus-routing.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-test-focus-routing contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-public-source-receipts",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-public-source-receipts.ps1",
+      "project": "",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Real MSBuild and child-process public receipt rejection checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-unit-routing",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-unit-routing.ps1",
+      "project": "",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "script-test-unit-routing contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": [],
+      "inputs": [
+        "tools/scripts/test-unit.ps1"
+      ]
+    },
+    {
+      "id": "script-test-workshop-download-markers",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-workshop-download-markers.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test-workshop-download-markers contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-workspace-preflight",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-workspace-preflight.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Internal Catalog/workspace preparation checks; public SDK usage does not require this route.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test",
+      "runner": "powershell",
+      "entry": "tools/scripts/test.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "script-test contract checks.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "build-DTMAPI.BepInExBootstrap",
+      "runner": "build-only",
+      "entry": "src/DTMAPI.BepInExBootstrap/DTMAPI.BepInExBootstrap.csproj",
+      "project": "src/DTMAPI.BepInExBootstrap/DTMAPI.BepInExBootstrap.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Public source build root; no game execution.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "build-DTMAPI.PlayerDoctor",
+      "runner": "build-only",
+      "entry": "src/DTMAPI.PlayerDoctor/DTMAPI.PlayerDoctor.csproj",
+      "project": "src/DTMAPI.PlayerDoctor/DTMAPI.PlayerDoctor.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Public source build root; no game execution.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "script-test-registry-contracts",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-registry-contracts.ps1",
+      "project": "",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51",
+        "InternalWorkspace"
+      ],
+      "arguments": [],
+      "purpose": "Fail closed on invalid or unclassified test inputs and preserve declared Unit coverage.",
+      "enabledByDefault": false,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "public-source-export",
+      "runner": "existing-exe-focus",
+      "entry": "tools/public-source/DTMAPI.PublicSource/DTMAPI.PublicSource.csproj",
+      "project": "tools/public-source/DTMAPI.PublicSource/DTMAPI.PublicSource.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [
+        "self-test"
+      ],
+      "purpose": "Exact Git export, payload and three-way contribution protocol",
+      "inputs": [
+        "tools/public-source/export-policy.json"
+      ],
+      "enabledByDefault": true
+    },
+    {
+      "id": "script-short-probe-preflight",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-short-probe-preflight.ps1",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51"
+      ],
+      "arguments": [],
+      "purpose": "Synthetic prelaunch composition and deployed package integrity",
+      "enabledByDefault": false
+    },
+    {
+      "id": "script-player-helper-closure",
+      "runner": "powershell",
+      "entry": "tools/scripts/test-player-helper-closure.ps1",
+      "project": null,
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "PowerShell51"
+      ],
+      "arguments": [],
+      "purpose": "Copied player helper import closure and no provisioning",
+      "enabledByDefault": false
+    },
+    {
+      "id": "oneaction",
+      "project": "tests/DTMAPI.OneActionComplete.Tests/DTMAPI.OneActionComplete.Tests.csproj",
+      "default": [
+        "OneActionProductTests.RunAll"
+      ],
+      "focuses": {
+        "oneaction-product": [
+          "OneActionProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.OneActionComplete.Tests/DTMAPI.OneActionComplete.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Fish roe title, fallback and owner callback behavior.",
+      "enabledByDefault": true,
+      "inputs": [
+        "products/first-party/OneActionComplete/src/",
+        "products/first-party/OneActionComplete/*.json"
+      ]
+    },
+    {
+      "id": "internal-workflow",
+      "project": "tests/DTMAPI.InternalWorkflow.Tests/DTMAPI.InternalWorkflow.Tests.csproj",
+      "default": [
+        "Batch5GcLadderRunnerEvidenceDiscoveryContracts",
+        "ProductOwnerRefreshSmokeReturnsHomeBeforeExit",
+        "Batch2PlayerLikeSmokeGatesAreOrderedAndRecoverable",
+        "Batch4RunnerRoutingMatrixUsesWindowsPowerShell51",
+        "ZoomAcceptanceRoutingRequiresProductNativeTitleAndExactOwnerCleanup",
+        "MoreSavesAcceptanceRoutingRequiresPostTitlePanelAndSaveProtection",
+        "MoreEquipmentSlotsAcceptanceRoutingRequiresProtectedThirdSaveAndExactOwnerCleanup",
+        "StartupEvidenceMetricRouting",
+        "InstallerValidationScriptRunsAndReportsItsSteps",
+        "DebugConsoleTitleCleanupRunnerUsesStableProductOwnershipEvidence"
+      ],
+      "focuses": {
+        "game-smoke-routing": [
+          "Batch4RunnerRoutingMatrixUsesWindowsPowerShell51"
+        ],
+        "debugconsole-title-cleanup-runner": [
+          "DebugConsoleTitleCleanupRunnerUsesStableProductOwnershipEvidence"
+        ],
+        "zoom-acceptance-routing": [
+          "ZoomAcceptanceRoutingRequiresProductNativeTitleAndExactOwnerCleanup"
+        ],
+        "moresaves-acceptance-routing": [
+          "MoreSavesAcceptanceRoutingRequiresPostTitlePanelAndSaveProtection"
+        ],
+        "moreequipment-acceptance-routing": [
+          "MoreEquipmentSlotsAcceptanceRoutingRequiresProtectedThirdSaveAndExactOwnerCleanup"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.InternalWorkflow.Tests/DTMAPI.InternalWorkflow.Tests.csproj",
+      "distribution": "internal",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Internal release, smoke routing and evidence policy checks.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "monstercontent-public",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.MonsterContent.Tests/DTMAPI.MonsterContent.Tests.csproj",
+      "project": "tests/DTMAPI.MonsterContent.Tests/DTMAPI.MonsterContent.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Optional content contract and codec behavior without a game.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": [],
+      "inputs": [
+        "examples/monster-authoring/"
+      ]
+    },
+    {
+      "id": "audiocontent-public",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.AudioContent.Tests/DTMAPI.AudioContent.Tests.csproj",
+      "project": "tests/DTMAPI.AudioContent.Tests/DTMAPI.AudioContent.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Optional content contract and codec behavior without a game.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "sdk-optional-tools",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.AuthorSdk.Tests/DTMAPI.AuthorSdk.Tests.csproj",
+      "project": "tests/DTMAPI.AuthorSdk.Tests/DTMAPI.AuthorSdk.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Ordinary external build, directory packing, optional deployment and recovery.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    }
+  ],
+  "supportingInputs": [
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/SelectedStackDelete/YSelectedStackDeleteProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in Y23 visible whole-stack deletion and normal shelf transfer NoNativeSave probe; existing UI10/native9, no observer deletion or default run."
+    },
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/CropMaturity/YCropMaturityProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in Y21 room-circle/three-family native maturity and unsaved reload probe; UI10/native9, native planting only, no default run."
+    },
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/CatalogCount/YCatalogCountProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in SDK-built Y catalog quantity and actual pointer dispatch NoNativeSave probe; existing UI10/native9 only, not a default suite."
+    },
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/SessionModes/YSessionModesProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in SDK-built Y session-mode NoNativeSave probe; existing UI10/native9 and native1 only, not a default suite."
+    },
+    {
+      "path": "tools/scripts/test-map05j.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit OutputRoot; MAP-05J editor, compiler parity and file-input checks; no default/public run."
+    },
+    {
+      "path": "tests/DTMAPI.StoryBinding.Tests/DTMAPI.StoryBinding.Tests.csproj",
+      "distribution": "internal",
+      "purpose": "S2 boundary tests consume an explicitly selected S1 candidate through test-story-s2.ps1; no default/public run."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/StoryS2/DTMAPI.Internal.StoryS2.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in S2 native construction fixture; SDK-generated Advanced V2 package, not part of Runtime."
+    },
+    {
+      "path": "tools/scripts/test-story-s2.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit candidate/evidence parameters; targeted S2 offline boundary verification."
+    },
+    {
+      "path": "tests/DTMAPI.NpcAuthoring.NativeProbe/DTMAPI.NpcAuthoring.NativeProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit offline GraphSource/IsMatch probe using read-only retained assemblies; no Unity or game process, not a default test."
+    },
+    {
+      "path": "tests/DTMAPI.MoreEquipmentSlots.Tests/NativeProbe/MoreEquipmentSlotsShortProbe.csproj",
+      "distribution": "internal",
+      "purpose": "SDK-built native QA fixture; only loaded by its explicit product validation workflow."
+    },
+    {
+      "path": "tests/DTMAPI.MoreEquipmentSlots.Tests/StorageProbe/StorageProbe.csproj",
+      "distribution": "internal",
+      "purpose": "SDK-built native storage experiment fixture; requires the dedicated experiment workflow."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/MonsterContent/DTMAPI.Internal.MonsterContent.csproj",
+      "distribution": "internal",
+      "purpose": "Internal MonsterContent native QA carrier; not a public author Host or default test executable."
+    },
+    {
+      "path": "tests/DTMAPI.AbiCompatibilityHarness/DTMAPI.AbiCompatibilityHarness.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.AbiCompatibilityHarness/Fixtures/HelperConsumer/HelperConsumer.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.AbiCompatibilityHarness/Fixtures/HelperImplementer/HelperImplementer.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.ActionSpeed.Tests/NativeProbe/ActionSpeedShortProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.AutoFishing.Tests/NativeProbe/AutoFishingShortProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.HeartMap.Tests/DTMAPI.HeartMap.Tests.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/AdvancedCodeModFixture/AdvancedCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/BepInExPluginFixture/BepInExPluginFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/CodeModFixture/CodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/GameReferenceFixture/GameReferenceFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/HarmonyReferenceFixture/HarmonyReferenceFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/RuntimeBootstrapIdentityFixture/RuntimeBootstrapIdentityFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/RuntimeCoreIdentityFixture/RuntimeCoreIdentityFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/RuntimeGameBridgeIdentityFixture/RuntimeGameBridgeIdentityFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.InstallDoctor.Tests/Fixtures/RuntimeModConfigMenuIdentityFixture/RuntimeModConfigMenuIdentityFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/DTMAPI.UnitTests.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/AdvancedRuntimeFailureFixture/AdvancedRuntimeFailureFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/AdvancedRuntimeSuccessFixture/AdvancedRuntimeSuccessFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ChestLocatorHarmonyOwnerFixture/ChestLocatorHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongFrameworkFixture/CompatibilityHostWrongFrameworkFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongNameFixture/CompatibilityHostWrongNameFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/CompatibilityHostWrongVersionFixture/CompatibilityHostWrongVersionFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DebugConsoleHarmonyOwnerFixture/DebugConsoleHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DebugConsoleNativeFixture/DebugConsoleNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/EquipmentSlotsHarmonyOwnerFixture/EquipmentSlotsHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/EquipmentSlotsLegacyNativeFixture/EquipmentSlotsLegacyNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/EquipmentSlotsLegacyTargetFixture/EquipmentSlotsLegacyTargetFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/EquipmentSlotsNativeFixture/EquipmentSlotsNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyCollisionA/LegacyCollisionA.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyCollisionB/LegacyCollisionB.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeCodeModFixture/LegacyNativeCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeHelperFixture/LegacyNativeHelperFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeThrowingCodeModFixture/LegacyNativeThrowingCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/MineHarmonyOwnerFixture/MineHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/MineNativeFixture/MineNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/StrongPlantingGunHarmonyOwnerFixture/StrongPlantingGunHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/StrongPlantingGunNativeFixture/StrongPlantingGunNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ZoomHarmonyOwnerFixture/ZoomHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/AdvancedCodeMod/DTMAPI.AdvancedFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/CropHarvesting/CropHarvestingQaMod.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/HeartMap/DTMAPI.Internal.HeartMap.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/HookProbe/HookProbeMod.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tools/scripts/test-unit.ps1",
+      "distribution": "public",
+      "purpose": "Metadata-driven suite entry point."
+    },
+    {
+      "path": "tools/scripts/test-public-source.ps1",
+      "distribution": "public",
+      "purpose": "Metadata-driven suite entry point."
+    },
+    {
+      "path": "tools/scripts/test-registry.ps1",
+      "distribution": "public",
+      "purpose": "Classification reader shared by public profile entry points."
+    },
+    {
+      "path": "tests/DTMAPI.ActionSpeed.Tests/NativeInstallFixture/NativeInstallFixture.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.AudioNative.Tests/DTMAPI.AudioNative.Tests.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.ChestLocator.Tests/NativeProbe/ChestIndexProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.ChestLocator.Tests/V2SmokeProbe/ChestV2SmokeProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Compatibility.Tests/ActionSpeedOwnerProbe/ActionSpeedOwnerProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/G10ModalProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.DebugConsole.Tests/NativeProbe/Simplification/YSimplificationProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Doloc25D.GeometryChecks/DTMAPI.Doloc25D.GeometryChecks.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.MoreEquipmentSlots.Tests/NormalBackend/NormalBackendProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.MoreEquipmentSlots.Tests/StorageProbe/ConfirmedRuntime/ConfirmedNativeProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.MoreSaves.Tests/NativeProbe/DTMAPI.Internal.MoreSavesPagingProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.MoreSaves.Tests/RenameProbe/DTMAPI.Internal.MoreSavesRenameProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.MoreSaves.Tests/StorageProbe/DTMAPI.Internal.MoreSavesStorageProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/CompletionSeamProbe/CompletionSeamProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/FourSlotProbe/FourSlotProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/ProductBatchProbe/ProductBatchProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/RangeProbe/RangeProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/SaveProbe/SpraySaveProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.StrongPlantingGun.Tests/SingleSeedProbe/SingleSeedProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/NameModalInputProbe/NameModalInputProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/NameModalInputProbe/NativeFixture/NativeFixture.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Zoom.Tests/OwnerContractProbe/NativeFixture/NativeFixture.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Zoom.Tests/OwnerContractProbe/OwnerContractProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Zoom.Tests/OwnerExclusionProbe/NativeFixture/NativeFixture.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.Zoom.Tests/OwnerExclusionProbe/OwnerExclusionProbe.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/AudioMonsterCommon/offline-attacks/AttackChecks.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/mod-fixtures/qa/AudioMonsterCommon/offline/WithdrawalChecks.csproj",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-audio-content.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-audio-native.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-camera-owner-exclusion.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-chest-indexed-slice.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-chest-native-contract.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-document-context.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-doloc25d.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-mes-embedded-entry.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-mes-input-session.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-mes-normal-backend.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-mes-source-capability.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-monster-capacity-continuation.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-monster-capacity-evidence.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-monster-capacity-layout.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-runtime-monster-kit.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-monster-ground-pilot-evidence.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-name-modal-input.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-product-contract-generations.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-smoke-index.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-spray-four-slot.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-spray-product-batch.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-spray-range.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-test-session.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-zoom-object-coverage.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-zoom-owner-contract.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tools/scripts/test-zoom-suite.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit auxiliary test or native/workspace probe; excluded from public profiles."
+    },
+    {
+      "path": "tests/DTMAPI.AudioPrepare.UiTests/DTMAPI.AudioPrepare.UiTests.csproj",
+      "distribution": "internal",
+      "purpose": "Opt-in published audio UI harness; requires explicit tool, audio input and output paths."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ConflictingNativeHelperFixture/ConflictingNativeHelperFixture.csproj",
+      "distribution": "public",
+      "purpose": "Synthetic conflicting assembly identity fixture for public dependency-loading tests."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandCallerFixture/DemandCallerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Synthetic caller fixture for demand-driven dependency-loading tests."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/UnusedReferenceFixture/UnusedReferenceFixture.csproj",
+      "distribution": "public",
+      "purpose": "Unused AssemblyRef fixture for public tests that distinguish candidate DLLs from demanded dependencies."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandEntryFixture/DemandEntryFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime demand-loading caller fixture; built with the selected unit project."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandPayloadFixture/DemandPayloadFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime demand-loading payload fixture; built with the selected unit project."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/RuntimeAudioFixture/RuntimeAudioFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime Audio component fixture used by unit tests."
+    },
+    {
+      "path": "tools/scripts/test-audio-runtime-delivery.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit local Runtime package installer test; requires package and output directories."
+    },
+    {
+      "path": "tools/scripts/test-audio-tool.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit published Audio tool UI test; requires prepared tool and audio inputs."
+    },
+    {
+      "path": "tools/scripts/test-author-sdk-compatibility.ps1",
+      "distribution": "internal",
+      "purpose": "Retained legacy SDK compatibility evidence tool; excluded from current SDK and public test routes."
+    },
+    {
+      "path": "tools/scripts/test-author-sdk-preparation.ps1",
+      "distribution": "internal",
+      "purpose": "Focused local-build versus explicit SDK distribution routing fixtures; no real SDK publication or game inputs."
+    },
+    {
+      "path": "tools/scripts/test-sdk-optional.ps1",
+      "distribution": "public",
+      "purpose": "Convenience entry for independent optional author tools and Doctor tests; suites select their test projects directly."
+    },
+    {
+      "path": "tests/DTMAPI.MonsterExamples.Build/DTMAPI.MonsterExamples.Build.csproj",
+      "distribution": "public",
+      "purpose": "Contract-only compiler fixture for the published monster author examples; no game references."
+    },
+    {
+      "path": "tools/scripts/test-monster-author-contracts.ps1",
+      "distribution": "public",
+      "purpose": "Explicit build check for the published contract-only monster examples; not a default execution selection."
+    },
+    {
+      "path": "tools/scripts/run-runtime-module-acceptance.ps1",
+      "distribution": "internal",
+      "purpose": "Explicit focused Runtime module game acceptance: installed candidate, Runtime lock, native references and NoNativeSave slot required."
+    }
+  ]
+}

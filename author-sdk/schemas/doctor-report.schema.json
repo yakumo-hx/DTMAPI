@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/doctor-report.schema.json",
+  "title": "DTMAPI read-only Doctor report",
+  "description": "Schema 2 is shared by dtmapi-author doctor and the player Doctor. New optional properties may be added without changing the schema version.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "rootPath",
+    "scanContext",
+    "readOnlyByDesign",
+    "runtimeVersionCheckRequested",
+    "installedDtmApiVersion",
+    "readOnlyVerificationRequested",
+    "treeUnchanged",
+    "initialTree",
+    "finalTree",
+    "artifacts",
+    "findings",
+    "errorCount",
+    "warningCount",
+    "misplacedCount",
+    "minimumBlockedCount"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "rootPath": { "type": "string", "minLength": 1 },
+    "scanContext": { "enum": ["InstalledGame", "PackageArtifact"] },
+    "readOnlyByDesign": { "const": true },
+    "runtimeVersionCheckRequested": { "type": "boolean" },
+    "installedDtmApiVersion": { "type": "string" },
+    "readOnlyVerificationRequested": { "type": "boolean" },
+    "treeUnchanged": { "type": ["boolean", "null"] },
+    "initialTree": { "$ref": "#/$defs/nullableTreeHash" },
+    "finalTree": { "$ref": "#/$defs/nullableTreeHash" },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "errorCount": { "type": "integer", "minimum": 0 },
+    "warningCount": { "type": "integer", "minimum": 0 },
+    "misplacedCount": { "type": "integer", "minimum": 0 },
+    "minimumBlockedCount": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["code", "severity", "path", "message", "guidance"],
+      "properties": {
+        "code": { "type": "string" },
+        "severity": { "enum": ["Info", "Warning", "Error"] },
+        "path": { "type": "string" },
+        "message": { "type": "string" },
+        "guidance": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "kind",
+        "placement",
+        "path",
+        "manifestPath",
+        "uniqueId",
+        "version",
+        "minimumDtmApiVersion",
+        "minimumVersionStatus",
+        "assemblyName",
+        "assemblyVersion",
+        "sha256",
+        "findings"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "DtmApiRuntime",
+            "DtmApiCodeMod",
+            "DtmApiContentPack",
+            "ExternalBepInExPlugin",
+            "NativeBinary",
+            "DamagedAssembly",
+            "Unknown"
+          ]
+        },
+        "placement": { "enum": ["Expected", "Misplaced", "Unknown", "NotApplicable"] },
+        "path": { "type": "string" },
+        "manifestPath": { "type": "string" },
+        "uniqueId": { "type": "string" },
+        "version": { "type": "string" },
+        "minimumDtmApiVersion": { "type": "string" },
+        "minimumVersionStatus": {
+          "enum": [
+            "NotChecked",
+            "NotDeclared",
+            "Compatible",
+            "RuntimeUnavailable",
+            "RuntimeVersionInvalid",
+            "MinimumVersionInvalid",
+            "RequiresNewerRuntime"
+          ]
+        },
+        "assemblyName": { "type": "string" },
+        "assemblyVersion": { "type": "string" },
+        "sha256": { "type": "string" },
+        "managedIdentity": { "enum": ["Unknown", "DtmApiRuntime", "StrictCodeMod", "LegacyNativeCodeMod", "AdvancedCodeMod", "ContentPack", "ExternalBepInExPlugin", "NativeBinary"] },
+        "declaredCodeModKind": { "type": "string" },
+        "effectiveCodeModKind": { "type": "string" },
+        "declarationStatus": { "enum": ["NotApplicable", "Explicit", "CompatibilityDefault", "LegacyCompatibility", "Missing", "Invalid"] },
+        "provenanceStatus": { "enum": ["NotApplicable", "InvalidDeclaration", "DeclaredOnly", "Unverified", "VerifiedReferenceReceipt", "MissingReferenceReceipt", "InvalidReferenceReceipt", "MissingPackageBinding", "InvalidPackageBinding", "ReferenceReceiptMismatch", "ExternalUnmanaged"] },
+        "provenanceReceiptPath": { "type": "string" },
+        "nativeRisk": { "enum": ["Unknown", "NotApplicable", "NoCode", "StableApiOnly", "ProductNative", "ThirdPartyAuthorManaged", "ForbiddenNativeReference", "ExternalUnmanaged"] },
+        "referenceCompatibility": { "enum": ["NotApplicable", "NotChecked", "ReceiptVerified", "Compatible", "Unverifiable", "Incompatible"] },
+        "gameCompatibility": { "enum": ["NotApplicable", "NotChecked", "ReceiptVerified", "Compatible", "Unverifiable", "Incompatible", "Exact", "Drift", "Unknown"] },
+        "referencePolicyId": { "type": "string" },
+        "referencePolicyVersion": { "type": "integer", "minimum": 0 },
+        "referencePolicySha256": { "type": "string" },
+        "referenceCount": { "type": "integer", "minimum": 0 },
+        "gameBuildId": { "type": "string" },
+        "gameAssemblySha256": { "type": "string" },
+        "expectedHarmonyOwner": { "type": "string" },
+        "restartPolicy": { "enum": ["NotApplicable", "RestartRequiredAfterLoad", "AuthorManagedRestartRequired", "OutsideDtmApiManagement"] },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "nullableTreeHash": {
+      "type": ["object", "null"],
+      "required": ["rootPath", "sha256", "fileCount", "totalBytes", "errors"],
+      "properties": {
+        "rootPath": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string" },
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "totalBytes": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    }
+  }
+}

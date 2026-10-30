@@ -1,0 +1,73 @@
+[
+  {
+    "id": "hatch_produce",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 1, "max_count": 1, "item_name": "hatch_egg" }
+    ]
+  },
+  {
+    "id": "drecko_produce",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 1, "max_count": 1, "item_name": "drecko_egg" }
+    ]
+  },
+  {
+    "id": "mole_produce",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 1, "max_count": 1, "item_name": "mole_egg" }
+    ]
+  },
+  {
+    "id": "oilfloater_produce",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 1, "max_count": 1, "item_name": "oilfloater_egg" }
+    ]
+  },
+  {
+    "id": "animal_care_hatch_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 5, "max_count": 5, "item_name": "iron_ore" },
+      { "spawn_weight": 1000, "min_count": 5, "max_count": 5, "item_name": "copper_ore" }
+    ]
+  },
+  {
+    "id": "animal_care_petrified_hatch_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 10, "max_count": 10, "item_name": "gold_ore" },
+      { "spawn_weight": 1000, "min_count": 5, "max_count": 5, "item_name": "titanium_ore" }
+    ]
+  },
+  {
+    "id": "animal_care_drecko_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 3, "max_count": 3, "item_name": "wool" }
+    ]
+  },
+  {
+    "id": "animal_care_mole_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 10, "max_count": 10, "item_name": "meat" }
+    ]
+  },
+  {
+    "id": "animal_care_fertile_mole_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 5, "max_count": 5, "item_name": "meat" },
+      { "spawn_weight": 1000, "min_count": 30, "max_count": 30, "item_name": "organic_fertilizer" }
+    ]
+  },
+  {
+    "id": "animal_care_oilfloater_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 20, "max_count": 20, "item_name": "coal" },
+      { "spawn_weight": 1000, "min_count": 5, "max_count": 5, "item_name": "resin" }
+    ]
+  },
+  {
+    "id": "animal_care_polymer_oilfloater_egg_drop",
+    "spawn_datas": [
+      { "spawn_weight": 1000, "min_count": 30, "max_count": 30, "item_name": "rubber" },
+      { "spawn_weight": 1000, "min_count": 30, "max_count": 30, "item_name": "plastic" }
+    ]
+  }
+]

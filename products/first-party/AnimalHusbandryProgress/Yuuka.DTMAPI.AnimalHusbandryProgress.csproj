@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DtmApiReferences Condition="'$(DtmApiReferences)' == ''">$(MSBuildThisFileDirectory)../../../.tools/api-references</DtmApiReferences>
+    <DtmApiNativeReferencePaths>BepInEx/core/0Harmony.dll;DolocTown_Data/Managed/Assembly-CSharp.dll;DolocTown_Data/Managed/UnityEngine.CoreModule.dll;DolocTown_Data/Managed/UnityEngine.UI.dll;DolocTown_Data/Managed/UnityEngine.UIModule.dll;DolocTown_Data/Managed/UnityEngine.TextRenderingModule.dll;DolocTown_Data/Managed/Assembly-CSharp-firstpass.dll</DtmApiNativeReferencePaths>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyName>Yuuka.DTMAPI.AnimalHusbandryProgress</AssemblyName>
+    <RootNamespace>Yuuka.DTMAPI.AnimalHusbandryProgress</RootNamespace>
+    <Version>1.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <None Remove="content/**/*" />
+    <Content Include="content/**/*" DtmApiPackagePath="Content/DTMAPI/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DTMAPI.Abstractions" HintPath="$(DtmApiReferences)/DTMAPI.Abstractions.dll" Private="false" />
+    <Reference Include="DTMAPI.ModConfigMenu" HintPath="$(DtmApiReferences)/DTMAPI.ModConfigMenu.dll" Private="false" />
+    <Reference Include="DTMAPI.MonsterContent" HintPath="$(DtmApiReferences)/DTMAPI.MonsterContent.dll" Private="false" />
+    <Reference Include="DTMAPI.AudioContent" HintPath="$(DtmApiReferences)/DTMAPI.AudioContent.dll" Private="false" />
+    <Reference Include="$(DtmApiNativeReferences)/*.dll" Condition="'$(DtmApiNativeReferences)' != ''" Private="false" />
+  </ItemGroup>
+</Project>

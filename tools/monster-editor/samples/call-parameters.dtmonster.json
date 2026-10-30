@@ -1,0 +1,143 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterCallParametersPack",
+    "name": "原生召唤参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "seed",
+      "templateId": "seed_carrier",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "windupGameSeconds": 0.6,
+          "call": {
+            "minCount": 3,
+            "maxCount": 3,
+            "roomLimit": 64
+          }
+        }
+      ]
+    },
+    {
+      "id": "air",
+      "templateId": "aircraft",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill04",
+          "cooldownGameSeconds": 5,
+          "startOnCooldown": true,
+          "windupGameSeconds": 0.8,
+          "call": {
+            "minCount": 2,
+            "maxCount": 2,
+            "roomLimit": 64
+          }
+        }
+      ]
+    },
+    {
+      "id": "silent",
+      "templateId": "seed_carrier",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.5,
+          "startOnCooldown": false,
+          "windupGameSeconds": 0,
+          "call": {
+            "minCount": 1,
+            "maxCount": 1,
+            "roomLimit": 0
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "seed",
+      "targetId": "seed_carrier",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 8,
+            "startOnCooldown": true,
+            "windupGameSeconds": 0.3,
+            "call": {
+              "minCount": 2,
+              "maxCount": 2,
+              "roomLimit": 64
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "air",
+      "targetId": "aircraft",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill04",
+            "cooldownGameSeconds": 9,
+            "startOnCooldown": true,
+            "windupGameSeconds": 0.45,
+            "call": {
+              "minCount": 1,
+              "maxCount": 1,
+              "roomLimit": 64
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

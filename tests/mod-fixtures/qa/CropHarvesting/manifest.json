@@ -1,0 +1,22 @@
+{
+  "Name": "Crop Harvesting QA",
+  "Author": "DTMAPI QA",
+  "Version": "0.1.0-dtmapi",
+  "Description": "Temporary manual QA mod for ICropHarvestingApi real-field checks.",
+  "UniqueID": "DTMAPI.CropHarvestingQaMod",
+  "EntryDll": "CropHarvestingQaMod.dll",
+  "MinimumDTMApiVersion": "0.5.1-alpha",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "MinimumVersion": "0.5.1-alpha",
+      "Required": true
+    },
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "MinimumVersion": "0.5.1-alpha",
+      "Required": false
+    }
+  ]
+}

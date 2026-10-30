@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DoctorBepInExPluginFixture</AssemblyName>
+    <RootNamespace>DoctorBepInExPluginFixture</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.BepInExStubs\DTMAPI.BepInExStubs.csproj" />
+  </ItemGroup>
+</Project>

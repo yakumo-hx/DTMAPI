@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.GameBridge.DolocTown.QA</AssemblyName>
+    <RootNamespace>DTMAPI.GameBridge.DolocTown.QA</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Scenarios/Fixtures/ActionSpeedFixtureCase.cs" />
+    <Compile Remove="Performance/Batch5GcLadderOrchestrator.cs" />
+    <Compile Remove="Contracts/Batch5GcLadderFixtureOptions.cs" />
+    <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+  </ItemGroup>
+</Project>

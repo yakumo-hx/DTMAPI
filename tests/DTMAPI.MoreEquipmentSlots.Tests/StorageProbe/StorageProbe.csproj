@@ -1,0 +1,13 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props" />
+  <PropertyGroup>
+    <AssemblyName>DTMAPI.Internal.MesStorageProbe</AssemblyName>
+    <RootNamespace>DTMAPI.Internal.MesStorageProbe</RootNamespace>
+    <Version>0.1.0</Version>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="ModEntry.cs" /><Compile Include="MigrationPhases.cs" /><Compile Include="CloudResiduePhase.cs" /></ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.targets" />
+</Project>

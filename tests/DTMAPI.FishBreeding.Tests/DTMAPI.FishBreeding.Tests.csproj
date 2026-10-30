@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>fishbreeding</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../../products/first-party/FishBreedingAssistant/src/Native/FishBreedingNativeRuntime.cs" Link="Product/FishBreedingNativeRuntime.cs" />
+    <Compile Include="../../products/first-party/FishBreedingAssistant/src/Native/FishBreedingCallbacks.cs" Link="Product/FishBreedingCallbacks.cs" />
+    <Compile Remove="NativeProbe/**/*.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

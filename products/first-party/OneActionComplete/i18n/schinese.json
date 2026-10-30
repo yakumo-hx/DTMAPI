@@ -1,0 +1,9 @@
+{
+  "mod.name": "DTMAPI一键完成",
+  "config.trees.name": "树木",
+  "config.ores.name": "矿石",
+  "config.garbage.name": "垃圾",
+  "config.weeds.name": "杂草",
+  "config.fuel.name": "燃料机器",
+  "config.feeders.name": "饲料槽"
+}

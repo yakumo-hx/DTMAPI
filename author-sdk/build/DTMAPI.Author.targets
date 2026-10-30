@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <Reference Include="DTMAPI.Abstractions" HintPath="$(DtmApiReferences)/DTMAPI.Abstractions.dll" Private="false" />
+    <Reference Include="$(DtmApiNativeReferences)/*.dll" Private="false" Condition="'$(DtmApiNativeReferences)' != ''" />
+    <Analyzer Include="$(DTMAPI_AUTHOR_SDK_ROOT)/analyzers/DTMAPI.Author.Analyzers.dll" Condition="'$(DtmApiUseAnalyzers)' == 'true' And Exists('$(DTMAPI_AUTHOR_SDK_ROOT)/analyzers/DTMAPI.Author.Analyzers.dll')" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+{
+  "UniqueID": "DTMAPI.StrongPlantingGunMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.StrongPlantingGun.dll",
+  "EntryType": "DTMAPI.StrongPlantingGun.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "Required": true,
+      "VersionRange": {
+        "minimumInclusive": "0.5.5",
+        "includePrerelease": false
+      }
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.StrongPlantingGunMod.Native"
+}

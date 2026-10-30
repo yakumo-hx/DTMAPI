@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><Version>0.3.0</Version><AssemblyVersion>0.1.0.0</AssemblyVersion></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DTMAPI.AudioContent/DTMAPI.AudioContent.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StrictJson.cs" Link="StrictJson.cs" /></ItemGroup>
+</Project>

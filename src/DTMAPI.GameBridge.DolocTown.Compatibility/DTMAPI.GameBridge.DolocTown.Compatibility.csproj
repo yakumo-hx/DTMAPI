@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.GameBridge.DolocTown.Compatibility</AssemblyName>
+    <RootNamespace>DTMAPI.GameBridge.DolocTown</RootNamespace>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
+    <ProjectReference Include="..\DTMAPI.GameBridge.DolocTown\DTMAPI.GameBridge.DolocTown.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\compatibility\EquipmentSlots\EquipmentSlotsCompatibilityService.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityService.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\compatibility\EquipmentSlots\EquipmentSlotsCompatibilityCleanup.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityCleanup.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\compatibility\EquipmentSlots\EquipmentSlotsCompatibilityTransactions.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotsCompatibilityTransactions.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\compatibility\EquipmentSlots\EquipmentSlotJournalRecoveryPolicy.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotJournalRecoveryPolicy.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\compatibility\EquipmentSlots\EquipmentSlotProtectedStoragePolicy.cs" Link="Compatibility\EquipmentSlots\EquipmentSlotProtectedStoragePolicy.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotContracts.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotContracts.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotItemState.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotItemState.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotNativeItem.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotNativeItem.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotEmbeddedArchive.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotEmbeddedArchive.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotNativePlacement.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotNativePlacement.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotStorageFormatProbe.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotStorageFormatProbe.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotDocumentStore.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotDocumentStore.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotNativeMailEvidence.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotNativeMailEvidence.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\MoreEquipmentSlotsReflectionAccess.cs" Link="Compatibility\EquipmentSlots\ProductSchema\MoreEquipmentSlotsReflectionAccess.cs" />
+    <Compile Include="..\..\products\first-party\MoreEquipmentSlots\src\Native\EquipmentSlotTransactionJournal.cs" Link="Compatibility\EquipmentSlots\ProductSchema\EquipmentSlotTransactionJournal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/compatibility/EquipmentSlots/EquipmentSlotsProductColdRecovery.cs" Link="EquipmentSlots/EquipmentSlotsProductColdRecovery.cs" />
+  </ItemGroup>
+</Project>

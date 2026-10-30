@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/package-report.schema.json",
+  "title": "DTMAPI deterministic package report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sdkVersion", "targetRuntimeVersion", "uniqueID", "version", "projectKind", "codeModKind", "packageFileName", "packageSha256", "manifestSha256", "entryDllSha256", "advancedReferenceReceiptSha256", "files"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "sdkVersion": { "const": "0.1.0" },
+    "targetRuntimeVersion": { "const": "0.5.5" },
+    "uniqueID": { "type": "string" },
+    "version": { "type": "string" },
+    "projectKind": { "enum": ["CodeMod", "ContentPack"] },
+    "codeModKind": { "enum": ["", "Strict", "Advanced"] },
+    "packageFileName": { "type": "string" },
+    "packageSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "entryDllSha256": { "type": "string", "pattern": "^(?:|[0-9a-f]{64})$" },
+    "advancedReferenceReceiptSha256": { "type": "string", "pattern": "^(?:|[0-9a-f]{64})$" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "length", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "length": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "projectKind": { "const": "ContentPack" } }, "required": ["projectKind"] },
+      "then": {
+        "properties": {
+          "codeModKind": { "const": "" },
+          "entryDllSha256": { "const": "" },
+          "advancedReferenceReceiptSha256": { "const": "" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "projectKind": { "const": "CodeMod" } }, "required": ["projectKind"] },
+      "then": {
+        "properties": {
+          "codeModKind": { "enum": ["Strict", "Advanced"] },
+          "entryDllSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "codeModKind": { "const": "Advanced" } }, "required": ["codeModKind"] },
+      "then": { "properties": { "advancedReferenceReceiptSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } }
+    },
+    {
+      "if": { "properties": { "codeModKind": { "const": "Strict" } }, "required": ["codeModKind"] },
+      "then": { "properties": { "advancedReferenceReceiptSha256": { "const": "" } } }
+    }
+  ]
+}

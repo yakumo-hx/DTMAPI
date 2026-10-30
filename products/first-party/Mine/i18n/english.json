@@ -1,0 +1,20 @@
+{
+  "mod.name": "DTMAPI Mine",
+  "mod.loaded": "DTMAPI Mine loaded; official JSON owns the Mine item/equipment/recipe and ProductNative production starts after a save loads.",
+  "config.section.machine": "Mine production",
+  "config.contract": "Power is fixed at the native 10-point appliance threshold. Cycle progress is session-derived and restarts after loading a save.",
+  "config.enabled.name": "Runtime production enabled",
+  "config.enabled.tooltip": "Enable ProductNative Mine production. Disabling restores recipe, tech and visual originals immediately. Enabling after a cold-disabled start requires restart.",
+  "config.cycle.name": "Cycle minutes",
+  "config.cycle.tooltip": "Game minutes per session-derived production cycle.",
+  "config.oilRecipe.name": "Use Oil recipe",
+  "config.oilRecipe.tooltip": "When DTMAPI Oil is loaded, temporarily use the Oil recipe. The exact original recipe is restored on disable, title or unload.",
+  "config.section.outputs": "Output weights",
+  "config.weight.coal": "Coal weight",
+  "config.weight.copper": "Copper ore weight",
+  "config.weight.iron": "Iron ore weight",
+  "config.weight.oil": "Oil weight",
+  "config.weight.tooltip": "Relative probability weight; zero disables this output.",
+  "config.verbose.name": "Verbose logs",
+  "config.verbose.tooltip": "Write bounded Mine lifecycle diagnostics."
+}

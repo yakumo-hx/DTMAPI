@@ -1,0 +1,11 @@
+{
+  "Name": {{NAME_JSON}},
+  "Author": {{AUTHOR_JSON}},
+  "Version": {{VERSION_JSON}},
+  "Description": {{DESCRIPTION_JSON}},
+  "UniqueID": {{UNIQUE_ID_JSON}},
+  "MinimumDTMApiVersion": {{MINIMUM_RUNTIME_JSON}},
+  "Type": "ContentPack",
+  "Dependencies": [],
+  "UpdateKeys": []
+}

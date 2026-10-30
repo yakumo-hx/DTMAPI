@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DTMAPI Audio content 2.0 (experimental)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "resources",
+    "events"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "path"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/$defs/id"
+          },
+          "path": {
+            "$ref": "#/$defs/path"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^([a-f0-9]{64})?$"
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "source",
+              "bank"
+            ]
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "resource",
+          "use"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/$defs/id"
+          },
+          "resource": {
+            "$ref": "#/$defs/id"
+          },
+          "use": {
+            "enum": [
+              "sfx",
+              "animal-voice",
+              "monster",
+              "monster-dead",
+              "monster-explosion",
+              "music"
+            ]
+          },
+          "nativeEvent": {
+            "$ref": "#/$defs/optionalId"
+          },
+          "replaceNativeEvent": {
+            "$ref": "#/$defs/optionalId"
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "minimumIntervalMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "species": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "volumeDb": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "const": "-inf"
+              }
+            ],
+            "default": 0
+          },
+          "channel": {
+            "enum": [
+              "actor",
+              "ui",
+              "ambience"
+            ]
+          },
+          "bankEvent": {
+            "$ref": "#/$defs/optionalId"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "optionalId": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "$comment": "The shared audio Codec checks event/resource references, supported audio uses and controlled media paths. Official CD/item/shop/icon content is author-owned and is not part of this schema."
+}

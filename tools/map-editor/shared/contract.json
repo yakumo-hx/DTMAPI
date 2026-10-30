@@ -1,0 +1,40 @@
+{
+  "$comment": "Private offline layout input. This bounded schema subset is consumed by JS and C#; cross-field checks live in their compilers and shared corpus.",
+  "$defs": {
+    "id": {"type":"string","pattern":"^[a-z][a-z0-9._-]{0,95}$"},
+    "text": {"type":"string","maxLength":200},
+    "hash": {"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "cell": {"type":"object","required":["x","y"],"properties":{"x":{"type":"integer","minimum":-4096,"maximum":4096},"y":{"type":"integer","minimum":-4096,"maximum":4096}}},
+    "origin": {"type":"object","required":["x","y"],"properties":{"x":{"type":"integer","minimum":-1000000,"maximum":1000000},"y":{"type":"integer","minimum":-1000000,"maximum":1000000}}},
+    "matrix": {"type":"array","maxItems":8192,"items":{"type":"integer","enum":[0,1]}},
+    "size": {"type":"object","required":["width","height"],"properties":{"width":{"type":"integer","minimum":1,"maximum":16},"height":{"type":"integer","minimum":1,"maximum":16}}},
+    "point": {"type":"object","required":["id","name","kind","cell","properties"],"properties":{"id":{"$ref":"id"},"name":{"$ref":"text"},"kind":{"type":"string","enum":["spawn","exit","resource","monster","decoration","switch","gate","chest"]},"cell":{"$ref":"cell"},"properties":{"type":"object"}}},
+    "spawn": {"type":"object","required":["primary"],"properties":{"primary":{"type":"boolean"}}},
+    "exit": {"type":"object","required":["target","trigger"],"properties":{"target":{"type":"object","required":["kind"],"properties":{"kind":{"enum":["home"]}}},"trigger":{"$ref":"size"}}},
+    "resource": {"type":"object","required":["prototypeId","count"],"properties":{"prototypeId":{"type":"string","pattern":"^$|^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,127}$"},"count":{"type":"integer","minimum":1,"maximum":999}}},
+    "monster": {"$ref":"resource"},
+    "decoration": {"type":"object"},
+    "gate": {"type":"object","required":["size","displacement","duration","initialOpen"],"properties":{"size":{"$ref":"size"},"displacement":{"type":"object","required":["x","y"],"properties":{"x":{"type":"integer","minimum":-128,"maximum":128},"y":{"type":"integer","minimum":-64,"maximum":64}}},"duration":{"type":"number","minimum":0.05,"maximum":10},"initialOpen":{"type":"boolean"}}},
+    "switch": {"type":"object","required":["target","mode"],"properties":{"target":{"type":["null","object"],"required":["roomId","pointId"],"properties":{"roomId":{"$ref":"id"},"pointId":{"$ref":"id"}}},"mode":{"enum":["single","toggle"]}}},
+    "chest": {"type":"object","required":["lifecycle","rewards"],"properties":{"lifecycle":{"enum":["once"]},"rewards":{"type":"object","required":["mode","items","listRef"],"properties":{"mode":{"enum":["inline","reference"]},"listRef":{"$ref":"text"},"items":{"type":"array","maxItems":64,"items":{"type":"object","required":["itemRef","count"],"properties":{"itemRef":{"$ref":"text"},"count":{"type":"integer","minimum":1,"maximum":9999}}}}}}}},
+    "entry": {"type":"object","required":["ref","locked"],"properties":{"ref":{"type":["null","string"],"pattern":"^[a-z][a-z0-9._-]{0,95}$"},"locked":{"type":"boolean"},"family":{"$ref":"id"},"manual":{"type":"boolean"}}},
+    "cells": {"type":"object","maxProperties":8192,"keyPattern":"^(0|[1-9][0-9]*)$","values":{"$ref":"entry"}},
+    "room": {"type":"object","required":["id","name","origin","width","height","terrain","points"],"properties":{"id":{"$ref":"id"},"name":{"$ref":"text"},"origin":{"$ref":"origin"},"width":{"type":"integer","minimum":8,"maximum":128},"height":{"type":"integer","minimum":8,"maximum":64},"terrain":{"type":"object","required":["solid","platform","background"],"properties":{"solid":{"$ref":"matrix"},"platform":{"$ref":"matrix"},"background":{"$ref":"matrix"}}},"points":{"type":"array","maxItems":2048,"items":{"$ref":"point"}}}},
+    "expandedRoom": {"type":"object","required":["tiles","hiddenRegions"],"properties":{"tiles":{"type":"object","required":["solid","platform","background","decoration"],"properties":{"solid":{"$ref":"cells"},"platform":{"$ref":"cells"},"background":{"$ref":"cells"},"decoration":{"$ref":"cells"}}},"hiddenRegions":{"type":"array","maxItems":128,"items":{"type":"object","required":["id","name","material","alpha","fadeSeconds","cells"],"properties":{"id":{"$ref":"id"},"name":{"$ref":"text"},"material":{"enum":["leaves","soil","custom"]},"alpha":{"type":"number","minimum":0,"maximum":1},"fadeSeconds":{"type":"number","minimum":0.05,"maximum":10},"cells":{"$ref":"cells"}}}}}},
+    "asset": {"type":"object","required":["source","mime","name","width","height","byteLength","data"],"properties":{"source":{"enum":["author"]},"mime":{"enum":["image/png"]},"name":{"$ref":"text"},"width":{"type":"integer","minimum":1,"maximum":2048},"height":{"type":"integer","minimum":1,"maximum":2048},"byteLength":{"type":"integer","minimum":1,"maximum":4194304},"data":{"type":"string","maxLength":5592408}}},
+    "tile": {"type":"object","required":["source","name","ppu","pivot","usage"],"properties":{"source":{"enum":["author","native"]},"name":{"$ref":"text"},"ppu":{"type":"number","minimum":1,"maximum":1024},"pivot":{"type":"object","required":["x","y"],"properties":{"x":{"type":"number","minimum":0,"maximum":1},"y":{"type":"number","minimum":0,"maximum":1}}},"usage":{"enum":["solid","platform","background","decoration","hidden"]}}},
+    "authorTile": {"type":"object","required":["asset","rect"],"properties":{"asset":{"$ref":"hash"},"rect":{"type":"object","required":["x","y","width","height"],"properties":{"x":{"type":"integer","minimum":0,"maximum":2047},"y":{"type":"integer","minimum":0,"maximum":2047},"width":{"type":"integer","minimum":1,"maximum":2048},"height":{"type":"integer","minimum":1,"maximum":2048}}}}},
+    "nativeTile": {"type":"object","required":["catalog","entry","imageHash","width","height"],"properties":{"catalog":{"$ref":"hash"},"entry":{"type":"string","pattern":"^native-preview:[a-f0-9]{32}$"},"imageHash":{"$ref":"hash"},"width":{"type":"integer","minimum":1,"maximum":2048},"height":{"type":"integer","minimum":1,"maximum":2048}}},
+    "expanded": {"type":"object","required":["assets","tiles"],"properties":{"assets":{"type":"object","maxProperties":32,"keyPattern":"^[a-f0-9]{64}$","values":{"$ref":"asset"}},"tiles":{"type":"object","maxProperties":1024,"keyPattern":"^[a-z][a-z0-9._-]{0,95}$","values":{"$ref":"tile"}}}},
+    "auto": {"type":"object","required":["rule","version","families"],"properties":{"rule":{"enum":["dtmapi.adjacency13"]},"version":{"enum":[1]},"families":{"type":"object","maxProperties":64,"keyPattern":"^[a-z][a-z0-9._-]{0,95}$","values":{"type":"object","required":["name","roles","fallback"],"properties":{"name":{"$ref":"text"},"roles":{"type":"object","maxProperties":13,"keyPattern":"^(core|top|bottom|left|right|topLeft|topRight|bottomLeft|bottomRight|innerTopLeft|innerTopRight|innerBottomLeft|innerBottomRight)$","values":{"type":["null","string"],"pattern":"^[a-z][a-z0-9._-]{0,95}$"}},"fallback":{"type":["null","string"],"pattern":"^[a-z][a-z0-9._-]{0,95}$"}}}}}
+    }
+  },
+  "type":"object","required":["format","formatVersion","profile","projectId","name","map","cellSize","appearance","rooms"],
+  "properties":{
+    "format":{"enum":["dtmapi.map-project"]},"formatVersion":{"enum":[1]},"profile":{"enum":["layout-v0","layout-v1","layout-v2"]},
+    "projectId":{"type":"string","pattern":"^[a-z][a-z0-9._:-]{0,127}$"},"name":{"$ref":"text"},
+    "map":{"type":"object","required":["id","name","revision"],"properties":{"id":{"$ref":"id"},"name":{"$ref":"text"},"revision":{"type":"integer","minimum":0,"maximum":2147483646}}},
+    "cellSize":{"enum":[1.5]},"appearance":{"type":"object","required":["theme"],"properties":{"theme":{"$ref":"id"}}},
+    "rooms":{"type":"array","minItems":1,"maxItems":32,"items":{"$ref":"room"}}
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterPackB",
+    "name": "琥珀菌守卫",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "variant",
+      "templateId": "fungus",
+      "overrides": {
+        "health": 110,
+        "defense": 3,
+        "tint": "#E7B66A",
+        "display": {
+          "name": "琥珀菌守卫",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "ruins",
+      "definitionId": "variant",
+      "roomId": "dungeon_旧城市废墟.住宅区-3",
+      "regionId": "",
+      "count": 1
+    }
+  ],
+  "assets": [],
+  "dependencies": []
+}

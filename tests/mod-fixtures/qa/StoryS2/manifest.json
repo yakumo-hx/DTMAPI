@@ -1,0 +1,10 @@
+{
+  "UniqueID": "DTMAPI.Internal.StoryS2",
+  "EntryDll": "Content/DTMAPI/DTMAPI.Internal.StoryS2.dll",
+  "EntryType": "DTMAPI.Internal.StoryS2.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.Internal.StoryS2.Native"
+}

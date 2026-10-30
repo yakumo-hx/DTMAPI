@@ -1,0 +1,53 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterCompendium",
+    "name": "青灯蛾图鉴",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "lantern",
+      "templateId": "bee",
+      "overrides": {
+        "health": 40,
+        "display": {
+          "name": "青灯蛾·配置",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "compendium": {
+        "title": "青灯蛾·配置",
+        "habitat": "旧温室的阴影里",
+        "description": "这只蛾的翅膀像两片浅绿色叶子。\n示例条目在首次击败后开放，击杀次数由游戏记录。",
+        "category": "Organism",
+        "showLocked": true,
+        "assetId": "moth"
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [
+    {
+      "id": "moth",
+      "name": "原创青灯蛾预览",
+      "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABRklEQVR4nO3Zsa0CMRBFUTqhCBogoxtEKWRUQgmkxHRBQr5ESMay1+P1zKwN90rO/vL9jgQEbDZERERERGTV7nyZwtP6d0MUj/mc7f4we3LPrb1HXG5AK0D3EKWLawF0ByG57PFxqwYIn+kWojQ6PEsAUs93gVAzPAfwup++TgmgG4ja4doAJQj38aWLWgHMQbgBSC9pCZBC6G68NYA5Qut4DwBThNbxXgAxQjfjPQHUEf4aQPren57X5NECkLy+yWcBAAAAAAAAg38NAgAAAAAA0NLoAE3jAVBE8AJQHx8DLL2cB4Dqe18bwRrAdLwGgiWAy/gUQM1FrQBSdzIDyCFILqwNkLuH6fgSwtzFtQDm/rfL+KUQMcDQP49LEcIxSwAkr73q+DDJZWsAhhkeZw2w9j5x2gBr72lKOuanRhMRERER9d0b7IOSzJoeOJ8AAAAASUVORK5CYII=",
+      "width": 64,
+      "height": 64
+    }
+  ],
+  "dependencies": [],
+  "catalog": null
+}

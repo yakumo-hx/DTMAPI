@@ -1,0 +1,7 @@
+{
+  "UniqueID": "DTMAPI.AnimalPack",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "ContentPack",
+  "Dependencies": [],
+  "ManifestVersion": 2
+}

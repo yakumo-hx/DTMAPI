@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><EnableDefaultCompileItems>false</EnableDefaultCompileItems><EnableDefaultNoneItems>false</EnableDefaultNoneItems></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="OptionalDoctorTests.cs" />
+    <Compile Include="../Shared/DtmApiTestSession.cs" Link="DtmApiTestSession.cs" />
+    <ProjectReference Include="../../src/DTMAPI.InstallDoctor/DTMAPI.InstallDoctor.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

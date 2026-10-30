@@ -1,0 +1,120 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterBulletTrainParametersPack",
+    "name": "原生列队射击参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 19,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "bulletTrain": {
+            "windupEnabled": true,
+            "volleyCount": 3,
+            "volleyIntervalGameSeconds": 0.25,
+            "bulletCount": 3,
+            "sectorAngleDegrees": 90,
+            "directionX": 0,
+            "directionY": -1,
+            "projectileSpeed": 8,
+            "projectileLifetimeGameSeconds": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "bulletTrain": {
+            "windupEnabled": false,
+            "volleyCount": 1,
+            "volleyIntervalGameSeconds": 0.1,
+            "bulletCount": 1,
+            "sectorAngleDegrees": 0,
+            "directionX": 0.5,
+            "directionY": 0,
+            "projectileSpeed": 4,
+            "projectileLifetimeGameSeconds": 1
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "charge",
+      "targetId": "nian",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.6,
+            "bulletTrain": {
+              "windupEnabled": false,
+              "volleyCount": 2,
+              "volleyIntervalGameSeconds": 0.3,
+              "bulletCount": 4,
+              "sectorAngleDegrees": 180,
+              "directionX": 0,
+              "directionY": 1,
+              "projectileSpeed": 6,
+              "projectileLifetimeGameSeconds": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

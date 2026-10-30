@@ -1,0 +1,114 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterBatteringBulletParametersPack",
+    "name": "原生冲撞抛射参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "impact",
+      "templateId": "battering_ram",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 17,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "batteringBullet": {
+            "windupEnabled": true,
+            "minBulletCount": 3,
+            "maxBulletCount": 3,
+            "attackDistance": 20,
+            "travelSpeed": 8,
+            "projectileHorizontalSpeed": 4,
+            "projectileLifetimeGameSeconds": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "quiet",
+      "templateId": "battering_ram",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "batteringBullet": {
+            "windupEnabled": false,
+            "minBulletCount": 1,
+            "maxBulletCount": 1,
+            "attackDistance": 4,
+            "travelSpeed": 16,
+            "projectileHorizontalSpeed": 0,
+            "projectileLifetimeGameSeconds": 1
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "impact",
+      "targetId": "battering_ram",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.6,
+            "batteringBullet": {
+              "windupEnabled": false,
+              "minBulletCount": 5,
+              "maxBulletCount": 5,
+              "attackDistance": 24,
+              "travelSpeed": 12,
+              "projectileHorizontalSpeed": 8,
+              "projectileLifetimeGameSeconds": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

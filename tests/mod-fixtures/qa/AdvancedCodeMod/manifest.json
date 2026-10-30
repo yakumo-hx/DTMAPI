@@ -1,0 +1,12 @@
+{
+  "Name": "DTMAPI Advanced Fixture",
+  "Author": "DTMAPI",
+  "Version": "0.1.0",
+  "Description": "Synthetic G2 fixture for Advanced CodeMod admission and Harmony supervision.",
+  "UniqueID": "DTMAPI.AdvancedFixture",
+  "EntryDll": "DTMAPI.AdvancedFixture.dll",
+  "EntryType": "DTMAPI.AdvancedFixture.ModEntry",
+  "MinimumDTMApiVersion": "0.5.5",
+  "Type": "CodeMod",
+  "CodeModKind": "Advanced"
+}

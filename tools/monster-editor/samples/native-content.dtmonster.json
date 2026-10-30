@@ -1,0 +1,98 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterNativeContentPack",
+    "name": "原版外观与追加掉落诊断",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [],
+  "nativeOverrides": [
+    {
+      "id": "body",
+      "targetId": "bee",
+      "fields": {
+        "skin": {
+          "assetId": "qa-native",
+          "templateFingerprint": "021b9bae15c86e3e1e088d49f1840da2bf6275bc1c81025d726b1142a130c74f",
+          "frames": [
+            {
+              "frameId": "anim_monster_bee_idle_0",
+              "x": 0,
+              "y": 0,
+              "width": 48,
+              "height": 48
+            },
+            {
+              "frameId": "anim_monster_bee_idle_1",
+              "x": 0,
+              "y": 0,
+              "width": 48,
+              "height": 48
+            },
+            {
+              "frameId": "anim_monster_bee_idle_2",
+              "x": 0,
+              "y": 0,
+              "width": 48,
+              "height": 48
+            },
+            {
+              "frameId": "anim_monster_bee_idle_3",
+              "x": 0,
+              "y": 0,
+              "width": 48,
+              "height": 48
+            },
+            {
+              "frameId": "anim_monster_bee_idle_4",
+              "x": 0,
+              "y": 0,
+              "width": 48,
+              "height": 48
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "extra-seed",
+      "targetId": "seed_carrier",
+      "fields": {
+        "additionalDrops": {
+          "minDraws": 2,
+          "maxDraws": 2,
+          "entries": [
+            {
+              "itemId": "seed_corn",
+              "weight": 1,
+              "minCount": 0,
+              "maxCount": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "green-projectiles",
+      "targetId": "drone",
+      "fields": {
+        "projectileTint": "#00FF00"
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [
+    {
+      "id": "qa-native",
+      "name": "native-fixture.png",
+      "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAADIElEQVR4nO3UIQEAIBDAwA9Hf4OlC8RA7MT5qc3a5wJN8zsA+McAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIMwAIOwBNoIsL9nX33MAAAAASUVORK5CYII=",
+      "width": 256,
+      "height": 256
+    }
+  ],
+  "dependencies": [],
+  "catalog": null
+}

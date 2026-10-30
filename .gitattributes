@@ -1,0 +1,20 @@
+# Preserve redistributed notices and corresponding-source archive bytes.
+/tools/public-source/licenses/** -text
+
+# Package contracts bind the exact reference-policy and frozen payload bytes.
+author-sdk/advanced-reference-policies/*.json text eol=lf
+author-sdk/advanced-reference-policies/*.txt text eol=lf
+author-sdk/advanced-reference-policies/history/*.json text eol=lf
+author-sdk/advanced-reference-policies/history/*.txt text eol=lf
+author-sdk/compatibility/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# Keep map editor/compiler inputs stable across platforms.
+tools/map-editor/src/*.js text eol=lf
+tools/map-editor/index.html text eol=lf
+tools/map-editor/shared/**/*.json text eol=lf
+tools/map-editor/shared/*.json text eol=lf
+src/DTMAPI.MapData/*.cs text eol=lf
+src/DTMAPI.MapData/*.csproj text eol=lf
+src/Shared/StrictJson.cs text eol=lf
+tools/MapData.Compiler/*.cs text eol=lf
+tools/MapData.Compiler/*.csproj text eol=lf

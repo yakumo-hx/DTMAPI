@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "policyId": "doloctown-24456188-moresaves-v1",
+  "policyVersion": 1,
+  "gameBuildId": "24456188",
+  "gameAssemblyRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+  "gameAssemblySha256": "E861E07E3CB82A6A21EEFA292456452F5AD12C25EC57972A59762AD3F3530923",
+  "references": [
+    {
+      "gameRelativePath": "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "assemblyName": "Assembly-CSharp",
+      "length": 6384128,
+      "sha256": "E861E07E3CB82A6A21EEFA292456452F5AD12C25EC57972A59762AD3F3530923",
+      "copyLocal": false
+    }
+  ]
+}

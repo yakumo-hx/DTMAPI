@@ -1,0 +1,14 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterNativeNianPack", "name": "原生年兽与头尾分体示例", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "nian", "templateId": "nian",
+      "overrides": {},
+      "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    }
+  ],
+  "nativeOverrides": [], "dropPools": [], "spawnRules": [], "assets": [], "dependencies": []
+}

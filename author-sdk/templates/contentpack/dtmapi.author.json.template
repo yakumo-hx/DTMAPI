@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 4,
+  "projectKind": "ContentPack",
+  "targetDtmApiVersion": {{API_TARGET_JSON}},
+  "contentDirectory": "content",
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI",
+      "Content"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  }
+}

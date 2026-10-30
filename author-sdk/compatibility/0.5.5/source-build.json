@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "apiTarget": "0.5.5",
+  "sourceCommit": "a13f1597a5f3920e519049b273e16bc41114738b",
+  "sourceRepository": "https://github.com/yakumo-hx/DTMAPI",
+  "sourceKind": "DTMAPI-authored frozen compilation inputs; no game/third-party source or binary",
+  "dotnetSdkVersion": "8.0.421",
+  "configuration": "Release",
+  "project": "src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj",
+  "pathMapTarget": "/_/DTMAPI",
+  "abstractionsSha256": "d04d34cd756c18189314e68891e933ceb5c060a79ba1eb54af21832e5f3f2bf8",
+  "files": [
+    {
+      "path": "Directory.Build.props",
+      "bytes": 1793,
+      "sha256": "b373c687c0805e23650e08ea317a6b7ff66a6486200c278482c7a1ad9f0a415a",
+      "gitBlob": "69432b3d50e2495541d74cb24ced6f662862aeef"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/ApiStatus.cs",
+      "bytes": 1731,
+      "sha256": "ecab1d56f0993c1e868345dc9b0f79221e93df309daa7ed6322cbc897d21f946",
+      "gitBlob": "17d37f001fee329b8d6ad18ac6245b0a934db860"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/AssemblyInfo.cs",
+      "bytes": 439,
+      "sha256": "0c4b6cb022d64d8ffa253ef246eb76cd7121c620200ff4760079a4aa8db09c7f",
+      "gitBlob": "1f528f5cca3cc98ddc0f1925aa77fa2b9bc5233e"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/ConfigMenu.cs",
+      "bytes": 5865,
+      "sha256": "9f4c6d49633898b2aa505150f43b73abdf3ab0e84b3b8be16bc81ef8bf8b0e1d",
+      "gitBlob": "d19ef08bb2d57d110ff678f4e20c93c1b5ef8e22"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/CustomEntities.cs",
+      "bytes": 46380,
+      "sha256": "113f9a845e1ba94d18cd9620ecadace4241bd88b7922372f21a32d28ccdd03ec",
+      "gitBlob": "725e7f4016ae75061296fb7ab769237f5143f9fd"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj",
+      "bytes": 244,
+      "sha256": "ca62a70d341f3d18fef3efef0559f5ff18a351bb99bd6a1361de779ff8a4724a",
+      "gitBlob": "29f2a910e859e31844eeb80d72dc984d0fb29908"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/DtmMod.cs",
+      "bytes": 454,
+      "sha256": "352644c5973ec14c655ec87f75730e27c63521143393f3f57abba06755084b4f",
+      "gitBlob": "8b86e2d44ae2a5c9eb8c7d02ededfc8c1eaa3b56"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Events.cs",
+      "bytes": 6232,
+      "sha256": "9cacc7af813b56208c78a75cb02e96968ca02fae71a5483ad6d6cda75d12cbfa",
+      "gitBlob": "f219aa93f774c32141d27baa71fa6845624405d2"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/ExperimentalGameBridge.cs",
+      "bytes": 77170,
+      "sha256": "902629bd3f1f455d75d4ebcccbaa947b19c08652404592f95d3f9ebee7303dbd",
+      "gitBlob": "3d23f01c5960759357d441dc5fd0a627531a684c"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Helpers.cs",
+      "bytes": 9201,
+      "sha256": "b3736503e21266c07c2519870784fe1f5acb2f13a483af6dae071f72a07c3256",
+      "gitBlob": "f7c7df4f3d3b9307bcaee0d5c06f124b021d80ce"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Input.cs",
+      "bytes": 22323,
+      "sha256": "32bbbd18144ad1b71fb5992a4d7765a97cc9a53ea75a1c141c15371b5fdf6600",
+      "gitBlob": "2d9cb9ec94fc1436d68ca1eaa1243768ceefd7c2"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Internal/MoreSavesNativeOwnerCoordinator.cs",
+      "bytes": 2222,
+      "sha256": "b33d2978220956d6cf87f76afdd16beeecb536447680d18de21ddd51369bec3c",
+      "gitBlob": "98eac8c3e2e8adbe06ca05df805b53ea0db2db59"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Logging.cs",
+      "bytes": 860,
+      "sha256": "29734e721fb6428f60b416899b3ff043f23704782c0ef50147a9829d5aa0d7d2",
+      "gitBlob": "60c95cff5201af5595e2e36768028530b8d7c861"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/Manifest.cs",
+      "bytes": 1631,
+      "sha256": "88ffd16aa65f8bfec690bffa4921b523205f9f6b2a45a68f03a63a2a92749859",
+      "gitBlob": "745670f09f639f7bd0cad02643fdd484ffd043bf"
+    },
+    {
+      "path": "src/DTMAPI.Abstractions/RetiredLampControl.cs",
+      "bytes": 3449,
+      "sha256": "86636535a1f884bcedc714675dfdc6283643d5205adf2598d5f99f83a11d7405",
+      "gitBlob": "f160166f63ca87489f9b4394ccd3bf45fb97d7a7"
+    },
+    {
+      "path": "tools/release/dtmapi-runtime-version.props",
+      "bytes": 328,
+      "sha256": "d7377fc459de2c403aa1492b0d5bd716345b396b46a3aad3b50bd9fae45fd78e",
+      "gitBlob": "69fb9d0c85c07645c2eedb2cbbf37d88368e2f42"
+    }
+  ]
+}

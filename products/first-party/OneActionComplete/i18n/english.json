@@ -1,0 +1,9 @@
+{
+  "mod.name": "DTMAPI One Action Complete",
+  "config.trees.name": "Trees",
+  "config.ores.name": "Ores",
+  "config.garbage.name": "Garbage",
+  "config.weeds.name": "Weeds",
+  "config.fuel.name": "Fuel machines",
+  "config.feeders.name": "Feeders"
+}

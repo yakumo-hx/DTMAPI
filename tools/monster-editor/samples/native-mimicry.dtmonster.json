@@ -1,0 +1,14 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterNativeMimicryPack", "name": "原生拟态诱饵示例", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "chomper", "templateId": "chomper",
+      "overrides": {},
+      "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    }
+  ],
+  "nativeOverrides": [], "dropPools": [], "spawnRules": [], "assets": [], "dependencies": []
+}

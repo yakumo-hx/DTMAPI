@@ -1,0 +1,19 @@
+{
+  "UniqueID": "DTMAPI.ZoomMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.Zoom.dll",
+  "EntryType": "DTMAPI.Zoom.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "Required": true,
+      "VersionRange": {
+        "minimumInclusive": "0.7.5",
+        "includePrerelease": false
+      }
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.ZoomMod.Native"
+}

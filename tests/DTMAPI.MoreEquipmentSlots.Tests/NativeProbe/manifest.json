@@ -1,0 +1,25 @@
+{
+  "Name": "MES instance-state acceptance probe",
+  "Author": "Yuuka",
+  "Version": "0.1.0",
+  "Description": "A DTMAPI code mod.",
+  "UniqueID": "DTMAPI.Internal.MoreEquipmentSlotsShortProbe",
+  "EntryDll": "DTMAPI.Internal.MoreEquipmentSlotsShortProbe.dll",
+  "EntryType": "DTMAPI.Internal.MoreEquipmentSlotsShortProbe.ModEntry",
+  "MinimumDTMApiVersion": "0.7.0",
+  "Type": "CodeMod",
+  "CodeModKind": "Advanced",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.MoreEquipmentSlotsMod",
+      "Required": false,
+      "VersionRange": {
+        "minimumInclusive": "1.1.0",
+        "includePrerelease": false
+      }
+    }
+  ],
+  "UpdateKeys": [],
+  "NativeContractVersion": 2,
+  "DependencyContractVersion": 1
+}

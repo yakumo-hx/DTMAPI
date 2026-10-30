@@ -1,0 +1,157 @@
+{
+  "animal_id": "hatch",
+  "display_name": "Hatch",
+  "animator_mode": "pngSpriteOverride",
+  "template_sprite_prefix": "anim_animal_chicken",
+  "custom_sprite_prefix": "anim_animal_hatch",
+  "canvas_by_stage": {
+    "adult": {
+      "width": 32,
+      "height": 32
+    },
+    "young": {
+      "width": 28,
+      "height": 24
+    }
+  },
+  "states": [
+    {
+      "stage": "adult",
+      "state": "idle",
+      "frame_count": 4,
+      "files": [
+        "anim_animal_hatch_adult_idle_0.png",
+        "anim_animal_hatch_adult_idle_1.png",
+        "anim_animal_hatch_adult_idle_2.png",
+        "anim_animal_hatch_adult_idle_3.png"
+      ]
+    },
+    {
+      "stage": "adult",
+      "state": "move",
+      "frame_count": 8,
+      "files": [
+        "anim_animal_hatch_adult_move_0.png",
+        "anim_animal_hatch_adult_move_1.png",
+        "anim_animal_hatch_adult_move_2.png",
+        "anim_animal_hatch_adult_move_3.png",
+        "anim_animal_hatch_adult_move_4.png",
+        "anim_animal_hatch_adult_move_5.png",
+        "anim_animal_hatch_adult_move_6.png",
+        "anim_animal_hatch_adult_move_7.png"
+      ]
+    },
+    {
+      "stage": "adult",
+      "state": "eat",
+      "frame_count": 7,
+      "files": [
+        "anim_animal_hatch_adult_eat_0.png",
+        "anim_animal_hatch_adult_eat_1.png",
+        "anim_animal_hatch_adult_eat_2.png",
+        "anim_animal_hatch_adult_eat_3.png",
+        "anim_animal_hatch_adult_eat_4.png",
+        "anim_animal_hatch_adult_eat_5.png",
+        "anim_animal_hatch_adult_eat_6.png"
+      ]
+    },
+    {
+      "stage": "adult",
+      "state": "sleep",
+      "frame_count": 1,
+      "files": [
+        "anim_animal_hatch_adult_sleep_0.png"
+      ]
+    },
+    {
+      "stage": "adult",
+      "state": "jump",
+      "frame_count": 3,
+      "files": [
+        "anim_animal_hatch_adult_jump_0.png",
+        "anim_animal_hatch_adult_jump_1.png",
+        "anim_animal_hatch_adult_jump_2.png"
+      ]
+    },
+    {
+      "stage": "adult",
+      "state": "jump_ready",
+      "alias_of": "jump",
+      "frame_count": 1,
+      "files": [
+        "anim_animal_hatch_adult_jump_0.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "idle",
+      "frame_count": 4,
+      "files": [
+        "anim_animal_hatch_young_idle_0.png",
+        "anim_animal_hatch_young_idle_1.png",
+        "anim_animal_hatch_young_idle_2.png",
+        "anim_animal_hatch_young_idle_3.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "move",
+      "frame_count": 8,
+      "files": [
+        "anim_animal_hatch_young_move_0.png",
+        "anim_animal_hatch_young_move_1.png",
+        "anim_animal_hatch_young_move_2.png",
+        "anim_animal_hatch_young_move_3.png",
+        "anim_animal_hatch_young_move_4.png",
+        "anim_animal_hatch_young_move_5.png",
+        "anim_animal_hatch_young_move_6.png",
+        "anim_animal_hatch_young_move_7.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "eat",
+      "frame_count": 7,
+      "files": [
+        "anim_animal_hatch_young_eat_0.png",
+        "anim_animal_hatch_young_eat_1.png",
+        "anim_animal_hatch_young_eat_2.png",
+        "anim_animal_hatch_young_eat_3.png",
+        "anim_animal_hatch_young_eat_4.png",
+        "anim_animal_hatch_young_eat_5.png",
+        "anim_animal_hatch_young_eat_6.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "sleep",
+      "frame_count": 1,
+      "files": [
+        "anim_animal_hatch_young_sleep_0.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "jump",
+      "frame_count": 2,
+      "files": [
+        "anim_animal_hatch_young_jump_0.png",
+        "anim_animal_hatch_young_jump_1.png"
+      ]
+    },
+    {
+      "stage": "young",
+      "state": "jump_ready",
+      "alias_of": "jump",
+      "frame_count": 1,
+      "files": [
+        "anim_animal_hatch_young_jump_0.png"
+      ]
+    }
+  ],
+  "notes": [
+    "The runtime maps chicken jump_ready frames to Hatch jump_0 because Hatch has no dedicated jump_ready PNG.",
+    "Eat uses 7 frames to cover the chicken template eat_0..6 sequence.",
+    "Adult jump_2 reuses adult jump_0 as a return pose during local product assembly; prototype inputs remain read-only."
+  ]
+}

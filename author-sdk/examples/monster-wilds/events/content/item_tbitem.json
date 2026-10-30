@@ -1,0 +1,59 @@
+[
+  {
+    "id": "samples_monsterwilds_royal_beacon",
+    "sub_type": "material_monster",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 0,
+    "buying_price": 0,
+    "overlay": 20,
+    "ui_sprite_asset": {
+      "url": "icon_item_slime_gel"
+    },
+    "title": {
+      "key": "samples_monsterwilds_royal_beacon_title",
+      "text": "蓝冠信标"
+    },
+    "description_basic": {
+      "key": "samples_monsterwilds_royal_beacon_desc",
+      "text": "凝胶与战用芯片制成的信标。在废弃城市郊野低地的中央区域使用，召唤蓝冠变形虫王。附近已有王或空间不足时不消耗。可在手工工作台制作。"
+    },
+    "function": {
+      "$type": "ItemFunction"
+    }
+  },
+  {
+    "id": "samples_monsterwilds_royal_beacon_blueprint",
+    "sub_type": "special_other",
+    "salable": false,
+    "disposable": false,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 0,
+    "buying_price": 0,
+    "overlay": 1,
+    "ui_sprite_asset": {
+      "url": "icon_item_slime_gel"
+    },
+    "title": {
+      "key": "samples_monsterwilds_blueprint_title",
+      "text": "蓝冠信标图纸"
+    },
+    "description_basic": {
+      "key": "samples_monsterwilds_blueprint_desc",
+      "text": "巢穴守卫者偶尔掉落的图纸。使用后解锁蓝冠信标的手工工作台配方。"
+    },
+    "function": {
+      "$type": "ItemFunctionRecipe",
+      "recipe_id": "samples_monsterwilds_royal_beacon"
+    }
+  }
+]

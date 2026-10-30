@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DoctorCodeModFixture</AssemblyName>
+    <RootNamespace>DoctorCodeModFixture</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

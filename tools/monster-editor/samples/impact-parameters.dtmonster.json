@@ -1,0 +1,108 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterImpactParametersPack",
+    "name": "原生冲击参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "fwb_drone",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 19,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "impact": {
+            "windupEnabled": true,
+            "distance": 6,
+            "travelSpeed": 4,
+            "arcPath": true,
+            "arcOffset": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "fwb_drone",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "impact": {
+            "windupEnabled": false,
+            "distance": 2,
+            "travelSpeed": 12,
+            "arcPath": false,
+            "arcOffset": -8
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "charge",
+      "targetId": "fwb_drone",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkNormal",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.6,
+            "impact": {
+              "windupEnabled": false,
+              "distance": 8,
+              "travelSpeed": 8,
+              "arcPath": false,
+              "arcOffset": 8
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

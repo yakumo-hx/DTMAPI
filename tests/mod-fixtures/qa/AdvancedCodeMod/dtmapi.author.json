@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 4,
+  "projectKind": "CodeMod",
+  "targetDtmApiVersion": "0.5.5",
+  "codeModKind": "Advanced",
+  "advanced": {
+    "referencePolicyId": "doloctown-23762374-g2-v1",
+    "references": [
+      "0Harmony",
+      "Assembly-CSharp"
+    ]
+  },
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI",
+      "Test"
+    ],
+    "localizedName": {
+      "english": "DTMAPI Advanced Fixture"
+    },
+    "localizedDescription": {
+      "english": "Synthetic G2 fixture for the receipt-bound Advanced CodeMod lane."
+    }
+  },
+  "projectFile": "DTMAPI.AdvancedFixture.csproj"
+}

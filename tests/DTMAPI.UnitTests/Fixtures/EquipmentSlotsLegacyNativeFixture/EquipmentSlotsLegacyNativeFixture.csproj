@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>Assembly-CSharp</AssemblyName>
+    <RootNamespace>DolocTown</RootNamespace>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);DTMAPI_LEGACY_237</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\EquipmentSlotsNativeFixture\NativeTypes.cs"
+             Link="NativeTypes.cs" />
+    <Compile Include="..\EquipmentSlotsNativeFixture\UnityUiTypes.cs"
+             Link="UnityUiTypes.cs" />
+  </ItemGroup>
+</Project>

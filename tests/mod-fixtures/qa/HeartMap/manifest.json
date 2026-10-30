@@ -1,0 +1,10 @@
+{
+  "UniqueID": "DTMAPI.Internal.HeartMap",
+  "EntryDll": "Content/DTMAPI/DTMAPI.Internal.HeartMap.dll",
+  "EntryType": "DTMAPI.Internal.HeartMap.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.Internal.HeartMap.Native"
+}

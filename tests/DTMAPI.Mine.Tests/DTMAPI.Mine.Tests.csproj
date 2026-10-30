@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>mine</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/MineHarmonyOwnerFixture/MineHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

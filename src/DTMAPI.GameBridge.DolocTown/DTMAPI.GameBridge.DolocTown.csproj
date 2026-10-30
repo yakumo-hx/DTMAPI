@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.GameBridge.DolocTown</AssemblyName>
+    <RootNamespace>DTMAPI.GameBridge.DolocTown</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\DTMAPI.Core\DTMAPI.Core.csproj" />
+  </ItemGroup>
+</Project>

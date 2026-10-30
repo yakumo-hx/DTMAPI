@@ -1,0 +1,4 @@
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("DTMAPI.UnitTests")]
+[assembly: InternalsVisibleTo("DTMAPI.QaUnitTests")]

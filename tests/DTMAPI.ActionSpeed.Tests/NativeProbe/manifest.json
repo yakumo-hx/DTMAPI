@@ -1,0 +1,25 @@
+{
+  "Name": "Independent ActionSpeed short probe",
+  "Author": "Yuuka",
+  "Version": "0.1.0",
+  "Description": "A DTMAPI code mod.",
+  "UniqueID": "DTMAPI.Internal.ActionSpeedShortProbe",
+  "EntryDll": "DTMAPI.Internal.ActionSpeedShortProbe.dll",
+  "EntryType": "DTMAPI.Internal.ActionSpeedShortProbe.ModEntry",
+  "MinimumDTMApiVersion": "0.7.0",
+  "Type": "CodeMod",
+  "CodeModKind": "Advanced",
+  "Dependencies": [
+    {
+      "VersionRange": {
+        "minimumInclusive": "2.0.0",
+        "includePrerelease": false
+      },
+      "Required": true,
+      "UniqueID": "Yuuka.DTMAPI.ActionSpeed"
+    }
+  ],
+  "UpdateKeys": [],
+  "NativeContractVersion": 2,
+  "DependencyContractVersion": 1
+}

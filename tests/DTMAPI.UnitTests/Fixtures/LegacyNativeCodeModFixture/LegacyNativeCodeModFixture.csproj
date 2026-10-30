@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.LegacyNativeCodeModFixture</AssemblyName>
+    <RootNamespace>DTMAPI.LegacyNativeCodeModFixture</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\..\src\DTMAPI.BepInExStubs\DTMAPI.BepInExStubs.csproj" />
+    <ProjectReference Include="..\LegacyNativeHelperFixture\LegacyNativeHelperFixture.csproj" />
+    <ProjectReference Include="..\..\..\DTMAPI.InstallDoctor.Tests\Fixtures\HarmonyReferenceFixture\HarmonyReferenceFixture.csproj" />
+    <ProjectReference Include="..\..\..\DTMAPI.InstallDoctor.Tests\Fixtures\GameReferenceFixture\GameReferenceFixture.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "dtmapi_bad_apple",
+    "item": "dtmapi_cassette_bad_apple",
+    "order": 73,
+    "default_unlock": true,
+    "title": "Bad Apple",
+    "bgm_event": "DTMAPI_MUSIC_BAD_APPLE"
+  },
+  {
+    "id": "dtmapi_iroha",
+    "item": "dtmapi_cassette_iroha",
+    "order": 74,
+    "default_unlock": false,
+    "title": "色は匂へど散りぬるを",
+    "bgm_event": "DTMAPI_MUSIC_IROHA"
+  },
+  {
+    "id": "dtmapi_tsuki",
+    "item": "dtmapi_cassette_tsuki",
+    "order": 75,
+    "default_unlock": false,
+    "title": "月に叢雲華に風",
+    "bgm_event": "DTMAPI_MUSIC_TSUKI"
+  }
+]

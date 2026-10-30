@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <DtmApiNativeReferences Condition="'$(DtmApiNativeReferences)' == ''">$(MSBuildThisFileDirectory)../../.tools/runtime-native/references</DtmApiNativeReferences>
+    <Version>0.1.71</Version><AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DTMAPI.RuntimeModules/DTMAPI.RuntimeModules.csproj" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="Data/template-frames.json" LogicalName="DTMAPI.MonsterFrames.json" /></ItemGroup>
+  <ItemGroup>
+    <Reference Include="$(DtmApiNativeReferences)/*.dll" Condition="'$(DtmApiNativeReferences)' != ''" Private="false" />
+  </ItemGroup>
+</Project>

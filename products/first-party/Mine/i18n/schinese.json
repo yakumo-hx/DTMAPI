@@ -1,0 +1,20 @@
+{
+  "mod.name": "DTMAPI 矿井",
+  "mod.loaded": "DTMAPI 矿井已加载；官方 JSON 负责矿井物品、设备和配方，载入存档后由产品运行时开始生产。",
+  "config.section.machine": "矿井生产",
+  "config.contract": "耗电固定使用原生用电器阈值 10。生产周期只在本次游戏会话内计算，重新载入存档后重新开始。",
+  "config.enabled.name": "启用运行时生产",
+  "config.enabled.tooltip": "启用矿井产品运行时。关闭后立即恢复配方、科技和显示原值；若本次启动时为关闭状态，改为开启后需要重启游戏。",
+  "config.cycle.name": "周期分钟",
+  "config.cycle.tooltip": "本次游戏会话内每次生产需要经过的游戏分钟数。",
+  "config.oilRecipe.name": "使用石油配方",
+  "config.oilRecipe.tooltip": "DTMAPI 石油已加载时临时使用石油配方；关闭、返回标题或卸载时恢复精确原配方。",
+  "config.section.outputs": "产出权重",
+  "config.weight.coal": "煤权重",
+  "config.weight.copper": "铜矿权重",
+  "config.weight.iron": "铁矿权重",
+  "config.weight.oil": "石油权重",
+  "config.weight.tooltip": "相对概率权重；设为零会停用该产物。",
+  "config.verbose.name": "详细日志",
+  "config.verbose.tooltip": "写入有频率限制的矿井生命周期诊断。"
+}

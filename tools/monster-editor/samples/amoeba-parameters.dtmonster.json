@@ -1,0 +1,28 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterAmoebaParametersPack", "name": "变形虫原生跳跃参数", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "long", "templateId": "amoeba_radiation",
+      "overrides": { "health": 500, "defense": 0 },
+      "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null },
+      "nativeAttacks": [ { "attackId": "AtkNormal", "cooldownGameSeconds": 4, "startOnCooldown": true, "damage": 17, "criticalRate": 0.35, "windupGameSeconds": 1.2,
+        "amoebaJump": { "range": 14, "speed": 4, "distanceCells": 6 } } ]
+    },
+    {
+      "id": "short", "templateId": "amoeba_radiation",
+      "overrides": { "health": 500, "defense": 0 },
+      "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null },
+      "nativeAttacks": [ { "attackId": "AtkNormal", "cooldownGameSeconds": 0.75, "startOnCooldown": false, "damage": 3, "criticalRate": 0, "windupGameSeconds": 0.2,
+        "amoebaJump": { "range": 6, "speed": 8, "distanceCells": 2 } } ]
+    }
+  ],
+  "nativeOverrides": [ { "id": "jump", "targetId": "amoeba_radiation", "fields": {
+    "nativeAttacks": [ { "attackId": "AtkNormal", "cooldownGameSeconds": 5, "startOnCooldown": true, "damage": 29, "criticalRate": 0.4, "windupGameSeconds": 0.6,
+      "amoebaJump": { "range": 12, "speed": 5, "distanceCells": 3 } } ]
+  } } ],
+  "dropPools": [], "spawnRules": [], "assets": [], "dependencies": [], "catalog": null
+}

@@ -1,0 +1,17 @@
+public static class DolocAPI
+{
+}
+
+namespace DolocTown
+{
+    public interface IAgentEquipmentShieldItem
+    {
+        float ShieldPercent { get; }
+
+        float ShieldValue { get; }
+
+        bool TryBlockAttack(
+            int damage,
+            out int blockedDamage);
+    }
+}

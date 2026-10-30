@@ -1,0 +1,11 @@
+{
+  "mod.name": "DTMAPI牧铃产物进度",
+  "config.colorPreset.name": "颜色预设",
+  "config.fillColor.name": "填充颜色",
+  "config.color.orange": "橙色",
+  "config.color.green": "绿色",
+  "config.color.blue": "蓝色",
+  "config.color.pink": "粉色",
+  "config.color.white": "白色",
+  "config.color.custom": "自定义"
+}

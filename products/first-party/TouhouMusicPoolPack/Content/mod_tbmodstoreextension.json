@@ -1,0 +1,112 @@
+[
+  {
+    "id": "phone_booth_shop",
+    "extra_items": [
+      {
+        "item_name": "dtmapi_cassette_bad_apple",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          }
+        ]
+      },
+      {
+        "item_name": "dtmapi_cassette_iroha",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          }
+        ]
+      },
+      {
+        "item_name": "dtmapi_cassette_tsuki",
+        "storage": 0,
+        "default_unlock": true,
+        "season_spawn_data": [
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          },
+          {
+            "spawn_weight": 0,
+            "count_range": {
+              "min_count": 1,
+              "max_count": 1
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

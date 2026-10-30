@@ -1,0 +1,117 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterDragonShootParametersPack",
+    "name": "原生往返扫射参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "sweep",
+      "templateId": "drone_ex",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 17,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "dragonShoot": {
+            "windupEnabled": true,
+            "sectorAngleDegrees": 90,
+            "shotIntervalGameSeconds": 0.1,
+            "projectileSpeed": 4,
+            "projectileLifetimeGameSeconds": 3,
+            "minBulletCount": 8,
+            "maxBulletCount": 8,
+            "sectorCount": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "line",
+      "templateId": "drone_ex",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "dragonShoot": {
+            "windupEnabled": false,
+            "sectorAngleDegrees": 360,
+            "shotIntervalGameSeconds": 0.15,
+            "projectileSpeed": 10,
+            "projectileLifetimeGameSeconds": 1,
+            "minBulletCount": 3,
+            "maxBulletCount": 3,
+            "sectorCount": 1
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "sweep",
+      "targetId": "drone_ex",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.6,
+            "dragonShoot": {
+              "windupEnabled": false,
+              "sectorAngleDegrees": 180,
+              "shotIntervalGameSeconds": 0.3,
+              "projectileSpeed": 5,
+              "projectileLifetimeGameSeconds": 2,
+              "minBulletCount": 5,
+              "maxBulletCount": 5,
+              "sectorCount": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

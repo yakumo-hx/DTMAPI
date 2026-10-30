@@ -1,0 +1,32 @@
+[
+  {
+    "id": "dtmapi_mine",
+    "sub_type": "equipment_ornament",
+    "salable": true,
+    "disposable": true,
+    "consumable": false,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [
+      "processing"
+    ],
+    "selling_price": -1,
+    "buying_price": 2500,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_well"
+    },
+    "title": {
+      "key": "item_dtmapi_mine",
+      "text": "矿井"
+    },
+    "description_basic": {
+      "key": "item_dtmapi_mine_desc",
+      "text": "接入电网后，每个生产周期固定消耗 10 点电力，并把煤、铜矿石、铁矿石等产物存入矿井自己的储物格。"
+    },
+    "function": {
+      "$type": "ItemFunctionEquipment"
+    }
+  }
+]

@@ -1,0 +1,117 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterScatter",
+    "name": "散射怪物",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "narrow",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "tint": "#F3BC65",
+        "display": {
+          "name": "散射配置 · narrow",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "fan",
+            "kind": "scatter",
+            "scatter": {
+              "projectileAttackId": "AtkNormal",
+              "bulletCount": 3,
+              "spreadDegrees": 30,
+              "bulletSpeed": 4,
+              "bulletLifetimeGameSeconds": 2,
+              "damage": 7,
+              "range": 12,
+              "windupGameSeconds": 0.6,
+              "recoveryGameSeconds": 0.2,
+              "cooldownGameSeconds": 5
+            }
+          }
+        ],
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "skill",
+              "skillId": "fan",
+              "maxGameSeconds": 10
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "wide",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "tint": "#F3BC65",
+        "display": {
+          "name": "散射配置 · wide",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "fan",
+            "kind": "scatter",
+            "scatter": {
+              "projectileAttackId": "AtkNormal",
+              "bulletCount": 7,
+              "spreadDegrees": 100,
+              "bulletSpeed": 8,
+              "bulletLifetimeGameSeconds": 1.5,
+              "damage": 13,
+              "range": 12,
+              "windupGameSeconds": 1,
+              "recoveryGameSeconds": 0.5,
+              "cooldownGameSeconds": 4
+            }
+          }
+        ],
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "skill",
+              "skillId": "fan",
+              "maxGameSeconds": 10
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><DtmApiTestSuite>autofishing</DtmApiTestSuite></PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Remove="NativeProbe/**/*.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/AutoFishingConfig.cs" Link="Product/AutoFishingConfig.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/FishingPolicy.cs" Link="Product/FishingPolicy.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/ModEntry.cs" Link="Product/ModEntry.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/Cleanup.cs" Link="Product/Cleanup.cs" />
+    <Compile Include="../../products/first-party/AutoFishing/src/FishingMotion.cs" Link="Product/FishingMotion.cs" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" /></ItemGroup>
+</Project>

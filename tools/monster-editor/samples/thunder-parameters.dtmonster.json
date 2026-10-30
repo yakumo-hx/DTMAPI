@@ -1,0 +1,120 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterThunderParametersPack",
+    "name": "原生雷桩参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "space_ship",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill03",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 19,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.6,
+          "thunderPile": {
+            "windupEnabled": true,
+            "range": 100,
+            "minCount": 3,
+            "maxCount": 3,
+            "subWindupGameSeconds": 0.2,
+            "dropSpeed": 12,
+            "maxDropGameSeconds": 2,
+            "waitGameSeconds": 0.4,
+            "fadeGameSeconds": 0.3
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "space_ship",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill03",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.6,
+          "thunderPile": {
+            "windupEnabled": false,
+            "range": 60,
+            "minCount": 1,
+            "maxCount": 1,
+            "subWindupGameSeconds": 0,
+            "dropSpeed": 7,
+            "maxDropGameSeconds": 0.3,
+            "waitGameSeconds": 0.1,
+            "fadeGameSeconds": 0
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "charge",
+      "targetId": "space_ship",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill03",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.2,
+            "thunderPile": {
+              "windupEnabled": true,
+              "range": 80,
+              "minCount": 2,
+              "maxCount": 2,
+              "subWindupGameSeconds": 0.15,
+              "dropSpeed": 9,
+              "maxDropGameSeconds": 3,
+              "waitGameSeconds": 0.8,
+              "fadeGameSeconds": 0.2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

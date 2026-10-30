@@ -1,0 +1,17 @@
+{
+  "name": "八云紫主题曲",
+  "author": "Yuuka",
+  "version": "0.1.0",
+  "description": "需要DTMAPI 0.7.5以上。\n收录《夜が降りてくる ～ Evening Star》和《ネクロファンタジア》两首曲目。\n对应磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。",
+  "steamDescription": "需要DTMAPI 0.7.5以上。\n收录《夜が降りてくる ～ Evening Star》和《ネクロファンタジア》两首曲目。\n对应磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。",
+  "localized_name": {
+    "schinese": "八云紫主题曲",
+    "tchinese": "八雲紫主題曲",
+    "english": "Yukari Yakumo Theme Songs"
+  },
+  "localized_description": {
+    "schinese": "需要DTMAPI 0.7.5以上。\n收录《夜が降りてくる ～ Evening Star》和《ネクロファンタジア》两首曲目。\n对应磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。",
+    "tchinese": "需要DTMAPI 0.7.5以上。\n收錄《夜が降りてくる ～ Evening Star》和《ネクロファンタジア》兩首曲目。\n對應磁帶在工坊貿易部（電話亭）出售，每盒 100 螺母。",
+    "english": "Requires DTMAPI 0.7.5 or later.\nIncludes two tracks: 夜が降りてくる ～ Evening Star and ネクロファンタジア.\nTheir cassettes are sold at the Workshop Trade Department (phone booth) for 100 Nuts each."
+  }
+}

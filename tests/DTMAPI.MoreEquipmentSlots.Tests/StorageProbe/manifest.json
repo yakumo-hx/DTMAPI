@@ -1,0 +1,16 @@
+{
+  "Name": "MES embedded storage experiment",
+  "Author": "Yuuka",
+  "Version": "0.1.0",
+  "Description": "Private disposable-save storage experiment.",
+  "UniqueID": "DTMAPI.Internal.MesStorageProbe",
+  "EntryDll": "DTMAPI.Internal.MesStorageProbe.dll",
+  "EntryType": "DTMAPI.Internal.MesStorageProbe.ModEntry",
+  "MinimumDTMApiVersion": "0.7.0",
+  "Type": "CodeMod",
+  "CodeModKind": "Advanced",
+  "Dependencies": [],
+  "UpdateKeys": [],
+  "NativeContractVersion": 2,
+  "DependencyContractVersion": 1
+}

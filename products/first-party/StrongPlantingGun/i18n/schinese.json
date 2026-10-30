@@ -1,0 +1,6 @@
+{
+  "mod.name": "DTMAPI 强力农用喷枪",
+  "mod.loaded": "DTMAPI 强力农用喷枪已加载。",
+  "config.range.name": "范围",
+  "config.range.tooltip": "正方形边长，7～15格，默认7格。沿原生偏移和朝向；保存新的范围会取消当前批次。"
+}

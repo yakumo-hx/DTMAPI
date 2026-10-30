@@ -1,0 +1,14 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterNativeThunderPack", "name": "原生飞船与雷桩示例", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "space_ship", "templateId": "space_ship",
+      "overrides": {},
+      "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    }
+  ],
+  "nativeOverrides": [], "dropPools": [], "spawnRules": [], "assets": [], "dependencies": []
+}

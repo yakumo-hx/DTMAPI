@@ -1,0 +1,12 @@
+{
+  "format":"dtmapi.monster-project","version":4,
+  "pack":{"id":"Samples.MonsterSalvoShootParametersPack","name":"原生齐射参数","author":"DTMAPI","version":"0.1.0"},
+  "monsters":[
+    {"id":"fan","templateId":"ball_drone","overrides":{"health":500,"defense":0},"behavior":{"mode":"inherit-native"},"drops":{"mode":"inherit","minCount":null,"maxCount":null},
+     "nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":4,"startOnCooldown":true,"damage":17,"criticalRate":1,"windupGameSeconds":0.6,"salvoShoot":{"windupEnabled":true,"bulletCount":4,"sectorAngleDegrees":90,"shotIntervalGameSeconds":0.2,"projectileSpeed":4,"projectileLifetimeGameSeconds":3}}]},
+    {"id":"ring","templateId":"ball_drone","overrides":{"health":500,"defense":0},"behavior":{"mode":"inherit-native"},"drops":{"mode":"inherit","minCount":null,"maxCount":null},
+     "nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":0.75,"startOnCooldown":false,"damage":3,"criticalRate":0,"windupGameSeconds":0.6,"salvoShoot":{"windupEnabled":false,"bulletCount":6,"sectorAngleDegrees":360,"shotIntervalGameSeconds":0.1,"projectileSpeed":10,"projectileLifetimeGameSeconds":1}}]}
+  ],
+  "nativeOverrides":[{"id":"volley","targetId":"ball_drone","fields":{"nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":5,"startOnCooldown":true,"damage":29,"criticalRate":0,"windupGameSeconds":0.6,"salvoShoot":{"windupEnabled":false,"bulletCount":2,"sectorAngleDegrees":180,"shotIntervalGameSeconds":0.3,"projectileSpeed":5,"projectileLifetimeGameSeconds":2}}]}}],
+  "dropPools":[],"spawnRules":[],"assets":[],"dependencies":[],"catalog":null
+}

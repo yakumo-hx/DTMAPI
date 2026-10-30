@@ -1,0 +1,10 @@
+<Project>
+  <!-- Optional conveniences. Standard projects can reference API DLLs directly. -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">netstandard2.0</TargetFramework>
+    <LangVersion Condition="'$(LangVersion)' == ''">latest</LangVersion>
+    <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+    <DTMAPI_AUTHOR_SDK_ROOT Condition="'$(DTMAPI_AUTHOR_SDK_ROOT)' == ''">$(MSBuildThisFileDirectory)..</DTMAPI_AUTHOR_SDK_ROOT>
+    <DtmApiReferences Condition="'$(DtmApiReferences)' == ''">$(DTMAPI_AUTHOR_SDK_ROOT)/references</DtmApiReferences>
+  </PropertyGroup>
+</Project>

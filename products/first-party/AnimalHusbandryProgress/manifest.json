@@ -1,0 +1,27 @@
+{
+  "UniqueID": "Yuuka.DTMAPI.AnimalHusbandryProgress",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.AnimalHusbandryProgress.dll",
+  "EntryType": "Yuuka.DTMAPI.AnimalHusbandryProgress.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "Required": true,
+      "VersionRange": {
+        "includePrerelease": false,
+        "minimumInclusive": "0.7.0"
+      }
+    },
+    {
+      "UniqueID": "DTMAPI.GameBridge.DolocTown",
+      "Required": true,
+      "VersionRange": {
+        "includePrerelease": false,
+        "minimumInclusive": "0.7.0"
+      }
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "Yuuka.DTMAPI.AnimalHusbandryProgress.Native"
+}

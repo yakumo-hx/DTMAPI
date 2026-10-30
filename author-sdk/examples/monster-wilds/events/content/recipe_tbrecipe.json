@@ -1,0 +1,16 @@
+[
+  {
+    "id": "samples_monsterwilds_royal_beacon",
+    "default_unlock": false,
+    "title": { "key": "", "text": "" },
+    "cost_time": 0,
+    "output_item": { "item_name": "samples_monsterwilds_royal_beacon", "min_count": 1, "max_count": 1 },
+    "input_items": [
+      { "item_name": "slime_gel", "item_count": 3 },
+      { "item_name": "combat_chip", "item_count": 3 }
+    ],
+    "recipe_sub_type": "none",
+    "tech_point": 0,
+    "show_in_handbook": true
+  }
+]

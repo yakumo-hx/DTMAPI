@@ -1,0 +1,19 @@
+{
+  "UniqueID": "DTMAPI.MoreSavesMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.MoreSaves.dll",
+  "EntryType": "DTMAPI.MoreSaves.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "VersionRange": {
+        "includePrerelease": false,
+        "minimumInclusive": "0.7.5"
+      },
+      "Required": true,
+      "UniqueID": "DTMAPI.ModConfigMenu"
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.MoreSavesMod.Native"
+}

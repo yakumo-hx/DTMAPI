@@ -1,0 +1,146 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterPlacedParametersPack",
+    "name": "原生地雷与定时炸弹参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "bomber",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 19,
+          "criticalRate": 0,
+          "landmine": {
+            "range": 40,
+            "recoilGameSeconds": 0.6,
+            "throwImpulse": 3,
+            "liveGameSeconds": 0.4,
+            "reactionGameSeconds": 0.3
+          }
+        },
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 5,
+          "startOnCooldown": true,
+          "damage": 29,
+          "criticalRate": 1,
+          "timeBomb": {
+            "range": 40,
+            "recoilGameSeconds": 0.8,
+            "throwImpulse": 2,
+            "maxThrowImpulse": 8,
+            "count": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "bomber",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 1,
+          "landmine": {
+            "range": 30,
+            "recoilGameSeconds": 0,
+            "throwImpulse": 0,
+            "liveGameSeconds": 0,
+            "reactionGameSeconds": 0
+          }
+        },
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.5,
+          "startOnCooldown": false,
+          "damage": 5,
+          "criticalRate": 0,
+          "timeBomb": {
+            "range": 30,
+            "recoilGameSeconds": 0,
+            "throwImpulse": 0,
+            "maxThrowImpulse": 0,
+            "count": 0
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "placement",
+      "targetId": "bomber",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkNormal",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 37,
+            "criticalRate": 0,
+            "landmine": {
+              "range": 32,
+              "recoilGameSeconds": 0.3,
+              "throwImpulse": 5,
+              "liveGameSeconds": 0.5,
+              "reactionGameSeconds": 0.9
+            }
+          },
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 6,
+            "startOnCooldown": true,
+            "damage": 43,
+            "criticalRate": 1,
+            "timeBomb": {
+              "range": 32,
+              "recoilGameSeconds": 0.4,
+              "throwImpulse": 4,
+              "maxThrowImpulse": 10,
+              "count": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.Core</AssemblyName>
+    <RootNamespace>DTMAPI.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\AuthorSessionJson.cs" Link="Runtime\AuthorSessionJson.cs" />
+    <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+  <Target Name="GenerateDtmApiVersionConstants" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <DtmApiGeneratedVersionFile>$(IntermediateOutputPath)DtmApiBuildVersion.g.cs</DtmApiGeneratedVersionFile>
+      <DtmApiGeneratedVersionSource>namespace DTMAPI.Core.Runtime { internal static class DtmApiBuildVersion { public const string ReleaseVersion = "$(DtmApiReleaseVersion)"%3B public const string BinaryFileVersion = "$(DtmApiBinaryFileVersion)"%3B } }</DtmApiGeneratedVersionSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(DtmApiGeneratedVersionFile)" Lines="$(DtmApiGeneratedVersionSource)" Overwrite="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(DtmApiGeneratedVersionFile)" />
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <Compile Include="..\Shared\PackageSemanticVersion.cs" Link="Authoring\PackageSemanticVersion.cs" />
+    <Compile Include="..\Shared\PackageDependencyContract.cs" Link="Authoring\PackageDependencyContract.cs" />
+    <Compile Include="../Shared/PackageDocumentFacts.cs" Link="Authoring/PackageDocumentFacts.cs" />
+    <Compile Include="..\Shared\ContentPackBinding.cs" Link="Authoring\ContentPackBinding.cs" />
+    <Compile Include="..\Shared\StrictJson.cs" Link="Authoring\StrictJson.cs" />
+    <Compile Include="..\Shared\PackageDependencyPlanner.cs" Link="Authoring\PackageDependencyPlanner.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/AuthorTreeDigest.cs" Link="AuthorTreeDigest.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <DtmApiVersionAuthoritySchema>1</DtmApiVersionAuthoritySchema>
+    <DtmApiReleaseVersion>0.5.5</DtmApiReleaseVersion>
+    <DtmApiBinaryFileVersion>0.5.5.0</DtmApiBinaryFileVersion>
+    <DtmApiAssemblyCompatibilityVersion>0.5.3.0</DtmApiAssemblyCompatibilityVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 2,
+  "policies": [
+    {
+      "policyId": "doloctown-23762374-autofishing-v1",
+      "policySha256": "C434506848F53E21A6371C487B43941FB3408031479FA85E96BB77145AAD5557",
+      "requiredUniqueId": "Yuuka.DTMAPI.AutoFishing",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-debugconsole-v1",
+      "policySha256": "483B48BC009F7E0FB80053BB0CC045C5AB57B09D9E049E5B5171115A6F24C165",
+      "requiredUniqueId": "DTMAPI.DebugConsoleMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-moreequipmentslots-v1",
+      "policySha256": "4B796B1E04921A411CEF505DF1B1CD63E14944A3B3A64F48EBC2E4860806B951",
+      "requiredUniqueId": "DTMAPI.MoreEquipmentSlotsMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    },
+    {
+      "policyId": "doloctown-23762374-moresaves-v1",
+      "policySha256": "6AE3281A8256A833B4DB1F3BF4C1C3967D3264AB042134E67DCEDCBFCFED4D1F",
+      "requiredUniqueId": "DTMAPI.MoreSavesMod",
+      "minimumDtmApiVersion": "0.5.5",
+      "compilerSurfaceSha256": "BDAEE793E089A9689AC441E6CA7099AB01C37CF60F1C275C6E5F01BA7CDF2F7D"
+    }
+  ]
+}

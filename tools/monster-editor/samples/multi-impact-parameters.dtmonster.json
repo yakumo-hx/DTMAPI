@@ -1,0 +1,206 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterMultiImpactParametersPack",
+    "name": "原生多段冲刺与年兽头部参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "charge",
+      "templateId": "bird",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill02",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 19,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.4,
+          "multiImpact": {
+            "windupEnabled": true,
+            "distance": 6,
+            "travelSpeed": 4,
+            "minExtraDashes": 2,
+            "maxExtraDashes": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "bird",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill02",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.4,
+          "multiImpact": {
+            "windupEnabled": false,
+            "distance": 2,
+            "travelSpeed": 12,
+            "minExtraDashes": 1,
+            "maxExtraDashes": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "head-charge",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeParts": [
+        {
+          "templateId": "nian_head",
+          "nativeAttacks": [
+            {
+              "attackId": "AtkNormal",
+              "cooldownGameSeconds": 4,
+              "startOnCooldown": true,
+              "damage": 19,
+              "criticalRate": 1,
+              "windupGameSeconds": 0.4,
+              "multiImpact": {
+                "windupEnabled": true,
+                "distance": 6,
+                "travelSpeed": 4,
+                "minExtraDashes": 2,
+                "maxExtraDashes": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "head-brief",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeParts": [
+        {
+          "templateId": "nian_head",
+          "nativeAttacks": [
+            {
+              "attackId": "AtkNormal",
+              "cooldownGameSeconds": 0.75,
+              "startOnCooldown": false,
+              "damage": 3,
+              "criticalRate": 0,
+              "windupGameSeconds": 0.4,
+              "multiImpact": {
+                "windupEnabled": false,
+                "distance": 2,
+                "travelSpeed": 12,
+                "minExtraDashes": 1,
+                "maxExtraDashes": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "bird",
+      "targetId": "bird",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill02",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.3,
+            "multiImpact": {
+              "windupEnabled": false,
+              "distance": 5,
+              "travelSpeed": 10,
+              "minExtraDashes": 1,
+              "maxExtraDashes": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "head",
+      "targetId": "nian_head",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkNormal",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.3,
+            "multiImpact": {
+              "windupEnabled": false,
+              "distance": 5,
+              "travelSpeed": 10,
+              "minExtraDashes": 1,
+              "maxExtraDashes": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

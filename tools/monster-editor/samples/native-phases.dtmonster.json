@@ -1,0 +1,187 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterNativePhasesPack",
+    "name": "原招式与血量阶段",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "cancel",
+      "templateId": "amoeba_radiation",
+      "overrides": {
+        "health": 500,
+        "defense": 0,
+        "display": {
+          "name": "原招式阶段配置 cancel",
+          "nameplate": true,
+          "healthBar": "Always",
+          "bossBar": true
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "charge",
+            "kind": "dash",
+            "dash": {
+              "distance": 2,
+              "speed": 4,
+              "hitStartFraction": 0,
+              "hitEndFraction": 1,
+              "damage": 11,
+              "range": 16,
+              "windupGameSeconds": 0.4,
+              "recoveryGameSeconds": 0.2,
+              "cooldownGameSeconds": 0.5
+            }
+          }
+        ],
+        "healthPhases": {
+          "transition": "CancelCurrent",
+          "stages": [
+            {
+              "id": "enraged",
+              "atOrBelow": 0.5,
+              "speedMultiplier": 1.5,
+              "damageMultiplier": 2
+            }
+          ]
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "native-jump",
+              "action": "attack",
+              "maxGameSeconds": 10,
+              "attackId": "AtkNormal"
+            },
+            {
+              "id": "walk",
+              "action": "move-to",
+              "maxGameSeconds": 10,
+              "offsetX": 2,
+              "offsetY": 0,
+              "maxTravel": 6
+            },
+            {
+              "id": "charge",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "charge"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "body": {
+        "scale": 2
+      },
+      "movement": {
+        "moveSpeed": 3,
+        "jumpSpeed": 9
+      },
+      "sight": {
+        "rangeScale": 1.5
+      }
+    },
+    {
+      "id": "finish",
+      "templateId": "amoeba_radiation",
+      "overrides": {
+        "health": 500,
+        "defense": 0,
+        "display": {
+          "name": "原招式阶段配置 finish",
+          "nameplate": true,
+          "healthBar": "Always",
+          "bossBar": true
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "charge",
+            "kind": "dash",
+            "dash": {
+              "distance": 2,
+              "speed": 4,
+              "hitStartFraction": 0,
+              "hitEndFraction": 1,
+              "damage": 11,
+              "range": 16,
+              "windupGameSeconds": 0.4,
+              "recoveryGameSeconds": 0.2,
+              "cooldownGameSeconds": 0.5
+            }
+          }
+        ],
+        "healthPhases": {
+          "transition": "FinishCurrent",
+          "stages": [
+            {
+              "id": "enraged",
+              "atOrBelow": 0.5,
+              "speedMultiplier": 1.5,
+              "damageMultiplier": 2
+            }
+          ]
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "native-jump",
+              "action": "attack",
+              "maxGameSeconds": 10,
+              "attackId": "AtkNormal"
+            },
+            {
+              "id": "walk",
+              "action": "move-to",
+              "maxGameSeconds": 10,
+              "offsetX": 2,
+              "offsetY": 0,
+              "maxTravel": 6
+            },
+            {
+              "id": "charge",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "charge"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "body": {
+        "scale": 2
+      },
+      "movement": {
+        "moveSpeed": 3,
+        "jumpSpeed": 9
+      },
+      "sight": {
+        "rangeScale": 1.5
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

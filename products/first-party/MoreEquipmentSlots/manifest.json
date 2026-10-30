@@ -1,0 +1,19 @@
+{
+  "UniqueID": "DTMAPI.MoreEquipmentSlotsMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.MoreEquipmentSlots.dll",
+  "EntryType": "DTMAPI.MoreEquipmentSlots.ModEntry",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "VersionRange": {
+        "minimumInclusive": "0.5.5",
+        "includePrerelease": false
+      },
+      "Required": true
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.MoreEquipmentSlotsMod.Native"
+}

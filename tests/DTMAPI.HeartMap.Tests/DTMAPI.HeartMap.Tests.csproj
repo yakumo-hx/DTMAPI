@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup>
+  <ItemGroup><Compile Include="../mod-fixtures/qa/HeartMap/src/HeartLayout.cs" Link="HeartLayout.cs" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/DTMAPI.MapData/DTMAPI.MapData.csproj" />
+    <Compile Include="../mod-fixtures/qa/HeartMap/src/MapContent.cs" Link="MapContent.cs" />
+    <Compile Include="../mod-fixtures/qa/HeartMap/src/MapFileInput.cs" Link="MapFileInput.cs" />
+    <Content Include="../../tools/map-editor/shared/fixtures/map05j-*.dtmap.json" Link="inputs/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../mod-fixtures/qa/HeartMap/src/MapRequest.cs" Link="MapRequest.cs" />
+    <Compile Include="../mod-fixtures/qa/HeartMap/src/MapPublication.cs" Link="MapPublication.cs" />
+    <Content Include="../mod-fixtures/qa/HeartMap/content/Maps/*.dtmap.json" Link="inputs/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

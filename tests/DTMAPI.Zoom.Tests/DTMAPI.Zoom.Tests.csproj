@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>zoom</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Remove="obj/**/*.cs;bin/**/*.cs" />
+    <Compile Remove="OwnerContractProbe/**/*.cs" />
+    <Compile Remove="SceneProbe/**/*.cs" />
+    <Compile Remove="OwnerExclusionProbe/**/*.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/TextAssertions.cs" Link="Shared/TextAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" Condition="'$(FrozenAbstractions)' == ''" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" Condition="'$(FrozenCore)' == ''" />
+    <Reference Include="DTMAPI.Abstractions" Condition="'$(FrozenAbstractions)' != ''"><HintPath>$(FrozenAbstractions)</HintPath></Reference>
+    <Reference Include="DTMAPI.Core" Condition="'$(FrozenCore)' != ''"><HintPath>$(FrozenCore)</HintPath></Reference>
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/ZoomHarmonyOwnerFixture/ZoomHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" Condition="'$(ReuseZoomFixture)' != 'true'" />
+  </ItemGroup>
+</Project>

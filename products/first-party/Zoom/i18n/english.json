@@ -1,0 +1,17 @@
+{
+  "mod.loaded": "DTMAPI Zoom loaded; press + / - to adjust the view.",
+  "mod.name": "DTMAPI Zoom",
+  "config.section.main": "Zoom",
+  "config.maxScale.name": "Maximum view",
+  "config.maxScale.tooltip": "Maximum visible range multiplier (1–10).",
+  "config.step.name": "Step",
+  "config.step.tooltip": "View scale changed per key press.",
+  "config.increaseKey.name": "Increase view key",
+  "config.increaseKey.tooltip": "Equals or keypad plus. Physical Shift selects maximum by default; the + character is not a separate key.",
+  "config.decreaseKey.name": "Decrease view key",
+  "config.decreaseKey.tooltip": "Decrease visible range down to vanilla.",
+  "config.maximumKey.name": "Maximum view key",
+  "config.maximumKey.tooltip": "Go directly to the configured maximum.",
+  "config.resetKey.name": "Reset view key",
+  "config.resetKey.tooltip": "Return to the original view."
+}

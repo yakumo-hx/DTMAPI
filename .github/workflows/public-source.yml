@@ -1,0 +1,43 @@
+name: Public source tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Check against the trusted policy
+        shell: pwsh
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+          APPROVED_POLICY: ${{ vars.DTMAPI_EXPORT_POLICY_COMMIT }}
+        run: |
+          $policy = if ($env:APPROVED_POLICY) { $env:APPROVED_POLICY } else { $env:BASE }
+          ./tools/public-source/check-public-source.ps1 -TreeCommit HEAD -PolicyCommit $policy
+      - name: Build and execute affected Windows suites
+        shell: pwsh
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          $selection = @{}
+          if ($env:BASE -match '^[a-f0-9]{40}$' -and $env:BASE -ne ('0' * 40)) { $selection.BaseCommit = $env:BASE }
+          ./tools/scripts/test-public-source.ps1 -Profile PublicWindows -Configuration Release -ReportPath "${{ runner.temp }}/public-source-result.json" @selection
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-source-result
+          path: ${{ runner.temp }}/public-source-result.json
