@@ -1,0 +1,244 @@
+{
+  "valid": [
+    {
+      "name": "empty-object",
+      "text": "{}"
+    },
+    {
+      "name": "empty-array",
+      "text": "[]"
+    },
+    {
+      "name": "root-string",
+      "text": "\"原生模板\""
+    },
+    {
+      "name": "root-number",
+      "text": "-12.5e+2"
+    },
+    {
+      "name": "true",
+      "text": "true"
+    },
+    {
+      "name": "false",
+      "text": "false"
+    },
+    {
+      "name": "null",
+      "text": "null"
+    },
+    {
+      "name": "whitespace",
+      "text": " \t\r\n{\"a\":1}\n "
+    },
+    {
+      "name": "single-bom",
+      "text": "﻿{\"a\":1}"
+    },
+    {
+      "name": "numbers",
+      "text": "[0,-0,12,-42,1.25,-1e-2,1E+3,1e308]"
+    },
+    {
+      "name": "escaped-string",
+      "text": "{\"text\":\"quote: \\\" slash: \\\\ solidus: \\/ \\b\\f\\n\\r\\t\\u4e2d\\u6587\\ud83d\\ude00\",\"empty\":\"\"}"
+    },
+    {
+      "name": "nested",
+      "text": "{\"a\":[true,false,null,{\"b\":[],\"c\":{}}],\"__proto__\":{\"x\":1}}"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "empty",
+      "text": "",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "whitespace-only",
+      "text": " \r\n",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "extra-empty-root",
+      "text": "{} {}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "extra-array-root",
+      "text": "{} []",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "trailing-text",
+      "text": "{} junk",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "leading-zero",
+      "text": "{\"n\":02}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "negative-leading-zero",
+      "text": "-01",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "leading-plus",
+      "text": "+1",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "leading-dot",
+      "text": ".5",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "trailing-dot",
+      "text": "1.",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "exponent-missing",
+      "text": "1e+",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "hex-number",
+      "text": "0x10",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "nan",
+      "text": "NaN",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "infinity",
+      "text": "Infinity",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "line-comment",
+      "text": "{\"a\":1//comment\n}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "block-comment",
+      "text": "/*comment*/{}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "semicolon",
+      "text": "{};",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "missing-comma",
+      "text": "{\"a\":1 \"b\":2}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "missing-colon",
+      "text": "{\"a\" 1}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "array-hole",
+      "text": "[1,,2]",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "object-trailing-comma",
+      "text": "{\"a\":1,}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "array-trailing-comma",
+      "text": "[1,]",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "nested-trailing-comma",
+      "text": "{\"a\":[{\"b\":1,}]}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "unescaped-control",
+      "text": "\"a\nb\"",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "unterminated-string",
+      "text": "\"a",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "invalid-escape",
+      "text": "\"\\x20\"",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "short-unicode",
+      "text": "\"\\u12\"",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "invalid-unicode",
+      "text": "\"\\uZZZZ\"",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "unquoted-key",
+      "text": "{a:1}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "duplicate-property",
+      "text": "{\"a\":1,\"a\":2}",
+      "code": "DuplicateField"
+    },
+    {
+      "name": "duplicate-escaped-property",
+      "text": "{\"x\":{\"a\":1,\"\\u0061\":2}}",
+      "code": "DuplicateField"
+    },
+    {
+      "name": "non-json-whitespace",
+      "text": " {}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "bom-after-space",
+      "text": " ﻿{}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "double-bom",
+      "text": "﻿﻿{}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "bom-in-document",
+      "text": "{\"a\":﻿1}",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "nul-trailer",
+      "text": "{}\u0000",
+      "code": "InvalidJson"
+    },
+    {
+      "name": "overflow",
+      "text": "1e999",
+      "code": "InvalidNumber"
+    },
+    {
+      "name": "nested-overflow",
+      "text": "{\"a\":[-1e999]}",
+      "code": "InvalidNumber"
+    }
+  ]
+}

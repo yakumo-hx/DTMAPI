@@ -23,13 +23,8 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             object? transientCase = null;
             object? targetRoom = null;
-            bool legacyCompatibilityRegistered = false;
-            const string qaOwnerId = "DTMAPI.QA.G5.ChestLocatorEnhancer";
             try
             {
-                ChestLocatorEnhancerService? chestLocatorService = ChestLocatorEnhancerService;
-                if (chestLocatorService == null)
-                    throw new InvalidOperationException("ChestLocatorEnhancer feature service is not available.");
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -40,10 +35,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     ChestLocatorProductAssemblyName,
                     ChestLocatorProductHarmonyOwner,
                     ChestLocatorProductHarmonyTargets);
-                bool productNativeRoute = productBefore.ProductAssemblyLoaded;
-                IChestLocatorEnhancerApi? api = null;
-                ManifestModel? owner = null;
-                if (productNativeRoute)
+                if (!productBefore.ProductAssemblyLoaded) throw new InvalidOperationException("ChestLocatorEnhancer product must be loaded.");
                 {
                     if (!productBefore.IsComplete ||
                         productBefore.ExactOwnerPatchCount != 1)
@@ -59,24 +51,6 @@ namespace DTMAPI.GameBridge.DolocTown
                             productBefore.Details +
                             "}.");
                     }
-                }
-                else
-                {
-                    api = chestLocatorService;
-                    owner = CreateChestLocatorSmokeManifest();
-                    ChestLocatorEnhancerRegisterResult register = api.Register(owner, new ChestLocatorEnhancerOptions
-                    {
-                        Enabled = true,
-                        IncludeSharedCases = true,
-                        IncludeSharedStorageShelfBoxes = true,
-                        RespectNativeAutoUseBoxSetting = true,
-                        VerboseLogging = true
-                    });
-                    if (!register.Success)
-                        throw new InvalidOperationException("Register failed: " + register.FailureReason + ": " + register.Message);
-                    legacyCompatibilityRegistered = true;
-                    if (!register.HookInstalled)
-                        throw new InvalidOperationException("ArchiveDataHandle.GetAvailableInventories hook was not installed. message=" + register.Message);
                 }
 
                 object? archive = ReadStaticMember(dolocApi, "archiveHandle");
@@ -107,15 +81,14 @@ namespace DTMAPI.GameBridge.DolocTown
 
                 int afterPlace = CountNativeItemForFixture(dolocApi, itemId, checkBox: true);
                 if (afterPlace < baseline + 3)
-                    throw new InvalidOperationException("CountItem did not include transient shared Case. item=" + itemId + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", route=" + (productNativeRoute ? "ProductNative" : "LegacyCompatibility") + ", bridge={" + chestLocatorService.LastChestLocatorEnhancerSummary + "}");
+                    throw new InvalidOperationException("CountItem did not include transient shared Case. item=" + itemId + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", route=" + ("ProductNative" ));
 
                 bool cost = CostNativeItemForFixture(dolocApi, itemId, 2, checkBox: true);
                 int afterCost = CountNativeItemForFixture(dolocApi, itemId, checkBox: true);
                 if (!cost || afterCost < baseline + 1 || afterCost > baseline + 1)
-                    throw new InvalidOperationException("CostItem did not consume through shared inventory array. item=" + itemId + ", cost=" + cost + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", afterCost=" + afterCost + ", route=" + (productNativeRoute ? "ProductNative" : "LegacyCompatibility") + ", bridge={" + chestLocatorService.LastChestLocatorEnhancerSummary + "}");
+                    throw new InvalidOperationException("CostItem did not consume through shared inventory array. item=" + itemId + ", cost=" + cost + ", baseline=" + baseline + ", afterPlace=" + afterPlace + ", afterCost=" + afterCost + ", route=" + ("ProductNative" ));
 
                 string routeEvidence;
-                if (productNativeRoute)
                 {
                     Batch6HarmonyOwnerInventory productAfter = Batch6AdvancedHarmonyOwnerObserver.Observe(
                         ChestLocatorProductAssemblyName,
@@ -140,18 +113,6 @@ namespace DTMAPI.GameBridge.DolocTown
                         productAfter.Details +
                         "}";
                 }
-                else
-                {
-                    ChestLocatorEnhancerState state = api!.GetState(owner!.UniqueID);
-                    if (state.LastAppendedInventoryCount <= 0 || state.LastSharedCaseCount <= 0)
-                        throw new InvalidOperationException("Bridge state did not record appended shared Case inventory. state=" + FormatChestLocatorState(state));
-                    routeEvidence =
-                        "route=LegacyCompatibility, bridge={" +
-                        chestLocatorService.LastChestLocatorEnhancerSummary +
-                        "}, state={" +
-                        FormatChestLocatorState(state) +
-                        "}";
-                }
 
                 string summary = "item=" + itemId +
                     ", baseline=" + baseline +
@@ -164,53 +125,20 @@ namespace DTMAPI.GameBridge.DolocTown
                 runtime.SetHookStatus(
                     "Smoke.ChestLocatorEnhancer",
                     "verified",
-                    productNativeRoute
-                        ? "ChestLocatorEnhancer ProductNative exact owner -> ArchiveDataHandle.GetAvailableInventories -> CountItem/CostItem"
-                        : "Frozen IChestLocatorEnhancerApi -> ArchiveDataHandle.GetAvailableInventories -> CountItem/CostItem",
+"ChestLocatorEnhancer ProductNative exact owner -> ArchiveDataHandle.GetAvailableInventories -> CountItem/CostItem"
+,
                     summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke chest locator enhancer exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "failed", "ChestLocatorEnhancer ProductNative or frozen compatibility route", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.ChestLocatorEnhancer", "failed", "ChestLocatorEnhancer ProductNative route", ex.GetType().Name + ": " + ex.Message);
             }
             finally
             {
                 if (transientCase != null)
                     TryRemoveTransientEquipmentForFixture(targetRoom, transientCase);
-                if (legacyCompatibilityRegistered)
-                    ChestLocatorEnhancerService?.RemoveOwner(qaOwnerId, "G5 fixture terminal cleanup");
             }
-        }
-
-        private static ManifestModel CreateChestLocatorSmokeManifest()
-        {
-            return new ManifestModel
-            {
-                Name = "DTMAPI Chest Locator Enhancer Smoke",
-                Author = "DTMAPI",
-                Version = DtmApiRuntime.ApiVersion,
-                UniqueID = "DTMAPI.QA.G5.ChestLocatorEnhancer",
-                Type = "Smoke"
-            };
-        }
-
-        private static string FormatChestLocatorState(ChestLocatorEnhancerState state)
-        {
-            if (state == null)
-                return "unknown";
-            return "owner=" + state.OwnerId +
-                ", status=" + state.Status +
-                ", enabled=" + state.Enabled +
-                ", hook=" + state.HookInstalled +
-                ", applications=" + state.ExtensionApplications +
-                ", base=" + state.LastBaseInventoryCount +
-                ", appended=" + state.LastAppendedInventoryCount +
-                ", roots=" + state.LastScannedRootCount +
-                ", equipment=" + state.LastScannedEquipmentCount +
-                ", cases=" + state.LastSharedCaseCount +
-                ", storageBoxes=" + state.LastSharedStorageBoxCount +
-                ", message=" + state.LastMessage;
         }
     }
 }

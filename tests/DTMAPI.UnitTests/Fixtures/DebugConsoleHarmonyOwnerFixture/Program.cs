@@ -9,20 +9,24 @@ using HarmonyLib;
 
 namespace DTMAPI.DebugConsoleHarmonyOwnerFixture
 {
-    internal static class Program
+    internal static partial class Program
     {
         private const string ProductOwner =
-            "dtmapi.mod.dtmapi.debugconsolemod";
-        private const string CompatibilityOwner =
-            "dtmapi.compatibility.debugconsole.legacy";
+            "DTMAPI.DebugConsoleMod.Native";
 
-        private static int Main()
+        private static int Main(string[] args)
         {
             try
             {
                 _ = typeof(DolocTown.AgentControllerState);
-                ProductFirstRejectsCompatibility();
-                CompatibilityFirstRejectsProduct();
+                if (args.Contains("--owner-boundary-diagnostic"))
+                {
+                    OwnerBoundaryDiagnostic();
+                    return 0;
+                }
+                ProductOwnsAndReleasesPatches();
+                SessionModesRespectNativeOwners();
+                OwnerBoundaryDiagnostic();
                 Console.WriteLine(
                     "DebugConsoleHarmonyOwnerFixture: OK");
                 return 0;
@@ -31,20 +35,22 @@ namespace DTMAPI.DebugConsoleHarmonyOwnerFixture
             {
                 Console.Error.WriteLine(error);
                 Cleanup(ProductOwner);
-                Cleanup(CompatibilityOwner);
                 return 1;
             }
         }
 
         private static void
-            ProductFirstRejectsCompatibility()
+            ProductOwnsAndReleasesPatches()
         {
             CleanupAll();
+            MethodInfo sharedTarget = typeof(DolocTown.AgentControllerState).GetMethods().Single(method => method.Name == "UseTool");
+            MethodInfo foreignPatch = typeof(Program).GetMethod(nameof(ForeignPrefix), BindingFlags.Static | BindingFlags.NonPublic)!;
+            new Harmony(ProductOwner).Patch(sharedTarget, prefix: new HarmonyMethod(foreignPatch));
             var product = new DebugConsoleHookInstaller();
             product.InstallAtomically();
             Assert(
-                CountOwner(ProductOwner) == 19,
-                "Product-first did not install exactly nineteen real Harmony patches.");
+                product.InstalledPatchCount == 12 && CountOwner(ProductOwner) == 13,
+                "The product installs twelve actual patches even when another method uses the same Harmony ID.");
             var player = new DolocTown.BodyController
             {
                 NativeMoveSpeed = 10f,
@@ -71,62 +77,14 @@ namespace DTMAPI.DebugConsoleHarmonyOwnerFixture
                 Math.Abs(player.MoveSpeed - 12.5f) < 0.0001f &&
                 Math.Abs(player.MoveScaler - 0.35f) < 0.0001f,
                 "Product movement reset must remove only its final-speed factor.");
-            var compatibility =
-                new CompatibilityDebugConsoleHookOwner(
-                    CreateRuntime(),
-                    installNativeHooks: true);
-            AssertThrows<InvalidOperationException>(
-                () => compatibility.SetModalOpen(true),
-                "Compatibility did not reject the active ProductNative owner.");
-            Assert(
-                CountOwner(ProductOwner) == 19 &&
-                CountOwner(CompatibilityOwner) == 0 &&
-                !CompatibilityDebugConsoleInputHooks
-                    .ModalOpen,
-                "Rejected Compatibility install changed the product owner or retained desired/physical state.");
             product.Unpatch();
             Assert(
-                CountOwner(ProductOwner) == 0,
-                "Product-first cleanup did not reach zero.");
+                product.InstalledPatchCount == 0 && CountOwner(ProductOwner) == 1 && Harmony.GetPatchInfo(sharedTarget)!.Prefixes.Any(patch => patch.PatchMethod == foreignPatch),
+                "Product cleanup releases its own twelve methods and preserves the other contribution sharing its ID.");
+            new Harmony(ProductOwner).Unpatch(sharedTarget, foreignPatch);
         }
 
-        private static void
-            CompatibilityFirstRejectsProduct()
-        {
-            CleanupAll();
-            var compatibility =
-                new CompatibilityDebugConsoleHookOwner(
-                    CreateRuntime(),
-                    installNativeHooks: true);
-            compatibility.SetModalOpen(true);
-            var player = new DolocTown.BodyController
-            {
-                NativeMoveSpeed = 9f,
-                MoveScaler = 0.25f
-            };
-            DolocAPI.agent = player;
-            compatibility.SetMovementMultiplier(player, 3d);
-            Assert(
-                CountOwner(CompatibilityOwner) == 4 &&
-                compatibility.InstalledPatchCount == 4 &&
-                Math.Abs(player.MoveSpeed - 27f) < 0.0001f &&
-                Math.Abs(player.MoveScaler - 0.25f) < 0.0001f,
-                "Compatibility-first did not install three input Prefixes plus one final-speed Postfix without changing MoveScaler.");
-            var product = new DebugConsoleHookInstaller();
-            AssertThrows<InvalidOperationException>(
-                product.InstallAtomically,
-                "ProductNative did not reject the active Compatibility owner.");
-            Assert(
-                CountOwner(CompatibilityOwner) == 4 &&
-                CountOwner(ProductOwner) == 0,
-                "Rejected ProductNative install changed the Compatibility owner.");
-            compatibility.Shutdown(
-                "compatibility-first fixture cleanup");
-            Assert(
-                CountOwner(CompatibilityOwner) == 0 &&
-                compatibility.InstalledPatchCount == 0,
-                "Compatibility exact-target cleanup did not reach zero.");
-        }
+        private static void ForeignPrefix() { }
 
         private static DtmApiRuntime CreateRuntime()
         {
@@ -150,7 +108,7 @@ namespace DTMAPI.DebugConsoleHarmonyOwnerFixture
 
         private static int CountOwner(string owner)
         {
-            return Targets().Sum(target =>
+            return Harmony.GetAllPatchedMethods().Sum(target =>
             {
                 Patches? patches =
                     Harmony.GetPatchInfo(target);
@@ -167,59 +125,13 @@ namespace DTMAPI.DebugConsoleHarmonyOwnerFixture
             });
         }
 
-        private static MethodBase[] Targets()
-        {
-            Type input = typeof(
-                DolocTown.AgentControllerState);
-            Type api = typeof(DolocAPI);
-            Type synthesizer = typeof(DolocTown.Synthesizer);
-            Type bodyController = typeof(DolocTown.BodyController);
-            return new MethodBase[]
-            {
-                Resolve(input, "UseTool", 1),
-                Resolve(input, "UseItem", 1),
-                Resolve(input, "EnterUICheck", 2),
-                Resolve(api, "CostEnergy", 1),
-                Resolve(api, "CostToolEnergy", 0),
-                Resolve(api, "HasEnoughEnergy", 1),
-                Resolve(api, "HasEnoughEnergyForUsingTool", 0),
-                Resolve(api, "CostItem", 3),
-                Resolve(api, "CostItem", 4),
-                Resolve(api, "CostItemNoCheck", 2),
-                Resolve(api, "CostItemNoCheck", 3),
-                Resolve(api, "CostSelectedItem", 2),
-                Resolve(api, "CostSelectedItem", 3),
-                Resolve(api, "CostItemAt", 4),
-                Resolve(api, "CanAfford", 2),
-                Resolve(api, "CanAfford", 3),
-                Resolve(api, "CanAffordMoney", 1),
-                Resolve(synthesizer, "GetRecipeTime", 2),
-                Resolve(bodyController, "get_MoveSpeed", 0)
-            };
-        }
-
-        private static MethodInfo Resolve(
-            Type type,
-            string name,
-            int parameterCount) =>
-            type.GetMethods(
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance |
-                    BindingFlags.Static)
-                .Single(method =>
-                    method.Name == name &&
-                    method.GetParameters().Length ==
-                        parameterCount);
-
         private static void CleanupAll()
         {
             Cleanup(ProductOwner);
-            Cleanup(CompatibilityOwner);
-            CompatibilityDebugConsoleInputHooks.Reset();
             DebugConsoleInputGate.Reset();
-            DebugConsoleCreativeHooks.Reset();
             DebugConsoleMovementHooks.Reset();
+            DebugConsoleMovementHooks.SessionIsCurrent = null;
+            DebugConsoleModeHooks.Reset();
         }
 
         private static void Cleanup(string owner) =>

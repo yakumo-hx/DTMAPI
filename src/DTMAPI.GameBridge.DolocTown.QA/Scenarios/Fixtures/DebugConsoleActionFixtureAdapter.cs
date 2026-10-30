@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // QA exercises the exact frozen compatibility contracts.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -9,491 +8,106 @@ using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown
 {
-    /// <summary>
-    /// QA-only selector for the admitted ProductNative action engine or the
-    /// frozen Compatibility proxies. It never changes production ownership.
-    /// </summary>
-    internal sealed class DebugConsoleActionFixtureAdapter :
-        IInventoryDebugApi,
-        IWeatherDebugApi,
-        IInstantSaveDebugApi,
-        ITimeDebugApi,
-        IMovementDebugApi,
-        IAdvancedDebugApi
+    // QA consumes the live product by reflection and owns its result snapshots.
+    // Product absence is a missing fixture, not a request for an old executor.
+    internal sealed class DebugConsoleActionFixtureAdapter
     {
         private const string ProductOwnerId = "DTMAPI.DebugConsoleMod";
-        private readonly DolocTownGameBridge bridge;
-        private readonly object? productActions;
+        private const BindingFlags Members = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        private readonly DtmApiRuntime runtime;
+        private readonly object productActions;
 
-        internal DebugConsoleActionFixtureAdapter(
-            DtmApiRuntime runtime,
-            DolocTownGameBridge bridge)
+        internal DebugConsoleActionFixtureAdapter(DtmApiRuntime runtime, DolocTownGameBridge bridge)
         {
-            this.bridge = bridge ??
-                throw new ArgumentNullException(nameof(bridge));
-            productActions = FindProductActions(
-                runtime ?? throw new ArgumentNullException(nameof(runtime)));
+            this.runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+            productActions = FindProductActions() ?? throw new InvalidOperationException("The current Y product must be loaded for this fixture.");
         }
 
-        internal string OwnerKind =>
-            productActions == null
-                ? "Compatibility"
-                : "ProductNative";
-
-        internal bool CompatibilityHostAssemblyLoaded =>
-            AppDomain.CurrentDomain.GetAssemblies().Any(assembly =>
-                string.Equals(
-                    assembly.GetName().Name,
-                    "DTMAPI.GameBridge.DolocTown.Compatibility",
-                    StringComparison.Ordinal));
-
+        internal string OwnerKind => "ProductNative";
+        internal object? ProductEntry => runtime.GetOwnerInstance(ProductOwnerId);
+        internal bool CompatibilityHostAssemblyLoaded => AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "DTMAPI.GameBridge.DolocTown.Compatibility");
         internal void ValidateOwnerBoundaryAfterAction()
         {
-            bool compatibilityActionServiceLoaded =
-                bridge.DebugActionCompatibilityLoadedForQa;
-            if (productActions != null &&
-                compatibilityActionServiceLoaded)
-            {
-                throw new InvalidOperationException(
-                    "ProductNative DebugConsole action execution unexpectedly loaded the Compatibility DebugActions service.");
-            }
-            if (productActions == null &&
-                !compatibilityActionServiceLoaded)
-            {
-                throw new InvalidOperationException(
-                    "Frozen DebugConsole action execution did not load the current Compatibility DebugActions service.");
-            }
+            if (!ReferenceEquals(productActions, FindProductActions()))
+                throw new InvalidOperationException("Y action session is no longer current.");
         }
 
-        internal object? ProductEntry =>
-            productActions == null
-                ? null
-                : FindProductEntry(bridge.RuntimeForQa);
-
-        public InventoryDebugPage GetItems(InventoryDebugQuery query) =>
-            productActions == null
-                ? bridge.InventoryDebugApiForQa.GetItems(query)
-                : Invoke<InventoryDebugPage>("GetItems", query);
-
-        public InventoryGiveResult GiveItem(
-            IManifest owner,
-            string itemId,
-            int count) =>
-            productActions == null
-                ? bridge.InventoryDebugApiForQa.GiveItem(owner, itemId, count)
-                : Invoke<InventoryGiveResult>("GiveItem", owner, itemId, count);
-
-        BridgeFeatureStatus IInventoryDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.InventoryDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        public WeatherDebugState GetState() =>
-            productActions == null
-                ? bridge.WeatherDebugApiForQa.GetState()
-                : Invoke<WeatherDebugState>("GetState");
-
-        public IReadOnlyList<WeatherDebugOption> GetAvailableWeathers() =>
-            productActions == null
-                ? bridge.WeatherDebugApiForQa.GetAvailableWeathers()
-                : Invoke<IReadOnlyList<WeatherDebugOption>>(
-                    "GetAvailableWeathers");
-
-        public WeatherSetResult SetWeather(
-            IManifest owner,
-            string weatherId,
-            bool patchCurrentPeriod) =>
-            productActions == null
-                ? bridge.WeatherDebugApiForQa.SetWeather(
-                    owner,
-                    weatherId,
-                    patchCurrentPeriod)
-                : Invoke<WeatherSetResult>(
-                    "SetWeather",
-                    owner,
-                    weatherId,
-                    patchCurrentPeriod);
-
-        BridgeFeatureStatus IWeatherDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.WeatherDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        public IReadOnlyList<TeleportDestination> GetDestinations() =>
-            productActions == null
-                ? bridge.TeleportDebugApiForQa.GetDestinations()
-                : Invoke<IReadOnlyList<TeleportDestination>>(
-                    "GetDestinations");
-
-        public TeleportSnapshot GetCurrentSnapshot() =>
-            productActions == null
-                ? bridge.TeleportDebugApiForQa.GetCurrentSnapshot()
-                : Invoke<TeleportSnapshot>("GetCurrentSnapshot");
-
-        public TeleportResult Teleport(
-            IManifest owner,
-            string destinationId) =>
-            productActions == null
-                ? bridge.TeleportDebugApiForQa.Teleport(
-                    owner,
-                    destinationId)
-                : Invoke<TeleportResult>(
-                    "Teleport",
-                    owner,
-                    destinationId);
-
-        // Keep teleport calls on this concrete QA facade. Runtime 0.6.1 still
-        // exposes the retired ExportDestinationsCsv interface slot; directly
-        // implementing the current, smaller ITeleportDebugApi makes Mono reject
-        // this type before any retained teleport member can be exercised.
-        internal BridgeFeatureStatus GetTeleportStatus() =>
-            productActions == null
-                ? bridge.TeleportDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        InstantSaveDebugState IInstantSaveDebugApi.GetState() =>
-            productActions == null
-                ? bridge.InstantSaveDebugApiForQa.GetState()
-                : Invoke<InstantSaveDebugState>("GetState");
-
-        public InstantSaveDebugResult Save(
-            IManifest owner,
-            bool reloadAfterSave) =>
-            productActions == null
-                ? bridge.InstantSaveDebugApiForQa.Save(
-                    owner,
-                    reloadAfterSave)
-                : Invoke<InstantSaveDebugResult>(
-                    "Save",
-                    owner,
-                    reloadAfterSave);
-
-        BridgeFeatureStatus IInstantSaveDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.InstantSaveDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        TimeDebugState ITimeDebugApi.GetState() =>
-            productActions == null
-                ? bridge.TimeDebugApiForQa.GetState()
-                : Invoke<TimeDebugState>("GetState");
-
-        public TimeSkipResult SkipToNextWeatherPeriod(IManifest owner) =>
-            productActions == null
-                ? bridge.TimeDebugApiForQa.SkipToNextWeatherPeriod(owner)
-                : Invoke<TimeSkipResult>(
-                    "SkipToNextWeatherPeriod",
-                    owner);
-
-        BridgeFeatureStatus ITimeDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.TimeDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        MovementDebugState IMovementDebugApi.GetState() =>
-            productActions == null
-                ? bridge.MovementDebugApiForQa.GetState()
-                : Invoke<MovementDebugState>("GetState");
-
-        public MovementSpeedResult SetSpeedMultiplier(
-            IManifest owner,
-            double multiplier) =>
-            productActions == null
-                ? bridge.MovementDebugApiForQa.SetSpeedMultiplier(
-                    owner,
-                    multiplier)
-                : Invoke<MovementSpeedResult>(
-                    "SetSpeedMultiplier",
-                    owner,
-                    multiplier);
-
-        public MovementSpeedResult ResetSpeed(
-            IManifest owner,
-            string reason) =>
-            productActions == null
-                ? bridge.MovementDebugApiForQa.ResetSpeed(owner, reason)
-                : Invoke<MovementSpeedResult>(
-                    "ResetSpeed",
-                    owner,
-                    reason);
-
-        BridgeFeatureStatus IMovementDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.MovementDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        public IReadOnlyList<TechPointDebugOption> GetTechPointOptions() =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GetTechPointOptions()
-                : Invoke<IReadOnlyList<TechPointDebugOption>>(
-                    "GetTechPointOptions");
-
-        public IReadOnlyList<SpawnDebugOption> GetMonsterOptions() =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GetMonsterOptions()
-                : Invoke<IReadOnlyList<SpawnDebugOption>>(
-                    "GetMonsterOptions");
-
-        public IReadOnlyList<SpawnDebugOption> GetResourceOptions() =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GetResourceOptions()
-                : Invoke<IReadOnlyList<SpawnDebugOption>>(
-                    "GetResourceOptions");
-
-        public CreativeModeState GetCreativeModeState() =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GetCreativeModeState()
-                : Invoke<CreativeModeState>("GetCreativeModeState");
-
-        public TimeSkipResult AdvanceTime(
-            IManifest owner,
-            AdvancedTimeAdvanceKind kind,
-            int amount) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.AdvanceTime(
-                    owner,
-                    kind,
-                    amount)
-                : Invoke<TimeSkipResult>(
-                    "AdvanceTime",
-                    owner,
-                    kind,
-                    amount);
-
-        public TimeScaleDebugResult SetTimeScale(
-            IManifest owner,
-            double multiplier) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.SetTimeScale(
-                    owner,
-                    multiplier)
-                : Invoke<TimeScaleDebugResult>(
-                    "SetTimeScale",
-                    owner,
-                    multiplier);
-
-        public TimeScaleDebugResult ResetTimeScale(
-            IManifest owner,
-            string reason) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.ResetTimeScale(
-                    owner,
-                    reason)
-                : Invoke<TimeScaleDebugResult>(
-                    "ResetTimeScale",
-                    owner,
-                    reason);
-
-        public DebugValueResult AddMoney(
-            IManifest owner,
-            int amount) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.AddMoney(owner, amount)
-                : Invoke<DebugValueResult>(
-                    "AddMoney",
-                    owner,
-                    amount);
-
-        public DebugValueResult AddTechPoint(
-            IManifest owner,
-            string pointTypeId,
-            int amount) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.AddTechPoint(
-                    owner,
-                    pointTypeId,
-                    amount)
-                : Invoke<DebugValueResult>(
-                    "AddTechPoint",
-                    owner,
-                    pointTypeId,
-                    amount);
-
-        public DebugCommandResult UnlockAllTechTrees(IManifest owner) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.UnlockAllTechTrees(owner)
-                : Invoke<DebugCommandResult>(
-                    "UnlockAllTechTrees",
-                    owner);
-
-        public CropMaturityResult MatureAllCrops(IManifest owner) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.MatureAllCrops(owner)
-                : Invoke<CropMaturityResult>(
-                    "MatureAllCrops",
-                    owner);
-
-        public CreativeModeResult SetCreativeMode(
-            IManifest owner,
-            bool enabled) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.SetCreativeMode(
-                    owner,
-                    enabled)
-                : Invoke<CreativeModeResult>(
-                    "SetCreativeMode",
-                    owner,
-                    enabled);
-
-        public InventoryGiveResult GiveCreativeGenerator(
-            IManifest owner) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GiveCreativeGenerator(owner)
-                : Invoke<InventoryGiveResult>(
-                    "GiveCreativeGenerator",
-                    owner);
-
-        public SpawnDebugResult SpawnMonster(
-            IManifest owner,
-            string monsterId,
-            int count) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.SpawnMonster(
-                    owner,
-                    monsterId,
-                    count)
-                : InvokeSpawnResult(
-                    "SpawnMonster",
-                    owner,
-                    monsterId,
-                    count);
-
-        public SpawnDebugResult SpawnResource(
-            IManifest owner,
-            string resourceId,
-            int count) =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.SpawnResource(
-                    owner,
-                    resourceId,
-                    count)
-                : Invoke<SpawnDebugResult>(
-                    "SpawnResource",
-                    owner,
-                    resourceId,
-                    count);
-
-        BridgeFeatureStatus IAdvancedDebugApi.GetStatus() =>
-            productActions == null
-                ? bridge.AdvancedDebugApiForQa.GetStatus()
-                : Invoke<BridgeFeatureStatus>("GetStatus");
-
-        private SpawnDebugResult InvokeSpawnResult(
-            string methodName,
-            params object?[] arguments)
+        public InventoryDebugPage GetItems(InventoryDebugQuery query) => Invoke<InventoryDebugPage>("GetItems", query);
+        public InventoryGiveResult GiveItem(IManifest owner, string id, int count) => Invoke<InventoryGiveResult>("GiveItem", owner, id, count);
+        public WeatherDebugState GetState() => Invoke<WeatherDebugState>("GetState");
+        public IReadOnlyList<WeatherDebugOption> GetAvailableWeathers() => Invoke<IReadOnlyList<WeatherDebugOption>>("GetAvailableWeathers");
+        public WeatherSetResult SetWeather(IManifest owner, string id, bool patchCurrentPeriod) => Invoke<WeatherSetResult>("SetWeather", owner, id, patchCurrentPeriod);
+        public IReadOnlyList<TeleportDestination> GetDestinations() => Invoke<IReadOnlyList<TeleportDestination>>("GetDestinations");
+        public TeleportSnapshot GetCurrentSnapshot() => Invoke<TeleportSnapshot>("GetCurrentSnapshot");
+        public TeleportResult Teleport(IManifest owner, string id) => Invoke<TeleportResult>("Teleport", owner, id);
+        internal BridgeFeatureStatus GetTeleportStatus() => Invoke<BridgeFeatureStatus>("ITeleportActions.GetStatus");
+        public InstantSaveDebugResult Save(IManifest owner, bool reloadAfterSave) => Invoke<InstantSaveDebugResult>("Save", owner, reloadAfterSave);
+        public TimeSkipResult SkipToNextWeatherPeriod(IManifest owner) => Invoke<TimeSkipResult>("SkipToNextWeatherPeriod", owner);
+        public MovementSpeedResult SetSpeedMultiplier(IManifest owner, double multiplier) => Invoke<MovementSpeedResult>("SetSpeedMultiplier", owner, multiplier);
+        public MovementSpeedResult ResetSpeed(IManifest owner, string reason) => Invoke<MovementSpeedResult>("ResetSpeed", owner, reason);
+        public TimeSkipResult AdvanceTime(IManifest owner, AdvancedTimeAdvanceKind kind, int amount) => Invoke<TimeSkipResult>("AdvanceTime", owner, kind, amount);
+        public TimeScaleDebugResult SetTimeScale(IManifest owner, double multiplier) => Invoke<TimeScaleDebugResult>("SetTimeScale", owner, multiplier);
+        public TimeScaleDebugResult ResetTimeScale(IManifest owner, string reason) => Invoke<TimeScaleDebugResult>("ResetTimeScale", owner, reason);
+        public DebugValueResult AddMoney(IManifest owner, int amount) => Invoke<DebugValueResult>("AddMoney", owner, amount);
+        public DebugValueResult AddTechPoint(IManifest owner, string id, int amount) => Invoke<DebugValueResult>("AddTechPoint", owner, id, amount);
+        public DebugCommandResult UnlockAllTechTrees(IManifest owner) => Invoke<DebugCommandResult>("UnlockAllTechTrees", owner);
+        public IReadOnlyList<SpawnCatalogOption> GetMonsterCatalog() => Invoke<IReadOnlyList<SpawnCatalogOption>>("GetMonsterCatalog");
+        public RoomCropMaturityResult MatureAllCrops(IManifest owner, int radius) => Invoke<RoomCropMaturityResult>("MatureAllCrops", owner, radius);
+        public SpawnDebugResult SpawnMonster(IManifest owner, string id, int count)
         {
-            object target = productActions ??
-                throw new InvalidOperationException(
-                    "ProductNative DebugConsole action engine is unavailable.");
-            MethodInfo? method = target.GetType().GetMethods(
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance)
-                .FirstOrDefault(candidate =>
-                    (candidate.Name.Equals(
-                         methodName,
-                         StringComparison.Ordinal) ||
-                     candidate.Name.EndsWith(
-                         "." + methodName,
-                         StringComparison.Ordinal)) &&
-                    candidate.GetParameters().Length == arguments.Length);
-            if (method == null)
-            {
-                throw new MissingMethodException(
-                    target.GetType().FullName,
-                    methodName + "(" + arguments.Length + ")");
-            }
-
-            try
-            {
-                object? outcome = method.Invoke(target, arguments);
-                if (outcome is SpawnDebugResult direct)
-                    return direct;
-                PropertyInfo? resultProperty = outcome?.GetType().GetProperty(
-                    "Result",
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance);
-                if (resultProperty?.GetValue(outcome, null) is SpawnDebugResult wrapped)
-                    return wrapped;
-                throw new InvalidCastException(
-                    method.Name + " returned " +
-                    (outcome?.GetType().FullName ?? "null") +
-                    " without a SpawnDebugResult payload.");
-            }
-            catch (TargetInvocationException error)
-                when (error.InnerException != null)
-            {
-                throw error.InnerException;
-            }
+            object outcome = InvokeRaw("SpawnMonster", null, owner, id, count)!;
+            return (SpawnDebugResult)Project(outcome.GetType().GetProperty("Result", Members)!.GetValue(outcome, null), typeof(SpawnDebugResult))!;
         }
 
-        private T Invoke<T>(
-            string methodName,
-            params object?[] arguments)
+        private T Invoke<T>(string method, params object?[] args) => (T)Project(InvokeRaw(method, typeof(T), args), typeof(T))!;
+
+        private object? InvokeRaw(string name, Type? resultType, params object?[] arguments)
         {
-            object target = productActions ??
-                throw new InvalidOperationException(
-                    "ProductNative DebugConsole action engine is unavailable.");
-            MethodInfo[] candidates = target.GetType().GetMethods(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance);
-            MethodInfo? method = candidates.FirstOrDefault(candidate =>
-                (candidate.Name.Equals(
-                     methodName,
-                     StringComparison.Ordinal) ||
-                 candidate.Name.EndsWith(
-                     "." + methodName,
-                     StringComparison.Ordinal)) &&
+            MethodInfo method = productActions.GetType().GetMethods(Members).Single(candidate =>
+                (candidate.Name == name || candidate.Name.EndsWith("." + name, StringComparison.Ordinal)) &&
                 candidate.GetParameters().Length == arguments.Length &&
-                typeof(T).IsAssignableFrom(candidate.ReturnType));
-            if (method == null)
-            {
-                throw new MissingMethodException(
-                    target.GetType().FullName,
-                    methodName + "(" + arguments.Length + ")");
-            }
-            try
-            {
-                object? result = method.Invoke(target, arguments);
-                return result is T typed
-                    ? typed
-                    : throw new InvalidCastException(
-                        method.Name + " returned " +
-                        (result?.GetType().FullName ?? "null") +
-                        " instead of " + typeof(T).FullName + ".");
-            }
-            catch (TargetInvocationException error)
-                when (error.InnerException != null)
-            {
-                throw error.InnerException;
-            }
+                (resultType == null || candidate.ReturnType.Name == resultType.Name));
+            var parameters = method.GetParameters();
+            object?[] projected = arguments.Select((arg, i) => Project(arg, parameters[i].ParameterType)).ToArray();
+            try { return method.Invoke(productActions, projected); }
+            catch (TargetInvocationException ex) when (ex.InnerException != null) { throw ex.InnerException; }
         }
 
-        private static object? FindProductActions(
-            DtmApiRuntime runtime)
+        private static object? Project(object? value, Type target)
         {
-            object? entry = FindProductEntry(runtime);
-            return entry?.GetType().GetField(
-                    "actions",
-                    BindingFlags.Instance |
-                    BindingFlags.NonPublic)
-                ?.GetValue(entry);
+            if (value == null || target.IsInstanceOfType(value)) return value;
+            if (target.IsEnum) return Enum.Parse(target, value.ToString());
+            if (target.IsGenericType && target.GetGenericTypeDefinition() == typeof(IReadOnlyList<>))
+            {
+                Type element = target.GetGenericArguments()[0];
+                var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(element));
+                foreach (object row in (IEnumerable)value) list.Add(Project(row, element));
+                return list;
+            }
+            object snapshot = Activator.CreateInstance(target, nonPublic: true);
+            foreach (PropertyInfo destination in target.GetProperties(Members).Where(p => p.CanWrite))
+            {
+                PropertyInfo source = value.GetType().GetProperty(destination.Name, Members) ??
+                    throw new MissingMemberException(value.GetType().FullName, destination.Name);
+                destination.SetValue(snapshot, Project(source.GetValue(value, null), destination.PropertyType), null);
+            }
+            return snapshot;
         }
 
-        private static object? FindProductEntry(
-            DtmApiRuntime runtime)
-        {
-            FieldInfo? field = runtime.GetType().GetField(
-                "modInstances",
-                BindingFlags.Instance |
-                BindingFlags.NonPublic);
-            if (!(field?.GetValue(runtime) is IDictionary instances))
-                return null;
-            return instances.Contains(ProductOwnerId)
-                ? instances[ProductOwnerId]
-                : null;
-        }
+        private object? FindProductActions() => ProductEntry?.GetType().GetField("actions", Members)?.GetValue(ProductEntry);
+    }
+
+    internal sealed class SpawnCatalogOption
+    {
+        public string Id { get; set; } = "";
+        public bool IsAvailable { get; set; }
+    }
+
+    internal sealed class RoomCropMaturityResult
+    {
+        public bool Success { get; set; }
+        public int CropsMatured { get; set; }
+        public int CandidateBasins { get; set; }
+        public string FailureReason { get; set; } = "";
     }
 }

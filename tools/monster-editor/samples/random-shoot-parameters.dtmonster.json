@@ -1,0 +1,114 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterRandomShootParametersPack",
+    "name": "年兽尾部随机射击参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "burst",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeParts": [
+        {
+          "templateId": "nian_tail",
+          "nativeAttacks": [
+            {
+              "attackId": "AtkNormal",
+              "cooldownGameSeconds": 4,
+              "startOnCooldown": true,
+              "damage": 19,
+              "criticalRate": 1,
+              "randomShoot": {
+                "minBulletCount": 3,
+                "maxBulletCount": 3,
+                "shotIntervalGameSeconds": 0.25,
+                "projectileSpeed": 8,
+                "projectileLifetimeGameSeconds": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brief",
+      "templateId": "nian",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeParts": [
+        {
+          "templateId": "nian_tail",
+          "nativeAttacks": [
+            {
+              "attackId": "AtkNormal",
+              "cooldownGameSeconds": 0.75,
+              "startOnCooldown": false,
+              "damage": 3,
+              "criticalRate": 0,
+              "randomShoot": {
+                "minBulletCount": 1,
+                "maxBulletCount": 1,
+                "shotIntervalGameSeconds": 0.1,
+                "projectileSpeed": 4,
+                "projectileLifetimeGameSeconds": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "tail",
+      "targetId": "nian_tail",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkNormal",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "randomShoot": {
+              "minBulletCount": 2,
+              "maxBulletCount": 2,
+              "shotIntervalGameSeconds": 0.3,
+              "projectileSpeed": 6,
+              "projectileLifetimeGameSeconds": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

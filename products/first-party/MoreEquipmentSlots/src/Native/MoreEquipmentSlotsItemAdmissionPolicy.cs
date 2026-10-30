@@ -34,6 +34,8 @@ namespace DTMAPI.MoreEquipmentSlots
             "DolocTown.Config.Item.ItemFunctionPassive";
         private const string HerbPackageFunction =
             "DolocTown.Config.Item.ItemFunctionHerbPackage";
+        private const string CooldownFunction =
+            "DolocTown.Config.Item.ItemFunctionCooldown";
 
         internal static MoreEquipmentSlotsItemAdmission Decide(
             bool isNativePassiveItem,
@@ -53,11 +55,15 @@ namespace DTMAPI.MoreEquipmentSlots
                     string.Equals(
                         itemFunctionType,
                         HerbPackageFunction,
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        itemFunctionType,
+                        CooldownFunction,
                         StringComparison.Ordinal);
                 if (!acceptedFunction)
                 {
                     return Reject(
-                        "Passive equipment must use ItemFunctionPassive or ItemFunctionHerbPackage.");
+                        "Passive equipment must use a supported passive, herb-package or cooldown function.");
                 }
                 if (string.IsNullOrWhiteSpace(skillId))
                 {

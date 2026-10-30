@@ -1,8 +1,11 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using global::DTMAPI.Abstractions;
+using DTMAPI.Abstractions;
+using DolocTown;
+using DolocTown.GameData;
 using HarmonyLib;
+using UnityEngine;
 
 namespace DTMAPI.Zoom
 {
@@ -12,360 +15,86 @@ namespace DTMAPI.Zoom
         private readonly Func<bool>? installGate;
         private readonly Action? unpatchOverride;
         private Harmony? harmony;
-        private MethodInfo? setEnvironmentCameraTarget;
-        private MethodInfo? refreshResolutionTarget;
+        private ZoomPatch[]? required;
 
-        internal ZoomHookInstaller(
-            IMonitor monitor,
-            Func<bool>? installGate = null,
-            Action? unpatchOverride = null)
+        internal ZoomHookInstaller(IMonitor monitor, Func<bool>? installGate = null, Action? unpatchOverride = null)
+        { this.monitor = monitor; this.installGate = installGate; this.unpatchOverride = unpatchOverride; }
+        public bool IsInstalled => required != null && required.All(p => Patches(p.Target, p.Kind).Any(x => IsOurs(x) && x.PatchMethod == p.Callback));
+        public int InstalledPatchCount => Harmony.GetAllPatchedMethods().Sum(m => AllPatches(m).Count(IsOurs));
+        internal bool HasOwnedPatches => Harmony.GetAllPatchedMethods().Any(m => AllPatches(m).Any(IsOurs));
+
+        public void InstallAtomically(ZoomNativeRuntime runtime)
         {
-            this.monitor = monitor ??
-                throw new ArgumentNullException(nameof(monitor));
-            this.installGate = installGate;
-            this.unpatchOverride = unpatchOverride;
-        }
-
-        public bool IsInstalled { get; private set; }
-
-        public int InstalledPatchCount =>
-            CountOwnedPatches();
-
-        public void InstallAtomically(
-            ZoomNativeRuntime runtime)
-        {
-            if (runtime == null)
-                throw new ArgumentNullException(nameof(runtime));
-            if (IsInstalled)
-                return;
-
-            setEnvironmentCameraTarget = ResolveTarget();
-            refreshResolutionTarget =
-                ResolveRefreshResolutionTarget();
-            ThrowIfOwnerCannotInstall(
-                setEnvironmentCameraTarget,
-                refreshResolutionTarget);
-            if (installGate != null && !installGate())
+            if (IsInstalled) return;
+            required = new[]
             {
-                throw new InvalidOperationException(
-                    "Injected Zoom Hook installation failure.");
-            }
-
-            MethodInfo setEnvironmentPostfix =
-                typeof(ZoomCallbacks).GetMethod(
-                    nameof(ZoomCallbacks
-                        .DolocApiSetEnvCameraPostfix),
-                    BindingFlags.Public |
-                    BindingFlags.Static) ??
-                throw new MissingMethodException(
-                    typeof(ZoomCallbacks).FullName,
-                    nameof(ZoomCallbacks
-                        .DolocApiSetEnvCameraPostfix));
-            MethodInfo refreshPrefix =
-                typeof(ZoomCallbacks).GetMethod(
-                    nameof(ZoomCallbacks
-                        .CameraControllerRefreshResolutionPrefix),
-                    BindingFlags.Public |
-                    BindingFlags.Static) ??
-                throw new MissingMethodException(
-                    typeof(ZoomCallbacks).FullName,
-                    nameof(ZoomCallbacks
-                        .CameraControllerRefreshResolutionPrefix));
-            MethodInfo refreshFinalizer =
-                typeof(ZoomCallbacks).GetMethod(
-                    nameof(ZoomCallbacks
-                        .CameraControllerRefreshResolutionFinalizer),
-                    BindingFlags.Public |
-                    BindingFlags.Static) ??
-                throw new MissingMethodException(
-                    typeof(ZoomCallbacks).FullName,
-                    nameof(ZoomCallbacks
-                        .CameraControllerRefreshResolutionFinalizer));
-            harmony = new Harmony(
-                ZoomProductContract.HarmonyOwner);
+                Patch(ResolveTarget(), HarmonyPatchType.Postfix, nameof(ZoomCallbacks.DolocApiSetEnvCameraPostfix)),
+                Patch(ResolveRefreshResolutionTarget(), HarmonyPatchType.Prefix, nameof(ZoomCallbacks.CameraControllerRefreshResolutionPrefix)),
+                Patch(ResolveRefreshResolutionTarget(), HarmonyPatchType.Finalizer, nameof(ZoomCallbacks.CameraControllerRefreshResolutionFinalizer)),
+                Patch(Target(typeof(BackgroundRenderer), "LoadPreset", typeof(EnvBackgroundSO)), HarmonyPatchType.Prefix, nameof(ZoomCallbacks.BackgroundLoadPrefix)),
+                Patch(Target(typeof(BackgroundRenderer), "LoadPreset", typeof(EnvBackgroundSO)), HarmonyPatchType.Finalizer, nameof(ZoomCallbacks.BackgroundLoadFinalizer)),
+                Patch(Target(typeof(DepthFogController), "__Init"), HarmonyPatchType.Postfix, nameof(ZoomCallbacks.ContentChangedPostfix)),
+                Patch(Target(typeof(DepthFogControllerBuilding), "__Init"), HarmonyPatchType.Postfix, nameof(ZoomCallbacks.ContentChangedPostfix))
+            };
+            if (HasExactOwner(ResolveTarget(), ZoomProductContract.CompatibilityOwner))
+                throw new InvalidOperationException("Zoom refused the active frozen camera compatibility owner.");
+            if (HasOwnedPatches) throw new InvalidOperationException("Zoom refused a duplicate or residual exact ProductNative owner.");
+            if (installGate != null && !installGate()) throw new InvalidOperationException("Injected Zoom Hook installation failure.");
+            harmony = new Harmony(ZoomProductContract.HarmonyOwner);
             ZoomHookTransaction.Install(
                 () => ZoomCallbacks.Attach(runtime),
                 () =>
                 {
-                    harmony.Patch(
-                        setEnvironmentCameraTarget,
-                        postfix: new HarmonyMethod(
-                            setEnvironmentPostfix));
-                    harmony.Patch(
-                        refreshResolutionTarget,
-                        prefix: new HarmonyMethod(
-                            refreshPrefix),
-                        finalizer: new HarmonyMethod(
-                            refreshFinalizer));
+                    foreach (var p in required)
+                    {
+                        var hook = new HarmonyMethod(p.Callback);
+                        harmony.Patch(p.Target, prefix: p.Kind == HarmonyPatchType.Prefix ? hook : null,
+                            postfix: p.Kind == HarmonyPatchType.Postfix ? hook : null,
+                            finalizer: p.Kind == HarmonyPatchType.Finalizer ? hook : null);
+                    }
                 },
-                () =>
-                {
-                    PublishObservedState();
-                    return IsInstalled;
-                },
-                UnpatchExactOwner,
-                () =>
-                {
-                    PublishObservedState();
-                    ZoomCallbacks.Detach(runtime);
-                });
-            PublishObservedState();
-            monitor.Log(
-                "Zoom ProductNative Hook installed owner=" +
-                ZoomProductContract.HarmonyOwner +
-                " count=3.");
+                () => IsInstalled, () => HasOwnedPatches, UnpatchExactOwner, () => ZoomCallbacks.Detach(runtime));
+            monitor.Log("Zoom ProductNative Hook installed owner=" + ZoomProductContract.HarmonyOwner + " count=" + InstalledPatchCount);
         }
-
-        public void UnpatchOwnedHooks(
-            ZoomNativeRuntime runtime)
+        public void UnpatchOwnedHooks(ZoomNativeRuntime runtime)
         {
-            Exception? unpatchFailure = null;
-            try
-            {
-                UnpatchExactOwner();
-            }
-            catch (Exception ex)
-            {
-                unpatchFailure = ex;
-            }
-            finally
-            {
-                if (setEnvironmentCameraTarget == null)
-                {
-                    try
-                    {
-                        setEnvironmentCameraTarget =
-                            ResolveTarget();
-                    }
-                    catch
-                    {
-                    }
-                }
-                if (refreshResolutionTarget == null)
-                {
-                    try
-                    {
-                        refreshResolutionTarget =
-                            ResolveRefreshResolutionTarget();
-                    }
-                    catch
-                    {
-                    }
-                }
-                PublishObservedState();
-                ZoomCallbacks.Detach(runtime);
-            }
-
-            if (IsInstalled)
-            {
-                throw new InvalidOperationException(
-                    "Zoom exact-owner cleanup retained one or more camera patches.");
-            }
-            if (unpatchFailure != null)
-                throw unpatchFailure;
+            Exception? failure = null;
+            try { UnpatchExactOwner(); } catch (Exception ex) { failure = ex; }
+            finally { ZoomCallbacks.Detach(runtime); }
+            if (HasOwnedPatches) throw new InvalidOperationException("Zoom exact-owner cleanup retained patches.", failure);
+            if (failure != null) throw failure;
             harmony = null;
         }
-
-        internal static MethodInfo ResolveTarget()
+        internal static MethodInfo ResolveTarget() => Target(typeof(DolocAPI), "SetEnvCamera", typeof(Vector2), typeof(Vector2), typeof(bool), typeof(bool), typeof(bool));
+        internal static MethodInfo ResolveRefreshResolutionTarget() => Target(typeof(CameraController), "RefreshResolution");
+        internal static bool HasExactOwner(MethodBase method, string owner) => Harmony.GetPatchInfo(method)?.Owners.Any(x => string.Equals(x, owner, StringComparison.Ordinal)) == true;
+        private static MethodInfo Target(Type type, string name, params Type[] args) =>
+            type.GetMethod(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, args, null) ?? throw new MissingMethodException(type.FullName, name);
+        private static ZoomPatch Patch(MethodInfo target, HarmonyPatchType kind, string callback) =>
+            new ZoomPatch(target, kind, typeof(ZoomCallbacks).GetMethod(callback)!);
+        private static bool IsOurs(HarmonyLib.Patch patch) => string.Equals(patch.owner, ZoomProductContract.HarmonyOwner, StringComparison.Ordinal);
+        private static System.Collections.Generic.IEnumerable<HarmonyLib.Patch> AllPatches(MethodBase target)
         {
-            MethodInfo[] matches = typeof(DolocAPI)
-                .GetMethods(
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Static)
-                .Where(method =>
-                    method.Name.Equals(
-                        "SetEnvCamera",
-                        StringComparison.Ordinal) &&
-                    HasExactSetEnvCameraSignature(method))
-                .ToArray();
-            if (matches.Length != 1)
-            {
-                throw new MissingMethodException(
-                    typeof(DolocAPI).FullName,
-                    "SetEnvCamera(Vector2,Vector2,bool,bool,bool)");
-            }
-            return matches[0];
+            var info = Harmony.GetPatchInfo(target);
+            return info == null ? Array.Empty<HarmonyLib.Patch>() : info.Prefixes.Concat(info.Postfixes).Concat(info.Finalizers).Concat(info.Transpilers);
         }
-
-        internal static MethodInfo ResolveRefreshResolutionTarget()
+        private static System.Collections.Generic.IEnumerable<HarmonyLib.Patch> Patches(MethodBase target, HarmonyPatchType kind)
         {
-            Type controllerType =
-                ResolveCameraControllerType();
-            MethodInfo[] matches = controllerType
-                .GetMethods(
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance)
-                .Where(method =>
-                    method.Name.Equals(
-                        "RefreshResolution",
-                        StringComparison.Ordinal) &&
-                    !method.IsStatic &&
-                    method.ReturnType == typeof(void) &&
-                    method.GetParameters().Length == 0)
-                .ToArray();
-            if (matches.Length != 1)
-            {
-                throw new MissingMethodException(
-                    controllerType.FullName,
-                    "RefreshResolution()");
-            }
-            return matches[0];
+            var info = Harmony.GetPatchInfo(target);
+            if (info == null) return Array.Empty<HarmonyLib.Patch>();
+            return kind == HarmonyPatchType.Prefix ? info.Prefixes : kind == HarmonyPatchType.Postfix ? info.Postfixes : info.Finalizers;
         }
-
-        private static Type ResolveCameraControllerType()
-        {
-            FieldInfo? field = typeof(DolocAPI).GetField(
-                "cameraController",
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Static);
-            if (field != null && field.FieldType != typeof(object))
-                return field.FieldType;
-
-            PropertyInfo? property = typeof(DolocAPI).GetProperty(
-                "cameraController",
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Static);
-            if (property != null && property.PropertyType != typeof(object))
-                return property.PropertyType;
-
-            object? instance = field?.GetValue(null) ??
-                property?.GetValue(null);
-            return instance?.GetType() ??
-                throw new TypeLoadException(
-                    "DolocAPI.cameraController type was unavailable.");
-        }
-
-        private static bool HasExactSetEnvCameraSignature(
-            MethodInfo method)
-        {
-            ParameterInfo[] parameters =
-                method.GetParameters();
-            return parameters.Length == 5 &&
-                parameters[0].ParameterType.FullName ==
-                    "UnityEngine.Vector2" &&
-                parameters[1].ParameterType.FullName ==
-                    "UnityEngine.Vector2" &&
-                parameters[2].ParameterType == typeof(bool) &&
-                parameters[3].ParameterType == typeof(bool) &&
-                parameters[4].ParameterType == typeof(bool);
-        }
-
-        internal static bool HasExactOwner(
-            MethodBase method,
-            string owner)
-        {
-            Patches? info = Harmony.GetPatchInfo(method);
-            return info != null &&
-                info.Owners.Any(candidate =>
-                    candidate.Equals(
-                        owner,
-                        StringComparison.Ordinal));
-        }
-
-        private static void ThrowIfOwnerCannotInstall(
-            MethodBase setEnvironmentCamera,
-            MethodBase refreshResolution)
-        {
-            switch (ZoomHookOwnership.DecideInstall(
-                HasExactOwner(
-                    setEnvironmentCamera,
-                    ZoomProductContract
-                        .CompatibilityOwner),
-                HasExactOwner(
-                    setEnvironmentCamera,
-                    ZoomProductContract.HarmonyOwner) ||
-                HasExactOwner(
-                    refreshResolution,
-                    ZoomProductContract.HarmonyOwner)))
-            {
-                case ZoomInstallDecision.Install:
-                    return;
-                case ZoomInstallDecision
-                    .RejectCompatibilityOwner:
-                    throw new InvalidOperationException(
-                        "Zoom refused to install because frozen camera compatibility already owns DolocAPI.SetEnvCamera.");
-                default:
-                    throw new InvalidOperationException(
-                        "Zoom refused a duplicate exact ProductNative owner.");
-            }
-        }
-
-        private void PublishObservedState()
-        {
-            IsInstalled = CountOwnedPatches() == 3;
-        }
-
-        private int CountOwnedPatches()
-        {
-            int count = 0;
-            if (setEnvironmentCameraTarget != null)
-            {
-                Patches? setInfo = Harmony.GetPatchInfo(
-                    setEnvironmentCameraTarget);
-                if (setInfo != null)
-                {
-                    count += setInfo.Postfixes.Count(patch =>
-                        patch.owner.Equals(
-                            ZoomProductContract.HarmonyOwner,
-                            StringComparison.Ordinal));
-                }
-            }
-            if (refreshResolutionTarget != null)
-            {
-                Patches? refreshInfo = Harmony.GetPatchInfo(
-                    refreshResolutionTarget);
-                if (refreshInfo != null)
-                {
-                    count += refreshInfo.Prefixes.Count(patch =>
-                        patch.owner.Equals(
-                            ZoomProductContract.HarmonyOwner,
-                            StringComparison.Ordinal));
-                    count += refreshInfo.Finalizers.Count(patch =>
-                        patch.owner.Equals(
-                            ZoomProductContract.HarmonyOwner,
-                            StringComparison.Ordinal));
-                }
-            }
-            return count;
-        }
-
         private void UnpatchExactOwner()
         {
-            if (unpatchOverride != null)
-            {
-                unpatchOverride();
-                return;
-            }
-            Harmony owner = harmony ??
-                new Harmony(
-                    ZoomProductContract.HarmonyOwner);
-            MethodInfo? method = typeof(Harmony)
-                .GetMethods(
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Static |
-                    BindingFlags.Instance)
-                .SingleOrDefault(candidate =>
-                    candidate.Name == "UnpatchAll" &&
-                    candidate.GetParameters().Length == 1 &&
-                    candidate.GetParameters()[0]
-                        .ParameterType == typeof(string));
-            if (method == null)
-            {
-                throw new MissingMethodException(
-                    typeof(Harmony).FullName,
-                    "UnpatchAll(string)");
-            }
-            method.Invoke(
-                method.IsStatic ? null : owner,
-                new object[]
-                {
-                    ZoomProductContract.HarmonyOwner
-                });
+            if (unpatchOverride != null) { unpatchOverride(); return; }
+            (harmony ?? new Harmony(ZoomProductContract.HarmonyOwner)).UnpatchSelf();
+        }
+        private readonly struct ZoomPatch
+        {
+            internal ZoomPatch(MethodInfo target, HarmonyPatchType kind, MethodInfo callback) { Target = target; Kind = kind; Callback = callback; }
+            internal MethodInfo Target { get; }
+            internal HarmonyPatchType Kind { get; }
+            internal MethodInfo Callback { get; }
         }
     }
 }

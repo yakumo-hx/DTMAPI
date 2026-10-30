@@ -1,10 +1,7 @@
 {
-  "Name": "Hello DTMAPI Mod",
-  "Author": "DTMAPI",
-  "Version": "0.1.0",
-  "Description": "Minimal load/log smoke test mod.",
   "UniqueID": "DTMAPI.HelloDtmMod",
-  "EntryDll": "HelloDtmMod.dll",
-  "MinimumDTMApiVersion": "0.1.0",
-  "Type": "CodeMod"
+  "EntryDll": "Content/DTMAPI/HelloDtmMod.dll",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "ManifestVersion": 2
 }

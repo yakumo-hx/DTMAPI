@@ -1,20 +1,19 @@
 {
-  "Name": "DTMAPI Auto Fishing",
-  "Author": "Yuuka",
-  "Version": "1.0.0",
-  "Description": "A self-contained DTMAPI Advanced CodeMod for native auto-fishing.",
   "UniqueID": "Yuuka.DTMAPI.AutoFishing",
-  "EntryDll": "Yuuka.DTMAPI.AutoFishing.dll",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.AutoFishing.dll",
   "EntryType": "Yuuka.DTMAPI.AutoFishing.ModEntry",
-  "MinimumDTMApiVersion": "0.6.0",
+  "MinimumDTMApiVersion": "0.7.5",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.5.5",
+      "VersionRange": {
+        "minimumInclusive": "0.5.5",
+        "includePrerelease": false
+      },
       "Required": true
     }
   ],
-  "UpdateKeys": [],
-  "CodeModKind": "Advanced"
+  "ManifestVersion": 2,
+  "HarmonyOwner": "Yuuka.DTMAPI.AutoFishing.Native"
 }

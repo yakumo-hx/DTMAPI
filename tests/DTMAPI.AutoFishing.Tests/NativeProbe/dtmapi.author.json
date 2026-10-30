@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 4,
+  "projectKind": "CodeMod",
+  "codeModKind": "Advanced",
+  "targetDtmApiVersion": "0.7.0",
+  "projectFile": "AutoFishingShortProbe.csproj",
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  },
+  "nativeReferences": {
+    "gameRoot": "C:/Games/Doloc Town",
+    "references": [
+      "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "DolocTown_Data/Managed/UnityEngine.CoreModule.dll",
+      "BepInEx/core/0Harmony.dll",
+      "DolocTown_Data/Managed/UnityEngine.Physics2DModule.dll"
+    ],
+    "harmonyOwner": "DTMAPI.Internal.AutoFishingShortProbe.Native",
+    "requiredMembers": []
+  }
+}

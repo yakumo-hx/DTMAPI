@@ -1,0 +1,13 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props" />
+  <PropertyGroup>
+    <AssemblyName>DTMAPI.Internal.ActionSpeedShortProbe</AssemblyName>
+    <RootNamespace>DTMAPI.Internal.ActionSpeedShortProbe</RootNamespace>
+    <Version>0.1.0</Version>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup><Compile Include="ModEntry.cs" /><Compile Include="Closeout.cs" /><Compile Include="Lifetime.cs" /><Compile Include="Milk.cs" /></ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.targets" />
+</Project>

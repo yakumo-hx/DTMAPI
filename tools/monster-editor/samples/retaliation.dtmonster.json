@@ -1,0 +1,89 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterRetaliation",
+    "name": "反击与不主动示例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "retaliate",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 3000,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "受击后反击",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            }
+          ]
+        },
+        "combat": {
+          "mode": "retaliate",
+          "checkIntervalGameSeconds": 0.5,
+          "repeatIntervalGameSeconds": 2.5,
+          "targetWaitGameSeconds": 4
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "passive",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 3000,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "不主动",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "combat": {
+          "mode": "passive",
+          "repeatIntervalGameSeconds": 2.5,
+          "checkIntervalGameSeconds": 0.5
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "pair",
+      "definitionId": "retaliate",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 2
+    }
+  ],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

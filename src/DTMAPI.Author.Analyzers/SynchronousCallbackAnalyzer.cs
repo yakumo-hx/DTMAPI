@@ -13,7 +13,7 @@ public sealed class SynchronousCallbackAnalyzer : DiagnosticAnalyzer
     private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
         "SDK203", "Platform callbacks must complete synchronously",
         "This platform callback is synchronous. An async-void delegate escapes completion, exception and scope tracking. Complete background work separately, then Post a synchronous result callback.",
-        "DTMAPI", DiagnosticSeverity.Error, isEnabledByDefault: true,
+        "DTMAPI", DiagnosticSeverity.Warning, isEnabledByDefault: true,
         customTags: new[] { WellKnownDiagnosticTags.NotConfigurable });
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);

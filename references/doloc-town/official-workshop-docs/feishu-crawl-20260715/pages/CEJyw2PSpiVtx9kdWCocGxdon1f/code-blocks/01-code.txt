@@ -1,3 +1,0 @@
-{
-  "workshop_id": xxxxxx
-}

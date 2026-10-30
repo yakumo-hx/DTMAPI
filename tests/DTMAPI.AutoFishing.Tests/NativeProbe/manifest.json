@@ -1,0 +1,25 @@
+{
+  "Name": "Independent AutoFishing short probe",
+  "Author": "Yuuka",
+  "Version": "0.1.0",
+  "Description": "A DTMAPI code mod.",
+  "UniqueID": "DTMAPI.Internal.AutoFishingShortProbe",
+  "EntryDll": "DTMAPI.Internal.AutoFishingShortProbe.dll",
+  "EntryType": "DTMAPI.Internal.AutoFishingShortProbe.ModEntry",
+  "MinimumDTMApiVersion": "0.7.0",
+  "Type": "CodeMod",
+  "CodeModKind": "Advanced",
+  "Dependencies": [
+    {
+      "VersionRange": {
+        "minimumInclusive": "1.1.0",
+        "includePrerelease": false
+      },
+      "Required": true,
+      "UniqueID": "Yuuka.DTMAPI.AutoFishing"
+    }
+  ],
+  "UpdateKeys": [],
+  "NativeContractVersion": 2,
+  "DependencyContractVersion": 1
+}

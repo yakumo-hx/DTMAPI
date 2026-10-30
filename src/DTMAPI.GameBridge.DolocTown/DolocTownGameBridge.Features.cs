@@ -28,45 +28,8 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void InstallGameBridgeFeatureHooks(HarmonyReflectionPatcher patcher)
         {
-            // Fishing needs the patcher reference for synchronous first-use activation,
-            // but BindPatcher performs no reflection search or patch installation.
-            fishingCompatibilityFeature?.BindPatcher(patcher);
-            // Demand can be registered before the managed product loads. Reconcile at the
-            // physical install boundary so both load orders fail closed before either
-            // ActionCompletion dependency Hook is installed.
-            actionCompletionFeature?.Service.ReconcileManagedProductOwnerBeforeHookInstall();
-            // ActionSpeed has the same bidirectional exclusion requirement across its
-            // parent route and five child demand routes. Reconcile before shared exits
-            // or unique native stages can be installed by the frozen compatibility owner.
-            actionSpeedFeature?.Service.ReconcileManagedProductOwnerBeforeHookInstall();
-            // FishRoe compatibility can be requested before the managed product loads.
-            // Remove that pending old-ABI demand before its three item-display Hooks install.
-            fishRoeTooltipFeature?.Service.ReconcileManagedProductOwnerBeforeHookInstall();
-            // Animal compatibility has the same two-order gap: old demand can predate
-            // the managed product, so remove it before the next deferred Hook pass.
-            animalViewerFeature?.Service.ReconcileManagedProductOwnerBeforeHookInstall();
-            cameraFeature?.ReconcileManagedProductOwnerBeforeHookInstall();
-            if (HasGameBridgeDemand(GameBridgeDemandRoutes.AgentStateToolExitShared))
-                agentStateLifecycleHooks?.InstallToolExitHook(patcher);
-            if (HasGameBridgeDemand(GameBridgeDemandRoutes.AgentStateInteractExitShared))
-                agentStateLifecycleHooks?.InstallInteractExitHook(patcher);
-            if (HasGameBridgeDemand(GameBridgeDemandRoutes.AgentStateBaseExitShared))
-                agentStateLifecycleHooks?.InstallBaseExitHook(patcher);
-            if (HasGameBridgeDemand(GameBridgeDemandRoutes.ToolColliderShared))
-                toolColliderHitHooks?.InstallHooks(patcher);
-
             InstallDemandedEnvironmentResetHook(patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.Camera, cameraFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.FishingCompatibility, fishingCompatibilityFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.FishRoeTooltip, fishRoeTooltipFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.ChestLocatorEnhancer, chestLocatorEnhancerFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.SaveSlots, saveSlotsFeature, patcher);
             InstallDemandedFeatureHooks(GameBridgeDemandRoutes.NativeUiLayoutDiagnostics, nativeUiLayoutDiagnosticsFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.AnimalViewer, animalViewerFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.CustomAnimalAnimatorBridge, customAnimalAnimatorBridgeFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.AudioReplacement, audioReplacementFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.ActionSpeed, actionSpeedFeature, patcher);
-            InstallDemandedFeatureHooks(GameBridgeDemandRoutes.ActionCompletion, actionCompletionFeature, patcher);
         }
 
         private void InstallDemandedEnvironmentResetHook(HarmonyReflectionPatcher patcher)
@@ -209,36 +172,16 @@ namespace DTMAPI.GameBridge.DolocTown
                 "; featureStatuses=" + featureStatuses.Count.ToString(CultureInfo.InvariantCulture) +
                 "; featureFailures=" + featureFailures.Count.ToString(CultureInfo.InvariantCulture) +
                 "; featureRuntimeStates=" + featureRuntimeStates.Count.ToString(CultureInfo.InvariantCulture) +
-                "; hookRetryTimerAlive=" + (hookRetryTimer == null ? "false" : "true") +
+                "; hookRetryTimerAlive=false; hookRetryFrameActive=" + hookInstallScheduler.RetryActive.ToString(CultureInfo.InvariantCulture) +
                 "; assemblyLoadSubscribed=" + assemblyLoadSubscribed.ToString(CultureInfo.InvariantCulture) +
                 "; saveLoadedEventSubscribed=" + saveLoadedEventSubscribed.ToString(CultureInfo.InvariantCulture) +
                 "; saveLoadedDelegateAlive=" + (saveLoadedUnityEventDelegate == null ? "false" : "true") +
                 "; patcherAlive=" + (patcher == null ? "false" : "true") +
-                "; pendingHookInstalls=" + hookInstallScheduler.GetSnapshot(false, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, legacyAllReady: false, assemblyLoadSubscribed: assemblyLoadSubscribed, retryTimerAlive: hookRetryTimer != null).Pending.ToString(CultureInfo.InvariantCulture) +
+                "; pendingHookInstalls=" + hookInstallScheduler.GetSnapshot(false, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, legacyAllReady: false, assemblyLoadSubscribed: assemblyLoadSubscribed, retryTimerAlive: false).Pending.ToString(CultureInfo.InvariantCulture) +
                 "; pendingWorkshopUploadPlanResolutions=" + pendingWorkshopUploadPlanResolutions.Count.ToString(CultureInfo.InvariantCulture) +
                 "; shutdownCleanupRan=" + shutdownCleanupRan.ToString(CultureInfo.InvariantCulture) + "}" +
                 "; featureById={" + FormatGameBridgeFeatureObjectGraphSummary() + "}" +
-                "; saveSlots={" + (saveSlotsFeature?.Service.GetOfficialSaveUiLifecycleSummary() ?? "saveUiStates=0, saveUiPagers=0, saveUiBinders=0") + "}" +
-                "; equipmentSlots={" + (equipmentSlotsFeature?.Service.GetLifecycleSummary() ?? "equipmentClones=0, equipmentBinders=0, equipmentRendered=false, equipmentStorageOwners=0, equipmentDirtyOwners=0, equipmentEntries=0") + "}" +
-                "; animalViewer={" + (animalViewerFeature?.Service.GetAnimalViewerLifecycleSummary() ?? "nativeData=0, overlayObjects=0, overlayRows=0") + "}" +
-                "; customAnimals={" + (customAnimalAnimatorBridgeFeature?.Service.GetCustomAnimalAnimatorLifecycleSummary() ?? "registrations=0, controllerCache=0, bundleCache=0") + "}" +
-                "; audioReplacement={" + (audioReplacementFeature?.Service.GetAudioReplacementLifecycleSummary() ?? "entries=0, audioClips=0, pendingRequests=0") + "}" +
-                "; fishingCompatibility={" + (fishingCompatibilityFeature?.GetCompatibilityLifecycleSummary() ?? "compatibilityStatus=inactive/no-consumer, fishingStates=0, fishingOptions=0") + "}");
-        }
-
-        private TitleReturnObjectGraphSection BuildGameBridgeUiOwnerObjectGraphSection()
-        {
-            return new TitleReturnObjectGraphSection(
-                "UI",
-                "byOwner={" +
-                (saveSlotsFeature?.Service.GetOfficialSaveUiOwnerObjectGraphSummary() ?? "DTMAPI.SaveSlots={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
-                "; " +
-                (equipmentSlotsFeature?.Service.GetUiOwnerObjectGraphSummary() ?? "DTMAPI.EquipmentSlots={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
-                "; " +
-                (debugConsoleApi is DebugConsoleCompatibilityProxy debugConsole
-                    ? debugConsole.GetOwnerObjectGraphSummary()
-                    : "DTMAPI.DebugConsole={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
-                "}");
+                "; equipmentSlots={" + (equipmentSlotsFeature?.Service.GetLifecycleSummary() ?? "equipmentClones=0, equipmentBinders=0, equipmentRendered=false, equipmentStorageOwners=0, equipmentDirtyOwners=0, equipmentEntries=0") + "}");
         }
 
         internal string BuildGameBridgeFinalHealthSummaryForTests(string reason)
@@ -251,14 +194,6 @@ namespace DTMAPI.GameBridge.DolocTown
             int failed = featureRuntimeStates.Values.Count(s => s.FailureCount > 0) +
                 featureStatuses.Values.Count(s => !s.LastSucceeded && s.FailureCount > 0);
             int active = Math.Max(0, features.Count - failed);
-            string nativeUiSummary =
-                "saveSlots={" + (saveSlotsFeature?.Service.GetOfficialSaveUiLifecycleSummary() ?? "saveUiStates=0, saveUiPagers=0, saveUiBinders=0") + "}" +
-                "; runtimeAutomation={" + (experimentalApi?.GetRuntimeAutomationLifecycleSummary() ?? "actionAnimators=0, actionAutoFillApplications=0, actionPendingAnimalInteract=false") + "}" +
-                "; animalViewer={" + (animalViewerFeature?.Service.GetAnimalViewerLifecycleSummary() ?? "nativeData=0, overlayObjects=0, overlayRows=0") + "}" +
-                "; customAnimals={" + (customAnimalAnimatorBridgeFeature?.Service.GetCustomAnimalAnimatorLifecycleSummary() ?? "registrations=0, controllerCache=0, bundleCache=0") + "}" +
-                "; audioReplacement={" + (audioReplacementFeature?.Service.GetAudioReplacementLifecycleSummary() ?? "entries=0, audioClips=0, pendingRequests=0") + "}" +
-                "; fishingCompatibility={" + (fishingCompatibilityFeature?.GetCompatibilityLifecycleSummary() ?? "compatibilityStatus=inactive/no-consumer, fishingStates=0, fishingOptions=0") + "}" +
-                "; actionSpeed={" + (actionSpeedFeature?.Service.GetActionSpeedLifecycleSummary() ?? "actionAnimators=0, actionAutoFillApplications=0, actionPendingAnimalInteract=false") + "}";
             string ownerSummary =
                 "input={" + runtime.Input.GetOwnerSnapshot().FormatSummary() + "}" +
                 "; events={" + runtime.Events.GetHandlerCleanupSnapshot().FormatSummary() + "}" +
@@ -273,7 +208,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 "; demandRouting={" + FormatGameBridgeDemandRoutingSummary() + "}" +
                 "; featureFanout={" + FormatGameBridgeFeatureFanoutSummary() + "}" +
                 "; environmentResetCount=" + environmentResetCount.ToString(CultureInfo.InvariantCulture) +
-                "; nativeUi={" + nativeUiSummary + "}" +
                 "; ownerCounters={" + ownerSummary + "}" +
                 "; resourceLedger={" + runtime.ResourceLifecycleSnapshot.FormatSummary() + "}" +
                 "; saveLoad={" + runtime.SaveLoadRequestSnapshot.FormatSummary() + "}" +

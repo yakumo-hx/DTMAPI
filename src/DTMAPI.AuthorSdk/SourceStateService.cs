@@ -23,32 +23,26 @@ internal static class SourceStateService
                 Status(command, gameRoot, Load(gameRoot), report);
             else if (action == "local select")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 LocalSelect(command, gameRoot, Load(gameRoot), report);
             }
             else if (action == "local clear")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 LocalClear(command, gameRoot, Load(gameRoot), report);
             }
             else if (action == "workshop prepare")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 WorkshopPrepare(command, gameRoot, Load(gameRoot), report);
             }
             else if (action == "workshop clear")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 WorkshopClear(command, gameRoot, Load(gameRoot), report);
             }
             else if (action == "reproduction begin")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 ReproductionBegin(command, gameRoot, Load(gameRoot), report);
             }
             else if (action == "reproduction restore")
             {
-                DeploymentService.AssertNoPendingLocalInstallForSourceMutation(gameRoot);
                 ReproductionRestore(command, gameRoot, Load(gameRoot), report);
             }
             else

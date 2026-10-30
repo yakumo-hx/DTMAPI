@@ -5,6 +5,7 @@ namespace DTMAPI.DebugConsole
 {
     internal interface IInventoryActions
     {
+        IReadOnlyList<InventoryDebugSourceGroup> GetSources();
         InventoryDebugPage GetItems(InventoryDebugQuery query);
         InventoryGiveResult GiveItem(
             IManifest owner,
@@ -66,7 +67,7 @@ namespace DTMAPI.DebugConsole
     {
         IReadOnlyList<SpawnCatalogOption> GetMonsterCatalog();
         IReadOnlyList<AnimalCatalogOption> GetAnimalCatalog();
-        CreativeModeState GetCreativeModeState();
+        bool GodModeEnabled { get; }
         TimeSkipResult AdvanceTime(
             IManifest owner,
             AdvancedTimeAdvanceKind kind,
@@ -83,8 +84,12 @@ namespace DTMAPI.DebugConsole
             string pointTypeId,
             int amount);
         DebugCommandResult UnlockAllTechTrees(IManifest owner);
-        CropMaturityResult MatureAllCrops(IManifest owner);
-        CreativeModeResult SetCreativeMode(
+        RoomCropMaturityResult MatureAllCrops(IManifest owner, int radius);
+        SelectedStackDeletePreparation PrepareSelectedStackDelete(IManifest owner, long window);
+        bool IsSelectedStackDeleteCurrent(IManifest owner, SelectedStackDeleteToken token, long window);
+        void CancelSelectedStackDelete(SelectedStackDeleteToken token);
+        SelectedStackDeleteResult ConfirmSelectedStackDelete(IManifest owner, SelectedStackDeleteToken token, long window);
+        DebugCommandResult SetGodMode(
             IManifest owner,
             bool enabled);
         SpawnActionResult SpawnMonster(

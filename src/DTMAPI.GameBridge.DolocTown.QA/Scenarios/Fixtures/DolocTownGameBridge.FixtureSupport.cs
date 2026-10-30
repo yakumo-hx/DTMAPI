@@ -1497,7 +1497,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        private bool TryPlaceSmokeItemInQuickSlot(
+        internal bool TryPlaceSmokeItemInQuickSlot(
             Type dolocApi,
             object item,
             int slot,
@@ -1564,7 +1564,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return true;
         }
 
-        private bool RestoreSmokeQuickSlot(Type dolocApi, object? inventory, int slot, object? originalSlotItem)
+        internal bool RestoreSmokeQuickSlot(Type dolocApi, object? inventory, int slot, object? originalSlotItem)
         {
             try
             {
@@ -1720,17 +1720,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            int beforeApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
-            int beforeContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
             continuesMethod.Invoke(agentController, new object[] { dt });
-            int afterApplications = experimentalApi?.ActionSpeedApplicationCount ?? 0;
-            int afterContinuous = experimentalApi?.ActionSpeedContinuousUseApplicationCount ?? 0;
             summary = "method=" + methodName +
                 ", dt=" + dt.ToString("0.###") +
-                ", currentState=" + ReadCurrentAgentStateForFixture(dolocApi) +
-                ", actionSpeedDelta=" + (afterApplications - beforeApplications) +
-                ", continuousDelta=" + (afterContinuous - beforeContinuous) +
-                ", continuous=" + (experimentalApi?.LastActionSpeedContinuousUseSummary ?? "none");
+                ", currentState=" + ReadCurrentAgentStateForFixture(dolocApi);
             return true;
         }
 
@@ -1758,11 +1751,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 return false;
             }
 
-            ActionCompletionService? actionCompletion = ActionCompletionService;
-            int before = actionCompletion?.OneActionApplicationCount ?? 0;
             onExit.Invoke(current, null);
-            int after = actionCompletion?.OneActionApplicationCount ?? 0;
-            summary = "state=" + current.GetType().Name + ", oneActionDelta=" + (after - before);
+            summary = "state=" + current.GetType().Name + ", native OnExit invoked";
             return true;
         }
 

@@ -1,23 +1,23 @@
-[CmdletBinding()]
-param([string] $OutputRoot = '', [switch] $Check, [switch] $NoProvision)
-
-$ErrorActionPreference = 'Stop'
+﻿[CmdletBinding()]
+param([string]$OutputRoot='', [string]$Configuration='Release', [switch]$Check, [switch]$NoProvision, [switch]$RequireReleaseArchive, [switch]$IncludeToolchain, [switch]$IncludeAnalyzer)
 . "$PSScriptRoot/common.ps1"
-. "$PSScriptRoot/author-sdk-release-common.ps1"
-. "$PSScriptRoot/author-sdk-preparation.ps1"
-$repo = Get-RepoRoot
-if ([string]::IsNullOrWhiteSpace($OutputRoot)) { $OutputRoot = Join-Path $repo '.tools/author-sdk' }
-$output = if ([IO.Path]::IsPathRooted($OutputRoot)) { [IO.Path]::GetFullPath($OutputRoot) } else { [IO.Path]::GetFullPath((Join-Path $repo $OutputRoot)) }
-Assert-DtmApiBuildPathsDisjoint -OutputPath $output -InputPaths @((Join-Path $repo 'src'), (Join-Path $repo 'author-sdk'), (Join-Path $repo 'tools/scripts'), (Join-Path $repo '.tools/dotnet'), (Join-Path $repo '.tools/author-sdk-packages'))
-$dotnet = Get-DotNetExe -NoProvision:($Check -or $NoProvision)
-$inputSnapshot = Get-DtmApiAuthorSdkInput -RepoRoot $repo -DotNetExe $dotnet
-if (-not (Test-DtmApiPreparedAuthorSdk -OutputRoot $output -InputSnapshot $inputSnapshot)) {
-    if ($Check) { throw "Author SDK preparation is absent, changed or damaged. Run prepare-author-sdk.ps1 -OutputRoot '$output'." }
-    & "$PSScriptRoot/build-author-sdk.ps1" -OutputRoot $output -NoProvision:$NoProvision
-    if (-not $?) { throw 'Author SDK preparation build failed.' }
-    $receipt = Get-Content -Raw -LiteralPath (Join-Path $output 'preparation.json') | ConvertFrom-Json
-    $inputSnapshot.sha256 = [string]$receipt.inputSha256
-    Write-Host "Author SDK prepared: $output"
+$ErrorActionPreference='Stop'
+$repo=Get-RepoRoot
+if(($IncludeToolchain -or $IncludeAnalyzer) -and -not $RequireReleaseArchive){throw 'Distribution additions require -RequireReleaseArchive.'}
+if(-not $OutputRoot){$OutputRoot=Join-Path $repo $(if($RequireReleaseArchive){'dist/author-sdk'}else{'.tools/author-sdk'})}
+$OutputRoot=[IO.Path]::GetFullPath($OutputRoot)
+if($Check){
+    if($RequireReleaseArchive){
+        & "$PSScriptRoot/check-author-sdk-release.ps1" -PackagePath (Join-Path $OutputRoot 'DTMAPI-AuthorSdk-0.7.5.zip')
+        if(-not $?){throw 'Author SDK delivery check failed.'}
+    }else{
+        $stage=Join-Path $repo "src/DTMAPI.AuthorSdk/bin/$Configuration/net8.0"
+        foreach($file in @('dtmapi-author.exe','dtmapi-author.dll','dtmapi-author.runtimeconfig.json')){
+            if(-not (Test-Path -LiteralPath (Join-Path $stage $file) -PathType Leaf)){throw "Local author CLI is absent: $stage. Run prepare-author-sdk.ps1 when this tool is needed."}
+        }
+        Write-Output "Local author CLI present: $stage (presence only; rebuild after relevant input changes)."
+    }
+    return
 }
-else { Write-Host "Author SDK reused: $output" }
-Write-Host "SDK input SHA-256: $($inputSnapshot.sha256)"
+& "$PSScriptRoot/build-author-sdk.ps1" -OutputRoot $OutputRoot -Configuration $Configuration -NoProvision:$NoProvision -ReleasePackage:$RequireReleaseArchive -IncludeToolchain:$IncludeToolchain -IncludeAnalyzer:$IncludeAnalyzer
+if(-not $?){throw 'Author SDK preparation failed.'}

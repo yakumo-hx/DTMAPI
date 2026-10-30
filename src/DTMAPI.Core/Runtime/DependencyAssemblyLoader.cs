@@ -12,131 +12,165 @@ namespace DTMAPI.Core.Runtime
     {
         public Assembly Assembly { get; set; } = null!;
         public string Path { get; set; } = "";
-        public string Sha256 { get; set; } = "";
         public PackageAssemblyIdentity Identity { get; set; } = null!;
+        public HashSet<string> Owners { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
     internal sealed class DependencyAssemblyLoader : IDisposable
     {
-        private readonly Dictionary<string, DiscoveredMod> mods;
-        private readonly Dictionary<string, PackageDependencyBundle> bundles = new Dictionary<string, PackageDependencyBundle>(StringComparer.OrdinalIgnoreCase);
-        private readonly IDictionary<string, DependencyLoadedAssembly> loaded;
+        private readonly Dictionary<string, RuntimePackage> packages = new Dictionary<string, RuntimePackage>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, PackagePlanInput> nodes = new Dictionary<string, PackagePlanInput>(StringComparer.OrdinalIgnoreCase);
+        private readonly IDictionary<Assembly, DependencyLoadedAssembly> loaded;
         private readonly Action<string> log;
-        private readonly string gamePath;
+        private readonly Action<string, Assembly>? onBound;
+        private readonly string[] hostDirectories;
         private readonly object sync = new object();
         public PackageDependencyPlan Plan { get; }
 
         public DependencyAssemblyLoader(IEnumerable<DiscoveredMod> selected, IEnumerable<KeyValuePair<string, string>> processProviders,
-            IDictionary<string, DependencyLoadedAssembly> loaded, Action<string> log, string gamePath)
+            IDictionary<Assembly, DependencyLoadedAssembly> loaded, Action<string> log, string gamePath,
+            StartupPackageReadTransaction? packageReads = null,
+            Action<string, Assembly>? onBound = null)
         {
-            this.loaded = loaded; this.log = log; this.gamePath = gamePath;
-            mods = selected.Where(mod => mod.OfficialEnabled).ToDictionary(mod => mod.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase);
-            var nodes = new List<PackagePlanInput>();
-            foreach (DiscoveredMod mod in mods.Values.OrderBy(mod => mod.Manifest.UniqueID, StringComparer.OrdinalIgnoreCase))
+            this.loaded = loaded; this.log = log; this.onBound = onBound;
+            var providers = processProviders.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+            hostDirectories = new[] {
+                Path.Combine(gamePath, "DolocTown_Data", "Managed"), Path.Combine(gamePath, "BepInEx", "core"),
+                Path.GetDirectoryName(typeof(object).Assembly.Location)!
+            }.Concat(RuntimeComponentFiles.Components.Values.Select(folder => Path.Combine(gamePath, "DTMAPI", "components", folder))).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            foreach (var mod in selected.Where(m => m.OfficialEnabled && !providers.ContainsKey(m.Manifest.UniqueID)))
             {
-                var node = new PackagePlanInput { Id = mod.Manifest.UniqueID };
-                try { node.Version = PackageSemanticVersion.Parse(mod.Manifest.Version); } catch (InvalidDataException) { }
-                if (mod.Manifest.DependencyContract != null) node.Dependencies = mod.Manifest.DependencyContract.Dependencies;
-                else node.Dependencies = mod.Manifest.DependencyModels.Select(dependency => new PackageModDependency(dependency.UniqueID, dependency.Required, new PackageVersionRange("0.0.0", null, true)) { LegacyOrderingOnly = true }).ToArray();
-                try
-                {
-                    if (mod.Manifest.DependencyContract != null)
-                    {
-                        var bundle = DependencyPackageVerifier.Read(mod.Manifest, mod.RootPath, mod.ManifestPath);
-                        bundles.Add(node.Id, bundle); node.Assemblies = bundle.Inventory.Assemblies;
-                    }
-                    else if (mod.Classification.IsCodeMod)
-                    {
-                        string path = Path.GetFullPath(Path.Combine(mod.RootPath, mod.Manifest.EntryDll));
-                        var record = DependencyPackageVerifier.Inspect(File.ReadAllBytes(path));
-                        record.Role = "entry"; record.Path = mod.Manifest.EntryDll;
-                        node.Assemblies = new[] { record };
-                    }
-                }
-                catch (Exception ex) when (ex is IOException || ex is InvalidDataException || ex is UnauthorizedAccessException || ex is ManagedModClassificationException)
-                { node.PreflightFailure = "dependency-preflight-failed: " + node.Id + ": " + ex.Message; }
-                nodes.Add(node);
+                var node = new PackagePlanInput { Id = mod.Manifest.UniqueID, OfficialPriority = mod.OfficialPriority < 0 ? (int?)null : mod.OfficialPriority,
+                    Dependencies = mod.Manifest.DependencyContract?.Dependencies ?? mod.Manifest.DependencyModels.Select(d =>
+                        new PackageModDependency(d.UniqueID, d.Required, new PackageVersionRange(string.IsNullOrEmpty(d.MinimumVersion) ? "0.0.0" : d.MinimumVersion, null, true))
+                        { LegacyOrderingOnly = string.IsNullOrEmpty(d.MinimumVersion) }).ToArray() };
+                node.Version = mod.Manifest.Version;
+                nodes.Add(node.Id, node);
+                try { packages.Add(node.Id, packageReads != null ? packageReads.Read(mod.Manifest, mod.RootPath, mod.ManifestPath) : DependencyPackageVerifier.Read(mod.Manifest, mod.RootPath, mod.ManifestPath)); }
+                catch (Exception ex) when (ex is IOException || ex is InvalidDataException || ex is UnauthorizedAccessException) { node.PreflightFailure = ex.Message; }
             }
-            foreach (var provider in processProviders)
+            foreach (var provider in providers)
             {
-                if (nodes.Any(node => string.Equals(node.Id, provider.Key, StringComparison.OrdinalIgnoreCase))) continue;
-                var node = new PackagePlanInput { Id = provider.Key };
-                try { node.Version = PackageSemanticVersion.Parse(provider.Value); } catch (InvalidDataException) { }
-                nodes.Add(node);
+                if (nodes.ContainsKey(provider.Key)) continue;
+                var node = new PackagePlanInput { Id = provider.Key, IsProcessProvider = true };
+                node.Version = provider.Value;
+                nodes.Add(node.Id, node);
             }
-            var residents = new List<PackageResidentAssembly>();
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                AssemblyName name = assembly.GetName();
-                loaded.TryGetValue(name.Name ?? "", out DependencyLoadedAssembly? evidence);
-                residents.Add(new PackageResidentAssembly
-                {
-                    Identity = Identity(name), Sha256 = evidence != null && ReferenceEquals(evidence.Assembly, assembly) ? evidence.Sha256 : "",
-                    ProvenHostOrPlanSource = evidence != null && ReferenceEquals(evidence.Assembly, assembly)
-                });
-            }
-            Plan = PackageDependencyPlanner.Plan(nodes, PackageHostReferences.ReservedFor(nodes.SelectMany(node => node.Assemblies)), residents);
+            Plan = PackageDependencyPlanner.Plan(nodes.Values);
             foreach (var item in Plan.Blocked) log("DependencyPlan blocked owner=" + item.Key + "; " + item.Value);
             foreach (string warning in Plan.Warnings) log("DependencyPlan " + warning);
             AppDomain.CurrentDomain.AssemblyResolve += Resolve;
+            AppDomain.CurrentDomain.AssemblyLoad += ObserveLoad;
+        }
+
+        private string? FindCandidate(string requester, string name)
+        {
+            if (packages.TryGetValue(requester, out var own) && own.HasCandidate(name)) return requester;
+            if (!nodes.TryGetValue(requester, out var node)) return null;
+            string[] providers = node.Dependencies.Where(d => !Plan.Blocked.ContainsKey(d.Id))
+                .Select(d => d.Id).Where(id => packages.TryGetValue(id, out var provider) && provider.HasCandidate(name, sharedOnly: true)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (providers.Length > 1) throw new InvalidDataException("dependency-provider-ambiguous: " + requester + " -> " + name + "; " + string.Join(", ", providers));
+            return providers.SingleOrDefault();
+        }
+
+        private bool IsHost(string name)
+        {
+            if (new[] { "DTMAPI.Abstractions", "DTMAPI.Core", "DTMAPI.GameBridge.DolocTown", "DTMAPI.BepInExBootstrap", "DTMAPI.ModConfigMenu" }.Contains(name, StringComparer.OrdinalIgnoreCase)) return true;
+            return hostDirectories.Any(directory => File.Exists(Path.Combine(directory, name + ".dll")));
         }
 
         public Assembly LoadEntry(string owner, string path)
         {
-            if (Plan.Blocked.TryGetValue(owner, out string? failure)) throw new InvalidDataException(failure);
-            var rechecked = DependencyPackageVerifier.Read(mods[owner].Manifest, mods[owner].RootPath, mods[owner].ManifestPath);
-            if (rechecked.Native != null)
+            lock (sync)
             {
-                string nativePath = PackageDependencyContract.ResolveFile(mods[owner].RootPath, NativePackageContract.FileName);
-                if (PackageDependencyContract.ComputeHash(File.ReadAllBytes(nativePath)) != mods[owner].Classification.ReferencePolicySha256)
-                    throw new InvalidDataException("native-package-changed-after-discovery: " + owner);
-                foreach (string warning in NativePackageVerifier.VerifyInstalled(rechecked.Native, gamePath)) log(warning);
+                var package = packages[owner];
+                var record = package.SelectEntry();
+                if (!Path.GetFullPath(path).Equals(package.Resolve(record), StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("dependency-entry-path-changed");
+                return Bind(owner, record);
             }
-            var bundle = bundles[owner];
-            // Bind the complete declared closure before constructing the entry type; no directory probing.
-            foreach (var record in bundle.Inventory.Assemblies.Where(record => record.Role != "entry").OrderBy(record => record.Identity.Name, StringComparer.OrdinalIgnoreCase)) Bind(record.Identity.Name);
-            var entry = bundle.Inventory.Assemblies.Single(record => record.Role == "entry");
-            if (!string.Equals(Path.GetFullPath(path), PackageDependencyContract.ResolveFile(mods[owner].RootPath, entry.Path), StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("dependency-entry-path-changed");
-            return Bind(entry.Identity.Name);
         }
 
-        private Assembly? Resolve(object? sender, ResolveEventArgs args)
+        private Assembly? Resolve(object? sender, ResolveEventArgs args) => ResolveRequest(new AssemblyName(args.Name), args.RequestingAssembly);
+
+        internal Assembly? ResolveRequest(AssemblyName request, Assembly? requestingAssembly)
         {
-            AssemblyName request = new AssemblyName(args.Name);
-            if (request.Name == null || !Plan.AssemblyOwners.ContainsKey(request.Name)) return null;
-            var result = Bind(request.Name);
-            if (Identity(result.GetName()).Key != Identity(request).Key) throw new InvalidDataException("dependency-resolve-identity-mismatch: " + args.Name);
-            return result;
+            if (request.Name == null || IsHost(request.Name)) return null;
+            lock (sync)
+            {
+                Assembly? caller = requestingAssembly;
+                string? owner = FindOwner(caller);
+                if (owner == null) { caller = FindCallingAssembly(); owner = FindOwner(caller); }
+                if (owner == null) return null;
+                string? provider = FindCandidate(owner, request.Name);
+                if (provider == null) return null;
+                return Bind(provider, packages[provider].Select(request.Name, sharedOnly: !provider.Equals(owner, StringComparison.OrdinalIgnoreCase),
+                    requesterPath: caller == null ? null : AssemblyLoadBinding.Location(caller)));
+            }
         }
 
-        private Assembly Bind(string name)
+        private Assembly? FindCallingAssembly()
+        {
+            // Unity Mono can omit RequestingAssembly for Assembly.Load(string).
+            foreach (var frame in new System.Diagnostics.StackTrace(false).GetFrames() ?? Array.Empty<System.Diagnostics.StackFrame>())
+            {
+                Assembly? assembly = frame.GetMethod()?.DeclaringType?.Assembly;
+                if (FindOwner(assembly) != null) return assembly;
+            }
+            return null;
+        }
+
+        private string? FindOwner(Assembly? assembly)
+        {
+            if (assembly == null) return null;
+            if (loaded.TryGetValue(assembly, out var binding)) return binding.Owners.Count == 1 ? binding.Owners.Single() : null;
+            string location = AssemblyLoadBinding.Location(assembly);
+            if (location.Length == 0) return null;
+            string[] owners = packages.Where(pair => location.StartsWith(pair.Value.Root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                .Select(pair => pair.Key).ToArray();
+            return owners.Length == 1 ? owners[0] : null;
+        }
+
+        private void ObserveLoad(object? sender, AssemblyLoadEventArgs args)
         {
             lock (sync)
             {
-                if (!Plan.AssemblyOwners.TryGetValue(name, out string? owner) || !bundles.TryGetValue(owner, out PackageDependencyBundle? bundle)) throw new InvalidDataException("dependency-bind-not-in-plan: " + name);
-                PackageAssemblyRecord record = bundle.Inventory.Assemblies.Single(item => item.Identity.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-                string path = PackageDependencyContract.ResolveFile(mods[owner].RootPath, record.Path);
-                if (PackageDependencyContract.ComputeHash(File.ReadAllBytes(path)) != record.Sha256) throw new InvalidDataException("dependency-file-changed-before-load: " + path);
-                if (loaded.TryGetValue(name, out DependencyLoadedAssembly? known))
-                {
-                    if (known.Identity.Key != record.Identity.Key || known.Sha256 != record.Sha256) throw new InvalidDataException("resident-conflict/restart-required: " + name);
-                    return known.Assembly;
-                }
-                if (AppDomain.CurrentDomain.GetAssemblies().Any(assembly => string.Equals(assembly.GetName().Name, name, StringComparison.OrdinalIgnoreCase))) throw new InvalidDataException("resident-conflict/restart-required: " + name);
-                Assembly result = Assembly.LoadFrom(path);
-                if (Identity(result.GetName()).Key != record.Identity.Key || !string.Equals(result.Location, path, StringComparison.OrdinalIgnoreCase)
-                    || PackageDependencyContract.ComputeHash(File.ReadAllBytes(path)) != record.Sha256) throw new InvalidDataException("dependency-loaded-identity-changed/restart-required: " + name);
-                loaded.Add(name, new DependencyLoadedAssembly { Assembly = result, Path = path, Sha256 = record.Sha256, Identity = record.Identity });
-                log("DependencyAssembly bound name=" + name + "; owner=" + owner + "; sha256=" + record.Sha256 + "; path=" + path);
-                return result;
+                Assembly assembly = args.LoadedAssembly;
+                if (IsHost(assembly.GetName().Name ?? "")) return;
+                string? owner = FindOwner(assembly) ?? FindOwner(FindCallingAssembly());
+                if (owner != null) Remember(owner, assembly);
             }
         }
 
-        private static PackageAssemblyIdentity Identity(AssemblyName name) => new PackageAssemblyIdentity
+        private void Remember(string owner, Assembly assembly)
         {
-            Name = name.Name ?? "", AssemblyVersion = name.Version?.ToString() ?? "", Culture = name.CultureName ?? "",
-            PublicKeyToken = BitConverter.ToString(name.GetPublicKeyToken() ?? Array.Empty<byte>()).Replace("-", "").ToLowerInvariant()
-        };
-        public void Dispose() => AppDomain.CurrentDomain.AssemblyResolve -= Resolve;
+            if (!loaded.TryGetValue(assembly, out var binding))
+                loaded.Add(assembly, binding = new DependencyLoadedAssembly { Assembly = assembly, Path = AssemblyLoadBinding.Location(assembly), Identity = AssemblyLoadBinding.Identity(assembly.GetName()) });
+            binding.Owners.Add(owner);
+            onBound?.Invoke(owner, assembly);
+        }
+
+        private Assembly Bind(string owner, PackageAssemblyRecord record)
+        {
+            if (Plan.Blocked.TryGetValue(owner, out var failure)) throw new InvalidDataException(failure);
+            Assembly assembly = AssemblyLoadBinding.BindDependency(owner, packages[owner].Resolve(record), loaded, log);
+            Remember(owner, assembly);
+            return assembly;
+        }
+
+
+        internal Assembly LoadDeclaredAssembly(string owner, string name)
+        {
+            lock (sync)
+            {
+                if (!packages.TryGetValue(owner, out var package) || !package.HasCandidate(name)) throw new InvalidDataException("module-assembly-missing: " + name);
+                return Bind(owner, package.Select(name));
+            }
+        }
+
+        public void Dispose()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve -= Resolve;
+            AppDomain.CurrentDomain.AssemblyLoad -= ObserveLoad;
+        }
     }
 }

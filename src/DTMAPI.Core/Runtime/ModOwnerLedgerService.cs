@@ -227,7 +227,6 @@ namespace DTMAPI.Core.Runtime
                 case "ApiOrLoadedMod": return "ApiOrLoadedMod";
                 case "ConfigMenuPage": return "ConfigMenuPage";
                 case "ConfigMigration": return "ConfigMigration";
-                case "CustomEntity": return "CustomEntity";
                 case "Event": return "Event";
                 case "EventHandler": return "EventHandler";
                 case "GameBridgeOwnerResource": return "GameBridgeOwnerResource";

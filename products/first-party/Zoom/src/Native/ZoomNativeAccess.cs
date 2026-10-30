@@ -1,176 +1,66 @@
 using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Reflection;
+using DolocTown;
+using UnityEngine;
 
 namespace DTMAPI.Zoom
 {
+    // Metadata is resolved once. Discovery visits only these exact native holders.
     internal static class ZoomNativeAccess
     {
-        internal static bool TryReadOrthographicSize(
-            out double value)
+        private static readonly FieldInfo Sky = Field(typeof(BackgroundRenderer), "skyRenderer");
+        private static readonly FieldInfo Layers = Field(typeof(BackgroundRenderer), "_layers");
+        private static readonly FieldInfo Outdoor = Field(typeof(EnvCovariantController), "_depthFogController");
+        private static readonly FieldInfo Indoor = Field(typeof(EnvCovariantController), "_depthFogControllerBuilding");
+        private static readonly FieldInfo FogSprites = Field(typeof(DepthFogController), "fogRenderers");
+        private static readonly FieldInfo IndoorSky = Field(typeof(DepthFogControllerBuilding), "skyRenderer");
+        private static readonly FieldInfo IndoorRemote = Field(typeof(DepthFogControllerBuilding), "remoteRenderer");
+
+        internal static void Discover(List<ZoomSpriteTarget> targets)
         {
-            object? camera = ReadStaticMember(
-                typeof(DolocAPI),
-                "mainCamera");
-            object? raw = ReadMember(
-                camera,
-                "orthographicSize");
-            try
+            targets.Clear();
+            BackgroundRenderer background = DolocAPI.envBackgroundEx;
+            if (background)
             {
-                value = raw == null
-                    ? 0d
-                    : Convert.ToDouble(
-                        raw,
-                        CultureInfo.InvariantCulture);
-                return value > 0d;
+                var sky = (BackgroundLayerRenderer?)Sky.GetValue(background);
+                if (sky) Add(targets, sky!.SpriteRenderer, background);
+                var layers = (BackgroundLayerRenderer[]?)Layers.GetValue(background);
+                if (layers != null)
+                    foreach (var layer in layers)
+                        if (layer) Add(targets, layer.SpriteRenderer, background);
             }
-            catch
+            var environment = DolocAPI.EnvCovariantController;
+            if (environment == null) return;
+            var outdoor = (DepthFogController?)Outdoor.GetValue(environment);
+            if (outdoor)
             {
-                value = 0d;
-                return false;
+                var sprites = (SpriteRenderer[]?)FogSprites.GetValue(outdoor);
+                if (sprites != null)
+                    foreach (var sprite in sprites) Add(targets, sprite, outdoor!);
+            }
+            var indoor = (DepthFogControllerBuilding?)Indoor.GetValue(environment);
+            if (indoor)
+            {
+                Add(targets, (SpriteRenderer?)IndoorSky.GetValue(indoor), indoor!);
+                Add(targets, (SpriteRenderer?)IndoorRemote.GetValue(indoor), indoor!);
             }
         }
 
-        internal static bool TryWriteOrthographicSize(
-            double value)
+        private static void Add(List<ZoomSpriteTarget> targets, SpriteRenderer? sprite, object holder)
         {
-            object? camera = ReadStaticMember(
-                typeof(DolocAPI),
-                "mainCamera");
-            return WriteMember(
-                camera,
-                "orthographicSize",
-                value);
+            if (sprite && sprite!.sprite) targets.Add(new ZoomSpriteTarget(sprite, holder));
         }
+        private static FieldInfo Field(Type type, string name) =>
+            type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic) ??
+            throw new MissingFieldException(type.FullName, name);
+    }
 
-        internal static bool IsMainCameraDefinitelyAbsent()
-        {
-            object? camera;
-            try
-            {
-                camera = ReadStaticMember(
-                    typeof(DolocAPI),
-                    "mainCamera");
-            }
-            catch
-            {
-                return false;
-            }
-            if (camera == null)
-                return true;
-
-            try
-            {
-                for (Type? type = camera.GetType();
-                     type != null;
-                     type = type.BaseType)
-                {
-                    MethodInfo? aliveOperator =
-                        type.GetMethod(
-                            "op_Implicit",
-                            BindingFlags.Public |
-                            BindingFlags.Static,
-                            null,
-                            new[] { type },
-                            null);
-                    if (aliveOperator?.ReturnType ==
-                        typeof(bool))
-                    {
-                        object? alive =
-                            aliveOperator.Invoke(
-                                null,
-                                new[] { camera });
-                        return alive is bool value &&
-                            !value;
-                    }
-                }
-            }
-            catch
-            {
-                // Reflection failure does not prove that a live Unity camera
-                // was destroyed.
-            }
-            return false;
-        }
-
-        private static object? ReadStaticMember(
-            Type type,
-            string name)
-        {
-            FieldInfo? field = type.GetField(
-                name,
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Static);
-            if (field != null)
-                return field.GetValue(null);
-            return type.GetProperty(
-                    name,
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Static)?
-                .GetValue(null);
-        }
-
-        private static object? ReadMember(
-            object? instance,
-            string name)
-        {
-            if (instance == null)
-                return null;
-            Type type = instance.GetType();
-            FieldInfo? field = type.GetField(
-                name,
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance);
-            if (field != null)
-                return field.GetValue(instance);
-            return type.GetProperty(
-                    name,
-                    BindingFlags.Public |
-                    BindingFlags.NonPublic |
-                    BindingFlags.Instance)?
-                .GetValue(instance);
-        }
-
-        private static bool WriteMember(
-            object? instance,
-            string name,
-            double value)
-        {
-            if (instance == null)
-                return false;
-            Type type = instance.GetType();
-            FieldInfo? field = type.GetField(
-                name,
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance);
-            if (field != null)
-            {
-                field.SetValue(
-                    instance,
-                    Convert.ChangeType(
-                        value,
-                        field.FieldType,
-                        CultureInfo.InvariantCulture));
-                return true;
-            }
-            PropertyInfo? property = type.GetProperty(
-                name,
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance);
-            if (property?.CanWrite != true)
-                return false;
-            property.SetValue(
-                instance,
-                Convert.ChangeType(
-                    value,
-                    property.PropertyType,
-                    CultureInfo.InvariantCulture));
-            return true;
-        }
+    internal readonly struct ZoomSpriteTarget
+    {
+        internal ZoomSpriteTarget(SpriteRenderer renderer, object holder)
+        { Renderer = renderer; Holder = holder; }
+        internal SpriteRenderer Renderer { get; }
+        internal object Holder { get; }
     }
 }

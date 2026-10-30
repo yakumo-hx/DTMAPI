@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 4,
+  "projectKind": "CodeMod",
+  "codeModKind": "Advanced",
+  "targetDtmApiVersion": "0.7.0",
+  "projectFile": "MoreEquipmentSlotsShortProbe.csproj",
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  },
+  "nativeReferences": {
+    "gameRoot": "C:/Games/Doloc Town",
+    "references": [
+      "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "DolocTown_Data/Managed/Assembly-CSharp-firstpass.dll",
+      "DolocTown_Data/Managed/UnityEngine.CoreModule.dll",
+      "BepInEx/core/0Harmony.dll",
+      "DolocTown_Data/Managed/UnityEngine.Physics2DModule.dll",
+      "DolocTown_Data/Managed/UnityEngine.AnimationModule.dll"
+    ],
+    "harmonyOwner": "DTMAPI.Internal.MoreEquipmentSlotsShortProbe.Native",
+    "requiredMembers": [
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocAPI",
+        "kind": "method",
+        "name": "SaveGame",
+        "isStatic": true,
+        "returnType": "[bcl]System.Boolean",
+        "parameterTypes": [
+          "[bcl]System.Int32"
+        ]
+      }
+    ]
+  }
+}

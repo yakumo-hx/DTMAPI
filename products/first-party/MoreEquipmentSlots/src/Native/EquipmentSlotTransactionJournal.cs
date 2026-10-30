@@ -929,6 +929,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 slot.ShieldMaxValue =
                     item.ShieldMaxValue;
                 slot.ShieldDefend = item.ShieldDefend;
+                slot.ItemState = item.ItemState?.Clone();
             }
         }
 
@@ -968,7 +969,8 @@ namespace DTMAPI.MoreEquipmentSlots
                 IsShield = slot.IsShield,
                 ShieldValue = slot.ShieldValue,
                 ShieldMaxValue = slot.ShieldMaxValue,
-                ShieldDefend = slot.ShieldDefend
+                ShieldDefend = slot.ShieldDefend,
+                ItemState = slot.ItemState?.Clone()
             };
 
         private static int GetIncomingBackpackDelta(
@@ -1025,19 +1027,7 @@ namespace DTMAPI.MoreEquipmentSlots
         }
 
         private static EquipmentSlotStorageEntry CloneSlot(
-            EquipmentSlotStorageEntry slot) =>
-            new EquipmentSlotStorageEntry
-            {
-                Index = slot.Index,
-                ItemId = slot.ItemId,
-                DisplayName = slot.DisplayName,
-                SkillId = slot.SkillId,
-                DefenseBonus = slot.DefenseBonus,
-                IsShield = slot.IsShield,
-                ShieldValue = slot.ShieldValue,
-                ShieldMaxValue = slot.ShieldMaxValue,
-                ShieldDefend = slot.ShieldDefend
-            };
+            EquipmentSlotStorageEntry slot) => slot.Clone();
 
         private static EquipmentSlotStorageEntry RequireSlot(
             EquipmentSlotStorageDocument document,
@@ -1472,19 +1462,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private static EquipmentSlotStorageEntry CloneSlot(
             EquipmentSlotStorageEntry source,
-            int index) =>
-            new EquipmentSlotStorageEntry
-            {
-                Index = index,
-                ItemId = source.ItemId,
-                DisplayName = source.DisplayName,
-                SkillId = source.SkillId,
-                DefenseBonus = source.DefenseBonus,
-                IsShield = source.IsShield,
-                ShieldValue = source.ShieldValue,
-                ShieldMaxValue = source.ShieldMaxValue,
-                ShieldDefend = source.ShieldDefend
-            };
+            int index) => source.Clone(index);
 
         private static EquipmentSlotGameplayCandidate RequireCandidate(
             EquipmentSlotStorageDocument document) =>

@@ -12,6 +12,7 @@ public static class AuthorApplication
         TextWriter error = standardError ?? Console.Error;
         try
         {
+            if (args.Length > 0 && args[0] is "build" or "restore") return await OptionalTools.BuildAsync(args, output, error);
             ParsedCommand command = ParsedCommand.Parse(args);
             if (command.Name is "help" or "-h" or "--help")
             {
@@ -21,7 +22,7 @@ public static class AuthorApplication
 
             if (command.Name is "version" or "--version" or "-v")
             {
-                await output.WriteLineAsync("DTMAPI Author SDK " + AuthorSdkContract.SdkVersion + " (default API target " + AuthorApiTargetCatalog.Current.DefaultTarget + ")").ConfigureAwait(false);
+                await output.WriteLineAsync("DTMAPI Author SDK " + AuthorSdkContract.SdkVersion + " (optional tools; standard .NET projects)").ConfigureAwait(false);
                 return 0;
             }
 
@@ -45,27 +46,25 @@ public static class AuthorApplication
             CommandReport report;
             if (command.Name == "session")
                 report = await AuthorSessionService.ExecuteAsync(command).ConfigureAwait(false);
-            else if (command.Name == "restore")
-                report = StandardBuildIntegration.RestoreCommand(command);
             else
             {
                 report = command.Name switch
                 {
-                    "new" => TemplateCreator.Create(command),
-                    "validate" => ProjectValidator.ValidateCommand(command),
-                    "build" => CodeModBuilder.BuildCommand(command),
-                    "msbuild-prepare" => StandardBuildIntegration.PrepareCommand(command),
-                    "msbuild-check-references" => StandardBuildIntegration.CheckReferencesCommand(command),
-                    "pack" => DeterministicPackager.PackCommand(command),
-                    "hash" => DeterministicPackager.HashCommand(command),
+                    "new" => OptionalTools.New(command),
+                    "native-references" => OptionalTools.NativeReferences(command),
+                    "status" => OptionalTools.Status(command),
+                    "validate" => OptionalTools.Validate(command),
+                    "pack" => OptionalTools.Pack(command),
+                    "hash" => OptionalTools.Hash(command),
                     "symbols" => SymbolInspector.Execute(command),
-                    "deploy" => DeploymentService.OfficialPackage(command, "deploy"),
-                    "update" => DeploymentService.OfficialPackage(command, "update"),
-                    "install-local" => DeploymentService.OfficialPackage(command, "install-local"),
-                    "install-local-status" => DeploymentService.InstallLocalStatus(command),
-                    "withdraw" => DeploymentService.Withdraw(command),
-                    "recover" => DeploymentService.Recover(command),
-                    "deployment-status" => DeploymentService.Status(command),
+                    "audio-prepare" => AudioPrepareCommand.Execute(command),
+                    "deploy" => OptionalTools.Deploy(command),
+                    "update" => OptionalTools.Deploy(command),
+                    "install-local" => OptionalTools.Deploy(command),
+                    "install-local-status" => OptionalTools.Status(command),
+                    "withdraw" => OptionalTools.Withdraw(command),
+                    "recover" => OptionalTools.Recover(command),
+                    "deployment-status" => OptionalTools.Status(command),
                     "source" => SourceStateService.Execute(command),
                     _ => throw new CommandLineException("Unknown command '" + command.Name + "'. Run dtmapi-author help.")
                 };
@@ -83,7 +82,7 @@ public static class AuthorApplication
         catch (Exception ex)
         {
             var report = Failure("internal", "SDK999", ex.Message);
-            report.Diagnostics[0].Guidance = "No package or destination was adopted. Re-run with --json and preserve the report for diagnosis.";
+            report.Diagnostics[0].Guidance = "Inspect the operation error and affected path. Deployment can be retried after correcting the file error; recover applies only when a preserved directory actually exists.";
             await WriteReportAsync(args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase)), report, output, error).ConfigureAwait(false);
             return 3;
         }
@@ -150,40 +149,27 @@ public static class AuthorApplication
     }
 
     private const string HelpText = """
-DTMAPI Author SDK 0.7.0 - available API targets from target-catalog.json
+DTMAPI 0.7.5 optional author tools
+  new codemod|contentpack <directory> --id Author.Mod [--references <API-directory>]
+  build|restore <project-or-directory> [standard dotnet arguments]
+  native-references <DLL-or-directory> [...] --output <directory>
+  validate <package-directory>
+  pack <package-directory> --output <zip> [--replace]
+  deploy <package-directory-or-zip> --game-root <game> [--clean] [--target <MODS-directory>]
+  status|withdraw|recover <UniqueID> --game-root <game> [--replace]
+  doctor <game-or-package-directory-or-zip> [--deep] [--json]
+  symbols <dll> [--pdb <pdb>]
+  audio-prepare <audio-file> --use effect|music --output <directory>
+  session prepare|snapshot|reload|command|clear --game-root <game>
 
-Usage:
-  dtmapi-author new codemod <directory> --id Author.Mod --name "Mod" --author "Author" [--code-mod-kind Strict|Advanced] [--api-target <version>] [--game-root <installed-game-for-open-Advanced>] [--native-references <paths-separated-by-semicolons>] [--harmony-owner <owner>] [--json]
-  dtmapi-author new contentpack <directory> --id Author.Pack --name "Pack" --author "Author" [--api-target <version>] [--json]
-  dtmapi-author validate <directory> [--json]
-  dtmapi-author build <directory> [--configuration Debug|Release] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--output <directory>] [--json]
-  dtmapi-author pack <directory> [--configuration Debug|Release] [--symbols true|false] [--compatibility-root <directory>] [--game-root <directory-for-Advanced>] [--build-output <directory>] [--output <zip>] [--json]
-  dtmapi-author hash <file-or-directory> [--json]
-  dtmapi-author deploy <package.zip> --game-root <directory> [--json]
-  dtmapi-author update <package.zip> --game-root <directory> [--json]
-  dtmapi-author install-local <package.zip> --game-root <directory> --expected-unique-id <UniqueID> --expected-version <version> --expected-package-sha256 <sha256> [--json]
-  dtmapi-author install-local-status <UniqueID> --game-root <directory> --expected-version <version> --expected-package-sha256 <sha256> [--json]
-  dtmapi-author withdraw <UniqueID> --game-root <directory> [--json]
-  dtmapi-author recover <UniqueID> --game-root <directory> [--json]
-  dtmapi-author deployment-status <UniqueID> --game-root <directory> [--json]
-  dtmapi-author source local select <UniqueID> <game/Mods/package> --game-root <directory> [--json]  (paused)
-  dtmapi-author source local clear <UniqueID> --game-root <directory> [--json]
-  dtmapi-author source workshop prepare|clear <UniqueID> --game-root <directory> [--json]
-  dtmapi-author source reproduction begin --game-root <directory> [--json]
-  dtmapi-author source reproduction restore <snapshotId> --game-root <directory> [--json]
-  dtmapi-author source status [UniqueID] --game-root <directory> [--json]
-  dtmapi-author session prepare --game-root <directory> [--api-target <version>] [--commands true|false] [--json]
-  dtmapi-author session snapshot <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
-  dtmapi-author session reload <UniqueID> <selectedRoot> --game-root <directory> [--timeout-seconds <1..60>] [--json]
-  dtmapi-author restore <project-directory> [--offline true|false] [--json]
-    Standard NuGet restore; --offline limits DTMAPI restore to local inputs. Pack requires a reviewed lock.
-  dtmapi-author session command <UniqueID> <selectedRoot> --game-root <directory> [--command-line <text>] [--timeout-seconds <1..60>] [--json]
-    Prepare with --commands true to offer execute-command/1; the Host must accept it. Default command-line is help.
-  dtmapi-author session clear --game-root <directory> [--json]
-  dtmapi-author doctor <directory-or-zip> [--json]
-  dtmapi-author symbols <DLL> [--pdb <path>] [--json]
-  dtmapi-author version
-
-The CLI never uploads, adopts existing packages, starts or polls the game, or writes ordinary Mods under BepInEx/plugins.
+Build is standard dotnet passthrough. Pack only archives existing files.
+Deploy overlays this package without a backup; files absent from it remain, including old DLLs/resources.
+Same-name package settings are overwritten. The target's existing root workshop.json is preserved.
+--clean clears the old installation after preparing the new package outside it, without an old backup.
+Failed clean staging contains the new package to install, not recoverable old settings.
+Use the failure's --target path when retrying, even if the old manifest was removed.
+Legacy deploy --replace is redundant overlay confirmation, never --clean.
+Withdraw/recover explicitly preserve/restore a directory; status labels their last recovery operation.
+The game must be closed for deployment; enable installed Mods in its official Mod page.
 """;
 }

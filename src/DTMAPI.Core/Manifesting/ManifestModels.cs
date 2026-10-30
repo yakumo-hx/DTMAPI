@@ -7,8 +7,13 @@ namespace DTMAPI.Core.Manifesting
     [DataContract]
     public sealed class ManifestModel : IManifest
     {
+        internal string? InfoReadWarning { get; set; }
         private string type = "CodeMod";
         private string codeModKind = string.Empty;
+
+        [DataMember(Name = "ManifestVersion")] public int ManifestVersion { get; set; }
+        [DataMember(Name = "HarmonyOwner")] public string HarmonyOwner { get; set; } = string.Empty;
+        [DataMember(Name = "Assemblies")] public List<ManifestAssemblyModel> AssemblyModels { get; set; } = new List<ManifestAssemblyModel>();
 
         [DataMember(Name = "Name")] public string Name { get; set; } = string.Empty;
         [DataMember(Name = "Author")] public string Author { get; set; } = string.Empty;
@@ -51,6 +56,7 @@ namespace DTMAPI.Core.Manifesting
 
         [IgnoreDataMember] internal bool TypeWasDeclared { get; private set; }
         [IgnoreDataMember] internal DTMAPI.Internal.Authoring.PackageDependencyManifest? DependencyContract { get; set; }
+        [IgnoreDataMember] internal DTMAPI.Internal.Authoring.ContentPackBinding? ContentPackBinding { get; set; }
         [IgnoreDataMember] internal bool NativeContractSelected { get; set; }
         [IgnoreDataMember] internal string DeclaredTypeValue { get; private set; } = string.Empty;
         [IgnoreDataMember] internal bool CodeModKindWasDeclared { get; private set; }
@@ -60,7 +66,7 @@ namespace DTMAPI.Core.Manifesting
         {
             Name = Name ?? string.Empty;
             Author = Author ?? string.Empty;
-            Version = string.IsNullOrWhiteSpace(Version) ? "0.0.0" : Version;
+            Version = Version ?? string.Empty;
             Description = Description ?? string.Empty;
             UniqueID = UniqueID ?? string.Empty;
             EntryDll = EntryDll ?? string.Empty;
@@ -82,6 +88,13 @@ namespace DTMAPI.Core.Manifesting
                 }
             }
         }
+    }
+
+    [DataContract]
+    public sealed class ManifestAssemblyModel
+    {
+        [DataMember(Name = "Path")] public string Path { get; set; } = string.Empty;
+        [DataMember(Name = "Role")] public string Role { get; set; } = "private-managed";
     }
 
     [DataContract]
@@ -172,7 +185,7 @@ namespace DTMAPI.Core.Manifesting
         public ManagedModClassification Classification { get; }
         public int OfficialPriority { get; }
 
-        internal DiscoveredMod WithSelectionReason(string selectionReason)
+        internal DiscoveredMod WithSelectionReason(string selectionReason, ManagedModClassification? classification = null)
         {
             return new DiscoveredMod(
                 Manifest,
@@ -187,7 +200,7 @@ namespace DTMAPI.Core.Manifesting
                 EnablementReason,
                 NativeSubscriptionVerified,
                 selectionReason,
-                Classification,
+                classification ?? Classification,
                 OfficialPriority);
         }
     }

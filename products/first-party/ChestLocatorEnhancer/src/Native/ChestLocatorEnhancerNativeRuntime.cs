@@ -9,8 +9,7 @@ namespace DTMAPI.ChestLocatorEnhancer
     {
         private readonly IMonitor monitor;
         private readonly ChestLocatorEnhancerHookInstaller hooks;
-        private ChestLocatorEnhancerConfig config =
-            new ChestLocatorEnhancerConfig();
+        private bool active;
         private readonly ChestLocatorObservationLogGate
             observationLogGate =
                 new ChestLocatorObservationLogGate();
@@ -18,7 +17,7 @@ namespace DTMAPI.ChestLocatorEnhancer
         private bool hasTraversalObservation;
         private bool lastUseBox;
         private bool lastNativeAutoUseBox;
-        private ChestLocatorTraversalResult
+        private ChestLocatorTraversalCounts
             lastTraversalObservation;
         private string lastMessage =
             "ProductNative inventory widening has not been configured.";
@@ -31,10 +30,13 @@ namespace DTMAPI.ChestLocatorEnhancer
                 throw new ArgumentNullException(nameof(monitor));
             hooks =
                 new ChestLocatorEnhancerHookInstaller(monitor);
+            UiRefresh = new ChestLocatorUiRefresh(monitor);
             Status = "created";
         }
 
-        internal bool Enabled => config.Enabled;
+        internal ChestLocatorUiRefresh UiRefresh { get; }
+
+        internal bool Enabled => active;
 
         internal bool IsHookInstalled =>
             hooks.IsInstalled;
@@ -78,132 +80,67 @@ namespace DTMAPI.ChestLocatorEnhancer
                 LastSharedStorageBoxCount,
                 LastMessage);
 
-        internal void Configure(
-            ChestLocatorEnhancerConfig value,
-            string reason)
+        internal void Activate()
         {
-            ChestLocatorEnhancerConfig next =
-                (value ??
-                 new ChestLocatorEnhancerConfig()).Copy();
-            config = next;
-            if (next.Enabled)
+            try
             {
-                try
-                {
-                    ChestLocatorHookOwnership.ApplyEnabledState(
-                        enabled: true,
-                        () => hooks.InstallAtomically(this),
-                        hooks.UnpatchOwnedHooks);
-                }
-                catch (Exception ex)
-                {
-                    Status = hooks.IsInstalled
-                        ? "enable-failed-owned"
-                        : "enable-failed-closed";
-                    SetMessage(
-                        "ProductNative enable failed: " +
-                        ex.GetType().Name +
-                        ": " +
-                        ex.Message);
-                    throw;
-                }
+                hooks.InstallAtomically(this);
+                active = true;
+                Status = "configured-product-native";
+                SetMessage("Officially enabled; shared inventories follow native useBox/autoUseBox.");
             }
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    ChestLocatorHookOwnership.ApplyEnabledState(
-                        enabled: false,
-                        () => hooks.InstallAtomically(this),
-                        hooks.UnpatchOwnedHooks);
-                    ChestLocatorEnhancerCallbacks.Detach(
-                        this);
-                }
-                catch (Exception ex)
-                {
-                    Status = hooks.IsInstalled
-                        ? "disable-failed-owned"
-                        : "disable-failed-clean";
-                    SetMessage(
-                        "ProductNative disable cleanup failed: " +
-                        ex.GetType().Name +
-                        ": " +
-                        ex.Message);
-                    throw;
-                }
+                Status = hooks.IsInstalled ? "enable-failed-owned" : "enable-failed-closed";
+                SetMessage("ProductNative enable failed: " + ex.GetType().Name + ": " + ex.Message);
+                throw;
             }
-
-            Status = next.Enabled
-                ? "configured-product-native"
-                : "disabled";
-            SetMessage(
-                "Chest locator ProductNative policy configured reason=" +
-                (reason ?? string.Empty) +
-                ", includeSharedCases=" +
-                config.IncludeSharedCases +
-                ", includeSharedStorageShelfBoxes=" +
-                config.IncludeSharedStorageShelfBoxes +
-                ", respectNativeAutoUseBox=" +
-                config.RespectNativeAutoUseBoxSetting +
-                ".");
         }
-
         internal Array ExtendAvailableInventories(
             object archive,
             bool useBox,
             Array nativeResult)
         {
-            if (!config.Enabled)
+            if (!active)
                 return nativeResult;
 
             try
             {
-                bool nativeAutoUseBox =
-                    !config.RespectNativeAutoUseBoxSetting ||
-                    IsNativeAutoUseBoxEnabled();
+                bool nativeAutoUseBox = ReadNativeAutoUseBox();
                 ChestLocatorTraversalResult result =
-                    ChestLocatorInventoryTraversal
-                        .AppendSharedInventories(
-                            archive,
-                            ChestLocatorInventoryTraversal
-                                .ReadStaticMember(
-                                    typeof(DolocAPI),
-                                    "CurrentRootRoom"),
-                            useBox,
-                            config.IncludeSharedCases,
-                            config
-                                .IncludeSharedStorageShelfBoxes,
-                            nativeAutoUseBox,
-                            nativeResult);
-
+                    ChestLocatorInventoryTraversal.AppendSharedInventories(
+                        archive,
+                        ChestLocatorInventoryTraversal.ReadStaticMember(typeof(DolocAPI), "CurrentRootRoom"),
+                        useBox,
+                        nativeAutoUseBox,
+                        nativeResult);
                 extensionApplications++;
                 LastAppendedInventoryCount =
-                    result.AppendedInventoryCount;
+                    result.Counts.AppendedInventoryCount;
                 LastSharedCaseCount =
-                    result.SharedCaseCount;
+                    result.Counts.SharedCaseCount;
                 LastSharedStorageBoxCount =
-                    result.SharedStorageBoxCount;
+                    result.Counts.SharedStorageBoxCount;
                 lastUseBox = useBox;
                 lastNativeAutoUseBox =
                     nativeAutoUseBox;
-                lastTraversalObservation = result;
+                lastTraversalObservation = result.Counts;
                 hasTraversalObservation = true;
                 Status =
-                    result.AppendedInventoryCount > 0
+                    result.Counts.AppendedInventoryCount > 0
                         ? "verified-product-native"
                         : "configured-product-native";
                 if (observationLogGate.ShouldLog(
-                    config.VerboseLogging,
                     useBox,
                     nativeAutoUseBox,
-                    result.AppendedInventoryCount > 0))
+                    result.Counts.AppendedInventoryCount > 0))
                 {
                     monitor.Log(
                         "ChestLocatorEnhancer ProductNative inventories " +
                         FormatTraversalObservation());
                 }
 
-                return result.AppendedInventoryCount > 0
+                return result.Counts.AppendedInventoryCount > 0
                     ? result.Inventories
                     : nativeResult;
             }
@@ -225,12 +162,13 @@ namespace DTMAPI.ChestLocatorEnhancer
 
         internal void ResetBoundary(string reason)
         {
+            UiRefresh.Reset();
             extensionApplications = 0;
             LastAppendedInventoryCount = 0;
             LastSharedCaseCount = 0;
             LastSharedStorageBoxCount = 0;
             observationLogGate.Reset();
-            Status = config.Enabled
+            Status = active
                 ? "configured-product-native"
                 : "disabled";
             SetMessage(
@@ -241,6 +179,7 @@ namespace DTMAPI.ChestLocatorEnhancer
 
         internal void DeactivateOwner(string reason)
         {
+            active = false;
             var failures = new List<Exception>();
             TryCleanup(
                 () => ResetBoundary(reason),
@@ -313,22 +252,17 @@ namespace DTMAPI.ChestLocatorEnhancer
         private void SetMessage(string message)
         {
             hasTraversalObservation = false;
+            lastTraversalObservation = default;
             lastMessage = message ?? string.Empty;
         }
 
-        private static bool IsNativeAutoUseBoxEnabled()
+        private static bool ReadNativeAutoUseBox()
         {
-            object? settings =
-                ChestLocatorInventoryTraversal.ReadStaticMember(
-                    typeof(DolocAPI),
-                    "userSettings");
-            object? value =
-                ChestLocatorInventoryTraversal.ReadMember(
-                    settings,
-                    "autoUseBox");
-            return !(value is bool flag) || flag;
+            object? settings = ChestLocatorInventoryTraversal.ReadStaticMember(typeof(DolocAPI), "userSettings");
+            object? value = ChestLocatorInventoryTraversal.ReadMember(settings, "autoUseBox");
+            if (value is bool enabled) return enabled;
+            throw new InvalidOperationException("Native autoUseBox setting is unavailable.");
         }
-
         private static void TryCleanup(
             Action cleanup,
             ICollection<Exception> failures)

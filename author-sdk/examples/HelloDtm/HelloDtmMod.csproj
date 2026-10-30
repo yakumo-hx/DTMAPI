@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DtmApiReferences Condition="'$(DtmApiReferences)' == ''">$(MSBuildThisFileDirectory)../../references</DtmApiReferences>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>HelloDtmMod</AssemblyName>
     <RootNamespace>HelloDtmMod</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
+    <Reference Include="DTMAPI.Abstractions" HintPath="$(DtmApiReferences)/DTMAPI.Abstractions.dll" Private="false" />
   </ItemGroup>
   <ItemGroup>
     <None Include="manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="PackageDirectory" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath);manifest.json" DestinationFolder="$(MSBuildProjectDirectory)/package/Content/DTMAPI" />
+    <Copy SourceFiles="info.json" DestinationFolder="$(MSBuildProjectDirectory)/package" />
+  </Target>
 </Project>

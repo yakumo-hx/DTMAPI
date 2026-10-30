@@ -325,6 +325,9 @@ namespace DTMAPI.MoreEquipmentSlots
         private static void ThrowIfOwnerCannotInstall(
             IReadOnlyList<MethodInfo> methods)
         {
+            foreach (bool legacyOwned in ObserveOwners(methods, MoreEquipmentSlotsProductContract.LegacyHarmonyOwner))
+                if (legacyOwned)
+                    throw new InvalidOperationException("MoreEquipmentSlots found a legacy Product owner still attached; restart before activating the rebuilt product.");
             bool[] compatibility = ObserveOwners(
                 methods,
                 MoreEquipmentSlotsProductContract

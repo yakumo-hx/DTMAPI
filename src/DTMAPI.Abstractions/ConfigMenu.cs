@@ -36,6 +36,10 @@ namespace DTMAPI.Abstractions
         IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null);
         IDisposable? PreviewPendingValues(IConfigMenuPage page);
         int RemoveOwner(string uniqueId);
+        void ConfigureDialogs(IConfigMenuDialogHost host);
+        IReadOnlyList<string> GetPendingRestartChanges();
+        bool HasUnnotifiedRestartChanges();
+        void AcknowledgeRestartChanges();
         void ConfigureDiagnostics(
             Action<string, string, string, string>? recordOwnerRegistration,
             Action<string, string, int, string>? recordOwnerCleanup,

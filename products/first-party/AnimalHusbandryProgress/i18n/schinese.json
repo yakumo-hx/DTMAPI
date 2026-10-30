@@ -1,12 +1,11 @@
 {
-  "mod.name": "DTMAPI牧铃隐藏产物进度",
-  "config.section.main": "动物查看界面",
-  "config.enabled.name": "启用",
-  "config.enabled.tooltip": "在牧铃动物查看界面显示隐藏特殊产物进度。",
+  "mod.name": "DTMAPI牧铃产物进度",
   "config.colorPreset.name": "颜色预设",
-  "config.colorPreset.tooltip": "直接选择进度条颜色。",
   "config.fillColor.name": "填充颜色",
-  "config.fillColor.tooltip": "自定义时使用的十六进制 RGB 颜色，例如 FF942E。",
-  "config.verbose.name": "详细日志",
-  "config.verbose.tooltip": "写入低频查看器诊断日志。"
+  "config.color.orange": "橙色",
+  "config.color.green": "绿色",
+  "config.color.blue": "蓝色",
+  "config.color.pink": "粉色",
+  "config.color.white": "白色",
+  "config.color.custom": "自定义"
 }

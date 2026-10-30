@@ -130,13 +130,13 @@ namespace DTMAPI.MoreEquipmentSlots
             }
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
-            if (!TryValidateRawV3(
+            if (!TryValidateRawDocument(
                 document,
                 document.Scope,
                 out string documentFailure))
             {
                 throw new InvalidDataException(
-                    "The equipment-slot sidecar cannot be normalized or written because its raw v3 structure is invalid: " +
+                    "The equipment-slot sidecar cannot be normalized or written because its raw Product structure is invalid: " +
                     documentFailure);
             }
             document.Normalize();
@@ -276,7 +276,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     return false;
                 }
 
-                if (!TryValidateRawV3(
+                if (!TryValidateRawDocument(
                     document,
                     expectedScope,
                     out failure))
@@ -343,15 +343,13 @@ namespace DTMAPI.MoreEquipmentSlots
             return false;
         }
 
-        private static bool TryValidateRawV3(
+        internal static bool TryValidateRawDocument(
             EquipmentSlotStorageDocument document,
             EquipmentSlotSaveScope expectedScope,
             out string failure)
         {
             failure = string.Empty;
-            if (document.SchemaVersion !=
-                MoreEquipmentSlotsProductContract
-                    .StorageSchemaVersion)
+            if (!MoreEquipmentSlotsProductContract.SupportsStorageSchema(document.SchemaVersion))
             {
                 failure = "schema-mismatch";
                 return false;
@@ -404,6 +402,7 @@ namespace DTMAPI.MoreEquipmentSlots
             }
 
             var slotIndexes = new HashSet<int>();
+            var instances = new HashSet<string>(StringComparer.Ordinal);
             for (int position = 0;
                  position < document.Slots.Count;
                  position++)
@@ -420,10 +419,11 @@ namespace DTMAPI.MoreEquipmentSlots
                     entry,
                     requireOccupied: false,
                     out failure) ||
+                    (entry.ItemState != null && !instances.Add(entry.ItemState.InstanceId)) ||
                     !slotIndexes.Add(entry.Index))
                 {
                     if (string.IsNullOrWhiteSpace(failure))
-                        failure = "slot-index-duplicate";
+                        failure = "slot-identity-duplicate";
                     return false;
                 }
             }
@@ -548,10 +548,15 @@ namespace DTMAPI.MoreEquipmentSlots
             }
 
             var escrowIndexes = new HashSet<int>();
+            var escrowInstances = new HashSet<string>(StringComparer.Ordinal);
             foreach (EquipmentSlotEscrowEntry escrow in
                 journal.Escrow)
             {
                 if (escrow == null ||
+                    (escrow.ItemState != null &&
+                     (!escrow.ItemState.IsValid ||
+                      !escrowInstances.Add(escrow.ItemState.InstanceId) ||
+                      escrow.IsShield != (escrow.ItemState.NativeType == "DolocTown.ItemHatShield"))) ||
                     escrow.SlotIndex < 0 ||
                     escrow.SlotIndex >=
                         MoreEquipmentSlotsProductContract
@@ -898,6 +903,10 @@ namespace DTMAPI.MoreEquipmentSlots
                     "gameplay-candidate-expectations-null";
                 return false;
             }
+            var workingInstances = new HashSet<string>(StringComparer.Ordinal);
+            foreach (EquipmentSlotStorageEntry entry in candidate.WorkingSlots)
+                if (entry.ItemState != null && !workingInstances.Add(entry.ItemState.InstanceId))
+                { failure = "gameplay-candidate-instance-duplicate"; return false; }
             var itemIds = new HashSet<string>(
                 StringComparer.Ordinal);
             foreach (EquipmentSlotNativeExpectation expectation in
@@ -916,6 +925,12 @@ namespace DTMAPI.MoreEquipmentSlots
                     return false;
                 }
             }
+            foreach (EquipmentSlotStorageEntry entry in document.Slots)
+                if (entry.IsOccupied && !itemIds.Contains(entry.ItemId))
+                { failure = "gameplay-candidate-evidence-incomplete"; return false; }
+            foreach (EquipmentSlotStorageEntry entry in candidate.WorkingSlots)
+                if (entry.IsOccupied && !itemIds.Contains(entry.ItemId))
+                { failure = "gameplay-candidate-evidence-incomplete"; return false; }
             return true;
         }
 
@@ -1069,14 +1084,22 @@ namespace DTMAPI.MoreEquipmentSlots
             left.ShieldValue == right.ShieldValue &&
             left.ShieldMaxValue ==
                 right.ShieldMaxValue &&
-            left.ShieldDefend == right.ShieldDefend;
+            left.ShieldDefend == right.ShieldDefend &&
+            EquipmentSlotItemState.Same(left.ItemState, right.ItemState);
 
-        private static bool TryValidateRawSlot(
+        internal static bool TryValidateRawSlot(
             EquipmentSlotStorageEntry entry,
             bool requireOccupied,
             out string failure)
         {
             failure = string.Empty;
+            if (entry?.ItemState != null &&
+                (!entry.IsOccupied || !entry.ItemState.IsValid ||
+                 entry.IsShield != (entry.ItemState.NativeType == "DolocTown.ItemHatShield")))
+            {
+                failure = "item-state-invalid";
+                return false;
+            }
             if (entry == null ||
                 entry.Index < 0 ||
                 entry.Index >=
@@ -1321,6 +1344,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     left.ShieldMaxValue !=
                         right.ShieldMaxValue ||
                     left.ShieldDefend != right.ShieldDefend ||
+                    !EquipmentSlotItemState.Same(left.ItemState, right.ItemState) ||
                     left.BeforeBackpackCount !=
                         right.BeforeBackpackCount ||
                     left.BeforeMailCount !=

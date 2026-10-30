@@ -9,6 +9,7 @@ namespace DTMAPI.MoreSaves
         private IDtmHelper helper = null!;
         private MoreSavesConfig config = new MoreSavesConfig();
         private MoreSavesNativeRuntime nativeRuntime = null!;
+        private MoreSavesPagingRuntime? paging;
         private bool entryStarted;
         private bool runtimeCreated;
         private bool updateSubscribed;
@@ -27,22 +28,25 @@ namespace DTMAPI.MoreSaves
             try
             {
                 config = helper.ReadConfig<MoreSavesConfig>();
-                config.Normalize();
                 nativeRuntime.Configure(config, "Entry");
+                paging = new MoreSavesPagingRuntime(nativeRuntime, helper.Monitor, T);
+                paging.Install();
                 RegisterConfigMenu();
                 helper.Events.Save.SaveLoaded += OnSaveLoaded; saveSubscribed = true;
                 helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle; titleSubscribed = true;
                 helper.Monitor.Log(T("mod.loaded", "DTMAPI More Saves ProductNative runtime loaded.") +
                     " owner=" + MoreSavesNativeOwnerCoordinator.ProductOwner +
-                    " patches=" + nativeRuntime.InstalledPatchCount +
+                    " patches=" + paging.InstalledPatchCount +
                     " " + nativeRuntime.StatusSummary);
             }
             catch (Exception entryFailure)
             {
                 var failures = new List<Exception> { entryFailure };
                 TryCleanup(UnsubscribeEvents, failures);
+                TryCleanup(() => paging?.Suspend(), failures);
                 if (runtimeCreated)
                     TryCleanup(() => nativeRuntime.DeactivateOwner("entry-failed"), failures);
+                if (!nativeRuntime.LeaseHeld) TryCleanup(() => paging?.RestoreAndDispose(), failures);
                 if (failures.Count == 1)
                     throw;
                 throw new AggregateException("MoreSaves Entry failed and rollback encountered cleanup failures.", failures);
@@ -54,14 +58,13 @@ namespace DTMAPI.MoreSaves
             if (disposed)
                 return;
             var failures = new List<Exception>();
-            if (entryStarted)
-            {
-                updateSubscribed = false;
-                saveSubscribed = false;
-                titleSubscribed = false;
-            }
+            // Core has already closed owner-bound event access before Dispose. Its owner cleanup
+            // removes these subscriptions; entry rollback above is the still-active removal path.
+            if (entryStarted) { updateSubscribed = false; saveSubscribed = false; titleSubscribed = false; }
+            TryCleanup(() => paging?.Suspend(), failures);
             if (runtimeCreated)
                 TryCleanup(() => nativeRuntime.DeactivateOwner("OwnerDeactivation"), failures);
+            if (!nativeRuntime.LeaseHeld) TryCleanup(() => paging?.RestoreAndDispose(), failures);
             if (failures.Count > 0)
                 throw new AggregateException("MoreSaves owner deactivation was incomplete.", failures);
             disposed = true;
@@ -78,14 +81,11 @@ namespace DTMAPI.MoreSaves
             menu.Register(helper.ModManifest, ResetConfig, SaveConfig);
             menu.SetDisplayName(helper.ModManifest, () => T("mod.name", "DTMAPI More Saves"));
             menu.AddSectionTitle(helper.ModManifest, () => T("config.section.slots", "Save slots"));
-            menu.AddParagraph(helper.ModManifest, () => string.Format(T("config.status", "Status: {0}"), nativeRuntime.StatusSummary));
-            menu.AddBoolOption(helper.ModManifest, () => T("config.enabled.name", "Enabled"), () => T("config.enabled.tooltip", "Expands the official save/load UI to 12 total slots."), () => config.Enabled, value => config.Enabled = value);
             menu.AddBoolOption(helper.ModManifest, () => T("config.verbose.name", "Verbose logs"), () => T("config.verbose.tooltip", "Write low-frequency archive-count lifecycle diagnostics."), () => config.VerboseLogging, value => config.VerboseLogging = value);
         }
 
         private void SaveConfig()
         {
-            config.Normalize();
             helper.WriteConfig(config);
             nativeRuntime.Configure(config, "config saved");
         }
@@ -93,7 +93,6 @@ namespace DTMAPI.MoreSaves
         private void ResetConfig()
         {
             config = new MoreSavesConfig();
-            config.Normalize();
         }
 
         private void OnUpdateTicked(object sender, UpdateTickedEventArgs e) => nativeRuntime.Update();

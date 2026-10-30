@@ -22,7 +22,6 @@ namespace DTMAPI.Internal.Authoring
     internal sealed class PackageDependencyManifest
     {
         public string OwnerId { get; set; } = string.Empty;
-        public PackageSemanticVersion Version { get; set; } = null!;
         public IReadOnlyList<PackageModDependency> Dependencies { get; set; } = Array.Empty<PackageModDependency>();
     }
 
@@ -51,85 +50,27 @@ namespace DTMAPI.Internal.Authoring
         public string Source { get; set; } = string.Empty;
     }
 
-    internal sealed class PackageDependencyInventory
-    {
-        public const string FileName = "dtmapi-dependencies.json";
-        public string OwnerId { get; set; } = string.Empty;
-        public string ApiTarget { get; set; } = string.Empty;
-        public string EntryPath { get; set; } = string.Empty;
-        public IReadOnlyList<PackageModDependency> Dependencies { get; set; } = Array.Empty<PackageModDependency>();
-        public IReadOnlyList<PackageAssemblyRecord> Assemblies { get; set; } = Array.Empty<PackageAssemblyRecord>();
-    }
-
     // Linked into the existing Runtime and tools. JSON and PE facts are data; no target code executes here.
     internal static class PackageDependencyContract
     {
         public static PackageDependencyManifest? ReadManifest(byte[] bytes)
         {
             XElement root = ReadJson(bytes);
-            XElement[] selector = root.Elements().Where(e => string.Equals(Name(e), "DependencyContractVersion", StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (selector.Length == 0) return null; // Preserve the original reader and aliases for old packages.
-            if (selector.Length != 1 || Name(selector[0]) != "DependencyContractVersion") Fail("dependency-contract-invalid", "Duplicate or mis-cased version selector.");
             Dictionary<string, XElement> fields = Object(root);
-            if (Number(Required(fields, "DependencyContractVersion")) != 1) Fail("dependency-contract-unsupported", "Expected DependencyContractVersion=1; no legacy fallback.");
+            var dependencies = fields.TryGetValue("Dependencies", out var rows)
+                ? ReadDependencies(rows, manifest: true).ToList() : new List<PackageModDependency>();
+            if (fields.TryGetValue("ContentPackFor", out var binding))
+            {
+                string host = Id(Text(Required(Object(binding), "HostId")));
+                var existing = dependencies.FirstOrDefault(d => d.Id.Equals(host, StringComparison.OrdinalIgnoreCase));
+                if (existing == null) dependencies.Add(new PackageModDependency(host, true, new PackageVersionRange("0.0.0", null, true)) { LegacyOrderingOnly = true });
+                else if (!existing.Required) dependencies[dependencies.IndexOf(existing)] = new PackageModDependency(host, true, existing.Range) { LegacyOrderingOnly = existing.LegacyOrderingOnly };
+            }
             return new PackageDependencyManifest
             {
                 OwnerId = Id(Text(Required(fields, "UniqueID"))),
-                Version = PackageSemanticVersion.Parse(Text(Required(fields, "Version"))),
-                Dependencies = ReadDependencies(Required(fields, "Dependencies"), manifest: true)
+                Dependencies = dependencies
             };
-        }
-
-        public static PackageDependencyInventory ReadInventory(byte[] bytes)
-        {
-            Dictionary<string, XElement> fields = Object(ReadJson(bytes), "schemaVersion", "ownerId", "apiTarget", "entryPath", "dependencies", "assemblies");
-            if (Number(Required(fields, "schemaVersion")) != 1) Fail("dependency-inventory-unsupported", "Expected schemaVersion=1.");
-            var records = new List<PackageAssemblyRecord>();
-            var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (XElement item in Array(Required(fields, "assemblies")))
-            {
-                var value = Object(item, "path", "role", "name", "assemblyVersion", "culture", "publicKeyToken", "length", "sha256", "targetFramework", "references", "distribution", "licenseFiles", "source");
-                var record = new PackageAssemblyRecord
-                {
-                    Path = Relative(Text(Required(value, "path"))), Role = Text(Required(value, "role")),
-                    Identity = ReadIdentity(value), Length = Number(Required(value, "length")),
-                    Sha256 = Hash(Text(Required(value, "sha256"))), TargetFramework = Text(Required(value, "targetFramework")),
-                    References = Array(Required(value, "references")).Select(reference => ReadIdentity(Object(reference, "name", "assemblyVersion", "culture", "publicKeyToken"))).ToArray(),
-                    Distribution = Text(Required(value, "distribution")),
-                    LicenseFiles = Array(Required(value, "licenseFiles")).Select(file => Relative(Text(file))).ToArray(),
-                    Source = Text(Required(value, "source"))
-                };
-                if (!paths.Add(record.Path) || !names.Add(record.Identity.Name)) Fail("dependency-assembly-duplicate", record.Path);
-                if (record.Role != "entry" && record.Role != "shared-contract" && record.Role != "private-managed") Fail("dependency-role-invalid", record.Role);
-                string prefix = record.Role == "shared-contract" ? "lib/shared/" : "lib/private/";
-                if (record.Role != "entry" && !record.Path.StartsWith(prefix, StringComparison.Ordinal)) Fail("dependency-library-path", record.Path);
-                if (!string.Equals(System.IO.Path.GetFileNameWithoutExtension(record.Path), record.Identity.Name, StringComparison.Ordinal) || !record.Path.EndsWith(".dll", StringComparison.Ordinal)) Fail("dependency-identity-filename", record.Path);
-                if (record.Length <= 0 || record.TargetFramework != ".NETStandard,Version=v2.0") Fail("dependency-framework-invalid", record.Path);
-                if (record.References.Select(r => r.Key).Distinct(StringComparer.Ordinal).Count() != record.References.Count) Fail("dependency-reference-duplicate", record.Path);
-                if (record.Distribution != "self-authored" && record.Distribution != "licensed-third-party") Fail("dependency-distribution-invalid", record.Path);
-                if (record.Distribution == "licensed-third-party" && record.LicenseFiles.Count == 0) Fail("dependency-license-missing", record.Path);
-                if (string.IsNullOrWhiteSpace(record.Source) || record.Source.Contains(":\\") || record.Source.StartsWith("/", StringComparison.Ordinal)) Fail("dependency-source-invalid", record.Path);
-                records.Add(record);
-            }
-            string entry = Text(Required(fields, "entryPath"));
-            if (entry.Length == 0)
-            { if (records.Count != 0) Fail("dependency-contentpack-executable", "ContentPack cannot contain assemblies."); }
-            else
-            { Relative(entry); if (records.Count(r => r.Role == "entry") != 1 || records.Single(r => r.Role == "entry").Path != entry) Fail("dependency-entry-mismatch", entry); }
-            return new PackageDependencyInventory
-            {
-                OwnerId = Id(Text(Required(fields, "ownerId"))), ApiTarget = Text(Required(fields, "apiTarget")), EntryPath = entry,
-                Dependencies = ReadDependencies(Required(fields, "dependencies"), manifest: false), Assemblies = records
-            };
-        }
-
-        public static void RequireProjection(PackageDependencyManifest manifest, PackageDependencyInventory inventory)
-        {
-            if (!string.Equals(manifest.OwnerId, inventory.OwnerId, StringComparison.Ordinal)) Fail("dependency-owner-mismatch", inventory.OwnerId);
-            string Key(PackageModDependency d) => d.Id.ToUpperInvariant() + "|" + d.Required + "|" + d.Range.Minimum.Text + "|" + d.Range.Maximum?.Text + "|" + d.Range.IncludePrerelease;
-            if (!manifest.Dependencies.Select(Key).OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(inventory.Dependencies.Select(Key).OrderBy(x => x, StringComparer.Ordinal)))
-                Fail("dependency-projection-mismatch", manifest.OwnerId);
         }
 
         public static string ResolveFile(string root, string relative)
@@ -157,34 +98,39 @@ namespace DTMAPI.Internal.Authoring
             foreach (XElement item in Array(array))
             {
                 string idName = manifest ? "UniqueID" : "uniqueId", requiredName = manifest ? "Required" : "required", rangeName = manifest ? "VersionRange" : "versionRange";
-                var fields = Object(item, idName, requiredName, rangeName);
+                var fields = Object(item);
                 string id = Id(Text(Required(fields, idName)));
                 if (!ids.Add(id)) Fail("dependency-id-duplicate", id);
-                var range = Object(Required(fields, rangeName), new[] { "minimumInclusive", "maximumExclusive", "includePrerelease" }, new[] { "maximumExclusive" });
-                result.Add(new PackageModDependency(id, Boolean(Required(fields, requiredName)),
-                    new PackageVersionRange(Text(Required(range, "minimumInclusive")), range.TryGetValue("maximumExclusive", out XElement? maximum) ? Text(maximum) : null, Boolean(Required(range, "includePrerelease")))));
+                bool required = fields.TryGetValue(requiredName, out var requiredField) ? Boolean(requiredField)
+                    : fields.TryGetValue("IsRequired", out var alias) ? Boolean(alias) : true;
+                if (fields.TryGetValue(rangeName, out var rangeField))
+                {
+                    var range = Object(rangeField);
+                    result.Add(new PackageModDependency(id, required, new PackageVersionRange(
+                        range.TryGetValue("minimumInclusive", out var minimum) ? Text(minimum) : "0.0.0",
+                        range.TryGetValue("maximumExclusive", out var maximum) ? Text(maximum) : null,
+                        range.TryGetValue("includePrerelease", out var prerelease) && Boolean(prerelease))));
+                }
+                else if (fields.TryGetValue("MinimumVersion", out var legacyMinimum) && !string.IsNullOrWhiteSpace(Text(legacyMinimum)))
+                    result.Add(new PackageModDependency(id, required, new PackageVersionRange(Text(legacyMinimum), null, true)));
+                else result.Add(new PackageModDependency(id, required, new PackageVersionRange("0.0.0", null, true)) { LegacyOrderingOnly = true });
             }
             return result;
         }
 
-        private static PackageAssemblyIdentity ReadIdentity(Dictionary<string, XElement> fields)
-        {
-            string version = Text(Required(fields, "assemblyVersion"));
-            if (!System.Version.TryParse(version, out Version? parsed) || parsed.Build < 0 || parsed.Revision < 0 || parsed.ToString() != version) Fail("dependency-clr-version-invalid", version);
-            string token = Text(Required(fields, "publicKeyToken"));
-            if (token.Length != 0 && (token.Length != 16 || token.Any(c => !Hex(c)))) Fail("dependency-token-invalid", token);
-            string name = Text(Required(fields, "name")), culture = Text(Required(fields, "culture"));
-            if (string.IsNullOrWhiteSpace(name) || name.IndexOfAny(new[] { '/', '\\', ':', ',' }) >= 0 || culture == "neutral" || token == "null") Fail("dependency-identity-invalid", name);
-            return new PackageAssemblyIdentity { Name = name, AssemblyVersion = version, Culture = culture, PublicKeyToken = token };
-        }
-
         internal static XElement ReadJson(byte[] bytes)
         {
-            if (bytes.Length > 2 * 1024 * 1024) Fail("dependency-document-too-large", "2 MiB limit.");
             int offset = bytes.Length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf ? 3 : 0;
+            if (offset == bytes.Length) Fail("dependency-json-invalid", "JSON document is empty (possibly only a UTF-8 BOM).");
             try
-            { using (var reader = JsonReaderWriterFactory.CreateJsonReader(bytes, offset, bytes.Length - offset, System.Text.Encoding.UTF8,
-                new XmlDictionaryReaderQuotas { MaxDepth = 32, MaxArrayLength = 2097152, MaxStringContentLength = 2097152 }, null)) return XElement.Load(reader); }
+            {
+                using (var reader = JsonReaderWriterFactory.CreateJsonReader(bytes, offset, bytes.Length - offset, System.Text.Encoding.UTF8,
+                    new XmlDictionaryReaderQuotas { MaxDepth = 32, MaxArrayLength = 2097152, MaxStringContentLength = 2097152 }, null))
+                {
+                    if (reader.MoveToContent() != XmlNodeType.Element) Fail("dependency-json-invalid", "JSON document has no root value.");
+                    return XElement.Load(reader);
+                }
+            }
             catch (Exception ex) when (ex is XmlException || ex is System.Runtime.Serialization.SerializationException)
             { throw new InvalidDataException("dependency-json-invalid: " + ex.Message, ex); }
         }
@@ -206,10 +152,27 @@ namespace DTMAPI.Internal.Authoring
         private static void Type(XElement element, string type) { if ((string?)element.Attribute("type") != type) Fail("dependency-field-type", Name(element) + ": " + type); }
         internal static string Text(XElement element) { Type(element, "string"); return element.Value; }
         internal static long Number(XElement element) { Type(element, "number"); if (!long.TryParse(element.Value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out long value)) throw new InvalidDataException("dependency-number-invalid"); return value; }
-        private static bool Boolean(XElement element) { Type(element, "boolean"); if (element.Value != "true" && element.Value != "false") Fail("dependency-boolean-invalid", element.Value); return element.Value == "true"; }
+        internal static bool Boolean(XElement element) { Type(element, "boolean"); if (element.Value != "true" && element.Value != "false") Fail("dependency-boolean-invalid", element.Value); return element.Value == "true"; }
         internal static IEnumerable<XElement> Array(XElement element) { Type(element, "array"); return element.Elements(); }
-        private static string Id(string value) { if (string.IsNullOrWhiteSpace(value) || value.Trim() != value || value.IndexOfAny(new[] { '/', '\\', ':', '|', '\0' }) >= 0) Fail("dependency-id-invalid", value); return value; }
-        internal static string Relative(string value) { if (string.IsNullOrEmpty(value) || value.IndexOfAny(new[] { '\\', ':', '\0' }) >= 0 || value.Split('/').Any(p => p.Length == 0 || p == "." || p == ".." || p.TrimEnd('.', ' ') != p)) Fail("dependency-path-invalid", value); return value; }
+        private static string Id(string value) => PackageDocumentFacts.Id(value);
+        internal static string Relative(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.IndexOfAny(new[] { ':', '\0' }) >= 0 || value.StartsWith("/") || value.StartsWith("\\"))
+                Fail("dependency-path-invalid", value);
+            var parts = new List<string>();
+            foreach (string part in value.Replace('\\', '/').Split('/'))
+            {
+                if (part.Length == 0 || part == ".") continue;
+                if (part == "..")
+                {
+                    if (parts.Count == 0) Fail("dependency-path-outside-package", value);
+                    parts.RemoveAt(parts.Count - 1);
+                }
+                else parts.Add(part);
+            }
+            if (parts.Count == 0) Fail("dependency-path-invalid", value);
+            return string.Join("/", parts);
+        }
         private static bool Hex(char c) => c >= '0' && c <= '9' || c >= 'a' && c <= 'f';
         internal static string Hash(string value) { if (value.Length != 64 || value.Any(c => !Hex(c))) Fail("dependency-sha256-invalid", value); return value; }
         private static void Fail(string code, string message) => throw new InvalidDataException(code + ": " + message);

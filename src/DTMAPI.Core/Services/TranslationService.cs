@@ -90,9 +90,10 @@ namespace DTMAPI.Core.Services
         private readonly Dictionary<string, string> catalogPaths;
         private readonly Dictionary<string, CatalogLoadResult> catalogs =
             new Dictionary<string, CatalogLoadResult>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> loggedCatalogFailures =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Action<string>? logWarning;
+        private string? resolvedLanguage;
+        private ResolvedCatalog resolvedCatalog;
+        private ResolvedCatalog? englishCatalog;
 
         public TranslationService(string modRootPath, string language)
             : this(modRootPath, new RuntimeLanguageSource(() => language))
@@ -165,20 +166,31 @@ namespace DTMAPI.Core.Services
 
         private ResolvedCatalog ResolveCatalog(string requestedLanguage)
         {
-            foreach (string candidate in BuildCandidates(requestedLanguage))
+            string language = NormalizeLocale(requestedLanguage);
+            lock (catalogGate)
             {
-                if (!catalogPaths.TryGetValue(candidate, out string path))
-                    continue;
-                CatalogLoadResult loaded = GetCatalog(path);
-                if (loaded.IsAvailable)
-                    return new ResolvedCatalog(Path.GetFileNameWithoutExtension(path), loaded.Values);
+                if (resolvedLanguage == language)
+                    return resolvedCatalog;
+                ResolvedCatalog result = ResolveCandidates(BuildCandidates(language)) ?? ResolveEnglishCatalog();
+                resolvedCatalog = result;
+                resolvedLanguage = language;
+                return result;
             }
-            return ResolveEnglishCatalog();
         }
 
         private ResolvedCatalog ResolveEnglishCatalog()
         {
-            foreach (string candidate in ExpandAliasGroup("english"))
+            lock (catalogGate)
+            {
+                if (!englishCatalog.HasValue)
+                    englishCatalog = ResolveCandidates(ExpandAliasGroup("english")) ?? new ResolvedCatalog("english", EmptyValues());
+                return englishCatalog.Value;
+            }
+        }
+
+        private ResolvedCatalog? ResolveCandidates(IEnumerable<string> candidates)
+        {
+            foreach (string candidate in candidates)
             {
                 if (!catalogPaths.TryGetValue(candidate, out string path))
                     continue;
@@ -186,7 +198,7 @@ namespace DTMAPI.Core.Services
                 if (loaded.IsAvailable)
                     return new ResolvedCatalog(Path.GetFileNameWithoutExtension(path), loaded.Values);
             }
-            return new ResolvedCatalog("english", EmptyValues());
+            return null;
         }
 
         private IEnumerable<string> BuildCandidates(string requestedLanguage)
@@ -255,8 +267,7 @@ namespace DTMAPI.Core.Services
 
                 result = ReadDictionary(path);
                 catalogs[path] = result;
-                shouldLog = !result.IsAvailable &&
-                    loggedCatalogFailures.Add(path);
+                shouldLog = !result.IsAvailable;
             }
             if (shouldLog)
                 logWarning?.Invoke("DTMAPI translation catalog is unavailable and will be skipped: " + path + ".");
@@ -268,7 +279,8 @@ namespace DTMAPI.Core.Services
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (!Directory.Exists(i18nPath))
                 return result;
-            foreach (string path in Directory.GetFiles(i18nPath, "*.json", SearchOption.TopDirectoryOnly)
+            foreach (string path in Directory.EnumerateFiles(i18nPath, "*", SearchOption.TopDirectoryOnly)
+                .Where(path => string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase))
                 .OrderBy(value => value, StringComparer.OrdinalIgnoreCase))
             {
                 string stem = NormalizeLocale(Path.GetFileNameWithoutExtension(path));

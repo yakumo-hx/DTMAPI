@@ -1,5 +1,5 @@
-Place an already supported DTMAPI content shape here, such as custom-animals.json,
-audio-replacements.json, and its relative assets. The SDK does not invent a wrapper
-or Format field. In the complete Batch 3 preview, explicit session reload supports only
-audio-replacements.json; custom animals, CodeMods, official-native JSON, and unknown formats
-remain restart-required.
+Place content in the layout required by its Host. Public Audio uses audio.json and
+relative media under PackData; see AUDIO-CONTENT.md. Other supported formats, such
+as custom-animals.json, follow their own author guide. The SDK does not invent a
+wrapper or Format field. Explicit author-session reload currently returns a
+restart-required result for content packages and CodeMods.

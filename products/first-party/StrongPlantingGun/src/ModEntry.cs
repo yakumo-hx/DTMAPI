@@ -8,12 +8,12 @@ namespace DTMAPI.StrongPlantingGun
     public sealed class ModEntry : DtmMod, IDisposable
     {
         private IDtmHelper helper = null!;
-        private StrongPlantingGunConfig config =
-            new StrongPlantingGunConfig();
         private StrongPlantingGunNativeRuntime nativeRuntime = null!;
+        private StrongPlantingGunConfig config = new StrongPlantingGunConfig();
         private bool runtimeCreated;
         private bool saveSubscribed;
         private bool titleSubscribed;
+        private bool tickSubscribed;
         private bool disposed;
 
         public override void Entry(IDtmHelper helper)
@@ -28,19 +28,23 @@ namespace DTMAPI.StrongPlantingGun
 
             try
             {
-                config = helper.ReadConfig<StrongPlantingGunConfig>() ??
-                    new StrongPlantingGunConfig();
-                nativeRuntime.Configure(config, "Entry");
+                config = helper.ReadConfig<StrongPlantingGunConfig>();
+                config.Range = StrongPlantingGunConfig.Normalize(config.Range);
+                nativeRuntime.SetBatchContext(helper.GetRequiredService<IDtmRuntimeContext>("0.7.0", "0.7.0"));
+                nativeRuntime.ApplyRange(config.Range);
+                nativeRuntime.Configure("Entry");
                 RegisterConfigMenu();
                 helper.Events.Save.SaveLoaded += OnSaveLoaded;
                 saveSubscribed = true;
                 helper.Events.GameLoop.ReturnedToTitle +=
                     OnReturnedToTitle;
                 titleSubscribed = true;
+                helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+                tickSubscribed = true;
                 helper.Monitor.Log(
                     T(
                         "mod.loaded",
-                        "DTMAPI Strong Planting Gun loaded; the official farming gun has fixed seed, film, and fertilizer slots.") +
+                        "DTMAPI Strong Farming Gun loaded; native seed, fertilizer, film and water actions use a scoped delayed batch.") +
                     " owner=" +
                     StrongPlantingGunProductContract.HarmonyOwner +
                     " hooks=" +
@@ -66,6 +70,26 @@ namespace DTMAPI.StrongPlantingGun
             }
         }
 
+        private void RegisterConfigMenu()
+        {
+            IDtmConfigMenuApi? menu = helper.ModRegistry.GetApi<IDtmConfigMenuApi>("DTMAPI.ModConfigMenu");
+            if (menu == null) return;
+            menu.Register(helper.ModManifest, () => config = new StrongPlantingGunConfig(), SaveConfig);
+            menu.SetDisplayName(helper.ModManifest, () => T("mod.name", "DTMAPI Strong Farming Gun"));
+            menu.AddNumberOption(helper.ModManifest,
+                () => T("config.range.name", "Range"),
+                () => T("config.range.tooltip", "Square side length, 7–15 tiles. Uses the native origin and facing."),
+                () => config.Range, value => config.Range = StrongPlantingGunConfig.Normalize(value),
+                StrongPlantingGunConfig.DefaultRange, StrongPlantingGunConfig.MaximumRange, 1);
+        }
+
+        private void SaveConfig()
+        {
+            config.Range = StrongPlantingGunConfig.Normalize(config.Range);
+            helper.WriteConfig(config);
+            nativeRuntime.ApplyRange(config.Range);
+        }
+
         public void Dispose()
         {
             if (disposed)
@@ -76,6 +100,7 @@ namespace DTMAPI.StrongPlantingGun
             // disposal; flags are cleared so this product keeps no roots.
             saveSubscribed = false;
             titleSubscribed = false;
+            tickSubscribed = false;
             if (runtimeCreated)
             {
                 TryCleanup(
@@ -93,113 +118,10 @@ namespace DTMAPI.StrongPlantingGun
             disposed = true;
         }
 
-        private void RegisterConfigMenu()
-        {
-            IDtmConfigMenuApi? menu =
-                helper.ModRegistry.GetApi<IDtmConfigMenuApi>(
-                    "DTMAPI.ModConfigMenu");
-            if (menu == null)
-            {
-                helper.Monitor.Log(
-                    "DTMAPI config menu API is not available.",
-                    LogLevel.Warn);
-                return;
-            }
-
-            menu.Register(
-                helper.ModManifest,
-                ResetConfig,
-                SaveConfig);
-            menu.SetDisplayName(
-                helper.ModManifest,
-                () => T(
-                    "mod.name",
-                    "DTMAPI Strong Planting Gun"));
-            menu.AddSectionTitle(
-                helper.ModManifest,
-                () => T(
-                    "config.section.main",
-                    "Strong planting gun"));
-            menu.AddParagraph(
-                helper.ModManifest,
-                BuildStatusText);
-            menu.AddParagraph(
-                helper.ModManifest,
-                () => T(
-                    "config.contract",
-                    "Fixed contract: three slots for seed, film, and fertilizer. Water and range expansion are not supported."));
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T("config.enabled.name", "Enabled"),
-                () => T(
-                    "config.enabled.tooltip",
-                    "Enable the fixed three-slot farming gun policy."),
-                () => config.Enabled,
-                value => config.Enabled = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T("config.seeds.name", "Use seeds"),
-                () => T(
-                    "config.seeds.tooltip",
-                    "Plant seeds using official basin checks."),
-                () => config.IncludeSeeds,
-                value => config.IncludeSeeds = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T("config.films.name", "Use films"),
-                () => T(
-                    "config.films.tooltip",
-                    "Apply films using official basin checks."),
-                () => config.IncludeFilms,
-                value => config.IncludeFilms = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.fertilizers.name",
-                    "Use fertilizers"),
-                () => T(
-                    "config.fertilizers.tooltip",
-                    "Apply fertilizers using official basin checks."),
-                () => config.IncludeFertilizers,
-                value => config.IncludeFertilizers = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.verbose.name",
-                    "Verbose logs"),
-                () => T(
-                    "config.verbose.tooltip",
-                    "Write bounded Strong Planting Gun observations."),
-                () => config.VerboseLogging,
-                value => config.VerboseLogging = value);
-        }
-
-        private string BuildStatusText() =>
-            string.Format(
-                CultureInfo.InvariantCulture,
-                T(
-                    "config.status",
-                    "Status={0}, hooks={1}/5, expanded={2}, consumed={3}. {4}"),
-                nativeRuntime.Status,
-                nativeRuntime.InstalledPatchCount,
-                nativeRuntime.ExpandedGunCount,
-                nativeRuntime.LastConsumedItemCount,
-                nativeRuntime.LastMessage);
-
-        private void SaveConfig()
-        {
-            helper.WriteConfig(config);
-            nativeRuntime.Configure(config, "config saved");
-        }
-
-        private void ResetConfig() =>
-            config = new StrongPlantingGunConfig();
-
         private void OnSaveLoaded(object sender, SaveLoadedEventArgs e)
         {
             int prepared =
                 nativeRuntime.ConfigureLoadedSaveBoundary(
-                    config,
                     "SaveLoaded");
             helper.Monitor.Log(
                 "StrongPlantingGun SaveLoaded boundary ready slot=" +
@@ -221,8 +143,15 @@ namespace DTMAPI.StrongPlantingGun
                 "StrongPlantingGun ReturnedToTitle restored native capacity and removed the ProductNative owner.");
         }
 
+        private void OnUpdateTicked(object sender, UpdateTickedEventArgs e) => nativeRuntime.ObserveToolBatch();
+
         private void UnsubscribeEvents()
         {
+            if (tickSubscribed)
+            {
+                helper.Events.GameLoop.UpdateTicked -= OnUpdateTicked;
+                tickSubscribed = false;
+            }
             if (saveSubscribed)
             {
                 helper.Events.Save.SaveLoaded -= OnSaveLoaded;

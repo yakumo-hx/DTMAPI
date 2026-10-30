@@ -1,19 +1,10 @@
 {
-  "Name": "DTMAPI Chest Locator Enhancer",
-  "Author": "Yuuka",
-  "Version": "1.0.0",
-  "Description": "A self-contained DTMAPI Advanced CodeMod that widens the official shared-container material lookup.",
   "UniqueID": "DTMAPI.ChestLocatorEnhancerMod",
-  "EntryDll": "DTMAPI.ChestLocatorEnhancer.dll",
+  "EntryDll": "Content/DTMAPI/DTMAPI.ChestLocatorEnhancer.dll",
   "EntryType": "DTMAPI.ChestLocatorEnhancer.ModEntry",
-  "MinimumDTMApiVersion": "0.5.5",
+  "MinimumDTMApiVersion": "0.7.5",
   "Type": "CodeMod",
-  "Dependencies": [
-    {
-      "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.5.5",
-      "Required": true
-    }
-  ],
-  "CodeModKind": "Advanced"
+  "Dependencies": [],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.ChestLocatorEnhancerMod.Native"
 }

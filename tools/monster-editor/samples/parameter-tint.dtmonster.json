@@ -1,0 +1,14 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterParameterTintPack", "name": "受击时长与原版主体着色", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    { "id": "zero-hurt", "templateId": "bee", "overrides": { "hurtDuration": 0 }, "behavior": { "mode": "inherit-native" }, "drops": { "mode": "inherit", "minCount": null, "maxCount": null } },
+    { "id": "inherited", "templateId": "bee", "overrides": {}, "behavior": { "mode": "inherit-native" }, "drops": { "mode": "inherit", "minCount": null, "maxCount": null } }
+  ],
+  "nativeOverrides": [{ "id": "red", "targetId": "bee", "fields": { "tint": "#FF6040" } }],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

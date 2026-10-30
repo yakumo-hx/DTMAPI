@@ -24,6 +24,8 @@ namespace DTMAPI.ChestLocatorEnhancer
 
     internal static class ChestLocatorHookOwnership
     {
+        internal const string HarmonyOwner = "DTMAPI.ChestLocatorEnhancerMod.Native";
+
         internal static void ApplyEnabledState(bool enabled, Action install, Action unpatch)
         {
             if (install == null)

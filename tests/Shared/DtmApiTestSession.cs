@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -26,7 +28,9 @@ namespace DTMAPI.Testing
         private readonly bool keepFailedArtifacts;
         private readonly string? previousTemp;
         private readonly string? previousTmp;
+        private readonly string? previousTmpDir;
         private readonly string? previousSessionRoot;
+        private readonly string? previousPersistentRoot;
         private FileStream? lease;
         private string status = "active";
         private Exception? failure;
@@ -39,16 +43,33 @@ namespace DTMAPI.Testing
             baseRoot = Path.GetFullPath(string.IsNullOrWhiteSpace(configuredRoot)
                 ? Path.Combine(Path.GetTempPath(), "DTMAPI-test-sessions")
                 : configuredRoot);
+            if (OperatingSystem.IsLinux())
+            {
+                // The production author pipe name plus CoreFxPipe_ must fit Unix's
+                // 108-byte socket-address limit. Use real owned short directories;
+                // symlink aliases would invalidate owner-file safety contracts.
+                string userKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Environment.UserName))).Substring(0, 2).ToLowerInvariant();
+                baseRoot = "/tmp/d" + userKey;
+            }
             Directory.CreateDirectory(baseRoot);
+            if (OperatingSystem.IsLinux())
+            {
+                if ((File.GetAttributes(baseRoot) & FileAttributes.ReparsePoint) != 0) throw new IOException("Linux test root must be a real directory: " + baseRoot);
+                File.SetUnixFileMode(baseRoot, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
             Scavenge(baseRoot);
 
             startedAtUtc = DateTimeOffset.UtcNow;
             sessionId = startedAtUtc.ToString("yyyyMMdd-HHmmss") + "-" + Environment.ProcessId + "-" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            RootPath = Path.Combine(baseRoot, suite, sessionId);
+            if (OperatingSystem.IsLinux())
+            {
+                do { RootPath = Path.Combine(baseRoot, suite.Substring(0, 1), Guid.NewGuid().ToString("N").Substring(0, 5)); } while (Directory.Exists(RootPath));
+            }
+            else RootPath = Path.Combine(baseRoot, suite, sessionId);
             Directory.CreateDirectory(RootPath);
             lease = new FileStream(
                 Path.Combine(RootPath, "active.lock"),
-                FileMode.OpenOrCreate,
+                FileMode.CreateNew,
                 FileAccess.ReadWrite,
                 FileShare.None,
                 1,
@@ -57,14 +78,22 @@ namespace DTMAPI.Testing
             keepFailedArtifacts = IsTrue(Environment.GetEnvironmentVariable("DTMAPI_KEEP_FAILED_TEST_TEMP"));
             previousTemp = Environment.GetEnvironmentVariable("TEMP");
             previousTmp = Environment.GetEnvironmentVariable("TMP");
+            previousTmpDir = Environment.GetEnvironmentVariable("TMPDIR");
             previousSessionRoot = Environment.GetEnvironmentVariable("DTMAPI_TEST_SESSION_ROOT");
-            Environment.SetEnvironmentVariable("TEMP", RootPath);
-            Environment.SetEnvironmentVariable("TMP", RootPath);
+            previousPersistentRoot = Environment.GetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT");
+            string temporaryRoot = RootPath;
+            Environment.SetEnvironmentVariable("TEMP", temporaryRoot);
+            Environment.SetEnvironmentVariable("TMP", temporaryRoot);
+            Environment.SetEnvironmentVariable("TMPDIR", temporaryRoot);
             Environment.SetEnvironmentVariable("DTMAPI_TEST_SESSION_ROOT", RootPath);
+            // Offline fixtures must never discover the player's Local MODS or saves.
+            string persistentRoot = Path.Combine(RootPath, "persistent");
+            Directory.CreateDirectory(persistentRoot);
+            Environment.SetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT", persistentRoot);
 
             string effectiveTemp = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            string expectedTemp = RootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            if (!string.Equals(effectiveTemp, expectedTemp, StringComparison.OrdinalIgnoreCase))
+            string expectedTemp = temporaryRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (!string.Equals(effectiveTemp, expectedTemp, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 throw new InvalidOperationException("Path.GetTempPath did not adopt the DTMAPI test session root. Expected '" + expectedTemp + "' but found '" + effectiveTemp + "'.");
 
             WriteSessionReceipt();
@@ -74,6 +103,14 @@ namespace DTMAPI.Testing
         public static DtmApiTestSession Current => current ?? throw new InvalidOperationException("No DTMAPI test session is active.");
 
         public string RootPath { get; }
+
+        public static string FindRepositoryRoot()
+        {
+            for (DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+                if (File.Exists(Path.Combine(directory.FullName, "DTMAPI.sln")) && File.Exists(Path.Combine(directory.FullName, "global.json")))
+                    return directory.FullName;
+            throw new DirectoryNotFoundException("Repository root was not found above the executing test assembly.");
+        }
 
         public static DtmApiTestSession Start(string suiteName)
         {
@@ -119,7 +156,9 @@ namespace DTMAPI.Testing
             {
                 Environment.SetEnvironmentVariable("TEMP", previousTemp);
                 Environment.SetEnvironmentVariable("TMP", previousTmp);
+                Environment.SetEnvironmentVariable("TMPDIR", previousTmpDir);
                 Environment.SetEnvironmentVariable("DTMAPI_TEST_SESSION_ROOT", previousSessionRoot);
+                Environment.SetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT", previousPersistentRoot);
                 lease?.Dispose();
                 lease = null;
                 current = null;

@@ -19,6 +19,12 @@ namespace DTMAPI.GameBridge.DolocTown.Native
         private bool hooked;
         private bool modal;
         private bool draining;
+        private bool dialogHooked;
+        private bool dialogModal;
+        private object? dialogParent;
+        private Type? nativeMenuType;
+        private PropertyInfo? currentStateProperty;
+        private Func<object?>? stateMachine;
         private static NativeMenuInputAdapter? active;
 
         internal NativeMenuInputAdapter(DtmApiRuntime runtime)
@@ -30,6 +36,26 @@ namespace DTMAPI.GameBridge.DolocTown.Native
 
         internal bool Ready => hooked && userInput != null;
         internal bool Draining => draining;
+        internal bool DialogBlocking => dialogParent != null;
+        internal object? CurrentNativeMenu
+        {
+            get
+            {
+                if (!attempted) Initialize();
+                object? input = stateMachine?.Invoke();
+                object? state = input == null ? null : currentStateProperty?.GetValue(input);
+                return state != null && nativeMenuType?.IsInstanceOfType(state) == true ? state : null;
+            }
+        }
+        internal bool BeginDialog(out object? parent)
+        {
+            parent = CurrentNativeMenu;
+            if (!Ready || !dialogHooked || parent == null) return false;
+            dialogParent = parent;
+            dialogModal = true;
+            return true;
+        }
+        internal void EndDialog() => dialogModal = false;
         internal void SetModal(bool value)
         {
             if (modal && !value) draining = true;
@@ -38,7 +64,7 @@ namespace DTMAPI.GameBridge.DolocTown.Native
 
         internal MenuInput Read()
         {
-            if (!isTitle()) { modal = false; draining = false; return default; }
+            if (!isTitle()) { modal = false; draining = false; if (dialogParent == null) return default; }
             if (!attempted) Initialize();
             if (!Ready) return default;
             try
@@ -53,6 +79,7 @@ namespace DTMAPI.GameBridge.DolocTown.Native
                     ConfirmEdge = Read(input, "BaseIsConfirmPressedThisFrame"), CancelEdge = Read(input, "BaseIsCancelPressed")
                 };
                 if (draining && result.IsNeutral) draining = false;
+                if (!dialogModal && dialogParent != null && (result.IsNeutral || !ReferenceEquals(dialogParent, CurrentNativeMenu))) dialogParent = null;
                 return result;
             }
             catch { return default; }
@@ -68,6 +95,13 @@ namespace DTMAPI.GameBridge.DolocTown.Native
                 PropertyInfo? property = api?.GetProperty("UserInput", BindingFlags.Static | BindingFlags.Public);
                 if (property == null) return;
                 Type inputType = property.PropertyType;
+                nativeMenuType = Type.GetType("DolocTown.DolocGameUiState, Assembly-CSharp");
+                PropertyInfo? machine = api!.GetProperty("userInput", BindingFlags.Public | BindingFlags.Static);
+                if (machine != null)
+                {
+                    stateMachine = Expression.Lambda<Func<object?>>(Expression.Convert(Expression.Property(null, machine), typeof(object))).Compile();
+                    currentStateProperty = machine.PropertyType.GetProperty("CurrentState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                }
                 userInput = Expression.Lambda<Func<object?>>(Expression.Convert(Expression.Property(null, property), typeof(object))).Compile();
                 ParameterExpression input = Expression.Parameter(typeof(object));
                 Expression typed = Expression.Convert(input, inputType);
@@ -78,6 +112,11 @@ namespace DTMAPI.GameBridge.DolocTown.Native
                 y = Expression.Lambda<Func<object, double>>(Expression.Convert(Expression.Field(move, "y"), typeof(double)), input).Compile();
                 hooked = patcher.TryPatchPrefix("DolocTown.HomePageUiState, Assembly-CSharp", "OnUiUpdate", typeof(NativeMenuInputAdapter).GetMethod(nameof(AllowNativeTitleUpdate), BindingFlags.Public | BindingFlags.Static), 1);
                 if (hooked) active = this;
+                dialogHooked = patcher.TryPatchPrefix("DolocTown.DolocGameUiState, Assembly-CSharp", "OnUpdate",
+                    typeof(NativeMenuInputAdapter).GetMethod(nameof(AllowNativeMenuUpdate), BindingFlags.Public | BindingFlags.Static), 1);
+                if (dialogHooked) active = this;
+                runtime.SetHookStatus("UI.ConfigDialogNavigation", dialogHooked ? "installed" : "degraded", "DolocGameUiState.OnUpdate(Single)",
+                    "Blocks only the native menu instance underneath a config dialog, including closing input drain.");
                 runtime.SetHookStatus("UI.TitleConfigNavigation", hooked ? "installed" : "degraded", "HomePageUiState.OnUiUpdate(Single)",
                     hooked ? "Title-only modal guard and native menu action readers installed; keyboard/controller journey not yet verified." : "Native title guard unavailable; custom navigation disabled.");
             }
@@ -89,13 +128,16 @@ namespace DTMAPI.GameBridge.DolocTown.Native
         }
 
         public static bool AllowNativeTitleUpdate() => active == null || !active.isTitle() || (!active.modal && !active.draining);
+        public static bool AllowNativeMenuUpdate(object __instance) => active == null || !ReferenceEquals(active.dialogParent, __instance);
 
         public void Dispose()
         {
             modal = false; draining = false;
+            dialogModal = false; dialogParent = null; dialogHooked = false;
             if (ReferenceEquals(active, this)) active = null;
             patcher.TryUnpatchAllOwnedPatches();
             userInput = null; buttons.Clear(); x = null; y = null; hooked = false;
+            stateMachine = null; currentStateProperty = null; nativeMenuType = null;
         }
     }
 

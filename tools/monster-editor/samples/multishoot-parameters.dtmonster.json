@@ -1,0 +1,14 @@
+{
+  "format":"dtmapi.monster-project","version":4,
+  "pack":{"id":"Samples.MonsterMultiShootParametersPack","name":"原生连射参数","author":"DTMAPI","version":"0.1.0"},
+  "monsters":[
+    {"id":"fixed","templateId":"drone_99","overrides":{"health":500,"defense":0},"behavior":{"mode":"inherit-native"},"drops":{"mode":"inherit","minCount":null,"maxCount":null},
+     "nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":4,"startOnCooldown":true,"damage":17,"criticalRate":1,"windupGameSeconds":0.6,"multiShoot":{"windupEnabled":true,"shotGameSeconds":0.3,"minShotCount":3,"maxShotCount":3,"fixedDirection":true,"projectileSpeed":4,"projectileLifetimeGameSeconds":3}}]},
+    {"id":"tracking","templateId":"drone_99","overrides":{"health":500,"defense":0},"behavior":{"mode":"inherit-native"},"drops":{"mode":"inherit","minCount":null,"maxCount":null},
+     "nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":0.75,"startOnCooldown":false,"damage":3,"criticalRate":0,"windupGameSeconds":0.6,"multiShoot":{"windupEnabled":false,"shotGameSeconds":0.15,"minShotCount":2,"maxShotCount":2,"fixedDirection":false,"projectileSpeed":10,"projectileLifetimeGameSeconds":1}}]},
+    {"id":"bastion","templateId":"bastion","overrides":{"health":500,"defense":0},"behavior":{"mode":"inherit-native"},"drops":{"mode":"inherit","minCount":null,"maxCount":null},
+     "nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":2,"startOnCooldown":false,"damage":11,"criticalRate":0,"windupGameSeconds":0.4,"multiShoot":{"windupEnabled":true,"shotGameSeconds":0.25,"minShotCount":2,"maxShotCount":2,"fixedDirection":true,"projectileSpeed":6,"projectileLifetimeGameSeconds":2}}]}
+  ],
+  "nativeOverrides":[{"id":"volley","targetId":"drone_99","fields":{"nativeAttacks":[{"attackId":"AtkNormal","cooldownGameSeconds":5,"startOnCooldown":true,"damage":29,"criticalRate":0,"windupGameSeconds":0.6,"multiShoot":{"windupEnabled":false,"shotGameSeconds":0.3,"minShotCount":2,"maxShotCount":2,"fixedDirection":true,"projectileSpeed":5,"projectileLifetimeGameSeconds":2}}]}}],
+  "dropPools":[],"spawnRules":[],"assets":[],"dependencies":[],"catalog":null
+}

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace DTMAPI.GameBridge.DolocTown
@@ -8,6 +9,9 @@ namespace DTMAPI.GameBridge.DolocTown
     {
         private readonly object gate = new object();
         private readonly Dictionary<string, HookInstallRequest> pendingByKey = new Dictionary<string, HookInstallRequest>(StringComparer.OrdinalIgnoreCase);
+        private readonly Func<double> elapsedSeconds;
+        private double? retryAt;
+        private bool closed;
         private long totalRequested;
         private long totalCoalesced;
         private long totalProcessed;
@@ -16,6 +20,50 @@ namespace DTMAPI.GameBridge.DolocTown
         private string latestPhase = string.Empty;
         private int latestThreadId;
         private DateTimeOffset latestRequestedAt = DateTimeOffset.MinValue;
+
+        internal HookInstallScheduler(Func<double>? elapsedSeconds = null)
+        {
+            this.elapsedSeconds = elapsedSeconds ?? (() => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency);
+        }
+
+        internal bool RetryActive { get { lock (gate) return retryAt.HasValue; } }
+
+        internal void StartRetry()
+        {
+            lock (gate)
+                if (!closed && !retryAt.HasValue) retryAt = elapsedSeconds() + 2;
+        }
+
+        internal void StopRetry()
+        {
+            lock (gate)
+            {
+                retryAt = null;
+                pendingByKey.Remove("RetryTimer");
+            }
+        }
+
+        internal void Close()
+        {
+            lock (gate)
+            {
+                closed = true;
+                retryAt = null;
+                pendingByKey.Clear();
+            }
+        }
+
+        internal void PollRetry(string phase, int runtimeThreadId)
+        {
+            lock (gate)
+            {
+                if (!retryAt.HasValue) return;
+                double now = elapsedSeconds();
+                if (now < retryAt.Value) return;
+                retryAt = now + 2;
+                Request("RetryFrame", phase, runtimeThreadId, runtimeThreadId);
+            }
+        }
 
         internal bool HasPending
         {
@@ -26,13 +74,14 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        public HookInstallSchedulerSnapshot Request(string reason, string phase, int threadId, int runtimeThreadId)
+        public void Request(string reason, string phase, int threadId, int runtimeThreadId)
         {
             reason = string.IsNullOrWhiteSpace(reason) ? "unknown" : reason.Trim();
             phase = phase ?? string.Empty;
             string key = GetRequestKey(reason);
             lock (gate)
             {
+                if (closed) return;
                 totalRequested++;
                 if (threadId != runtimeThreadId)
                     offThreadRequests++;
@@ -50,11 +99,10 @@ namespace DTMAPI.GameBridge.DolocTown
                     existing.LastThreadId = threadId;
                     existing.LastRequestedAt = latestRequestedAt;
                     totalCoalesced++;
-                    return BuildSnapshotNoLock(false, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, legacyAllReady: false, assemblyLoadSubscribed: false, retryTimerAlive: false);
+                    return;
                 }
 
                 pendingByKey[key] = new HookInstallRequest(key, reason, phase, threadId, latestRequestedAt);
-                return BuildSnapshotNoLock(false, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, legacyAllReady: false, assemblyLoadSubscribed: false, retryTimerAlive: false);
             }
         }
 
@@ -133,7 +181,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             if (reason.StartsWith("AssemblyLoad", StringComparison.OrdinalIgnoreCase))
                 return "AssemblyLoad";
-            if (reason.StartsWith("RetryTimer", StringComparison.OrdinalIgnoreCase))
+            if (reason.StartsWith("RetryTimer", StringComparison.OrdinalIgnoreCase) || reason.StartsWith("RetryFrame", StringComparison.OrdinalIgnoreCase))
                 return "RetryTimer";
             if (reason.StartsWith("Initialize", StringComparison.OrdinalIgnoreCase))
                 return "Initialize";

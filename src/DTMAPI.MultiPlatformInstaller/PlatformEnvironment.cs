@@ -241,10 +241,15 @@ internal sealed class PlatformEnvironment
 
     public IDisposable AcquireMutationLock(string gameDir)
     {
-        string stateRoot = FileSystemSafety.CombineUnder(gameDir, "DTMAPI");
-        FileSystemSafety.EnsureDirectoryUnder(gameDir, stateRoot);
-        string fileLockPath = FileSystemSafety.CombineUnder(gameDir, "DTMAPI/.multiplatform-installer.lock");
-        FileSystemSafety.AssertNoLinksOnExistingPath(gameDir, fileLockPath);
+        // Keep the stable lock outside the installation: cancellation and a no-op
+        // uninstall must not create DTMAPI, and cleanup must not unlink a held lock.
+        string identity = Path.GetFullPath(gameDir).TrimEnd('\\', '/');
+        if (OperatingSystem.IsWindows()) identity = identity.ToUpperInvariant();
+        string digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
+        string stateRoot = Path.Combine(Path.GetTempPath(), "DTMAPI-InstallerLocks");
+        Directory.CreateDirectory(stateRoot);
+        string fileLockPath = FileSystemSafety.CombineUnder(stateRoot, digest + ".lock");
+        FileSystemSafety.AssertNoLinksOnExistingPath(stateRoot, fileLockPath);
         FileStream fileLock;
         try
         {
@@ -260,7 +265,7 @@ internal sealed class PlatformEnvironment
         {
             // Recheck after opening to close the ordinary check/open race. The
             // lock stream is disposed before any linked entry is reported.
-            FileSystemSafety.AssertNoLinksOnExistingPath(gameDir, fileLockPath);
+            FileSystemSafety.AssertNoLinksOnExistingPath(stateRoot, fileLockPath);
         }
         catch
         {
@@ -274,8 +279,6 @@ internal sealed class PlatformEnvironment
         {
             if (OperatingSystem.IsWindows())
             {
-                string identity = Path.GetFullPath(gameDir).TrimEnd('\\', '/').ToUpperInvariant();
-                string digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
                 mutex = new Mutex(false, @"Local\DTMAPI.RuntimeInstaller." + digest);
                 try { mutexOwned = mutex.WaitOne(0); }
                 catch (AbandonedMutexException) { mutexOwned = true; }

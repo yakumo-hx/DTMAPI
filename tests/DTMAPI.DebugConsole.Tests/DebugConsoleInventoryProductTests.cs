@@ -127,8 +127,11 @@ public sealed class DebugConsoleInventoryFixture
 public static partial class DolocAPI
 {
     public static DebugConsoleInventoryFixture? InventoryFixture;
-    public static bool QueryItemProto(string id, out DebugConsoleInventoryProto? proto) =>
-        InventoryFixture!.Protos.TryGetValue(id, out proto);
+    public static bool QueryItemProto(string id, out DebugConsoleInventoryProto? proto)
+    {
+        proto = null;
+        return InventoryFixture != null && InventoryFixture.Protos.TryGetValue(id, out proto);
+    }
     public static int CountItem(string id, bool checkBox) => InventoryFixture!.Count(id);
     public static DebugConsoleInventoryItem? GenerateItem(string id, int count)
     {

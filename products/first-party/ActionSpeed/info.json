@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI动作加速",
+  "author": "Yuuka",
+  "version": "2.0.0",
+  "description": "依赖 DTMAPI 0.7.0。\n六类动作分别设置开关和 1～4 倍率，默认 3 倍。支持自动装水和瓶装水右键连续饮用，通过 DTMAPI 的模组配置入口调整设置。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI动作加速",
+    "tchinese": "DTMAPI動作加速",
+    "english": "DTMAPI Action Speed"
+  },
+  "localized_description": {
+    "schinese": "依赖 DTMAPI 0.7.0。\n六类动作分别设置开关和 1～4 倍率，默认 3 倍。支持自动装水和瓶装水右键连续饮用，通过 DTMAPI 的模组配置入口调整设置。",
+    "tchinese": "依賴 DTMAPI 0.7.0。六類動作獨立設定開關和 1～4 倍率，預設 3 倍。支援自動裝水和瓶裝水右鍵連續飲用，透過 DTMAPI 的模組設定入口調整設定。",
+    "english": "Requires DTMAPI 0.7.0. Six independent action controls (1–4x, default 3x), optional automatic bottle filling, and faster held-right-click drinking of bottled water. Open settings through DTMAPI Mod Config Menu."
+  }
+}

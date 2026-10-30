@@ -6,27 +6,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Shared\AuthorSessionJson.cs" Link="Runtime\AuthorSessionJson.cs" />
-    <Compile Include="..\Shared\AuthorApiTargetCatalog.cs" Link="Manifesting\AuthorApiTargetCatalog.cs" />
-    <Compile Include="..\Shared\AuthorPackageMarker.cs" Link="Manifesting\AuthorPackageMarker.cs" />
-    <EmbeddedResource Include="..\..\author-sdk\target-catalog.json" LogicalName="DTMAPI.Authoring.target-catalog.json" />
     <ProjectReference Include="..\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
-    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\registry.json"
-                      LogicalName="DTMAPI.Core.AdvancedReferencePolicyRegistry.json" />
-    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\*.json"
-                      Exclude="..\..\author-sdk\advanced-reference-policies\registry.json"
-                      LogicalName="DTMAPI.Core.AdvancedReferencePolicy.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\history\runtime-registry.json"
-                      LogicalName="DTMAPI.Core.HistoricalAdvancedReferencePolicyRegistry.json" />
-    <EmbeddedResource Include="..\..\author-sdk\advanced-reference-policies\history\*.json"
-                      Exclude="..\..\author-sdk\advanced-reference-policies\history\runtime-registry.json"
-                      LogicalName="DTMAPI.Core.HistoricalAdvancedReferencePolicy.%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\tools\release\dtmapi-product-catalog.json"
-                      LogicalName="DTMAPI.Core.ProductCatalog.json" />
   </ItemGroup>
   <Target Name="GenerateDtmApiVersionConstants" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <DtmApiGeneratedVersionFile>$(IntermediateOutputPath)DtmApiBuildVersion.g.cs</DtmApiGeneratedVersionFile>
-      <DtmApiGeneratedVersionSource>namespace DTMAPI.Core.Runtime { internal static class DtmApiBuildVersion { public const string ReleaseVersion = &quot;$(DtmApiReleaseVersion)&quot;%3B public const string BinaryFileVersion = &quot;$(DtmApiBinaryFileVersion)&quot;%3B } }</DtmApiGeneratedVersionSource>
+      <DtmApiGeneratedVersionSource>namespace DTMAPI.Core.Runtime { internal static class DtmApiBuildVersion { public const string ReleaseVersion = "$(DtmApiReleaseVersion)"%3B public const string BinaryFileVersion = "$(DtmApiBinaryFileVersion)"%3B } }</DtmApiGeneratedVersionSource>
     </PropertyGroup>
     <WriteLinesToFile File="$(DtmApiGeneratedVersionFile)" Lines="$(DtmApiGeneratedVersionSource)" Overwrite="true" Encoding="UTF-8" />
     <ItemGroup>
@@ -36,21 +21,12 @@
   <ItemGroup>
     <Compile Include="..\Shared\PackageSemanticVersion.cs" Link="Authoring\PackageSemanticVersion.cs" />
     <Compile Include="..\Shared\PackageDependencyContract.cs" Link="Authoring\PackageDependencyContract.cs" />
+    <Compile Include="../Shared/PackageDocumentFacts.cs" Link="Authoring/PackageDocumentFacts.cs" />
+    <Compile Include="..\Shared\ContentPackBinding.cs" Link="Authoring\ContentPackBinding.cs" />
+    <Compile Include="..\Shared\StrictJson.cs" Link="Authoring\StrictJson.cs" />
     <Compile Include="..\Shared\PackageDependencyPlanner.cs" Link="Authoring\PackageDependencyPlanner.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Shared\PackageDependencyVerifier.cs" Link="Authoring\PackageDependencyVerifier.cs" />
+    <Compile Include="../Shared/AuthorTreeDigest.cs" Link="AuthorTreeDigest.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\Shared\PackageHostReferences.cs" Link="Authoring\PackageHostReferences.cs" />
-    <EmbeddedResource Include="..\..\author-sdk\bcl-reference-identities.json" LogicalName="DTMAPI.Authoring.bcl-reference-identities.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\Shared\PackageDependencyBundle.cs" Link="Authoring\PackageDependencyBundle.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="../Shared/NativeSignature.cs" Link="Authoring/NativeSignature.cs" />
-    <Compile Include="../Shared/NativePackageContract.cs" Link="Authoring/NativePackageContract.cs" />
-  </ItemGroup>
-  <ItemGroup><Compile Include="../Shared/NativeGenericSignature.cs" Link="Authoring/NativeGenericSignature.cs" /></ItemGroup>
 </Project>

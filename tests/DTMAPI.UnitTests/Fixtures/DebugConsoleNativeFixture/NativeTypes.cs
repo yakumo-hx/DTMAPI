@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-public static class DolocAPI
+public static partial class DolocAPI
 {
     public static DolocTown.BodyController agent { get; set; } = null!;
 

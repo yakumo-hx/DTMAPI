@@ -64,10 +64,20 @@ namespace DTMAPI.MoreEquipmentSlots
                     "file-missing");
             }
 
+            try { return Probe(File.ReadAllBytes(path)); }
+            catch (Exception ex)
+            {
+                return new EquipmentSlotStorageFormatProbe(EquipmentSlotStorageFormat.Invalid, 0,
+                    ex.GetType().Name + ": " + ex.Message);
+            }
+        }
+
+        internal static EquipmentSlotStorageFormatProbe Probe(byte[] bytes)
+        {
             try
             {
                 StorageShapeProbe? probe;
-                using (FileStream stream = File.OpenRead(path))
+                using (var stream = new MemoryStream(bytes, writable: false))
                 {
                     probe =
                         CreateSerializer(typeof(StorageShapeProbe))
@@ -97,21 +107,17 @@ namespace DTMAPI.MoreEquipmentSlots
                 if (hasProductShape)
                 {
                     return new EquipmentSlotStorageFormatProbe(
-                        schema ==
-                            MoreEquipmentSlotsProductContract
-                                .StorageSchemaVersion
+                        MoreEquipmentSlotsProductContract.SupportsStorageSchema(schema)
                             ? EquipmentSlotStorageFormat.ProductV3
                             : EquipmentSlotStorageFormat
                                 .UnsupportedProduct,
                         schema,
-                        schema ==
-                            MoreEquipmentSlotsProductContract
-                                .StorageSchemaVersion
+                        MoreEquipmentSlotsProductContract.SupportsStorageSchema(schema)
                             ? string.Empty
                             : "unsupported-product-schema");
                 }
                 if (!probe.SchemaVersion.HasValue &&
-                    IsExactPreSchemaGlobal(probe, path))
+                    IsExactPreSchemaGlobal(probe, bytes))
                 {
                     return new EquipmentSlotStorageFormatProbe(
                         EquipmentSlotStorageFormat.PreSchemaGlobal,
@@ -151,7 +157,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private static bool IsExactPreSchemaGlobal(
             StorageShapeProbe probe,
-            string path)
+            byte[] bytes)
         {
             if (!string.Equals(
                     probe.OwnerId?.Trim(),
@@ -174,7 +180,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 probe.Journal != null ||
                 probe.GameplayCandidate != null ||
                 probe.LegacyMigration != null ||
-                !HasExactPreSchemaJsonShape(path))
+                !HasExactPreSchemaJsonShape(bytes))
             {
                 return false;
             }
@@ -203,14 +209,14 @@ namespace DTMAPI.MoreEquipmentSlots
         }
 
         private static bool HasExactPreSchemaJsonShape(
-            string path)
+            byte[] bytes)
         {
             var top = new HashSet<string>(
                 StringComparer.Ordinal);
             HashSet<string>? slot = null;
             using (XmlDictionaryReader reader =
                 JsonReaderWriterFactory.CreateJsonReader(
-                    File.ReadAllBytes(path),
+                    bytes,
                     XmlDictionaryReaderQuotas.Max))
             {
                 while (reader.Read())

@@ -950,7 +950,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     "equipmentJournals=0",
                     StringComparison.Ordinal) < 0 ||
                 lifecycle.IndexOf(
-                    "equipmentGameplayCandidates=0",
+                    "equipmentOutcomeUnknown=0",
                     StringComparison.Ordinal) < 0)
             {
                 throw new InvalidOperationException(
@@ -1031,7 +1031,7 @@ namespace DTMAPI.GameBridge.DolocTown
             string context)
         {
             if (document == null ||
-                document.SchemaVersion != 3 ||
+                (document.SchemaVersion != 3 && document.SchemaVersion != 4) ||
                 document.Generation < 0 ||
                 document.Scope == null ||
                 document.Scope.ArchiveIndex != 2 ||
@@ -1057,7 +1057,7 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 throw new InvalidOperationException(
                     "Product-v3 document did not match the exact disposable third-save scope during " +
-                    context + ". document=" +
+                    context + ". schema=" + document?.SchemaVersion + "; document=" +
                     FormatMoreEquipmentSlotsProductScope(document?.Scope) +
                     "; native=" +
                     FormatMoreEquipmentSlotsProductScope(expectedScope) +

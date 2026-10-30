@@ -32,6 +32,7 @@ namespace DTMAPI.GameBridge.DolocTown
         private int g4AnimalSwitchStage;
         private int g4AnimalExpectedReceiptSequence;
         private bool g4AnimalAwaitingNextFrameGuard;
+        private DateTimeOffset g4AnimalSelectionRequestedAt;
         private bool g4AnimalPreflightComplete;
         private int g4AnimalConstructedCount;
         private int g4AnimalProgressRowCount;
@@ -81,9 +82,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly List<object> g4NativeUiExitedStateReceipts = new List<object>();
         private NativeUiLayoutObservation? g4LastVerifiedNativeUiLayoutObservation;
         private string g4LastVerifiedNativeUiRepairHooks = string.Empty;
-
-        private HatchVoiceFixtureSession? g4HatchVoiceSession;
-        private CameraPlayableMovementFixtureScenario? g4CameraSession;
 
         internal void NotifyQaHostUiObservation(string source)
         {
@@ -657,6 +655,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     renderSummary.IndexOf("nextFrameGuard=completed", StringComparison.OrdinalIgnoreCase) < 0 ||
                     receiptSequence < g4AnimalExpectedReceiptSequence)
                 {
+                    if ((DateTimeOffset.UtcNow - g4AnimalSelectionRequestedAt).TotalSeconds > 5)
+                        return G4FixtureStepResult.Failed("Native animal selection did not produce a new guarded binding; observation={" + renderSummary + "}.");
                     return G4FixtureStepResult.Pending(
                         "Waiting for AnimalHusbandryProgress next-frame guard after repeated switch " +
                         g4AnimalSwitchStage.ToString(CultureInfo.InvariantCulture) + "/" +
@@ -677,14 +677,34 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (g4AnimalSwitchStage == 0)
                     panel?.GetType().GetMethod("RefreshView", BindingFlags.Public | BindingFlags.Instance)?.Invoke(panel, null);
                 int targetIndex = g4AnimalSwitchStage;
+                // Native pointer focus can already have selected the planned
+                // row. Select a different row so this case requires a real Show.
+                if (panel != null && ReadIntMember(panel, "currentSlotIndex", -1) == targetIndex)
+                    targetIndex = (targetIndex + 1) % requiredSwitches;
                 panel?.GetType().GetMethod("Select", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(int) }, null)?.Invoke(panel, new object[] { targetIndex });
+                object? eventSystem = ReadStaticMember(ResolveType("UnityEngine.EventSystems.EventSystem, UnityEngine.UI"), "current");
+                object? slot = (ReadMember(panel!, "slots") as Array)?.GetValue(targetIndex);
+                object? button = slot == null ? null : ReadMember(slot, "button");
+                runtime.RuntimeMonitor.Log("Animal selection probe target=" + targetIndex + "; selected=" + ReadMember(panel!, "selectedIndex") +
+                    "; capacity=" + ReadMember(panel!, "totalCapacity") + "; eventSystem=" + eventSystem?.GetType().Name +
+                    "; eventSelected=" + (eventSystem == null ? null : ReadMember(eventSystem, "currentSelectedGameObject")) +
+                    "; slotVisible=" + (slot == null ? null : ReadMember(slot, "visible")) +
+                    "; buttonInteractable=" + (button == null ? null : ReadMember(button, "interactable")) +
+                    "; buttonActive=" + (button == null ? null : ReadMember(ReadMember(button, "gameObject")!, "activeInHierarchy")));
                 g4AnimalSwitchStage++;
                 g4AnimalExpectedReceiptSequence = beforeSequence + 1;
                 g4AnimalAwaitingNextFrameGuard = true;
+                g4AnimalSelectionRequestedAt = DateTimeOffset.UtcNow;
                 return G4FixtureStepResult.Pending(
                     "Selected AnimalHusbandryProgress animal index=" +
                     targetIndex.ToString(CultureInfo.InvariantCulture) +
                     "; awaiting one next-frame guard receipt.");
+            }
+            if (AnimalProgressS03Enabled && !animalProgressS03Complete)
+            {
+                G4FixtureStepResult semantics = ObserveAnimalProgressS03ForFixture(panel!, animals, screenshotPath);
+                if (!semantics.Completed || !semantics.Succeeded) return semantics;
+                animalProgressS03Complete = true;
             }
             G4FixtureStepResult screenshot = ObserveScreenshotForFixture(screenshotPath, ref g4AnimalScreenshotPath, ref g4AnimalScreenshotRequestedAt);
             if (!screenshot.Completed || !screenshot.Succeeded)
@@ -1002,82 +1022,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     CultureInfo.InvariantCulture);
         }
 
-        internal G4FixtureStepResult ObserveAudioDefinitionsForFixture()
-        {
-            AudioReplacementService? service = audioReplacementFeature?.Service;
-            if (service == null)
-                return G4FixtureStepResult.Failed("Audio replacement service is unavailable.");
-            AudioReplacementState state = service.GetState("Yuuka.DTMAPI.ManboCardboardAudio");
-            int ready = state.Replacements.Count(item => item.PreloadReady);
-            bool paperBoxReady = state.Replacements.Any(item =>
-                item.PreloadReady &&
-                item.ReplacementId.Equals("manbo-paper-box", StringComparison.OrdinalIgnoreCase) &&
-                item.NativeSoundEvent.Equals("PLAY_RESOURCE_PAPER_BOX", StringComparison.OrdinalIgnoreCase));
-            return paperBoxReady
-                ? G4FixtureStepResult.Verified("status=" + state.Status + "; definitions=" + state.Replacements.Count + "; preloadReady=" + ready + "; paperBoxReady=true; refresh=false")
-                : G4FixtureStepResult.Pending("Waiting for the existing paper-box definition preload. status=" + state.Status + "; definitions=" + state.Replacements.Count + "; preloadReady=" + ready + "; refresh=false");
-        }
-
-        internal G4FixtureStepResult ExerciseHatchVoiceForFixture()
-        {
-            AudioReplacementService? service = audioReplacementFeature?.Service;
-            if (service == null)
-                return G4FixtureStepResult.Failed("Audio replacement service is unavailable.");
-            AudioReplacementState state = service.GetState("DTMAPI.HatchAssets");
-            bool childReady = state.Replacements.Any(item => item.PreloadReady && item.ReplacementId.Equals("hatch-pet-child", StringComparison.OrdinalIgnoreCase));
-            bool adultReady = state.Replacements.Any(item => item.PreloadReady && item.ReplacementId.Equals("hatch-pet-adult", StringComparison.OrdinalIgnoreCase));
-            if (!childReady || !adultReady)
-                return G4FixtureStepResult.Pending("Waiting for already-loaded Hatch definitions; refresh=false.");
-            List<object> animals = FindAnimalsForFixture();
-            object? hatch = animals.FirstOrDefault(item => GetAnimalIdForFixture(item).Equals("hatch", StringComparison.OrdinalIgnoreCase));
-            if (hatch == null)
-                return G4FixtureStepResult.Failed("No Hatch animal exists in the loaded save.");
-            MethodInfo? stage = hatch.GetType().GetMethod("DEBUG_SetAdult", BindingFlags.Public | BindingFlags.Instance);
-            MethodInfo? play = hatch.GetType().GetMethod("PlayAnimalSound", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-            if (stage == null || play == null)
-                return G4FixtureStepResult.Failed("Hatch stage/sound methods are unavailable.");
-            object? vanilla = animals.FirstOrDefault(item => !ReferenceEquals(item, hatch) && GetAnimalIdForFixture(item).Equals("chicken", StringComparison.OrdinalIgnoreCase));
-            MethodInfo? vanillaPlay = vanilla?.GetType().GetMethod("PlayAnimalSound", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-            g4HatchVoiceSession ??= new HatchVoiceFixtureSession(
-                (out bool adult) => TryReadAnimalAdultForFixture(hatch, out adult),
-                value => stage.Invoke(hatch, new object[] { value }),
-                () => play.Invoke(hatch, null),
-                vanillaPlay == null || vanilla == null ? (Action?)null : () => vanillaPlay.Invoke(vanilla, null));
-            string run = g4HatchVoiceSession.Run();
-            string close = g4HatchVoiceSession.Close();
-            g4HatchVoiceSession = null;
-            return G4FixtureStepResult.Verified(run + "; close={" + close + "}");
-        }
-
-        internal G4FixtureStepResult ExerciseCameraPlayableForFixture(string runId, string evidenceDirectory)
-        {
-            if (cameraFeature == null)
-                return G4FixtureStepResult.Pending("Camera production feature is not available yet.");
-            try
-            {
-                g4CameraSession ??= new CameraPlayableMovementFixtureScenario(
-                    cameraFeature.ViewApi,
-                    runId,
-                    ownerId => cameraFeature.CountOwnerResources(ownerId),
-                    CaptureAgentPositionForFixture,
-                    RestoreAgentPositionForFixture,
-                    CaptureCameraPositionForFixture,
-                    RestoreCameraPositionForFixture,
-                    MoveAgentAndCameraForFixture,
-                    () => cameraFeature?.Update(),
-                    TryRequestScreenshotForFixture,
-                    evidenceDirectory);
-                G4FixtureStepResult result = g4CameraSession.Advance();
-                if (result.Completed && result.Succeeded)
-                    g4CameraSession = null;
-                return result;
-            }
-            catch (Exception ex)
-            {
-                return G4FixtureStepResult.Failed(ex.GetType().Name + ": " + ex.Message);
-            }
-        }
-
         internal G4FixtureStepResult ObserveContentMetadataForFixture(bool expectOilAbsent)
         {
             Type? configType = ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
@@ -1105,7 +1049,23 @@ namespace DTMAPI.GameBridge.DolocTown
                     return G4FixtureStepResult.Failed("Oil-absent coal_mine_drop LUT differs from the native coal/amber order: " + string.Join("|", names) + ".");
                 lut = string.Join("|", names);
             }
-            return G4FixtureStepResult.Verified("hats=" + hatRows.Count + "; items=" + itemRows.Count + "; oilInItemTable=" + oilInItemTable + "; oilAbsentLut=" + lut + "; readOnly=true");
+            object? modManager = ReadStaticMember(ResolveType("DolocAPI, Assembly-CSharp"), "modManager");
+            object[] enabledMods = EnumerateObjects(ReadMemberOrNull(modManager, "EnabledMods")).ToArray();
+            IDictionary? selectedSprites = ReadMemberOrNull(modManager, "CachedSprites") as IDictionary;
+            IDictionary? selectedConfigs = ReadMemberOrNull(modManager, "CachedConfigs") as IDictionary;
+            var rows = new List<string> { "id\troot\tsprites\tconfigKeys\tselectedSprites\tselectedConfigKeys" };
+            foreach (object mod in enabledMods)
+            {
+                int spriteCount = (ReadMemberOrNull(mod, "sprites") as IDictionary)?.Count ?? 0;
+                int configCount = (ReadMemberOrNull(mod, "configs") as IDictionary)?.Count ?? 0;
+                int selectedSpriteCount = selectedSprites?.Values.Cast<object>().Count(value => ReferenceEquals(value, mod)) ?? 0;
+                int selectedConfigCount = selectedConfigs?.Values.Cast<object>().Count(value => EnumerateObjects(value).Any(source => ReferenceEquals(source, mod))) ?? 0;
+                rows.Add(string.Join("\t", ReadStringMember(mod, "id"), ReadStringMember(mod, "rootPath"), spriteCount, configCount, selectedSpriteCount, selectedConfigCount));
+            }
+            string receiptPath = GetEvidencePath("g4/metadata", "native-content.tsv");
+            Directory.CreateDirectory(Path.GetDirectoryName(receiptPath)!);
+            File.WriteAllLines(receiptPath, rows);
+            return G4FixtureStepResult.Verified("hats=" + hatRows.Count + "; items=" + itemRows.Count + "; oilInItemTable=" + oilInItemTable + "; oilAbsentLut=" + lut + "; enabledNativeMods=" + enabledMods.Length + "; nativeContentReceipt=" + receiptPath + "; readOnly=true");
         }
 
         internal G4FixtureStepResult ObserveNativeUiLayoutForFixture()
@@ -1137,6 +1097,7 @@ namespace DTMAPI.GameBridge.DolocTown
             string titleConfigPager = CleanupTitleConfigPagerFixturePages("G4 fixture close");
             bool official = CloseNativeUiOwnedByFixture(ref g4OfficialUiOwnedState);
             bool pause = CloseNativeUiOwnedByFixture(ref g4PauseUiOwnedState);
+            RestoreAnimalProgressS03Fixture();
             bool animal = CloseNativeUiOwnedByFixture(ref g4AnimalUiOwnedState);
             g4AnimalSwitchStage = 0;
             g4AnimalExpectedReceiptSequence = 0;
@@ -1147,10 +1108,8 @@ namespace DTMAPI.GameBridge.DolocTown
             bool debug = CloseDebugConsoleOwnedByFixture();
             bool save = RestoreG4SaveSlotsCoordinatorReceipt();
             bool moreSavesPostTitle = CloseNativeUiOwnedByFixture(ref g4MoreSavesPostTitleUiState);
-            bool hatch = CloseRetainedHatchSession();
-            bool camera = CloseRetainedCameraSession();
-            string summary = "title=" + title + "; titleConfigPager={" + titleConfigPager + "}; official=" + official + "; pause=" + pause + "; animal=" + animal + "; debug=" + debug + "; save=" + save + "; moreSavesPostTitle=" + moreSavesPostTitle + "; hatch=" + hatch + "; camera=" + camera;
-            if (!title || !official || !pause || !animal || !debug || !save || !moreSavesPostTitle || !hatch || !camera)
+            string summary = "title=" + title + "; titleConfigPager={" + titleConfigPager + "}; official=" + official + "; pause=" + pause + "; animal=" + animal + "; debug=" + debug + "; save=" + save + "; moreSavesPostTitle=" + moreSavesPostTitle;
+            if (!title || !official || !pause || !animal || !debug || !save || !moreSavesPostTitle)
                 throw new InvalidOperationException("G4 cleanup receipt failed: " + summary + ".");
             return summary;
         }
@@ -1416,22 +1375,6 @@ namespace DTMAPI.GameBridge.DolocTown
             catch { return false; }
         }
 
-        private bool CloseRetainedHatchSession()
-        {
-            if (g4HatchVoiceSession == null)
-                return true;
-            try { g4HatchVoiceSession.Close(); g4HatchVoiceSession = null; return true; }
-            catch { return false; }
-        }
-
-        private bool CloseRetainedCameraSession()
-        {
-            if (g4CameraSession == null)
-                return true;
-            try { g4CameraSession.Close(); g4CameraSession = null; return true; }
-            catch { return false; }
-        }
-
         private bool CloseTitleOverlayOwnedByFixture()
         {
             if (g4TitleOverlaySessionSequence == 0)
@@ -1682,25 +1625,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!target.Contains(item)) target.Add(item);
         }
 
-        private static bool TryReadAnimalAdultForFixture(object animal, out bool adult)
-        {
-            adult = false;
-            object? data = ReadMemberOrNull(animal, "data");
-            object? rawAdult = ReadMemberOrNull(data, "isAdult");
-            if (rawAdult is bool value)
-            {
-                adult = value;
-                return true;
-            }
-            object? child = ReadMemberOrNull(data, "isChild");
-            if (child is bool childValue)
-            {
-                adult = !childValue;
-                return true;
-            }
-            return false;
-        }
-
         private static string GetAnimalIdForFixture(object animal) => FirstText(ReadStringMember(animal, "protoName"), animal.GetType().Name);
 
         private AgentPositionFixtureReceipt CaptureAgentPositionForFixture()
@@ -1742,30 +1666,6 @@ namespace DTMAPI.GameBridge.DolocTown
             return restored.Captured &&
                 Math.Abs(restored.X - receipt.X) <= 1d &&
                 Math.Abs(restored.Y - receipt.Y) <= 1d;
-        }
-
-        private CameraPlayablePositionSample MoveAgentAndCameraForFixture(double x, double y, double z)
-        {
-            if (!TryWriteAgentPositionForFixture(x, y, z))
-                throw new InvalidOperationException("DolocAPI.AgentPosition is not writable.");
-            if (!TryWriteCameraPositionForFixture(x, y))
-                throw new InvalidOperationException("CameraController.ForceSetPosition(Vector2, false) is unavailable.");
-
-            AgentPositionFixtureReceipt agent = CaptureAgentPositionForFixture();
-            CameraPositionFixtureReceipt camera = CaptureCameraPositionForFixture();
-            if (!agent.Captured)
-                throw new InvalidOperationException("CameraPlayable could not read back AgentPosition after movement.");
-            if (!camera.Captured)
-                throw new InvalidOperationException("CameraPlayable could not read back CameraController.position2d after movement.");
-            return new CameraPlayablePositionSample
-            {
-                AgentX = agent.X,
-                AgentY = agent.Y,
-                AgentZ = agent.Z,
-                CameraX = camera.X,
-                CameraY = camera.Y,
-                CameraZ = camera.Z
-            };
         }
 
         private static bool TryWriteAgentPositionForFixture(double x, double y, double z)

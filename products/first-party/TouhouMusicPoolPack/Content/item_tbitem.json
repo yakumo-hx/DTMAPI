@@ -1,0 +1,89 @@
+[
+  {
+    "id": "dtmapi_cassette_bad_apple",
+    "sub_type": "special_cd",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 100,
+    "buying_price": 100,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_cd_23"
+    },
+    "title": {
+      "key": "",
+      "text": "磁带：Bad Apple"
+    },
+    "description_basic": {
+      "key": "",
+      "text": "收藏磁带；本曲默认在播放器中解锁。"
+    },
+    "function": {
+      "$type": "ItemFunctionCD",
+      "cd_id": "dtmapi_bad_apple"
+    }
+  },
+  {
+    "id": "dtmapi_cassette_iroha",
+    "sub_type": "special_cd",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 100,
+    "buying_price": 100,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_cd_23"
+    },
+    "title": {
+      "key": "",
+      "text": "磁带：色は匂へど散りぬるを"
+    },
+    "description_basic": {
+      "key": "",
+      "text": "使用后可在播放器中选择《色は匂へど散りぬるを》。"
+    },
+    "function": {
+      "$type": "ItemFunctionCD",
+      "cd_id": "dtmapi_iroha"
+    }
+  },
+  {
+    "id": "dtmapi_cassette_tsuki",
+    "sub_type": "special_cd",
+    "salable": false,
+    "disposable": true,
+    "consumable": true,
+    "cookable": false,
+    "electric_energy": 0,
+    "viewable": true,
+    "source": [],
+    "selling_price": 100,
+    "buying_price": 100,
+    "overlay": 99,
+    "ui_sprite_asset": {
+      "url": "icon_item_cd_23"
+    },
+    "title": {
+      "key": "",
+      "text": "磁带：月に叢雲華に風"
+    },
+    "description_basic": {
+      "key": "",
+      "text": "使用后可在播放器中选择《月に叢雲華に風》。"
+    },
+    "function": {
+      "$type": "ItemFunctionCD",
+      "cd_id": "dtmapi_tsuki"
+    }
+  }
+]

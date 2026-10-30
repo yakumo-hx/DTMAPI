@@ -34,22 +34,6 @@ namespace DTMAPI.GameBridge.DolocTown
             FixtureAttemptResult result;
             switch (caseId ?? string.Empty)
             {
-                case "ActionSpeedTool":
-                    hookId = "Smoke.ActionSpeedTool";
-                    result = TryExerciseActionSpeedToolForFixture();
-                    break;
-                case "ActionSpeedConfigApply":
-                    hookId = "Smoke.ActionSpeedConfigApply";
-                    result = TryExerciseActionSpeedConfigApplyForFixture();
-                    break;
-                case "ActionSpeedInteraction":
-                    hookId = "Smoke.ActionSpeedInteraction";
-                    result = TryExerciseActionSpeedInteractionForFixture();
-                    break;
-                case "ActionSpeedGcLadder":
-                    hookId = "Smoke.Batch5GcLadder.ActionSpeed";
-                    result = TryExerciseActionSpeedGcLadderForFixture();
-                    break;
                 case "OneActionResourceHit":
                     hookId = "Smoke.OneActionResourceHit";
                     result = TryExerciseOneActionResourceHitForFixture();

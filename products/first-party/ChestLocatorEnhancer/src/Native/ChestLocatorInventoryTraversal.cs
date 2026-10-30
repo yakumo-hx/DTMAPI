@@ -8,11 +8,6 @@ namespace DTMAPI.ChestLocatorEnhancer
 {
     internal static class ChestLocatorInventoryTraversal
     {
-        private const string CaseTypeName = "DolocTown.Case";
-        private const string StorageShelfTypeName =
-            "DolocTown.StorageShelf";
-        private const string ItemBoxTypeName =
-            "DolocTown.ItemBox";
         private static readonly object MetadataGate =
             new object();
         private static readonly Dictionary<MemberCacheKey, MemberInfo?>
@@ -21,9 +16,6 @@ namespace DTMAPI.ChestLocatorEnhancer
         private static readonly Dictionary<MethodCacheKey, MethodInfo?>
             MethodCache =
                 new Dictionary<MethodCacheKey, MethodInfo?>();
-        private static readonly Dictionary<Type, EquipmentKind>
-            EquipmentKindCache =
-                new Dictionary<Type, EquipmentKind>();
 
         [ThreadStatic]
         private static TraversalScratch? cachedScratch;
@@ -32,8 +24,6 @@ namespace DTMAPI.ChestLocatorEnhancer
             object archive,
             object? currentRootRoom,
             bool useBox,
-            bool includeSharedCases,
-            bool includeSharedStorageShelfBoxes,
             bool nativeAutoUseBox,
             Array nativeResult)
         {
@@ -95,28 +85,39 @@ namespace DTMAPI.ChestLocatorEnhancer
                     scratch.ScannedRoots++;
                     object? equipmentManager =
                         ReadMember(room, "DM_equipment");
-                    if (ReadMember(
-                        equipmentManager,
-                        "AllEquipments") is IEnumerable equipmentList)
+                    if (equipmentManager != null)
                     {
-                        foreach (object? candidate in equipmentList)
+                        foreach (object equipment in NativeIndexes.Cases.Invoke(equipmentManager, null) as IEnumerable
+                            ?? throw new InvalidOperationException("Native Case index returned no collection."))
                         {
-                            if (candidate == null)
-                                continue;
-
-                            object equipment = candidate;
                             scratch.ScannedEquipment++;
-                            ProcessEquipment(
-                                equipment,
-                                useBox,
-                                includeSharedCases,
-                                includeSharedStorageShelfBoxes,
-                                nativeAutoUseBox,
-                                inventoryType,
-                                scratch);
+                            if (ReadBoolMember(equipment, "IsShared", false) &&
+                                AddInventory(ReadMember(equipment, "inventory"), inventoryType, scratch))
+                                scratch.SharedCases++;
+                        }
+
+                        if (useBox && nativeAutoUseBox)
+                        {
+                            foreach (object shelf in NativeIndexes.Shelves.Invoke(equipmentManager, null) as IEnumerable
+                                ?? throw new InvalidOperationException("Native StorageShelf index returned no collection."))
+                            {
+                                scratch.ScannedEquipment++;
+                                if (!ReadBoolMember(shelf, "IsShared", false))
+                                    continue;
+                                object? shelfInventory = ReadMember(shelf, "inventory");
+                                MethodInfo? readAll = shelfInventory == null ? null :
+                                    FindMethodInHierarchy(shelfInventory.GetType(), "ReadAll", 0);
+                                if (!(readAll?.Invoke(shelfInventory, null) is IEnumerable items))
+                                    continue;
+                                foreach (object? item in items)
+                                {
+                                    if (item != null && NativeIndexes.ItemBox.IsInstanceOfType(item) &&
+                                        AddInventory(ReadMember(item, "inventory"), inventoryType, scratch))
+                                        scratch.SharedStorageBoxes++;
+                                }
+                            }
                         }
                     }
-
                     object? buildingManager =
                         ReadMember(room, "DM_building");
                     if (ReadMember(
@@ -174,112 +175,26 @@ namespace DTMAPI.ChestLocatorEnhancer
             }
         }
 
-        private static void ProcessEquipment(
-            object equipment,
-            bool useBox,
-            bool includeSharedCases,
-            bool includeSharedStorageShelfBoxes,
-            bool nativeAutoUseBox,
-            Type inventoryType,
-            TraversalScratch scratch)
+        // Resolve metadata once; Native V2 declares both closed generic uses.
+        // Inventory members still come from a fresh query, including subclasses.
+        private static class NativeIndexes
         {
-            if (!ReadBoolMember(
-                equipment,
-                "IsShared",
-                fallback: false))
+            internal static readonly MethodInfo Cases = Resolve("DolocTown.Case");
+            internal static readonly MethodInfo Shelves = Resolve("DolocTown.StorageShelf");
+            internal static readonly Type ItemBox = typeof(DolocAPI).Assembly.GetType("DolocTown.ItemBox", true)!;
+
+            private static MethodInfo Resolve(string elementName)
             {
-                return;
-            }
-
-            switch (GetEquipmentKind(equipment.GetType()))
-            {
-                case EquipmentKind.Case:
-                    if (!includeSharedCases)
-                        return;
-                    if (AddInventory(
-                        ReadMember(equipment, "inventory"),
-                        inventoryType,
-                        scratch))
-                    {
-                        scratch.SharedCases++;
-                    }
-                    return;
-
-                case EquipmentKind.StorageShelf:
-                    if (!includeSharedStorageShelfBoxes ||
-                        !useBox ||
-                        !nativeAutoUseBox)
-                    {
-                        return;
-                    }
-
-                    object? shelfInventory =
-                        ReadMember(equipment, "inventory");
-                    MethodInfo? readAll =
-                        shelfInventory == null
-                            ? null
-                            : FindMethodInHierarchy(
-                                shelfInventory.GetType(),
-                                "ReadAll",
-                                parameterCount: 0);
-                    if (!(readAll?.Invoke(
-                        shelfInventory,
-                        null) is IEnumerable items))
-                    {
-                        return;
-                    }
-
-                    foreach (object? item in items)
-                    {
-                        if (item == null ||
-                            !IsTypeOrBase(
-                                item.GetType(),
-                                ItemBoxTypeName))
-                        {
-                            continue;
-                        }
-
-                        if (AddInventory(
-                            ReadMember(item, "inventory"),
-                            inventoryType,
-                            scratch))
-                        {
-                            scratch.SharedStorageBoxes++;
-                        }
-                    }
-                    return;
-
-                default:
-                    return;
+                Assembly game = typeof(DolocAPI).Assembly;
+                Type manager = game.GetType("DolocTown.EquipmentManager", true)!;
+                Type element = game.GetType(elementName, true)!;
+                foreach (MethodInfo method in manager.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                    if (method.Name == "GetEquipments" && method.IsGenericMethodDefinition &&
+                        method.GetGenericArguments().Length == 1 && method.GetParameters().Length == 0)
+                        return method.MakeGenericMethod(element);
+                throw new MissingMethodException(manager.FullName, "GetEquipments<T>()");
             }
         }
-
-        private static EquipmentKind GetEquipmentKind(
-            Type type)
-        {
-            lock (MetadataGate)
-            {
-                if (EquipmentKindCache.TryGetValue(
-                    type,
-                    out EquipmentKind cached))
-                {
-                    return cached;
-                }
-            }
-
-            EquipmentKind resolved =
-                IsTypeOrBase(type, CaseTypeName)
-                    ? EquipmentKind.Case
-                    : IsTypeOrBase(
-                        type,
-                        StorageShelfTypeName)
-                        ? EquipmentKind.StorageShelf
-                        : EquipmentKind.Other;
-            lock (MetadataGate)
-                EquipmentKindCache[type] = resolved;
-            return resolved;
-        }
-
         private static TraversalScratch AcquireScratch()
         {
             TraversalScratch scratch =
@@ -412,21 +327,6 @@ namespace DTMAPI.ChestLocatorEnhancer
             return resolved;
         }
 
-        private static bool IsTypeOrBase(
-            Type? type,
-            string fullName)
-        {
-            for (Type? current = type;
-                current != null;
-                current = current.BaseType)
-            {
-                if (current.FullName == fullName)
-                    return true;
-            }
-
-            return false;
-        }
-
         private static MethodInfo? FindMethodInHierarchy(
             Type? type,
             string name,
@@ -460,7 +360,7 @@ namespace DTMAPI.ChestLocatorEnhancer
                     BindingFlags.Instance |
                     BindingFlags.DeclaredOnly))
                 {
-                    if (method.Name == name &&
+                    if (method.Name == name && !method.ContainsGenericParameters &&
                         method.GetParameters().Length ==
                             parameterCount)
                     {
@@ -473,13 +373,6 @@ namespace DTMAPI.ChestLocatorEnhancer
             lock (MetadataGate)
                 MethodCache[key] = resolved;
             return resolved;
-        }
-
-        private enum EquipmentKind
-        {
-            Other,
-            Case,
-            StorageShelf
         }
 
         private sealed class TraversalScratch
@@ -599,45 +492,34 @@ namespace DTMAPI.ChestLocatorEnhancer
 
     internal readonly struct ChestLocatorTraversalResult
     {
-        internal ChestLocatorTraversalResult(
-            Array inventories,
-            int baseInventoryCount,
-            int appendedInventoryCount,
-            int scannedRootCount,
-            int scannedEquipmentCount,
-            int sharedCaseCount,
-            int sharedStorageBoxCount)
+        internal ChestLocatorTraversalResult(Array inventories, int baseCount, int appended, int roots, int equipment, int cases, int boxes)
         {
-            Inventories =
-                inventories ??
-                throw new ArgumentNullException(
-                    nameof(inventories));
-            BaseInventoryCount = baseInventoryCount;
-            AppendedInventoryCount =
-                appendedInventoryCount;
-            ScannedRootCount = scannedRootCount;
-            ScannedEquipmentCount =
-                scannedEquipmentCount;
-            SharedCaseCount = sharedCaseCount;
-            SharedStorageBoxCount =
-                sharedStorageBoxCount;
+            Inventories = inventories;
+            Counts = new ChestLocatorTraversalCounts(baseCount, appended, roots, equipment, cases, boxes);
         }
-
         internal Array Inventories { get; }
-
-        internal int BaseInventoryCount { get; }
-
-        internal int AppendedInventoryCount { get; }
-
-        internal int ScannedRootCount { get; }
-
-        internal int ScannedEquipmentCount { get; }
-
-        internal int SharedCaseCount { get; }
-
-        internal int SharedStorageBoxCount { get; }
+        internal ChestLocatorTraversalCounts Counts { get; }
     }
 
+    // Diagnostics retain only scalar counts, never the returned inventory array.
+    internal readonly struct ChestLocatorTraversalCounts
+    {
+        internal ChestLocatorTraversalCounts(int baseCount, int appended, int roots, int equipment, int cases, int boxes)
+        {
+            BaseInventoryCount = baseCount;
+            AppendedInventoryCount = appended;
+            ScannedRootCount = roots;
+            ScannedEquipmentCount = equipment;
+            SharedCaseCount = cases;
+            SharedStorageBoxCount = boxes;
+        }
+        internal int BaseInventoryCount { get; }
+        internal int AppendedInventoryCount { get; }
+        internal int ScannedRootCount { get; }
+        internal int ScannedEquipmentCount { get; }
+        internal int SharedCaseCount { get; }
+        internal int SharedStorageBoxCount { get; }
+    }
     internal sealed class ReferenceIdentityComparer<T> :
         IEqualityComparer<T>
         where T : class

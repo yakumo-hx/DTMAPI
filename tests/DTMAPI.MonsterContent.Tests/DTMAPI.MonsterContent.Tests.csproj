@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><AudioTestSourceRoot Condition="'$(AudioTestSourceRoot)' == ''">../../src/DTMAPI.Modules.Audio</AudioTestSourceRoot></PropertyGroup>
+  <PropertyGroup Condition="'$(AudioTestAcceptedSfx)' == 'true'"><DefineConstants>$(DefineConstants);AUDIO_MONSTER_ACCEPTED_SFX</DefineConstants></PropertyGroup>
+  <PropertyGroup Condition="'$(MonsterOnly)' == 'true'"><DefineConstants>$(DefineConstants);MONSTER_ONLY</DefineConstants></PropertyGroup>
+  <ItemGroup Condition="'$(MonsterOnly)' == 'true'"><Compile Remove="CommonAudioChecks.cs;NativeOverrideAudioChecks.cs" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.MonsterContent/DTMAPI.MonsterContent.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.MonsterContent.Authoring/DTMAPI.MonsterContent.Authoring.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../src/DTMAPI.Modules.Monsters/SpawnSlotAssignment.cs" Link="SpawnSlotAssignment.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../src/DTMAPI.Modules.Monsters/HummingLoopDefaults.cs" Link="HummingLoopDefaults.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../src/DTMAPI.Modules.Monsters/ConfiguredSequence.cs" Link="ConfiguredSequence.cs" /><Compile Include="../../src/DTMAPI.Modules.Monsters/CombatSequence.cs" Link="CombatSequence.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../examples/monster-authoring/mc08/SampleDefinitions.cs" Link="MC08SampleDefinitions.cs" /></ItemGroup>
+  <ItemGroup><None Update="strict-json-cases.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup Condition="'$(MonsterOnly)' != 'true'">
+    <Compile Include="$(AudioTestSourceRoot)/AudioEngine.cs" Link="AudioEngine.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/OwnedSoundBank.cs" Link="OwnedSoundBank.cs" />
+    <ProjectReference Include="../../src/DTMAPI.AudioPreparation/DTMAPI.AudioPreparation.csproj" />
+    <Compile Include="$(AudioTestSourceRoot)/AudioEngine.Streaming.cs" Link="AudioEngine.Streaming.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/AudioEngine.MusicEvents.cs" Link="AudioEngine.MusicEvents.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/StreamingCache.cs" Link="StreamingCache.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/MusicRequests.cs" Link="MusicRequests.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/WaitingMusic.cs" Link="WaitingMusic.cs" />
+    <Compile Include="$(AudioTestSourceRoot)/NativeMusicCancellation.cs" Link="NativeMusicCancellation.cs" />
+
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.RuntimeModules/DTMAPI.RuntimeModules.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/MonsterModuleFixture.cs" Link="MonsterModuleFixture.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/AudioModuleFixture.cs" Link="AudioModuleFixture.cs" /><ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" /></ItemGroup>
+</Project>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Emit;
 using global::DTMAPI.Abstractions;
 using HarmonyLib;
 
@@ -48,12 +49,10 @@ namespace DTMAPI.StrongPlantingGun
             MethodInfo toolCallback = RequireCallback(
                 nameof(StrongPlantingGunCallbacks
                     .ItemFarmingGunOnUseAsToolPrefix));
-            MethodInfo placeCallback = RequireCallback(
-                nameof(StrongPlantingGunCallbacks
-                    .FarmingGunUiStateHandlePlaceToOtherSidePrefix));
-            MethodInfo swapCallback = RequireCallback(
-                nameof(StrongPlantingGunCallbacks
-                    .FarmingGunUiStateHandleSwapOneItemPrefix));
+            MethodInfo previewCallback = RequireCallback(
+                nameof(StrongPlantingGunCallbacks.ItemFarmingGunRefreshCellTipPrefix));
+            var containerForwarder = new HarmonyMethod(typeof(StrongPlantingGunHookInstaller),
+                nameof(ForwardNativeContainerOperation));
 
             harmony = new Harmony(
                 StrongPlantingGunProductContract.HarmonyOwner);
@@ -72,14 +71,14 @@ namespace DTMAPI.StrongPlantingGun
                     3,
                     targets[2],
                     prefix: new HarmonyMethod(toolCallback));
-                PatchWithGate(
-                    4,
-                    targets[3],
-                    prefix: new HarmonyMethod(placeCallback));
-                PatchWithGate(
-                    5,
-                    targets[4],
-                    prefix: new HarmonyMethod(swapCallback));
+                PatchWithGate(4, targets[3], prefix: new HarmonyMethod(previewCallback));
+                PatchWithGate(5, targets[4], prefix: new HarmonyMethod(RequireCallback(
+                    nameof(StrongPlantingGunCallbacks.ItemFarmingGunOpenContainerUiPrefix))));
+                for (int i = 5; i < 14; i++)
+                    PatchWithGate(i + 1, targets[i], transpiler: containerForwarder);
+                PatchWithGate(15, targets[14],
+                    prefix: new HarmonyMethod(RequireCallback(nameof(StrongPlantingGunCallbacks.ItemFarmingGunInitCellTipPrefix))),
+                    transpiler: new HarmonyMethod(typeof(StrongPlantingGunHookInstaller), nameof(AdaptNativeRange)));
 
                 PublishObservedState();
                 if (!IsInstalled ||
@@ -88,7 +87,7 @@ namespace DTMAPI.StrongPlantingGun
                         .ExpectedHookCount)
                 {
                     throw new InvalidOperationException(
-                        "StrongPlantingGun could not prove all five exact-owner Hooks after installation.");
+                        "StrongPlantingGun could not prove all exact-owner Hooks after installation.");
                 }
 
                 StrongPlantingGunCallbacks
@@ -241,22 +240,63 @@ namespace DTMAPI.StrongPlantingGun
                 "OnUseAsTool",
                 Type.EmptyTypes));
 
-            Type uiType = ResolveGameType(
-                "DolocTown.FarmingGunUiState");
-            targets.Add(ResolveInstanceMethod(
-                uiType,
-                "HandlePlaceToOtherSide",
-                new[]
+            targets.Add(ResolveInstanceMethod(gunType, "RefreshCellTip", Type.EmptyTypes));
+            targets.Add(RequireDeclared(gunType, "OpenContainerUI", Type.EmptyTypes));
+            Type uiType = ResolveGameType("DolocTown.FarmingGunUiState");
+            foreach (string name in new[] { "HandlePlaceToOtherSide", "HandleSwapOneItem",
+                "OnBackpackItemClick", "OnContainerItemClick", "HandleSwapHalfItems" })
+                targets.Add(RequireDeclared(uiType, name, new[] { typeof(int) }));
+            foreach (string name in new[] { "PutAll", "PutMax", "GetTipInBackpack", "GetTipInContainer" })
+                targets.Add(RequireDeclared(uiType, name, Type.EmptyTypes));
+            targets.Add(RequireDeclared(gunType, "InitCellTip", Type.EmptyTypes));
+        }
+
+        private static IEnumerable<CodeInstruction> AdaptNativeRange(IEnumerable<CodeInstruction> instructions)
+        {
+            var result = new List<CodeInstruction>();
+            int reads = 0;
+            MethodInfo getter = RequireDeclared(ResolveGameType("DolocTown.Config.Item.ItemFunctionFarmingGun"), "get_Area", Type.EmptyTypes);
+            foreach (CodeInstruction instruction in instructions)
+            {
+                if (instruction.Calls(getter))
                 {
-                    typeof(int)
-                }));
-            targets.Add(ResolveInstanceMethod(
-                uiType,
-                "HandleSwapOneItem",
-                new[]
-                {
-                    typeof(int)
-                }));
+                    reads++;
+                    // Keep branch/exception markers on the replacement call.
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = RequireCallback(nameof(StrongPlantingGunCallbacks.FarmingGunArea));
+                    result.Add(instruction);
+                    result.Add(new CodeInstruction(OpCodes.Unbox_Any, getter.ReturnType));
+                }
+                else result.Add(instruction);
+            }
+            if (reads != 1) throw new InvalidOperationException("Native InitCellTip must read ItemFunctionFarmingGun.Area exactly once.");
+            return result;
+        }
+
+        private static MethodInfo RequireDeclared(Type type, string name, Type[] parameters) =>
+            type.GetMethod(name, BindingFlags.DeclaredOnly | BindingFlags.Instance |
+                BindingFlags.Public | BindingFlags.NonPublic, null, parameters, null) ??
+            throw new MissingMethodException(type.FullName, name);
+
+        // Emit only a direct call to the existing native base operation. No native
+        // method body is copied, and no shared ContainerBaseUiState target is patched.
+        private static IEnumerable<CodeInstruction> ForwardNativeContainerOperation(MethodBase __originalMethod)
+        {
+            Type type = __originalMethod.DeclaringType!;
+            if (type.FullName != "DolocTown.FarmingGunUiState" ||
+                type.BaseType?.FullName != "DolocTown.ContainerBaseUiState")
+                throw new InvalidOperationException("Unexpected farming container owner.");
+            ParameterInfo[] parameters = __originalMethod.GetParameters();
+            var types = new Type[parameters.Length];
+            for (int i = 0; i < types.Length; i++) types[i] = parameters[i].ParameterType;
+            MethodInfo native = RequireDeclared(type.BaseType!, __originalMethod.Name, types);
+            if (native.IsAbstract || native.ReturnType != ((MethodInfo)__originalMethod).ReturnType)
+                throw new InvalidOperationException("Native container operation changed.");
+            yield return new CodeInstruction(OpCodes.Ldarg_0);
+            for (int i = 0; i < parameters.Length; i++)
+                yield return new CodeInstruction(OpCodes.Ldarg, i + 1);
+            yield return new CodeInstruction(OpCodes.Call, native);
+            yield return new CodeInstruction(OpCodes.Ret);
         }
 
         private void ThrowIfOwnerCannotInstall()
@@ -264,6 +304,9 @@ namespace DTMAPI.StrongPlantingGun
             bool[] compatibility = ObserveOwners(
                 StrongPlantingGunProductContract
                     .CompatibilityOwner);
+            bool[] legacyProduct = ObserveOwners(StrongPlantingGunProductContract.LegacyProductOwner);
+            for (int index = 0; index < compatibility.Length; index++)
+                compatibility[index] |= legacyProduct[index];
             bool[] product = ObserveOwners(
                 StrongPlantingGunProductContract.HarmonyOwner);
             switch (StrongPlantingGunHookOwnership.DecideInstall(
@@ -275,7 +318,7 @@ namespace DTMAPI.StrongPlantingGun
                 case StrongPlantingGunInstallDecision
                     .RejectCompatibilityOwner:
                     throw new InvalidOperationException(
-                        "StrongPlantingGun refused to install because the legacy GameBridge owner is present on at least one of its five native targets.");
+                        "StrongPlantingGun refused to install because a legacy GameBridge/product owner is present on at least one of its exact native targets.");
                 case StrongPlantingGunInstallDecision
                     .RejectDuplicateProductOwner:
                     throw new InvalidOperationException(
@@ -290,7 +333,8 @@ namespace DTMAPI.StrongPlantingGun
             int ordinal,
             MethodBase target,
             HarmonyMethod? prefix = null,
-            HarmonyMethod? postfix = null)
+            HarmonyMethod? postfix = null,
+            HarmonyMethod? transpiler = null)
         {
             if (installGate != null &&
                 !installGate(ordinal))
@@ -303,7 +347,8 @@ namespace DTMAPI.StrongPlantingGun
             harmony!.Patch(
                 target,
                 prefix: prefix,
-                postfix: postfix);
+                postfix: postfix,
+                transpiler: transpiler);
         }
 
         private void PublishObservedState()

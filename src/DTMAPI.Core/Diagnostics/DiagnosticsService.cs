@@ -156,22 +156,11 @@ namespace DTMAPI.Core.Diagnostics
             }
         }
 
-        public void RecordError(string owner, string message, string details)
-        {
-            long trimmed = 0;
-            string ownerIdentity = BoundedDiagnosticScalar.StableIdentity(owner);
-            string safeOwner = BoundedDiagnosticScalar.Sanitize(owner, BoundedDiagnosticScalar.OwnerIdChars, ref trimmed);
-            string safeMessage = BoundedDiagnosticScalar.Sanitize(message, BoundedDiagnosticScalar.MessageChars, ref trimmed);
-            string safeDetails = BoundedDiagnosticScalar.Sanitize(details, BoundedDiagnosticScalar.DetailsChars, ref trimmed);
-            lock (gate)
-            {
-                BoundedDiagnosticScalar.AddTrimmedBytes(ref trimmedDiagnosticBytes, trimmed);
-                RecordDiagnosticCounter("Error", safeOwner, safeMessage, safeDetails);
-                AddBounded(errors, new DtmErrorInfo(safeOwner, safeMessage, safeDetails, ownerIdentity), ref trimmedErrorCount);
-            }
-        }
+        public void RecordError(string owner, string message, string details) => RecordDiagnostic(owner, message, details, error: true);
 
-        internal void RecordWarning(string owner, string message, string details)
+        internal void RecordWarning(string owner, string message, string details) => RecordDiagnostic(owner, message, details, error: false);
+
+        private void RecordDiagnostic(string owner, string message, string details, bool error)
         {
             long trimmed = 0;
             string ownerIdentity = BoundedDiagnosticScalar.StableIdentity(owner);
@@ -181,8 +170,11 @@ namespace DTMAPI.Core.Diagnostics
             lock (gate)
             {
                 BoundedDiagnosticScalar.AddTrimmedBytes(ref trimmedDiagnosticBytes, trimmed);
-                RecordDiagnosticCounter("Warning", safeOwner, safeMessage, safeDetails);
-                AddBounded(warnings, new DtmWarningInfo(safeOwner, safeMessage, safeDetails, ownerIdentity), ref trimmedWarningCount);
+                RecordDiagnosticCounter(error ? "Error" : "Warning", safeOwner, safeMessage, safeDetails);
+                if (error)
+                    AddBounded(errors, new DtmErrorInfo(safeOwner, safeMessage, safeDetails, ownerIdentity), ref trimmedErrorCount);
+                else
+                    AddBounded(warnings, new DtmWarningInfo(safeOwner, safeMessage, safeDetails, ownerIdentity), ref trimmedWarningCount);
             }
         }
 

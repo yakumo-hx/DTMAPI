@@ -13,14 +13,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private const string ProductionHarmonyOwnerId = "dtmapi.gamebridge.doloctown";
         private readonly DtmApiRuntime runtime;
         private readonly string ownerId;
-        private object? harmony;
-        private Type? harmonyType;
-        private Type? harmonyMethodType;
+        private HarmonyBinding? harmony;
         private static ArrayResultPostfixBinding? arrayResultPostfixBinding;
-        private static Func<string, AnimatorAssetLoadPrefixResult>? animatorAssetTryLoadAssetCallback;
-        private static Func<string, Type?, Type?>? animalAIDefaultAnyStateCallback;
-        private static Func<object?, AnimalAITaskPrefixResult>? animalAIMakeDecisionFreeTimeCallback;
-        private static Func<object?, string, object?, PngSpriteOverrideResult>? spriteOverrideTryGetModOverrideSpriteCallback;
         private static readonly object TypeResolutionGate = new object();
         private static readonly Dictionary<string, Type?> TypeResolutionCache = new Dictionary<string, Type?>(StringComparer.Ordinal);
 
@@ -47,13 +41,12 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal string OwnerId => ownerId;
 
+        internal void BindHarmonyForTests(object instance, Type methodType) =>
+            harmony = new HarmonyBinding(instance, instance.GetType(), methodType);
+
         internal static void ClearStaticCallbacks()
         {
             Volatile.Write(ref arrayResultPostfixBinding, null);
-            animatorAssetTryLoadAssetCallback = null;
-            animalAIDefaultAnyStateCallback = null;
-            animalAIMakeDecisionFreeTimeCallback = null;
-            spriteOverrideTryGetModOverrideSpriteCallback = null;
         }
 
         internal bool TryUnpatchAllOwnedPatches()
@@ -63,15 +56,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
             try
             {
-                MethodInfo? unpatchAll = harmonyType?
-                    .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance)
-                    .FirstOrDefault(method =>
-                    {
-                        if (!method.Name.Equals("UnpatchAll", StringComparison.Ordinal))
-                            return false;
-                        ParameterInfo[] parameters = method.GetParameters();
-                        return parameters.Length == 1 && parameters[0].ParameterType == typeof(string);
-                    });
+                MethodInfo? unpatchAll = harmony.UnpatchAll;
                 if (unpatchAll == null)
                 {
                     runtime.Diagnostics.RecordError(
@@ -81,10 +66,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
-                unpatchAll.Invoke(unpatchAll.IsStatic ? null : harmony, new object[] { ownerId });
+                unpatchAll.Invoke(unpatchAll.IsStatic ? null : harmony.Instance, new object[] { ownerId });
                 harmony = null;
-                harmonyType = null;
-                harmonyMethodType = null;
                 runtime.RuntimeMonitor.Log("Harmony owner cleanup completed owner=" + ownerId + ".");
                 return true;
             }
@@ -113,25 +96,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     parameterCount);
                 if (target == null)
                     return false;
-                MethodInfo? unpatch = harmonyType?
-                    .GetMethods(
-                        BindingFlags.Public |
-                        BindingFlags.Instance)
-                    .FirstOrDefault(method =>
-                    {
-                        if (!method.Name.Equals(
-                                "Unpatch",
-                                StringComparison.Ordinal))
-                            return false;
-                        ParameterInfo[] parameters =
-                            method.GetParameters();
-                        return parameters.Length == 3 &&
-                            typeof(MethodBase).IsAssignableFrom(
-                                parameters[0].ParameterType) &&
-                            parameters[1].ParameterType.IsEnum &&
-                            parameters[2].ParameterType ==
-                                typeof(string);
-                    });
+                MethodInfo? unpatch = harmony!.Unpatch;
                 if (unpatch == null)
                     return false;
                 Type patchType =
@@ -141,7 +106,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     "All",
                     ignoreCase: false);
                 unpatch.Invoke(
-                    harmony,
+                    harmony.Instance,
                     new[] { target, all, ownerId });
                 return CountOwnerPatches(
                     targetTypeName,
@@ -176,22 +141,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     parameterCount);
                 if (target == null)
                     return -1;
-                MethodInfo? getPatchInfo = harmonyType?
-                    .GetMethods(
-                        BindingFlags.Public |
-                        BindingFlags.Static)
-                    .FirstOrDefault(method =>
-                    {
-                        if (!method.Name.Equals(
-                                "GetPatchInfo",
-                                StringComparison.Ordinal))
-                            return false;
-                        ParameterInfo[] parameters =
-                            method.GetParameters();
-                        return parameters.Length == 1 &&
-                            typeof(MethodBase).IsAssignableFrom(
-                                parameters[0].ParameterType);
-                    });
+                MethodInfo? getPatchInfo = harmony!.GetPatchInfo;
                 object? info =
                     getPatchInfo?.Invoke(null, new object[] { target });
                 if (info == null)
@@ -324,207 +274,6 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        public bool TryPatchAnimatorAssetTryLoadAssetPrefix(
-            string targetTypeName,
-            string methodName,
-            string runtimeAnimatorControllerTypeName,
-            Func<string, AnimatorAssetLoadPrefixResult> callback)
-        {
-            try
-            {
-                string targetLabel = targetTypeName + "." + methodName + "(string,out " + runtimeAnimatorControllerTypeName + ")";
-                if (callback == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimatorAsset.TryLoadAsset prefix skipped: callback missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                if (!EnsureHarmony())
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimatorAsset.TryLoadAsset prefix skipped: Harmony unavailable for " + targetLabel + ".");
-                    return false;
-                }
-
-                Type? targetType = FindType(targetTypeName);
-                Type? runtimeAnimatorControllerType = FindType(runtimeAnimatorControllerTypeName);
-                if (targetType == null || runtimeAnimatorControllerType == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimatorAsset.TryLoadAsset prefix skipped: target or RuntimeAnimatorController type missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? target = FindAnimatorAssetTryLoadAssetTarget(targetType, methodName, runtimeAnimatorControllerType);
-                if (target == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimatorAsset.TryLoadAsset prefix skipped: exact target signature not found for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? prefixDefinition = typeof(HarmonyReflectionPatcher).GetMethod(nameof(AnimatorAssetTryLoadAssetPrefixGeneric), BindingFlags.NonPublic | BindingFlags.Static);
-                if (prefixDefinition == null)
-                    return false;
-
-                animatorAssetTryLoadAssetCallback = callback;
-                MethodInfo prefix = prefixDefinition.MakeGenericMethod(runtimeAnimatorControllerType);
-                bool patched = ApplyPatch(target, prefix: prefix, postfix: null);
-                runtime.RuntimeMonitor.Log("Harmony AnimatorAsset.TryLoadAsset prefix result: target=" + target + ", patched=" + patched + ".");
-                return patched;
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch AnimatorAsset.TryLoadAsset prefix {targetTypeName}.{methodName}.", ex.ToString());
-                return false;
-            }
-        }
-
-        public bool TryPatchAnimalAIDefaultAnyStatePostfix(
-            string targetTypeName,
-            string methodName,
-            Func<string, Type?, Type?> callback)
-        {
-            try
-            {
-                string targetLabel = targetTypeName + "." + methodName + "(string):Type";
-                if (callback == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.GetDefaultAnyState postfix skipped: callback missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                if (!EnsureHarmony())
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.GetDefaultAnyState postfix skipped: Harmony unavailable for " + targetLabel + ".");
-                    return false;
-                }
-
-                Type? targetType = FindType(targetTypeName);
-                MethodInfo? target = FindAnimalAIDefaultAnyStateTarget(targetType, methodName);
-                if (target == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.GetDefaultAnyState postfix skipped: exact target signature not found for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? postfix = typeof(HarmonyReflectionPatcher).GetMethod(nameof(AnimalAIDefaultAnyStatePostfix), BindingFlags.NonPublic | BindingFlags.Static);
-                if (postfix == null)
-                    return false;
-
-                animalAIDefaultAnyStateCallback = callback;
-                bool patched = ApplyPatch(target, prefix: null, postfix: postfix);
-                runtime.RuntimeMonitor.Log("Harmony AnimalAI.GetDefaultAnyState postfix result: target=" + target + ", patched=" + patched + ".");
-                return patched;
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch AnimalAI.GetDefaultAnyState postfix {targetTypeName}.{methodName}.", ex.ToString());
-                return false;
-            }
-        }
-
-        public bool TryPatchAnimalAIMakeDecisionFreeTimePrefix(
-            string targetTypeName,
-            string methodName,
-            Func<object?, AnimalAITaskPrefixResult> callback)
-        {
-            try
-            {
-                string targetLabel = targetTypeName + "." + methodName + "():LinearTask";
-                if (callback == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.MakeDecision_FreeTime prefix skipped: callback missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                if (!EnsureHarmony())
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.MakeDecision_FreeTime prefix skipped: Harmony unavailable for " + targetLabel + ".");
-                    return false;
-                }
-
-                Type? targetType = FindType(targetTypeName);
-                MethodInfo? target = FindTarget(targetType, methodName, HarmonyTargetSignature.FromParameterCount(0));
-                if (target == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.MakeDecision_FreeTime prefix skipped: exact target signature not found for " + targetLabel + ".");
-                    return false;
-                }
-
-                if (target.ReturnType.IsValueType)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony AnimalAI.MakeDecision_FreeTime prefix skipped: target return type is not a class for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? prefixDefinition = typeof(HarmonyReflectionPatcher).GetMethod(nameof(AnimalAIMakeDecisionFreeTimePrefixGeneric), BindingFlags.NonPublic | BindingFlags.Static);
-                if (prefixDefinition == null)
-                    return false;
-
-                animalAIMakeDecisionFreeTimeCallback = callback;
-                MethodInfo prefix = prefixDefinition.MakeGenericMethod(target.ReturnType);
-                bool patched = ApplyPatch(target, prefix: prefix, postfix: null);
-                runtime.RuntimeMonitor.Log("Harmony AnimalAI.MakeDecision_FreeTime prefix result: target=" + target + ", patched=" + patched + ".");
-                return patched;
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch AnimalAI.MakeDecision_FreeTime prefix {targetTypeName}.{methodName}.", ex.ToString());
-                return false;
-            }
-        }
-
-        public bool TryPatchSpriteOverrideTryGetModOverrideSpritePostfix(
-            string targetTypeName,
-            string methodName,
-            string spriteTypeName,
-            Func<object?, string, object?, PngSpriteOverrideResult> callback)
-        {
-            try
-            {
-                string targetLabel = targetTypeName + "." + methodName + "(string,out " + spriteTypeName + ")";
-                if (callback == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony SpriteOverrideHandler.TryGetModOverrideSprite postfix skipped: callback missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                if (!EnsureHarmony())
-                {
-                    runtime.RuntimeMonitor.Log("Harmony SpriteOverrideHandler.TryGetModOverrideSprite postfix skipped: Harmony unavailable for " + targetLabel + ".");
-                    return false;
-                }
-
-                Type? targetType = FindType(targetTypeName);
-                Type? spriteType = FindType(spriteTypeName);
-                if (targetType == null || spriteType == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony SpriteOverrideHandler.TryGetModOverrideSprite postfix skipped: target or Sprite type missing for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? target = FindSpriteOverrideTryGetModOverrideSpriteTarget(targetType, methodName, spriteType);
-                if (target == null)
-                {
-                    runtime.RuntimeMonitor.Log("Harmony SpriteOverrideHandler.TryGetModOverrideSprite postfix skipped: exact target signature not found for " + targetLabel + ".");
-                    return false;
-                }
-
-                MethodInfo? postfixDefinition = typeof(HarmonyReflectionPatcher).GetMethod(nameof(SpriteOverrideTryGetModOverrideSpritePostfixGeneric), BindingFlags.NonPublic | BindingFlags.Static);
-                if (postfixDefinition == null)
-                    return false;
-
-                spriteOverrideTryGetModOverrideSpriteCallback = callback;
-                MethodInfo postfix = postfixDefinition.MakeGenericMethod(spriteType);
-                bool patched = ApplyPatch(target, prefix: null, postfix: postfix);
-                runtime.RuntimeMonitor.Log("Harmony SpriteOverrideHandler.TryGetModOverrideSprite postfix result: target=" + target + ", patched=" + patched + ".");
-                return patched;
-            }
-            catch (Exception ex)
-            {
-                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", $"Failed to patch SpriteOverrideHandler.TryGetModOverrideSprite postfix {targetTypeName}.{methodName}.", ex.ToString());
-                return false;
-            }
-        }
-
         public bool TryPatchConstructorPostfix(string targetTypeName, MethodInfo? postfix, int? parameterCount = null)
         {
             return TryPatchConstructorPostfix(targetTypeName, postfix, HarmonyTargetSignature.FromParameterCount(parameterCount));
@@ -646,18 +395,10 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private bool ApplyPatch(MethodBase target, MethodInfo? prefix, MethodInfo? postfix, MethodInfo? finalizer = null)
         {
-            object? prefixMethod = prefix == null ? null : Activator.CreateInstance(harmonyMethodType!, prefix);
-            object? postfixMethod = postfix == null ? null : Activator.CreateInstance(harmonyMethodType!, postfix);
-            object? finalizerMethod = finalizer == null ? null : Activator.CreateInstance(harmonyMethodType!, finalizer);
-            MethodInfo? patch = harmonyType!.GetMethods()
-                .FirstOrDefault(m => m.Name == "Patch" &&
-                    m.GetParameters().Length == 5 &&
-                    typeof(MethodBase).IsAssignableFrom(m.GetParameters()[0].ParameterType));
-            if (patch == null)
-                return false;
-
-            object?[] args = new object?[] { target, prefixMethod, postfixMethod, null, finalizerMethod };
-            patch.Invoke(harmony, args);
+            HarmonyBinding binding = harmony!;
+            if (binding.Patch == null) return false;
+            object? Wrap(MethodInfo? method) => method == null ? null : Activator.CreateInstance(binding.MethodType, method);
+            binding.Patch.Invoke(binding.Instance, new object?[] { target, Wrap(prefix), Wrap(postfix), null, Wrap(finalizer) });
             return true;
         }
 
@@ -724,80 +465,13 @@ namespace DTMAPI.GameBridge.DolocTown
             internal Func<bool>? CallbackGuard { get; }
         }
 
-        private static bool AnimatorAssetTryLoadAssetPrefixGeneric<TAsset>(string __0, ref TAsset __1, ref bool __result) where TAsset : class
-        {
-            Func<string, AnimatorAssetLoadPrefixResult>? callback = animatorAssetTryLoadAssetCallback;
-            if (callback == null)
-                return true;
-
-            AnimatorAssetLoadPrefixResult result = callback(__0);
-            if (!result.Handled)
-                return true;
-
-            TAsset? asset = result.Asset as TAsset;
-            __1 = asset!;
-            __result = asset != null;
-            return false;
-        }
-
-        private static void AnimalAIDefaultAnyStatePostfix(string __0, ref Type __result)
-        {
-            Func<string, Type?, Type?>? callback = animalAIDefaultAnyStateCallback;
-            if (callback == null)
-                return;
-
-            Type? next = callback(__0, __result);
-            if (next != null)
-                __result = next;
-        }
-
-        private static bool AnimalAIMakeDecisionFreeTimePrefixGeneric<TTask>(object __instance, ref TTask __result) where TTask : class
-        {
-            Func<object?, AnimalAITaskPrefixResult>? callback = animalAIMakeDecisionFreeTimeCallback;
-            if (callback == null)
-                return true;
-
-            AnimalAITaskPrefixResult result = callback(__instance);
-            if (!result.Handled)
-                return true;
-
-            if (result.Task is TTask task)
-            {
-                __result = task;
-                return false;
-            }
-
-            return true;
-        }
-
-        private static void SpriteOverrideTryGetModOverrideSpritePostfixGeneric<TSprite>(object __instance, string __0, ref TSprite __1, ref bool __result) where TSprite : class
-        {
-            Func<object?, string, object?, PngSpriteOverrideResult>? callback = spriteOverrideTryGetModOverrideSpriteCallback;
-            if (callback == null)
-                return;
-
-            PngSpriteOverrideResult result = callback(__instance, __0, __1);
-            if (!result.Handled)
-                return;
-
-            if (result.UseOverride && result.Sprite is TSprite sprite)
-            {
-                __1 = sprite;
-                __result = true;
-                return;
-            }
-
-            __1 = null!;
-            __result = false;
-        }
-
         private bool EnsureHarmony()
         {
             if (harmony != null)
                 return true;
 
-            harmonyType = FindType("HarmonyLib.Harmony, 0Harmony") ?? FindType("HarmonyLib.Harmony, Harmony");
-            harmonyMethodType = FindType("HarmonyLib.HarmonyMethod, 0Harmony") ?? FindType("HarmonyLib.HarmonyMethod, Harmony");
+            Type? harmonyType = FindType("HarmonyLib.Harmony, 0Harmony") ?? FindType("HarmonyLib.Harmony, Harmony");
+            Type? harmonyMethodType = FindType("HarmonyLib.HarmonyMethod, 0Harmony") ?? FindType("HarmonyLib.HarmonyMethod, Harmony");
             if (harmonyType == null || harmonyMethodType == null)
             {
                 try
@@ -821,8 +495,37 @@ namespace DTMAPI.GameBridge.DolocTown
             }
             if (harmonyType == null || harmonyMethodType == null)
                 return false;
-            harmony = Activator.CreateInstance(harmonyType, ownerId);
-            return harmony != null;
+            object? instance = Activator.CreateInstance(harmonyType, ownerId);
+            if (instance == null) return false;
+            harmony = new HarmonyBinding(instance, harmonyType, harmonyMethodType);
+            return true;
+        }
+
+        private sealed class HarmonyBinding
+        {
+            public HarmonyBinding(object instance, Type type, Type methodType)
+            {
+                Instance = instance;
+                MethodType = methodType;
+                MethodInfo[] methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                Patch = Find("Patch", parameters => parameters.Length == 5 && typeof(MethodBase).IsAssignableFrom(parameters[0].ParameterType));
+                UnpatchAll = Find("UnpatchAll", parameters => parameters.Length == 1 && parameters[0].ParameterType == typeof(string));
+                Unpatch = methods.FirstOrDefault(method => !method.IsStatic && method.Name == "Unpatch" && MatchesUnpatch(method.GetParameters()));
+                GetPatchInfo = methods.FirstOrDefault(method => method.IsStatic && method.Name == "GetPatchInfo" &&
+                    method.GetParameters().Length == 1 && typeof(MethodBase).IsAssignableFrom(method.GetParameters()[0].ParameterType));
+                MethodInfo? Find(string name, Func<ParameterInfo[], bool> accepts) =>
+                    methods.FirstOrDefault(method => method.Name == name && accepts(method.GetParameters()));
+            }
+
+            private static bool MatchesUnpatch(ParameterInfo[] parameters) => parameters.Length == 3 &&
+                typeof(MethodBase).IsAssignableFrom(parameters[0].ParameterType) && parameters[1].ParameterType.IsEnum && parameters[2].ParameterType == typeof(string);
+
+            public object Instance { get; }
+            public Type MethodType { get; }
+            public MethodInfo? Patch { get; }
+            public MethodInfo? UnpatchAll { get; }
+            public MethodInfo? Unpatch { get; }
+            public MethodInfo? GetPatchInfo { get; }
         }
 
         private static MethodInfo? FindTarget(Type? type, string name, int? parameterCount)
@@ -842,72 +545,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     continue;
                 return method;
             }
-            return null;
-        }
-
-        private static MethodInfo? FindAnimatorAssetTryLoadAssetTarget(Type? type, string name, Type runtimeAnimatorControllerType)
-        {
-            if (type == null || runtimeAnimatorControllerType == null)
-                return null;
-
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                if (method.Name != name || method.ReturnType != typeof(bool))
-                    continue;
-
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 2)
-                    continue;
-                if (parameters[0].ParameterType != typeof(string))
-                    continue;
-                if (!parameters[1].ParameterType.IsByRef || parameters[1].ParameterType.GetElementType() != runtimeAnimatorControllerType)
-                    continue;
-
-                return method;
-            }
-
-            return null;
-        }
-
-        private static MethodInfo? FindAnimalAIDefaultAnyStateTarget(Type? type, string name)
-        {
-            if (type == null)
-                return null;
-
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-            {
-                if (method.Name != name || method.ReturnType != typeof(Type))
-                    continue;
-
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                    return method;
-            }
-
-            return null;
-        }
-
-        private static MethodInfo? FindSpriteOverrideTryGetModOverrideSpriteTarget(Type? type, string name, Type spriteType)
-        {
-            if (type == null || spriteType == null)
-                return null;
-
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                if (method.Name != name || method.ReturnType != typeof(bool))
-                    continue;
-
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 2)
-                    continue;
-                if (parameters[0].ParameterType != typeof(string))
-                    continue;
-                if (!parameters[1].ParameterType.IsByRef || parameters[1].ParameterType.GetElementType() != spriteType)
-                    continue;
-
-                return method;
-            }
-
             return null;
         }
 
@@ -1017,61 +654,8 @@ namespace DTMAPI.GameBridge.DolocTown
         }
     }
 
-    internal readonly struct AnimatorAssetLoadPrefixResult
-    {
-        private AnimatorAssetLoadPrefixResult(bool handled, object? asset)
-        {
-            Handled = handled;
-            Asset = asset;
-        }
 
-        public bool Handled { get; }
 
-        public object? Asset { get; }
-
-        public static AnimatorAssetLoadPrefixResult Unhandled() => new AnimatorAssetLoadPrefixResult(false, null);
-
-        public static AnimatorAssetLoadPrefixResult HandledAsset(object? asset) => new AnimatorAssetLoadPrefixResult(true, asset);
-    }
-
-    internal readonly struct PngSpriteOverrideResult
-    {
-        private PngSpriteOverrideResult(bool handled, bool useOverride, object? sprite)
-        {
-            Handled = handled;
-            UseOverride = useOverride;
-            Sprite = sprite;
-        }
-
-        public bool Handled { get; }
-
-        public bool UseOverride { get; }
-
-        public object? Sprite { get; }
-
-        public static PngSpriteOverrideResult Unhandled() => new PngSpriteOverrideResult(false, false, null);
-
-        public static PngSpriteOverrideResult OverrideSprite(object sprite) => new PngSpriteOverrideResult(true, true, sprite);
-
-        public static PngSpriteOverrideResult NoOverride() => new PngSpriteOverrideResult(true, false, null);
-    }
-
-    internal readonly struct AnimalAITaskPrefixResult
-    {
-        private AnimalAITaskPrefixResult(bool handled, object? task)
-        {
-            Handled = handled;
-            Task = task;
-        }
-
-        public bool Handled { get; }
-
-        public object? Task { get; }
-
-        public static AnimalAITaskPrefixResult Continue() => new AnimalAITaskPrefixResult(false, null);
-
-        public static AnimalAITaskPrefixResult UseTask(object task) => new AnimalAITaskPrefixResult(true, task);
-    }
 
     internal readonly struct HarmonyTargetSignature
     {

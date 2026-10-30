@@ -9,12 +9,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
     {
         private readonly GameBridgeFixtureAccess access;
         private readonly QaHostSettings settings;
-        private readonly Batch6AutoFishingPilotCoordinator? batch6AutoFishingPilot;
-        private readonly Batch6AutoFishingManagerLifecycleCoordinator? batch6AutoFishingManagerLifecycle;
-        private readonly Batch5GcLadderOrchestrator batch5GcLadder;
         private readonly Batch5NoDemandProfileFixture? batch5NoDemand;
         private readonly QaScenarioController scenarios;
-        private readonly CustomEntityRegistrationContractProbe customEntityProbe;
         private readonly FishRoeTooltipObservationProbe fishRoeProbe;
         private readonly bool itemDisplayNameLifecycleRequested;
         private readonly DiagnosticsSnapshotProbe diagnosticsProbe;
@@ -28,10 +24,11 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private bool preRuntimePrepared;
         private bool closed;
         private int updates;
-        private bool customEntityCompleted;
         private bool fishRoeCompleted;
         private bool diagnosticsCompleted;
         private bool saveLoadedObserved;
+        private readonly bool nativeAllocationCalibrationRequested = Environment.GetEnvironmentVariable("DTMAPI_MONO_ALLOCATION_QA") == "1";
+        private bool nativeAllocationCalibrationCompleted;
         private bool saveSavedObserved;
         private bool workshopReloadObserved;
         private bool titleSettingsCompleted;
@@ -46,13 +43,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private bool moreSavesPostTitlePanelCompleted;
         private bool animalCompleted;
         private bool equipmentSlotsCompleted;
-        private bool audioCompleted;
-        private bool audioReadinessCompleted;
-        private string audioReadinessDetails = string.Empty;
-        private bool hatchActionCompleted;
-        private string hatchActionDetails = string.Empty;
-        private bool hatchCompleted;
-        private bool cameraCompleted;
         private bool contentMetadataCompleted;
         private bool nativeUiObservationCompleted;
         private bool postTitleBoundaryObserved;
@@ -69,7 +59,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private bool g6LifecycleCompleted;
         private DateTimeOffset startedAt;
         private bool returnHomeRequested;
-        private bool batch6AutoFishingReentryLoadRequested;
         private bool productOwnerRefreshRequested;
         private bool productOwnerRefreshCompleted;
         private bool productOwnerRefreshCleanupCompleted;
@@ -77,11 +66,17 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private bool advancedProductOwnerDeactivationCompleted;
         private DateTimeOffset returnHomeQuiescenceObservedAt;
 
-        internal QaHostParticipant(GameBridgeFixtureAccess access, QaHostSettings settings)
+        private readonly Func<DateTimeOffset> utcNow;
+        private readonly Func<bool> normalGameplay;
+
+        internal QaHostParticipant(GameBridgeFixtureAccess access, QaHostSettings settings, Func<DateTimeOffset>? utcNow = null, Func<bool>? normalGameplay = null)
         {
             this.access = access ?? throw new ArgumentNullException(nameof(access));
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             scenarios = new QaScenarioController(access);
+            this.utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
+            this.normalGameplay = normalGameplay ?? scenarios.IsNormalGameplay;
+            scenarios.AnimalProgressS03Enabled = settings.AnimalProgressS03Enabled;
             scenarios.ConfigureDebugConsoleSaveAcceptance(
                 settings.DebugConsoleSaveAcceptancePhase,
                 settings.ExpectedDebugConsoleMoney);
@@ -104,16 +99,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 settings.G5WorldMutationCases.Contains(
                     "MoreEquipmentSlotsNoNativeSave",
                     StringComparer.Ordinal));
-            if (settings.Batch6AutoFishingPilot.Enabled)
-                batch6AutoFishingPilot = new Batch6AutoFishingPilotCoordinator(access, settings.Batch6AutoFishingPilot);
-            if (settings.Batch6AutoFishingManagerLifecycle.Enabled)
-            {
-                batch6AutoFishingManagerLifecycle = new Batch6AutoFishingManagerLifecycleCoordinator(
-                    access,
-                    settings.Batch6AutoFishingManagerLifecycle,
-                    scenarios.RequestProductOwnerRefresh);
-            }
-            batch5GcLadder = new Batch5GcLadderOrchestrator(settings, access);
             if (settings.Batch5NoDemandEnabled)
             {
                 batch5NoDemand = new Batch5NoDemandProfileFixture(
@@ -122,19 +107,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                     settings.Batch5NoDemandWarmupFrames,
                     settings.Batch5NoDemandTargetFrames);
             }
-            scenarios.ConfigureBatch5GcLadder(new Batch5GcLadderFixtureOptions
-            {
-                Enabled = settings.Batch5GcLadderEnabled,
-                Domain = settings.Batch5GcLadderDomain,
-                Level = settings.Batch5GcLadderLevel,
-                Workload = settings.Batch5GcLadderWorkload,
-                Multiplier = settings.Batch5GcLadderMultiplier,
-                TargetUnits = settings.Batch5GcLadderTargetUnits,
-                MeasureSeconds = settings.Batch5GcLadderMeasureSeconds,
-                SaveSlot = settings.SaveSlot
-            });
-            customEntityProbe = new CustomEntityRegistrationContractProbe(access);
-            fishRoeProbe = new FishRoeTooltipObservationProbe(access);
+            fishRoeProbe = new FishRoeTooltipObservationProbe(access, settings.FishRoeProductDisabled);
             itemDisplayNameLifecycleRequested = settings.FishRoeTooltipObservationEnabled &&
                 settings.G6LifecycleCases.Any(item => item.Equals("SaveLoadCycle", StringComparison.Ordinal)) &&
                 settings.G6SaveLoadCycleCount >= 2;
@@ -200,8 +173,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                     LongTitleIdleSeconds = settings.G6LongTitleIdleSeconds
                 });
             }
-            batch6AutoFishingPilot?.Start();
-            batch6AutoFishingManagerLifecycle?.Start();
             access.Log("Optional QA host participant started runId=" + access.RunId + ".");
             PublishPendingStatuses();
         }
@@ -212,7 +183,18 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 throw new InvalidOperationException("The optional QA participant cannot update outside its active lifetime.");
             updates++;
             nativeLoadContinuationProbe?.Update("Update");
-            batch5GcLadder.Update(scenarios.CaptureActionSpeedGcLadderProgress(DateTimeOffset.UtcNow));
+            if (nativeAllocationCalibrationRequested && saveLoadedObserved && !nativeAllocationCalibrationCompleted)
+            {
+                nativeAllocationCalibrationCompleted = true;
+                if (!string.Equals(settings.SaveTestMode, "NoNativeSave", StringComparison.Ordinal))
+                    throw new InvalidOperationException("Native allocation calibration requires NoNativeSave.");
+                bool calibrated = NativeAllocationCalibration.Run(message => access.Log(message));
+                access.PublishG3Status("Smoke.NativeAllocationCalibration", calibrated ? "verified" : "failed",
+                    "startup Mono profiler and known allocations", "calibrated=" + calibrated + "; sevenGroupsRun=false; owner=qa");
+                if (!calibrated) throw new InvalidOperationException("Native allocation calibration unavailable; inspect the calibration rows.");
+                if (Environment.GetEnvironmentVariable("DTMAPI_MONSTER_ALLOCATION_SAMPLING") == "1")
+                    NativeAllocationCalibration.StartSampling(message => access.Log(message));
+            }
             if (batch5NoDemand != null && saveLoadedObserved && !batch5NoDemand.MeasurementCompleted)
             {
                 batch5NoDemand.Update();
@@ -249,22 +231,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 return;
             }
 
-            if (batch6AutoFishingPilot?.ShouldRequestReentryLoad == true)
-            {
-                G4FixtureStepResult wait = batch6AutoFishingPilot.Advance();
-                if (wait.Completed && !wait.Succeeded)
-                    throw new InvalidOperationException(wait.Details);
-                if (!batch6AutoFishingReentryLoadRequested)
-                {
-                    batch6AutoFishingReentryLoadRequested = scenarios.TryRequestInitialSaveLoad(settings.SaveSlot);
-                    if (batch6AutoFishingReentryLoadRequested)
-                        access.Log("Batch6 AutoFishing L5 QA lifecycle requested the second authoritative save-slot load through the existing official save-load coordinator.");
-                }
-                if (batch6AutoFishingReentryLoadRequested && batch6AutoFishingPilot.ShouldRequestReentryLoad)
-                    scenarios.ContinueInitialSaveLoad();
-                return;
-            }
-
             // The bounded product lifecycle acceptances combine in-save observers
             // with the existing SaveLoadCycle. Let SaveLoadCycle drive the initial
             // load, then pause it while G5 performs its in-save ProductNative work
@@ -285,13 +251,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 (settings.G5WorldMutationCases.Length == 0 || g5WorldMutationCompleted || saveLoadCycleMayDriveInitialLoad))
             {
                 string caseId = settings.G6LifecycleCases[g6LifecycleIndex];
-                G4FixtureStepResult result;
-                if (string.Equals(caseId, Batch6AutoFishingPilotSettings.CaseId, StringComparison.Ordinal))
-                    result = batch6AutoFishingPilot?.Advance() ?? G4FixtureStepResult.Failed("Batch6AutoFishingPilot case has no product QA coordinator.");
-                else if (string.Equals(caseId, Batch6AutoFishingManagerLifecycleSettings.CaseId, StringComparison.Ordinal))
-                    result = batch6AutoFishingManagerLifecycle?.Advance() ?? G4FixtureStepResult.Failed("Batch6AutoFishingManagerLifecycle case has no product QA coordinator.");
-                else
-                    result = scenarios.AdvanceG6Lifecycle(caseId);
+                G4FixtureStepResult result = scenarios.AdvanceG6Lifecycle(caseId);
                 if (!result.Completed)
                 {
                     access.PublishG6Status("pending", result.Details + "; completed=" + g6LifecycleIndex + "/" + settings.G6LifecycleCases.Length + "; owner=qa");
@@ -373,24 +333,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                     RunG4Step("Smoke.EquipmentSlotsUiObservation", "real player B input + product-neutral state + QA-owned evidence", scenarios.ObserveEquipmentSlotsUi, ref equipmentSlotsCompleted);
                     return;
                 }
-                if (settings.AudioObservationEnabled && !audioCompleted)
-                {
-                    RunAudioReplacementObservation();
-                    return;
-                }
-                if (settings.HatchVoiceEnabled && !hatchCompleted)
-                {
-                    RunHatchVoiceObservation();
-                    return;
-                }
-                if (settings.CameraPlayableEnabled && !cameraCompleted)
-                {
-                    RunG4Step("Smoke.CameraPlayable", "optional QA receipt-bound CameraView arbitration", scenarios.ExerciseCameraPlayable, ref cameraCompleted);
-                    if (cameraCompleted)
-                        access.PublishG4Status("Smoke.Zoom", "verified", "G4 CameraPlayable compatibility status", "CameraPlayable is a Frozen-ABI compatibility fixture and is not current Zoom ProductNative acceptance evidence.");
-                    return;
-                }
-                if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted)
+;                if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted)
                 {
                     RunG4Step("Smoke.ContentMetadataObservation", "optional QA read-only content metadata observer", () => scenarios.ObserveContentMetadata(settings.ContentMetadataExpectOilAbsent), ref contentMetadataCompleted);
                     return;
@@ -568,9 +511,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 }
             }
             saveLoadedObserved = true;
-            batch5GcLadder.OnSaveLoaded();
-            batch6AutoFishingPilot?.OnSaveLoaded(slot, isNewGame);
-            batch6AutoFishingManagerLifecycle?.OnSaveLoaded(slot, isNewGame);
             if (settings.G6LifecycleCases.Length > 0)
                 scenarios.NotifyG6SaveLoaded(slot, isNewGame);
             if (settings.SaveSlotsPagingEnabled && !saveSlotsCompleted)
@@ -586,10 +526,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                     "DtmApiRuntime.SaveSessionLoaded -> optional QA participant",
                     "slot=" + (slot?.ToString() ?? "unknown") + "; isNewGame=" + isNewGame.ToString().ToLowerInvariant() + "; owner=qa; fallback=false");
             }
-
-            if (settings.CustomEntityContractEnabled && !customEntityCompleted)
-                customEntityCompleted = RunG3Probe("Smoke.CustomEntityApis", "owner-bound in-memory registration session", customEntityProbe.Run);
-            if (settings.FishRoeTooltipObservationEnabled &&
+;            if (settings.FishRoeTooltipObservationEnabled &&
                 (!fishRoeCompleted || (itemDisplayNameLifecycleRequested && fishRoeProbe.ShouldRunAfterSaveLoaded)))
             {
                 bool completed = RunG3Probe("Smoke.FishRoeTooltip", "transient ItemFishRoe tooltip observation", fishRoeProbe.Run);
@@ -646,7 +583,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             if (!started || closed)
                 return;
             workshopReloadObserved = true;
-            batch6AutoFishingManagerLifecycle?.OnWorkshopReloadCompleted();
             if (settings.ProductOwnerRefreshEnabled)
             {
                 productOwnerRefreshCompleted = true;
@@ -677,10 +613,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             if (!hasObservedSaveLoaded && RequiresSaveLoadedBoundary())
                 return QaHostBoundaryDisposition.Continue;
             scenarios.OnReturnedToTitle();
-            batch5GcLadder.OnReturnedToTitle();
             if (batch5NoDemand != null && !batch5NoDemand.CompleteTitleCleanup())
                 throw new InvalidOperationException("Batch 5 no-demand profile did not reach a successful terminal title-cleanup state.");
-            batch6AutoFishingPilot?.OnReturnedToTitle();
             if (itemDisplayNameLifecycleRequested)
                 fishRoeProbe.OnReturnedToTitle();
             postTitleBoundaryObserved = true;
@@ -720,9 +654,11 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 return QaHostBoundaryDisposition.Continue;
             if (settings.G6LifecycleCases.Length > 0 && !g6LifecycleCompleted)
                 return QaHostBoundaryDisposition.Continue;
-            if (batch5GcLadder.Enabled && !batch5GcLadder.TerminalSucceeded)
-                return QaHostBoundaryDisposition.Continue;
-            return QaHostBoundaryDisposition.Close;
+            // Manual observation may return to title and load again. Retain the
+            // participant and its disposable-save isolation until process exit.
+            return settings.WaitForManualExit
+                ? QaHostBoundaryDisposition.Continue
+                : QaHostBoundaryDisposition.Close;
         }
 
         public void Close(string reason)
@@ -734,6 +670,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 failureCloseRequested = true;
             bool failureClose = failureCloseRequested;
             var closeFailures = new List<Exception>();
+            RunCloseStep(closeFailures, "NativeAllocationSampling.Close", () => NativeAllocationCalibration.StopSampling(message => access.Log(message)));
             bool nativeProbeClosed = nativeLoadContinuationProbe?.Close(closeReason) ?? true;
             if (!nativeProbeClosed)
                 closeFailures.Add(new InvalidOperationException("The optional QA native continuation probe did not release its Harmony owner."));
@@ -746,13 +683,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                         closeReason));
             }
             RunCloseStep(closeFailures, "QaScenarioController.Close", () => scenarios.Close(closeReason));
-            RunCloseStep(closeFailures, "Batch5GcLadder.Close", () => batch5GcLadder.Close(closeReason));
             if (batch5NoDemand != null)
                 RunCloseStep(closeFailures, "Batch5NoDemand.Close", () => batch5NoDemand.Close(closeReason));
-            if (batch6AutoFishingPilot != null)
-                RunCloseStep(closeFailures, "Batch6AutoFishingPilot.Close", () => batch6AutoFishingPilot.Close(closeReason));
-            if (batch6AutoFishingManagerLifecycle != null)
-                RunCloseStep(closeFailures, "Batch6AutoFishingManagerLifecycle.Close", () => batch6AutoFishingManagerLifecycle.Close(closeReason));
             if (HasG4Requirements())
                 RunCloseStep(closeFailures, "G4Fixtures.Close", () => access.Log("G4 fixture close receipt " + scenarios.CloseG4Fixtures() + "."));
             if (!string.IsNullOrWhiteSpace(returnedToTitleG4Failure) && !returnedToTitleG4FailureRaised)
@@ -814,9 +746,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
 
         private void PublishPendingStatuses()
         {
-            if (settings.CustomEntityContractEnabled)
-                access.PublishG3Status("Smoke.CustomEntityApis", "pending", "optional QA owner-bound registration session", "Waiting for SaveLoaded; runtime verbs are unavailable through the QA facade.");
-            if (settings.FishRoeTooltipObservationEnabled)
+;            if (settings.FishRoeTooltipObservationEnabled)
                 access.PublishG3Status("Smoke.FishRoeTooltip", "pending", "optional QA transient tooltip observation", "Waiting for SaveLoaded; no world object will be created or retained.");
             if (itemDisplayNameLifecycleRequested)
                 access.PublishG3Status("Smoke.ItemDisplayNameLifecycle", "pending", "existing Fish/Animal product and SaveLoadCycle observers", "Waiting for two product queries and two real DolocAPI.SetEnvCamera cache-clear boundaries; owner=qa; fallback=false.");
@@ -851,13 +781,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 access.PublishG4Status("Smoke.AnimalViewerRendering", "pending", "optional QA read-only animal observer", "Waiting for SaveLoaded; no husbandry seed is permitted.");
             if (settings.EquipmentSlotsObservationEnabled)
                 access.PublishG4Status("Smoke.EquipmentSlotsUiObservation", "pending", "optional QA read-only equipment UI observer", "Waiting for SaveLoaded and runner real B input; QA does not open, close, render, or mutate the product UI.");
-            if (settings.AudioObservationEnabled)
-                access.PublishG4Status("Smoke.AudioReplacement", "pending", "optional QA real-input audio observer", "Waiting for definition readiness and runner real E input; no definition refresh is permitted.");
-            if (settings.HatchVoiceEnabled)
-                access.PublishG4Status("Smoke.HatchAnimalVoice", "pending", "optional QA receipt-bound Hatch voice driver", "Waiting for SaveLoaded and already-preloaded definitions.");
-            if (settings.CameraPlayableEnabled)
-                access.PublishG4Status("Smoke.CameraPlayable", "pending", "optional QA receipt-bound CameraView arbitration", "Waiting for SaveLoaded; this route exercises Frozen CameraView compatibility only.");
-            if (settings.ContentMetadataObservationEnabled)
+;            if (settings.ContentMetadataObservationEnabled)
                 access.PublishG4Status("Smoke.ContentMetadataObservation", "pending", "optional QA read-only content metadata observer", "Waiting for SaveLoaded; world and inventory verbs are unavailable.");
             if (settings.ContinuousHomePageTerminalEnabled)
             {
@@ -890,9 +814,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             try
             {
                 string details = probe();
-                string logPrefix = hookId.Equals("Smoke.CustomEntityApis", StringComparison.Ordinal)
-                    ? "Smoke exercise CustomEntityApis OK "
-                    : hookId + " QA probe OK ";
+                string logPrefix = hookId + " QA probe OK ";
                 access.Log(logPrefix + details);
                 access.PublishG3Status(hookId, "verified", source, details);
                 return true;
@@ -907,9 +829,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         private string[] GetIncompleteG3Requirements()
         {
             var incomplete = new System.Collections.Generic.List<string>();
-            if (settings.CustomEntityContractEnabled && !customEntityCompleted)
-                incomplete.Add("CustomEntityContract");
-            if (settings.FishRoeTooltipObservationEnabled && !fishRoeCompleted)
+;            if (settings.FishRoeTooltipObservationEnabled && !fishRoeCompleted)
                 incomplete.Add("FishRoeTooltipObservation");
             if (itemDisplayNameLifecycleRequested && !fishRoeProbe.LifecycleComplete)
                 incomplete.Add("ItemDisplayNameLifecycle");
@@ -917,6 +837,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 incomplete.Add("DiagnosticsSnapshot");
             if (settings.ObserveSaveLoaded && !saveLoadedObserved)
                 incomplete.Add("SaveLoaded");
+            if (nativeAllocationCalibrationRequested && !nativeAllocationCalibrationCompleted)
+                incomplete.Add("NativeAllocationCalibration");
             if (settings.ObserveSaveSaved && !saveSavedObserved)
                 incomplete.Add("SaveSaved");
             if (settings.ObserveWorkshopReloadCompleted && !workshopReloadObserved)
@@ -983,67 +905,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             access.Log("Smoke exercise DebugConsoleHotkey OK " + details);
         }
 
-        private void RunAudioReplacementObservation()
-        {
-            const string source = "runner real E -> paper-box OnInteract -> production AudioReplacement breadcrumbs";
-            if (!audioReadinessCompleted)
-            {
-                G4FixtureStepResult readiness = scenarios.ObserveAudioDefinitions();
-                if (!readiness.Completed)
-                {
-                    access.PublishG4Status("Smoke.AudioReplacement", "pending", source, readiness.Details + "; owner=qa; fallback=false");
-                    return;
-                }
-                if (!readiness.Succeeded)
-                    throw new InvalidOperationException(readiness.Details);
-                audioReadinessCompleted = true;
-                audioReadinessDetails = readiness.Details;
-            }
-
-            G4FixtureStepResult behavior = AudioReplacementBehaviorObservation.Observe(access.ReadLatestLogText(), audioReadinessDetails);
-            if (!behavior.Completed)
-            {
-                access.PublishG4Status("Smoke.AudioReplacement", "pending", source, behavior.Details + "; owner=qa; fallback=false");
-                return;
-            }
-            if (!behavior.Succeeded)
-                throw new InvalidOperationException(behavior.Details);
-            audioCompleted = true;
-            access.PublishG4Status("Smoke.AudioReplacement", "verified", source, behavior.Details + "; owner=qa; fallback=false");
-            access.Log("Smoke exercise AudioReplacement OK " + behavior.Details + "; owner=qa.");
-        }
-
-        private void RunHatchVoiceObservation()
-        {
-            const string source = "QA receipt-bound native Hatch stage/sound calls -> production AudioReplacement breadcrumbs";
-            if (!hatchActionCompleted)
-            {
-                G4FixtureStepResult action = scenarios.ExerciseHatchVoice();
-                if (!action.Completed)
-                {
-                    access.PublishG4Status("Smoke.HatchAnimalVoice", "pending", source, action.Details + "; owner=qa; fallback=false");
-                    return;
-                }
-                if (!action.Succeeded)
-                    throw new InvalidOperationException(action.Details);
-                hatchActionCompleted = true;
-                hatchActionDetails = action.Details;
-            }
-
-            string log = access.ReadLatestLogText();
-            bool child = log.IndexOf("AudioReplacement event owner=DTMAPI.HatchAssets replacement=hatch-pet-child event=PLAY_ANIMAL_PET_CHICKEN_CHILD played=True suppressed=True", StringComparison.Ordinal) >= 0;
-            bool adult = log.IndexOf("AudioReplacement event owner=DTMAPI.HatchAssets replacement=hatch-pet-adult event=PLAY_ANIMAL_PET_CHICKEN played=True suppressed=True", StringComparison.Ordinal) >= 0;
-            if (!child || !adult)
-            {
-                access.PublishG4Status("Smoke.HatchAnimalVoice", "pending", source, hatchActionDetails + "; childPlayedSuppressed=" + child.ToString().ToLowerInvariant() + "; adultPlayedSuppressed=" + adult.ToString().ToLowerInvariant() + "; owner=qa; fallback=false");
-                return;
-            }
-            hatchCompleted = true;
-            string details = hatchActionDetails + "; childPlayedSuppressed=true; adultPlayedSuppressed=true; owner=qa; fallback=false";
-            access.PublishG4Status("Smoke.HatchAnimalVoice", "verified", source, details);
-            access.Log("Smoke exercise HatchAnimalVoice OK " + details);
-        }
-
         private static void ValidateExternalMarkerBoundary(string evidenceRoot, string markerPath)
         {
             string root = Path.GetFullPath(evidenceRoot ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -1075,9 +936,6 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                     case "SaveSlotsPaging": hookId = "Smoke.MoreSavesOfficialSaveUi"; break;
                     case "AnimalObservation": hookId = "Smoke.AnimalViewerRendering"; break;
                     case "EquipmentSlotsObservation": hookId = "Smoke.EquipmentSlotsUiObservation"; break;
-                    case "AudioObservation": hookId = "Smoke.AudioReplacement"; break;
-                    case "HatchVoice": hookId = "Smoke.HatchAnimalVoice"; break;
-                    case "CameraPlayable": hookId = "Smoke.CameraPlayable"; break;
                     case "ContentMetadata": hookId = "Smoke.ContentMetadataObservation"; break;
                     case "ExternalInputReady": hookId = "Smoke.ExternalPlayerInput"; break;
                     case "ExternalInputMarker":
@@ -1094,20 +952,20 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             HasTitleUiRoute() || settings.OfficialModUiEnabled || settings.PauseMenuLayoutEnabled ||
             settings.DebugConsoleEnabled || settings.SaveSlotsPagingEnabled || settings.AnimalObservationEnabled ||
             settings.EquipmentSlotsObservationEnabled ||
-            settings.AudioObservationEnabled || settings.HatchVoiceEnabled || settings.CameraPlayableEnabled ||
+
             settings.ContentMetadataObservationEnabled || settings.ContinuousHomePageTerminalEnabled || settings.ExternalPlayerInputObservationEnabled ||
             settings.TitleLifecycleEnabled || settings.ProductOwnerRefreshEnabled || settings.AdvancedProductOwnerDeactivationEnabled;
 
         private bool RequiresSaveLoadedForG4() =>
             settings.PauseMenuLayoutEnabled || settings.DebugConsoleEnabled || settings.SaveSlotsPagingEnabled ||
-            settings.AnimalObservationEnabled || settings.EquipmentSlotsObservationEnabled || settings.AudioObservationEnabled || settings.HatchVoiceEnabled ||
-            settings.CameraPlayableEnabled || settings.ContentMetadataObservationEnabled || settings.ExternalPlayerInputObservationEnabled ||
+            settings.AnimalObservationEnabled || settings.EquipmentSlotsObservationEnabled ||
+             settings.ContentMetadataObservationEnabled || settings.ExternalPlayerInputObservationEnabled ||
             settings.TitleLifecycleEnabled || settings.ProductOwnerRefreshEnabled || settings.AdvancedProductOwnerDeactivationEnabled;
 
         private bool RequiresSaveLoadedBoundary() =>
             RequiresSaveLoadedForG4() ||
             settings.ContinuousHomePageRequiresSaveLoaded ||
-            settings.CustomEntityContractEnabled || settings.FishRoeTooltipObservationEnabled ||
+            settings.FishRoeTooltipObservationEnabled ||
             settings.DiagnosticsSnapshotEnabled || settings.ObserveSaveLoaded || settings.ObserveSaveSaved ||
             settings.Batch5NoDemandEnabled ||
             settings.G5WorldMutationCases.Length > 0 || settings.G6LifecycleCases.Length > 0;
@@ -1145,12 +1003,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         {
             if (returnHomeRequested || postTitleBoundaryObserved || !saveLoadedObserved)
                 return false;
-            if (batch6AutoFishingPilot?.ShouldRequestReturnHome == true)
-                return true;
             if (GetIncompleteG3Requirements().Length > 0 || GetIncompleteG5Requirements().Length > 0 || GetIncompleteG6Requirements().Length > 0)
                 return false;
-            if (batch5GcLadder.ShouldRequestReturnHome)
-                return true;
             if (batch5NoDemand?.ShouldRequestReturnHome == true)
                 return true;
             if (homePageTerminals.Count == 0)
@@ -1169,8 +1023,8 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             // that it pops its exact state. Give the game a continuous normal-Gameplay
             // window to settle that native exit before ReturnHome tears the scene down.
             return QaScenarioController.HasContinuousStableObservationForFixture(
-                scenarios.IsNormalGameplay(),
-                DateTimeOffset.UtcNow,
+                normalGameplay(),
+                utcNow(),
                 1d,
                 ref returnHomeQuiescenceObservedAt);
         }
@@ -1182,7 +1036,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             {
                 return false;
             }
-            return (!batch5GcLadder.Enabled || batch5GcLadder.TerminalSucceeded) &&
+            return
                 (batch5NoDemand == null || batch5NoDemand.TerminalSucceeded);
         }
 
@@ -1224,10 +1078,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             if (settings.SaveSlotsPagingEnabled && !saveSlotsCompleted) incomplete.Add("SaveSlotsPaging");
             if (settings.AnimalObservationEnabled && !animalCompleted) incomplete.Add("AnimalObservation");
             if (settings.EquipmentSlotsObservationEnabled && !equipmentSlotsCompleted) incomplete.Add("EquipmentSlotsObservation");
-            if (settings.AudioObservationEnabled && !audioCompleted) incomplete.Add("AudioObservation");
-            if (settings.HatchVoiceEnabled && !hatchCompleted) incomplete.Add("HatchVoice");
-            if (settings.CameraPlayableEnabled && !cameraCompleted) incomplete.Add("CameraPlayable");
-            if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted) incomplete.Add("ContentMetadata");
+;            if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted) incomplete.Add("ContentMetadata");
             if (settings.ExternalPlayerInputObservationEnabled && (externalPlayerInput == null || !externalPlayerInput.Ready)) incomplete.Add("ExternalInputReady");
             if (settings.ExternalPlayerInputObservationEnabled && (externalPlayerInput == null || !externalPlayerInput.MarkerObserved)) incomplete.Add("ExternalInputMarker");
             if (settings.ExternalPlayerInputObservationEnabled && externalPlayerInput != null && externalPlayerInput.MarkerObserved && !externalPlayerInput.MarkerPassed) incomplete.Add("ExternalInputMarkerPassed");
@@ -1257,10 +1108,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             if (RequiresMoreSavesPostTitlePanelReceipt() && !moreSavesPostTitlePanelCompleted) incomplete.Add("MoreSavesPostTitlePanel");
             if (settings.AnimalObservationEnabled && !animalCompleted) incomplete.Add("AnimalObservation");
             if (settings.EquipmentSlotsObservationEnabled && !equipmentSlotsCompleted) incomplete.Add("EquipmentSlotsObservation");
-            if (settings.AudioObservationEnabled && !audioCompleted) incomplete.Add("AudioObservation");
-            if (settings.HatchVoiceEnabled && !hatchCompleted) incomplete.Add("HatchVoice");
-            if (settings.CameraPlayableEnabled && !cameraCompleted) incomplete.Add("CameraPlayable");
-            if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted) incomplete.Add("ContentMetadata");
+;            if (settings.ContentMetadataObservationEnabled && !contentMetadataCompleted) incomplete.Add("ContentMetadata");
             if (settings.ExternalPlayerInputObservationEnabled && (externalPlayerInput == null || !externalPlayerInput.Ready)) incomplete.Add("ExternalInputReady");
             if (settings.ExternalPlayerInputObservationEnabled && (externalPlayerInput == null || !externalPlayerInput.MarkerObserved)) incomplete.Add("ExternalInputMarker");
             if (settings.ExternalPlayerInputObservationEnabled && externalPlayerInput != null && externalPlayerInput.MarkerObserved && !externalPlayerInput.MarkerPassed) incomplete.Add("ExternalInputMarkerPassed");

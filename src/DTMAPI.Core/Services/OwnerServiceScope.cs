@@ -81,14 +81,16 @@ namespace DTMAPI.Core.Services
     internal sealed class OwnerServiceManager : IModOwnerCleanupParticipant
     {
         private readonly PlatformRuntimeServices? platform;
-        internal OwnerServiceManager(PlatformRuntimeServices? platform = null) { this.platform = platform; }
+        private readonly ContentHostManager? contentHosts;
+        internal OwnerServiceManager(PlatformRuntimeServices? platform = null, ContentHostManager? contentHosts = null)
+        { this.platform = platform; this.contentHosts = contentHosts; }
         private readonly Dictionary<string, OwnerServiceScope> scopes = new Dictionary<string, OwnerServiceScope>(StringComparer.OrdinalIgnoreCase);
         public string ParticipantId => "Core.OptionalPlatformServices";
 
         internal OwnerServiceScope Create(string owner, Action ensureOwnerActive, Action ensureRuntimeThread,
             string? packageRoot = null, string? globalDataRoot = null,
             ConfigService? config = null, InputService? input = null, TranslationService? translation = null,
-            Action? ensureReflectionOwnerAlive = null)
+            Action? ensureReflectionOwnerAlive = null, string? configRoot = null)
         {
             ensureRuntimeThread();
             ensureOwnerActive();
@@ -96,16 +98,20 @@ namespace DTMAPI.Core.Services
             var scope = new OwnerServiceScope(ensureOwnerActive, ensureRuntimeThread,
                 (contract, guard) => contract == typeof(IReflectionHelper) && ensureReflectionOwnerAlive != null
                     ? new Reflection.OwnerReflectionService(ensureReflectionOwnerAlive)
-                    : ResolvePlatformService(contract, guard, owner, packageRoot, globalDataRoot, config, input, translation));
+                    : ResolvePlatformService(contract, guard, ensureRuntimeThread, owner, packageRoot, globalDataRoot, configRoot, config, input, translation));
             scopes.Add(owner, scope);
             return scope;
         }
 
         // Fixed platform catalog. No registration, assignability, name matching or Mod API lookup.
-        private object? ResolvePlatformService(Type contract, Action ensureActive,
-            string owner, string? packageRoot, string? globalDataRoot, ConfigService? config, InputService? input, TranslationService? translation)
+        private object? ResolvePlatformService(Type contract, Action ensureActive, Action ensureRuntimeThread,
+            string owner, string? packageRoot, string? globalDataRoot, string? configRoot, ConfigService? config, InputService? input, TranslationService? translation)
         {
+            if (contract == typeof(IProtectedSourceFiles) && owner == ProtectedSourceFileService.Owner && configRoot != null)
+                return new ProtectedSourceFileService(configRoot, ensureActive, ensureRuntimeThread);
             if (contract == typeof(IOwnerFileHelper) && packageRoot != null) return new OwnerFileService(packageRoot, ensureActive);
+            if (contract == typeof(IModResourceHelper) && packageRoot != null) return new ModResourceService(packageRoot, ensureActive);
+            if (contract == typeof(IContentHostService)) return contentHosts?.CreateService(owner, ensureActive);
             if (contract == typeof(IGlobalDataHelper) && globalDataRoot != null) return new GlobalDataService(owner, globalDataRoot, ensureActive);
             if (contract == typeof(IVersionedConfigHelper)) return config?.CreateVersioned(owner, ensureActive);
             if (contract == typeof(IDtmInputDiagnostics)) return input?.CreateDiagnostics(owner, ensureActive);

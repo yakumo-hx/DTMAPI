@@ -1,0 +1,27 @@
+# 冲刺技能（Experimental）
+
+当前配对为 Host 0.1.11、MonsterContent / 原生模块 0.1.10、Runtime / SDK 0.7.5，作者项目 v4、载荷 schema 2、绑定 `dtmapi.monsters/2` / 2.0.0。所有当前包统一声明 Host `[0.1.11,0.2.0)`；模板能力仍由实际目录逐项证明。
+
+`MonsterSkill { Id = "charge", Kind = "dash", Dash = new MonsterDash { ... } }` 通过 `UseSkill("charge", maxGameSeconds)` 执行；配置使用相同的 `skill` 步骤和 `skillId`。两入口共用动作、游戏时间、冷却和取消。
+
+完整普通作者见 [Strict C# 样例](examples/monster-dash/ModEntry.cs)，编辑器项目见 [dash.dtmonster.json](../tools/monster-editor/samples/dash.dtmonster.json)。在“模板与身份”新增冲刺技能，把步骤动作设为“自定义技能”并选择技能 ID；切换模板保留参数，目录不支持时明确提示。修改后冷更新包并重新启动游戏。
+
+| 参数 | 含义与范围 |
+| --- | --- |
+| Distance | 正数 世界单位，直线最大路程 |
+| Speed | 正数 世界单位/游戏秒；时长由 Distance / Speed 决定 |
+| HitStartFraction / HitEndFraction | 0–1，起点严格小于终点；仅全程这段比例内扫过的身体区域可命中。例如 0.25–0.75 表示中间一半路程 |
+| Damage | 非负 原始攻击值，无暴击；0 不调用伤害入口 |
+| Range | 正数，前摇期间原生目标/视线检查距离，与最大位移分开 |
+| WindupGameSeconds / RecoveryGameSeconds | 各 非负 游戏秒 |
+| CooldownGameSeconds | 正数，实例与技能 ID 独立，自接纳开始，取消不返还 |
+
+前摇持续核对原生目标身份和射程。地面身体从现有主碰撞体中心检查到目标碰撞体中心的射程及原生敌方攻击通道，避免无发射点模板把脚底当作射线起点；飞行沿原生发射射线检查。前摇结束时锁定方向，冲刺期间不追踪；地面身体只水平移动，遇悬崖/地图不可达格停止，不跳跃。飞行身体按平面方向直冲。固定炮台和其他未证明的移动机制返回 `DashUnsupported`，旧目录缺冲刺能力也不默认支持。
+
+冲刺按现有主碰撞体的世界 AABB 做矩形扫掠，墙体使用原生 groundMask 且忽略触发器；保留 0.02 单位墙间隙，碰墙/地图边缘即关闭命中并进入收招，不反弹、不滑墙、不穿墙。命中只检查被实际通过的窗口段，沿原生敌方攻击通道查询玩家碰撞体；每个实际受击对象最多一次尝试，原生拥有防御、无敌和完美闪避。命中不结束位移。前摇和收招不产生冲刺伤害，窗口不会因碰墙或暂停延长。
+
+取消、超时、硬直、死亡或离房使当前执行退休：停止位移和命中，清除受击对象引用，保留已到达位置，不回原点、不恢复旧移动路径或补发伤害。暂停冻结前摇、路程、收招与冷却。正常完成等收招结束；动作预算包含前摇、移动及收招，预算不足沿现有 TimedOut。冲刺不启用原生攻击伤害盒、不创建 Tween/弹体或第二套战斗循环，不改模板/刚体参数；外观沿模板当前表现，MC10.b 才扩展动画。
+
+动作快照的 `InterruptionReason` 区分中断：前摇目标/身份/射程或攻击通道失效为 `TargetInvalidated`，零方向为 `AimUnavailable`，明确受击锁为 `Hurt`。成功清理后这三种原因让有限序列 `Interrupted`；active 等完整轮间隔后新建一轮，retaliate 冷却后等待新有效 hit。实际位置偏离受控位置超过 0.05 为 `ExternalDisplacement`，偏差本身不能证明受击或传送，配置序列仍失败；`None`、未知原因和真实故障也不重新等待。取消优先、无旧动作恢复，见[序列指南](MONSTER-SEQUENCES.md)。
+
+技能参数随定义冻结。字段必须与 kind 匹配，不得混用 scatter/dash。导出要求最低 Host 0.1.11；配置载荷仍是 schema 2，作者项目为 v4。

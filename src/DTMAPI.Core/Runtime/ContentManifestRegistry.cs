@@ -271,12 +271,6 @@ namespace DTMAPI.Core.Runtime
             var capabilities = new List<string>();
             if (mod.Classification.IsCodeMod)
                 capabilities.Add("CodeMod");
-            if (mod.Classification.IsAdvanced)
-                capabilities.Add("AdvancedCodeMod");
-            else if (mod.Classification.IsLegacyNativeCompatibility)
-                capabilities.Add("LegacyNativeCompatibilityCodeMod");
-            else if (mod.Classification.Identity == ManagedModIdentity.StrictCodeMod)
-                capabilities.Add("StrictCodeMod");
             if (IsContentPack(mod))
                 capabilities.Add("ContentPack");
             if (mod.OfficialEnablementManaged)
@@ -291,24 +285,6 @@ namespace DTMAPI.Core.Runtime
             string dtmapiContentRoot = Path.Combine(mod.RootPath, "Content", "DTMAPI");
             if (Directory.Exists(dtmapiContentRoot))
                 capabilities.Add("DTMAPIContent");
-            if (File.Exists(Path.Combine(dtmapiContentRoot, "custom-animals.json")))
-                capabilities.Add("CustomAnimals");
-
-            string audioPath = Path.Combine(dtmapiContentRoot, "audio-replacements.json");
-            if (File.Exists(audioPath))
-            {
-                capabilities.Add("AudioReplacement");
-                try
-                {
-                    string text = File.ReadAllText(audioPath);
-                    if (text.IndexOf("AnimalVoice", StringComparison.OrdinalIgnoreCase) >= 0)
-                        capabilities.Add("AnimalVoice");
-                }
-                catch
-                {
-                    capabilities.Add("AudioReplacementUnreadable");
-                }
-            }
 
             string contentRoot = Path.Combine(mod.RootPath, "Content");
             if (OfficialJsonFiles.Any(file => File.Exists(Path.Combine(contentRoot, file))))
@@ -541,8 +517,6 @@ namespace DTMAPI.Core.Runtime
                 "; contentPacks=" + ContentPackCount +
                 "; loadedContentPacks=" + LoadedContentPackCount +
                 "; codeMods=" + Rows.Count(r => r.Capabilities.Contains("CodeMod", StringComparer.OrdinalIgnoreCase)) +
-                "; customAnimalPacks=" + Rows.Count(r => r.Capabilities.Contains("CustomAnimals", StringComparer.OrdinalIgnoreCase)) +
-                "; animalVoicePacks=" + Rows.Count(r => r.Capabilities.Contains("AnimalVoice", StringComparer.OrdinalIgnoreCase)) +
                 "; dependencyErrors=" + DependencyErrorCount +
                 "; dependencyWarnings=" + DependencyWarningCount +
                 "; apiTooNew=" + ApiTooNewCount +

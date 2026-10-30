@@ -1,0 +1,98 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterSequence",
+    "name": "顺序行为示例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "sequence",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 200,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "sequence",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "sequence": {
+          "repeatCount": 2,
+          "steps": [
+            {
+              "id": "outbound",
+              "action": "move-to",
+              "offsetX": 1.25,
+              "offsetY": 0,
+              "maxTravel": 8,
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "fire",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "return",
+              "action": "move-to",
+              "offsetX": 0,
+              "offsetY": 0,
+              "maxTravel": 8,
+              "maxGameSeconds": 15
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "inherited",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 200,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "inherited",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "pair",
+      "definitionId": "sequence",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 2
+    }
+  ],
+  "assets": [],
+  "dependencies": [],
+  "catalog": {
+    "gameVersion": "1.00.08",
+    "moduleVersion": "0.1.0",
+    "fingerprint": "c7e9a3dd6da5d6a5f7825ba31f4b3786f11c0748ca692727925151cf236a6c22"
+  }
+}

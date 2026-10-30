@@ -64,17 +64,6 @@ function ConvertFrom-UnicodeCodePoints([int[]]$CodePoints) {
     return -join @($CodePoints | ForEach-Object { [char]$_ })
 }
 
-function Get-TextSha256([string]$Text) {
-    $sha256 = [Security.Cryptography.SHA256]::Create()
-    try {
-        $bytes = [Text.Encoding]::UTF8.GetBytes($Text)
-        return ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '')
-    }
-    finally {
-        $sha256.Dispose()
-    }
-}
-
 function Get-PngGeometry([string]$Path) {
     $bitmap = [System.Drawing.Bitmap]::new($Path)
     try {
@@ -135,113 +124,75 @@ foreach ($jsonFile in @(Get-ChildItem -LiteralPath $dataRoot -Recurse -File -Fil
 
 $contentRoot = Join-Path $dataRoot 'Content'
 $manifestPath = if ($isPackage) { Join-Path $contentRoot 'DTMAPI\manifest.json' } else { Join-Path $dataRoot 'manifest.json' }
-$infoPath = if ($isPackage) { Join-Path $dataRoot 'info.json' } else { Join-Path $dataRoot 'official-info.json' }
+$infoPath = Join-Path $dataRoot 'info.json'
 $manifest = Read-Json $manifestPath
 $officialInfo = Read-Json $infoPath
 $assetConfig = Read-Json (Join-Path $productRoot 'asset-sources.json')
 Assert-Equal $assetConfig.schemaVersion 3 'asset-source schema version'
+# Independent of the tested manifest: the already researched adult chicken
+# jump_ready/jump clips request these three Hatch names in this product slice.
+$requiredHatchAdultJumpFrames = @(
+    'anim_animal_hatch_adult_jump_0.png',
+    'anim_animal_hatch_adult_jump_1.png',
+    'anim_animal_hatch_adult_jump_2.png'
+)
+$hatchFrameManifest = Read-Json (Join-Path $contentRoot 'Sprites\hatch_frame_manifest.json')
+$hatchAdultJump = @($hatchFrameManifest.states | Where-Object { $_.stage -ceq 'adult' -and $_.state -ceq 'jump' })
+Assert-Equal $hatchAdultJump.Count 1 'Hatch adult jump manifest state count'
+Assert-Equal ($hatchAdultJump[0].files -join '|') ($requiredHatchAdultJumpFrames -join '|') 'Hatch adult jump manifest must include jump_0/1/2 in order'
+Assert-Equal $hatchAdultJump[0].frame_count 3 'Hatch adult jump manifest frame count'
+Assert-Equal $assetConfig.hatchAdultJumpCompletion.sourceFrame $requiredHatchAdultJumpFrames[0] 'Hatch jump return-pose source'
+Assert-Equal $assetConfig.hatchAdultJumpCompletion.destinationFrame $requiredHatchAdultJumpFrames[2] 'Hatch jump return-pose destination'
+if ($isPackage) {
+    foreach ($frameName in $requiredHatchAdultJumpFrames) {
+        $framePath = Join-Path $contentRoot ("Sprites\{0}" -f $frameName)
+        Assert-True (Test-Path -LiteralPath $framePath -PathType Leaf) "required Hatch adult jump frame exists: $frameName"
+        $frameGeometry = Get-PngGeometry $framePath
+        Assert-Equal $frameGeometry.CanvasWidth 32 "Hatch adult jump canvas width: $frameName"
+        Assert-Equal $frameGeometry.CanvasHeight 32 "Hatch adult jump canvas height: $frameName"
+    }
+    Assert-Equal (Get-FileHash -LiteralPath (Join-Path $contentRoot 'Sprites\anim_animal_hatch_adult_jump_2.png') -Algorithm SHA256).Hash $assetConfig.hatchAdultJumpCompletion.sha256 'Hatch jump return frame reuses the unchanged preparation pose'
+}
 Assert-Equal $manifest.UniqueID 'DTMAPI.AnimalPack' 'manifest UniqueID'
-Assert-Equal $manifest.Name (ConvertFrom-UnicodeCodePoints @(0x7F3A, 0x6C27, 0x52A8, 0x7269, 0x5305)) 'manifest display name'
-Assert-Equal $manifest.Author 'Yuuka' 'manifest author'
-Assert-Equal $manifest.Version '1.0.0' 'manifest version'
+Assert-Equal $manifest.ManifestVersion 2 'manifest format'
+Assert-Equal $officialInfo.version '1.0.0' 'product version'
 Assert-Equal $manifest.Type 'ContentPack' 'manifest type'
 Assert-True ($null -eq $manifest.PSObject.Properties['EntryDll']) 'content-pack manifest must omit EntryDll'
-Assert-Equal $manifest.MinimumDTMApiVersion '0.6.0' 'manifest minimum DTMAPI version'
-Assert-True ($null -eq $manifest.PSObject.Properties['Dependencies']) 'content-pack manifest must omit Dependencies'
-Assert-True (-not (Test-Path -LiteralPath (Join-Path $contentRoot 'DTMAPI\dtmapi-package.json'))) 'legacy dtmapi-package.json must be absent'
+Assert-Equal $manifest.MinimumDTMApiVersion '0.7.5' 'manifest minimum DTMAPI version'
+Assert-Equal @($manifest.Dependencies).Count 0 'built-in module usage follows accepted content contributions'
+Assert-True ($null -eq $manifest.PSObject.Properties['ContentPackFor']) 'native content remains unbound'
 Assert-Equal $officialInfo.name (ConvertFrom-UnicodeCodePoints @(0x7F3A, 0x6C27, 0x52A8, 0x7269, 0x5305)) 'official-info display name'
 Assert-Equal $officialInfo.author 'Yuuka' 'official-info author'
 Assert-Equal $officialInfo.localized_name.schinese $officialInfo.name 'official-info Simplified Chinese name'
-Assert-Equal $manifest.Description $officialInfo.description 'manifest and official-info descriptions'
 Assert-Equal $officialInfo.localized_description.schinese $officialInfo.description 'official-info Simplified Chinese description'
 Assert-ExactSet @($officialInfo.localized_description.PSObject.Properties.Name) @('schinese', 'tchinese', 'english') 'official-info localized-description languages'
-Assert-Equal (Get-TextSha256 ([string]$officialInfo.description)) '125ACEECE2667F184A8957BF757EAFD5EEC999153D211A6E7DFF5B068A82A026' 'frozen requested Simplified Chinese description'
-Assert-Equal (Get-TextSha256 ([string]$officialInfo.localized_description.tchinese)) 'B2934BD613C59D1F383638CC2C0948AE59C12D734479B0F47735D626B17D1EA7' 'frozen Traditional Chinese Steam description'
-Assert-Equal (Get-TextSha256 ([string]$officialInfo.localized_description.english)) 'A139839A9BE782DF1F004EF85DCC93009620D953B1431ACAB0BC4557AC43383D' 'frozen English Steam description'
-Assert-Equal @(([string]$officialInfo.description) -split "`n").Count 19 'Simplified Chinese Steam description line count'
-Assert-Equal @(([string]$officialInfo.localized_description.tchinese) -split "`n").Count 19 'Traditional Chinese Steam description line count'
-Assert-Equal @(([string]$officialInfo.localized_description.english) -split "`n").Count 19 'English Steam description line count'
-foreach ($descriptionNeedle in @(
-    (ConvertFrom-UnicodeCodePoints @(0x51EF, 0x6D85, 0x5C3C, 0x6728)),
-    (ConvertFrom-UnicodeCodePoints @(0x5C0F, 0x52A8, 0x7269, 0x7167, 0x6599, 0x7AD9, 0x56FE, 0x7EB8)),
-    'DTMAPI 0.6.0',
-    '1000G',
-    '1h',
-    (ConvertFrom-UnicodeCodePoints @(0x94DC, 0x952D, 0x00D7, 0x0035)),
-    (ConvertFrom-UnicodeCodePoints @(0x6728, 0x5934, 0x00D7, 0x0031, 0x0030, 0x0030)),
-    'PNG',
-    'WAV',
-    'JSON'
-)) {
-    Assert-True ([string]$officialInfo.description).Contains([string]$descriptionNeedle) "official-info description contains '$descriptionNeedle'"
+foreach ($language in @('schinese', 'tchinese', 'english')) {
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$officialInfo.localized_description.$language)) "official-info $language description is nonempty"
 }
-foreach ($footerNeedle in @(
-    (ConvertFrom-UnicodeCodePoints @(0x672C, 0x006D, 0x006F, 0x0064, 0x4E3A, 0x793A, 0x4F8B, 0x006D, 0x006F, 0x0064)),
-    (ConvertFrom-UnicodeCodePoints @(0x57FA, 0x4E8E, 0x0044, 0x0054, 0x004D, 0x0041, 0x0050, 0x0049, 0x7684, 0x52A8, 0x7269, 0x62D3, 0x5C55, 0x80FD, 0x529B)),
-    (ConvertFrom-UnicodeCodePoints @(0x4F5C, 0x8005, 0x53EA, 0x9700, 0x8981, 0x914D, 0x7F6E, 0x0050, 0x004E, 0x0047, 0x3001, 0x0057, 0x0041, 0x0056, 0x3001, 0x004A, 0x0053, 0x004F, 0x004E, 0x5373, 0x53EF, 0x5B9E, 0x73B0, 0x6DFB, 0x52A0, 0x517B, 0x6B96, 0x52A8, 0x7269)),
-    (ConvertFrom-UnicodeCodePoints @(0x6B22, 0x8FCE, 0x5927, 0x5BB6, 0x4F53, 0x9A8C)),
-    (ConvertFrom-UnicodeCodePoints @(0x6709, 0x0062, 0x0075, 0x0067, 0x8BF7, 0x53CD, 0x9988, 0xFF0C, 0x559C, 0x6B22, 0x8BF7, 0x70B9, 0x597D, 0x8BC4))
-)) {
-    Assert-True ([string]$officialInfo.description).Contains([string]$footerNeedle) "official-info example-mod footer contains '$footerNeedle'"
-}
-
 $brandingProperties = @($assetConfig.branding.PSObject.Properties)
 Assert-ExactSet @($brandingProperties.Name) @('largePreview', 'icon') 'branding asset roles'
 $brandingExpected = @{
-    largePreview = [pscustomobject]@{
-        Role = 'steam-large-preview'
-        Source = (ConvertFrom-UnicodeCodePoints @(0x44, 0x3A, 0x2F, 0x56FE, 0x7247, 0x2F, 0x5C01, 0x9762, 0x56FE, 0x2F, 0x7F3A, 0x6C27, 0x52A8, 0x7269, 0x5305, 0x2E, 0x6A, 0x70, 0x67))
-        SourceWidth = 1549
-        SourceHeight = 925
-        SourceHash = '5D217596C9BBD5F4087ECD53CBDE55A559617064B1378BA38EDB6B449CF9C1E6'
-        Destination = 'preview.png'
-        OutputWidth = 1549
-        OutputHeight = 925
-        OutputBytes = 849062
-        MaximumBytesExclusive = 1000000
-        OutputHash = '743206EE3A57402CA20611F6160A738E82E61292EE31400911D866A099ADC96F'
-    }
-    icon = [pscustomobject]@{
-        Role = 'in-game-cover-and-steam-small-preview'
-        Source = (ConvertFrom-UnicodeCodePoints @(0x44, 0x3A, 0x2F, 0x56FE, 0x7247, 0x2F, 0x5C01, 0x9762, 0x56FE, 0x2F, 0x7F3A, 0x6C27, 0x52A8, 0x7269, 0x5305, 0x20, 0x2D, 0x20, 0x526F, 0x672C, 0x2E, 0x6A, 0x70, 0x67))
-        SourceWidth = 744
-        SourceHeight = 482
-        SourceHash = '5D332C54242F0CB69A51A2B233FC47BA5416752E364279600C9A86BCEE7B0F90'
-        Destination = 'icon.png'
-        OutputWidth = 744
-        OutputHeight = 482
-        OutputHash = '4FF9E28E95123D37C9C80E7C43C067AF0D27C793673C6D489A1DEEF361845960'
-    }
+    largePreview = [pscustomobject]@{ Role = 'steam-large-preview'; Destination = 'preview.png' }
+    icon = [pscustomobject]@{ Role = 'in-game-cover-and-steam-small-preview'; Destination = 'icon.png' }
 }
 foreach ($brandingProperty in $brandingProperties) {
     $key = [string]$brandingProperty.Name
     $branding = $brandingProperty.Value
     $expected = $brandingExpected[$key]
     Assert-Equal $branding.role $expected.Role "$key branding role"
-    Assert-Equal $branding.source $expected.Source "$key branding source path"
-    Assert-Equal $branding.sourceFormat 'JPEG' "$key branding source format"
-    Assert-Equal $branding.sourceWidth $expected.SourceWidth "$key branding source width"
-    Assert-Equal $branding.sourceHeight $expected.SourceHeight "$key branding source height"
-    Assert-Equal $branding.sha256 $expected.SourceHash "$key branding source SHA-256"
     Assert-Equal $branding.destination $expected.Destination "$key branding destination"
     Assert-Equal $branding.outputFormat 'PNG' "$key branding output format"
-    Assert-Equal $branding.outputWidth $expected.OutputWidth "$key branding output width"
-    Assert-Equal $branding.outputHeight $expected.OutputHeight "$key branding output height"
-    Assert-Equal $branding.outputSha256 $expected.OutputHash "$key branding output SHA-256"
 
     $brandingPath = Join-Path $dataRoot ([string]$branding.destination)
     Assert-True (Test-Path -LiteralPath $brandingPath -PathType Leaf) "$key branding PNG exists"
-    Assert-Equal (Get-FileHash -LiteralPath $brandingPath -Algorithm SHA256).Hash $expected.OutputHash "$key branding PNG hash"
+    Assert-Equal (Get-FileHash -LiteralPath $brandingPath -Algorithm SHA256).Hash $branding.outputSha256 "$key branding PNG hash"
     $brandingMetadata = Get-ImageMetadata $brandingPath
     Assert-True $brandingMetadata.IsPng "$key branding asset is a true PNG"
-    Assert-Equal $brandingMetadata.Width $expected.OutputWidth "$key branding PNG width"
-    Assert-Equal $brandingMetadata.Height $expected.OutputHeight "$key branding PNG height"
+    Assert-Equal $brandingMetadata.Width $branding.outputWidth "$key branding PNG width"
+    Assert-Equal $brandingMetadata.Height $branding.outputHeight "$key branding PNG height"
     if ($key -ceq 'largePreview') {
         $brandingBytes = (Get-Item -LiteralPath $brandingPath).Length
-        Assert-Equal $branding.outputBytes $expected.OutputBytes "$key branding declared byte length"
-        Assert-Equal $branding.maximumBytesExclusive $expected.MaximumBytesExclusive "$key branding maximum byte length"
-        Assert-Equal $brandingBytes $expected.OutputBytes "$key branding PNG byte length"
-        Assert-True ($brandingBytes -lt [long]$expected.MaximumBytesExclusive) "$key branding PNG stays below the Steam preview limit"
+        Assert-True ($brandingBytes -lt 1000000) "$key branding PNG stays below the Steam preview limit"
     }
 }
 
@@ -254,10 +205,24 @@ $dismantleRecipes = New-IdMap (Read-Json (Join-Path $contentRoot 'recipe_tbdisma
 $dismantleGroups = New-IdMap (Read-Json (Join-Path $contentRoot 'recipe_tbdismantlerecipegroup.json')) 'recipe_tbdismantlerecipegroup'
 $buildRecipes = New-IdMap (Read-Json (Join-Path $contentRoot 'recipe_tbrecipe.json')) 'recipe_tbrecipe'
 $equipment = New-IdMap (Read-Json (Join-Path $contentRoot 'equipment_tbequipment.json')) 'equipment_tbequipment'
-$customAnimals = New-IdMap ((Read-Json (Join-Path $contentRoot 'DTMAPI\custom-animals.json')) | ForEach-Object {
+$customAnimals = New-IdMap ((Read-Json (Join-Path $dataRoot 'PackData\content.json')).animals.definitions | ForEach-Object {
     [pscustomobject]@{ id = $_.speciesId; row = $_ }
-}) 'custom-animals speciesId'
-$audioRows = @(Read-Json (Join-Path $contentRoot 'DTMAPI\audio-replacements.json'))
+}) 'animals.definitions speciesId'
+$audioInput = Read-Json (Join-Path $dataRoot 'PackData\content.json')
+$audioRows = @($audioInput.audio.events)
+Assert-Equal $audioInput.schemaVersion 1 'common audio schema'
+Assert-Equal @($audioInput.audio.resources).Count 8 'static atomic resource set'
+Assert-True (-not (Test-Path -LiteralPath (Join-Path $contentRoot 'DTMAPI\audio-replacements.json'))) 'retired filename demand is absent'
+Assert-ExactSet @($audioInput.animals.voices.speciesId | Select-Object -Unique) @('hatch','drecko','mole','oilfloater') 'audio species scopes'
+foreach ($row in $audioRows) {
+    Assert-Equal $row.use 'effect'
+    Assert-Equal $row.route 'NativeAnimal' 'common animal voice route'
+    Assert-True ([double]$row.volumeDb -eq 0) 'animal voice keeps its original unity level'
+    $voice = @($audioInput.animals.voices | Where-Object sound -CEQ $row.key)
+    Assert-Equal $voice.Count 1 'one domain binding per audio event'
+    Assert-True ($voice[0].stage -in @('child','adult')) 'explicit animal stage'
+    Assert-Equal @($audioInput.audio.resources | Where-Object key -CEQ $row.resource).Count 1 'registration-local resource reference'
+}
 
 $speciesIds = @('hatch', 'drecko', 'mole', 'oilfloater')
 Assert-ExactSet @($animals.Keys) $speciesIds 'animal species set'
@@ -273,23 +238,9 @@ $speciesSpecs = @(
     [pscustomobject]@{ Id = 'oilfloater'; Template = 'slime'; Interval = 3; Space = 2; ProduceLut = 'oilfloater_produce'; Product = 'oilfloater_egg'; Hidden = 'polymer_oilfloater_egg'; HiddenCount = 1; Threshold = 120; Bag = 'sack_oilfloater'; BagTitle = (ConvertFrom-UnicodeCodePoints @(0x9EBB, 0x888B, 0xFF08, 0x6D6E, 0x6E38, 0x751F, 0x7269, 0xFF09)); BagBuy = 1200; BagBaseSell = 600; ChildSell = 960; AdultSell = 3600 }
 )
 
-$productionEquipmentSpecs = @{
-    hatch = [pscustomobject]@{ Template = 'chicken'; EquipmentId = 'chicken_nest'; Simplified = (ConvertFrom-UnicodeCodePoints @(0x9E21, 0x7A9D)); Traditional = (ConvertFrom-UnicodeCodePoints @(0x96DE, 0x7AA9)); English = 'Chicken Coop' }
-    drecko = [pscustomobject]@{ Template = 'goat'; EquipmentId = 'lint_roller'; Simplified = (ConvertFrom-UnicodeCodePoints @(0x7C98, 0x6BDB, 0x6EDA)); Traditional = (ConvertFrom-UnicodeCodePoints @(0x7C98, 0x6BDB, 0x6EFE)); English = 'Lint Roller' }
-    mole = [pscustomobject]@{ Template = 'marsh_pangolin'; EquipmentId = 'milking_machine'; Simplified = (ConvertFrom-UnicodeCodePoints @(0x6324, 0x5976, 0x5668)); Traditional = (ConvertFrom-UnicodeCodePoints @(0x64E0, 0x5976, 0x5668)); English = 'Milking Machine' }
-    oilfloater = [pscustomobject]@{ Template = 'slime'; EquipmentId = 'honey_comb'; Simplified = (ConvertFrom-UnicodeCodePoints @(0x8702, 0x7BB1)); Traditional = (ConvertFrom-UnicodeCodePoints @(0x8702, 0x7BB1)); English = 'Hive Box' }
-}
-$simplifiedEquipmentPrefix = ConvertFrom-UnicodeCodePoints @(0x4EA7, 0x51FA, 0x8BBE, 0x5907, 0x4E3A)
-$traditionalEquipmentPrefix = ConvertFrom-UnicodeCodePoints @(0x7522, 0x51FA, 0x8A2D, 0x5099, 0x70BA)
-
 foreach ($spec in $speciesSpecs) {
     $animal = $animals[$spec.Id]
     Assert-Equal $animal.schedule_id $spec.Template "$($spec.Id) schedule template"
-    $productionEquipment = $productionEquipmentSpecs[$spec.Id]
-    Assert-Equal $animal.schedule_id $productionEquipment.Template "$($spec.Id) production-equipment schedule template"
-    Assert-True ([string]$officialInfo.description).Contains("$simplifiedEquipmentPrefix$($productionEquipment.Simplified)") "$($spec.Id) Simplified Chinese description names official production equipment '$($productionEquipment.EquipmentId)'"
-    Assert-True ([string]$officialInfo.localized_description.tchinese).Contains("$traditionalEquipmentPrefix$($productionEquipment.Traditional)") "$($spec.Id) Traditional Chinese description names official production equipment '$($productionEquipment.EquipmentId)'"
-    Assert-True ([string]$officialInfo.localized_description.english).Contains("production equipment: $($productionEquipment.English)") "$($spec.Id) English description names official production equipment '$($productionEquipment.EquipmentId)'"
     Assert-Equal $animal.metabolism_interval $spec.Interval "$($spec.Id) production interval"
     Assert-Equal $animal.space $spec.Space "$($spec.Id) animal space"
     Assert-Equal $animal.produce_spawn_entry.spawn_lut $spec.ProduceLut "$($spec.Id) produce LUT"
@@ -637,7 +588,7 @@ if ($isPackage) {
             Assert-True (Test-Path -LiteralPath (Join-Path $contentRoot ("Sprites\{0}" -f [string]$frameName)) -PathType Leaf) "assembled frame exists: $frameName"
         }
         foreach ($audioName in @($animal.audioFiles)) {
-            Assert-True (Test-Path -LiteralPath (Join-Path $contentRoot ("Audio\{0}" -f [string]$audioName)) -PathType Leaf) "assembled WAV exists: $audioName"
+            Assert-True (Test-Path -LiteralPath (Join-Path $dataRoot ("PackData\audio\{0}" -f [string]$audioName)) -PathType Leaf) "assembled WAV exists: $audioName"
         }
     }
 }

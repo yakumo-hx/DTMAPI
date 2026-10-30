@@ -688,12 +688,10 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 OptionalNativeUpdaterInvocations = Delta(start.OptionalNativeUpdaterInvocations, end.OptionalNativeUpdaterInvocations),
                 OptionalRetainedCallbackWork = Delta(start.OptionalRetainedCallbackWork, end.OptionalRetainedCallbackWork),
                 CustomAnimalsRetainedCallbackWork = Delta(start.CustomAnimalsRetainedCallbackWork, end.CustomAnimalsRetainedCallbackWork),
-                AudioRetainedCallbackWork = Delta(start.AudioRetainedCallbackWork, end.AudioRetainedCallbackWork),
                 OptionalHookInstallRequests = Delta(start.OptionalHookInstallRequests, end.OptionalHookInstallRequests),
                 CameraEnvironmentResets = Delta(start.CameraEnvironmentResets, end.CameraEnvironmentResets),
                 CustomAnimalDefinitionCandidateBuilds = Delta(start.CustomAnimalDefinitionCandidateBuilds, end.CustomAnimalDefinitionCandidateBuilds),
                 ContentQueryCandidateBuilds = Delta(start.ContentQueryCandidateBuilds, end.ContentQueryCandidateBuilds),
-                AudioPendingEntryVisits = Delta(start.AudioPendingEntryVisits, end.AudioPendingEntryVisits),
                 MandatoryBaseUpdaterInvocations = Delta(start.MandatoryUpdaterInvocations, end.MandatoryUpdaterInvocations),
                 QaUpdaterInvocations = Delta(start.QaObserverUpdaterInvocations, end.QaObserverUpdaterInvocations),
                 EventQueueDiagnosticRevision = Delta(start.EventQueueDiagnosticRevision, end.EventQueueDiagnosticRevision),
@@ -735,12 +733,10 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             RequireZero(failures, "optional native updater invocation", receipt.OptionalNativeUpdaterInvocations);
             RequireZero(failures, "optional retained callback work", receipt.OptionalRetainedCallbackWork);
             RequireZero(failures, "CustomAnimals retained callback work", receipt.CustomAnimalsRetainedCallbackWork);
-            RequireZero(failures, "Audio retained callback work", receipt.AudioRetainedCallbackWork);
             RequireZero(failures, "optional hook install request", receipt.OptionalHookInstallRequests);
             RequireZero(failures, "Camera EnvironmentReset fanout", receipt.CameraEnvironmentResets);
             RequireZero(failures, "CustomAnimals definition candidate build", receipt.CustomAnimalDefinitionCandidateBuilds);
             RequireZero(failures, "ContentQuery candidate build", receipt.ContentQueryCandidateBuilds);
-            RequireZero(failures, "Audio pending entry visit", receipt.AudioPendingEntryVisits);
             RequireZero(failures, "event queue diagnostic revision", receipt.EventQueueDiagnosticRevision);
             RequireZero(failures, "Hook-status queue diagnostic revision", receipt.HookStatusQueueDiagnosticRevision);
             RequireZero(failures, "zero-listener EventArgs creation", receipt.EventArgsCreated);

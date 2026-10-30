@@ -1,30 +1,15 @@
-# 包依赖与共享契约 DLL
+# DLL 候选与依赖
 
-SDK 0.7.0 的作者工程统一使用 schema 4 与标准 MSBuild；当前 API 目标生成 manifest `DependencyContractVersion=1`。旧二进制、包格式与安装恢复继续由各自 reader 检查。
+扫描目录只记录候选路径。明确入口、CLR 实际请求、显式动态加载与可选模块激活决定实际使用的 DLL。未用 DLL 不读取 PE、不计算哈希、不参与整包冲突判断。延迟模块继续按需加载。
 
-`manifest.json` 的 Dependencies 是 Mod 身份依赖权威。新项必须包含 UniqueID、Required、VersionRange；VersionRange 包含 minimumInclusive、可选 maximumExclusive、必填 includePrerelease。完整 SemVer 2 区间下界包含、上界排除；false 排除所有 prerelease，build metadata 不参与优先级。不要在新项中混写 MinimumVersion 或 IsRequired。Runtime 最低版本和游戏版本继续使用原比较规则。
+默认候选包括入口所在目录、包根 DLL、`lib/private`、`lib/shared`。可用 `Assemblies` 补充 `{ "Path": "extras/Library.dll", "Role": "private-managed" }`；角色还包括 `shared-contract`。它描述位置和共享意图，不证明全部文件可信或已加载。旧依赖清单仅提供可用的路径/角色提示，损坏提示不成为否决条件。
 
-在 Mod csproj 中引用普通契约库：
+`Dependencies` 可以省略。每项 `UniqueID` 必需，`Required` 缺省 true，`VersionRange` 可省略；无版本范围只表达存在和排序。版本范围使用 `minimumInclusive`、`maximumExclusive`、`includePrerelease`。不伪造缺失的产品版本；有范围而无法比较时报告具体依赖问题。ContentPackFor 隐含必需 Host 依赖，不用重复写一行。
 
-```xml
-<ItemGroup>
-  <ProjectReference Include="../Contract/Contract.csproj"
-                    DtmApiRole="shared-contract" DtmApiDistribution="self-authored" />
-</ItemGroup>
-```
-role 只接受 shared-contract 或 private-managed。DLL 文件名必须与实际 AssemblyName 相同，实际 TargetFramework 必须是 netstandard2.0。所有传递库均须显式携带；第三方库使用 licensed-third-party 并包含非空许可文件。声明不代表许可已经获得。游戏、Unity、BepInEx、Harmony 和平台提供的 DLL 不得复制进 Mod。BCL 接受集合来自冻结 NETStandard.Library 2.0.3 的 113 个实际引用 DLL 身份，记录在 bcl-reference-identities.json；第 114 个引用目录文件是 XML，不是 DLL。没有 System.* 前缀通行规则。
+实际请求先由宿主常规绑定处理，Core 只补充请求者、本包及声明 provider 的位置。先过滤可见性：本包可访问 private；跨包只访问声明 provider 的共享程序集及 Entry，不会连带开放其全部私有库。多个 provider 都提供同名可见程序集时，该次请求报告歧义，不按依赖顺序选择。
 
-库进入 lib/shared 或 lib/private，许可文件进入 licenses。SDK 从实际 PE 生成 dtmapi-dependencies.json，并把它、manifest、DLL、许可和其他发布文件绑定进原 dtmapi-package.json 的 inventory。不要手改生成文件；内容变更后重新 build/pack 并增加 Mod 版本。不同源码/版本标签不能允许同 CLR 身份对应不同字节。
+在唯一选定包的可见候选内，按请求者同目录、Entry 同目录、包根、private 子树、shared 子树、其他声明路径选择第一层非空候选。规范化路径去重后仍有多个候选时，仅该次请求报错并列出路径；目录枚举顺序、版本和 SHA 不参与仲裁。缺少 RequestingAssembly 时沿实际调用 Assembly 的上下文解析；没有 Location 不拒载。未选候选与失败发现不占用进程绑定；实际方法缺失或不可替换实现冲突只影响相关对象。
 
-每个包单独安装时都应有完整库闭包。Provider 与 Consumer 分别引用并携带同一份 Contract DLL；接口、枚举和 DTO 放在该库中，避免原生类型、可变静态状态和初始化副作用。公开 GetApi<T> 使用准确 CLR Type；同名接口文字相同不构成类型相同。
+记录实际 Assembly 对象；版本、Location、SHA 和 TFM 都不是运行资格。旧 DependencyContractVersion 不参与依赖解析或加载判断，无需修复或更新这个工具字段。
 
-Runtime 在 Entry 前检查全部选中包及其传递 AssemblyRef，再生成加载顺序。同 simple name、完整 identity 和 SHA 相同的库绑定一次；任意 identity/字节冲突会拒绝所有参与包及必需消费者，无关 Mod 保持可运行。private-managed 不提供 AppDomain 隔离。入口程序集不能重名。已驻留来源或原始字节无法证明时要求重启，磁盘覆盖不能更新已经加载的程序集。
-
-required provider 缺失、版本不符或 Entry 失败时，consumer 不进入 Entry。provider 关闭时先关闭必需 consumers；consumer 清理失败保留 provider，下一次沿现有清理路径重试。optional provider 不可用时 consumer 可降级；但 optional Mod 声明不能免除真实 DLL 引用闭包。Provider 返回的对象仍由作者负责 owner guard；平台不会撤销别人缓存的普通对象或生成自动代理。
-
-保留原始包及其 hash。旧 DLL 兼容性不由新编译器重建证明；不要仅改 marker、DLL 名或 MinimumDTMApiVersion 绕过校验。本格式提供完整性与兼容性预检，不是 CLR 安全沙箱。
-
-## 普通契约库
-
-在 SDK 开发环境中用 `dotnet new classlib -f netstandard2.0` 创建库。程序集版本由该库的 csproj 拥有；Provider 和 Consumer 分别引用同一库，并在各自包中携带其完整闭包。标准 restore/build 选择实际资产，pack 按 CLR identity、hash 和依赖检查最终运行库。生成器、不同 ref/lib、许可元数据和离线恢复见[工程与恢复](PROJECTS-AND-RESTORE.md)。
-生成格式见 `schemas/dtmapi-dependencies.schema.json` 和 `schemas/dtmapi-package-v3.schema.json`；工具负责校验哈希、版本区间及跨文件一致性。安装器拥有的 `.dtmapi-author-receipt.json` 不属于不可变包载荷清单，也不能包含可执行文件。
+平台与原生 DLL 是宿主提供的编译引用，应设置 `Private=false`。自有私有库放 `lib/private`；声明依赖方能使用提供方入口程序集或 `lib/shared` 中实际请求的契约。

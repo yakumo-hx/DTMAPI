@@ -1,0 +1,18 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": { "id": "Samples.MonsterNativeTrainingPack", "name": "原生训练对象示例", "author": "DTMAPI", "version": "0.1.0" },
+  "monsters": [
+    {
+      "id": "target_01", "templateId": "target_01",
+      "overrides": {}, "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    },
+    {
+      "id": "scarecrow", "templateId": "scarecrow",
+      "overrides": {}, "behavior": { "mode": "inherit-native" },
+      "drops": { "mode": "inherit", "minCount": null, "maxCount": null }
+    }
+  ],
+  "nativeOverrides": [], "dropPools": [], "spawnRules": [], "assets": [], "dependencies": []
+}

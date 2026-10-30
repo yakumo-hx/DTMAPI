@@ -1,0 +1,126 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterScatteringShootParametersPack",
+    "name": "原生散射参数",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "fan",
+      "templateId": "drone",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 4,
+          "startOnCooldown": true,
+          "damage": 17,
+          "criticalRate": 1,
+          "windupGameSeconds": 0.2,
+          "scatteringShoot": {
+            "windupEnabled": true,
+            "minBulletCount": 3,
+            "maxBulletCount": 3,
+            "sectorAngleDegrees": 90,
+            "burstCount": 3,
+            "burstIntervalGameSeconds": 0.15,
+            "directionMode": "Offset",
+            "angleOffsetDegrees": 20,
+            "reverseAngleOffset": false,
+            "projectileSpeed": 4,
+            "projectileLifetimeGameSeconds": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "ring",
+      "templateId": "drone",
+      "overrides": {
+        "health": 500,
+        "defense": 0
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "cooldownGameSeconds": 0.75,
+          "startOnCooldown": false,
+          "damage": 3,
+          "criticalRate": 0,
+          "windupGameSeconds": 0.15,
+          "scatteringShoot": {
+            "windupEnabled": false,
+            "minBulletCount": 6,
+            "maxBulletCount": 6,
+            "sectorAngleDegrees": 360,
+            "burstCount": 2,
+            "burstIntervalGameSeconds": 0.1,
+            "directionMode": "Offset",
+            "angleOffsetDegrees": 15,
+            "reverseAngleOffset": true,
+            "projectileSpeed": 10,
+            "projectileLifetimeGameSeconds": 1
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [
+    {
+      "id": "bursts",
+      "targetId": "drone",
+      "fields": {
+        "nativeAttacks": [
+          {
+            "attackId": "AtkSkill01",
+            "cooldownGameSeconds": 5,
+            "startOnCooldown": true,
+            "damage": 29,
+            "criticalRate": 0,
+            "windupGameSeconds": 0.2,
+            "scatteringShoot": {
+              "windupEnabled": false,
+              "minBulletCount": 2,
+              "maxBulletCount": 2,
+              "sectorAngleDegrees": 180,
+              "burstCount": 3,
+              "burstIntervalGameSeconds": 0.3,
+              "directionMode": "Fixed",
+              "angleOffsetDegrees": 0,
+              "reverseAngleOffset": false,
+              "projectileSpeed": 5,
+              "projectileLifetimeGameSeconds": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

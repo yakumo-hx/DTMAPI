@@ -22,4 +22,9 @@
     <DebugSymbols>false</DebugSymbols>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../tools/scripts/uninstall-targets.json" LogicalName="DTMAPI.UninstallTargets.json" />
+    <AssemblyMetadata Include="DtmApiRuntimeReleaseVersion" Value="$(DtmApiReleaseVersion)" />
+    <AssemblyMetadata Include="DtmApiRuntimeBinaryFileVersion" Value="$(DtmApiBinaryFileVersion)" />
+  </ItemGroup>
 </Project>

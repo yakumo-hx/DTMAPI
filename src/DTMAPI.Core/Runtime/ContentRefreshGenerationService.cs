@@ -35,14 +35,10 @@ namespace DTMAPI.Core.Runtime
     internal static class ContentRefreshDomains
     {
         public const string ContentQuery = "ContentQuery";
-        public const string CustomAnimals = "CustomAnimals";
-        public const string AudioReplacement = "AudioReplacement";
 
         public static readonly string[] SourceDriven =
         {
-            ContentQuery,
-            CustomAnimals,
-            AudioReplacement
+            ContentQuery
         };
     }
 

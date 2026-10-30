@@ -33,33 +33,7 @@ namespace DTMAPI.UnitTests
             Directory.CreateDirectory(componentDirectory);
             string target = Path.Combine(componentDirectory, fileName);
             File.Copy(source, target, overwrite: true);
-            string sha256;
-            using (FileStream stream = File.OpenRead(target))
-            using (SHA256 hash = SHA256.Create())
-                sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", string.Empty);
-            var info = new FileInfo(target);
-            var receipt = new
-            {
-                OptionalComponents = new[]
-                {
-                    new
-                    {
-                        ComponentId = "gamebridge-compatibility-host",
-                        Distribution = "dormant-shipped",
-                        LoadPolicy = "first-frozen-abi-call",
-                        RelativePath = "DTMAPI/components/compatibility/" + fileName,
-                        Length = info.Length,
-                        Sha256 = sha256,
-                        AssemblyName = "DTMAPI.GameBridge.DolocTown.Compatibility",
-                        AssemblyVersion = AssemblyName.GetAssemblyName(target).Version?.ToString() ?? string.Empty,
-                        FileVersion = FileVersionInfo.GetVersionInfo(target).FileVersion ?? string.Empty,
-                        TargetFramework = "netstandard2.0",
-                        DefaultLoadState = "dormant",
-                        IncludedInDownloadPackage = true
-                    }
-                }
-            };
-            File.WriteAllText(Path.Combine(gamePath, "DTMAPI", "release-manifest.json"), JsonSerializer.Serialize(receipt), new UTF8Encoding(false));
+
         }
 
         private static int CountGameBridgeOwnerResourcesForTest(DolocTownGameBridge bridge, string ownerId)

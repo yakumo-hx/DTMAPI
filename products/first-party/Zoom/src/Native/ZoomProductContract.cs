@@ -14,11 +14,11 @@ namespace DTMAPI.Zoom
     internal static class ZoomProductContract
     {
         internal const string HarmonyOwner =
-            "dtmapi.mod.dtmapi.zoommod";
+            "DTMAPI.ZoomMod.Native";
 
         internal const string CompatibilityOwner =
             "dtmapi.gamebridge.doloctown.camera.compatibility";
 
-        internal const int ExpectedHookCount = 1;
+        internal const int ExpectedHookCount = 7;
     }
 }

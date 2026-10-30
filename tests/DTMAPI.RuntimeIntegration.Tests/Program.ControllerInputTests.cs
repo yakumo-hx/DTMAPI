@@ -7,6 +7,7 @@ using DTMAPI.Core.Runtime;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.ModConfigMenu;
 using System.Reflection;
+using System.IO;
 
 namespace DTMAPI.UnitTests
 {
@@ -28,24 +29,24 @@ namespace DTMAPI.UnitTests
             MethodInfo initialize = typeof(ReflectedTitleMenuSettingsUi).GetMethod("InitializeInputSettings", BindingFlags.NonPublic | BindingFlags.Instance)!;
             FieldInfo active = typeof(ReflectedTitleMenuSettingsUi).GetField("nativeTitleEntryEnabledAtStartup", BindingFlags.NonPublic | BindingFlags.Instance)!;
             initialize.Invoke(ui, null);
-            Assert(!(bool)active.GetValue(ui)!, "Existing and fresh settings leave the parallel title entry disabled.");
+            Assert((bool)active.GetValue(ui)!, "Fresh settings enable the native title entry through the real config read.");
             ((IConfigMenuRuntime)registry).BeginEditing("DTMAPI.TitleSettings");
-            Assert(((IConfigMenuRuntime)registry).GetPage("DTMAPI.TitleSettings")!.Items[1].TrySetPendingValue("true", out _), "Enable the option through the same draft transaction as the UI.");
+            Assert(((IConfigMenuRuntime)registry).GetPage("DTMAPI.TitleSettings")!.Items[1].TrySetPendingValue("false", out _), "Disable the option through the same draft transaction as the UI.");
             ((IConfigMenuRuntime)registry).Save("DTMAPI.TitleSettings");
             initialize.Invoke(ui, null);
-            Assert(!(bool)active.GetValue(ui)!, "Saving does not mutate the live native action list.");
+            Assert((bool)active.GetValue(ui)!, "Saving does not mutate the live native action list.");
+            ui.Shutdown("restart fixture");
+            ui = new ReflectedTitleMenuSettingsUi(runtime, registry);
+            initialize.Invoke(ui, null);
+            Assert(!(bool)active.GetValue(ui)!, "Restart withdraws a saved disabled entry.");
+            ((IConfigMenuRuntime)registry).BeginEditing("DTMAPI.TitleSettings");
+            Assert(((IConfigMenuRuntime)registry).GetPage("DTMAPI.TitleSettings")!.Items[1].TrySetPendingValue("true", out _), "Enable through the UI draft transaction.");
+            ((IConfigMenuRuntime)registry).Save("DTMAPI.TitleSettings");
+            Assert(!(bool)active.GetValue(ui)!, "Enabling also waits for restart.");
             ui.Shutdown("restart fixture");
             ui = new ReflectedTitleMenuSettingsUi(runtime, registry);
             initialize.Invoke(ui, null);
             Assert((bool)active.GetValue(ui)!, "Restart reads the saved enabled entry.");
-            ((IConfigMenuRuntime)registry).BeginEditing("DTMAPI.TitleSettings");
-            Assert(((IConfigMenuRuntime)registry).GetPage("DTMAPI.TitleSettings")!.Items[1].TrySetPendingValue("false", out _), "Disable through the UI draft transaction.");
-            ((IConfigMenuRuntime)registry).Save("DTMAPI.TitleSettings");
-            Assert((bool)active.GetValue(ui)!, "Disabling also waits for restart.");
-            ui.Shutdown("restart fixture");
-            ui = new ReflectedTitleMenuSettingsUi(runtime, registry);
-            initialize.Invoke(ui, null);
-            Assert(!(bool)active.GetValue(ui)!, "Restart withdraws a disabled entry.");
             ui.Shutdown("test complete");
         }
 
@@ -73,14 +74,57 @@ namespace DTMAPI.UnitTests
 
         private static void RuntimeInputConfigSerializesAndOwnsOnlyItsPage()
         {
+            var owner = new ManifestModel { UniqueID = "DTMAPI.TitleSettings", Version = "0.7.5" };
+            var initialize = typeof(ReflectedTitleMenuSettingsUi).GetMethod("InitializeInputSettings", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var active = typeof(ReflectedTitleMenuSettingsUi).GetField("nativeTitleEntryEnabledAtStartup", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            foreach (var fixture in new[] {
+                (Json: "{}", Enabled: true, Binding: "F8"),
+                (Json: "{\"OpenConfig\":\"Control+H\"}", Enabled: true, Binding: "Control+H"),
+                (Json: "{\"ShowNativeTitleEntry\":true}", Enabled: true, Binding: "F8"),
+                (Json: "{\"OpenConfig\":\"Control+H\",\"ShowNativeTitleEntry\":false}", Enabled: false, Binding: "Control+H") })
+            {
+                string gameDir = NewTempGameDir();
+                var fixtureRegistry = new ConfigMenuRegistry();
+                var fixtureRuntime = new DtmApiRuntime(new FakeHost(gameDir), fixtureRegistry);
+                fixtureRuntime.Paths.Ensure();
+                string path = Path.Combine(fixtureRuntime.Paths.ConfigPath, owner.UniqueID + ".json");
+                File.WriteAllText(path, fixture.Json);
+                var fixtureUi = new ReflectedTitleMenuSettingsUi(fixtureRuntime, fixtureRegistry);
+                initialize.Invoke(fixtureUi, null);
+                var read = fixtureRuntime.Config.ReadConfig<ReflectedTitleMenuSettingsUi.InputSettings>(owner);
+                Assert(read.ShowNativeTitleEntry == fixture.Enabled && read.OpenConfig == fixture.Binding && (bool)active.GetValue(fixtureUi)! == fixture.Enabled,
+                    "Actual JSON read defaults missing fields while preserving explicit choices and bindings: " + fixture.Json);
+                Assert(File.ReadAllText(path) == fixture.Json, "Reading an existing choice must not rewrite its config.");
+                fixtureRuntime.Config.WriteConfig(owner, read);
+                fixtureUi.Shutdown("cold config read");
+                fixtureRegistry = new ConfigMenuRegistry();
+                fixtureRuntime = new DtmApiRuntime(new FakeHost(gameDir), fixtureRegistry);
+                fixtureUi = new ReflectedTitleMenuSettingsUi(fixtureRuntime, fixtureRegistry);
+                initialize.Invoke(fixtureUi, null);
+                Assert((bool)active.GetValue(fixtureUi)! == fixture.Enabled && fixtureRuntime.Config.ReadConfig<ReflectedTitleMenuSettingsUi.InputSettings>(owner).OpenConfig == fixture.Binding,
+                    "A new Runtime reads the saved choice and binding.");
+                var fixturePages = (IConfigMenuRuntime)fixtureRegistry;
+                fixturePages.BeginEditing(owner.UniqueID);
+                fixturePages.Reset(owner.UniqueID);
+                Assert((bool)active.GetValue(fixtureUi)! == fixture.Enabled, "Restoring defaults does not mutate the startup choice.");
+                fixturePages.Save(owner.UniqueID);
+                read = fixtureRuntime.Config.ReadConfig<ReflectedTitleMenuSettingsUi.InputSettings>(owner);
+                Assert(read.ShowNativeTitleEntry && read.OpenConfig == "F8", "The normal Reset/Save transaction persists enabled defaults and F8.");
+                fixtureUi.Shutdown("reset saved");
+                fixtureRegistry = new ConfigMenuRegistry();
+                fixtureRuntime = new DtmApiRuntime(new FakeHost(gameDir), fixtureRegistry);
+                fixtureUi = new ReflectedTitleMenuSettingsUi(fixtureRuntime, fixtureRegistry);
+                initialize.Invoke(fixtureUi, null);
+                Assert((bool)active.GetValue(fixtureUi)!, "A new Runtime applies the saved restored default.");
+                fixtureUi.Shutdown("fixture complete");
+            }
             var registry = new ConfigMenuRegistry();
             var runtime = new DtmApiRuntime(new FakeHost(NewTempGameDir()), registry);
             runtime.Paths.Ensure();
             var ui = new ReflectedTitleMenuSettingsUi(runtime, registry);
             typeof(ReflectedTitleMenuSettingsUi).GetMethod("InitializeInputSettings", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(ui, null);
-            var owner = new ManifestModel { UniqueID = "DTMAPI.TitleSettings", Version = "0.6.4" };
             var settings = runtime.Config.ReadConfig<ReflectedTitleMenuSettingsUi.InputSettings>(owner);
-            Assert(settings.OpenConfig == "F8", "Runtime-owned config must serialize on the actual serializer path.");
+            Assert(settings.OpenConfig == "F8" && settings.ShowNativeTitleEntry, "No-config defaults must persist on the actual serializer path.");
             settings.OpenConfig = "Control+H, GamepadStart";
             runtime.Config.WriteConfig(owner, settings);
             Assert(runtime.Config.ReadConfig<ReflectedTitleMenuSettingsUi.InputSettings>(owner).OpenConfig == settings.OpenConfig, "Keyboard/controller alternatives survive a cold config read.");

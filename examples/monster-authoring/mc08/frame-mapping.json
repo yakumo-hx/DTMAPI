@@ -1,0 +1,41 @@
+{
+  "assetId": "cyan-atlas",
+  "templateFingerprint": "72791bd7bb537d2490f078d8533be484a736abd7eb1519411b563cdd03df0749",
+  "frames": [
+    {
+      "frameId": "anim_monster_bee_idle_0",
+      "x": 0,
+      "y": 0,
+      "width": 48,
+      "height": 48
+    },
+    {
+      "frameId": "anim_monster_bee_idle_1",
+      "x": 48,
+      "y": 0,
+      "width": 48,
+      "height": 48
+    },
+    {
+      "frameId": "anim_monster_bee_idle_2",
+      "x": 96,
+      "y": 0,
+      "width": 48,
+      "height": 48
+    },
+    {
+      "frameId": "anim_monster_bee_idle_3",
+      "x": 144,
+      "y": 0,
+      "width": 48,
+      "height": 48
+    },
+    {
+      "frameId": "anim_monster_bee_idle_4",
+      "x": 192,
+      "y": 0,
+      "width": 48,
+      "height": 48
+    }
+  ]
+}

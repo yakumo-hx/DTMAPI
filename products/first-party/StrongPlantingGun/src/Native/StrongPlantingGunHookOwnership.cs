@@ -62,7 +62,7 @@ namespace DTMAPI.StrongPlantingGun
                 StrongPlantingGunProductContract.ExpectedHookCount)
             {
                 throw new ArgumentException(
-                    "StrongPlantingGun owner observations must contain exactly five targets.",
+                    "StrongPlantingGun owner observations must contain the complete exact target set.",
                     nameof(owners));
             }
 
@@ -97,7 +97,7 @@ namespace DTMAPI.StrongPlantingGun
                         .ExpectedHookCount)
             {
                 throw new ArgumentException(
-                    "StrongPlantingGun install decisions require exactly five target observations.");
+                    "StrongPlantingGun install decisions require the complete exact target observations.");
             }
         }
 

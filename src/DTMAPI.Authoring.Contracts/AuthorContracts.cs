@@ -4,12 +4,10 @@ namespace DTMAPI.Authoring.Contracts;
 
 public static class AuthorSdkContract
 {
-    public const string SdkVersion = "0.7.0";
-    // Legacy target/default values retained for existing contracts. Current
-    // project selection and supported package combinations come from target-catalog.json.
-    // The frozen payload's SDK version is independent of the running tool version.
-    public const string TargetRuntimeVersion = "0.5.5";
-    public const string HighestSupportedRuntimeVersion = "0.7.0";
+    public const string SdkVersion = "0.7.5";
+    // Tool defaults describe the current format; Runtime performs its own version check.
+    public const string TargetRuntimeVersion = "0.7.5";
+    public const string HighestSupportedRuntimeVersion = "0.7.5";
     public const int CompatibilitySchemaVersion = 1;
     public const int PackageReportSchemaVersion = 2;
     public const int AdvancedReferencePolicyRegistrySchemaVersion = 2;
@@ -27,8 +25,8 @@ public static class AuthorSessionContract
 {
     public const int SchemaVersion = 2;
     public const int ProtocolMajor = 1;
-    public const int MinimumMinor = 0;
-    public const int MaximumMinor = 0;
+    public const int MinimumMinor = 1;
+    public const int MaximumMinor = 1;
     public const string MinimumRuntimeVersion = "0.6.1";
     public const string LegacyWireVersion = "0.5.5";
     public const string SnapshotCapability = "get-source-snapshot/1";
@@ -81,6 +79,8 @@ public sealed class CommandReport
 public sealed class RuntimeManifest
 {
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public RuntimeContentPackBinding? ContentPackFor { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? NativeContractVersion { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? DependencyContractVersion { get; set; }
@@ -97,6 +97,13 @@ public sealed class RuntimeManifest
     public string CodeModKind { get; set; } = string.Empty;
     public List<RuntimeManifestDependency> Dependencies { get; set; } = new();
     public List<string> UpdateKeys { get; set; } = new();
+}
+
+public sealed class RuntimeContentPackBinding
+{
+    public string HostId { get; set; } = string.Empty;
+    public string Schema { get; set; } = string.Empty;
+    public DependencyVersionRange ContractVersionRange { get; set; } = new();
 }
 
 public sealed class RuntimeManifestDependency
@@ -128,6 +135,10 @@ public sealed class AuthorProject
     public string TargetDtmApiVersion { get; set; } = string.Empty;
     public string CodeModKind { get; set; } = string.Empty;
     public string ContentDirectory { get; set; } = "content";
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? PackDataDirectory { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? NativeContentDirectory { get; set; }
     public string AssemblyName { get; set; } = string.Empty;
     public AdvancedAuthorProject? Advanced { get; set; }
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]

@@ -4,6 +4,13 @@
   </PropertyGroup>
   <Import Project="../DTMAPI.UnitTests/Suite.props" />
   <ItemGroup>
+    <Compile Remove="CompletionSeamProbe/**/*.cs" />
+    <Compile Remove="FourSlotProbe/**/*.cs" />
+    <Compile Remove="ProductBatchProbe/**/*.cs" />
+    <Compile Remove="RangeProbe/**/*.cs" />
+    <Compile Remove="SaveProbe/**/*.cs" />
+    <Compile Remove="SingleSeedProbe/**/*.cs" />
+    <Compile Include="../../products/first-party/StrongPlantingGun/src/StrongPlantingGunConfig.cs" Link="StrongPlantingGun/StrongPlantingGunConfig.cs" />
     <Compile Include="../../products/first-party/StrongPlantingGun/src/Native/StrongPlantingGunProductContract.cs" Link="StrongPlantingGun/StrongPlantingGunProductContract.cs" />
     <Compile Include="../../products/first-party/StrongPlantingGun/src/Native/StrongPlantingGunHookOwnership.cs" Link="StrongPlantingGun/StrongPlantingGunHookOwnership.cs" />
     <Compile Include="../../products/first-party/StrongPlantingGun/src/Native/StrongPlantingGunLogGate.cs" Link="StrongPlantingGun/StrongPlantingGunLogGate.cs" />

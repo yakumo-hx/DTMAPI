@@ -1,0 +1,182 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterBodies",
+    "name": "三类身体样例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "ground_melee",
+      "templateId": "amoeba_radiation",
+      "overrides": {
+        "health": 300,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "地面近战",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "combat": {
+          "mode": "active",
+          "checkIntervalGameSeconds": 0.5,
+          "repeatIntervalGameSeconds": 2
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "outbound",
+              "action": "move-to",
+              "offsetX": 1.25,
+              "offsetY": 0,
+              "maxTravel": 8,
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "attack",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "return",
+              "action": "move-to",
+              "offsetX": 0,
+              "offsetY": 0,
+              "maxTravel": 8,
+              "maxGameSeconds": 15
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "flying_shooter",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "飞行射手",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "combat": {
+          "mode": "active",
+          "checkIntervalGameSeconds": 0.5,
+          "repeatIntervalGameSeconds": 2
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "outbound",
+              "action": "move-to",
+              "offsetX": 4,
+              "offsetY": 3,
+              "maxTravel": 12,
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "attack",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            },
+            {
+              "id": "return",
+              "action": "move-to",
+              "offsetX": 0,
+              "offsetY": 0,
+              "maxTravel": 12,
+              "maxGameSeconds": 15
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "fixed_turret",
+      "templateId": "fungus",
+      "overrides": {
+        "health": 300,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "固定炮台",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "combat": {
+          "mode": "active",
+          "checkIntervalGameSeconds": 0.5,
+          "repeatIntervalGameSeconds": 2
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "attack",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "ground_melee",
+      "definitionId": "ground_melee",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 1
+    },
+    {
+      "id": "flying_shooter",
+      "definitionId": "flying_shooter",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 1
+    },
+    {
+      "id": "fixed_turret",
+      "definitionId": "fixed_turret",
+      "roomId": "dungeon_山脊谷地.隐秘峭壁",
+      "regionId": "",
+      "count": 1
+    }
+  ],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "dtmapi_evening_star",
+    "item": "dtmapi_cassette_evening_star",
+    "order": 71,
+    "default_unlock": false,
+    "title": "夜が降りてくる ～ Evening Star",
+    "bgm_event": "DTMAPI_AUDIO_44544D4150492E4576656E696E67537461724361737365747465_64746D6170695F6576656E696E675F73746172"
+  },
+  {
+    "id": "dtmapi_necro_fantasia",
+    "item": "dtmapi_cassette_necro_fantasia",
+    "order": 72,
+    "default_unlock": false,
+    "title": "ネクロファンタジア",
+    "bgm_event": "DTMAPI_MUSIC_NECRO_FANTASIA"
+  }
+]

@@ -21,7 +21,6 @@ namespace DTMAPI.BepInExBootstrap
     {
         private DtmApiRuntime? runtime;
         private DolocTownGameBridge? bridge;
-        private DebugConsoleCompatibilityProxy? debugConsoleCompatibility;
         private ReflectedTitleMenuSettingsUi? titleSettingsUi;
         private BepInExRuntimeHost? host;
         private bool initialized;
@@ -37,7 +36,6 @@ namespace DTMAPI.BepInExBootstrap
         private bool nativeGameFrameCallbackSeen;
         private bool bridgeUpdateErrorLogged;
         private bool titleUiUpdateErrorLogged;
-        private bool debugCompatibilityUpdateErrorLogged;
         private int updateFailureCount;
         private int fallbackTickQueued;
         private int shutdownStarted;
@@ -66,6 +64,16 @@ namespace DTMAPI.BepInExBootstrap
         private bool startupAttempted;
         private bool startupPrepared;
 
+        public BootstrapPlugin() { }
+
+        // Inject prepared objects so offline integration checks execute the real Start boundary.
+        internal BootstrapPlugin(DtmApiRuntime runtime, DolocTownGameBridge bridge)
+        {
+            this.runtime = runtime;
+            this.bridge = bridge;
+            startupPrepared = true;
+        }
+
         public void OnEnable()
         {
             runtime?.RuntimeMonitor.Log("Unity OnEnable observed by DTMAPI bootstrap.");
@@ -78,12 +86,15 @@ namespace DTMAPI.BepInExBootstrap
             {
                 Logger.LogInfo("DTMAPI startup segment Bootstrap.Awake begin.");
                 host = new BepInExRuntimeHost(Logger);
-                NativePreloaderOrigins.Capture(host.GamePath, message => Logger.LogInfo(message));
                 ConfigurePersistentRoot();
                 Logger.LogInfo("DTMAPI startup segment BepInEx init elapsedMs=" + startup.ElapsedMilliseconds + ".");
                 var configMenu = new ConfigMenuRegistry();
                 runtime = new DtmApiRuntime(host, configMenu);
+                runtime.RegisterRuntimeModule("DTMAPI.Monsters");
+                runtime.RegisterRuntimeModule("DTMAPI.Audio");
+                runtime.RegisterRuntimeModule("DTMAPI.Animals");
                 titleSettingsUi = new ReflectedTitleMenuSettingsUi(runtime, configMenu);
+                runtime.AppendBgmGroups = titleSettingsUi.ReadStartupBgmAppend();
                 runtime.AddRuntimeReportContextProvider(BuildBootstrapRuntimeReportContext);
                 runtime.AddTitleReturnObjectGraphProvider(BuildBootstrapTitleReturnObjectGraphSection);
                 runtime.AddTitleReturnObjectGraphProvider(BuildBootstrapUiOwnerObjectGraphSection);
@@ -93,34 +104,9 @@ namespace DTMAPI.BepInExBootstrap
                 runtime.ReturnedToTitleBoundary += () => ReflectedUnityInput.ClearTransientState();
                 runtime.ReturnedToTitleBoundary += () => ReinstallPlayerLoopFrameDriver("ReturnedToTitle");
                 runtime.ReturnedToTitleBoundary += () => titleSettingsUi?.ResetForTitleBoundary();
-                debugConsoleCompatibility =
-                    new DebugConsoleCompatibilityProxy(runtime);
-                runtime.SaveSessionLoaded +=
-                    (slot, isNewGame) =>
-                        debugConsoleCompatibility?
-                            .ResetForSaveBoundaryIfLoaded(
-                                slot,
-                                isNewGame);
-                runtime.ReturnedToTitleBoundary +=
-                    () =>
-                        debugConsoleCompatibility?
-                            .ResetForTitleBoundaryIfLoaded();
-                runtime.RegisterRuntimeApi<IDebugConsoleApi>(
-                    new ManifestModel
-                    {
-                        Name = "DTMAPI Debug Console Compatibility",
-                        Author = "DTMAPI",
-                        Version = DtmApiRuntime.ApiVersion,
-                        UniqueID = "DTMAPI.DebugConsoleHost",
-                        Type = "RuntimeApi"
-                    },
-                    debugConsoleCompatibility,
-                    OwnerBoundGameBridgeApis.ForDebugConsole(
-                        debugConsoleCompatibility));
                 PreparedQaHost? preparedQaHost = QaHostActivationLoader.LoadIfRequested(runtime);
                 bridge = new DolocTownGameBridge(
                     runtime,
-                    debugConsoleCompatibility,
                     preparedQaHost);
                 runtime.NativeLoadGameReturned += (slot, result) => ReinstallPlayerLoopFrameDriver("LoadGameReturned:" + slot.ToString(CultureInfo.InvariantCulture) + ":" + result.ToString(CultureInfo.InvariantCulture));
                 runtime.NativeGameFrame += OnNativeGameFrame;
@@ -154,9 +140,9 @@ namespace DTMAPI.BepInExBootstrap
                 "; nativeGameFrameCallbackSeen=" + nativeGameFrameCallbackSeen +
                 "; unityUpdateCallbacks=" + unityUpdateCallbackCount +
                 "; unityContextAlive=" + (unityContext == null ? "false" : "true") + "}" +
-                "; titleSettings={" + (titleSettingsUi?.GetLifecycleSummary() ?? "not-created") + "}; debugConsole={" + (debugConsoleCompatibility?.GetLifecycleSummary() ?? "resident-dormant") + "}" +
+                "; titleSettings={" + (titleSettingsUi?.GetLifecycleSummary() ?? "not-created") + "}" +
                 "; uiByOwner={" + (titleSettingsUi?.GetOwnerObjectGraphSummary() ?? "DTMAPI.TitleSettings={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
-                "; " + (debugConsoleCompatibility?.GetOwnerObjectGraphSummary() ?? "DTMAPI.DebugConsole={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") + "}");
+                "}");
         }
 
         private TitleReturnObjectGraphSection BuildBootstrapUiOwnerObjectGraphSection()
@@ -165,8 +151,6 @@ namespace DTMAPI.BepInExBootstrap
                 "UI",
                 "byOwner={" +
                 (titleSettingsUi?.GetOwnerObjectGraphSummary() ?? "DTMAPI.TitleSettings={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
-                "; " +
-                (debugConsoleCompatibility?.GetOwnerObjectGraphSummary() ?? "DTMAPI.DebugConsole={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}") +
                 "}");
         }
 
@@ -189,7 +173,7 @@ namespace DTMAPI.BepInExBootstrap
                 "; unityUpdateCallbacks=" + unityUpdateCallbackCount +
                 "; lastProcessedUnityFrame=" + lastProcessedUnityFrame +
                 "; unityContextAlive=" + (unityContext == null ? "false" : "true"));
-            builder.AppendLine("BootstrapUiLifecycle: titleSettings={" + (titleSettingsUi?.GetLifecycleSummary() ?? "not-created") + "}; debugConsole={" + (debugConsoleCompatibility?.GetLifecycleSummary() ?? "resident-dormant") + "}");
+            builder.AppendLine("BootstrapUiLifecycle: titleSettings={" + (titleSettingsUi?.GetLifecycleSummary() ?? "not-created") + "}");
             return builder.ToString();
         }
 
@@ -719,18 +703,6 @@ namespace DTMAPI.BepInExBootstrap
                         RecordUpdateComponentError("DTMAPI.TitleSettings", "Title settings UI update failed.", ex, ref titleUiUpdateErrorLogged);
                     }
 
-                    try
-                    {
-                        debugConsoleCompatibility?.UpdateIfLoaded();
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordUpdateComponentError(
-                            "DTMAPI.DebugConsoleCompatibility",
-                            "Frozen DebugConsole compatibility update failed.",
-                            ex,
-                            ref debugCompatibilityUpdateErrorLogged);
-                    }
                 }
 
                 bool uiCapturingKey = titleSettingsUi != null && titleSettingsUi.IsCapturingKey;
@@ -743,11 +715,8 @@ namespace DTMAPI.BepInExBootstrap
                     runtime.RuntimeMonitor.Log("DTMAPI diagnostics hotkey " + diagnosticsHotkey + " observed. open=" + wasOpen + " -> " + runtime.UI.IsOpen + " context=" + runtime.UI.InputContext + ".");
                 }
 
-                bool compatibilityConsumedInput =
-                    debugConsoleCompatibility?.ConsumedInputThisFrame == true;
                 if (allowUnityApi &&
-                    !uiCapturingKey &&
-                    !compatibilityConsumedInput)
+                    !uiCapturingKey)
                     SampleDtmInputFrame();
                 else
                     ReflectedUnityInput.DiscardLatchedEdges();
@@ -904,7 +873,6 @@ namespace DTMAPI.BepInExBootstrap
             RunShutdownStage("InputSystem driver", UnsubscribeInputSystemFrameDriver);
             RunShutdownStage("input transient state", ReflectedUnityInput.ClearTransientState);
             RunShutdownStage("title UI", () => titleSettingsUi?.Shutdown(reason));
-            RunShutdownStage("debug compatibility", () => debugConsoleCompatibility?.ShutdownIfLoaded(reason));
             RunShutdownStage("GameBridge", () => bridge?.Shutdown(reason));
             RunShutdownStage("Core", () => runtime?.NotifyRuntimeShutdown(reason));
             runtime?.RuntimeMonitor.Log(reason + " observed by DTMAPI bootstrap.");

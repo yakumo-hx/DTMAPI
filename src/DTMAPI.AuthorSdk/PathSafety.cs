@@ -32,9 +32,15 @@ internal static class PathSafety
         string fullRoot = Path.GetFullPath(root);
         foreach (string path in paths.Append(fullRoot))
         {
-            FileAttributes attributes = File.GetAttributes(path);
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-                throw new InvalidDataException("Symbolic links and other reparse points are not accepted: " + path);
+            string? current = Path.GetFullPath(path);
+            while (current != null)
+            {
+                FileAttributes attributes = File.GetAttributes(current);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                    throw new InvalidDataException("Symbolic links and other reparse points are not accepted: " + current);
+                if (current.Equals(fullRoot, StringComparison.OrdinalIgnoreCase)) break;
+                current = Path.GetDirectoryName(current);
+            }
         }
     }
 
@@ -42,6 +48,22 @@ internal static class PathSafety
     {
         using FileStream stream = File.OpenRead(path);
         return Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+    }
+
+    // Check selected payload directories before descending; unused development
+    // directories are not package inputs and may contain tools or links.
+    public static IEnumerable<string> EnumeratePayloadFiles(string projectRoot, string root)
+    {
+        RejectReparsePoints(projectRoot, new[] { root });
+        foreach (string path in Directory.EnumerateFileSystemEntries(root))
+        {
+            RejectReparsePoints(root, new[] { path });
+            if (Directory.Exists(path))
+            {
+                foreach (string file in EnumeratePayloadFiles(projectRoot, path)) yield return file;
+            }
+            else yield return path;
+        }
     }
 
     public static string Sha256Bytes(ReadOnlySpan<byte> bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();

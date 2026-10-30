@@ -14,7 +14,7 @@ namespace DTMAPI.Core.Runtime
         public const string LegacyWireVersion = "0.5.5";
         public const int Major = 1;
         public const int MinimumMinor = 0;
-        public const int MaximumMinor = 0;
+        public const int MaximumMinor = 1;
         public const string HelloOperation = "hello";
         public const string ProtocolVersion = "dtmapi-author-session/1";
         public const string GetSourceSnapshotOperation = "get-source-snapshot";
@@ -148,23 +148,6 @@ namespace DTMAPI.Core.Runtime
             return true;
         }
 
-        public static bool IsSha256(string value)
-        {
-            string text = value ?? string.Empty;
-            if (text.Length != 64)
-                return false;
-            for (int index = 0; index < text.Length; index++)
-            {
-                char character = text[index];
-                bool hexadecimal = (character >= '0' && character <= '9') ||
-                    (character >= 'a' && character <= 'f') ||
-                    (character >= 'A' && character <= 'F');
-                if (!hexadecimal)
-                    return false;
-            }
-
-            return true;
-        }
     }
 
     [DataContract]
@@ -249,9 +232,6 @@ namespace DTMAPI.Core.Runtime
         [DataMember(Name = "selectedRoot", Order = 7)]
         public string SelectedRoot { get; set; } = string.Empty;
 
-        [DataMember(Name = "expectedTreeSha256", Order = 8)]
-        public string ExpectedTreeSha256 { get; set; } = string.Empty;
-
         [DataMember(Name = "operation", Order = 9, IsRequired = true)]
         public string Operation { get; set; } = string.Empty;
 
@@ -273,7 +253,6 @@ namespace DTMAPI.Core.Runtime
         {
             GameRoot = AuthorSessionProtocol.NormalizePath(GameRoot);
             SelectedRoot = AuthorSessionProtocol.NormalizePath(SelectedRoot);
-            ExpectedTreeSha256 = ExpectedTreeSha256.ToUpperInvariant();
         }
     }
 

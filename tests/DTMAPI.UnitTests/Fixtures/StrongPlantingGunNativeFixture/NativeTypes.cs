@@ -5,12 +5,27 @@ using System.Runtime.CompilerServices;
 public static class DolocAPI
 {
     public static object? archiveHandle;
+    public static object? CurrentRoom, agent, SelectedItem;
 }
 
 namespace DolocTown.Config.Item
 {
     public sealed class ItemInfo
     {
+    }
+
+    public sealed class ItemFunctionFarmingGun
+    {
+        public ItemFunctionFarmingGun(int capacity) => Capacity = capacity;
+        public int Capacity { get; set; }
+        public NativeArea Area { get; private set; } = new NativeArea(7, 7);
+        public NativeArea Offset { get; private set; } = new NativeArea(-3, 0);
+    }
+
+    public struct NativeArea
+    {
+        public int x, y;
+        public NativeArea(int x, int y) { this.x = x; this.y = y; }
     }
 }
 
@@ -19,15 +34,8 @@ namespace DolocTown
     public delegate void InventoryReceiver(
         int index,
         Item? item,
-        bool isSlotLocked);
-
-    public sealed class ItemFunctionFarmingGun
-    {
-        public ItemFunctionFarmingGun(int capacity) =>
-            Capacity = capacity;
-
-        public int Capacity { get; set; }
-    }
+        bool isSlotLocked,
+        Item? replacedItem);
 
     public sealed class ArchiveHandle
     {
@@ -66,6 +74,8 @@ namespace DolocTown
         public bool ThrowOnPlaceAfterMutation { get; set; }
 
         public bool ThrowOnCostAfterMutation { get; set; }
+
+        public bool LastCostExactItem { get; private set; }
 
         public int ThrowOnReadIndex { get; set; } = -1;
 
@@ -127,8 +137,9 @@ namespace DolocTown
         public bool TryCostAtIndex(
             int index,
             int count,
-            bool allowPartial)
+            bool exactItem)
         {
+            LastCostExactItem = exactItem;
             if (count != 1 ||
                 !(Read(index) is Item item) ||
                 item.count < count)
@@ -224,7 +235,8 @@ namespace DolocTown
                 receiver(
                     index,
                     inventory[index] as Item,
-                    slotLockStates[index]);
+                    slotLockStates[index],
+                    null);
             }
         }
 
@@ -244,7 +256,8 @@ namespace DolocTown
                 receiver(
                     index,
                     inventory[index] as Item,
-                    slotLockStates[index]);
+                    slotLockStates[index],
+                    null);
             }
         }
 
@@ -282,9 +295,9 @@ namespace DolocTown
 
     public class ItemFarmingGun : Item
     {
-        private static readonly ItemFunctionFarmingGun
+        private static readonly Config.Item.ItemFunctionFarmingGun
             SharedProtoFunction =
-                new ItemFunctionFarmingGun(1);
+                new Config.Item.ItemFunctionFarmingGun(1);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public ItemFarmingGun(
@@ -307,7 +320,17 @@ namespace DolocTown
 
         public LinearInventory inventory;
 
-        public ItemFunctionFarmingGun func;
+        public Config.Item.ItemFunctionFarmingGun func;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void OpenContainerUI() { }
+
+        public CellTip cellTip = new CellTip();
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void RefreshCellTip() { cellTip.CellTipValid = false; }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void InitCellTip() { cellTip.CellSize = func.Area; }
 
         public bool CheckCanInteractResult { get; set; } = true;
 
@@ -323,16 +346,17 @@ namespace DolocTown
             OriginalToolUseCount++;
         }
 
-        public object[] GetEquipmentsFromArea() =>
-            new[]
-            {
-                (object)this
-            };
+        public int EquipmentQueryCount { get; private set; }
+        public object[] GetEquipmentsFromArea()
+        {
+            EquipmentQueryCount++;
+            return new object[] { this };
+        }
 
         public bool CheckCanInteract(
             object equipment,
             object item) =>
-            CheckCanInteractResult;
+            CheckCanInteractResult && item is ItemFilm;
 
         public bool DoInteract(
             object equipment,
@@ -354,57 +378,53 @@ namespace DolocTown
         {
         }
 
-        public void InitCellTip()
-        {
-        }
     }
 
-    public sealed class FarmingGunUiState
+    public class ContainerBaseUiState
     {
-        public FarmingGunUiState(
-            ItemFarmingGun container,
-            LinearInventory backpackInventory,
-            Item selectedItem,
-            int currentIndex)
-        {
-            this.container = container;
-            containerInventory = container.inventory;
-            this.backpackInventory = backpackInventory;
-            this.selectedItem = selectedItem;
-            this.currentIndex = currentIndex;
-        }
-
-        public bool inBackpack = true;
-
-        public EmptyBuffer buffer { get; } =
-            new EmptyBuffer();
-
-        public ItemFarmingGun container;
-
-        public LinearInventory containerInventory;
-
-        public LinearInventory backpackInventory;
-
-        public Item selectedItem;
-
-        public int currentIndex;
-
-        public int OriginalPlaceCount { get; private set; }
-
-        public int OriginalSwapCount { get; private set; }
-
+        public string LastNativeOperation = "";
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void HandlePlaceToOtherSide(int index)
-        {
-            OriginalPlaceCount++;
-        }
-
+        public virtual void HandlePlaceToOtherSide(int index) { LastNativeOperation = "HandlePlaceToOtherSide"; }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void HandleSwapOneItem(int index)
-        {
-            OriginalSwapCount++;
-        }
+        public virtual void HandleSwapOneItem(int index) { LastNativeOperation = "HandleSwapOneItem"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual void OnBackpackItemClick(int index) { LastNativeOperation = "OnBackpackItemClick"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual void OnContainerItemClick(int index) { LastNativeOperation = "OnContainerItemClick"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual void HandleSwapHalfItems(int index) { LastNativeOperation = "HandleSwapHalfItems"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual void PutAll() { LastNativeOperation = "PutAll"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual void PutMax() { LastNativeOperation = "PutMax"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual string[] GetTipInBackpack() { LastNativeOperation = "GetTipInBackpack"; return new[] { "native-tip" }; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual string[] GetTipInContainer() { LastNativeOperation = "GetTipInContainer"; return new[] { "native-tip" }; }
     }
+    public sealed class FarmingGunUiState : ContainerBaseUiState
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void HandlePlaceToOtherSide(int index) { LastNativeOperation = "legacy-HandlePlaceToOtherSide"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void HandleSwapOneItem(int index) { LastNativeOperation = "legacy-HandleSwapOneItem"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void OnBackpackItemClick(int index) { LastNativeOperation = "legacy-OnBackpackItemClick"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void OnContainerItemClick(int index) { LastNativeOperation = "legacy-OnContainerItemClick"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void HandleSwapHalfItems(int index) { LastNativeOperation = "legacy-HandleSwapHalfItems"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void PutAll() { LastNativeOperation = "legacy-PutAll"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override void PutMax() { LastNativeOperation = "legacy-PutMax"; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override string[] GetTipInBackpack() { LastNativeOperation = "legacy-GetTipInBackpack"; return new[] { "legacy-tip" }; }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override string[] GetTipInContainer() { LastNativeOperation = "legacy-GetTipInContainer"; return new[] { "legacy-tip" }; }
+    }
+
+    public class CellTip { public bool CellTipValid { get; set; } public Config.Item.NativeArea CellSize; }
 
     public sealed class EmptyBuffer
     {

@@ -29,7 +29,6 @@
         "requestId",
         "uniqueId",
         "selectedRoot",
-        "expectedTreeSha256",
         "operation"
       ],
       "properties": {
@@ -65,10 +64,6 @@
         "selectedRoot": {
           "type": "string",
           "minLength": 1
-        },
-        "expectedTreeSha256": {
-          "type": "string",
-          "pattern": "^[A-Fa-f0-9]{64}$"
         },
         "operation": {
           "enum": [
@@ -253,9 +248,6 @@
         "selectedRoot": {
           "type": "string"
         },
-        "expectedTreeSha256": {
-          "type": "string"
-        },
         "operation": {
           "enum": [
             "hello",
@@ -300,15 +292,11 @@
               },
               "uniqueId": {
                 "minLength": 1
-              },
-              "expectedTreeSha256": {
-                "pattern": "^[A-Fa-f0-9]{64}$"
               }
             },
             "required": [
               "uniqueId",
               "selectedRoot",
-              "expectedTreeSha256",
               "hostVersion",
               "protocolMinor"
             ]
@@ -326,8 +314,21 @@
           }
         },
         {
-          "if": { "properties": { "operation": { "const": "execute-command" } }, "required": ["operation"] },
-          "then": { "required": ["commandLine"] }
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "execute-command"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "commandLine"
+            ]
+          }
         }
       ]
     },

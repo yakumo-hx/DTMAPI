@@ -1,0 +1,83 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterActive",
+    "name": "主动攻击示例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "active",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 200,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "主动攻击",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "attack",
+              "attackId": "AtkNormal",
+              "maxGameSeconds": 15
+            }
+          ]
+        },
+        "combat": {
+          "mode": "active",
+          "checkIntervalGameSeconds": 0.5,
+          "repeatIntervalGameSeconds": 2
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "inherited",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 200,
+        "tint": "#80CFC0",
+        "display": {
+          "name": "inherited",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "pair",
+      "definitionId": "active",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 2
+    }
+  ],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

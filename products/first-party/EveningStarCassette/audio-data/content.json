@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "audio": {
+    "resources": [
+      {
+        "key": "evening-star",
+        "path": "PackData/audio/cd-evening.wav",
+        "stream": true
+      },
+      {
+        "key": "necro_fantasia",
+        "path": "PackData/audio/cd-necro.wav",
+        "stream": true
+      }
+    ],
+    "events": [
+      {
+        "key": "evening-star",
+        "resource": "evening-star",
+        "use": "music",
+        "nativeEvent": "DTMAPI_AUDIO_44544D4150492E4576656E696E67537461724361737365747465_64746D6170695F6576656E696E675F73746172",
+        "volumeDb": -27.8,
+        "route": "Music"
+      },
+      {
+        "key": "necro_fantasia",
+        "resource": "necro_fantasia",
+        "use": "music",
+        "nativeEvent": "DTMAPI_MUSIC_NECRO_FANTASIA",
+        "volumeDb": -32.5,
+        "route": "Music"
+      }
+    ]
+  }
+}

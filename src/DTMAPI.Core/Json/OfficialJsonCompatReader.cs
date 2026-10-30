@@ -30,55 +30,6 @@ namespace DTMAPI.Core.Json
             }
         }
 
-        internal static string RemoveLineComments(string json)
-        {
-            if (string.IsNullOrEmpty(json))
-                return json ?? string.Empty;
-
-            var builder = new StringBuilder(json.Length);
-            bool inString = false;
-            bool escaped = false;
-            for (int index = 0; index < json.Length; index++)
-            {
-                char current = json[index];
-                if (inString)
-                {
-                    builder.Append(current);
-                    if (escaped)
-                    {
-                        escaped = false;
-                    }
-                    else if (current == '\\')
-                    {
-                        escaped = true;
-                    }
-                    else if (current == '"')
-                    {
-                        inString = false;
-                    }
-                    continue;
-                }
-
-                if (current == '"')
-                {
-                    inString = true;
-                    builder.Append(current);
-                    continue;
-                }
-
-                if (current == '/' && index + 1 < json.Length && json[index + 1] == '/')
-                {
-                    index += 2;
-                    while (index < json.Length && json[index] != '\r' && json[index] != '\n')
-                        index++;
-                    if (index < json.Length)
-                        builder.Append(json[index]);
-                    continue;
-                }
-
-                builder.Append(current);
-            }
-            return builder.ToString();
-        }
+        internal static string RemoveLineComments(string json) => DTMAPI.Internal.Authoring.PackageDocumentFacts.RemoveLineComments(json);
     }
 }

@@ -10,7 +10,7 @@ namespace DTMAPI.MoreSaves
     internal sealed class MoreSavesNativeRuntime
     {
         internal const int VanillaSlotCount = 6;
-        internal const int ExpandedSlotCount = 12;
+        internal const int ExpandedSlotCount = 60;
         private static readonly TimeSpan RetryInterval = TimeSpan.FromMilliseconds(750);
         private readonly IMonitor monitor;
         private readonly Func<object?> managerProvider;
@@ -20,6 +20,7 @@ namespace DTMAPI.MoreSaves
         private readonly Action<bool>? retryDemandChanged;
         private readonly Func<object, MoreSavesArchiveMigrationResult> archiveMigration;
         private MoreSavesConfig config = new MoreSavesConfig();
+        private bool active;
         private DateTimeOffset retryAfterUtc;
         private bool leaseHeld;
         private bool applyPending;
@@ -54,16 +55,15 @@ namespace DTMAPI.MoreSaves
         internal bool RetryPending => applyPending || restorePending;
         internal bool RetrySchedulingRequested => retrySchedulingAllowed && RetryPending;
         internal int NativeSlotCount => nativeSlotCount;
-        internal int InstalledPatchCount => 0;
         internal string StatusSummary =>
             "state=" + status +
              ", native=" + nativeSlotCount.ToString(CultureInfo.InvariantCulture) +
-             ", target=" + (config.Enabled ? ExpandedSlotCount : VanillaSlotCount).ToString(CultureInfo.InvariantCulture) +
+             ", target=" + (active ? ExpandedSlotCount : VanillaSlotCount).ToString(CultureInfo.InvariantCulture) +
              ", owner=" + (leaseHeld ? MoreSavesNativeOwnerCoordinator.ProductOwner : "none") +
              ", pendingWork=" + RetryPending.ToString().ToLowerInvariant() +
              ", retryScheduled=" + RetrySchedulingRequested.ToString().ToLowerInvariant() +
              ", migration=" + archiveMigrationSummary +
-             ", hooks=0. " + lastMessage;
+             ". " + lastMessage;
 
         internal void Configure(MoreSavesConfig value, string reason)
         {
@@ -71,15 +71,8 @@ namespace DTMAPI.MoreSaves
             try
             {
                 config = (value ?? new MoreSavesConfig()).Copy();
-                config.Normalize();
-                if (config.Enabled)
-                {
-                    ApplyExpandedOrFail(reason ?? "configure");
-                    return;
-                }
-
-                applyPending = false;
-                RestoreAndRelease(reason ?? "disabled");
+                active = true;
+                ApplyExpandedOrFail(reason ?? "configure");
             }
             finally
             {
@@ -93,7 +86,7 @@ namespace DTMAPI.MoreSaves
                 return;
             try
             {
-                if (config.Enabled)
+                if (active)
                     ApplyExpandedOrFail("bounded native-manager retry");
                 else
                     RestoreAndRelease("bounded native-manager restore retry");
@@ -106,7 +99,7 @@ namespace DTMAPI.MoreSaves
 
         internal void ResetBoundary(string reason)
         {
-            if (!config.Enabled)
+            if (!active)
                 return;
             try
             {
@@ -121,7 +114,7 @@ namespace DTMAPI.MoreSaves
 
         internal void DeactivateOwner(string reason)
         {
-            config.Enabled = false;
+            active = false;
             applyPending = false;
             retrySchedulingAllowed = false;
             try
@@ -165,7 +158,7 @@ namespace DTMAPI.MoreSaves
             catch (Exception activationFailure)
             {
                 applyPending = false;
-                config.Enabled = false;
+                active = false;
                 try
                 {
                     RestoreAndRelease("activation-failed:" + reason);

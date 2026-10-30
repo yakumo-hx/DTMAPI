@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using global::DTMAPI.Abstractions;
 using HarmonyLib;
@@ -8,13 +9,13 @@ namespace DTMAPI.ChestLocatorEnhancer
     internal sealed class ChestLocatorEnhancerHookInstaller
     {
         internal const string HarmonyOwner =
-            "dtmapi.mod.dtmapi.chestlocatorenhancermod";
+            ChestLocatorHookOwnership.HarmonyOwner;
         internal const string CompatibilityOwner =
             "dtmapi.gamebridge.doloctown";
-        private const int ExpectedPatchCount = 1;
         private readonly IMonitor monitor;
         private Harmony? harmony;
         private MethodInfo? target;
+        private readonly List<MethodBase> ownedTargets = new List<MethodBase>();
 
         internal ChestLocatorEnhancerHookInstaller(IMonitor monitor) =>
             this.monitor =
@@ -37,6 +38,15 @@ namespace DTMAPI.ChestLocatorEnhancer
 
             target = ResolveTarget();
             ThrowIfConflictingOwnerIsPresent(target);
+            ChestLocatorUiRefresh.Patch[] uiPatches = ChestLocatorUiRefresh.ResolvePatches();
+            ownedTargets.Clear();
+            ownedTargets.Add(target);
+            foreach (ChestLocatorUiRefresh.Patch patch in uiPatches)
+            {
+                if (HasExactOwner(patch.Target, HarmonyOwner))
+                    throw new InvalidOperationException("ChestLocatorEnhancer refuses a residual product UI patch: " + patch.Target);
+                if (!ownedTargets.Contains(patch.Target)) ownedTargets.Add(patch.Target);
+            }
             MethodInfo genericCallback =
                 typeof(ChestLocatorEnhancerCallbacks).GetMethod(
                     nameof(ChestLocatorEnhancerCallbacks
@@ -67,14 +77,22 @@ namespace DTMAPI.ChestLocatorEnhancer
                 harmony.Patch(
                     target,
                     postfix: new HarmonyMethod(callback));
+                foreach (ChestLocatorUiRefresh.Patch patch in uiPatches)
+                {
+                    harmony.Patch(patch.Target,
+                        prefix: patch.Prefix ? new HarmonyMethod(patch.Callback) : null,
+                        postfix: !patch.Prefix && !patch.Finalizer ? new HarmonyMethod(patch.Callback) : null,
+                        finalizer: patch.Finalizer ? new HarmonyMethod(patch.Callback) : null);
+                }
                 if (!HasExactOwner(target, HarmonyOwner))
                 {
                     throw new InvalidOperationException(
                         "ChestLocatorEnhancer could not prove its exact Harmony owner on the native inventory target.");
                 }
 
-                InstalledPatchCount = ExpectedPatchCount;
-                IsInstalled = true;
+                PublishObservedOwnerState(target);
+                if (InstalledPatchCount != 1 + uiPatches.Length)
+                    throw new InvalidOperationException("ChestLocatorEnhancer could not prove every selected UI patch.");
                 monitor.Log(
                     "ChestLocatorEnhancer product-owned patch installed owner=" +
                     HarmonyOwner +
@@ -123,7 +141,7 @@ namespace DTMAPI.ChestLocatorEnhancer
             if (IsInstalled)
             {
                 throw new InvalidOperationException(
-                    "ChestLocatorEnhancer exact-owner unpatch returned while its Harmony owner still remained on ArchiveDataHandle.GetAvailableInventories.");
+                    "ChestLocatorEnhancer exact-owner unpatch returned while its Harmony owner still remained on a selected native target.");
             }
 
             harmony = null;
@@ -217,11 +235,18 @@ namespace DTMAPI.ChestLocatorEnhancer
         private void PublishObservedOwnerState(
             MethodBase method)
         {
-            ChestLocatorObservedHookState observed =
-                ChestLocatorHookOwnership.FromExactOwnerObservation(
-                    HasExactOwner(method, HarmonyOwner));
-            IsInstalled = observed.IsInstalled;
-            InstalledPatchCount = observed.InstalledPatchCount;
+            int count = 0;
+            foreach (MethodBase owned in ownedTargets)
+            {
+                Patches? info = Harmony.GetPatchInfo(owned);
+                if (info == null) continue;
+                foreach (Patch patch in info.Prefixes) if (patch.owner == HarmonyOwner) count++;
+                foreach (Patch patch in info.Postfixes) if (patch.owner == HarmonyOwner) count++;
+                foreach (Patch patch in info.Transpilers) if (patch.owner == HarmonyOwner) count++;
+                foreach (Patch patch in info.Finalizers) if (patch.owner == HarmonyOwner) count++;
+            }
+            InstalledPatchCount = count;
+            IsInstalled = count != 0;
         }
 
         private static void UnpatchExactOwner(

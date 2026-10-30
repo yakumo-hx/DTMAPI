@@ -72,7 +72,7 @@ internal static class AuthorSessionService
     {
         RequirePositionals(command, 1, "session prepare takes no additional arguments.");
         if (!bool.TryParse(command.Option("commands", "false"), out bool enableCommands)) throw new CommandLineException("--commands must be true or false.");
-        AuthorApiTarget apiTarget = SdkApiTargets.ForCommand(command.Option("api-target", AuthorApiTargetCatalog.Current.DefaultTarget));
+        string apiTarget = command.Option("api-target", "0.7.5");
         DateTimeOffset now = DateTimeOffset.UtcNow;
         EnsureSessionSlotAvailable(gameRoot, now);
         string sessionId = Guid.NewGuid().ToString("N");
@@ -82,9 +82,8 @@ internal static class AuthorSessionService
         {
             SchemaVersion = AuthorSessionContract.SchemaVersion,
             GameRoot = gameRoot,
-            ApiTarget = apiTarget.ApiTarget,
-            MinimumRuntimeVersion = Version.Parse(apiTarget.MinimumRuntimeVersion) > Version.Parse(AuthorSessionContract.MinimumRuntimeVersion)
-                ? apiTarget.MinimumRuntimeVersion : AuthorSessionContract.MinimumRuntimeVersion,
+            ApiTarget = apiTarget,
+            MinimumRuntimeVersion = AuthorSessionContract.MinimumRuntimeVersion,
             SessionId = sessionId,
             Token = token,
             PipeName = pipeName,
@@ -155,14 +154,10 @@ internal static class AuthorSessionService
             throw new SessionCommandException("unique-id-invalid", "UniqueID must be dotted and path-safe.", command.Positionals[1]);
         string selectedRoot = Path.GetFullPath(command.Positionals[2]);
         PathSafety.RejectBepInExPluginDestination(selectedRoot);
-        if (!Directory.Exists(selectedRoot))
-            throw new SessionCommandException("selected-root-missing", "The selected source root does not exist.", selectedRoot);
-        ValidateSelectedManifest(selectedRoot, uniqueId);
 
         AuthorSessionSecret secret = LoadClientSecret(gameRoot, DateTimeOffset.UtcNow);
         int responseTimeoutSeconds = ParseTimeoutSeconds(command.Option("timeout-seconds", "35"));
         int connectTimeoutMilliseconds = Math.Min(5000, checked(responseTimeoutSeconds * 1000));
-        string treeSha256 = AuthorFileTreeDigest.Compute(selectedRoot);
         string operation = action == "snapshot" ? SnapshotOperation : action == "command" ? CommandOperation : ReloadOperation;
         if (secret.SchemaVersion != AuthorSessionContract.SchemaVersion)
             throw new SessionCommandException("session-prepare-required", "Clear the legacy credential and prepare a new explicit session; the SDK does not downgrade its protocol.", gameRoot);
@@ -190,7 +185,6 @@ internal static class AuthorSessionService
         AuthorSessionRequestFrame request = CreateRequest(secret, operation);
         request.UniqueId = uniqueId;
         request.SelectedRoot = selectedRoot;
-        request.ExpectedTreeSha256 = treeSha256;
         if (action == "command")
         {
             request.CommandLine = command.Option("command-line", "help");
@@ -200,7 +194,6 @@ internal static class AuthorSessionService
         ValidateResponse(response, request, secret);
 
         report.OutputPath = selectedRoot;
-        report.Sha256 = treeSha256;
         string safeCode = Redact(response.Code, secret.Token);
         report.Values["statusCode"] = safeCode;
         report.Values["runtimeStatus"] = response.Status;
@@ -216,8 +209,6 @@ internal static class AuthorSessionService
         report.Values["unsupportedOptionalCapabilities"] = string.Join(",", secret.Negotiated.UnsupportedOptionalCapabilities);
         report.Values["uniqueID"] = uniqueId;
         report.Values["selectedRoot"] = selectedRoot;
-        report.Values["expectedTreeSha256"] = treeSha256;
-        report.Values["treeDigestAlgorithm"] = AuthorFileTreeDigest.AlgorithmId;
         report.Values["connectTimeoutMs"] = connectTimeoutMilliseconds.ToString(CultureInfo.InvariantCulture);
         report.Values["responseTimeoutMs"] = (responseTimeoutSeconds * 1000).ToString(CultureInfo.InvariantCulture);
         int responseValueIndex = 0;
@@ -456,19 +447,6 @@ internal static class AuthorSessionService
         {
             // Preserve mismatched or damaged descriptor evidence; session clear is the explicit authority.
         }
-    }
-
-    private static void ValidateSelectedManifest(string selectedRoot, string uniqueId)
-    {
-        string rootManifest = Path.Combine(selectedRoot, "manifest.json");
-        string packageManifest = Path.Combine(selectedRoot, "Content", "DTMAPI", "manifest.json");
-        string[] present = new[] { rootManifest, packageManifest }.Where(File.Exists).ToArray();
-        if (present.Length != 1)
-            throw new SessionCommandException("selected-manifest-invalid", "selectedRoot must contain exactly one root or Content/DTMAPI manifest.json.", selectedRoot);
-        RuntimeManifest manifest = JsonSerializer.Deserialize<RuntimeManifest>(File.ReadAllText(present[0], Encoding.UTF8), JsonSupport.RuntimeManifest)
-            ?? throw new SessionCommandException("selected-manifest-invalid", "selectedRoot manifest did not contain one object.", present[0]);
-        if (!manifest.UniqueID.Equals(uniqueId, StringComparison.Ordinal) || manifest.Type is not ("CodeMod" or "ContentPack"))
-            throw new SessionCommandException("selected-manifest-mismatch", "selectedRoot manifest UniqueID/type does not exactly match this request.", present[0]);
     }
 
     private static string CreateToken()
@@ -710,7 +688,6 @@ internal sealed class AuthorSessionRequestFrame : AuthorSessionOffer
     public string RequestId { get; set; } = string.Empty;
     public string UniqueId { get; set; } = string.Empty;
     public string SelectedRoot { get; set; } = string.Empty;
-    public string ExpectedTreeSha256 { get; set; } = string.Empty;
     public string Operation { get; set; } = string.Empty;
 }
 

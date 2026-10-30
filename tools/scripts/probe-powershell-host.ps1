@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)] [string] $ToolsRoot,
     [Parameter(Mandatory = $true)]
     [ValidateSet('install', 'uninstall', 'status', 'collect')]
@@ -43,7 +43,9 @@ if ([string]::IsNullOrWhiteSpace($ToolsRoot)) {
 $toolsRootFull = [System.IO.Path]::GetFullPath($ToolsRoot)
 $scriptNames = New-Object 'System.Collections.Generic.List[string]'
 $scriptNames.Add('common.ps1') | Out-Null
-if ($Action -ne 'collect') {
+$commonParts = if ($Action -eq 'uninstall') { @('repository','files','game-session','installer') } else { @('repository','files','toolchain','runtime-lock','game-session','installer') }
+foreach ($part in $commonParts) { $scriptNames.Add("common/$part.ps1") | Out-Null }
+if ($Action -in @('install','status')) {
     $scriptNames.Add('release-common.ps1') | Out-Null
 }
 $scriptNames.Add('probe-powershell-host.ps1') | Out-Null
@@ -52,7 +54,11 @@ switch ($Action) {
         $scriptNames.Add('install-to-game.ps1') | Out-Null
         $scriptNames.Add('install-bepinex.ps1') | Out-Null
     }
-    'uninstall' { $scriptNames.Add('uninstall-dtmapi.ps1') | Out-Null }
+    'uninstall' {
+        $scriptNames.Add('uninstall-dtmapi.ps1') | Out-Null
+        $scriptNames.Add('uninstall-common.ps1') | Out-Null
+        if (-not (Test-Path -LiteralPath (Join-Path $toolsRootFull 'uninstall-targets.json') -PathType Leaf)) { Write-Host '[ERROR] Missing uninstall-targets.json'; exit 3 }
+    }
     'status' { $scriptNames.Add('check-dtmapi-status.ps1') | Out-Null }
     'collect' {
         $scriptNames.Add('collect-logs.ps1') | Out-Null
@@ -119,12 +125,13 @@ if ($commonPath.Count -ne 1) {
 }
 
 try {
-    . $commonPath[0]
-    $selfHash = Get-DtmApiFileSha256 -Path $hostProbePath
-    if ($selfHash -notmatch '^[0-9A-F]{64}$') {
-        throw 'Portable SHA-256 helper returned an invalid digest.'
+    $commonAction = if ($Action -eq 'uninstall') { 'uninstall' } else { 'all' }
+    . $commonPath[0] -DtmApiCommonAction $commonAction
+    if ($Action -ne 'uninstall') {
+        $selfHash = Get-DtmApiFileSha256 -Path $hostProbePath
+        if ($selfHash -notmatch '^[0-9A-F]{64}$') { throw 'Portable SHA-256 helper returned an invalid digest.' }
+        Write-Host '[INFO]   Portable SHA-256 capability: OK'
     }
-    Write-Host '[INFO]   Portable SHA-256 capability: OK'
 
     if ($Action -eq 'install') {
         if (-not (Test-DtmApiZipArchiveSupport)) {

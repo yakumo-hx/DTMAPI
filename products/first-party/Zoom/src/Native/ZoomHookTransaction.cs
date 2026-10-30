@@ -9,13 +9,14 @@ namespace DTMAPI.Zoom
         internal static void Install(
             Action attach,
             Action patch,
-            Func<bool> exactOwnerPresent,
+            Func<bool> completeSetInstalled,
+            Func<bool> anyOwnedPatch,
             Action unpatch,
             Action detach)
         {
             if (attach == null ||
                 patch == null ||
-                exactOwnerPresent == null ||
+                completeSetInstalled == null || anyOwnedPatch == null ||
                 unpatch == null ||
                 detach == null)
             {
@@ -27,10 +28,10 @@ namespace DTMAPI.Zoom
             try
             {
                 patch();
-                if (!exactOwnerPresent())
+                if (!completeSetInstalled())
                 {
                     throw new InvalidOperationException(
-                        "Zoom could not prove all three exact ProductNative camera patches.");
+                        "Zoom could not prove the complete exact ProductNative patch set.");
                 }
             }
             catch (Exception installFailure)
@@ -49,7 +50,7 @@ namespace DTMAPI.Zoom
                 {
                     detach();
                 }
-                if (exactOwnerPresent())
+                if (anyOwnedPatch())
                 {
                     failures.Add(
                         new InvalidOperationException(

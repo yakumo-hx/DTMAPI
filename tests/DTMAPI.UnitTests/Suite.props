@@ -8,6 +8,7 @@
     <StartupObject>DTMAPI.UnitTests.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../Shared/BoundedTestProcess.cs" Link="Infrastructure/BoundedTestProcess.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SuiteEntry.cs" Link="Infrastructure/SuiteEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)../Shared/DtmApiTestSession.cs" Link="Infrastructure/DtmApiTestSession.cs" />
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">

@@ -324,6 +324,7 @@ namespace DTMAPI.DebugConsole
 
         private void PrepareRetainedUiForClose()
         {
+            ResetDeleteConfirmation();
             ReleaseItemTooltip();
             ReleaseCatalogChrome();
             ReleaseOwnedBinders(worldBinders);

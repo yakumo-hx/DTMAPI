@@ -19,7 +19,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly DateTimeOffset initializedAt = DateTimeOffset.Now;
         private HarmonyReflectionPatcher? patcher;
         private G6FixtureState? g6FixtureState;
-        private bool autoExerciseActionSpeedInteractionMainFarmRequested;
         private bool autoExerciseOneActionMainFarmRequested;
         private readonly HashSet<string> autoExerciseOneActionWrongToolCreateAttempts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly List<string> pauseMenuLayoutSamples = new List<string>();
@@ -64,8 +63,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private DateTimeOffset saveLoadCyclePendingPressureSaveLoadedAt;
         private string? newContentEvidenceDir;
         private bool qaHostObservedSaveLoaded;
-        private Batch5GcLadderFixtureOptions batch5GcLadder = new Batch5GcLadderFixtureOptions();
-        private readonly Batch6ActionSpeedReflectionObserver actionSpeedProductObserver = new Batch6ActionSpeedReflectionObserver();
         private DebugConsoleActionFixtureAdapter? debugConsoleActions;
         private string debugConsoleSaveAcceptancePhase = "None";
         private int expectedDebugConsoleMoney = -1;
@@ -74,31 +71,20 @@ namespace DTMAPI.GameBridge.DolocTown
         private DebugConsoleActionFixtureAdapter DebugConsoleActions =>
             debugConsoleActions ??=
                 new DebugConsoleActionFixtureAdapter(runtime, bridge);
-        private IInventoryDebugApi inventoryDebugApi => DebugConsoleActions;
-        private IWeatherDebugApi weatherDebugApi => DebugConsoleActions;
+        private DebugConsoleActionFixtureAdapter inventoryDebugApi => DebugConsoleActions;
+        private DebugConsoleActionFixtureAdapter weatherDebugApi => DebugConsoleActions;
         // This concrete QA seam intentionally avoids binding the current
         // reduced interface to an older installed Runtime vtable.
         private DebugConsoleActionFixtureAdapter teleportDebugApi => DebugConsoleActions;
-        private IInstantSaveDebugApi instantSaveDebugApi => DebugConsoleActions;
-        private ITimeDebugApi timeDebugApi => DebugConsoleActions;
-        private IMovementDebugApi movementDebugApi => DebugConsoleActions;
-        private IAdvancedDebugApi advancedDebugApi => DebugConsoleActions;
-        private CameraFeature? cameraFeature => bridge.CameraFeatureForQa;
-        private FishingAutomationCompatibilityFeature? fishingCompatibilityFeature => bridge.FishingAutomationCompatibilityFeatureForQa;
-        private AudioReplacementFeature? audioReplacementFeature => bridge.AudioReplacementFeatureForQa;
+        private DebugConsoleActionFixtureAdapter instantSaveDebugApi => DebugConsoleActions;
+        private DebugConsoleActionFixtureAdapter timeDebugApi => DebugConsoleActions;
+        private DebugConsoleActionFixtureAdapter movementDebugApi => DebugConsoleActions;
+        private DebugConsoleActionFixtureAdapter advancedDebugApi => DebugConsoleActions;
         private NativeUiLayoutDiagnosticsFeature? nativeUiLayoutDiagnosticsFeature => bridge.NativeUiLayoutDiagnosticsFeatureForQa;
         private NativeUiLayoutRepairService? NativeUiLayoutRepairService => bridge.NativeUiLayoutRepairService;
-        private ChestLocatorEnhancerService? ChestLocatorEnhancerService => bridge.ChestLocatorEnhancerService;
         private CropHarvestingService? CropHarvestingService => bridge.CropHarvestingService;
-        private ActionCompletionService? ActionCompletionService => bridge.ActionCompletionService;
         private bool AllHookTargetsReady => bridge.AllHookTargetsReadyForQa;
-        private bool actionSpeedInteractEnterPatched => ObserveActionSpeedProduct().ActualHarmonyOwnerReady;
-        private bool actionSpeedInteractExitPatched => ObserveActionSpeedProduct().ActualHarmonyOwnerReady;
-        private bool actionSpeedEatEnterPatched => ObserveActionSpeedProduct().ActualHarmonyOwnerReady;
-        private bool actionSpeedUseItemContinuesPatched => ObserveActionSpeedProduct().ActualHarmonyOwnerReady;
-        private bool actionSpeedInteractContinuesPatched => ObserveActionSpeedProduct().ActualHarmonyOwnerReady;
 
-        private Batch6ActionSpeedObservation ObserveActionSpeedProduct() => actionSpeedProductObserver.Observe(runtime);
 
         internal QaScenarioController(GameBridgeFixtureAccess access)
         {
@@ -135,9 +121,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal G4FixtureStepResult ObservePostTitleMoreSavesOfficialSaveUi() => ObservePostTitleMoreSavesOfficialSaveUiForFixture(GetEvidencePath("g4/ui", "official-save-ui-post-title.png"));
         internal G4FixtureStepResult ObserveAnimals() => ObserveAnimalsForFixture(GetEvidencePath("g4/ui", "animal-panel.png"));
         internal G4FixtureStepResult ObserveEquipmentSlotsUi() => ObserveEquipmentSlotsUiForFixture(GetEvidencePath("g4/ui", "equipment-slots.png"), GetEvidencePath("g4/ui", "equipment-slots-summary.txt"));
-        internal G4FixtureStepResult ObserveAudioDefinitions() => ObserveAudioDefinitionsForFixture();
-        internal G4FixtureStepResult ExerciseHatchVoice() => ExerciseHatchVoiceForFixture();
-        internal G4FixtureStepResult ExerciseCameraPlayable() => ExerciseCameraPlayableForFixture(access.RunId, GetEvidenceDirectory("g4/camera-playable"));
         internal G4FixtureStepResult ObserveContentMetadata(bool expectOilAbsent) => ObserveContentMetadataForFixture(expectOilAbsent);
         internal G4FixtureStepResult ObserveNativeUiLayout() => ObserveNativeUiLayoutForFixture();
         internal G4FixtureStepResult RequestProductOwnerRefresh() => TryReloadOfficialModsAndConfig("Smoke.ProductOwnerRefresh", "optional QA product-owner refresh before save load", out string details) ? G4FixtureStepResult.Verified(details) : G4FixtureStepResult.Failed(details);
@@ -176,8 +159,6 @@ namespace DTMAPI.GameBridge.DolocTown
             ConfigureMoreEquipmentSlotsTransitionForFixture(phase);
         internal void NotifyMoreEquipmentSlotsTransitionSaveSaved() =>
             NotifyMoreEquipmentSlotsTransitionSaveSavedForFixture();
-        internal void ConfigureBatch5GcLadder(Batch5GcLadderFixtureOptions options) =>
-            batch5GcLadder = options ?? throw new ArgumentNullException(nameof(options));
         internal void PrepareG6Lifecycle(G6FixtureOptions options) => PrepareG6LifecycleForFixture(options);
         internal G4FixtureStepResult AdvanceG6Lifecycle(string caseId) => AdvanceG6LifecycleForFixture(caseId);
         internal void NotifyG6SaveLoaded(int? slot, bool isNewGame)
@@ -198,7 +179,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void Close(string reason)
         {
             var failures = new List<Exception>();
-            RunScenarioCloseStep(failures, "ActionSpeedAutoFillFixtureCleanup", () => CleanupActionSpeedAutoFillFixtureState("QA host close: " + (reason ?? string.Empty)));
             RunScenarioCloseStep(failures, "PendingMineProductionCleanup", () => CleanupPendingMineProductionForFixture("QA host close: " + (reason ?? string.Empty)));
             RunScenarioCloseStep(failures, "TitleConfigPagerFixtureCleanup", () => CleanupTitleConfigPagerFixturePages("QA host close: " + (reason ?? string.Empty)));
             RunScenarioCloseStep(failures, "OwnerLifetimeCleanup", () => CleanupOwnerLifetimeOnClose(reason ?? string.Empty));

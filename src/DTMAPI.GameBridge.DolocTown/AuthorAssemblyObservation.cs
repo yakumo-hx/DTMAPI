@@ -20,9 +20,13 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (!string.IsNullOrWhiteSpace(selected.Manifest.EntryDll))
                 {
                     string path = Path.GetFullPath(Path.Combine(selected.RootPath, selected.Manifest.EntryDll));
-                    byte[] bytes = File.ReadAllBytes(path);
-                    diskMvid = PortableAssemblyReferenceInspector.Inspect(bytes).ModuleMvid;
-                    using (var sha = SHA256.Create()) diskHash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+                    try
+                    {
+                        byte[] bytes = File.ReadAllBytes(path);
+                        diskMvid = PortableAssemblyReferenceInspector.Inspect(bytes).ModuleMvid;
+                        using (var sha = SHA256.Create()) diskHash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
+                    }
+                    catch { /* A rebuild can make disk bytes unavailable while the module stays resident. */ }
                     var resident = AppDomain.CurrentDomain.GetAssemblies().Where(assembly =>
                     {
                         try { return !assembly.IsDynamic && AuthorSessionProtocol.PathsEqual(assembly.Location, path); }
@@ -31,7 +35,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (resident.Length == 1)
                     {
                         residentMvid = resident[0].ManifestModule.ModuleVersionId.ToString("D");
-                        match = string.Equals(diskMvid, residentMvid, StringComparison.OrdinalIgnoreCase).ToString();
+                        if (diskMvid != "unavailable")
+                            match = string.Equals(diskMvid, residentMvid, StringComparison.OrdinalIgnoreCase).ToString();
                     }
                 }
             }

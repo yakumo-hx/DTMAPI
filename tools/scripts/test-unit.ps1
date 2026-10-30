@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string] $Configuration = 'Release',
     [AllowEmptyString()] [string] $Focus,
     [switch] $List,
@@ -12,7 +12,8 @@ $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
 $mapPath = Join-Path $repo 'tests\DTMAPI.UnitTests\suites.json'
 $map = Get-Content -LiteralPath $mapPath -Raw | ConvertFrom-Json
-if ($map.schemaVersion -ne 1) { throw "Unsupported Unit suite map: $mapPath" }
+if ($map.schemaVersion -ne 2) { throw "Unsupported Unit suite map: $mapPath" }
+$map.suites = @($map.suites | Where-Object { $_.runner -eq 'unit-exe' -and ((-not $_.PSObject.Properties['distribution'] -or $_.distribution -ne 'internal') -or (Test-Path -LiteralPath (Join-Path $repo $_.project) -PathType Leaf)) })
 if ($NoBuild -and $BuildOnly) { throw '-NoBuild and -BuildOnly cannot be combined.' }
 
 # Validate before SDK lookup, build, dependency preparation, or test-session creation.
@@ -50,7 +51,7 @@ if ($List) {
 }
 if ($selected.Count -eq 0) { throw 'The Unit suite map has no default tests.' }
 $isWindowsHost = [Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT
-if (-not $isWindowsHost -and @($selected | Where-Object { $_.Suite.requiresWindows }).Count -gt 0) {
+if (-not $isWindowsHost -and @($selected | Where-Object { $_.Suite.platforms -notcontains 'Linux' }).Count -gt 0) {
     throw 'The selected suite includes Windows/.NET Framework fixtures. Use a Windows host or select a supported suite explicitly.'
 }
 

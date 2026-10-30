@@ -7,17 +7,12 @@ namespace DTMAPI.Internal.Authoring
     internal sealed class PackagePlanInput
     {
         public string Id { get; set; } = string.Empty;
-        public PackageSemanticVersion? Version { get; set; }
+        public string Version { get; set; } = string.Empty;
         public IReadOnlyList<PackageModDependency> Dependencies { get; set; } = Array.Empty<PackageModDependency>();
-        public IReadOnlyList<PackageAssemblyRecord> Assemblies { get; set; } = Array.Empty<PackageAssemblyRecord>();
         public string PreflightFailure { get; set; } = string.Empty;
-    }
-
-    internal sealed class PackageResidentAssembly
-    {
-        public PackageAssemblyIdentity Identity { get; set; } = new PackageAssemblyIdentity();
-        public string Sha256 { get; set; } = string.Empty;
-        public bool ProvenHostOrPlanSource { get; set; }
+        // Runtime supplies this after source selection; offline SDK inputs keep ID fallback.
+        public int? OfficialPriority { get; set; }
+        public bool IsProcessProvider { get; set; }
     }
 
     internal sealed class PackageDependencyPlan
@@ -25,15 +20,13 @@ namespace DTMAPI.Internal.Authoring
         public IReadOnlyList<string> LoadOrder { get; set; } = Array.Empty<string>();
         public IReadOnlyDictionary<string, string> Blocked { get; set; } = new Dictionary<string, string>();
         public IReadOnlyList<string> Warnings { get; set; } = Array.Empty<string>();
-        public IReadOnlyDictionary<string, string> AssemblyOwners { get; set; } = new Dictionary<string, string>();
     }
 
     internal static class PackageDependencyPlanner
     {
         private static readonly StringComparer IdComparer = StringComparer.OrdinalIgnoreCase;
 
-        public static PackageDependencyPlan Plan(IEnumerable<PackagePlanInput> inputs,
-            ISet<string> reservedNames, IEnumerable<PackageResidentAssembly> residentAssemblies)
+        public static PackageDependencyPlan Plan(IEnumerable<PackagePlanInput> inputs)
         {
             PackagePlanInput[] nodes = inputs.OrderBy(n => n.Id, IdComparer).ToArray();
             var blocked = new Dictionary<string, string>(IdComparer);
@@ -52,11 +45,11 @@ namespace DTMAPI.Internal.Authoring
                 foreach (PackageModDependency dependency in node.Dependencies)
                 {
                     bool present = byId.TryGetValue(dependency.Id, out PackagePlanInput? provider);
-                    bool available = present && (dependency.LegacyOrderingOnly || (provider!.Version != null && dependency.Range.Contains(provider.Version)));
+                    bool available = present && (dependency.LegacyOrderingOnly || VersionFits(provider!.Version, dependency.Range));
                     if (available) (dependency.Required ? required : optional)[node.Id].Add(provider!.Id);
                     else
                     {
-                        string reason = node.Id + " -> " + dependency.Id + (present ? " (version outside range: " + (provider!.Version?.Text ?? "invalid SemVer") + ")" : " (missing)");
+                        string reason = node.Id + " -> " + dependency.Id + (present ? " (version outside range: " + provider!.Version + ")" : " (missing)");
                         if (dependency.Required) blocked[node.Id] = "required-dependency-unavailable: " + reason;
                         else warnings.Add("optional-dependency-unavailable: " + reason);
                     }
@@ -84,22 +77,8 @@ namespace DTMAPI.Internal.Authoring
             }
             foreach (string id in byId.Keys.OrderBy(id => id, IdComparer)) Visit(id);
 
-            var residents = residentAssemblies.GroupBy(r => r.Identity.Name, IdComparer).ToDictionary(g => g.Key, g => g.ToArray(), IdComparer);
-            var groups = nodes.SelectMany(node => node.Assemblies.Select(assembly => new { Owner = node.Id, Assembly = assembly }))
-                .GroupBy(row => row.Assembly.Identity.Name, IdComparer).OrderBy(group => group.Key, IdComparer).ToArray();
-            foreach (var group in groups)
-            {
-                var rows = group.ToArray();
-                string participants = string.Join(", ", rows.Select(r => r.Owner + "/" + r.Assembly.Path));
-                string reason = string.Empty;
-                if (reservedNames.Contains(group.Key)) reason = "reserved-assembly-name";
-                else if (rows.Length > 1 && rows.Any(r => r.Assembly.Role == "entry")) reason = "entry-assembly-name-conflict";
-                else if (rows.Select(r => r.Assembly.Identity.Key + "/" + r.Assembly.Sha256).Distinct(StringComparer.Ordinal).Count() != 1) reason = "assembly-identity-or-bytes-conflict";
-                else if (residents.TryGetValue(group.Key, out PackageResidentAssembly[]? existing) && existing.Any(r =>
-                    !r.ProvenHostOrPlanSource || r.Identity.Key != rows[0].Assembly.Identity.Key || r.Sha256 != rows[0].Assembly.Sha256)) reason = "resident-conflict/restart-required";
-                if (reason.Length > 0)
-                    foreach (var row in rows) blocked[row.Owner] = reason + ": " + participants + "; rename or rebuild consistent libraries and restart.";
-            }
+            // A Mod dependency plan has no authority over candidate DLL identities.
+            // CLR binding happens only when an entry or running code requests it.
             bool changed;
             do
             {
@@ -119,22 +98,33 @@ namespace DTMAPI.Internal.Authoring
             var order = new List<string>();
             while (remaining.Count > 0)
             {
-                string? next = remaining.OrderBy(id => id, IdComparer).FirstOrDefault(id => !required[id].Any(remaining.Contains) && !optional[id].Any(remaining.Contains));
+                string? next = PackageLoadOrder.Next(remaining.Select(id => byId[id]), id => !required[id].Any(remaining.Contains) && !optional[id].Any(remaining.Contains));
                 if (next == null)
                 {
                     // Required SCCs have already been removed. Break only optional ordering edges.
-                    next = remaining.OrderBy(id => id, IdComparer).First(id => !required[id].Any(remaining.Contains));
+                    next = PackageLoadOrder.Next(remaining.Select(id => byId[id]), id => !required[id].Any(remaining.Contains))!;
                     warnings.Add("optional-order-cycle-broken: " + next + " -> " + string.Join(", ", optional[next].Where(remaining.Contains)));
                 }
                 remaining.Remove(next); order.Add(next);
             }
-            var binding = new Dictionary<string, string>(IdComparer);
-            foreach (var group in groups)
-            {
-                var candidate = group.Where(r => !blocked.ContainsKey(r.Owner)).OrderBy(r => r.Owner, IdComparer).ThenBy(r => r.Assembly.Path, StringComparer.Ordinal).FirstOrDefault();
-                if (candidate != null) binding.Add(group.Key, candidate.Owner);
-            }
-            return new PackageDependencyPlan { LoadOrder = order, Blocked = blocked, Warnings = warnings, AssemblyOwners = binding };
+            return new PackageDependencyPlan { LoadOrder = order, Blocked = blocked, Warnings = warnings };
         }
+        private static bool VersionFits(string text, PackageVersionRange range)
+        {
+            try { return range.Contains(PackageSemanticVersion.Parse(text)); }
+            catch (System.IO.InvalidDataException) { return false; }
+        }
+    }
+
+    // Shared ready-candidate selection, not dependency admission or assembly binding policy.
+    internal static class PackageLoadOrder
+    {
+        internal static IOrderedEnumerable<PackagePlanInput> Initial(IEnumerable<PackagePlanInput> nodes) =>
+            nodes.OrderBy(node => node.IsProcessProvider ? 0 : 1)
+                .ThenBy(node => node.OfficialPriority.GetValueOrDefault(-1))
+                .ThenBy(node => node.Id, StringComparer.OrdinalIgnoreCase);
+
+        internal static string? Next(IEnumerable<PackagePlanInput> nodes, Func<string, bool> ready) =>
+            Initial(nodes).FirstOrDefault(node => ready(node.Id))?.Id;
     }
 }

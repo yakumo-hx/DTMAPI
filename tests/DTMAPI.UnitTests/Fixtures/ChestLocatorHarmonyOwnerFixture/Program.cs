@@ -10,9 +10,8 @@ namespace DTMAPI.ChestLocatorHarmonyOwnerFixture
     internal static class Program
     {
         private const string ProductOwner =
-            "dtmapi.mod.dtmapi.chestlocatorenhancermod";
-        private const string CompatibilityOwner =
-            "dtmapi.gamebridge.doloctown";
+            ChestLocatorHookOwnership.HarmonyOwner;
+        private const string OtherOwner = ProductOwner + ".Observer";
         private static readonly MethodInfo Target =
             typeof(Program).GetMethod(
                 nameof(ExactTarget),
@@ -35,8 +34,7 @@ namespace DTMAPI.ChestLocatorHarmonyOwnerFixture
         {
             try
             {
-                ProductFirstFailsClosed();
-                CompatibilityFirstFailsClosed();
+                ExactOwnerIsolationAndDuplicateRejection();
                 DisableRestartAndResidualObservation();
                 Console.WriteLine(
                     "ChestLocatorHarmonyOwnerFixture: OK");
@@ -46,65 +44,35 @@ namespace DTMAPI.ChestLocatorHarmonyOwnerFixture
             {
                 Console.Error.WriteLine(ex);
                 Cleanup(ProductOwner);
-                Cleanup(CompatibilityOwner);
+                Cleanup(OtherOwner);
                 return 1;
             }
         }
 
-        private static void ProductFirstFailsClosed()
+        private static void ExactOwnerIsolationAndDuplicateRejection()
         {
             Cleanup(ProductOwner);
-            Cleanup(CompatibilityOwner);
+            Cleanup(OtherOwner);
             Install(ProductOwner);
             Assert(
                 ExactTarget(1) == 11,
-                "The product-first Harmony Postfix did not execute.");
+                "The V2 product Harmony Postfix did not execute.");
             Assert(
-                HasOwner(ProductOwner) &&
-                !HasOwner(CompatibilityOwner),
-                "The product-first target did not expose the exact owner state required by the compatibility fail-closed guard.");
-            bool compatibilityMayAcquire =
-                !HasOwner(ProductOwner);
+                ChestLocatorHookOwnership.DecideInstall(false, HasOwner(ProductOwner)) ==
+                    ChestLocatorInstallDecision.RejectDuplicateProductOwner,
+                "The physically present V2 owner must reject a duplicate installation.");
+            Install(OtherOwner);
             Assert(
-                !compatibilityMayAcquire,
-                "A real product-first owner did not fail the later compatibility acquisition closed.");
-            Cleanup(CompatibilityOwner);
-            Assert(
-                HasOwner(ProductOwner),
-                "Compatibility cleanup removed the unrelated product owner.");
+                ExactTarget(1) == 111,
+                "The unrelated owner control did not execute alongside the product.");
             Cleanup(ProductOwner);
             Assert(
-                !HasOwner(ProductOwner) &&
-                ExactTarget(1) == 1,
-                "Product exact-owner cleanup did not restore the target.");
-        }
-
-        private static void CompatibilityFirstFailsClosed()
-        {
-            Install(CompatibilityOwner);
+                !HasOwner(ProductOwner) && HasOwner(OtherOwner) && ExactTarget(1) == 101,
+                "Exact-owner cleanup must preserve a different owner with the same prefix.");
+            Cleanup(OtherOwner);
             Assert(
-                ExactTarget(2) == 12,
-                "The compatibility-first Harmony Postfix did not execute.");
-            ChestLocatorInstallDecision second =
-                ChestLocatorHookOwnership.DecideInstall(
-                    compatibilityOwnerPresent:
-                        HasOwner(CompatibilityOwner),
-                    productOwnerPresent:
-                        HasOwner(ProductOwner));
-            Assert(
-                second ==
-                    ChestLocatorInstallDecision
-                        .RejectCompatibilityOwner,
-                "A real compatibility-first owner did not reject ProductNative before patching.");
-            Cleanup(ProductOwner);
-            Assert(
-                HasOwner(CompatibilityOwner),
-                "Rejected product cleanup removed the unrelated compatibility owner.");
-            Cleanup(CompatibilityOwner);
-            Assert(
-                !HasOwner(CompatibilityOwner) &&
-                ExactTarget(2) == 2,
-                "Compatibility exact-owner cleanup did not restore the target.");
+                !HasOwner(OtherOwner) && ExactTarget(1) == 1,
+                "The fixture did not return to the original function.");
         }
 
         private static void DisableRestartAndResidualObservation()
@@ -160,7 +128,9 @@ namespace DTMAPI.ChestLocatorHarmonyOwnerFixture
                 ".");
             new Harmony(owner).Patch(
                 Target,
-                postfix: Postfix);
+                postfix: owner == OtherOwner
+                    ? new HarmonyMethod(typeof(Program), nameof(OtherTargetPostfix))
+                    : Postfix);
             Assert(
                 OwnerCount(owner) == 1,
                 "Harmony did not publish exactly one owner " +
@@ -193,6 +163,9 @@ namespace DTMAPI.ChestLocatorHarmonyOwnerFixture
         private static void ExactTargetPostfix(
             ref int __result) =>
             __result += 10;
+
+        private static void OtherTargetPostfix(ref int __result) =>
+            __result += 100;
 
         private static void Assert(
             bool condition,

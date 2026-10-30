@@ -48,7 +48,8 @@ namespace DTMAPI.MoreSaves
     {
         internal const string CurrentArchiveFileNameFormat = "doloc-save-{0}.data";
         internal const int FirstExpandedArchiveIndex = MoreSavesNativeRuntime.VanillaSlotCount;
-        internal const int LastExpandedArchiveIndex = MoreSavesNativeRuntime.ExpandedSlotCount - 1;
+        // The legacy product had six extra slots. Paging does not extend this historical domain.
+        internal const int LastExpandedArchiveIndex = 11;
         private const string LegacyArchiveFileNameFormat = "ea-playtest-doloc-archive-{0}.data";
         private const string LegacyPrevFileNameFormat = "ea-playtest-doloc-archive-{0}-prev.data";
         private const string LegacyBackupFileNameFormat = "ea-playtest-doloc-archive-{0}-bak.data";

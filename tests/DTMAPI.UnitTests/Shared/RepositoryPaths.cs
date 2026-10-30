@@ -27,7 +27,7 @@ namespace DTMAPI.UnitTests
             DirectoryInfo? current = new DirectoryInfo(AppContext.BaseDirectory);
             while (current != null)
             {
-                if (File.Exists(Path.Combine(current.FullName, "PROJECT.md")))
+                if ((File.Exists(Path.Combine(current.FullName, "DTMAPI.sln")) && File.Exists(Path.Combine(current.FullName, "global.json"))))
                     return current.FullName;
                 current = current.Parent;
             }

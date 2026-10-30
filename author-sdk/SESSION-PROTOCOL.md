@@ -1,12 +1,12 @@
 # 显式作者会话
 
-当前实现使用 descriptor/envelope schema 2 和 session protocol 1.0。本页说明会话实现契约；实际发行状态见[仓库发布页面](https://github.com/yakumo-hx/DTMAPI/releases)。编译 API target、SDK 版本、已安装 Runtime 版本和会话协议是不同的值，不能相互代替。
+当前实现使用 descriptor/envelope schema 2 和 session protocol 1.1（Host 同时接受旧 1.0 提议）。本页说明会话实现契约；实际发行状态见[仓库发布页面](https://github.com/yakumo-hx/DTMAPI/releases)。编译 API target、SDK 版本、已安装 Runtime 版本和会话协议是不同的值，不能相互代替。
 
 ## 准备会话与 hello
 
 `session prepare --game-root <path>` 写入一次性启动描述符和受保护的客户端凭据，不启动游戏，也不预设 Host 版本。两个文件都绑定规范化游戏根目录、GUID-N 格式的 session ID、派生管道名、随机 token，以及十分钟的 UTC 有效期。Windows 使用受保护的当前用户 ACL，Unix 使用 0600 权限；这项文件权限实现本身不代表其他平台的完整作者流程已验收。
 
-schema 2 增加 `protocolMajor`、`minimumMinor`、`maximumMinor`、`apiTarget`、`minimumRuntimeVersion`、`requiredCapabilities` 和 `optionalCapabilities`。当前 writer 请求协议 1.0、已有冻结编译 target、会话契约的最低 Runtime、必需能力 `get-source-snapshot/1` 和可选能力 `reload-content/1`。离线描述符没有 `hostVersion` 或旧 `runtimeVersion` 字段。描述符在启动时只被原子消费一次；没有描述符就不建立 listener、watcher 或轮询循环。
+schema 2 增加 `protocolMajor`、`minimumMinor`、`maximumMinor`、`apiTarget`、`minimumRuntimeVersion`、`requiredCapabilities` 和 `optionalCapabilities`。当前 writer 请求协议 1.1、已有冻结编译 target、会话契约的最低 Runtime、必需能力 `get-source-snapshot/1` 和可选能力 `reload-content/1`。离线描述符没有 `hostVersion` 或旧 `runtimeVersion` 字段。描述符在启动时只被原子消费一次；没有描述符就不建立 listener、watcher 或轮询循环。
 
 Host 校验凭据、路径和有效期，再选择双方协议范围交集中的最高 minor。major 不同、minor 无交集、未满足最低 Runtime 或必需能力未知时，拒绝描述符。未知可选能力会报告出来，但不会启用。首个线路请求必须是经过认证的 `hello`，并携带与描述符相同的能力及版本提议。响应包含选定的 major/minor、实际 `hostVersion`、`apiTarget`、`acceptedCapabilities` 和 `unsupportedOptionalCapabilities`。
 
@@ -16,9 +16,9 @@ Host 校验凭据、路径和有效期，再选择双方协议范围交集中的
 
 实现还支持可选 `execute-command/1`，仅由 `session prepare --commands true` 请求。`session command --command-line <text>` 使用已有会话和选定 owner。schema-2 请求携带长度受限的 `commandLine`；Host 复用现有 pending-request/去重生命周期，由唯一的 Runtime scheduler 执行同步 handler。完成结果保留相同 request ID 和 owner。到达 deadline 或会话关闭时，取消尚未开始的工作；已开始的工作继续完成，不承诺回滚。此能力与公共 API target 是否可用相互独立，见[平台服务语义](PLATFORM-SERVICES.md)。
 
-schema 2 请求携带版本及能力提议字段，以及 `gameRoot`、`session`、`token`、`requestId` 和 `operation`。业务请求还绑定选定的 `hostVersion`/`protocolMinor`、`uniqueId`、`selectedRoot` 和 `expectedTreeSha256`。响应绑定 schema、协议、Host、根目录、会话、请求、操作及 owner。只有协商接受的能力才授权对应操作。hello 由传输层处理，业务操作进入有界 Runtime 线程队列。重复 request ID 会被拒绝，包括使用旧 ID 重试 hello。
+schema 2 请求携带版本及能力提议字段，以及 `gameRoot`、`session`、`token`、`requestId` 和 `operation`。业务请求还绑定选定的 `hostVersion`/`protocolMinor`、`uniqueId`和 `selectedRoot`。响应绑定 schema、协议、Host、根目录、会话、请求、操作及 owner。只有协商接受的能力才授权对应操作。hello 由传输层处理，业务操作进入有界 Runtime 线程队列。重复 request ID 会被拒绝，包括使用旧 ID 重试 hello。
 
-`snapshot` 读取当前选定来源。`reload` 校验选定根目录、当前文件树、活动身份和包元数据，只刷新支持的非代码内容。DLL 改变、格式未知或 manifest/包身份变化都需要重启。包的编译 target 由已有 SDK 包契约独立校验，不以 Host 发行版本代替。
+`snapshot` 读取 Runtime 当前选定来源及必要的入口程序集观察。会话不扫描整棵源文件树，也不以文件树摘要授权命令。客户端规范化请求路径，不要求磁盘目录或 manifest 当前可读；编辑或重建包时仍可查询当前进程，UniqueID/根目录匹配由 Runtime 当前来源决定检查。`reload` 核对选定根目录和活动 owner 后直接返回 `restart-required`：当前 CodeMod 和内容包均没有热重载实现，因此不重读 manifest、包元数据或领域文件。重新启动后的正常加载仍执行包契约检查。协议 1.1 不再发送或消费 `expectedTreeSha256`；旧客户端携带该可选字段时由 reader 忽略，新 SDK 不向仅支持 1.0 的 Host 降级。
 
 未知可选 JSON 字段会被忽略，重复关键字段会被拒绝。描述符及请求大小上限仍为 32 KiB，响应为 64 KiB；每个能力列表最多 32 项，防重放窗口保存 4,096 个 request ID。现有 pending/并发上限及 Runtime deadline 继续生效。会话关闭会撤销接受状态，清空排队工作、防重放状态和 Host 凭据，并关闭 listener。token 值不进入报告。
 

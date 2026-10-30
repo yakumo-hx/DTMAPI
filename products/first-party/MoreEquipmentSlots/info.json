@@ -1,0 +1,23 @@
+{
+  "name": "DTMAPI 更多装备槽",
+  "author": "Yuuka",
+  "version": "1.1.0",
+  "description": "提供额外三个装备栏位，可以放帽子或四个特殊饰品。\n只获得帽子和特殊饰品的效果，人物外观仍然加载官方自带的帽子栏位。\n禁用mod后额外装备栏物品在进入存档后回退背包或邮件。\n\nupdate0830\n修正在同一栏位创建新存档后旧本地数据导致报错问题。",
+  "tags": [
+    "Mod",
+    "Functional",
+    "DTMAPI",
+    "Equipment",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多装备槽",
+    "tchinese": "DTMAPI 更多裝備槽",
+    "english": "DTMAPI More Equipment Slots"
+  },
+  "localized_description": {
+    "schinese": "提供额外三个装备栏位，可放帽子或四种特殊饰品，只增加装备效果，人物外观仍使用游戏自带的帽子栏位。\n扩展槽装备随存档保存。停用 mod 不会自动退物，已保存的数据会保留，重新启用后继续读取。\n旧版装备需要在读档后从背包装备栏明确选择；采用旧装备可能与背包中已有装备重复。",
+    "tchinese": "提供額外三個裝備欄位，可放帽子或四種特殊飾品，只增加裝備效果，人物外觀仍使用遊戲內建的帽子欄位。\n擴展槽裝備隨存檔保存。停用 mod 不會自動退物，已保存的資料會保留，重新啟用後繼續讀取。\n舊版裝備需要在讀檔後從背包裝備欄明確選擇；採用舊裝備可能與背包中已有裝備重複。",
+    "english": "Provides three additional equipment slots for hats or the four special accessories. Equipment effects apply; the character's appearance still uses the game's built-in hat slot.\nExtra-slot equipment is saved with the archive. Disabling the mod does not automatically return items; saved data is retained and read again after reactivation.\nAfter loading a save, choose legacy equipment explicitly from the backpack equipment panel. Adoption may duplicate equipment already in the backpack."
+  }
+}

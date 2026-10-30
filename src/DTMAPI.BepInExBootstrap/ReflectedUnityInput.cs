@@ -181,14 +181,16 @@ namespace DTMAPI.BepInExBootstrap
             string key = DTMAPI.Abstractions.DtmButton.Normalize(sample.Button);
             if (string.IsNullOrWhiteSpace(key))
                 return;
-            if (!latchedButtons.TryGetValue(key, out LatchedButtonState state))
+            bool hasPreviousSample = latchedButtons.TryGetValue(key, out LatchedButtonState state);
+            if (!hasPreviousSample)
             {
                 state = new LatchedButtonState();
                 latchedButtons[key] = state;
             }
 
             bool wasDown = state.IsDownNow;
-            bool pressed = sample.PressedEdge || (!wasDown && sample.IsDownNow);
+            // Pruning ends continuity: first observing a held key is not a new press.
+            bool pressed = sample.PressedEdge || (hasPreviousSample && !wasDown && sample.IsDownNow);
             bool released = sample.ReleasedEdge || (wasDown && !sample.IsDownNow);
             if (wasDown && sample.PressedEdge && !sample.ReleasedEdge)
                 pressed = false;

@@ -13,7 +13,7 @@ namespace DTMAPI.UnitTests
             try
             {
                 DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
-                while (directory != null && !File.Exists(Path.Combine(directory.FullName, "PROJECT.md")))
+                while (directory != null && !(File.Exists(Path.Combine(directory.FullName, "DTMAPI.sln")) && File.Exists(Path.Combine(directory.FullName, "global.json"))))
                     directory = directory.Parent;
                 string repo = directory?.FullName ?? throw new InvalidOperationException("Could not locate the repository root.");
                 string script = Path.Combine(repo, "tools", "scripts", "test-unit.ps1");

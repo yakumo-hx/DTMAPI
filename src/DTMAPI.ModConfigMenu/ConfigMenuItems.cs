@@ -13,6 +13,23 @@ namespace DTMAPI.ModConfigMenu
         private Func<string>? nameGetter;
         private Func<string>? tooltipGetter;
         private bool isActive = true;
+        private string? restartBaseline;
+        private string? restartSavedValue;
+        private string? restartNotifiedValue;
+        internal bool PendingRestart => isActive && restartSavedValue != null && restartSavedValue != restartBaseline;
+        internal bool RestartNoticePending => PendingRestart && restartSavedValue != restartNotifiedValue;
+        internal void RequireRestart()
+        {
+            ThrowIfInactive();
+            if (restartBaseline == null) restartBaseline = committedValue;
+        }
+        internal void CommitRestartState()
+        {
+            if (restartBaseline == null) return;
+            restartSavedValue = committedValue;
+            if (!PendingRestart) restartNotifiedValue = null;
+        }
+        internal void AcknowledgeRestart() { if (PendingRestart) restartNotifiedValue = restartSavedValue; }
 
         protected ConfigMenuItemBase(string itemId, string kind, Func<string> name, Func<string> tooltip)
         {
@@ -125,6 +142,7 @@ namespace DTMAPI.ModConfigMenu
             tooltipGetter = null;
             committedValue = string.Empty;
             pendingValue = string.Empty;
+            restartBaseline = restartSavedValue = restartNotifiedValue = null;
             ValidationError = string.Empty;
             DeactivateCore();
         }

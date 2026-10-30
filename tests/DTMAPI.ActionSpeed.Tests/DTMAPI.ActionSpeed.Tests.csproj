@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><DtmApiTestSuite>actionspeed</DtmApiTestSuite><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="RebuildTests.cs" />
+    <Compile Include="LifecycleTests.cs" />
+    <Compile Include="ConfigMigrationTests.cs" />
+    <Compile Include="NativeCallbackTests.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/NativeActions.Lifetime.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/ModEntry.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/ActionConfig.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/ConfigMigration.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/ActionRules.cs" />
+    <Compile Include="../../products/first-party/ActionSpeed/src/Rebuild/SpeedLease.cs" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" /></ItemGroup>
+</Project>

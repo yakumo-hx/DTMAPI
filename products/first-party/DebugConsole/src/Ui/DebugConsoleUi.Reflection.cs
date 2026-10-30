@@ -214,21 +214,6 @@ namespace DTMAPI.DebugConsole
             return textObject;
         }
 
-        private object AddImage(object parent, string name, object sprite, float x, float y, float w, float h, bool stretch = false)
-        {
-            object go = CreateUiObject(name, parent);
-            object image = AddComponent(go, imageType!);
-            SetProperty(image, "sprite", sprite);
-            SetProperty(image, "preserveAspect", true);
-            SetProperty(image, "raycastTarget", false);
-            SetProperty(image, "color", Color(1f, 1f, 1f, 1f));
-            if (stretch)
-                SetRect(go, Vector2(0, 0), Vector2(1, 1), Vector2(0.5f, 0.5f), Vector2(x, y), Vector2(w, h));
-            else
-                SetRect(go, Vector2(0, 1), Vector2(0, 1), Vector2(0, 1), Vector2(x, y), Vector2(w, h));
-            return image;
-        }
-
         private object? ResolveItemSprite(string itemId)
         {
             if (string.IsNullOrWhiteSpace(itemId))
@@ -1236,6 +1221,9 @@ namespace DTMAPI.DebugConsole
 
             private void HandlePointerDown(object? eventData)
             {
+                // Right dispatch has one EventTrigger entry. Unity Button's
+                // OnPointerClick accepts only Left; no time-based suppression
+                // is needed and separate quick presses remain separate actions.
                 if (!IsRightClick(eventData))
                     return;
                 if (kind == CatalogCellKind.Item && item != null)
@@ -1250,9 +1238,9 @@ namespace DTMAPI.DebugConsole
                         owner.SetStatusMessage(hover, false);
                 }
                 else if (kind == CatalogCellKind.Monster && monster != null)
-                    owner.SpawnMonster(monster, 10);
+                    owner.SpawnMonster(monster, owner.GetRightClickCount());
                 else if (kind == CatalogCellKind.Animal && animal != null)
-                    owner.SpawnAnimal(animal, 10);
+                    owner.SpawnAnimal(animal, owner.GetRightClickCount());
             }
 
             private void HandlePointerEnter(object? eventData)

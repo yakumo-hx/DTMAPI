@@ -44,7 +44,7 @@ namespace DTMAPI.GameBridge.DolocTown
     /// <summary>QA-only exact Harmony owner inventory over a reviewed target list.</summary>
     internal static class Batch6AdvancedHarmonyOwnerObserver
     {
-        internal static int CountAllOwnerPatches(string owner)
+        internal static int CountAllOwnerPatches(string owner, Assembly? patchAssembly = null)
         {
             if (string.IsNullOrWhiteSpace(owner))
                 throw new ArgumentException("Harmony owner is required.", nameof(owner));
@@ -66,7 +66,7 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 foreach (object? method in methods)
                     if (method is MethodBase methodBase)
-                        count += CountOwnerPatches(getPatchInfo.Invoke(null, new object[] { methodBase }), owner);
+                        count += CountOwnerPatches(getPatchInfo.Invoke(null, new object[] { methodBase }), owner, patchAssembly);
             }
             return count;
         }
@@ -154,7 +154,8 @@ namespace DTMAPI.GameBridge.DolocTown
         internal static Batch6HarmonyOwnerInventory Observe(
             string productAssemblyName,
             string owner,
-            IReadOnlyList<Batch6HarmonyPatchTarget> targets)
+            IReadOnlyList<Batch6HarmonyPatchTarget> targets,
+            Assembly? patchAssembly = null)
         {
             if (string.IsNullOrWhiteSpace(productAssemblyName))
                 throw new ArgumentException("Product assembly name is required.", nameof(productAssemblyName));
@@ -168,7 +169,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 ExpectedTargetCount = targets.Count,
                 ExpectedPatchCount = targets.Sum(target => target.ExpectedOwnerPatchCount)
             };
-            Assembly? productAssembly = AppDomain.CurrentDomain.GetAssemblies()
+            Assembly? productAssembly = patchAssembly ?? AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(assembly => string.Equals(assembly.GetName().Name, productAssemblyName, StringComparison.Ordinal));
             if (productAssembly == null)
             {
@@ -209,7 +210,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
                 inventory.ResolvedTargetCount++;
                 object? patchInfo = getPatchInfo.Invoke(null, new object[] { method });
-                int ownerPatchCount = CountOwnerPatches(patchInfo, owner);
+                int ownerPatchCount = CountOwnerPatches(patchInfo, owner, patchAssembly);
                 inventory.ExactOwnerPatchCount += ownerPatchCount;
                 if (ownerPatchCount == target.ExpectedOwnerPatchCount)
                     inventory.ExactOwnerTargetCount++;
@@ -234,7 +235,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return null;
         }
 
-        internal static int CountOwnerPatches(object? patchInfo, string owner)
+        internal static int CountOwnerPatches(object? patchInfo, string owner, Assembly? patchAssembly = null)
         {
             if (patchInfo == null)
                 return 0;
@@ -246,7 +247,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 foreach (object? patch in patches)
                 {
                     string patchOwner = Convert.ToString(ReadMember(patch, "owner") ?? ReadMember(patch, "Owner"), CultureInfo.InvariantCulture) ?? string.Empty;
-                    if (string.Equals(patchOwner, owner, StringComparison.Ordinal))
+                    MethodInfo? callback = ReadMember(patch, "PatchMethod") as MethodInfo;
+                    if (patchAssembly != null
+                        ? ReferenceEquals(callback?.Module.Assembly, patchAssembly)
+                        : string.Equals(patchOwner, owner, StringComparison.Ordinal))
                         count++;
                 }
             }

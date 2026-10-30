@@ -20,58 +20,10 @@ namespace DTMAPI.GameBridge.DolocTown
         private const int VanillaArchiveSlotCount = 6;
 
         private readonly DTMAPI.Core.Runtime.DtmApiRuntime runtime;
-        private ActionSpeedService? actionSpeedService;
 
         public DolocTownExperimentalBridgeApi(DTMAPI.Core.Runtime.DtmApiRuntime runtime)
         {
             this.runtime = runtime;
-        }
-
-        internal void AttachActionSpeedService(ActionSpeedService service)
-        {
-            actionSpeedService = service;
-        }
-
-
-        internal int ActionSpeedApplicationCount => actionSpeedService?.ActionSpeedApplicationCount ?? 0;
-
-        internal string LastActionSpeedApplicationSummary => actionSpeedService?.LastActionSpeedApplicationSummary ?? string.Empty;
-
-        internal int ActionSpeedContinuousUseApplicationCount => actionSpeedService?.ActionSpeedContinuousUseApplicationCount ?? 0;
-
-        internal string LastActionSpeedContinuousUseSummary => actionSpeedService?.LastActionSpeedContinuousUseSummary ?? string.Empty;
-
-        internal string LastActionSpeedAutoFillSummary => actionSpeedService?.LastActionSpeedAutoFillSummary ?? string.Empty;
-
-        internal int ActionSpeedAutoFillApplicationCount => actionSpeedService?.ActionSpeedAutoFillApplicationCount ?? 0;
-
-        internal bool TryGetConfiguredActionSpeedOwner(out string ownerId)
-        {
-            if (actionSpeedService != null)
-                return actionSpeedService.TryGetConfiguredActionSpeedOwner(out ownerId);
-
-            ownerId = string.Empty;
-            return false;
-        }
-
-        internal bool TryGetConfiguredActionSpeedInteractionOwner(out string ownerId)
-        {
-            if (actionSpeedService != null)
-                return actionSpeedService.TryGetConfiguredActionSpeedInteractionOwner(out ownerId);
-
-            ownerId = string.Empty;
-            return false;
-        }
-
-        internal void RestoreActionSpeed(string reason)
-        {
-            actionSpeedService?.RestoreActionSpeed(reason);
-        }
-
-        internal string GetRuntimeAutomationLifecycleSummary()
-        {
-            return actionSpeedService?.GetActionSpeedLifecycleSummary() ??
-                "actionAnimators=0, actionAutoFillApplications=0, actionPendingAnimalInteract=false";
         }
 
 

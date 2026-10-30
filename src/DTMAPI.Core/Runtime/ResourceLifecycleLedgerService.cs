@@ -82,6 +82,8 @@ namespace DTMAPI.Core.Runtime
     {
         private const int MaxTimeline = 160;
         private const int MaxDiagnostics = 96;
+        internal const int MaxDetailedRecords = 512;
+        internal const int MaxCounterKeys = 256;
         private readonly object gate = new object();
         private readonly Dictionary<string, MutableResourceLifecycleRecord> records = new Dictionary<string, MutableResourceLifecycleRecord>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> refreshCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -119,6 +121,8 @@ namespace DTMAPI.Core.Runtime
         private int skippedRefreshCalls;
         private int skippedRefreshFastPathCount;
         private int snapshotBuilds;
+        private int trimmedResourceObservations;
+        private int trimmedCounterUpdates;
 
         public ResourceLifecycleLedgerUpdate RecordPhase(string phase)
         {
@@ -219,6 +223,8 @@ namespace DTMAPI.Core.Runtime
                 bool existed = records.TryGetValue(key, out MutableResourceLifecycleRecord? record);
                 if (record == null)
                 {
+                    if (RecordCapacityReachedNoLock(newDiagnostics))
+                        return TruncatedRecordUpdateNoLock(newDiagnostics);
                     record = new MutableResourceLifecycleRecord(
                         Normalize(resourceKind, "unknown"),
                         Normalize(resourceId, "unknown"),
@@ -309,6 +315,8 @@ namespace DTMAPI.Core.Runtime
                 string key = BuildRecordKey(resourceKind, resourceId, ownerId, sourcePath, normalizedLifetime, resolvedGeneration);
                 if (!records.TryGetValue(key, out MutableResourceLifecycleRecord? record))
                 {
+                    if (RecordCapacityReachedNoLock(newDiagnostics))
+                        return TruncatedRecordUpdateNoLock(newDiagnostics);
                     record = new MutableResourceLifecycleRecord(
                         Normalize(resourceKind, "unknown"),
                         Normalize(resourceId, "unknown"),
@@ -354,6 +362,7 @@ namespace DTMAPI.Core.Runtime
             {
                 string key = currentPhase + "::" + normalizedArea + "::" + normalizedResult + "::contentGeneration=" + contentGeneration;
                 string fastPathKey = key + "::resources=" + resourceCount;
+                key = CounterKeyNoLock(refreshCounts, key);
                 bool skippedRefresh =
                     string.Equals(normalizedResult, ResourceLifecycleStatus.SkippedThrottle, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(normalizedResult, ResourceLifecycleStatus.SkippedUnchanged, StringComparison.OrdinalIgnoreCase);
@@ -374,6 +383,11 @@ namespace DTMAPI.Core.Runtime
                         "area=" + normalizedArea + "; reason=" + normalizedReason + "; generation=" + contentGeneration + "; count=" + count);
                 }
 
+                if (skippedRefresh && !skippedRefreshFastPathKeys.Contains(fastPathKey) && skippedRefreshFastPathKeys.Count >= MaxCounterKeys - 1)
+                {
+                    trimmedCounterUpdates++;
+                    fastPathKey = "[other-skipped-refresh]";
+                }
                 if (skippedRefresh && skippedRefreshFastPathKeys.Contains(fastPathKey))
                 {
                     skippedRefreshFastPathCount++;
@@ -435,10 +449,30 @@ namespace DTMAPI.Core.Runtime
 
         private ResourceLifecycleLedgerUpdate BuildUpdateNoLock(IReadOnlyList<ResourceLifecycleDiagnostic> newDiagnostics, string publishArea)
         {
-            string area = Normalize(publishArea, "unknown");
+            string area = CounterKeyNoLock(publishCountsByArea, Normalize(publishArea, "unknown"));
             publishCountsByArea.TryGetValue(area, out int count);
             publishCountsByArea[area] = count + 1;
             return new ResourceLifecycleLedgerUpdate(BuildSnapshotNoLock(), newDiagnostics.ToArray());
+        }
+
+        private bool RecordCapacityReachedNoLock(List<ResourceLifecycleDiagnostic> newDiagnostics)
+        {
+            if (records.Count < MaxDetailedRecords) return false;
+            trimmedResourceObservations++;
+            if (trimmedResourceObservations == 1)
+                AddDiagnosticNoLock(newDiagnostics, "warning", currentPhase, "Resource ledger detail capacity reached.",
+                    "capacity=" + MaxDetailedRecords + "; detail projection is incomplete; authoritative owner/demand roots are unaffected.");
+            return true;
+        }
+
+        private ResourceLifecycleLedgerUpdate TruncatedRecordUpdateNoLock(List<ResourceLifecycleDiagnostic> newDiagnostics) =>
+            newDiagnostics.Count == 0 ? ResourceLifecycleLedgerUpdate.NoPublish() : BuildUpdateNoLock(newDiagnostics, "detail-capacity");
+
+        private string CounterKeyNoLock(Dictionary<string, int> counts, string key)
+        {
+            if (counts.ContainsKey(key) || counts.Count < MaxCounterKeys - 1) return key;
+            trimmedCounterUpdates++;
+            return "[other]";
         }
 
         private ResourceLifecycleSnapshot BuildSnapshotNoLock()
@@ -447,7 +481,7 @@ namespace DTMAPI.Core.Runtime
             ResourceLifecycleDiagnostic[] diagnosticSnapshot = diagnostics.ToArray();
             int errorCount = diagnosticSnapshot.Count(d => d.Severity.Equals("error", StringComparison.OrdinalIgnoreCase));
             int warningCount = diagnosticSnapshot.Count(d => d.Severity.Equals("warning", StringComparison.OrdinalIgnoreCase));
-            string status = errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "ok";
+            string status = errorCount > 0 ? "error" : warningCount > 0 || trimmedResourceObservations > 0 || trimmedCounterUpdates > 0 ? "warning" : "ok";
             ResourceLifecycleRecord[] recordSnapshot = records.Values.Select(r => r.ToRecord()).OrderBy(r => r.ResourceKind, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.ResourceId, StringComparer.OrdinalIgnoreCase).ToArray();
             int releasedCurrentSaveRecords = recordSnapshot.Count(r =>
                 r.Lifetime.Equals(ResourceLifetime.SaveLifetime, StringComparison.OrdinalIgnoreCase) &&
@@ -473,11 +507,13 @@ namespace DTMAPI.Core.Runtime
                 snapshotBuilds,
                 skippedRefreshCalls,
                 skippedRefreshFastPathCount,
-                aggregatedRecordCount);
+                aggregatedRecordCount,
+                trimmedResourceObservations,
+                trimmedCounterUpdates);
         }
 
         private ResourceLifecycleLedgerUpdate RecordAggregatedResourceNoLock(
-            IReadOnlyList<ResourceLifecycleDiagnostic> newDiagnostics,
+            List<ResourceLifecycleDiagnostic> newDiagnostics,
             string resourceKind,
             string resourceId,
             string ownerId,
@@ -497,6 +533,8 @@ namespace DTMAPI.Core.Runtime
             string key = BuildRecordKey(normalizedKind, aggregateId, normalizedOwner, aggregateSource, lifetime, generation);
             if (!records.TryGetValue(key, out MutableResourceLifecycleRecord? record))
             {
+                if (RecordCapacityReachedNoLock(newDiagnostics))
+                    return TruncatedRecordUpdateNoLock(newDiagnostics);
                 record = new MutableResourceLifecycleRecord(
                     normalizedKind,
                     aggregateId,
@@ -531,13 +569,7 @@ namespace DTMAPI.Core.Runtime
                     record.AcquireCount++;
             }
 
-            record.ReleasePolicy = "aggregated-current-state; " +
-                Normalize(releasePolicy, "report-only") +
-                "; aggregationKey=" + normalizedAggregationKey +
-                "; firstSample=" + record.FirstSampleId +
-                "; lastSample=" + record.LastSampleId +
-                "; observed=" + record.ObservationCount +
-                "; released=" + record.ReleaseCount;
+            record.ReleasePolicy = Normalize(releasePolicy, "report-only");
 
             int eventCount = record.ObservationCount + record.ReleaseCount;
             bool shouldPublish = eventCount <= 2 || eventCount % 100 == 0 || newDiagnostics.Count > 0;
@@ -705,6 +737,12 @@ namespace DTMAPI.Core.Runtime
 
             public ResourceLifecycleRecord ToRecord()
             {
+                string policy = FirstSampleId.Length > 0
+                    ? "aggregated-current-state; " + ReleasePolicy +
+                        "; aggregationKey=" + ResourceId.Substring("aggregate:".Length) +
+                        "; firstSample=" + FirstSampleId + "; lastSample=" + LastSampleId +
+                        "; observed=" + ObservationCount + "; released=" + ReleaseCount
+                    : ReleasePolicy;
                 return new ResourceLifecycleRecord(
                     ResourceKind,
                     ResourceId,
@@ -716,7 +754,7 @@ namespace DTMAPI.Core.Runtime
                     Status,
                     AcquiredAtPhase,
                     ReleasedAtPhase,
-                    ReleasePolicy,
+                    policy,
                     ObservationCount,
                     AcquireCount,
                     ReleaseCount);
@@ -768,7 +806,9 @@ namespace DTMAPI.Core.Runtime
             int snapshotBuilds,
             int skippedRefreshCalls,
             int skippedRefreshFastPathCount,
-            int aggregatedRecordCount)
+            int aggregatedRecordCount,
+            int trimmedResourceObservations = 0,
+            int trimmedCounterUpdates = 0)
         {
             Status = status ?? "unknown";
             ProcessGeneration = processGeneration;
@@ -789,6 +829,8 @@ namespace DTMAPI.Core.Runtime
             SkippedRefreshCalls = skippedRefreshCalls;
             SkippedRefreshFastPathCount = skippedRefreshFastPathCount;
             AggregatedRecordCount = aggregatedRecordCount;
+            TrimmedResourceObservations = trimmedResourceObservations;
+            TrimmedCounterUpdates = trimmedCounterUpdates;
         }
 
         public string Status { get; }
@@ -830,6 +872,8 @@ namespace DTMAPI.Core.Runtime
         public int SkippedRefreshFastPathCount { get; }
 
         public int AggregatedRecordCount { get; }
+        public int TrimmedResourceObservations { get; }
+        public int TrimmedCounterUpdates { get; }
 
         public bool Success => !Status.Equals("error", StringComparison.OrdinalIgnoreCase);
 
@@ -857,6 +901,10 @@ namespace DTMAPI.Core.Runtime
                 "; skippedRefreshCalls=" + SkippedRefreshCalls +
                 "; skippedRefreshFastPath=" + SkippedRefreshFastPathCount +
                 "; aggregatedRecords=" + AggregatedRecordCount +
+                "; recordCapacity=" + ResourceLifecycleLedgerService.MaxDetailedRecords +
+                "; trimmedResourceObservations=" + TrimmedResourceObservations +
+                "; counterCapacity=" + ResourceLifecycleLedgerService.MaxCounterKeys +
+                "; trimmedCounterUpdates=" + TrimmedCounterUpdates +
                 "; titleIdleGrowthWarnings=" + TitleIdleResourceGrowthWarnings +
                 "; prunedSaveLifetimeRecords=" + PrunedSaveLifetimeRecords +
                 "; warnings=" + WarningCount +

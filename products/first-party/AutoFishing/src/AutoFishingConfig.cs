@@ -1,28 +1,25 @@
 using System;
-using System.Runtime.Serialization;
-using global::DTMAPI.Abstractions;
 
 namespace Yuuka.DTMAPI.AutoFishing
 {
-    [DataContract]
-    internal sealed class AutoFishingConfig
+    public sealed class AutoFishingConfig
     {
-        [DataMember] public string ToggleKey { get; set; } = "F6";
-        [DataMember] public bool SkipMiniGame { get; set; }
-        [DataMember] public bool InstantBite { get; set; }
-        [DataMember] public bool FastAnimations { get; set; }
-        [DataMember] public double AnimationMultiplier { get; set; } = 3;
-        [DataMember] public double CastChargeRatio { get; set; }
+        public const float MaximumAnimationMultiplier = 5f;
+        public string ToggleKey { get; set; } = "F6";
+        public bool InstantBite { get; set; }
+        public bool SkipMiniGame { get; set; }
+        public bool FastAnimations { get; set; }
+        public float CastChargeRatio { get; set; }
+        public float AnimationMultiplier { get; set; } = 3f;
 
-        internal void Normalize()
+        public void Normalize()
         {
-            ToggleKey = string.IsNullOrWhiteSpace(ToggleKey) ? "F6" : DtmKeybindList.Parse(ToggleKey).ToString();
-            if (double.IsNaN(AnimationMultiplier) || double.IsInfinity(AnimationMultiplier) || AnimationMultiplier <= 0)
-                AnimationMultiplier = 3;
-            AnimationMultiplier = Math.Min(4, Math.Max(1, AnimationMultiplier));
-            if (double.IsNaN(CastChargeRatio) || double.IsInfinity(CastChargeRatio))
-                CastChargeRatio = 0;
-            CastChargeRatio = Math.Min(1, Math.Max(0, CastChargeRatio));
+            ToggleKey = ToggleKey ?? "F6";
+            CastChargeRatio = Clamp(CastChargeRatio, 0f, 1f, 0f);
+            AnimationMultiplier = Clamp(AnimationMultiplier, 1f, MaximumAnimationMultiplier, 3f);
         }
+
+        private static float Clamp(float value, float min, float max, float fallback) =>
+            float.IsNaN(value) || float.IsInfinity(value) ? fallback : Math.Max(min, Math.Min(max, value));
     }
 }

@@ -1,33 +1,17 @@
-using System.Runtime.Serialization;
+using System;
 
 namespace DTMAPI.StrongPlantingGun
 {
-    [DataContract]
-    internal sealed class StrongPlantingGunConfig
+    public sealed class StrongPlantingGunConfig
     {
-        [DataMember]
-        public bool Enabled { get; set; } = true;
+        public double Range { get; set; } = DefaultRange;
+        internal const int DefaultRange = 7, MaximumRange = 15;
 
-        [DataMember]
-        public bool IncludeSeeds { get; set; } = true;
-
-        [DataMember]
-        public bool IncludeFilms { get; set; } = true;
-
-        [DataMember]
-        public bool IncludeFertilizers { get; set; } = true;
-
-        [DataMember]
-        public bool VerboseLogging { get; set; }
-
-        internal StrongPlantingGunConfig Copy() =>
-            new StrongPlantingGunConfig
-            {
-                Enabled = Enabled,
-                IncludeSeeds = IncludeSeeds,
-                IncludeFilms = IncludeFilms,
-                IncludeFertilizers = IncludeFertilizers,
-                VerboseLogging = VerboseLogging
-            };
+        internal static int Normalize(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || Math.Truncate(value) != value)
+                return DefaultRange;
+            return value < DefaultRange ? DefaultRange : value > MaximumRange ? MaximumRange : (int)value;
+        }
     }
 }

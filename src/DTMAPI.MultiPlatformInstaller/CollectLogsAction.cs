@@ -9,7 +9,7 @@ namespace DTMAPI.MultiPlatformInstaller;
 internal static class CollectLogsAction
 {
     public static InstallerResult Run(
-        PackageLayout package,
+        string packageRoot,
         string gameDir,
         PlatformEnvironment platform,
         string? outputParent)
@@ -62,8 +62,19 @@ internal static class CollectLogsAction
                 }
             }
 
-            StatusReport status = StatusAction.Evaluate(package, gameDir, platform);
-            File.WriteAllText(Path.Combine(staging, "status.txt"), StatusAction.Format(status), new UTF8Encoding(false));
+            string statusText;
+            try
+            {
+                StatusReport status = StatusAction.Evaluate(packageRoot, gameDir, platform);
+                statusText = StatusAction.Format(status);
+                manifest.MissingOrSkipped.AddRange(status.Findings.Where(item => item.StartsWith("PACKAGE_UNAVAILABLE:", StringComparison.Ordinal)));
+            }
+            catch (Exception ex)
+            {
+                statusText = "STATUS_UNAVAILABLE: " + ex.Message;
+                manifest.MissingOrSkipped.Add(statusText);
+            }
+            File.WriteAllText(Path.Combine(staging, "status.txt"), statusText, new UTF8Encoding(false));
             File.WriteAllText(Path.Combine(staging, "environment.txt"), BuildEnvironmentText(platform), new UTF8Encoding(false));
             JsonStore.WriteAtomic(Path.Combine(staging, "collection-manifest.json"), manifest,
                 InstallerJsonContext.Default.LogCollectionManifest,
@@ -103,6 +114,18 @@ internal static class CollectLogsAction
         LogCollectionManifest manifest)
     {
         List<(string Source, string Group, string SafetyRoot)> sources = new();
+        foreach (string root in InstallerLog.Roots)
+        {
+            try
+            {
+                if (!Directory.Exists(root)) continue;
+                FileSystemSafety.AssertNoLinksOnExistingPath(root, root);
+                foreach (string path in Directory.EnumerateFiles(root, "uninstall-*.log")
+                             .OrderByDescending(File.GetLastWriteTimeUtc).Take(10))
+                    AddIfPresent(sources, manifest, path, "Installer", root);
+            }
+            catch (Exception ex) { manifest.MissingOrSkipped.Add(root + ": " + ex.Message); }
+        }
         string logsRoot = FileSystemSafety.CombineUnder(gameDir, "DTMAPI/logs");
         if (Directory.Exists(logsRoot))
         {

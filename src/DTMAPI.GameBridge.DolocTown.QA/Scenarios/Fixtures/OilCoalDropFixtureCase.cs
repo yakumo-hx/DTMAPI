@@ -39,7 +39,7 @@ namespace DTMAPI.GameBridge.DolocTown
             });
             InventoryDebugItem? item = page.Items.FirstOrDefault(i => i.Id.Equals("crude_oil", StringComparison.OrdinalIgnoreCase));
             if (item == null)
-                throw new InvalidOperationException("IInventoryDebugApi did not return crude_oil. status=" + page.Status + ", total=" + page.TotalItems + ".");
+                throw new InvalidOperationException("DebugConsoleActionFixtureAdapter did not return crude_oil. status=" + page.Status + ", total=" + page.TotalItems + ".");
 
             InventoryDebugPage sourcePage = inventoryDebugApi.GetItems(new InventoryDebugQuery
             {
@@ -136,7 +136,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 throw new InvalidOperationException("Oil item metadata smoke failed: " + string.Join(", ", failures) + ". " + summary);
 
             runtime.RuntimeMonitor.Log("Smoke exercise NewContentOilItemMetadata OK " + summary);
-            runtime.SetHookStatus("Smoke.NewContentOilItemMetadata", "verified", "IInventoryDebugApi.GetItems + DolocAPI.QueryItemProto", summary);
+            runtime.SetHookStatus("Smoke.NewContentOilItemMetadata", "verified", "DebugConsoleActionFixtureAdapter.GetItems + DolocAPI.QueryItemProto", summary);
             return summary;
         }
 

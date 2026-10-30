@@ -1,8 +1,8 @@
 # 精确反射 V1
 
-这些接口由内部 API 0.6.2 引入，已进入普通 SDK 构建路径。SDK 0.7.0 默认使用 0.7.0 target，也保留 0.6.2 target。旧 API 0.5.5 及历史 M2 0.7 快照没有这些类型；PN-021 原 0.8 隔离候选保持历史身份。
+这些接口由 API 0.6.2 引入，当前 0.7.5 API 引用继续提供。普通 netstandard2.0 工程可以直接使用，SDK 可选。
 
-解压当前 SDK，使用公开 `new codemod`、`build`、`pack`、`install-local` 和 `withdraw`。当前默认目标为 0.7.0；可显式选择保留的 0.6.2。版本范围见 [目标目录](target-catalog.json)，采用前查看 [API 状态](API-STATUS.md) 和 [迁移](MIGRATION.md)。
+普通构建产生 DLL，作品目录可直接安装或单独压缩。可选工具入口及升级方式见 [README](README.md)、[API 状态](API-STATUS.md)和[迁移](MIGRATION.md)。
 
 在 `Entry(IDtmHelper helper)` 的运行线程取得服务。服务取得后，对普通托管对象的查找和调用可以在调用者线程进行；不会自动调度到游戏线程。访问 Unity/原生对象的线程与存活责任仍由作者承担。下面访问作者自己的对象：
 
@@ -31,4 +31,4 @@ sealed class AuthorState
 
 及时 Dispose 包装器会释放其目标。owner 失败、停用或 Runtime 关闭后，保留的服务/包装器拒绝新调用；仍存活的包装器会被清除目标，即使不再调用它也能回收。已获准开始的调用使用局部引用完成，关闭不回滚它的副作用。缓存只留有界元数据，owner 用弱登记跟踪包装器。
 
-Strict 可反射作者自己的托管对象，这不构成安全沙箱，也不保证原生字段写入具有正确玩法语义。共享契约 DLL、自助 Advanced 和 native 引用有各自的契约，分别见[包依赖](PACKAGE-DEPENDENCIES.md)和[原生引用](NATIVE-REFERENCES.md)。
+CodeMod 可反射作者自己的托管对象，这不构成安全沙箱，也不保证原生字段写入具有正确玩法语义。共享契约 DLL 和原生引用有各自的使用边界，分别见[包依赖](PACKAGE-DEPENDENCIES.md)和[原生引用](NATIVE-REFERENCES.md)。

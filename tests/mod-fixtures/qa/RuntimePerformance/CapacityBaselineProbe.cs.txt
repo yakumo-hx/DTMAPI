@@ -1,0 +1,868 @@
+#nullable disable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using DTMAPI.Abstractions;
+using DTMAPI.MonsterContent;
+using DolocTown;
+using DolocTown.Config.Monster;
+using HarmonyLib;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+namespace RuntimePerformanceCapacity
+{
+    public sealed class Settings
+    {
+        public string EvidenceDirectory { get; set; } = "";
+        public bool TreeOverview { get; set; } = true;
+        public bool AllowSingleMovingMapBoundary { get; set; }
+        public float[] ExpectedPlanXY { get; set; }
+    }
+
+    // Runtime audit derivative of MonsterContent/CapacityProbe.cs.txt. The original
+    // MC09 fixture and its accepted gates remain untouched. All 0/1/16/64 windows
+    // use the same tree room, camera, seed and first N entries of one 64-point plan.
+    // Native AI, collision, movement, damage and pooling remain active. No graph
+    // scanner, weak-reference polling or JSON serialization runs in a cost window.
+    public sealed class ModEntry : DtmMod, IDisposable
+    {
+        private Settings settings;
+        private string TestRoom => settings.TreeOverview ? "dungeon_多洛可河谷.stage2_巨大的树" : "dungeon_多洛可河谷.stage1_上强度";
+        private Vector2 Target => settings.TreeOverview ? new Vector2(450.75f, 181.49f) : new Vector2(402.5f, 61.49f);
+        private Camera camera;
+        private Vector3 originalCameraPosition;
+        private float originalCameraSize, fixedCameraAspect;
+        private bool originalCameraEnabled;
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        internal static ModEntry Current;
+        private IDtmHelper helper;
+        private readonly Harmony harmony = new Harmony("Experiment.RuntimeCapacity.Native");
+        private readonly Process process = Process.GetCurrentProcess();
+        private string output, kind = "zero";
+        private int sequence;
+        private bool enabled, closed, active, loadAttempted;
+        private bool nativeGateAttempted, nativeGateFailed;
+        private Vector2[] layout64;
+        private Vector2[] groundAnchors = Array.Empty<Vector2>();
+        private Vector2[] predictedPositions = Array.Empty<Vector2>();
+        private Vector2[] createdPositions = Array.Empty<Vector2>();
+        private readonly Dictionary<string, int> preparedModes = new Dictionary<string, int>();
+        private string lastPreparedMode = "";
+        private readonly Dictionary<string, Vector2[]> landingPredictions = new Dictionary<string, Vector2[]>();
+        private int[] anchorAssignments = Array.Empty<int>(), anchorOccupancy = Array.Empty<int>();
+        private bool groupedGround;
+        private string LayoutName => groupedGround ? "ground-25-groups-v3" : settings.TreeOverview ? "tree-ground-body-gap-v3" : "ground-body-gap-v2";
+        private const float BodyGap = .2f;
+        private const double LongFrameStopMs = 1000;
+        private long warmLast;
+        private double warmMaxMs;
+        private double warmCpuStart;
+        private readonly long[] previousTicks = new long[9];
+        private GameObject driver;
+        private IMonsterContentApi api;
+        private MonsterLease demand, behavior;
+        private readonly List<MonsterDefinitionLease> definitions = new List<MonsterDefinitionLease>();
+        private readonly List<Monster> monsters = new List<Monster>(64);
+        private readonly Dictionary<MonsterController, int> controllers = new Dictionary<MonsterController, int>(64);
+        private readonly HashSet<SpriteOverrideHandler> sprites = new HashSet<SpriteOverrideHandler>();
+        private readonly List<Patrol> behaviors = new List<Patrol>(64);
+        private readonly long[] counters = new long[8], ticks = new long[9];
+        private readonly double[] frames = new double[4096];
+        private Action<long[]> reader;
+        private Action stopCounter;
+        private Component uiDriver;
+        private FieldInfo uiField;
+        private Action originalUi, measuredUi;
+        private GameObject[] uiRoots = Array.Empty<GameObject>();
+        private List<Bullet>[] bullets = Array.Empty<List<Bullet>>();
+        private Dictionary<string, BulletManager> managers;
+        private int managerCount, frameCount, gcStart;
+        private long start, warmup, lastFrame, firstBytes, firstAll, heapStart;
+        private double cpuStart;
+        private float seconds;
+        private Record window;
+        private string transitionLabel;
+        private long transitionStart, transitionCallback, nativeLoadStart;
+        private bool arrived;
+        private int stable;
+        private static readonly string[] ResourceNames = { "instances", "controllers", "handles", "presentationOwners", "displayScopes", "managerShots", "followingEffects", "groupOwners", "jumpOwners", "bindings", "frameTemplates" };
+
+        [Serializable] private sealed class Record
+        {
+            public string type, label, kind, error = "", detail = "";
+            public bool valid = true, profiler, module;
+            public int requested, monstersMin = int.MaxValue, monstersMax, controllersMin = int.MaxValue, controllersMax,
+                bulletsMin = int.MaxValue, bulletsMax, uiMin = int.MaxValue, uiMax, managers, fired, frames, gc0, width, height, targetFps, vSync;
+            public double seconds, cpuMs;
+            // Boundary timestamps align external native-profiler observations.
+            // Capture is taken at emission; sample bounds exclude JSON/file I/O.
+            public string captureUtc;
+            public long captureQpc, qpcFrequency, sampleStartQpc, sampleEndQpc;
+            public long entryStartQpc, entryCallbackQpc, stableReadyQpc;
+            public double stableReadySeconds;
+            public int requestedNativeIndex = -1;
+            public int nativeLoadRequestedIndex = -1;
+            public int actualNativeIndex = -1;
+            public string uiStateBefore, uiStateAfter;
+            public bool loadAttempted, loadAccepted;
+            public long mainBytes = -1, allBytes = -1, heapDelta;
+            public string[] paths = { "Controller.Update", "Controller.Fixed", "Sprite.LateUpdate", "BulletManager.Fixed", "Module.UI", "GetSelf.outer", "GetAction.outer", "GetAttacks.outer", "Behavior.Tick.inclusive" };
+            public long[] calls = new long[9], bytes = new long[9], updates, fixedUpdates;
+            public double[] ms = new double[9], frameMs;
+            public string[] resources;
+            public int[] resourceCounts;
+            public int behaviorStarts, behaviorStops, bulletsAfterDespawn = -1, residentControllers = -1;
+            public int validPositions, distinctResolvedPositions;
+            public float[] requestedXY, resolvedXY;
+            public string moduleReadState, layout, genType, bodyShape, phase;
+            public float[] bodyBounds, nearestDistances;
+            public float minDistance, minBodyGap, extentX, extentY, bodyWidth, bodyHeight;
+            public int overlapPairs, candidatePositions, seed = 190925;
+            public double warmupSeconds, warmupMaxFrameMs, warmupCpuMs, longFrameMs;
+            public double[] longFramePathMs, warmupPathMs;
+            public float targetX = 402.5f, targetY = 61.49f;
+            public bool groupedGround, anchorPlanMatched;
+            public int anchorCount, withinGroupOverlapPairs, crossGroupOverlapPairs;
+            public int[] anchorAssignments, plannedOccupancy, observedOccupancy;
+            public float[] anchorXY;
+            public float minInterGroupBodyGap, maxAnchorDistance;
+            public bool nativeLandingMatched;
+            public float[] predictedXY;
+            public float maxLandingDeviation;
+            public bool bodyBoundsSynchronized;
+            public float maxBodyCenterOffset;
+            public float[] creationBodyBounds, displacements;
+            public string[] positionGenTypes, positionCells;
+            public bool[] positionMapValid;
+            public bool mapBoundaryObservation;
+            public float creationMinBodyGap, maxDisplacement;
+            public int creationOverlapPairs;
+            public int processId;
+            public string processStartUtc;
+            public string[] preparedModes;
+            public int[] preparedCounts;
+            public string lastPreparedMode;
+            public string[] poolKeys;
+            public int[] poolActiveCounts, poolCacheCounts, poolControllerIds, poolControllerOwners;
+            public bool[] poolControllerActive;
+            public int[] otherControllerIds;
+            public string roomId;
+            public float[] cameraXY;
+            public float cameraSize, cameraAspect;
+        }
+        [Serializable] private sealed class PoolResidency
+        {
+            public string key;
+            public int activeCount, cacheCount;
+            public int[] activeIds, cachedIds;
+        }
+        public struct Token { internal bool active; internal long time, bytes; internal int index; }
+        private static T Value<T>(MonsterResult<T> value)
+        { if (!value.Success) throw new InvalidOperationException(value.Diagnostic.Code + ":" + value.Diagnostic.Message); return value.Value; }
+
+        public override void Entry(IDtmHelper h)
+        {
+            helper = h; Current = this; settings = h.ReadConfig<Settings>(); output = settings.EvidenceDirectory;
+            if (!settings.TreeOverview || settings.ExpectedPlanXY?.Length != 128) throw new InvalidOperationException("Runtime baseline requires the common tree room and complete 64-point plan.");
+            if (string.IsNullOrWhiteSpace(output) || !Path.IsPathRooted(output)) throw new InvalidOperationException("Absolute evidence directory required.");
+            Directory.CreateDirectory(output);
+            Patch(typeof(MonsterController), "OnUpdate", nameof(UpdateBefore), nameof(UpdateAfter));
+            Patch(typeof(MonsterController), "OnFixedUpdate", nameof(FixedBefore), nameof(FixedAfter));
+            Patch(typeof(SpriteOverrideHandler), "LateUpdate", nameof(SpriteBefore), nameof(SpriteAfter));
+            Patch(typeof(BulletManager), "OnFixedUpdate", nameof(BulletBefore), nameof(BulletAfter));
+            harmony.Patch(AccessTools.Method(typeof(BulletManager), "_Fire"), prefix: new HarmonyMethod(typeof(ModEntry), nameof(Fired)));
+            driver = new GameObject("Runtime Performance Capacity QA"); Object.DontDestroyOnLoad(driver); driver.AddComponent<CapacityDriver>();
+            h.GetRequiredService<IDtmCommands>("0.7.0", "0.7.0").Register("capacity", Command, alias: "rp-cap", description: "Same-room 0/1/16/64 runtime baseline");
+        }
+        private void Patch(Type type, string method, string before, string after)
+        {
+            harmony.Patch(AccessTools.Method(type, method) ?? throw new MissingMethodException(type.FullName, method),
+                prefix: new HarmonyMethod(typeof(ModEntry), before) { priority = Priority.First },
+                postfix: new HarmonyMethod(typeof(ModEntry), after) { priority = Priority.Last });
+        }
+        private void Command(IDtmCommandContext c)
+        {
+            var a = c.Arguments; var op = a.Count == 0 ? "status" : a[0];
+            if (op != "status" && op != "quit" && (window != null || transitionLabel != null)) throw new InvalidOperationException("Observation active.");
+            if (op == "load")
+            {
+                if (a.Count != 1 || loadAttempted || enabled || window != null || transitionLabel != null || DolocAPI.CurrentRoom != null)
+                    throw new InvalidOperationException("One fixed UI-slot-2/native-index-1 load is allowed only before room/module/observation.");
+                loadAttempted = true;
+                var row = New("load", "load-native1"); row.requestedNativeIndex = row.nativeLoadRequestedIndex = 1; row.loadAttempted = true;
+                try { nativeLoadStart = Stopwatch.GetTimestamp(); row.loadAccepted = DolocAPI.LoadGame(1); row.valid = row.loadAccepted; }
+                catch (Exception e) { row.valid = false; row.error = e.ToString(); Emit(row); throw; }
+                if (!row.loadAccepted) row.error = "NativeIndex1LoadRejected";
+                Emit(row); c.WriteLine("requestedNativeIndex=1; loadAccepted=" + row.loadAccepted + "; noFallback=True; noSave=True");
+                if (!row.loadAccepted) throw new InvalidOperationException("Fixed native index 1 load rejected; no retry or fallback.");
+            }
+            else if (op == "init")
+            {
+                if (loadAttempted)
+                {
+                    // Reuse NativeRetentionBaseline's completed direct-load boundary:
+                    // native LoadGame restores the prior title state asynchronously.
+                    if ((Stopwatch.GetTimestamp() - nativeLoadStart) / (double)Stopwatch.Frequency < 2 ||
+                        !DolocAPI.IsDataLoaded || DolocAPI.CurrentRoom == null || DolocAPI.AgentTransform == null)
+                        throw new InvalidOperationException("Fixed load is not ready; require at least two seconds, data, room and agent before init.");
+                    if (DolocAPI.archiveHandle.archiveIndex != 1) throw new InvalidOperationException("Wrong native slot; init requires archive index 1.");
+                    var inputState = DolocAPI.userInput.CurrentState;
+                    var normalState = DolocAPI.gameStateManager.normalGameState;
+                    string before = inputState?.GetType().FullName;
+                    if (inputState?.GetType().Name == "HomePageUiState") DolocAPI.userInput.ClearState(normalState);
+                    else if (!ReferenceEquals(inputState, normalState)) throw new InvalidOperationException("Unexpected UI state; init may leave only HomePageUiState or accept the existing normal state.");
+                    if (!ReferenceEquals(DolocAPI.userInput.CurrentState, normalState)) throw new InvalidOperationException("Normal gameplay state was not established.");
+                    var row = New("load-ready", "load-native1-ready"); row.nativeLoadRequestedIndex = row.requestedNativeIndex = row.actualNativeIndex = 1;
+                    row.loadAttempted = true; row.loadAccepted = true; row.uiStateBefore = before; row.uiStateAfter = DolocAPI.userInput.CurrentState.GetType().FullName;
+                    row.detail = "actualNativeIndex=1; completed native load; title-to-normal boundary confirmed; noSave=True"; Emit(row);
+                    c.WriteLine("actualNativeIndex=1; uiState=" + row.uiStateAfter);
+                }
+                DolocAPI.gameManager.gameInitConfig.agentInvincible = true; DolocAPI.gameLoop.IsPaused = false;
+                InitializeReader(); c.WriteLine("ready profiler=" + (reader != null));
+            }
+            else if (op == "enter")
+            {
+                if (!DolocAPI.QueryRoom(TestRoom, out var room)) throw new InvalidOperationException("Room missing.");
+                transitionLabel = "entry"; arrived = false; stable = 0; transitionCallback = 0;
+                transitionStart = Stopwatch.GetTimestamp();
+                if (!DolocAPI.EnterRoom(room, Target + Vector2.up * 7.51f, () => { transitionCallback = Stopwatch.GetTimestamp(); arrived = true; })) throw new InvalidOperationException("Entry rejected.");
+            }
+            else if (op == "isolate")
+            {
+                if (enabled || DolocAPI.CurrentRoom.RoomId != TestRoom) throw new InvalidOperationException("Isolate once before demand.");
+                int n = DolocAPI.CurrentRoom.DM_monster.MonsterCount;
+                ((IMonsterHost)DolocAPI.CurrentRoom).ClearMonsters(); DolocAPI.battleSystem.ClearBulletsAndSkills();
+                UnityEngine.Random.InitState(190925); DolocAPI.AgentPosition = Target;
+                c.WriteLine("removedNative=" + n + "; noKill=True; noSave=True; capacityClaim=direct-api-only");
+            }
+            else if (op == "module") Enable();
+            else if (op == "placement") Placement(int.Parse(a[1], CultureInfo.InvariantCulture));
+            else if (op == "layout64") SelectGroundLayout(false);
+            else if (op == "layout64-grouped") SelectGroundLayout(true);
+            else if (op == "gate64")
+            {
+                if (enabled || reader != null || nativeGateAttempted || layout64 == null) throw new InvalidOperationException("One prepared no-module normal-process gate only.");
+                if (groupedGround && predictedPositions.Length != 64) throw new InvalidOperationException("Read native landing for the exact grouped inputs first.");
+                Spawn("native", 64, a[1] + "-create"); Sample(a[1], 15);
+            }
+            else if (op == "run64" || op == "prepare64")
+            {
+                if ((!groupedGround && !settings.TreeOverview) || layout64 == null || nativeGateFailed) throw new InvalidOperationException("Prepared grouped/tree layout required; a failed window cannot be retried.");
+                Spawn(a[1], 64, a[2] + "-create"); Sample(a[2], 15);
+                // Same peak workload/duration for resident preparation, kept out
+                // of the cost-window set (including reused first-batch windows).
+                if (op == "prepare64") window.type = "preparation";
+            }
+            else if (op == "run")
+            {
+                int count = int.Parse(a[2], CultureInfo.InvariantCulture);
+                if (count == 0)
+                {
+                    if (a[1] != "zero" || monsters.Count != 0 || DolocAPI.CurrentRoom.DM_monster.MonsterCount != 0) throw new InvalidOperationException("Zero window requires an empty native room.");
+                    kind = "zero"; UnityEngine.Random.InitState(190925); DolocAPI.AgentPosition = Target;
+                }
+                else Spawn(a[1], count, a[3] + "-create");
+                Sample(a[3], a.Count > 4 ? float.Parse(a[4], CultureInfo.InvariantCulture) : 15);
+            }
+            else if (op == "spawn") Spawn(a[1], int.Parse(a[2], CultureInfo.InvariantCulture), a[3]);
+            else if (op == "sample") Sample(a[1], float.Parse(a[2], CultureInfo.InvariantCulture));
+            else if (op == "clear") { Clear(a.Count > 1 ? a[1] : "clear"); c.WriteLine(Status()); }
+            else if (op == "resources") Resources(a[1]);
+            else if (op == "release") { Release(); Resources("released"); }
+            else if (op == "calibrate") { CalibrationAllocate(); c.WriteLine("expected2objects expectedbytes69696"); }
+            else if (op == "quit") { Dispose(); Application.Quit(); }
+            else if (op == "status") c.WriteLine(Status());
+            else throw new ArgumentException("Unknown capacity command.");
+        }
+        // Dedicated observer bucket, outside production totals and timed windows.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CalibrationAllocate()
+        {
+            GC.KeepAlive(new byte[4096]);
+            GC.KeepAlive(new byte[65536]);
+        }
+        private void Enable()
+        {
+            if (enabled || monsters.Count != 0) throw new InvalidOperationException("Enable after native baseline cleanup.");
+            api = helper.ModRegistry.GetApi<IMonsterContentApi>(MonsterModule.ProviderId) ?? throw new InvalidOperationException("Provider missing.");
+            demand = Value(api.RequestModule()); enabled = true;
+            behavior = Value(api.RegisterBehavior("patrol", () => { var p = new Patrol(this); behaviors.Add(p); return p; }));
+            foreach (var name in new[] { "fungus", "fungus-ui", "bee-ui", "code-ui" })
+            {
+                bool code = name == "code-ui", ui = name.EndsWith("-ui", StringComparison.Ordinal);
+                definitions.Add(Value(api.RegisterDefinition(new MonsterDefinition { LocalId = name, TemplateId = name == "fungus" || name == "fungus-ui" ? "fungus" : "bee",
+                    Behavior = code ? "code-provider" : "inherit-native", BehaviorId = code ? "Experiment.RuntimeCapacity:patrol" : "",
+                    Display = new MonsterDisplay { Name = "Capacity", Nameplate = ui, HealthBar = ui ? MonsterHealthBar.Always : MonsterHealthBar.Never } })));
+            }
+            if (definitions.Any(d => d.Snapshot.State != MonsterDefinitionState.Creatable)) throw new InvalidOperationException("Definition not creatable.");
+            Resources("module-ready");
+        }
+        private void Spawn(string mode, int count, string label)
+        {
+            if ((count != 1 && count != 16 && count != 64) || layout64 == null || nativeGateFailed || monsters.Count != 0 || DolocAPI.CurrentRoom.RoomId != TestRoom || DolocAPI.CurrentRoom.DM_monster.MonsterCount != 0)
+                throw new InvalidOperationException("Require empty same-room fixture, a valid common plan and 1/16/64 actual requested instances.");
+            if (mode != "native" && mode != "inherit" && mode != "ui" && mode != "mixed-ui" && mode != "code-ui") throw new ArgumentException("Unknown capacity mode.");
+            if (mode != "native" && !enabled) throw new InvalidOperationException("Demand missing.");
+            if (layout64 != null)
+            {
+                if (!landingPredictions.TryGetValue("fungus", out var fungusLandings) || fungusLandings.Length != 64 || !landingPredictions.TryGetValue("bee", out var beeLandings) || beeLandings.Length != 64) throw new InvalidOperationException("Read all 64 native landing points before any creation.");
+                predictedPositions = Enumerable.Range(0, count).Select(i => landingPredictions[mode == "code-ui" || (mode == "mixed-ui" && i % 2 != 0) ? "bee" : "fungus"][i]).ToArray();
+            }
+            kind = mode; UnityEngine.Random.InitState(190925); DolocAPI.AgentPosition = Target;
+            var host = (IMonsterHost)DolocAPI.CurrentRoom; var row = New("spawn", label); row.requested = count;
+            long b = ReadBytes(), t = Stopwatch.GetTimestamp();
+            for (int i = 0; i < count; i++)
+            {
+                var position = Position(i);
+                if (mode == "native")
+                {
+                    if (!DolocAPI.assets.monsters.QueryMonster("fungus", out var proto)) throw new InvalidOperationException("Template missing.");
+                    monsters.Add(host.GenerateMonster(proto, position, true));
+                }
+                else
+                {
+                    string local = mode == "inherit" ? "fungus" : mode == "code-ui" ? "code-ui" : mode == "mixed-ui" && i % 2 != 0 ? "bee-ui" : "fungus-ui";
+                    Value(api.Spawn(new MonsterSpawnRequest { DefinitionId = "Experiment.RuntimeCapacity:" + local, X = position.x, Y = position.y }));
+                }
+            }
+            row.seconds = (Stopwatch.GetTimestamp() - t) / (double)Stopwatch.Frequency; row.mainBytes = reader == null ? -1 : ReadBytes() - b;
+            if (mode != "native") monsters.AddRange(host.DM_monster.AllMonsters);
+            if (monsters.Count != count) throw new InvalidOperationException("Actual logical population mismatch.");
+            for (int i = 0; i < monsters.Count; i++)
+            {
+                var m = monsters[i]; var controller = m.Controller;
+                if (m.IsDead || controller == null || controller.MonsterAI == null) throw new InvalidOperationException("Unusable instance.");
+                controllers.Add(controller, i); var s = controller.GetComponent<SpriteOverrideHandler>(); if (s != null) sprites.Add(s);
+                foreach (var sight in controller.GetComponentsInChildren<MonsterSight>(true)) { sight.ReplaceTarget(DolocAPI.AgentTransform); sight.SetTarget(DolocAPI.AgentTransform); }
+            }
+            AttachUi(); row.detail = Status(); Emit(row);
+            if (!ActualPlacement(label + "-positions", "created"))
+            { nativeGateFailed = true; throw new InvalidOperationException("Actual creation layout failed; no sample allowed."); }
+        }
+        private Vector2 Position(int i) => layout64 != null ? layout64[i] : throw new InvalidOperationException("Common tree layout not prepared.");
+        private void SelectGroundLayout(bool grouped)
+        {
+            if (enabled || monsters.Count != 0 || nativeGateAttempted || DolocAPI.CurrentRoom?.RoomId != TestRoom) throw new InvalidOperationException("Select once before native gate.");
+            var pools = (IDictionary)AccessTools.Field(DolocAPI.EntitySystem.GetGameEntityManager<MonsterController>().GetType(), "nestedPools").GetValue(DolocAPI.EntitySystem.GetGameEntityManager<MonsterController>());
+            var prefab = (GameObject)pools["fungus"].GetType().GetProperty("Prefab").GetValue(pools["fungus"]);
+            var body = prefab.GetComponent<Collider2D>(); Vector2 size;
+            if (body is BoxCollider2D box) size = box.size;
+            else if (body is CapsuleCollider2D capsule) size = capsule.size;
+            else if (body is CircleCollider2D circle) size = Vector2.one * (2 * circle.radius);
+            else throw new InvalidOperationException("Unknown template body shape.");
+            var scale = body.transform.lossyScale; size = Vector2.Scale(size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            if (size.x <= 0 || size.y <= 0 || Quaternion.Angle(body.transform.rotation, Quaternion.identity) > .01f) throw new InvalidOperationException("Unmeasured body transform.");
+            var map = ((IMonsterHost)DolocAPI.CurrentRoom).MonsterEnv.GroundMap;
+            if (settings.TreeOverview && grouped) throw new InvalidOperationException("Tree fixture is the retained separated plan.");
+            var selected = new List<Vector2>(); var target = Target;
+            var candidates = map.GroundPositions.Select(c => map.CellToWorldPivot(c, new Vector2(.5f, 0))).OrderBy(p => (p - target).sqrMagnitude).ThenBy(p => p.x).ThenBy(p => p.y).ToArray();
+            foreach (var p in candidates)
+            {
+                if (!map.RaycastToGround(p + Vector2.up * .01f, out var landed) || Vector2.Distance(p, landed) > .02f || map.IsObstacleOrInvalid(map.WorldToCell(landed))) continue;
+                if (selected.Any(q => RectGap(p, size, q, size) < BodyGap)) continue;
+                selected.Add(p); if (selected.Count == 64) break;
+            }
+            groupedGround = grouped;
+            var row = New("layout", "layout64"); row.kind = "fungus"; row.genType = "Ground"; row.requested = 64;
+            row.candidatePositions = candidates.Length; row.validPositions = selected.Count; row.bodyShape = body.GetType().Name; row.bodyWidth = size.x; row.bodyHeight = size.y;
+            row.resolvedXY = selected.SelectMany(p => new[] { p.x, p.y }).ToArray(); row.detail = "Native ground cells, nearest target first; minimum body AABB gap=0.2; no room-slot claim; " + Status();
+            int requiredAnchors = grouped ? 25 : 64;
+            if (selected.Count != requiredAnchors) { row.valid = false; row.error = "UnexpectedSeparatedGroundPositionCount"; }
+            else if (!grouped) layout64 = selected.ToArray();
+            else
+            {
+                groundAnchors = selected.ToArray(); anchorOccupancy = Enumerable.Range(0, 25).Select(i => i < 14 ? 3 : 2).ToArray();
+                layout64 = new Vector2[64]; anchorAssignments = new int[64]; int index = 0;
+                for (int a = 0; a < groundAnchors.Length; a++) for (int member = 0; member < anchorOccupancy[a]; member++)
+                {
+                    float dx = anchorOccupancy[a] == 3 ? (member - 1) * .45f : (member == 0 ? -.3f : .3f);
+                    layout64[index] = groundAnchors[a] + new Vector2(dx, .02f); anchorAssignments[index++] = a;
+                }
+                AddAnchorPlan(row);
+                row.requestedXY = layout64.SelectMany(p => new[] { p.x, p.y }).ToArray();
+                row.detail += "; explicit grouped scenario: 14 anchors x3 + 11 x2, small input offsets; native landing and physics unchanged";
+            }
+            if (layout64 != null)
+            {
+                row.requestedXY = layout64.SelectMany(p => new[] { p.x, p.y }).ToArray();
+                if (settings.TreeOverview && row.requestedXY.Where((v, i) => Mathf.Abs(v - settings.ExpectedPlanXY[i]) > .001f).Any())
+                { row.valid = false; row.error = "RetainedTreePlanChanged"; layout64 = null; }
+            }
+            Emit(row);
+        }
+        private void AddAnchorPlan(Record row)
+        {
+            row.anchorCount = groundAnchors.Length; row.anchorXY = groundAnchors.SelectMany(p => new[] { p.x, p.y }).ToArray();
+            row.anchorAssignments = anchorAssignments; row.plannedOccupancy = anchorOccupancy;
+        }
+        private static float RectGap(Vector2 a, Vector2 sizeA, Vector2 b, Vector2 sizeB)
+        {
+            float x = Mathf.Abs(a.x - b.x) - (sizeA.x + sizeB.x) * .5f, y = Mathf.Abs(a.y - b.y) - (sizeA.y + sizeB.y) * .5f;
+            return x <= 0 && y <= 0 ? Mathf.Max(x, y) : new Vector2(Mathf.Max(0, x), Mathf.Max(0, y)).magnitude;
+        }
+        private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+        private static Bounds CreationBounds(Collider2D body)
+        {
+            Vector2 size;
+            if (body is BoxCollider2D box) size = box.size;
+            else if (body is CapsuleCollider2D capsule) size = capsule.size;
+            else if (body is CircleCollider2D circle) size = Vector2.one * (2 * circle.radius);
+            else throw new InvalidOperationException("Unknown actual body shape.");
+            var x = body.transform.TransformVector(new Vector3(size.x, 0, 0));
+            var y = body.transform.TransformVector(new Vector3(0, size.y, 0));
+            return new Bounds(body.transform.TransformPoint(body.offset), new Vector3(Mathf.Abs(x.x) + Mathf.Abs(y.x), Mathf.Abs(x.y) + Mathf.Abs(y.y), 0));
+        }
+        private bool ActualPlacement(string label, string phase)
+        {
+            var row = New("positions", label); row.phase = phase; row.requested = monsters.Count;
+            row.predictedXY = predictedPositions.SelectMany(p => new[] { p.x, p.y }).ToArray();
+            if (groupedGround)
+            {
+                AddAnchorPlan(row); row.observedOccupancy = new int[groundAnchors.Length];
+                row.predictedXY = predictedPositions.SelectMany(p => new[] { p.x, p.y }).ToArray();
+            }
+            row.resolvedXY = new float[monsters.Count * 2]; row.bodyBounds = new float[monsters.Count * 4]; row.nearestDistances = new float[monsters.Count];
+            row.displacements = new float[monsters.Count];
+            row.positionGenTypes = new string[monsters.Count]; row.positionCells = new string[monsters.Count]; row.positionMapValid = new bool[monsters.Count];
+            if (phase == "created") { createdPositions = new Vector2[monsters.Count]; row.creationBodyBounds = new float[monsters.Count * 4]; }
+            row.minDistance = row.minBodyGap = float.MaxValue;
+            row.creationMinBodyGap = float.MaxValue;
+            row.minInterGroupBodyGap = float.MaxValue;
+            var bounds = new Bounds[monsters.Count]; var distinct = new HashSet<Vector2>(); var all = new Bounds();
+            var creationBounds = phase == "created" ? new Bounds[monsters.Count] : null;
+            for (int i = 0; i < monsters.Count; i++)
+            {
+                var controller = monsters[i].Controller;
+                if (monsters[i].IsDead || controller == null || !controllers.ContainsKey(controller) || controller.Collider == null || !controller.Collider.enabled || !controller.gameObject.activeInHierarchy) throw new InvalidOperationException("Actual body unavailable.");
+                var p = (Vector2)controller.transform.position; bounds[i] = controller.Collider.bounds; distinct.Add(p);
+                if (phase == "created")
+                {
+                    createdPositions[i] = p; creationBounds[i] = CreationBounds(controller.Collider);
+                    var b = creationBounds[i];
+                    row.creationBodyBounds[i * 4] = b.center.x; row.creationBodyBounds[i * 4 + 1] = b.center.y;
+                    row.creationBodyBounds[i * 4 + 2] = b.size.x; row.creationBodyBounds[i * 4 + 3] = b.size.y;
+                    if (!Finite(b.center.x) || !Finite(b.center.y) || !Finite(b.size.x) || !Finite(b.size.y) || b.size.x <= 0 || b.size.y <= 0) throw new InvalidOperationException("Unknown actual creation body.");
+                }
+                if (createdPositions.Length != monsters.Count) throw new InvalidOperationException("Creation observation missing.");
+                row.displacements[i] = Vector2.Distance(p, createdPositions[i]); row.maxDisplacement = Mathf.Max(row.maxDisplacement, row.displacements[i]);
+                var expectedBodyCenter = (Vector2)controller.Collider.transform.TransformPoint(controller.Collider.offset);
+                row.maxBodyCenterOffset = Mathf.Max(row.maxBodyCenterOffset, Vector2.Distance(bounds[i].center, expectedBodyCenter));
+                if (predictedPositions.Length == monsters.Count) row.maxLandingDeviation = Mathf.Max(row.maxLandingDeviation, Vector2.Distance(p, predictedPositions[i]));
+                if (groupedGround)
+                {
+                    row.maxAnchorDistance = Mathf.Max(row.maxAnchorDistance, Vector2.Distance(p, groundAnchors[anchorAssignments[i]]));
+                    row.maxLandingDeviation = Mathf.Max(row.maxLandingDeviation, Vector2.Distance(p, predictedPositions[i]));
+                    int nearest = 0;
+                    for (int a = 1; a < groundAnchors.Length; a++) if ((p - groundAnchors[a]).sqrMagnitude < (p - groundAnchors[nearest]).sqrMagnitude) nearest = a;
+                    row.observedOccupancy[nearest]++;
+                }
+                if (!Finite(p.x) || !Finite(p.y) || !Finite(bounds[i].center.x) || !Finite(bounds[i].center.y) || !Finite(bounds[i].size.x) || !Finite(bounds[i].size.y) || !Finite(row.maxBodyCenterOffset) || bounds[i].size.x <= 0 || bounds[i].size.y <= 0) throw new InvalidOperationException("Unknown or empty actual body bounds.");
+                row.resolvedXY[i * 2] = p.x; row.resolvedXY[i * 2 + 1] = p.y;
+                row.bodyBounds[i * 4] = bounds[i].center.x; row.bodyBounds[i * 4 + 1] = bounds[i].center.y; row.bodyBounds[i * 4 + 2] = bounds[i].size.x; row.bodyBounds[i * 4 + 3] = bounds[i].size.y;
+                row.nearestDistances[i] = float.MaxValue;
+                if (i == 0) all = bounds[i]; else all.Encapsulate(bounds[i]);
+                var map = ((IMonsterHost)DolocAPI.CurrentRoom).MonsterEnv.GetMap(monsters[i].proto.GenType);
+                var cell = map.WorldToCell(p);
+                row.positionGenTypes[i] = monsters[i].proto.GenType.ToString(); row.positionCells[i] = cell.ToString();
+                row.positionMapValid[i] = !map.IsObstacleOrInvalid(cell);
+                if (row.positionMapValid[i]) row.validPositions++;
+            }
+            for (int i = 0; i < bounds.Length; i++) for (int j = i + 1; j < bounds.Length; j++)
+            {
+                float distance = Vector2.Distance(bounds[i].center, bounds[j].center), gap = RectGap(bounds[i].center, bounds[i].size, bounds[j].center, bounds[j].size);
+                row.nearestDistances[i] = Mathf.Min(row.nearestDistances[i], distance); row.nearestDistances[j] = Mathf.Min(row.nearestDistances[j], distance);
+                row.minDistance = Mathf.Min(row.minDistance, distance); row.minBodyGap = Mathf.Min(row.minBodyGap, gap); if (gap < 0) row.overlapPairs++;
+                if (creationBounds != null)
+                {
+                    float creationGap = RectGap(creationBounds[i].center, creationBounds[i].size, creationBounds[j].center, creationBounds[j].size);
+                    row.creationMinBodyGap = Mathf.Min(row.creationMinBodyGap, creationGap); if (creationGap < 0) row.creationOverlapPairs++;
+                }
+                if (groupedGround)
+                {
+                    if (anchorAssignments[i] != anchorAssignments[j]) { row.minInterGroupBodyGap = Mathf.Min(row.minInterGroupBodyGap, gap); if (gap < 0) row.crossGroupOverlapPairs++; }
+                    else if (gap < 0) row.withinGroupOverlapPairs++;
+                }
+            }
+            row.distinctResolvedPositions = distinct.Count; row.extentX = all.size.x; row.extentY = all.size.y;
+            // A freshly reused collider may still expose its pool bounds before
+            // the first native physics step. Preserve the reading and its validity.
+            row.bodyBoundsSynchronized = row.maxBodyCenterOffset < .02f;
+            row.nativeLandingMatched = predictedPositions.Length == monsters.Count && row.maxLandingDeviation < .02f;
+            if (groupedGround)
+            {
+                row.anchorPlanMatched = row.observedOccupancy.SequenceEqual(anchorOccupancy) && row.maxAnchorDistance < .75f;
+                row.nativeLandingMatched = row.maxLandingDeviation < .02f;
+                // The user explicitly chose 2/3 bodies per anchor. Record actual
+                // density after native motion; do not force 64 non-overlapping bodies.
+            }
+            bool moving = kind == "mixed-ui" || kind == "code-ui";
+            row.monstersMin = row.monstersMax = DolocAPI.CurrentRoom.DM_monster.MonsterCount;
+            row.controllersMin = row.controllersMax = controllers.Count;
+            int expected = monsters.Count;
+            bool layoutValid = (expected == 1 || expected == 16 || expected == 64) && controllers.Count == expected && row.monstersMin == expected;
+            if (phase == "created")
+                layoutValid &= row.nativeLandingMatched && (groupedGround || (distinct.Count == expected && row.creationMinBodyGap >= BodyGap - .01f && row.creationOverlapPairs == 0));
+            else
+                layoutValid &= row.bodyBoundsSynchronized && (groupedGround || moving || (distinct.Count == expected && row.minBodyGap >= BodyGap - .01f && row.overlapPairs == 0));
+            row.valid = layoutValid && row.validPositions == expected;
+            // User-accepted QA boundary: preserve the raw failed map observation.
+            // Creation, multiple map misses and every non-map failure still stop.
+            row.mapBoundaryObservation = settings.AllowSingleMovingMapBoundary && expected == 64 && layoutValid && moving && row.validPositions == 63 &&
+                (phase == "after-five-second-warmup" || phase == "sample-end");
+            if (!row.valid) row.error = "ActualPlacementFailed";
+            row.detail = Status(); Emit(row); return row.valid || row.mapBoundaryObservation;
+        }
+        private void Placement(int count)
+        {
+            if (count != 64 || layout64 == null || monsters.Count != 0 || DolocAPI.CurrentRoom?.RoomId != TestRoom)
+                throw new InvalidOperationException("Inspect all 64 common landing points once in the empty tree room.");
+            var host = (IMonsterHost)DolocAPI.CurrentRoom;
+            foreach (var id in new[] { "fungus", "bee" })
+            {
+                if (!DolocAPI.assets.monsters.QueryMonster(id, out var proto)) throw new InvalidOperationException("Template missing.");
+                var map = host.MonsterEnv.GetMap(proto.GenType);
+                var row = New("placement", "placement-" + id); row.kind = id; row.requested = count;
+                row.requestedXY = new float[count * 2]; row.resolvedXY = new float[count * 2];
+                var distinct = new HashSet<Vector2>();
+                for (int i = 0; i < count; i++)
+                {
+                    var p = Position(i); var resolved = p;
+                    if (proto.GenType == MonsterGenType.Ground && host.MonsterEnv.GroundMap.RaycastToGround(p, out var landing)) resolved = landing;
+                    row.requestedXY[2 * i] = p.x; row.requestedXY[2 * i + 1] = p.y;
+                    row.resolvedXY[2 * i] = resolved.x; row.resolvedXY[2 * i + 1] = resolved.y;
+                    if (!map.IsObstacleOrInvalid(map.WorldToCell(p)) && !map.IsObstacleOrInvalid(map.WorldToCell(resolved))) row.validPositions++;
+                    distinct.Add(resolved);
+                }
+                row.distinctResolvedPositions = distinct.Count;
+                if (layout64 != null && row.validPositions == count)
+                {
+                    landingPredictions[id] = Enumerable.Range(0, count).Select(i => new Vector2(row.resolvedXY[i * 2], row.resolvedXY[i * 2 + 1])).ToArray();
+                    if (id == "fungus") predictedPositions = landingPredictions[id];
+                }
+                row.detail = "Read-only native map/landing inspection; no spawn and no cost window; " + Status(); Emit(row);
+            }
+        }
+        private void Clear(string label)
+        {
+            DetachUi(); var row = New("clear", label); row.requested = monsters.Count;
+            long b = ReadBytes(), t = Stopwatch.GetTimestamp();
+            if (monsters.Count != 0 && kind != "native" && api != null) foreach (var item in Value(api.GetInstances())) Value(api.Despawn(item.Handle));
+            else foreach (var monster in monsters) ((IMonsterHost)monster.Host).RemoveMonster(monster);
+            row.seconds = (Stopwatch.GetTimestamp() - t) / (double)Stopwatch.Frequency; row.mainBytes = reader == null ? -1 : ReadBytes() - b;
+            monsters.Clear(); controllers.Clear(); sprites.Clear(); uiRoots = Array.Empty<GameObject>();
+            // Check the actual native bullet lists before the baseline fixture can
+            // clear them. A module cleanup failure must remain a failed result.
+            row.bulletsAfterDespawn = BulletCount();
+            if (kind != "native" && row.bulletsAfterDespawn != 0) { row.valid = false; row.error = "NativeBulletsAfterOwnedDespawn"; }
+            if (kind != "native" && enabled) Resources(label + "-owned-resources");
+            DolocAPI.battleSystem?.ClearBulletsAndSkills();
+            row.behaviorStarts = behaviors.Count; row.behaviorStops = behaviors.Sum(p => p.Stops);
+            if (behaviors.Any(p => p.Stops != 1)) { row.valid = false; row.error = "BehaviorStopNotOnce"; }
+            behaviors.Clear(); kind = "zero";
+            if (DolocAPI.CurrentRoom?.RoomId == TestRoom && DolocAPI.CurrentRoom.DM_monster.MonsterCount != 0) { row.valid = false; row.error = "PopulationAfterClear"; }
+            row.detail = Status(); Emit(row);
+        }
+        private void Release()
+        {
+            if (monsters.Count != 0) throw new InvalidOperationException("Clear first.");
+            foreach (var d in definitions) d.Dispose(); definitions.Clear(); behavior?.Dispose(); behavior = null; demand?.Dispose(); demand = null;
+        }
+        private void InitializeReader()
+        {
+            if (Environment.GetEnvironmentVariable("DTMAPI_MONO_ALLOCATION_QA") != "1") return;
+            var type = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("DTMAPI.GameBridge.DolocTown.QA.NativeAllocationCalibration", false)).Single(t => t != null);
+            reader = (Action<long[]>)Delegate.CreateDelegate(typeof(Action<long[]>), type.GetMethod("ReadSampling", Flags));
+            var begin = (Func<int>)Delegate.CreateDelegate(typeof(Func<int>), type.GetMethod("dtmapi_alloc_start", Flags));
+            stopCounter = (Action)Delegate.CreateDelegate(typeof(Action), type.GetMethod("dtmapi_alloc_stop", Flags));
+            reader(counters); if (counters[6] != 0 || counters[7] != 2 || counters[4] != counters[5] || begin() != 1) throw new InvalidOperationException("Idle calibrated counter missing.");
+            for (int i = 0; i < 10000; i++) ReadBytes();
+            long b = ReadBytes(); for (int i = 0; i < 10000; i++) ReadBytes(); long overhead = ReadBytes() - b;
+            GC.KeepAlive(new byte[4096]); GC.KeepAlive(new byte[65536]);
+            b = ReadBytes(); GC.KeepAlive(new byte[4096]); long small = ReadBytes() - b;
+            b = ReadBytes(); GC.KeepAlive(new byte[65536]); long large = ReadBytes() - b;
+            if (overhead != 0 || small != 4128 || large != 65568) throw new InvalidOperationException("Reader calibration failed.");
+            var row = New("calibration", "calibration"); row.detail = "read10000=" + overhead + ";small=" + small + ";large=" + large; Emit(row);
+        }
+        private long ReadBytes()
+        {
+            if (reader == null) return -1;
+            reader(counters); if (counters[6] != 1 || counters[7] != 2 || counters[4] != counters[5]) throw new InvalidOperationException("Counter state/thread changed.");
+            return counters[0];
+        }
+        private double CpuMs() { process.Refresh(); return process.TotalProcessorTime.TotalMilliseconds; }
+        private void AttachUi()
+        {
+            var module = Module();
+            if (module == null) return;
+            var type = module.GetType().Assembly.GetType("DTMAPI.Modules.Monsters.MonsterPresentationDriver", true);
+            uiDriver = (Component)Object.FindObjectOfType(type);
+            if (uiDriver == null) return;
+            uiField = type.GetField("UpdatePresentation", Flags); originalUi = (Action)uiField.GetValue(uiDriver);
+            measuredUi = MeasureUi; uiField.SetValue(uiDriver, measuredUi);
+            var overlay = (GameObject)module.GetType().GetField("overlay", Flags).GetValue(module);
+            uiRoots = Enumerable.Range(0, overlay.transform.childCount).Select(i => overlay.transform.GetChild(i).gameObject).ToArray();
+        }
+        private void MeasureUi() { var token = Before(true); try { originalUi(); } finally { After(4, token); } }
+        private void DetachUi()
+        {
+            if (uiDriver != null && (Action)uiField.GetValue(uiDriver) == measuredUi) uiField.SetValue(uiDriver, originalUi);
+            uiDriver = null; originalUi = null; measuredUi = null;
+        }
+        private object ReadModule(out string state)
+        {
+            state = "unknown";
+            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "DTMAPI.Modules.Monsters");
+            if (assembly == null) { state = "absent"; return null; }
+            var field = assembly.GetType("DTMAPI.Modules.Monsters.NativeModule")?.GetField("current", Flags);
+            if (field == null) return null;
+            var module = field.GetValue(null); state = module == null ? "absent" : "present"; return module;
+        }
+        private object Module() => ReadModule(out _);
+        private void Resources(string label)
+        {
+            var module = ReadModule(out var state); var row = New("resources", label); row.resources = ResourceNames; row.moduleReadState = state;
+            row.resourceCounts = ResourceNames.Select(n => { var v = module?.GetType().GetField(n, Flags)?.GetValue(module); return v?.GetType().GetProperty("Count")?.GetValue(v) is int count ? count : -1; }).ToArray();
+            row.bulletsAfterDespawn = BulletCount();
+            ReadNativeResidents(row);
+            row.preparedModes = preparedModes.Keys.OrderBy(m => m, StringComparer.Ordinal).ToArray();
+            row.preparedCounts = row.preparedModes.Select(m => preparedModes[m]).ToArray();
+            row.lastPreparedMode = lastPreparedMode;
+            row.detail = Status(); Emit(row);
+        }
+        private static void ReadNativeResidents(Record row)
+        {
+            // Window-external observations of the actual native owner, not the
+            // module's own cleanup lists. Include inactive cached controllers.
+            var manager = DolocAPI.EntitySystem.GetGameEntityManager<MonsterController>();
+            var nested = (IDictionary)AccessTools.Field(manager.GetType(), "nestedPools").GetValue(manager);
+            var sources = new SortedDictionary<string, object>(StringComparer.Ordinal) { ["<root>"] = manager.GetType().GetProperty("Pool").GetValue(manager) };
+            foreach (DictionaryEntry pair in nested) sources.Add((string)pair.Key, pair.Value);
+            var known = new HashSet<int>(); var seenPools = new HashSet<object>(); var observations = new List<PoolResidency>();
+            foreach (var pair in sources)
+            {
+                if (!seenPools.Add(pair.Value)) continue; // Multiple aliases may refer to one native owner.
+                var type = pair.Value.GetType();
+                int[] Ids(IEnumerable items) => items.Cast<MonsterController>().Select(item => item != null ? item.GetInstanceID() : throw new InvalidOperationException("Destroyed controller in native pool.")).OrderBy(id => id).ToArray();
+                var active = Ids((IEnumerable)type.GetProperty("Instances").GetValue(pair.Value));
+                var cached = Ids((IEnumerable)AccessTools.Field(type, "pool").GetValue(pair.Value));
+                int activeCount = (int)type.GetProperty("ActiveCount").GetValue(pair.Value), cacheCount = (int)type.GetProperty("CacheCount").GetValue(pair.Value);
+                if (active.Length != activeCount || cached.Length != cacheCount) throw new InvalidOperationException("Native pool counts disagree with objects.");
+                foreach (int id in active.Concat(cached)) if (!known.Add(id)) throw new InvalidOperationException("Controller has multiple native pool owners.");
+                observations.Add(new PoolResidency { key = pair.Key, activeCount = activeCount, cacheCount = cacheCount, activeIds = active, cachedIds = cached });
+            }
+            var all = UnityEngine.Resources.FindObjectsOfTypeAll<MonsterController>().Select(c => c.GetInstanceID()).ToArray();
+            if (known.Any(id => !all.Contains(id))) throw new InvalidOperationException("Native pool controller missing from Unity objects.");
+            row.residentControllers = all.Length;
+            row.poolKeys = observations.Select(p => p.key).ToArray();
+            row.poolActiveCounts = observations.Select(p => p.activeCount).ToArray(); row.poolCacheCounts = observations.Select(p => p.cacheCount).ToArray();
+            row.poolControllerIds = observations.SelectMany(p => p.activeIds.Concat(p.cachedIds)).ToArray();
+            row.poolControllerOwners = observations.SelectMany((p, i) => Enumerable.Repeat(i, p.activeCount + p.cacheCount)).ToArray();
+            row.poolControllerActive = observations.SelectMany(p => Enumerable.Repeat(true, p.activeCount).Concat(Enumerable.Repeat(false, p.cacheCount))).ToArray();
+            // Prefabs and any objects outside the enumerated pools stay explicit.
+            // Their identity set must not grow/change at the resident checkpoints.
+            row.otherControllerIds = all.Where(id => !known.Contains(id)).OrderBy(id => id).ToArray();
+        }
+        private static int BulletCount()
+        {
+            if (DolocAPI.battleSystem == null) return 0;
+            var factory = AccessTools.Field(typeof(BattleSystem), "_bulletFactory").GetValue(DolocAPI.battleSystem);
+            var all = (Dictionary<string, BulletManager>)AccessTools.Field(factory.GetType(), "_managers").GetValue(factory);
+            int count = 0; foreach (var manager in all.Values) count += ((List<Bullet>)AccessTools.Field(typeof(BulletManager), "bullets").GetValue(manager)).Count;
+            return count;
+        }
+        private void Sample(string label, float duration)
+        {
+            if (duration < 10 || duration > 30 || DolocAPI.CurrentRoom?.RoomId != TestRoom) throw new ArgumentException("Fixed room, 10-30 seconds required.");
+            if (monsters.Count == 64)
+            {
+                if (layout64 == null || nativeGateFailed || (kind == "native" && !enabled && nativeGateAttempted)) throw new InvalidOperationException("64 native gate cannot be retried in this process.");
+                if (kind == "native" && !enabled) nativeGateAttempted = true;
+            }
+            seconds = duration; window = New("window", label); window.requested = monsters.Count;
+            window.width = Screen.width; window.height = Screen.height; window.targetFps = Application.targetFrameRate; window.vSync = QualitySettings.vSyncCount;
+            window.updates = new long[monsters.Count]; window.fixedUpdates = new long[monsters.Count];
+            var factory = AccessTools.Field(typeof(BattleSystem), "_bulletFactory").GetValue(DolocAPI.battleSystem);
+            managers = (Dictionary<string, BulletManager>)AccessTools.Field(factory.GetType(), "_managers").GetValue(factory);
+            Array.Clear(ticks, 0, ticks.Length); Array.Clear(previousTicks, 0, previousTicks.Length);
+            warmCpuStart = CpuMs(); warmup = warmLast = Stopwatch.GetTimestamp(); warmMaxMs = 0; active = false;
+        }
+        internal void Step()
+        {
+            try { StepCore(); }
+            catch (Exception e)
+            {
+                active = false;
+                var row = window ?? New("failure", transitionLabel ?? "driver-failure"); row.valid = false; row.error = e.ToString();
+                window = null; transitionLabel = null; Emit(row);
+            }
+        }
+        private void StepCore()
+        {
+            if (transitionLabel != null)
+            {
+                stable = arrived && DolocAPI.CurrentRoom?.RoomId == TestRoom && !DolocAPI.gameLoop.IsPaused && !DolocAPI.gameLoop.IsGlobalPaused ? stable + 1 : 0;
+                if (stable >= (settings.TreeOverview ? 120 : 3))
+                {
+                    SetCamera(); var row = New("entry", transitionLabel);
+                    row.entryStartQpc = transitionStart; row.entryCallbackQpc = transitionCallback; row.stableReadyQpc = Stopwatch.GetTimestamp();
+                    row.seconds = (transitionCallback - transitionStart) / (double)Stopwatch.Frequency;
+                    row.stableReadySeconds = (row.stableReadyQpc - transitionStart) / (double)Stopwatch.Frequency;
+                    transitionLabel = null; Emit(row);
+                }
+                else if ((Stopwatch.GetTimestamp() - transitionStart) / (double)Stopwatch.Frequency > 40) throw new InvalidOperationException("Entry timeout.");
+                return;
+            }
+            if (window == null) return;
+            if (settings.TreeOverview && (camera == null || camera.orthographicSize != 42.12f || camera.aspect != fixedCameraAspect || Vector2.Distance(camera.transform.position, new Vector2(416.25f, 216)) > .01f))
+                throw new InvalidOperationException("Fixed tree camera changed.");
+            if (!active)
+            {
+                long nowWarm = Stopwatch.GetTimestamp(); double warmFrame = (nowWarm - warmLast) * 1000.0 / Stopwatch.Frequency; warmLast = nowWarm;
+                warmMaxMs = Math.Max(warmMaxMs, warmFrame);
+                window.warmupSeconds = (nowWarm - warmup) / (double)Stopwatch.Frequency; window.warmupMaxFrameMs = warmMaxMs;
+                if (monsters.Count == 64 && warmFrame > LongFrameStopMs)
+                {
+                    window.valid = false; window.error = "WarmupLongFrameStop"; window.phase = "warmup"; nativeGateFailed = true;
+                    window.warmupCpuMs = CpuMs() - warmCpuStart; window.warmupPathMs = ticks.Select(t => t * 1000.0 / Stopwatch.Frequency).ToArray();
+                    window.longFrameMs = warmFrame; window.longFramePathMs = ticks.Select((t, i) => (t - previousTicks[i]) * 1000.0 / Stopwatch.Frequency).ToArray();
+                    var failed = window; window = null; Emit(failed); ActualPlacement(failed.label + "-warmup-stopped-positions", "warmup-stopped"); return;
+                }
+                Array.Copy(ticks, previousTicks, ticks.Length);
+                if (window.warmupSeconds < 5) return;
+                window.warmupCpuMs = CpuMs() - warmCpuStart; window.warmupPathMs = ticks.Select(t => t * 1000.0 / Stopwatch.Frequency).ToArray();
+                if (monsters.Count > 0 && !ActualPlacement(window.label + "-warm-positions", "after-five-second-warmup"))
+                { window.valid = false; window.error = "WarmupPlacementFailed"; nativeGateFailed = true; var failed = window; window = null; Emit(failed); return; }
+                managerCount = managers.Count; window.managers = managerCount;
+                bullets = managers.Values.Select(m => (List<Bullet>)AccessTools.Field(typeof(BulletManager), "bullets").GetValue(m)).ToArray();
+                Array.Clear(ticks, 0, ticks.Length); frameCount = 0; gcStart = GC.CollectionCount(0); heapStart = GC.GetTotalMemory(false);
+                Array.Clear(previousTicks, 0, previousTicks.Length); Array.Clear(window.calls, 0, window.calls.Length); Array.Clear(window.bytes, 0, window.bytes.Length);
+                Array.Clear(window.updates, 0, window.updates.Length); Array.Clear(window.fixedUpdates, 0, window.fixedUpdates.Length); window.fired = 0;
+                cpuStart = CpuMs(); firstBytes = ReadBytes(); firstAll = reader == null ? -1 : counters[2]; start = lastFrame = Stopwatch.GetTimestamp(); window.sampleStartQpc = start; active = true;
+            }
+            long now = Stopwatch.GetTimestamp();
+            double frameMs = (now - lastFrame) * 1000.0 / Stopwatch.Frequency;
+            if (now > lastFrame && frameCount < frames.Length) frames[frameCount++] = frameMs;
+            if (monsters.Count == 64 && frameMs > LongFrameStopMs) { window.valid = false; window.error = "SampleLongFrameStop"; window.phase = "sample"; window.longFrameMs = frameMs; window.longFramePathMs = ticks.Select((t, i) => (t - previousTicks[i]) * 1000.0 / Stopwatch.Frequency).ToArray(); nativeGateFailed = true; }
+            Array.Copy(ticks, previousTicks, ticks.Length);
+            lastFrame = now;
+            int count = DolocAPI.CurrentRoom.DM_monster.MonsterCount, running = 0, bulletCount = 0, ui = 0;
+            foreach (var m in monsters) if (!m.IsDead && m.Controller != null && controllers.ContainsKey(m.Controller)) running++;
+            foreach (var list in bullets) bulletCount += list.Count;
+            foreach (var root in uiRoots) if (root != null && root.activeInHierarchy) ui++;
+            window.monstersMin = Math.Min(window.monstersMin, count); window.monstersMax = Math.Max(window.monstersMax, count);
+            window.controllersMin = Math.Min(window.controllersMin, running); window.controllersMax = Math.Max(window.controllersMax, running);
+            window.bulletsMin = Math.Min(window.bulletsMin, bulletCount); window.bulletsMax = Math.Max(window.bulletsMax, bulletCount);
+            window.uiMin = Math.Min(window.uiMin, ui); window.uiMax = Math.Max(window.uiMax, ui);
+            if (DolocAPI.CurrentRoom.RoomId != TestRoom || DolocAPI.gameLoop.IsPaused || DolocAPI.gameLoop.IsGlobalPaused || count != window.requested || running != count || managers.Count != managerCount ||
+                Screen.width != window.width || Screen.height != window.height || Application.targetFrameRate != window.targetFps || QualitySettings.vSyncCount != window.vSync)
+            { window.valid = false; window.error = "RoomPausePopulationDisplayOrManagersChanged"; }
+            if (!window.valid || (now - start) / (double)Stopwatch.Frequency >= seconds) EndWindow();
+        }
+        private void EndWindow()
+        {
+            active = false; window.sampleEndQpc = Stopwatch.GetTimestamp(); window.seconds = (window.sampleEndQpc - start) / (double)Stopwatch.Frequency;
+            long b = ReadBytes(); window.mainBytes = reader == null ? -1 : b - firstBytes; window.allBytes = reader == null ? -1 : counters[2] - firstAll;
+            window.cpuMs = CpuMs() - cpuStart; window.gc0 = GC.CollectionCount(0) - gcStart; window.heapDelta = GC.GetTotalMemory(false) - heapStart; window.frames = frameCount;
+            Array.Sort(frames, 0, frameCount); window.frameMs = frameCount == 0 ? Array.Empty<double>() : new[] { frames[frameCount / 2], frames[(int)(frameCount * .95)], frames[(int)(frameCount * .99)], frames[frameCount - 1] };
+            for (int i = 0; i < ticks.Length; i++) window.ms[i] = ticks[i] * 1000.0 / Stopwatch.Frequency;
+            window.behaviorStarts = behaviors.Count; window.behaviorStops = behaviors.Sum(p => p.Stops); window.detail = Status();
+            var done = window; window = null; Emit(done);
+            if (monsters.Count > 0)
+            {
+                if (!ActualPlacement(done.label + "-end-positions", "sample-end")) nativeGateFailed = true;
+                else if (done.valid) { preparedModes[kind] = preparedModes.TryGetValue(kind, out var count) ? count + 1 : 1; lastPreparedMode = kind; }
+            }
+        }
+        private Token Before(bool selected, int index = -1)
+        { if (window == null || !selected) return default; long b = ReadBytes(); return new Token { active = true, bytes = b, time = Stopwatch.GetTimestamp(), index = index }; }
+        private void After(int path, Token token)
+        {
+            if (!token.active || window == null) return;
+            long end = Stopwatch.GetTimestamp(), b = ReadBytes(); ticks[path] += end - token.time; window.calls[path]++;
+            if (reader != null) window.bytes[path] += b - token.bytes;
+            if (path == 0) window.updates[token.index]++; else if (path == 1) window.fixedUpdates[token.index]++;
+        }
+        private static void UpdateBefore(MonsterController __instance, out Token __state)
+        { var c = Current; __state = c != null && c.window != null && c.controllers.TryGetValue(__instance, out var i) ? c.Before(true, i) : default; }
+        private static void UpdateAfter(Token __state) => Current?.After(0, __state);
+        private static void FixedBefore(MonsterController __instance, out Token __state)
+        { var c = Current; __state = c != null && c.window != null && c.controllers.TryGetValue(__instance, out var i) ? c.Before(true, i) : default; }
+        private static void FixedAfter(Token __state) => Current?.After(1, __state);
+        private static void SpriteBefore(SpriteOverrideHandler __instance, out Token __state) { var c = Current; __state = c?.Before(c.sprites.Contains(__instance)) ?? default; }
+        private static void SpriteAfter(Token __state) => Current?.After(2, __state);
+        private static void BulletBefore(out Token __state) => __state = Current?.Before(true) ?? default;
+        private static void BulletAfter(Token __state) => Current?.After(3, __state);
+        private static void Fired() { if (Current?.window != null) Current.window.fired++; }
+        private string Status() => "room=" + DolocAPI.CurrentRoom?.RoomId + " kind=" + kind + " count=" + DolocAPI.CurrentRoom?.DM_monster.MonsterCount + " module=" + enabled + " dll=" + AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "DTMAPI.Modules.Monsters") + " hooks=" + Harmony.GetAllPatchedMethods().Count(m => Harmony.GetPatchInfo(m).Owners.Contains("DTMAPI.Monsters.Native"));
+        private Record New(string type, string label) => new Record { type = type, label = label, kind = kind, profiler = reader != null, module = enabled, groupedGround = groupedGround, layout = LayoutName,
+            processId = process.Id, processStartUtc = process.StartTime.ToUniversalTime().ToString("o", CultureInfo.InvariantCulture),
+            roomId = TestRoom, targetX = Target.x, targetY = Target.y, cameraXY = camera == null ? Array.Empty<float>() : new[] { camera.transform.position.x, camera.transform.position.y },
+            cameraSize = camera == null ? 0 : camera.orthographicSize, cameraAspect = camera == null ? 0 : camera.aspect };
+        private void SetCamera()
+        {
+            if (!settings.TreeOverview) return;
+            if (camera != null) throw new InvalidOperationException("Tree camera already configured.");
+            camera = Camera.main; if (camera == null || !camera.orthographic) throw new InvalidOperationException("Orthographic gameplay camera required.");
+            originalCameraPosition = camera.transform.position; originalCameraSize = camera.orthographicSize; originalCameraEnabled = DolocAPI.cameraController.enabled;
+            DolocAPI.cameraController.setEnabled(false); camera.transform.position = new Vector3(416.25f, 216, originalCameraPosition.z); camera.orthographicSize = 42.12f; fixedCameraAspect = camera.aspect;
+        }
+        private void Emit(Record row)
+        {
+            row.captureQpc = Stopwatch.GetTimestamp(); row.qpcFrequency = Stopwatch.Frequency;
+            row.captureUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            string destination = Path.Combine(output, (++sequence).ToString("D3") + "-" + row.label + ".json");
+            File.WriteAllText(destination + ".pending", JsonUtility.ToJson(row, true)); File.Move(destination + ".pending", destination);
+            helper.Monitor.Log("Capacity complete label=" + row.label + "; valid=" + row.valid + "; error=" + row.error);
+        }
+        private sealed class Patrol : IMonsterBehavior
+        {
+            private readonly ModEntry owner;
+            private IMonsterBehaviorContext context;
+            private MonsterActionHandle action;
+            private bool hasAction, right;
+            private float clock, nextAttack, nextMove, x, y;
+            internal int Stops;
+            internal Patrol(ModEntry owner) { this.owner = owner; }
+            public void Start(IMonsterBehaviorContext value) { context = value; var self = Value(context.GetSelf()); x = self.X; y = self.Y; }
+            public void Tick(float dt)
+            {
+                var all = owner.Before(true);
+                try
+                {
+                    clock += dt; var token = owner.Before(true); var self = context.GetSelf(); owner.After(5, token); Value(self);
+                    if (hasAction)
+                    {
+                        token = owner.Before(true); var status = context.GetAction(action); owner.After(6, token);
+                        if (status.Success && status.Value.State == MonsterActionState.Running) return; hasAction = false;
+                    }
+                    if (clock >= nextAttack)
+                    {
+                        nextAttack = clock + 2; token = owner.Before(true); var attacks = context.GetAttacks(); owner.After(7, token);
+                        var attack = attacks.Success ? attacks.Value.FirstOrDefault(a => a.Available && a.TargetInRange) : null;
+                        if (attack != null) { var result = context.Attack(attack.Id, 5); if (result.Success) { action = result.Value; hasAction = true; return; } }
+                    }
+                    if (clock < nextMove) return; nextMove = clock + .5f;
+                    var move = context.MoveTo(x + (right ? .75f : -.75f), y, 4, 20); right = !right;
+                    if (move.Success) { action = move.Value; hasAction = true; }
+                }
+                finally { owner.After(8, all); }
+            }
+            public void Stop() { if (++Stops != 1) throw new InvalidOperationException("Duplicate Stop."); context = null; }
+        }
+        public void Dispose()
+        {
+            if (closed) return; active = false; window = null; transitionLabel = null;
+            Clear("shutdown-clear"); Release(); stopCounter?.Invoke(); reader = null; harmony.UnpatchSelf();
+            if (camera != null) { camera.transform.position = originalCameraPosition; camera.orthographicSize = originalCameraSize; DolocAPI.cameraController.setEnabled(originalCameraEnabled); }
+            if (driver != null) Object.Destroy(driver); closed = true; Current = null;
+        }
+    }
+    public sealed class CapacityDriver : MonoBehaviour { private void LateUpdate() => ModEntry.Current?.Step(); }
+}

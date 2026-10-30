@@ -1,0 +1,101 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterPhases",
+    "name": "两阶段 Boss",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "boss",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 100,
+        "defense": 0,
+        "tint": "#FFC06A",
+        "display": {
+          "name": "阶段 Boss 配置",
+          "nameplate": true,
+          "healthBar": "Always",
+          "bossBar": true
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "fan",
+            "kind": "scatter",
+            "scatter": {
+              "projectileAttackId": "AtkNormal",
+              "bulletCount": 1,
+              "spreadDegrees": 0,
+              "bulletSpeed": 4,
+              "bulletLifetimeGameSeconds": 2,
+              "damage": 7,
+              "range": 12,
+              "windupGameSeconds": 1.2,
+              "recoveryGameSeconds": 0.4,
+              "cooldownGameSeconds": 0.2
+            }
+          },
+          {
+            "id": "dash",
+            "kind": "dash",
+            "dash": {
+              "distance": 2,
+              "speed": 4,
+              "hitStartFraction": 0,
+              "hitEndFraction": 1,
+              "damage": 7,
+              "range": 12,
+              "windupGameSeconds": 0.5,
+              "recoveryGameSeconds": 0.4,
+              "cooldownGameSeconds": 0.2
+            }
+          }
+        ],
+        "healthPhases": {
+          "transition": "CancelCurrent",
+          "stages": [
+            {
+              "id": "enraged",
+              "atOrBelow": 0.5,
+              "speedMultiplier": 1.5,
+              "damageMultiplier": 2
+            }
+          ]
+        },
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "fire",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "fan"
+            },
+            {
+              "id": "charge",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "dash"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

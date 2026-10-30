@@ -153,7 +153,6 @@ namespace DTMAPI.DebugConsole
         private bool saveSessionObserved;
         private bool openLogged;
         private bool suppressYCloseUntilReleased;
-        private bool suppressLegacyYCloseUntilReleased;
         private bool suppressEscapeCloseUntilReleased;
         private int escapeCloseDrainCleanFrames;
         private bool eventSystemPendingLogged;
@@ -164,22 +163,33 @@ namespace DTMAPI.DebugConsole
         private bool saveConfirmationArmed;
         private DateTimeOffset saveConfirmationExpiresAtUtc =
             DateTimeOffset.MinValue;
-        private DateTimeOffset lastRightClickGiveAt;
         private DateTimeOffset nextEventSystemRetryAtUtc = DateTimeOffset.MinValue;
 
-        public DebugConsoleUi(IDebugConsoleRuntime runtime)
+        private readonly Func<int> customTimeMultiplier;
+        private readonly Func<int> rightClickCount;
+        private readonly Func<int> cropMaturityRadius;
+
+        public DebugConsoleUi(IDebugConsoleRuntime runtime, Func<int>? customTimeMultiplier = null, Func<int>? rightClickCount = null, Func<int>? cropMaturityRadius = null)
         {
             this.runtime = runtime ??
                 throw new ArgumentNullException(nameof(runtime));
             text = new DebugConsoleText(runtime.Translation);
+            this.customTimeMultiplier = customTimeMultiplier ?? (() => 4);
+            this.rightClickCount = rightClickCount ?? (() => 10);
+            this.cropMaturityRadius = cropMaturityRadius ?? (() => 25);
         }
 
+        private int GetRightClickCount() => DebugConsoleConfig.NormalizeDispatchCount(rightClickCount());
+
+        internal void RefreshDispatchCount() => dirtyRegions |= UiDirtyRegion.Catalog;
+
+        private IUiModalSession? modalSession;
+        // Presentation/Hook cleanup may still be pending after Core replaces a session.
         public bool IsOpen { get; private set; }
         public bool ConsumedInputThisFrame { get; private set; }
         internal bool NeedsUpdate =>
             IsOpen ||
             suppressYCloseUntilReleased ||
-            suppressLegacyYCloseUntilReleased ||
             suppressEscapeCloseUntilReleased;
 
         public string GetLifecycleSummary()
@@ -243,7 +253,6 @@ namespace DTMAPI.DebugConsole
             activeSaveSlot = null;
             saveSessionObserved = false;
             ResetItemFilters("ReturnedToTitle");
-            suppressLegacyYCloseUntilReleased = false;
             if (IsOpen)
                 Close(ownerManifest!, "ReturnedToTitle");
             else
@@ -300,17 +309,19 @@ namespace DTMAPI.DebugConsole
             ownerManifest = ClaimOwner(owner);
             if (IsOpen)
                 return;
-            if (!runtime.UI.OpenOwnerBoundCustomMenu(
+            DtmModalOpenResult acquisition = runtime.UI.OpenModal(
                     MenuId,
-                    ownerManifest!.UniqueID))
+                    ownerManifest!.UniqueID);
+            if (acquisition.Session == null)
             {
                 runtime.SetHookStatus(
                     "UI.DebugConsoleVisibility",
                     "blocked-foreign-modal",
                     "DTMAPI owner-bound modal token",
-                    "DebugConsole did not open because another owner already holds the modal token.");
+                    "DebugConsole modal acquisition ended with " + acquisition.Status + ".");
                 return;
             }
+            modalSession = acquisition.Session;
             IsOpen = true;
             text = new DebugConsoleText(runtime.Translation);
             dirtyRegions |= UiDirtyRegion.Dynamic;
@@ -345,13 +356,9 @@ namespace DTMAPI.DebugConsole
                 catch
                 {
                 }
-                if (runtime.UI.IsOpen &&
-                    runtime.UI.ActiveMenuId.Equals(
-                        MenuId,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    runtime.UI.Close();
-                }
+                IUiModalSession? failedSession = modalSession;
+                modalSession = null;
+                failedSession?.Dispose();
                 runtime.SetHookStatus(
                     "UI.DebugConsoleVisibility",
                     "hook-install-failed",
@@ -375,8 +382,10 @@ namespace DTMAPI.DebugConsole
             EnsureOwnerMatchesIfBound(owner);
             if (!IsOpen)
                 return;
-            bool ownedRuntimeMenuOpen = runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase);
-            string activeRuntimeMenu = runtime.UI.ActiveMenuId;
+            // Restore before releasing this generation. A failing native setter leaves
+            // the UI/claim available for retry; a MenuClosed reentry owns a new effect cycle.
+            IUiModalSession? closingSession = modalSession;
+            bool ownedRuntimeMenuOpen = closingSession?.IsOpen == true;
             bool previousInputDrain =
                 suppressEscapeCloseUntilReleased;
             bool nextInputDrain =
@@ -395,13 +404,6 @@ namespace DTMAPI.DebugConsole
                 runtime.NativeInputDrainActive =
                     nextInputDrain;
                 runtime.ModalOpen = false;
-                if (runtime.UI.IsOpen &&
-                    runtime.UI.ActiveMenuId.Equals(
-                        MenuId,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    runtime.UI.Close();
-                }
             }
             catch (Exception closeFailure)
             {
@@ -412,19 +414,6 @@ namespace DTMAPI.DebugConsole
                     };
                 try
                 {
-                    if (!runtime.UI.IsOpen ||
-                        !runtime.UI.ActiveMenuId.Equals(
-                            MenuId,
-                            StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!runtime.UI.OpenOwnerBoundCustomMenu(
-                                MenuId,
-                                ownerManifest!.UniqueID))
-                        {
-                            throw new InvalidOperationException(
-                                "DebugConsole could not reacquire its Core modal token after a failed close.");
-                        }
-                    }
                     runtime.ModalOpen = true;
                     runtime.NativeInputDrainActive =
                         previousInputDrain;
@@ -451,16 +440,20 @@ namespace DTMAPI.DebugConsole
             }
 
             IsOpen = false;
+            modalSession = null;
             ResetSaveConfirmation();
             suppressYCloseUntilReleased = false;
             suppressEscapeCloseUntilReleased =
                 nextInputDrain;
             escapeCloseDrainCleanFrames = 0;
             PrepareRetainedUiForClose();
-            runtime.RuntimeMonitor.Log("Debug console close boundary reason=" + (reason ?? string.Empty) + " modalOpen=" + ownedRuntimeMenuOpen + " activeMenu=" + (activeRuntimeMenu.Length == 0 ? "none" : activeRuntimeMenu) + ".");
+            runtime.RuntimeMonitor.Log("Debug console close boundary reason=" + (reason ?? string.Empty) + " modalOpen=" + ownedRuntimeMenuOpen + " sequence=" + closingSession?.Sequence + ".");
             runtime.RuntimeMonitor.Log("Debug console closed reason=" + (reason ?? string.Empty) + " owner=" + (owner?.UniqueID ?? ownerManifest?.UniqueID ?? "unknown") + ".");
             runtime.SetHookStatus("UI.DebugConsoleVisibility", "closed", "DTMAPI.DebugConsoleMod + Unity UI Canvas", "Debug console closed from " + (reason ?? "unknown") + ".");
             ApplyVisibilityState();
+            // Finish this presentation before dispatching MenuClosed, which may reopen
+            // the same product. Nothing below may clear the successor's gates or Canvas.
+            closingSession?.Close();
         }
 
         public void Toggle(IManifest owner, string reason)
@@ -525,19 +518,19 @@ namespace DTMAPI.DebugConsole
 
         private void ReleaseOwnerGraph(string reason)
         {
+            IUiModalSession? releasedSession = modalSession;
+            modalSession = null;
             IsOpen = false;
             runtime.ModalOpen = false;
             runtime.NativeInputDrainActive = false;
             suppressYCloseUntilReleased = false;
-            suppressLegacyYCloseUntilReleased = false;
             suppressEscapeCloseUntilReleased = false;
             escapeCloseDrainCleanFrames = 0;
             ConsumedInputThisFrame = false;
 
             try
             {
-                if (runtime.UI.IsOpen && runtime.UI.ActiveMenuId.Equals(MenuId, StringComparison.OrdinalIgnoreCase))
-                    runtime.UI.Close();
+                releasedSession?.Dispose();
             }
             catch
             {
@@ -675,11 +668,13 @@ namespace DTMAPI.DebugConsole
         public void Update()
         {
             ConsumedInputThisFrame = false;
+            CheckDeleteConfirmation();
+            if (IsOpen && modalSession?.IsOpen != true)
+                Close(ownerManifest!, "modal session replaced");
             if (ownerManifest == null)
             {
                 runtime.ModalOpen = false;
                 runtime.NativeInputDrainActive = false;
-                suppressLegacyYCloseUntilReleased = false;
                 suppressEscapeCloseUntilReleased = false;
                 escapeCloseDrainCleanFrames = 0;
                 if (HasUnboundOwnerGraph())
@@ -702,8 +697,7 @@ namespace DTMAPI.DebugConsole
                 inputMask |= DebugConsoleRawInputMask.YPressed |
                     DebugConsoleRawInputMask.YDown;
             }
-            else if (suppressYCloseUntilReleased ||
-                suppressLegacyYCloseUntilReleased)
+            else if (suppressYCloseUntilReleased)
             {
                 inputMask |= DebugConsoleRawInputMask.YDown;
             }
@@ -714,13 +708,6 @@ namespace DTMAPI.DebugConsole
             bool escapeDown = rawInput.EscapeDown;
 
             AdvanceEscapeCloseDrain(escapePressed, escapeDown);
-
-            if (suppressLegacyYCloseUntilReleased)
-            {
-                runtime.Input.Suppress("Y");
-                if (!rawInput.YDown)
-                    suppressLegacyYCloseUntilReleased = false;
-            }
 
             runtime.ModalOpen = IsOpen;
             runtime.NativeInputDrainActive = suppressEscapeCloseUntilReleased;
@@ -741,14 +728,6 @@ namespace DTMAPI.DebugConsole
                         IsAnyTextInputFocused()))
                     {
                         runtime.Input.Suppress("Y");
-                        return;
-                    }
-
-                    if (ShouldUseLegacyYCloseFallback() && runtime.TryDispatchLegacyModalButtonPressed(MenuId, ownerManifest!.UniqueID, "Y"))
-                    {
-                        suppressLegacyYCloseUntilReleased = true;
-                        runtime.Input.Suppress("Y");
-                        runtime.RuntimeMonitor.Log("Debug console legacy RegisterButton Y close compatibility dispatched owner=" + ownerManifest!.UniqueID + ".");
                         return;
                     }
 
@@ -947,14 +926,6 @@ namespace DTMAPI.DebugConsole
 
             runtime.NativeInputDrainActive = suppressEscapeCloseUntilReleased;
             return suppressEscapeCloseUntilReleased;
-        }
-
-        internal bool ShouldUseLegacyYCloseFallback()
-        {
-            string ownerId = ownerManifest?.UniqueID ?? string.Empty;
-            return ownerId.Length > 0 &&
-                runtime.Input.HasOwnerLegacyButtonRegistration(ownerId, "Y") &&
-                !runtime.Input.HasOwnerTypedKeybindForButton(ownerId, "Y");
         }
 
         internal bool TryConsumeRawYKeyDown(bool yIsDown, bool textInputFocused)

@@ -1,6 +1,6 @@
 # API 0.6.2 引入的平台服务
 
-这些平台服务在内部 API 0.6.2 中合并了此前验证的 M2 与反射能力，仍为 Experimental。SDK 0.7.0 保留 0.6.2 target，默认 target 为 0.7.0；target 是否可选及对应 Runtime 范围以 [target catalog](target-catalog.json) 为准。显式选择 API 0.5.5 的工程保持原载荷，不能调用这些服务。请使用正常 SDK 构建及匹配的引用载荷，不要为了编译通过而引用已安装的 Runtime DLL。
+这些平台服务由 API 0.6.2 引入，当前 0.7.5 引用继续提供，仍为 Experimental。普通 netstandard2.0 工程引用所需 API DLL，并声明实际最低 Runtime 版本即可。SDK、target catalog 和构建证明都不是使用前提；旧 0.5.5 引用没有这些类型。
 
 ## 获取服务与生命周期
 
@@ -14,13 +14,15 @@
 
 每个 handle 只有一个终态结果。取消无法中断已运行的 Action。回调共享 Runtime 每帧预算，应尽量简短。完成 Task 的 continuation 异步运行，不会自动回到 Unity 线程；先完成后台工作，再用 Post 提交结果。不要使用 `async void`：SDK203 会识别直接传给 scheduler、context、command 和 language 回调的 async lambda/method group，但不会追踪存入变量的委托。
 
-`IDtmOwnedResources.Register` 在 Runtime 线程上注册一个 `IDisposable` 并返回 token。`Unregister` 只解除注册，不 dispose；token 的 `Dispose` 请求清理。后台调用 Dispose 会等待 Runtime 处理队列。范围失效或 owner 关闭时，资源按注册顺序倒序 dispose，异常相互隔离，清理失败的资源保留以供重试。dispose 应可重复执行而不产生额外副作用。已关闭 owner/token 不会因同 ID Mod 再次加载而恢复活动。
+`IDtmOwnedResources.Register` 在 Runtime 线程上注册一个 `IDisposable` 并返回 token。`Unregister` 只解除注册，不 dispose；token 的 `Dispose` 请求清理。后台调用只排队并返回，随后由 Runtime 线程处理。范围失效或 owner 关闭时，资源按注册顺序倒序 dispose，异常相互隔离，清理失败的资源保留以供重试。dispose 应可重复执行而不产生额外副作用。已关闭 owner/token 不会因同 ID Mod 再次加载而恢复活动。
+
+[可运行清理示例](examples/OwnedCleanup/ModEntry.cs)演示单项失败、其余继续、状态检查及重试，并说明 AF／AS 的产品原生恢复责任。
 
 ## 命令
 
 `IDtmCommands.Register("status", handler, scope, description, parameters, alias)` 注册规范名称 `UniqueID/status`。名称和别名比较不区分大小写；别名冲突会失败，不覆盖先前注册。`GetHelp` 返回只读快照。`Execute` 与其他工作使用同一 scheduler 和范围检查。handler 收到 request ID、owner ID、只读参数及 `WriteLine`。输出最多 32 行/4096 字符。解析器支持带引号参数、反斜杠转义和空引号参数；输入不是 shell 命令或脚本。
 
-存在注册命令时，标题界面的 Status 页会显示命令输入框。用 `help` 查看名称；界面显示简短输出，完整输出写入日志。认证作者会话先通过 `--commands true` 准备，再使用 `session command <UniqueID> <selectedRoot> --game-root <path> --command-line "UniqueID/status"`。该选项协商可选 `execute-command/1`，仍需通过选定来源、文件树、owner 和 request-ID 检查；不能借会话执行另一个 owner 的命令。排队超时或会话关闭会取消未开始的工作，已经运行的工作不回滚。
+存在注册命令时，标题界面的 Status 页会显示命令输入框。用 `help` 查看名称；界面显示简短输出，完整输出写入日志。认证作者会话先通过 `--commands true` 准备，再使用 `session command <UniqueID> <selectedRoot> --game-root <path> --command-line "UniqueID/status"`。该选项协商可选 `execute-command/1`，仍需通过选定来源、owner 和 request-ID 检查；不能借会话执行另一个 owner 的命令。排队超时或会话关闭会取消未开始的工作，已经运行的工作不回滚。
 
 ## 带版本的配置
 
@@ -29,6 +31,8 @@
 迁移先作用于候选值，校验后一次原子提交。校验返回 null/空字符串表示成功，错误字符串表示失败。校验接收隔离值，必须只做检查，校验中修改的值不会提交。读取已提交版本成功后，不会再次迁移。`Corrupt`、`UnsupportedSchema`、`MigrationRequired`、`MigrationFailed`、`ValidationFailed`、`AccessDenied` 和 `IoError` 都会保留现有字节，且与 `Missing` 不同；不能把它们当作写入默认值的许可。不会自动修复并覆盖损坏或未来版本数据。owner 关闭时释放迁移回调。
 
 带版本配置位于 Runtime 配置区，与旧 `ReadConfig` 文件分开；采用它不会静默导入或改写旧文件。作者可显式读取旧模型、校验，并且只在版本化读取结果为 `Missing` 时写入新配置。旧 migration Actions 仍保留原来的每次读取行为。配置独立于玩法存档的提交/回滚语义。
+
+[旧配置迁移示例](examples/LegacyConfig/ModEntry.cs)使用 AS 的实际字段名，比较保留原路径和显式导入 Versioned 的成本，覆盖新安装、改名、失败保全和重复启动。
 
 ## 输入与翻译
 

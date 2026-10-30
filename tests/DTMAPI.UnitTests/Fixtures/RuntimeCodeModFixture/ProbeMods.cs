@@ -144,14 +144,6 @@ public sealed class ThrowAfterRegisterProbeMod : DtmMod
             menu.AddParagraph(helper.ModManifest, () => "This page must be removed after Entry failure.");
         }
 
-#pragma warning disable CS0618 // Frozen legacy API is intentional in this cleanup fixture.
-        ICustomAnimalApi? animals = helper.ModRegistry.GetApi<ICustomAnimalApi>("DTMAPI");
-        animals?.RegisterSpecies(helper.ModManifest, new CustomAnimalSpeciesDefinition
-        {
-            SpeciesId = helper.ModManifest.UniqueID + ".Animal"
-        });
-#pragma warning restore CS0618
-
         throw new InvalidOperationException("throw-after-register-probe");
     }
 }

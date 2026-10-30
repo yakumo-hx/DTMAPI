@@ -1,0 +1,46 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterPackA",
+    "name": "苔青巡游蜂",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "variant",
+      "templateId": "bee",
+      "overrides": {
+        "health": 70,
+        "defense": 1,
+        "tint": "#71CFAC",
+        "display": {
+          "name": "苔青巡游蜂",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [
+    {
+      "id": "ruins",
+      "definitionId": "variant",
+      "roomId": "dungeon_多洛可河谷.stage2_巨大的树",
+      "regionId": "",
+      "count": 1
+    }
+  ],
+  "assets": [],
+  "dependencies": []
+}

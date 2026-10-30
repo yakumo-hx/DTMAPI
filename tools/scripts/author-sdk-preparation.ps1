@@ -77,6 +77,7 @@ function Get-DtmApiAuthorSdkInput {
     foreach ($relative in @('tools/scripts/build-author-sdk.ps1', 'tools/scripts/prepare-author-sdk.ps1', 'tools/scripts/author-sdk-preparation.ps1', 'tools/scripts/author-sdk-release-common.ps1', 'tools/scripts/author-sdk-compatibility.ps1', 'tools/scripts/prepare-author-sdk-compatibility.ps1', 'tools/scripts/check-author-sdk-release.ps1', 'tools/scripts/common.ps1')) {
         $files.Add((Join-Path $repoFull $relative)) | Out-Null
     }
+    foreach ($module in @('repository', 'files', 'toolchain')) { $files.Add((Join-Path $repoFull "tools/scripts/common/$module.ps1")) | Out-Null }
     # Content/EmbeddedResource evaluation above owns packaged assets. Only these
     # target files are copied outside MSBuild. Examples, their bin/obj and retired
     # policy history are not SDK build inputs.
@@ -109,17 +110,17 @@ function Get-DtmApiAuthorSdkInput {
 }
 
 function Test-DtmApiPreparedAuthorSdk {
-    param([string] $OutputRoot, $InputSnapshot)
+    param([string] $OutputRoot, $InputSnapshot, [switch] $RequireReleaseArchive)
     $receiptPath = Join-Path $OutputRoot 'preparation.json'
     if (-not (Test-Path -LiteralPath $receiptPath -PathType Leaf)) { return $false }
     try {
-        $receipt = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+        $receipt = Get-Content -Raw -Encoding UTF8 -LiteralPath $receiptPath | ConvertFrom-Json
         if ($receipt.schemaVersion -ne 1 -or $receipt.inputSha256 -cne $InputSnapshot.sha256) { return $false }
         $stage = Assert-AuthorSdkChildPath -Root $OutputRoot -Path ([string]$receipt.stageRoot) -Label 'prepared SDK'
         if (@(Get-ChildItem -LiteralPath $stage -Force -Recurse | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count -gt 0) { return $false }
         $inventoryPath = Join-Path $stage 'author-sdk-release.json'
         if ((Get-AuthorSdkSha256 -Path $inventoryPath) -cne $receipt.inventorySha256) { return $false }
-        $inventory = Get-Content -Raw -LiteralPath $inventoryPath | ConvertFrom-Json
+        $inventory = Get-Content -Raw -Encoding UTF8 -LiteralPath $inventoryPath | ConvertFrom-Json
         $expected = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
         $expected.Add('author-sdk-release.json') | Out-Null
         foreach ($row in $inventory.files) {
@@ -131,6 +132,44 @@ function Test-DtmApiPreparedAuthorSdk {
         if ($actual.Count -ne $expected.Count) { return $false }
         foreach ($file in $actual) {
             if (-not $expected.Contains((Get-AuthorSdkRelativePath -Root $stage -Path $file.FullName)) -or ($file.Attributes -band [IO.FileAttributes]::ReparsePoint)) { return $false }
+        }
+        if ($RequireReleaseArchive) {
+            # The preparation receipt binds the stage inventory, not an adjacent
+            # archive. Check its bytes and exact entry set before reusing both.
+            $zipPath = $stage + '.zip'
+            $sidecarPath = $zipPath + '.sha256'
+            foreach ($path in @($zipPath, $sidecarPath)) {
+                if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+                    ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { return $false }
+            }
+            $sidecar = [regex]::Match([IO.File]::ReadAllText($sidecarPath), '\A([a-fA-F0-9]{64}) \*([^\r\n]+)\r?\n?\z')
+            if (-not $sidecar.Success -or $sidecar.Groups[2].Value -cne [IO.Path]::GetFileName($zipPath) -or
+                $sidecar.Groups[1].Value.ToLowerInvariant() -cne (Get-AuthorSdkSha256 -Path $zipPath)) { return $false }
+
+            $zipFiles = New-Object 'System.Collections.Generic.Dictionary[string,object]' ([StringComparer]::Ordinal)
+            $zipFiles.Add('author-sdk-release.json', [pscustomobject]@{ length = (Get-Item -LiteralPath $inventoryPath).Length; sha256 = $receipt.inventorySha256 })
+            foreach ($row in $inventory.files) { $zipFiles.Add([string]$row.path, $row) }
+            Add-Type -AssemblyName System.IO.Compression
+            $zipStream = [IO.File]::OpenRead($zipPath)
+            try {
+                $archive = New-Object IO.Compression.ZipArchive($zipStream, [IO.Compression.ZipArchiveMode]::Read, $true)
+                try {
+                    if ($archive.Entries.Count -ne $zipFiles.Count) { return $false }
+                    foreach ($entry in $archive.Entries) {
+                        if (-not $zipFiles.ContainsKey($entry.FullName)) { return $false }
+                        $row = $zipFiles[$entry.FullName]
+                        if ($entry.Length -ne $row.length) { return $false }
+                        $entryStream = $entry.Open()
+                        try { $entryHash = ((Get-FileHash -InputStream $entryStream -Algorithm SHA256).Hash).ToLowerInvariant() }
+                        finally { $entryStream.Dispose() }
+                        if ($entryHash -cne $row.sha256) { return $false }
+                        $zipFiles.Remove($entry.FullName) | Out-Null
+                    }
+                    if ($zipFiles.Count -ne 0) { return $false }
+                }
+                finally { $archive.Dispose() }
+            }
+            finally { $zipStream.Dispose() }
         }
         return $true
     }

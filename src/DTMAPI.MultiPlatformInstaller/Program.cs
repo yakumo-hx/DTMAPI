@@ -78,6 +78,7 @@ internal static class Program
                 PackageRoot = baseOptions.PackageRoot,
                 OutputPath = baseOptions.OutputPath,
                 NonInteractive = false,
+                ConfirmLegacyEquipmentRemoval = baseOptions.ConfirmLegacyEquipmentRemoval,
                 Pause = false
             };
             _ = RunOnce(run);
@@ -93,7 +94,6 @@ internal static class Program
         {
             PlatformEnvironment platform = new();
             string packageRoot = PackageLayout.FindPackageRoot(options.PackageRoot);
-            PackageLayout package = PackageLayout.LoadAndValidate(packageRoot);
             string? gameDir;
             try
             {
@@ -122,10 +122,10 @@ internal static class Program
 
             InstallerResult result = options.Action switch
             {
-                InstallerAction.Install => InstallAction.Run(package, gameDir, platform),
-                InstallerAction.Uninstall => UninstallAction.Run(package, gameDir, platform),
-                InstallerAction.Status => RunStatus(package, gameDir, platform),
-                InstallerAction.CollectLogs => CollectLogsAction.Run(package, gameDir, platform, options.OutputPath),
+                InstallerAction.Install => InstallAction.Run(PackageLayout.Load(packageRoot), gameDir, platform),
+                InstallerAction.Uninstall => UninstallAction.Run(gameDir, platform, options.ConfirmLegacyEquipmentRemoval, options.NonInteractive),
+                InstallerAction.Status => RunStatus(packageRoot, gameDir, platform),
+                InstallerAction.CollectLogs => CollectLogsAction.Run(packageRoot, gameDir, platform, options.OutputPath),
                 _ => InstallerResult.Failure(InstallerCodes.Unexpected, 2,
                     "未选择有效操作。", "No valid action was selected.")
             };
@@ -157,9 +157,9 @@ internal static class Program
         }
     }
 
-    private static InstallerResult RunStatus(PackageLayout package, string gameDir, PlatformEnvironment platform)
+    private static InstallerResult RunStatus(string packageRoot, string gameDir, PlatformEnvironment platform)
     {
-        StatusReport report = StatusAction.Evaluate(package, gameDir, platform);
+        StatusReport report = StatusAction.Evaluate(packageRoot, gameDir, platform);
         string formatted = StatusAction.Format(report);
         if (report.Files == FileHealth.Healthy)
             return InstallerResult.Success(InstallerCodes.Healthy,
@@ -196,6 +196,9 @@ internal static class Program
                     break;
                 case "--non-interactive":
                     options.NonInteractive = true;
+                    break;
+                case "--confirm-legacy-equipment-removal":
+                    options.ConfirmLegacyEquipmentRemoval = true;
                     break;
                 case "--pause":
                     options.Pause = true;
@@ -250,7 +253,8 @@ internal static class Program
         Console.WriteLine("  --game-path <path>       Folder containing DolocTown.exe");
         Console.WriteLine("  --package-root <path>    Complete Workshop package root");
         Console.WriteLine("  --output <directory>     Parent directory for collected logs");
-        Console.WriteLine("  --non-interactive        Never prompt for a path");
+        Console.WriteLine("  --non-interactive        Never prompt for input");
+        Console.WriteLine("  --confirm-legacy-equipment-removal  Accept permanent loss of legacy equipment data on uninstall");
         Console.WriteLine("  --pause                  Wait for Enter before closing");
         Console.WriteLine();
         Console.WriteLine("Steam Deck / Linux required launch option:");

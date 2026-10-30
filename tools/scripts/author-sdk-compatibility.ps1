@@ -127,7 +127,7 @@ function Get-DtmApiFrozenCompatibilitySource {
 function Test-DtmApiPreparedCompatibility {
     param([string] $OutputRoot, [string] $PayloadRoot, [string] $InputSha256, $Contract)
     try {
-        $receiptName = if ($Contract.targetRuntimeVersion -ceq '0.5.5') { 'compatibility.preparation.json' } else { "$($Contract.targetRuntimeVersion).compatibility.preparation.json" }
+        $receiptName = "$($Contract.targetRuntimeVersion).compatibility.preparation.json"
         $receipt = Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $OutputRoot $receiptName) | ConvertFrom-Json
         if ($receipt.schemaVersion -ne 1 -or $receipt.inputSha256 -cne $InputSha256) { return $false }
         $manifestPath = Join-Path $PayloadRoot ([string]$Contract.releaseManifestName)
@@ -167,18 +167,17 @@ function Prepare-DtmApiAuthorSdkCompatibility {
         [string] $OutputRoot,
         [string] $NetStandardPackageRoot = '',
         [string] $FrozenAbstractionsDll = '',
-        [string] $ApiTarget = '0.5.5',
+        [string] $ApiTarget = '',
         [switch] $NoProvision,
         [switch] $Check
     )
+    $target = Resolve-AuthorSdkTarget -RepoRoot $RepoRoot -ApiTarget $ApiTarget
+    $ApiTarget = [string]$target.apiTarget
     if (-not $OutputRoot) { $OutputRoot = Join-Path $RepoRoot '.tools/author-sdk-compatibility' }
     $output = [IO.Path]::GetFullPath($OutputRoot)
-    $catalog = Get-AuthorSdkTargetCatalog -RepoRoot $RepoRoot
-    $target = @($catalog.targets | Where-Object { $_.apiTarget -ceq $ApiTarget -and $_.state -ceq 'available' })
-    if ($target.Count -ne 1) { throw "No available frozen API target: $ApiTarget" }
-    $contract = Get-AuthorSdkContract -RepoRoot $RepoRoot -Target $target[0]
+    $contract = Get-AuthorSdkContract -RepoRoot $RepoRoot -Target $target
     $contractRoot = Join-Path $RepoRoot ('author-sdk/compatibility/' + $ApiTarget)
-    $receiptName = if ($ApiTarget -ceq '0.5.5') { 'compatibility.preparation.json' } else { "$ApiTarget.compatibility.preparation.json" }
+    $receiptName = "$ApiTarget.compatibility.preparation.json"
     $source = Get-DtmApiFrozenCompatibilitySource -RepoRoot $RepoRoot -Contract $contract
     # Drain native stdout before inspecting the exit code; Select-Object -First can
     # close the pipe early under Windows PowerShell and terminate a valid host.
@@ -186,7 +185,7 @@ function Prepare-DtmApiAuthorSdkCompatibility {
     $dotnetVersionExitCode = $LASTEXITCODE
     $dotnetVersion = if ($dotnetVersionOutput.Count -eq 1) { ([string]$dotnetVersionOutput[0]).Trim() } else { '' }
     if ($dotnetVersionExitCode -ne 0 -or $dotnetVersion -cne $source.manifest.dotnetSdkVersion) { throw "Frozen compatibility build requires .NET SDK $($source.manifest.dotnetSdkVersion), actual: $dotnetVersion (exit $dotnetVersionExitCode)" }
-    $requested = if ($FrozenAbstractionsDll) { $FrozenAbstractionsDll } elseif ($ApiTarget -ceq '0.5.5') { $env:DTMAPI_AUTHOR_SDK_FROZEN_ABSTRACTIONS_DLL } else { '' }
+    $requested = $FrozenAbstractionsDll
     if ($requested) {
         $requested = [IO.Path]::GetFullPath($requested)
         if ((Get-AuthorSdkSha256 -Path $requested) -cne $contract.abstractionsSha256) { throw 'Explicit frozen Abstractions override does not match the unchanged contract SHA.' }

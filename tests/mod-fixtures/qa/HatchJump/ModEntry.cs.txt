@@ -1,0 +1,178 @@
+#nullable disable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using DTMAPI.Abstractions;
+using DolocTown;
+using HarmonyLib;
+using RedSaw.AI.LinearTask;
+using UnityEngine;
+
+namespace HatchJumpProbe
+{
+    public sealed class Settings { public string EvidenceDirectory { get; set; } = ""; public string ExpiresUtc { get; set; } = ""; }
+
+    // Bounded Advanced QA. Native creation/StartJump/renderer/ReturnHome own the
+    // action; postfixes only observe requests and the actual SpriteRenderer.
+    public sealed class ModEntry : DtmMod, IDisposable
+    {
+        const string Owner = "Experiment.HatchJumpProbe", Prefix = "anim_animal_hatch_adult_";
+        internal static ModEntry Current;
+        Settings settings; Harmony harmony; GameObject driver;
+        IAnimalHost host; Room room; Animal animal; AnimalRenderer renderer; SpriteOverrideHandler handler; SpriteRenderer spriteRenderer; Animator animator;
+        readonly Dictionary<int, string> sources = new Dictionary<int, string>();
+        readonly List<string> requests = new List<string>(), displays = new List<string>(), trajectory = new List<string>();
+        readonly List<string> jumpOrder = new List<string>();
+        readonly HashSet<string> captures = new HashSet<string>();
+        int phase, row, requestFrame = -1, returnedId, fallbackCount; float started, phaseAt, maxY; bool arrived, jumping, landed, finished;
+        Vector2 startPosition; Vector2Int destination; string requestedNative = "", displayedKey = "";
+        [Serializable] sealed class Report { public string label, error; public bool passed; public int slot, frame; public string[] lines; }
+        static void Need(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
+        string Key(Sprite sprite) => sprite != null && sources.TryGetValue(sprite.GetInstanceID(), out var key) ? key : "native/unobserved";
+        string State() { var s = animator.GetCurrentAnimatorStateInfo(0); return s.IsName("jump_ready") ? "jump_ready" : s.IsName("jump") ? "jump" : s.IsName("idle") ? "idle" : "other:" + s.shortNameHash; }
+        string Fact(Sprite sprite) => sprite == null ? "null" : "id=" + sprite.GetInstanceID() + ":key=" + Key(sprite) + ":rect=" + sprite.rect + ":ppu=" + sprite.pixelsPerUnit + ":pivot=" + sprite.pivot;
+        string[] Inspect() => new[] { "room=" + room?.RoomId, "adult=" + animal?.IsAdult, "cell=" + animal?.positionCell + ":destination=" + destination,
+            "renderer=" + (renderer == null ? "null" : renderer.GetInstanceID().ToString()), "spriteRenderer=" + (spriteRenderer == null ? "null" : spriteRenderer.GetInstanceID().ToString()),
+            "sprite=" + (spriteRenderer == null ? "null" : Fact(spriteRenderer.sprite)), "jumpOrder=" + string.Join(",", jumpOrder), "fallbackCount=" + fallbackCount,
+            "start=" + startPosition + ":maxY=" + maxY + ":landed=" + landed };
+        void Patch(Type type, string method, string observer)
+        {
+            var target = AccessTools.Method(type, method); Need(target != null, "Required native entry absent: " + type.FullName + "." + method);
+            harmony.Patch(target, postfix: new HarmonyMethod(typeof(ModEntry), observer) { priority = Priority.Last });
+        }
+        public override void Entry(IDtmHelper helper)
+        {
+            settings = helper.ReadConfig<Settings>();
+            Need(Path.IsPathRooted(settings.EvidenceDirectory) && DateTime.TryParse(settings.ExpiresUtc, out var expiry) && expiry.ToUniversalTime() > DateTime.UtcNow && expiry.ToUniversalTime() < DateTime.UtcNow.AddMinutes(15), "Fresh bounded QA config required.");
+            Directory.CreateDirectory(settings.EvidenceDirectory); Need(!File.Exists(Path.Combine(settings.EvidenceDirectory, "result.json")), "Fresh run evidence required.");
+            Current = this; started = phaseAt = Time.realtimeSinceStartup; Application.runInBackground = true;
+            harmony = new Harmony(Owner + ".Native");
+            Patch(typeof(DolocTown.Config.ModManager), "LoadSpriteFromFile", nameof(Loaded));
+            Patch(typeof(SpriteOverrideHandler), "TryGetModOverrideSprite", nameof(Requested));
+            Patch(typeof(SpriteOverrideHandler), "LateUpdate", nameof(Displayed));
+            driver = new GameObject("Hatch native jump observation"); UnityEngine.Object.DontDestroyOnLoad(driver); driver.AddComponent<Driver>();
+            Write("entry", new[] { "UI2/native1 NoNativeSave", "controlled native Animal.StartJump; no physical player-input claim", "native WaitSeconds task keeps unrelated AI choices outside this one hop; no sprite/transform/animator writes" });
+        }
+        static void Loaded(string __0, Sprite __1, bool __result)
+        {
+            var p = Current;
+            if (p != null && !p.finished && __result && __1 != null && __0.StartsWith(Prefix, StringComparison.Ordinal)) p.sources[__1.GetInstanceID()] = __0;
+        }
+        static void Requested(SpriteOverrideHandler __instance, string __0, Sprite __1, bool __result)
+        {
+            var p = Current; if (p == null || p.finished || !ReferenceEquals(__instance, p.handler)) return;
+            try
+            {
+                if (!__result || __1 == null || !p.Key(__1).StartsWith(Prefix, StringComparison.Ordinal)) { p.fallbackCount++; throw new InvalidOperationException("Actual native sprite request fell back: " + __0 + " => " + p.Fact(__1)); }
+                Need(__1.rect.width == 32 && __1.rect.height == 32, "Adult Hatch request has wrong canvas.");
+                p.requestFrame = Time.frameCount; p.requestedNative = __0; p.returnedId = __1.GetInstanceID();
+                if (p.requests.Count < 240) p.requests.Add("frame=" + Time.frameCount + ":state=" + p.State() + ":native=" + __0 + ":returned=" + p.Fact(__1));
+            }
+            catch (Exception e) { p.Fail(e); }
+        }
+        static void Displayed(SpriteOverrideHandler __instance)
+        {
+            var p = Current; if (p == null || p.finished || !ReferenceEquals(__instance, p.handler) || !p.jumping) return;
+            try
+            {
+                var sprite = p.spriteRenderer.sprite; var key = p.Key(sprite);
+                Need(key.StartsWith(Prefix, StringComparison.Ordinal), "LateUpdate left a native chicken/unobserved sprite on the actual SpriteRenderer.");
+                if (p.requestFrame == Time.frameCount) Need(sprite.GetInstanceID() == p.returnedId, "Actual displayed sprite differs from that frame's override result.");
+                Need(sprite.rect.width == 32 && sprite.rect.height == 32 && p.renderer.transform.localScale.x != 0, "Displayed canvas/direction invalid.");
+                if (key != p.displayedKey)
+                {
+                    p.displayedKey = key;
+                    var state = p.animator.GetCurrentAnimatorStateInfo(0);
+                    p.displays.Add("frame=" + Time.frameCount + ":state=" + p.State() + ":stateLoop=" + state.loop + ":normalizedTime=" + state.normalizedTime + ":requestFrame=" + p.requestFrame + ":native=" + p.requestedNative + ":displayed=" + p.Fact(sprite) + ":position=" + p.renderer.position + ":scale=" + p.renderer.transform.localScale + ":flipX=" + p.spriteRenderer.flipX);
+                    if (key.StartsWith(Prefix + "jump_", StringComparison.Ordinal))
+                    {
+                        p.jumpOrder.Add(key);
+                        if (p.captures.Add(key)) p.driver.GetComponent<Driver>().StartCoroutine(p.CaptureAfterFrame(key));
+                    }
+                }
+                if (p.trajectory.Count < 240) p.trajectory.Add("frame=" + Time.frameCount + ":state=" + p.State() + ":key=" + key + ":position=" + p.renderer.position + ":scale=" + p.renderer.transform.localScale + ":flipX=" + p.spriteRenderer.flipX);
+                p.maxY = Math.Max(p.maxY, p.renderer.position.y);
+            }
+            catch (Exception e) { p.Fail(e); }
+        }
+        IEnumerator CaptureAfterFrame(string name) { yield return new WaitForEndOfFrame(); ScreenCapture.CaptureScreenshot(Path.Combine(settings.EvidenceDirectory, name + ".png")); }
+        void Write(string label, IEnumerable<string> lines, bool passed = true, string error = "")
+        {
+            string name = label == "result" ? label : (++row).ToString("D3") + "-" + label;
+            File.WriteAllText(Path.Combine(settings.EvidenceDirectory, name + ".json"), JsonUtility.ToJson(new Report { label=label, error=error, passed=passed, slot=DolocAPI.archiveHandle?.archiveIndex ?? -1, frame=Time.frameCount, lines=lines.ToArray() }, true));
+        }
+        void Next(int value) { phase = value; phaseAt = Time.realtimeSinceStartup; }
+        internal void Tick()
+        {
+            if (finished) return;
+            try
+            {
+                Need(Time.realtimeSinceStartup - started < 140 && Time.realtimeSinceStartup - phaseAt < 35, "Native hop deadline exceeded at phase " + phase);
+                if (phase == 0)
+                {
+                    if (!DolocAPI.IsDataLoaded || DolocAPI.archiveHandle?.archiveIndex != 1 || DolocAPI.CurrentRoom == null || DolocAPI.gameLoop.IsGlobalPaused || DolocAPI.gameLoop.IsPaused) return;
+                    var buildings = ((IBuildingHost)DolocAPI.archiveHandle.MainFarm).DM_building.Buildings.ToArray();
+                    var barn = buildings.FirstOrDefault(x => x.proto.IsAnimalBuilding && ((IAnimalHost)x.room).MaxAnimalSpace - ((IAnimalHost)x.room).TotalAnimalSpace >= 2);
+                    Need(barn != null, "Existing UI2 barn with capacity for one Hatch required; no facility construction.");
+                    room = barn.room; host = (IAnimalHost)room;
+                    Need(DolocAPI.EnterRoom(room, room.Geometry.DefaultEntryPosition, () => arrived = true), "Native barn entry rejected."); Next(1); return;
+                }
+                if (phase == 1)
+                {
+                    if (!arrived || DolocAPI.CurrentRoom != room || DolocAPI.gameLoop.IsPaused || DolocAPI.gameLoop.IsGlobalPaused || Time.realtimeSinceStartup - phaseAt < 2) return;
+                    var proto = DolocTown.Config.DolocConfig.Tables.TbAnimal.GetOrDefault("hatch"); Need(proto != null, "Actual AnimalPack official Hatch row required.");
+                    var origin = AnimalUtils.GetNearestValidPosition(room, DolocAPI.AgentRoomCellPosition, proto.Size);
+                    animal = host.CreateAnimal(proto, origin, true); Need(animal != null && animal.Renderer != null, "Native host did not create a rendered Hatch.");
+                    animal.DEBUG_SetAdult(true); Need(animal.IsAdult, "Native adult preparation failed.");
+                    renderer = animal.Renderer; handler = renderer.GetComponent<SpriteOverrideHandler>(); spriteRenderer = renderer.GetComponent<SpriteRenderer>(); animator = renderer.GetComponent<Animator>();
+                    Need(handler != null && spriteRenderer != null && animator != null, "Native Hatch renderer components missing.");
+                    animal.controller.ChangeTask(LinearTask.WaitSeconds(30));
+                    destination = AnimalUtils.GetNearestValidPosition(room, origin + new Vector2Int(2, 0), proto.Size);
+                    Need(destination != origin && AnimalUtils.IsPositionWalkable(room, destination, animal.width), "Single native neighbor destination unavailable; stop without coordinate retries.");
+                    Write("created-adult", Inspect().Concat(new[] { "origin=" + origin, "destination=" + destination, "controller=" + animal.controller.CurrentTaskType })); Next(2); return;
+                }
+                if (phase == 2)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < 1 || !Key(spriteRenderer.sprite).StartsWith(Prefix, StringComparison.Ordinal)) return;
+                    startPosition = renderer.position; maxY = startPosition.y; jumping = true;
+                    Need(animal.StartJump(destination), "Controlled native Animal.StartJump rejected its valid neighbor.");
+                    Write("native-start-jump", Inspect().Concat(new[] { "state=" + State(), "route=Animal.StartJump -> AnimalRenderer.Jump -> native FixedUpdate/Animator -> SpriteOverrideHandler.LateUpdate" })); Next(3); return;
+                }
+                if (phase == 3)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < 1 || State() != "idle") return;
+                    var expected = new[] { Prefix + "jump_0", Prefix + "jump_1", Prefix + "jump_2" };
+                    Need(jumpOrder.Count >= 3 && jumpOrder[0] == expected[0] && Enumerable.Range(1, jumpOrder.Count - 1).All(i => jumpOrder[i] == expected[1 + (i - 1) % 2]), "Native jump must prepare with 0 then alternate the looping 1/2 clip: " + string.Join(",", jumpOrder));
+                    Need(maxY > startPosition.y + .1f && Vector2.Distance(renderer.position, animal.Jumper.destination) < .05f, "Native renderer did not travel a jump arc to its destination.");
+                    Need(Math.Sign(renderer.transform.localScale.x) == -Math.Sign(animal.Jumper.destination.x - startPosition.x), "Native direction does not match the hop.");
+                    Need(animal.Jump(), "Native completion rejected."); landed = true; jumping = false;
+                    Write("jump-display-pass", Inspect().Concat(requests).Concat(displays).Concat(trajectory)); Next(4); return;
+                }
+                if (phase == 4)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < 1) return;
+                    Need(host.RemoveAnimal(animal), "Native QA Hatch removal failed."); DolocAPI.ReturnHome(false); Next(5); return;
+                }
+                if (phase == 5 && !DolocAPI.IsDataLoaded && Time.realtimeSinceStartup - phaseAt > 3) Finish(true, "");
+            }
+            catch (Exception e) { Fail(e); }
+        }
+        void Fail(Exception e) { if (finished) return; try { Write("failure", Inspect().Concat(requests).Concat(displays).Concat(trajectory), false, e.ToString()); } catch { } Finish(false, e.ToString()); }
+        void Finish(bool passed, string error)
+        {
+            if (finished) return; finished = true;
+            try { harmony?.UnpatchSelf(); } catch (Exception e) { passed = false; error += " Observer cleanup: " + e; }
+            Write("result", new[] { "controlled native hop; no player-keyboard claim", "landed=" + landed, "displayOrder=" + string.Join(",", jumpOrder), "fallbackCount=" + fallbackCount, "returnedToTitle=" + !DolocAPI.IsDataLoaded, "NoNativeSave" }, passed, error);
+            Application.Quit();
+        }
+        public void Dispose()
+        {
+            if (settings == null) { finished = true; harmony?.UnpatchSelf(); } else if (!finished) Finish(false, "QA owner stopped before the native hop completed.");
+            if (ReferenceEquals(Current, this)) Current = null;
+            if (driver != null) UnityEngine.Object.Destroy(driver);
+        }
+    }
+    public sealed class Driver : MonoBehaviour { void Update() { ModEntry.Current?.Tick(); } }
+}

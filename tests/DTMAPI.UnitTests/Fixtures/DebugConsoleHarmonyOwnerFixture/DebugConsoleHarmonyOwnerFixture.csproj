@@ -8,18 +8,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleInputGate.cs"
-             Link="DebugConsole\DebugConsoleInputGate.cs" />
-    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleInputHooks.cs"
-             Link="DebugConsole\DebugConsoleInputHooks.cs" />
-    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleCreativeHooks.cs"
-             Link="DebugConsole\DebugConsoleCreativeHooks.cs" />
-    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleMovementHooks.cs"
-             Link="DebugConsole\DebugConsoleMovementHooks.cs" />
-    <Compile Include="..\..\..\..\products\first-party\DebugConsole\src\Native\DebugConsoleHookInstaller.cs"
-             Link="DebugConsole\DebugConsoleHookInstaller.cs" />
-    <Compile Include="..\..\..\..\src\DTMAPI.GameBridge.DolocTown.Compatibility\DebugConsole\CompatibilityDebugConsoleInputHooks.cs"
-             Link="DebugConsole\CompatibilityDebugConsoleInputHooks.cs" />
+    <Compile Include="../../../../products/first-party/DebugConsole/src/**/*.cs" Link="Product/%(RecursiveDir)%(Filename)%(Extension)" />
     <ProjectReference Include="..\DebugConsoleNativeFixture\DebugConsoleNativeFixture.csproj" />
     <ProjectReference Include="..\..\..\..\src\DTMAPI.Abstractions\DTMAPI.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\..\src\DTMAPI.Core\DTMAPI.Core.csproj" />

@@ -260,6 +260,7 @@ namespace DTMAPI.UnitTests
 
         private static void ConfigRecoveryFailuresPreserveOriginalBytes()
         {
+            LegacyConfigAuthorExamplePreservesMigrationInputs();
             string? previousRoot = UseTempPersistentRoot();
             try
             {
@@ -306,6 +307,48 @@ namespace DTMAPI.UnitTests
                 File.WriteAllBytes(path, original);
                 config.ReadConfig<SampleConfig>(manifest);
                 Assert(Backups().Length == 4, "Repeated recovery must produce unique backups and preserve collision bytes.");
+            }
+            finally { RestorePersistentRoot(previousRoot); }
+        }
+
+        private static void LegacyConfigAuthorExamplePreservesMigrationInputs()
+        {
+            string? previousRoot = UseTempPersistentRoot();
+            try
+            {
+                var paths = new RuntimePaths(NewTempGameDir(), NewTempGameDir());
+                var files = new ConfigFileOperations();
+                var originalWriter = files.Replace;
+                var service = new ConfigService(paths, new DiagnosticsService(paths), files);
+                var owner = new ManifestModel { UniqueID = "Samples.LegacyConfig" };
+                string path = service.GetConfigPath(owner);
+                var fresh = Samples.LegacyConfig.LegacySettings.Load(service, owner);
+                Assert(fresh.Enabled && fresh.ToolEnabled && fresh.FillEnabled && fresh.SchemaVersion == 1,
+                    "A new example installation creates its own defaults independently of legacy switches.");
+                byte[] legacy = Encoding.UTF8.GetBytes("{\"Enabled\":false,\"ToolSpeedEnabled\":false,\"BottleFillSpeedEnabled\":false,\"BottleFillMultiplier\":3.2}");
+                File.WriteAllBytes(path, legacy);
+                var migrated = Samples.LegacyConfig.LegacySettings.Load(service, owner);
+                Assert(!migrated.Enabled && !migrated.ToolEnabled && !migrated.FillEnabled && migrated.FillMultiplier == 3.2,
+                    "The example preserves actual AS renamed disabled fields and multiplier values.");
+                byte[] committed = File.ReadAllBytes(path);
+                DateTime written = File.GetLastWriteTimeUtc(path);
+                files.Replace = (_, __) => throw new IOException("No rewrite allowed");
+                Samples.LegacyConfig.LegacySettings.Load(service, owner);
+                Assert(File.ReadAllBytes(path).SequenceEqual(committed) && File.GetLastWriteTimeUtc(path) == written,
+                    "Repeated startup does not invoke the writer or change migrated bytes/timestamp.");
+                File.WriteAllBytes(path, legacy);
+                AssertThrows<IOException>(() => Samples.LegacyConfig.LegacySettings.Load(service, owner), "Migration write failure must propagate.");
+                Assert(File.ReadAllBytes(path).SequenceEqual(legacy), "The real platform writer preserves the old example file on failure.");
+                files.Replace = originalWriter;
+                Assert(!Samples.LegacyConfig.LegacySettings.Load(service, owner).FillEnabled, "A later startup retries the uncommitted migration.");
+                foreach (string invalid in new[] { "{\"SchemaVersion\":99,\"ToolEnabled\":false}", "{invalid", "{\"ToolSpeedEnabled\":\"false\"}", "{\"ToolSpeedEnabled\":null}" })
+                {
+                    File.WriteAllText(path, invalid);
+                    AssertThrows<Exception>(() => Samples.LegacyConfig.LegacySettings.Load(service, owner), "Unknown schema or invalid input must be rejected.");
+                    Assert(File.ReadAllText(path) == invalid, "Rejected example data remains unchanged.");
+                }
+                File.WriteAllText(path, "{\"FillEnabled\":false,\"BottleFillSpeedEnabled\":true}");
+                Assert(!Samples.LegacyConfig.LegacySettings.Load(service, owner).FillEnabled, "An explicit current field takes precedence over its old name.");
             }
             finally { RestorePersistentRoot(previousRoot); }
         }
@@ -578,8 +621,39 @@ namespace DTMAPI.UnitTests
             AssertThrows(buttonPage.Items.Single(item => item.Kind == "Button").Invoke, "Button callback failure should be wrapped for the UI action guard.");
         }
 
+        private static void ConfigMenuTransactionsFreezeItemMembership()
+        {
+            var menu = new ConfigMenuRegistry();
+            IConfigMenuRuntime runtime = menu;
+            var manifest = new ManifestModel { UniqueID = "DTMAPI.Tests.MenuMembership", Name = "Menu membership", Version = "1.0" };
+            bool first = false, late = false, added = false;
+            int saves = 0;
+            menu.Register(manifest, () => { }, () => saves++);
+            menu.AddBoolOption(manifest, () => "First", () => "", () => first, value =>
+            {
+                first = value;
+                if (!value || added) return;
+                added = true;
+                menu.AddBoolOption(manifest, () => "Late", () => "", () => late, next => late = next);
+                runtime.GetPage(manifest.UniqueID)!.Items[1].TrySetPendingValue("true", out _);
+            });
+            runtime.BeginEditing(manifest.UniqueID);
+            IConfigMenuPage page = runtime.GetPage(manifest.UniqueID)!;
+            page.Items[0].TrySetPendingValue("true", out _);
+            runtime.Save(manifest.UniqueID);
+            Assert(first && !late && saves == 1 && page.HasPendingChanges,
+                "A setter may register another setting, but that new item's pending value belongs to the next transaction.");
+            runtime.Save(manifest.UniqueID);
+            runtime.BeginEditing(manifest.UniqueID);
+            page.Items[0].TrySetPendingValue("false", out _);
+            runtime.Cancel(manifest.UniqueID);
+            Assert(first && late && saves == 2 && !page.IsEditing,
+                "The next save includes the new item; reopening and canceling retains both committed values without another save.");
+        }
+
         private static void ConfigMenuPendingPreviewDrivesConditionalVisibility()
         {
+            ConfigMenuTransactionsFreezeItemMembership();
             var menu = new ConfigMenuRegistry();
             IConfigMenuRuntime menuRuntime = menu;
             IManifest manifest = new ManifestModel

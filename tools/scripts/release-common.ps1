@@ -486,8 +486,10 @@ function Get-DtmApiProductDefinitions {
                 $definition.SourceRoot = ([string]$definition.SourceRoot).Replace('/', '\')
                 if ($lane -cne 'PublishedBuilder') { $definition.DeveloperOnly = $true }
                 if ($lane -ceq 'ExplicitQaInstallOnly') { $definition.QaFixture = $true }
-                if ([string](Get-DtmApiMapValue $product 'currentImplementationType' '') -ceq 'OfficialJsonContentPack') { $definition.ContentOnly = $true }
-                if ([string](Get-DtmApiMapValue $product 'productionBuildAuthority' '') -ceq 'DTMAPI Author SDK build/pack/deploy') {
+                $implementationType = [string](Get-DtmApiMapValue $product 'currentImplementationType' '')
+                if ($implementationType -cin @('OfficialJsonContentPack', 'HostBoundContentPack')) { $definition.ContentOnly = $true }
+                if ($implementationType -ceq 'HostBoundContentPack') { $definition.HostBoundContentPack = $true }
+                if ([string](Get-DtmApiMapValue $product 'productionBuildAuthority' '') -cin @('DTMAPI Author SDK build/pack/deploy','ordinary-dotnet-project-and-directory')) {
                     $definition.AuthorSdkProject = $true
                     $definition.AuthorSdkBuildScript = 'build-batch6-advanced-product.ps1'
                     $definition.AuthorSdkCatalogId = $product.catalogId
@@ -518,6 +520,23 @@ function Get-DtmApiProductDefinitions {
         if ([string]::IsNullOrWhiteSpace($source) -or [IO.Path]::IsPathRooted($source) -or $source -match '(^|[/\\])\.\.([/\\]|$)') { throw "Invalid source root for '$id'." }
     }
     return $definitions
+}
+
+function Assert-DtmApiContentPackStaging {
+    param(
+        [Parameter(Mandatory = $true)] [string] $PackageRoot,
+        [Parameter(Mandatory = $true)] [string] $Context
+    )
+
+    $unexpectedDlls = @(Get-ChildItem -LiteralPath $PackageRoot -Recurse -File -Filter '*.dll' -ErrorAction Stop)
+    if ($unexpectedDlls.Count -gt 0) {
+        throw "$Context staged unexpected DLL files: $([string]::Join(', ', @($unexpectedDlls.FullName)))"
+    }
+    $manifestPath = [IO.Path]::GetFullPath((Join-Path $PackageRoot 'Content/DTMAPI/manifest.json'))
+    $manifests = @(Get-ChildItem -LiteralPath (Join-Path $PackageRoot 'Content') -Recurse -File -Filter 'manifest.json' -ErrorAction Stop)
+    if ($manifests.Count -ne 1 -or -not [string]::Equals([IO.Path]::GetFullPath($manifests[0].FullName), $manifestPath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "$Context must stage exactly one canonical Content/DTMAPI/manifest.json."
+    }
 }
 
 function Export-DtmApiProductDefinitionsSnapshot {
@@ -619,6 +638,7 @@ function Assert-DtmApiManifestInfoVersionParity {
 
     $manifestVersion = [string](Get-DtmApiMapValue -Map $Manifest -Key 'Version' -Default '')
     $infoVersion = [string](Get-DtmApiMapValue -Map $Info -Key 'version' -Default '')
+    if ((Get-DtmApiMapValue -Map $Manifest -Key 'ManifestVersion' -Default 0) -eq 2) { return }
     if ([string]::IsNullOrWhiteSpace($manifestVersion)) {
         throw "$Context manifest Version must be present before packaging."
     }
@@ -657,7 +677,7 @@ function Assert-DtmApiCurrentProductProjection {
     }
 
     $product = $matches[0]
-    $manifestVersion = [string](Get-DtmApiMapValue -Map $Manifest -Key 'Version' -Default '')
+    $manifestVersion = if ((Get-DtmApiMapValue -Map $Manifest -Key 'ManifestVersion' -Default 0) -eq 2) { [string](Get-DtmApiMapValue -Map $Info -Key 'version' -Default '') } else { [string](Get-DtmApiMapValue -Map $Manifest -Key 'Version' -Default '') }
     $catalogVersion = [string]$product.sourceVersion
     if (-not [string]::Equals($manifestVersion, $catalogVersion, [System.StringComparison]::Ordinal)) {
         throw "$Context current-version projection mismatch: manifest Version=$manifestVersion; catalog sourceVersion=$catalogVersion. Packaging must not rewrite either value."

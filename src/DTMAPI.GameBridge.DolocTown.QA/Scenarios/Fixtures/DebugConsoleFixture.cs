@@ -531,16 +531,16 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", nativeOwner=" + DebugConsoleActions.OwnerKind;
                 DebugConsoleActions.ValidateOwnerBoundaryAfterAction();
                 runtime.RuntimeMonitor.Log("Smoke exercise DebugInventory OK " + summary);
-                runtime.SetHookStatus("Smoke.DebugInventory", "verified", "IInventoryDebugApi -> DolocAPI.TryPlaceInBackpack", summary);
+                runtime.SetHookStatus("Smoke.DebugInventory", "verified", "DebugConsoleActionFixtureAdapter -> DolocAPI.TryPlaceInBackpack", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug inventory exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.DebugInventory", "failed", "IInventoryDebugApi", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.DebugInventory", "failed", "DebugConsoleActionFixtureAdapter", ex.GetType().Name + ": " + ex.Message);
             }
         }
 
-        private static InventoryDebugItem? SelectInventorySmokeItem(IInventoryDebugApi api)
+        private static InventoryDebugItem? SelectInventorySmokeItem(DebugConsoleActionFixtureAdapter api)
         {
             string[] preferredIds = { "wood", "stone", "roughage_feed", "seed_endyam" };
             foreach (string preferredId in preferredIds)
@@ -558,7 +558,7 @@ namespace DTMAPI.GameBridge.DolocTown
             return api.GetItems(new InventoryDebugQuery { PageSize = 50 }).Items.FirstOrDefault(i => i.CanSpawn);
         }
 
-        private static InventoryDebugItem? SelectModInventorySmokeItem(IInventoryDebugApi api)
+        private static InventoryDebugItem? SelectModInventorySmokeItem(DebugConsoleActionFixtureAdapter api)
         {
             string? requiredId = Environment.GetEnvironmentVariable("DTMAPI_QA_DEBUG_INVENTORY_ITEM_ID");
             if (!string.IsNullOrWhiteSpace(requiredId))
@@ -622,12 +622,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", nativeOwner=" + DebugConsoleActions.OwnerKind;
                 DebugConsoleActions.ValidateOwnerBoundaryAfterAction();
                 runtime.RuntimeMonitor.Log("Smoke exercise DebugWeather OK " + summary);
-                runtime.SetHookStatus("Smoke.DebugWeather", "verified", "IWeatherDebugApi -> ArchiveDataHandle.SetWeather/PatchWeather", summary);
+                runtime.SetHookStatus("Smoke.DebugWeather", "verified", "DebugConsoleActionFixtureAdapter -> ArchiveDataHandle.SetWeather/PatchWeather", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug weather exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.DebugWeather", "failed", "IWeatherDebugApi", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.DebugWeather", "failed", "DebugConsoleActionFixtureAdapter", ex.GetType().Name + ": " + ex.Message);
             }
         }
 
@@ -657,12 +657,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", nativeOwner=" + DebugConsoleActions.OwnerKind;
                 DebugConsoleActions.ValidateOwnerBoundaryAfterAction();
                 runtime.RuntimeMonitor.Log("Smoke exercise DebugTime OK " + summary);
-                runtime.SetHookStatus("Smoke.DebugTime", "verified", "ITimeDebugApi -> ArchiveDataHandle.PassTimeNoControl", summary);
+                runtime.SetHookStatus("Smoke.DebugTime", "verified", "DebugConsoleActionFixtureAdapter -> ArchiveDataHandle.PassTimeNoControl", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug time exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.DebugTime", "failed", "ITimeDebugApi", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.DebugTime", "failed", "DebugConsoleActionFixtureAdapter", ex.GetType().Name + ": " + ex.Message);
             }
         }
 
@@ -694,12 +694,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     DebugConsoleActions.OwnerKind;
                 DebugConsoleActions.ValidateOwnerBoundaryAfterAction();
                 runtime.RuntimeMonitor.Log("Smoke exercise DebugMovement OK " + summary);
-                runtime.SetHookStatus("Smoke.DebugMovement", "verified", "IMovementDebugApi -> player BodyController.MoveSpeed Postfix", summary);
+                runtime.SetHookStatus("Smoke.DebugMovement", "verified", "DebugConsoleActionFixtureAdapter -> player BodyController.MoveSpeed Postfix", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke debug movement exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.DebugMovement", "failed", "IMovementDebugApi", ex.GetType().Name + ": " + ex.Message);
+                runtime.SetHookStatus("Smoke.DebugMovement", "failed", "DebugConsoleActionFixtureAdapter", ex.GetType().Name + ": " + ex.Message);
             }
         }
 
@@ -711,23 +711,22 @@ namespace DTMAPI.GameBridge.DolocTown
                 var required = new List<string>();
                 var optional = new List<string>();
 
-                IReadOnlyList<SpawnDebugOption> monsterOptions =
-                    advancedDebugApi.GetMonsterOptions();
-                SpawnDebugOption? monsterOption = monsterOptions.FirstOrDefault(option =>
-                        option.IsAvailableInCurrentRoom &&
+                IReadOnlyList<SpawnCatalogOption> monsterOptions =
+                    advancedDebugApi.GetMonsterCatalog();
+                SpawnCatalogOption? monsterOption = monsterOptions.FirstOrDefault(option =>
+                        option.IsAvailable &&
                         option.Id.Equals(
                             "space_ship",
                             StringComparison.OrdinalIgnoreCase)) ??
                     monsterOptions.FirstOrDefault(option =>
-                        option.IsAvailableInCurrentRoom);
-                SpawnDebugOption? resourceOption = advancedDebugApi.GetResourceOptions().FirstOrDefault(option => option.IsAvailableInCurrentRoom);
-                if (monsterOption == null || resourceOption == null)
+                        option.IsAvailable);
+                if (monsterOption == null)
                 {
                     runtime.SetHookStatus(
                         "Smoke.AdvancedDebug",
                         "pending",
                         "CurrentRoom IMonsterHost + IDungeonResourceHost preflight",
-                        "Waiting for the loaded save to publish a room that supports the reviewed monster/resource spawn probes before any AdvancedDebug mutation. monsterReady=" + (monsterOption != null) + ", resourceReady=" + (resourceOption != null) + ".");
+                        "Waiting for the loaded save to publish a room that supports the reviewed monster/resource spawn probes before any AdvancedDebug mutation. monsterReady=" + (monsterOption != null) + ".");
                     return;
                 }
 
@@ -749,45 +748,11 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("Add money failed: " + money.FailureReason + ": " + money.Message);
                 required.Add("money{" + money.BeforeValue + "->" + money.AfterValue + "}");
 
-                TechPointDebugOption? techOption = advancedDebugApi.GetTechPointOptions().FirstOrDefault();
-                if (techOption == null)
-                    throw new InvalidOperationException("No tech point options were available.");
-                DebugValueResult tech = advancedDebugApi.AddTechPoint(owner, techOption.Id, 1);
-                if (!tech.Success)
-                    throw new InvalidOperationException("Add tech point failed: " + tech.FailureReason + ": " + tech.Message);
-                required.Add("tech{" + techOption.Id + ":" + tech.BeforeValue + "->" + tech.AfterValue + "}");
-
-                CreativeModeResult creativeOn = advancedDebugApi.SetCreativeMode(owner, true);
-                CreativeModeResult? creativeOff = null;
-                string creativeSmoke;
-                try
-                {
-                    if (!creativeOn.Success || !creativeOn.After.RuntimeHooksInstalled)
-                        throw new InvalidOperationException("Creative enable failed: " + FirstNonEmpty(creativeOn.FailureReason, creativeOn.Message));
-                    creativeSmoke = VerifyAdvancedCreativeHooksForFixture();
-                }
-                finally
-                {
-                    creativeOff = advancedDebugApi.SetCreativeMode(owner, false);
-                }
-                if (creativeOff == null || !creativeOff.Success)
-                    throw new InvalidOperationException("Creative disable failed: " + (creativeOff == null ? "no result" : FirstNonEmpty(creativeOff.FailureReason, creativeOff.Message)));
-                required.Add("creative{hooks=" + creativeOn.After.RuntimeHooksInstalled + ", generatorAvailable=" + creativeOn.After.GeneratorRuntimeAvailable + ", smoke=" + creativeSmoke + "}");
-
                 DebugCommandResult unlock = advancedDebugApi.UnlockAllTechTrees(owner);
                 optional.Add("unlockTech{success=" + unlock.Success + ", affected=" + unlock.AffectedCount + ", reason=" + FirstNonEmpty(unlock.FailureReason, "none") + "}");
 
-                CropMaturityResult crops = advancedDebugApi.MatureAllCrops(owner);
-                optional.Add("crops{success=" + crops.Success + ", matured=" + crops.CropsMatured + "/" + crops.PlantBasinsVisited + ", reason=" + FirstNonEmpty(crops.FailureReason, "none") + "}");
-
-                InventoryGiveResult generator = advancedDebugApi.GiveCreativeGenerator(owner);
-                optional.Add(
-                    "generator{success=" + generator.Success +
-                    ", id=" + FirstNonEmpty(generator.ItemId, "dtmapi_creative_generator") +
-                    ", before=" + generator.BeforeCount +
-                    ", after=" + generator.AfterCount +
-                    ", reason=" + FirstNonEmpty(generator.FailureReason, "none") +
-                    "}");
+                RoomCropMaturityResult crops = advancedDebugApi.MatureAllCrops(owner, 10);
+                optional.Add("crops{success=" + crops.Success + ", matured=" + crops.CropsMatured + "/" + crops.CandidateBasins + ", reason=" + FirstNonEmpty(crops.FailureReason, "none") + "}");
 
                 SpawnDebugResult monsterOne = advancedDebugApi.SpawnMonster(owner, monsterOption.Id, 1);
                 if (!monsterOne.Success || monsterOne.SpawnedCount != 1)
@@ -814,11 +779,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", one=" + monsterOne.Message +
                     ", ten=" + monsterTen.Message + "}");
 
-                SpawnDebugResult resource = advancedDebugApi.SpawnResource(owner, resourceOption.Id, 1);
-                if (!resource.Success)
-                    throw new InvalidOperationException("Resource spawn failed: " + resource.FailureReason + ": " + resource.Message);
-                required.Add("resource{success=True, id=" + resourceOption.Id + ", count=" + resource.SpawnedCount + "}");
-
                 string summary = "required=" +
                     string.Join("; ", required.ToArray()) +
                     "; optional=" +
@@ -827,66 +787,12 @@ namespace DTMAPI.GameBridge.DolocTown
                     DebugConsoleActions.OwnerKind;
                 DebugConsoleActions.ValidateOwnerBoundaryAfterAction();
                 runtime.RuntimeMonitor.Log("Smoke exercise AdvancedDebug OK " + summary);
-                runtime.SetHookStatus("Smoke.AdvancedDebug", "verified", "IAdvancedDebugApi whitelist", summary);
+                runtime.SetHookStatus("Smoke.AdvancedDebug", "verified", "DebugConsoleActionFixtureAdapter whitelist", summary);
             }
             catch (Exception ex)
             {
                 runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Smoke advanced debug exercise failed.", ex.ToString());
-                runtime.SetHookStatus("Smoke.AdvancedDebug", "failed", "IAdvancedDebugApi whitelist", ex.GetType().Name + ": " + ex.Message);
-            }
-        }
-
-        private string VerifyAdvancedCreativeHooksForFixture()
-        {
-            CreativeModeState state = advancedDebugApi.GetCreativeModeState();
-            if (!state.Enabled)
-                throw new InvalidOperationException("Creative mode is not enabled.");
-            if (!state.RuntimeHooksInstalled)
-                throw new InvalidOperationException("Creative no-cost/no-time hooks are not installed.");
-
-            patcher ??= new HarmonyReflectionPatcher(runtime);
-            Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
-            object? gameManager = ReadStaticMember(dolocApi, "gameManager");
-            object? config = gameManager == null ? null : ReadMember(gameManager, "gameInitConfig");
-            if (dolocApi == null || config == null)
-                throw new InvalidOperationException("Creative native DolocAPI/GameInitConfig state is unavailable.");
-
-            bool ignoreMaterialCost = ReadBoolMember(config, "ignoreMaterialCost", false);
-            bool skipMoneyVerifyInShop = ReadBoolMember(config, "skipMoneyVerifyInShop", false);
-            bool ignoreSpiritCost = ReadBoolMember(config, "ignoreSpiritCost", false);
-            if (!ignoreMaterialCost || !skipMoneyVerifyInShop || !ignoreSpiritCost)
-                throw new InvalidOperationException("Creative native GameInitConfig flags are not active. ignoreMaterialCost=" + ignoreMaterialCost + ", skipMoneyVerifyInShop=" + skipMoneyVerifyInShop + ", ignoreSpiritCost=" + ignoreSpiritCost + ".");
-
-            MethodInfo? canAffordMoney = dolocApi.GetMethod("CanAffordMoney", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
-            object? canAffordResult = canAffordMoney?.Invoke(null, new object?[] { int.MaxValue });
-            if (!(canAffordResult is bool canAfford) || !canAfford)
-                throw new InvalidOperationException("Creative CanAffordMoney(int.MaxValue) did not return true.");
-
-            int? energyBefore = ReadAgentEnergyForFixture(dolocApi);
-            MethodInfo? costEnergy = dolocApi.GetMethod("CostEnergy", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
-            object? costEnergyResult = costEnergy?.Invoke(null, new object?[] { 1 });
-            int? energyAfter = ReadAgentEnergyForFixture(dolocApi);
-            if (!(costEnergyResult is bool costOk) || !costOk)
-                throw new InvalidOperationException("Creative CostEnergy(1) did not return true.");
-            if (energyBefore.HasValue && energyAfter.HasValue && energyBefore.Value != energyAfter.Value)
-                throw new InvalidOperationException("Creative CostEnergy(1) changed energy " + energyBefore.Value + "->" + energyAfter.Value + ".");
-
-            return "nativeFlags{ignoreMaterialCost=" + ignoreMaterialCost + ",skipMoneyVerifyInShop=" + skipMoneyVerifyInShop + ",ignoreSpiritCost=" + ignoreSpiritCost + "}, canAffordMoneyIntMax=True, costEnergyNoChange=" + (energyBefore.HasValue && energyAfter.HasValue ? (energyBefore.Value == energyAfter.Value).ToString() : "unknown") + ", noTimeHookInstalled=" + state.RuntimeHooksInstalled + ", generatorAvailable=" + state.GeneratorRuntimeAvailable;
-        }
-
-        private static int? ReadAgentEnergyForFixture(Type dolocApi)
-        {
-            try
-            {
-                object? archive = ReadStaticMember(dolocApi, "archiveHandle");
-                object? farmData = archive == null ? null : ReadMember(archive, "farmData");
-                object? agentData = farmData == null ? null : ReadMember(farmData, "agentData");
-                object? value = agentData == null ? null : ReadMember(agentData, "energy");
-                return value == null ? (int?)null : Convert.ToInt32(value, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                return null;
+                runtime.SetHookStatus("Smoke.AdvancedDebug", "failed", "DebugConsoleActionFixtureAdapter whitelist", ex.GetType().Name + ": " + ex.Message);
             }
         }
 

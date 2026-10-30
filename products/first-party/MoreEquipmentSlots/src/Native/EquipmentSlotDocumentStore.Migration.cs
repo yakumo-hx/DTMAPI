@@ -161,7 +161,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
             EquipmentSlotLegacyMigrationStamp stamp =
                 converted!.LegacyMigration!;
-            if (!TryValidateRawV3(
+            if (!TryValidateRawDocument(
                     converted,
                     expectedScope,
                     out string convertedFailure))
@@ -377,7 +377,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 throw new InvalidDataException(
                     "The flat legacy source changed before Product publication.");
             }
-            if (!TryValidateRawV3(
+            if (!TryValidateRawDocument(
                 document,
                 document.Scope,
                 out string validationFailure))

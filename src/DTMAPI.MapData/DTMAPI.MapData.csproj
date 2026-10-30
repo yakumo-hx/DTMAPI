@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><Version>0.1.0</Version></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Shared/StrictJson.cs" Link="StrictJson.cs" />
+    <EmbeddedResource Include="../../tools/map-editor/shared/contract.json" LogicalName="MapContract.json" />
+  </ItemGroup>
+</Project>

@@ -1,19 +1,19 @@
 {
-  "Name": "DTMAPI Action Speed",
-  "Author": "Yuuka",
-  "Version": "1.0.0",
-  "Description": "A self-contained DTMAPI Advanced CodeMod for action animation and native interaction timing.",
   "UniqueID": "Yuuka.DTMAPI.ActionSpeed",
-  "EntryDll": "Yuuka.DTMAPI.ActionSpeed.dll",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.ActionSpeed.dll",
   "EntryType": "Yuuka.DTMAPI.ActionSpeed.ModEntry",
-  "MinimumDTMApiVersion": "0.5.5",
+  "MinimumDTMApiVersion": "0.7.5",
   "Type": "CodeMod",
   "Dependencies": [
     {
       "UniqueID": "DTMAPI.ModConfigMenu",
-      "MinimumVersion": "0.5.5",
-      "Required": true
+      "Required": true,
+      "VersionRange": {
+        "minimumInclusive": "0.7.0",
+        "includePrerelease": false
+      }
     }
   ],
-  "CodeModKind": "Advanced"
+  "ManifestVersion": 2,
+  "HarmonyOwner": "Yuuka.DTMAPI.ActionSpeed.Native"
 }

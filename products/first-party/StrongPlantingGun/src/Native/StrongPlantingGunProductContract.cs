@@ -5,11 +5,13 @@ namespace DTMAPI.StrongPlantingGun
         internal const string UniqueId =
             "DTMAPI.StrongPlantingGunMod";
         internal const string HarmonyOwner =
+            "DTMAPI.StrongPlantingGunMod.Native";
+        internal const string LegacyProductOwner =
             "dtmapi.mod.dtmapi.strongplantinggunmod";
         internal const string CompatibilityOwner =
             "dtmapi.gamebridge.doloctown";
-        internal const int FixedSlotCount = 3;
-        internal const int ExpectedHookCount = 5;
+        internal const int FixedSlotCount = 4;
+        internal const int ExpectedHookCount = 15;
 
         internal static int GetTargetInventoryCapacity(
             int currentCapacity) =>

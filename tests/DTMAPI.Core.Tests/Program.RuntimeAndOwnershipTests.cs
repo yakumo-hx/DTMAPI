@@ -43,10 +43,12 @@ namespace DTMAPI.UnitTests
                 File.WriteAllText(paths.PlayerDoctorSummaryPath, "stale-summary");
                 string stalePending = paths.PlayerDoctorJsonReportPath + ".pending-stale";
                 File.WriteAllText(stalePending, "stale-pending");
+                Directory.CreateDirectory(Path.GetDirectoryName(paths.PlayerDoctorPath)!);
+                File.WriteAllText(paths.PlayerDoctorPath, "not an executable: startup must never attempt to launch this");
                 var service = new PlayerDoctorRuntimeService();
-                PlayerDoctorRuntimeResult first = service.RunOnce(paths, DtmApiRuntime.ApiVersion);
-                PlayerDoctorRuntimeResult second = service.RunOnce(paths, DtmApiRuntime.ApiVersion);
-                Assert(first.Status == "unavailable" && !first.Completed, "Missing Player Doctor helper should be a non-fatal unavailable startup summary.");
+                PlayerDoctorRuntimeResult first = service.PrepareManualDiagnostics(paths);
+                PlayerDoctorRuntimeResult second = service.PrepareManualDiagnostics(paths);
+                Assert(first.Status == "manual-only" && !first.Completed, "Player Doctor is manual-only regardless of helper presence.");
                 Assert(object.ReferenceEquals(first, second), "Player Doctor startup service must return its first bounded result and never rerun.");
                 Assert(!File.Exists(paths.PlayerDoctorJsonReportPath) &&
                        !File.Exists(paths.PlayerDoctorTextReportPath) &&
@@ -120,8 +122,10 @@ namespace DTMAPI.UnitTests
                 runtime.Start();
 
                 RuntimeSnapshot started = runtime.CreateSnapshot();
-                Assert(!started.LoadedMods.Any(mod => mod.Manifest.UniqueID == providerId) && started.Errors.Any(error => error.Owner == providerId && error.Message.Contains("保留", StringComparison.Ordinal)), "An ordinary source collision with a dynamically registered process provider must be rejected before Assembly.LoadFrom.");
-                Assert(started.LoadedMods.Count(mod => mod.Manifest.UniqueID == consumerId) == 1 && AtomicOwnerProbeMod.EntryCount == 1, "An ordinary consumer should load once against the preserved dynamic process provider.");
+                Assert(!started.LoadedMods.Any(mod => mod.Manifest.UniqueID == providerId) && started.Errors.Any(error => error.Owner == providerId && error.Message.Contains("保留", StringComparison.Ordinal)),
+                    "An ordinary source collision with a dynamically registered process provider must be rejected before Assembly.LoadFrom. Discovery errors: " +
+                    string.Join(" | ", started.Errors.Select(error => error.Owner + ": " + error.Message + " " + error.Details)));
+                Assert(started.LoadedMods.Count(mod => mod.Manifest.UniqueID == consumerId) == 1 && AtomicOwnerProbeMod.EntryCount == 1, "An ordinary consumer should load once against the preserved dynamic process provider. " + string.Join(" | ", started.Errors.Select(error => error.Owner + ": " + error.Message + " " + error.Details)));
                 Assert(ReferenceEquals(runtime.ModRegistry.Get(providerId), canonical) &&
                     ReferenceEquals(runtime.ModRegistry.GetApi<IUnitProbeApi>(providerId), original) &&
                     ReferenceEquals(runtime.ModRegistry.GetApi<ISecondProbeApi>(providerId), dual),
@@ -217,12 +221,8 @@ namespace DTMAPI.UnitTests
             string[] variables =
             {
                 "DTMAPI_REFACTOR_LIFECYCLE_OBSERVATION",
-                "DTMAPI_REFACTOR_SHADOW_CONTENT_REGISTRY",
-                "DTMAPI_REFACTOR_SHADOW_RESOURCE_LOADER",
-                "DTMAPI_REFACTOR_REGISTRY_TAKES_OVER",
                 "DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_LEDGER",
                 "DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_CLEANUP",
-                "DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_TITLE_ASSET_RELEASE",
                 "DTMAPI_REFACTOR_HOOK_INSTALL_SCHEDULER",
                 "DTMAPI_REFACTOR_HOOK_STATUS_QUEUE",
                 "DTMAPI_REFACTOR_EVENT_MAIN_THREAD_BOUNDARY",
@@ -246,12 +246,8 @@ namespace DTMAPI.UnitTests
 
                 RuntimeSubsystemOptions defaults = RuntimeSubsystemOptions.Load(paths, out string defaultSummary, out string defaultWarning);
                 Assert(defaults.LifecycleObservation, "Lifecycle observation should default on.");
-                Assert(defaults.ShadowContentRegistry, "Shadow content registry should default on.");
-                Assert(!defaults.ShadowResourceLoader, "Shadow resource loader should default off.");
-                Assert(!defaults.RegistryTakesOver, "Registry takeover should default off.");
                 Assert(defaults.ResourceLifecycleLedger, "Resource lifecycle ledger should default on.");
                 Assert(defaults.ResourceLifecycleCleanup, "Resource lifecycle cleanup should default on.");
-                Assert(!defaults.ResourceLifecycleTitleAssetRelease, "Title asset release should default off.");
                 Assert(defaults.HookInstallScheduler, "Hook install scheduler should default on.");
                 Assert(defaults.HookStatusQueue, "Hook status queue should default on.");
                 Assert(defaults.EventMainThreadBoundary, "Event main-thread boundary should default on.");
@@ -281,12 +277,8 @@ namespace DTMAPI.UnitTests
                     "New refactor-scaffold configs must not publish the retired feature bucket option.");
 
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_LIFECYCLE_OBSERVATION", "0");
-                Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_SHADOW_CONTENT_REGISTRY", "false");
-                Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_SHADOW_RESOURCE_LOADER", "yes");
-                Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_REGISTRY_TAKES_OVER", "on");
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_LEDGER", "off");
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_CLEANUP", "0");
-                Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_TITLE_ASSET_RELEASE", "true");
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_HOOK_INSTALL_SCHEDULER", "0");
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_HOOK_STATUS_QUEUE", "off");
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_EVENT_MAIN_THREAD_BOUNDARY", "false");
@@ -303,12 +295,8 @@ namespace DTMAPI.UnitTests
                 Environment.SetEnvironmentVariable("DTMAPI_REFACTOR_CONTENT_MANIFEST_REGISTRY", "false");
                 RuntimeSubsystemOptions overridden = RuntimeSubsystemOptions.Load(paths, out string overrideSummary, out _);
                 Assert(!overridden.LifecycleObservation, "Environment override should disable lifecycle observation.");
-                Assert(!overridden.ShadowContentRegistry, "Environment override should disable shadow content registry.");
-                Assert(overridden.ShadowResourceLoader, "Environment override should enable shadow resource loader flag.");
-                Assert(overridden.RegistryTakesOver, "Environment override should enable registry takeover flag for diagnostics.");
                 Assert(!overridden.ResourceLifecycleLedger, "Environment override should disable resource lifecycle ledger.");
                 Assert(!overridden.ResourceLifecycleCleanup, "Environment override should disable resource lifecycle cleanup.");
-                Assert(overridden.ResourceLifecycleTitleAssetRelease, "Environment override should enable title asset release flag for diagnostics.");
                 Assert(!overridden.HookInstallScheduler, "Environment override should disable hook install scheduler.");
                 Assert(!overridden.HookStatusQueue, "Environment override should disable hook status queue.");
                 Assert(!overridden.EventMainThreadBoundary, "Environment override should disable event main-thread boundary.");
@@ -323,8 +311,6 @@ namespace DTMAPI.UnitTests
                 Assert(!overridden.GameBridgeFeatureContracts, "Environment override should disable GameBridge feature contract diagnostics.");
                 Assert(!overridden.GameBridgeFinalHealthSnapshot, "Environment override should disable GameBridge final health snapshots.");
                 Assert(!overridden.ContentManifestRegistry, "Environment override should disable content/manifest registry authoritative index.");
-                Assert(overrideSummary.Contains("RegistryTakesOver=true"), "Override summary should include takeover flag.");
-                Assert(overrideSummary.Contains("ResourceLifecycleTitleAssetRelease=true"), "Override summary should include title asset release flag.");
                 Assert(overrideSummary.Contains("HookInstallScheduler=false"), "Override summary should include hook scheduler flag.");
                 Assert(overrideSummary.Contains("SaveLoadRequestCoordinator=false"), "Override summary should include SaveLoad coordinator flag.");
                 Assert(overrideSummary.Contains("ModOwnerLedger=false"), "Override summary should include mod owner ledger flag.");
@@ -339,23 +325,28 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void RuntimeSubsystemOptionsAllFlagsOffDisablesObservationAndShadowRegistry()
+        private static void RuntimeSubsystemOptionsAllFlagsOffDisablesObservation()
         {
             string? previousRoot = UseTempPersistentRoot();
+            DtmApiRuntime? runtime = null;
             try
             {
                 string dir = NewTempGameDir();
+                const string ownerId = "DTMAPI.Tests.ObservationOff.Startup";
+                WriteAtomicProbePackage(dir, ownerId, string.Empty);
+                AtomicOwnerProbeMod.EntryCount = 0;
                 string configDir = Path.Combine(dir, "DTMAPI", "config");
                 Directory.CreateDirectory(configDir);
                 File.WriteAllText(
                     Path.Combine(configDir, "refactor-scaffold.json"),
                     "{ \"LifecycleObservation\": false, \"ShadowContentRegistry\": false, \"ShadowResourceLoader\": false, \"RegistryTakesOver\": false, \"ResourceLifecycleLedger\": false, \"ResourceLifecycleCleanup\": false, \"ResourceLifecycleTitleAssetRelease\": false, \"HookInstallScheduler\": false, \"HookStatusQueue\": false, \"EventMainThreadBoundary\": false, \"HookReadinessLayers\": false, \"SaveLoadRequestCoordinator\": false, \"ModOwnerLedger\": false, \"ModLoadTransaction\": false, \"OwnerBoundInput\": false, \"EventHandlerQuarantine\": false, \"ConfigPreviewAudit\": false, \"GameBridgeFeatureContracts\": false, \"GameBridgeFeatureUpdateBuckets\": false, \"GameBridgeFinalHealthSnapshot\": false, \"ContentManifestRegistry\": false }");
 
-                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 runtime.Start();
+                Assert(runtime.DiscoveredMods.Count == 1 && runtime.LoadedMods.Single().Manifest.UniqueID == ownerId && AtomicOwnerProbeMod.EntryCount == 1,
+                    "Disabled lifecycle observation must still discover the startup package and execute its code Entry once.");
 
                 Assert(!runtime.RefactorOptions.LifecycleObservation, "Runtime should read lifecycle observation disabled from config.");
-                Assert(!runtime.RefactorOptions.ShadowContentRegistry, "Runtime should read shadow registry disabled from config.");
                 Assert(!runtime.RefactorOptions.ResourceLifecycleLedger, "Runtime should read resource lifecycle ledger disabled from config.");
                 Assert(!runtime.RefactorOptions.ResourceLifecycleCleanup, "Runtime should read resource lifecycle cleanup disabled from config.");
                 Assert(!runtime.RefactorOptions.HookInstallScheduler, "Runtime should read hook install scheduler disabled from config.");
@@ -378,11 +369,9 @@ namespace DTMAPI.UnitTests
                 Assert(runtime.ModOwnerLedgerSnapshot.Entries.Count == 0, "Disabled mod owner ledger must not record owner lifecycle entries.");
                 runtime.NotifyLoadGameRequested(2);
                 Assert(runtime.SaveLoadRequestSnapshot.Requests.Count == 0, "Disabled SaveLoad request coordinator must not record request entries.");
-                Assert(runtime.LatestShadowContentRegistrySnapshot == null, "Disabled shadow content registry must not build a snapshot.");
                 Assert(runtime.LatestContentManifestRegistrySnapshot == null, "Disabled content/manifest registry must not build a snapshot.");
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.LifecycleObservation" && f.Status == "disabled"), "Disabled lifecycle observation should be reported through feature status.");
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.LifecycleBoundaryContract" && f.Status == "disabled"), "Disabled lifecycle boundary contract should be reported through feature status.");
-                Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.ShadowContentRegistry" && f.Status == "disabled"), "Disabled shadow registry should be reported through feature status.");
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.ResourceLifecycleLedger" && f.Status == "disabled"), "Disabled resource ledger should be reported through feature status.");
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.HookStatusQueue" && f.Status == "disabled"), "Disabled hook status queue should be reported through feature status.");
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.EventMainThreadBoundary" && f.Status == "disabled"), "Disabled event main-thread boundary should be reported through feature status.");
@@ -395,10 +384,29 @@ namespace DTMAPI.UnitTests
                 Assert(runtime.Diagnostics.GetFeatureStatuses().Any(f => f.FeatureId == "Refactor.ContentManifestRegistry" && f.Status == "disabled"), "Disabled content/manifest registry should be reported through feature status.");
                 Assert(!File.ReadAllText(Path.Combine(configDir, "refactor-scaffold.json")).Contains("GameBridgeFeatureUpdateBuckets", StringComparison.Ordinal),
                     "Loading an old refactor-scaffold config must rewrite away the retired feature bucket option.");
+
+                var workshopCounts = new List<int>();
+                CreateEventsProxy(runtime, "DTMAPI.Tests.ObservationOff.Observer").Workshop.ModListChanged += (_, args) => workshopCounts.Add(args.ModCount);
+                for (int ordinal = 1; ordinal <= 2; ordinal++)
+                {
+                    string refreshId = "DTMAPI.Tests.ObservationOff.Refresh" + ordinal;
+                    WriteManifest(dir, refreshId, "{ \"Name\": \"Observation Off Refresh\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"" + refreshId + "\", \"Type\": \"ContentPack\" }");
+                    runtime.NotifyWorkshopModListChanged();
+                    Assert(runtime.DiscoveredMods.Count == ordinal + 1 && runtime.LoadedMods.Count == ordinal + 1 && runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == refreshId),
+                        "Disabled lifecycle observation must still discover and load each new Workshop content package.");
+                    Assert(runtime.LoadedMods.Count(mod => mod.Manifest.UniqueID == ownerId) == 1 && AtomicOwnerProbeMod.EntryCount == 1,
+                        "Repeated Workshop refreshes with observation disabled must retain the startup owner without repeating Entry.");
+                    Assert(runtime.LifecycleObservationSnapshot.Entries.Count == 0 && runtime.LifecycleBoundaryContractSnapshot.Timeline.Count == 0,
+                        "Disabled lifecycle observation must remain empty after every Workshop refresh.");
+                    Assert(runtime.LifecycleBoundaryContractSnapshot.PhaseCounts.Count == 0 && runtime.LifecycleBoundaryContractSnapshot.RegistryRefreshCounts.Count == 0,
+                        "Disabled lifecycle observation must not accumulate phase or registry counters during actual refreshes.");
+                }
+                Assert(workshopCounts.SequenceEqual(new[] { 2, 3 }), "Each Workshop refresh must still dispatch the discovered Mod count when observation is disabled.");
             }
             finally
             {
-                RestorePersistentRoot(previousRoot);
+                try { runtime?.NotifyRuntimeShutdown("ObservationOff test complete"); }
+                finally { RestorePersistentRoot(previousRoot); }
             }
         }
 
@@ -704,14 +712,38 @@ namespace DTMAPI.UnitTests
 
         private static void LifecycleBoundaryContractTracksPhaseRegistryAndHookDiagnostics()
         {
+            var cycles = new LifecycleBoundaryContractService();
+            cycles.RecordPhase(RuntimeLifecyclePhase.SaveLoaded, 1, false, 5, 3, 2);
+            for (int i = 0; i < 2; i++)
+                using (cycles.BeginRegistryRefreshCycle("WorkshopModListChanged"))
+                {
+                    Assert(cycles.RecordRegistryRefresh("DiscoverMods", 5, 3).NewDiagnostics.Count == 0, "Independent official refreshes in one save phase must not be diagnosed as duplicate discovery.");
+                    Assert(cycles.RecordRegistryRefresh("LoadMods hot loadedNow=0", 5, 3).NewDiagnostics.Count == 0, "Independent official refreshes must not be diagnosed as duplicate publication.");
+                }
+            Assert(cycles.GetSnapshot().RegistryRefreshCounts[RuntimeLifecyclePhase.SaveLoaded + "::DiscoverMods"] == 2, "Lifetime refresh counts must remain observable across cycles.");
+            try
+            {
+                using (cycles.BeginRegistryRefreshCycle("outer"))
+                {
+                    cycles.RecordRegistryRefresh("DiscoverMods", 5, 3);
+                    using (cycles.BeginRegistryRefreshCycle("reentrant"))
+                        Assert(cycles.RecordRegistryRefresh("DiscoverMods", 5, 3).NewDiagnostics.Count == 1, "Nested refresh must not erase the current cycle's duplicate evidence.");
+                    throw new InvalidOperationException("cycle-test");
+                }
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "cycle-test") { }
+            using (cycles.BeginRegistryRefreshCycle("after failure"))
+                Assert(cycles.RecordRegistryRefresh("DiscoverMods", 5, 3).NewDiagnostics.Count == 0, "Failed cycle must close so the next official refresh has a new boundary.");
+            Assert(cycles.GetSnapshot().WarningCount == 1, "New cycles must retain historical duplicate warnings.");
+
             var service = new LifecycleBoundaryContractService();
             LifecycleBoundaryContractUpdate startup = service.RecordPhase(RuntimeLifecyclePhase.Startup, null, null, 5, 0, 2);
             Assert(startup.Snapshot.Status == "ok", "Initial lifecycle boundary phase should be ok.");
 
-            LifecycleBoundaryContractUpdate firstRegistry = service.RecordRegistryRefresh("DiscoverMods", 5, 0, 1, 2);
+            LifecycleBoundaryContractUpdate firstRegistry = service.RecordRegistryRefresh("DiscoverMods", 5, 0);
             Assert(firstRegistry.Snapshot.Status == "ok", "First registry refresh for a phase/reason should be ok.");
-            LifecycleBoundaryContractUpdate duplicateRegistry = service.RecordRegistryRefresh("DiscoverMods", 5, 0, 1, 2);
-            Assert(duplicateRegistry.NewDiagnostics.Any(d => d.Message.Contains("Shadow registry refresh repeated", StringComparison.Ordinal)), "Duplicate registry refresh should produce a diagnostic.");
+            LifecycleBoundaryContractUpdate duplicateRegistry = service.RecordRegistryRefresh("DiscoverMods", 5, 0);
+            Assert(duplicateRegistry.NewDiagnostics.Count == 1 && duplicateRegistry.Snapshot.RegistryRefreshCounts[RuntimeLifecyclePhase.Startup + "::DiscoverMods"] == 2, "Duplicate registry refresh should produce a diagnostic and retain the observed count.");
 
             LifecycleBoundaryContractUpdate firstHook = service.RecordHookStatus("Save.SaveLoaded", "experimental", "Harmony Postfix: DolocAPI.AfterLoadArchiveData", "Hook installed.");
             Assert(!firstHook.NewDiagnostics.Any(), "First hook install signal should not warn.");
@@ -862,6 +894,7 @@ namespace DTMAPI.UnitTests
 
         private static void ResourceLifecycleLedgerSkipsDuplicateSkippedRefreshSnapshots()
         {
+            ResourceLedgerBoundsReportIncompleteDetails();
             var service = new ResourceLifecycleLedgerService();
             service.RecordPhase(RuntimeLifecyclePhase.SaveLoaded);
 
@@ -943,14 +976,74 @@ namespace DTMAPI.UnitTests
             Assert(snapshot.PublishCountsByArea.TryGetValue("AutoFishing.MiniGameHandle", out int publishCount) && publishCount < 15, "High-churn AutoFishing publish count should be sampled, not linear with handle count.");
         }
 
+        private static void ResourceLedgerBoundsReportIncompleteDetails()
+        {
+            var ledger = new ResourceLifecycleLedgerService();
+            for (int index = 0; index < ResourceLifecycleLedgerService.MaxDetailedRecords + 3; index++)
+                ledger.RecordResource("test", "resource-" + index, "owner", "", ResourceLifetime.ProcessLifetime,
+                    ResourceOwnership.DtmapiOwned, ResourceLifecycleStatus.Ready, "owner-dispose");
+            for (int index = 0; index < ResourceLifecycleLedgerService.MaxCounterKeys + 3; index++)
+                ledger.RecordRefresh("area-" + index, "unchanged", ResourceLifecycleStatus.SkippedUnchanged, index);
+            ResourceLifecycleSnapshot snapshot = ledger.GetSnapshot();
+            Assert(snapshot.RecordCount == ResourceLifecycleLedgerService.MaxDetailedRecords && snapshot.TrimmedResourceObservations == 3,
+                "The diagnostic ledger must bound detailed rows and state exactly how many observations lack a row.");
+            Assert(snapshot.RefreshCounts.Count <= ResourceLifecycleLedgerService.MaxCounterKeys && snapshot.PublishCountsByArea.Count <= ResourceLifecycleLedgerService.MaxCounterKeys && snapshot.TrimmedCounterUpdates > 0,
+                "Changing resource areas must not create unbounded diagnostic counter keys.");
+            Assert(snapshot.Status == "warning" && snapshot.FormatSummary().Contains("trimmedResourceObservations=3", StringComparison.Ordinal),
+                "A clipped resource projection must remain visibly incomplete rather than claim an unrestricted successful audit.");
+            Assert(ledger.RemoveOwner("owner") == ResourceLifecycleLedgerService.MaxDetailedRecords && ledger.CurrentRecordCount == 0,
+                "Owner cleanup must still remove every retained diagnostic row after overflow.");
+        }
+
         private static void RuntimeLifecycleBoundaryContractReportsAndRespectsFlag()
         {
             string? previousRoot = UseTempPersistentRoot();
+            DtmApiRuntime? runtime = null;
             try
             {
                 string dir = NewTempGameDir();
-                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                const string ownerId = "DTMAPI.Tests.ObservationOn.Startup";
+                WriteAtomicProbePackage(dir, ownerId, string.Empty);
+                AtomicOwnerProbeMod.EntryCount = 0;
+                runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 runtime.Start();
+                Assert(runtime.RefactorOptions.LifecycleObservation, "Runtime lifecycle observation should be enabled by default.");
+                Assert(runtime.DiscoveredMods.Count == 1 && runtime.LoadedMods.Single().Manifest.UniqueID == ownerId && AtomicOwnerProbeMod.EntryCount == 1,
+                    "Default lifecycle observation must preserve actual startup discovery and code Entry.");
+                LifecycleBoundaryContractSnapshot started = runtime.LifecycleBoundaryContractSnapshot;
+                LifecycleBoundaryTimelineEntry startupCycle = started.Timeline.Single(entry => entry.Kind == "registry-cycle");
+                Assert(startupCycle.Phase == RuntimeLifecyclePhase.Startup && startupCycle.Details == "cycle=1; reason=Startup",
+                    "The actual default Start entry must open exactly one Startup registry cycle.");
+                LifecycleBoundaryTimelineEntry[] startupRefreshes = started.Timeline.Where(entry => entry.Kind == "registry").ToArray();
+                Assert(startupRefreshes.Length == 2 && startupRefreshes[0].Details.Contains("reason=DiscoverMods;", StringComparison.Ordinal) &&
+                    startupRefreshes[1].Details.Contains("reason=LoadMods initial loadedNow=1;", StringComparison.Ordinal) &&
+                    startupRefreshes.All(entry => entry.Phase == RuntimeLifecyclePhase.Startup && entry.Details.Contains("cycle=1; cycleCount=1;", StringComparison.Ordinal)),
+                    "Actual startup discovery and initial loading must record one refresh each within the same Startup cycle.");
+
+                var workshopCounts = new List<int>();
+                CreateEventsProxy(runtime, "DTMAPI.Tests.ObservationOn.Observer").Workshop.ModListChanged += (_, args) => workshopCounts.Add(args.ModCount);
+                for (int ordinal = 1; ordinal <= 2; ordinal++)
+                {
+                    string refreshId = "DTMAPI.Tests.ObservationOn.Refresh" + ordinal;
+                    WriteManifest(dir, refreshId, "{ \"Name\": \"Observation On Refresh\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"" + refreshId + "\", \"Type\": \"ContentPack\" }");
+                    runtime.NotifyWorkshopModListChanged();
+                    Assert(runtime.DiscoveredMods.Count == ordinal + 1 && runtime.LoadedMods.Count == ordinal + 1 && runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == refreshId) && AtomicOwnerProbeMod.EntryCount == 1,
+                        "Default Workshop refreshes must discover and load each new content package without repeating startup Entry.");
+                    LifecycleBoundaryContractSnapshot refreshed = runtime.LifecycleBoundaryContractSnapshot;
+                    LifecycleBoundaryTimelineEntry[] cycleEntries = refreshed.Timeline.Where(entry => entry.Kind == "registry-cycle").ToArray();
+                    Assert(cycleEntries.Length == ordinal + 1 && cycleEntries.Last().Phase == RuntimeLifecyclePhase.TitleObserved &&
+                        cycleEntries.Last().Details == "cycle=" + (ordinal + 1) + "; reason=WorkshopModListChanged",
+                        "Each actual default Workshop entry must establish a new independent registry cycle.");
+                    LifecycleBoundaryTimelineEntry[] refreshEntries = refreshed.Timeline.Where(entry => entry.Kind == "registry").ToArray();
+                    Assert(refreshEntries.Length == 2 * (ordinal + 1) && refreshEntries[refreshEntries.Length - 2].Details.Contains("reason=DiscoverMods;", StringComparison.Ordinal) &&
+                        refreshEntries.Last().Details.Contains("reason=LoadMods hot loadedNow=1;", StringComparison.Ordinal) &&
+                        refreshEntries.Skip(refreshEntries.Length - 2).All(entry => entry.Phase == RuntimeLifecyclePhase.TitleObserved && entry.Details.Contains("cycle=" + (ordinal + 1) + "; cycleCount=1;", StringComparison.Ordinal)),
+                        "Each default Workshop cycle must record discovery and actual hot loading once.");
+                    Assert(refreshed.RegistryRefreshCounts[RuntimeLifecyclePhase.TitleObserved + "::DiscoverMods"] == ordinal &&
+                        refreshed.RegistryRefreshCounts[RuntimeLifecyclePhase.TitleObserved + "::LoadMods hot loadedNow=1"] == ordinal && refreshed.WarningCount == 0,
+                        "Separate actual Workshop cycles must preserve cumulative refresh counts without duplicate warnings.");
+                }
+                Assert(workshopCounts.SequenceEqual(new[] { 2, 3 }), "Default Workshop events must publish each discovered count through the runtime queue flush.");
                 runtime.NotifyLoadGameRequested(2);
                 runtime.NotifySaveLoaded(false);
                 runtime.NotifyReturnedToTitle();
@@ -975,62 +1068,37 @@ namespace DTMAPI.UnitTests
             }
             finally
             {
-                RestorePersistentRoot(previousRoot);
+                try { runtime?.NotifyRuntimeShutdown("ObservationOn test complete"); }
+                finally { RestorePersistentRoot(previousRoot); }
             }
         }
 
-        private static void ShadowContentRegistryParsesGoodAndBadContentPacks()
+        private static void RuntimeDiscoveryIgnoresUnconsumedContent()
         {
-            string dir = NewTempGameDir();
-            string goodRoot = Path.Combine(dir, "Mods", "GoodAnimal");
-            Directory.CreateDirectory(Path.Combine(goodRoot, "Content", "DTMAPI"));
-            File.WriteAllText(Path.Combine(goodRoot, "manifest.json"), "{ \"Name\": \"Good Animal\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.GoodAnimal\", \"Type\": \"ContentPack\" }");
-            File.WriteAllText(Path.Combine(goodRoot, "Content", "DTMAPI", "custom-animals.json"), "[ { \"speciesId\": \"hatch\", \"templateSpeciesId\": \"chicken\", \"animatorMode\": \"pngSpriteOverride\" } ]");
-            File.WriteAllText(Path.Combine(goodRoot, "Content", "DTMAPI", "audio-replacements.json"), "[ { \"id\": \"hatch-pet\", \"category\": \"AnimalVoice\", \"nativeSoundEvent\": \"PLAY_ANIMAL_PET_CHICKEN\" } ]");
-            File.WriteAllText(Path.Combine(goodRoot, "Content", "animal_tbanimal.json"), "[ { \"id\": \"hatch\" } ]");
-
-            string badRoot = Path.Combine(dir, "Mods", "BadAnimal");
-            Directory.CreateDirectory(Path.Combine(badRoot, "Content", "DTMAPI"));
-            File.WriteAllText(Path.Combine(badRoot, "manifest.json"), "{ \"Name\": \"Bad Animal\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.BadAnimal\", \"Type\": \"ContentPack\" }");
-            File.WriteAllText(Path.Combine(badRoot, "Content", "DTMAPI", "custom-animals.json"), "{ not json");
-            File.WriteAllText(Path.Combine(badRoot, "Content", "DTMAPI", "audio-replacements.json"), "[ { \"id\": \"bad\", \"category\": \"AnimalVoice\" } ]");
-            File.WriteAllText(Path.Combine(badRoot, "Content", "item_tbitem.json"), "not-json");
-
-            var good = new DiscoveredMod(
-                new ManifestModel { Name = "Good Animal", Author = "DTMAPI", Version = "1.0.0", UniqueID = "DTMAPI.Tests.GoodAnimal", Type = "ContentPack" },
-                goodRoot,
-                Path.Combine(goodRoot, "manifest.json"),
-                "Local",
-                null,
-                true,
-                true,
-                string.Empty,
-                false,
-                string.Empty);
-            var bad = new DiscoveredMod(
-                new ManifestModel { Name = "Bad Animal", Author = "DTMAPI", Version = "1.0.0", UniqueID = "DTMAPI.Tests.BadAnimal", Type = "ContentPack" },
-                badRoot,
-                Path.Combine(badRoot, "manifest.json"),
-                "Local",
-                null,
-                true,
-                true,
-                string.Empty,
-                false,
-                string.Empty);
-
-            var registry = new ShadowContentRegistry();
-            ShadowContentRegistrySnapshot snapshot = registry.Build(new[] { good, bad }, new[] { good }, "unit-test");
-            ShadowContentRegistryRow goodRow = snapshot.Rows.Single(r => r.UniqueID == "DTMAPI.Tests.GoodAnimal");
-            ShadowContentRegistryRow badRow = snapshot.Rows.Single(r => r.UniqueID == "DTMAPI.Tests.BadAnimal");
-            Assert(goodRow.LoadedByOldSystem, "Shadow row should carry old loaded state.");
-            Assert(goodRow.CustomAnimals.Count == 1 && goodRow.CustomAnimals.ParseStatus == "ok", "Good custom animal JSON should parse.");
-            Assert(goodRow.AudioReplacements.Count == 1 && goodRow.AudioReplacements.ParseStatus == "ok", "Good audio replacement JSON should parse.");
-            Assert(goodRow.OfficialJson.ExistsCount == 1 && goodRow.OfficialJson.InvalidCount == 0, "Good official JSON should be recognized as JSON-shaped.");
-            Assert(badRow.CustomAnimals.ParseStatus == "parse-error", "Bad custom animal JSON should be diagnosed.");
-            Assert(badRow.OfficialJson.InvalidCount == 1, "Bad official JSON shape should be diagnosed.");
-            Assert(snapshot.DiffCount >= 2, "Bad shadow content should produce diff diagnostics.");
-            Assert(snapshot.FormatSummary().Contains("customAnimals=1"), "Shadow summary should include custom animal count.");
+            string? previousRoot = UseTempPersistentRoot();
+            DtmApiRuntime? runtime = null;
+            try
+            {
+                string dir = NewTempGameDir();
+                const string owner = "DTMAPI.Tests.UnconsumedContent";
+                WriteManifest(dir, owner, "{ \"Name\": \"Unconsumed content\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"" + owner + "\", \"Type\": \"ContentPack\" }");
+                string content = Path.Combine(dir, "Mods", owner, "Content", "DTMAPI");
+                Directory.CreateDirectory(content);
+                string unused = Path.Combine(content, "custom-animals.json");
+                File.WriteAllText(unused, "not-json");
+                using var held = new FileStream(unused, FileMode.Open, FileAccess.Read, FileShare.None);
+                runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
+                runtime.Start();
+                runtime.NotifyWorkshopModListChanged();
+                Assert(runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == owner), "Unused content must not prevent the owner from loading.");
+                Assert(!runtime.Diagnostics.GetWarnings().Any(w => w.Details.Contains("custom-animals", StringComparison.Ordinal)), "Discovery must not read or diagnose content owned by an absent domain consumer.");
+                Assert(runtime.LifecycleBoundaryContractSnapshot.RegistryRefreshCounts.Count > 0, "Discovery lifecycle observation must remain available without content scans.");
+            }
+            finally
+            {
+                try { runtime?.NotifyRuntimeShutdown("unused-content-test"); }
+                finally { RestorePersistentRoot(previousRoot); }
+            }
         }
 
         private static void ContentManifestRegistryBuildsAuthoritativeIndexAndCapabilities()
@@ -1038,9 +1106,9 @@ namespace DTMAPI.UnitTests
             string dir = NewTempGameDir();
             string goodRoot = Path.Combine(dir, "Mods", "GoodAnimal");
             Directory.CreateDirectory(Path.Combine(goodRoot, "Content", "DTMAPI"));
+            File.WriteAllText(Path.Combine(goodRoot, "Content", "DTMAPI", "audio-replacements.json"), "[{ \"category\": \"AnimalVoice\" }]");
             File.WriteAllText(Path.Combine(goodRoot, "manifest.json"), "{ \"Name\": \"Good Animal\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.GoodAnimal\", \"Type\": \"ContentPack\" }");
             File.WriteAllText(Path.Combine(goodRoot, "Content", "DTMAPI", "custom-animals.json"), "[ { \"speciesId\": \"hatch\", \"templateSpeciesId\": \"chicken\" } ]");
-            File.WriteAllText(Path.Combine(goodRoot, "Content", "DTMAPI", "audio-replacements.json"), "[ { \"id\": \"hatch-pet\", \"category\": \"AnimalVoice\", \"nativeSoundEvent\": \"PLAY_ANIMAL_PET_CHICKEN\" } ]");
             File.WriteAllText(Path.Combine(goodRoot, "Content", "animal_tbanimal.json"), "[ { \"id\": \"hatch\" } ]");
 
             DiscoveredMod good = CreateDiscoveredContentPack(goodRoot, "DTMAPI.Tests.GoodAnimal", "Good Animal", source: "OfficialLocal", officialManaged: true);
@@ -1056,14 +1124,12 @@ namespace DTMAPI.UnitTests
             Assert(row.LoadedByOldSystem, "Authoritative index should preserve old loader loaded state.");
             Assert(row.OwnerId == "DTMAPI.Tests.GoodAnimal", "Registry row owner should default to the manifest UniqueID.");
             Assert(row.Capabilities.Contains("ContentPack", StringComparer.OrdinalIgnoreCase), "Content pack capability should be inferred.");
-            Assert(row.Capabilities.Contains("CustomAnimals", StringComparer.OrdinalIgnoreCase), "CustomAnimals capability should be inferred from DTMAPI content JSON.");
-            Assert(row.Capabilities.Contains("AudioReplacement", StringComparer.OrdinalIgnoreCase), "AudioReplacement capability should be inferred from DTMAPI content JSON.");
-            Assert(row.Capabilities.Contains("AnimalVoice", StringComparer.OrdinalIgnoreCase), "AnimalVoice capability should be inferred from replacement category text.");
+            Assert(!row.Capabilities.Contains("CustomAnimals", StringComparer.OrdinalIgnoreCase), "Core does not interpret domain files or infer an Animals provider from filenames.");
             Assert(row.Capabilities.Contains("OfficialJson", StringComparer.OrdinalIgnoreCase), "Official JSON capability should be inferred without applying content.");
             Assert(row.Capabilities.Contains("OfficialLocal", StringComparer.OrdinalIgnoreCase), "Official local source capability should be retained.");
             Assert(snapshot.DiffCount == 0, "Registry should not diff when all legacy loaded content packs are indexed.");
-            Assert(snapshot.FormatSummary().Contains("customAnimalPacks=1"), "Content registry summary should count custom animal packs.");
-            Assert(snapshot.FormatSummary().Contains("animalVoicePacks=1"), "Content registry summary should count AnimalVoice packs.");
+            Assert(!snapshot.FormatSummary().Contains("customAnimalPacks="), "Core content summary must not maintain a second domain contribution ledger.");
+            Assert(!row.Capabilities.Contains("AudioReplacement", StringComparer.OrdinalIgnoreCase) && !row.Capabilities.Contains("AnimalVoice", StringComparer.OrdinalIgnoreCase), "A retired audio sidecar must not create Core audio capabilities.");
             Assert(snapshot.FormatOwnershipSummary().Contains("officialManaged=1"), "Ownership summary should expose official enablement ownership.");
         }
 
@@ -1156,43 +1222,6 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void AdvancedCodeModWithoutReceiptFailsClosedBeforeDiscoveryAndAssemblyLoad()
-        {
-            string? previousRoot = UseTempPersistentRoot();
-            try
-            {
-                string dir = NewTempGameDir();
-                string modDir = Path.Combine(dir, "Mods", "ReservedCodeModKind");
-                Directory.CreateDirectory(modDir);
-                string assemblyPath = typeof(ApiOwnerProbeMod).Assembly.Location;
-                string assemblyName = Path.GetFileName(assemblyPath);
-                File.Copy(assemblyPath, Path.Combine(modDir, assemblyName));
-                File.WriteAllText(
-                    Path.Combine(modDir, "manifest.json"),
-                    "{ \"Name\": \"Reserved CodeModKind\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.ReservedCodeModKind\", \"Type\": \"CodeMod\", \"CodeModKind\": \"Advanced\", \"EntryDll\": \"" + assemblyName + "\", \"EntryType\": \"" + (typeof(ApiOwnerProbeMod).FullName ?? nameof(ApiOwnerProbeMod)) + "\" }" );
-
-                var checkpoints = new List<ModLoadCheckpoint>();
-                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
-                runtime.ConfigureModLoadCheckpointForTests(checkpoints.Add);
-                runtime.Start();
-                RuntimeSnapshot snapshot = runtime.CreateSnapshot();
-
-                Assert(!snapshot.LoadedMods.Any(mod => mod.Manifest.UniqueID == "DTMAPI.Tests.ReservedCodeModKind"), "Advanced CodeMod without its receipt must not produce a loaded owner.");
-                Assert(!runtime.ModRegistry.IsLoaded("DTMAPI.Tests.ReservedCodeModKind"), "Advanced CodeMod without its receipt must not publish a registry owner.");
-                Assert(checkpoints.Count == 0, "Advanced CodeMod without its receipt must be rejected before Assembly.LoadFrom and every mod-load checkpoint.");
-                Assert(
-                    snapshot.Errors.Any(error =>
-                        error.Owner == "DTMAPI.ModScanner" &&
-                        error.Message.Contains("Manifest discovery failed", StringComparison.Ordinal) &&
-                        error.Details.Contains("advanced-reference-receipt-missing", StringComparison.Ordinal)),
-                    "Advanced CodeMod without its receipt should produce the stable pre-load scanner failure code.");
-            }
-            finally
-            {
-                RestorePersistentRoot(previousRoot);
-            }
-        }
-
         private static void RuntimePathsDoNotCreateOrAdvertiseLegacyDevelopmentRoot()
         {
             string dir = Path.Combine(Path.GetTempPath(), "DTMAPI-tests", Guid.NewGuid().ToString("N"));
@@ -1257,8 +1286,8 @@ namespace DTMAPI.UnitTests
             try
             {
                 string dir = NewTempGameDir();
-                Assert(DtmApiRuntime.ApiVersion == "0.7.0", "DTMAPI runtime API version should project the 0.7.0 release authority.");
-                Assert(DtmApiRuntime.BinaryVersion == "0.7.0.0", "DTMAPI binary/plugin file version should remain numeric and project the 0.7.0 authority.");
+                Assert(DtmApiRuntime.ApiVersion == "0.7.5", "DTMAPI runtime API version should project the 0.7.5 local candidate authority.");
+                Assert(DtmApiRuntime.BinaryVersion == "0.7.5.0", "DTMAPI binary/plugin file version should remain numeric and project the 0.7.5 candidate authority.");
                 WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
                 WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
                 WriteManifest(dir, "OptionalNeedsBase2", "{ \"Name\": \"Optional Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalNeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": false } ] }");
@@ -1326,7 +1355,7 @@ namespace DTMAPI.UnitTests
                 runtime.Start();
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
                 Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.EscapingDll"), "EntryDll escaping the mod root must not load.");
-                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.EscapingDll" && e.Message.Contains("不能逃出")), "Escaping EntryDll should have a path-safety diagnostic.");
+                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.EscapingDll" && e.Details.Contains("dependency-path-outside-package")), "Escaping EntryDll should have a path-safety diagnostic from the common path reader.");
             }
             finally
             {
@@ -1334,19 +1363,22 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void EntryDllMustBeDllFile()
+        private static void EntryPathUsesActualAssemblyRegardlessOfSuffix()
         {
             string? previousRoot = UseTempPersistentRoot();
             try
             {
                 string dir = NewTempGameDir();
-                WriteManifest(dir, "NotDll", "{ \"Name\": \"Not DLL\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NotDll\", \"EntryDll\": \"NotDll.txt\", \"Type\": \"CodeMod\" }");
+                string package = WriteAtomicProbePackage(dir, "DTMAPI.Tests.NotDll", "");
+                string manifestPath = Path.Combine(package, "manifest.json");
+                string fileName = Path.GetFileName(typeof(AtomicOwnerProbeMod).Assembly.Location);
+                File.Move(Path.Combine(package, fileName), Path.Combine(package, "Entry.bin"));
+                File.WriteAllText(manifestPath, File.ReadAllText(manifestPath).Replace(fileName, "Entry.bin"));
 
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 runtime.Start();
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
-                Assert(!snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NotDll"), "EntryDll with a non-.dll extension must not load.");
-                Assert(snapshot.Errors.Any(e => e.Owner == "DTMAPI.Tests.NotDll" && e.Message.Contains(".dll")), "Non-.dll EntryDll should have a clear diagnostic.");
+                Assert(snapshot.LoadedMods.Any(m => m.Manifest.UniqueID == "DTMAPI.Tests.NotDll"), "An explicitly selected valid assembly loads by path; its filename suffix is not a runtime qualification.");
             }
             finally
             {
@@ -1430,6 +1462,7 @@ namespace DTMAPI.UnitTests
 
         private static void HelperModRegistryBindsApiRegistrationToOwner()
         {
+            RegistryLateFactoryResultsAreDiscarded();
             string? previousRoot = UseTempPersistentRoot();
             try
             {
@@ -1456,8 +1489,66 @@ namespace DTMAPI.UnitTests
             }
         }
 
+        private static void ContentQueryEntryUsesCompletedOwnerInputs()
+        {
+            foreach (bool queryDuringColdEntry in new[] { false, true })
+            {
+                string? previousRoot = UseTempPersistentRoot();
+                try
+                {
+                    string gameDir = NewTempGameDir();
+                    const string firstOwner = "DTMAPI.Tests.ContentEntry.First";
+                    const string secondOwner = "DTMAPI.Tests.ContentEntry.Second";
+                    string firstRoot = WriteAtomicProbePackage(gameDir, firstOwner, string.Empty);
+                    string textPath = Path.Combine(firstRoot, "entry-query.txt");
+                    File.WriteAllText(textPath, "before hot load");
+                    var runtime = new DtmApiRuntime(new FakeHost(gameDir), new ConfigMenuRegistry());
+                    bool coldCheckpointRead = false;
+                    runtime.ConfigureModLoadCheckpointForTests(checkpoint =>
+                    {
+                        if (checkpoint != ModLoadCheckpoint.ContextAttached || !queryDuringColdEntry)
+                            return;
+                        coldCheckpointRead = true;
+                        Assert(runtime.Content.FindAssets("txt").Count == 0 && runtime.Content.CandidateBuildCountForTest == 0,
+                            "Cold Entry must see the empty publication until complete active-owner inputs exist.");
+                    });
+                    runtime.Start();
+                    Assert(coldCheckpointRead == queryDuringColdEntry && runtime.Content.CandidateBuildCountForTest == (queryDuringColdEntry ? 1 : 0),
+                        "Cold Entry demand is fulfilled only at the completed LoadMods boundary.");
+
+                    File.WriteAllText(textPath, "current file at first demand");
+                    File.WriteAllText(Path.Combine(firstRoot, "added-after-startup.txt"), "visible on first demand");
+                    string secondRoot = WriteAtomicProbePackage(gameDir, secondOwner, string.Empty);
+                    File.WriteAllText(Path.Combine(secondRoot, "second-entry.txt"), "not yet active");
+                    bool hotCheckpointRead = false;
+                    runtime.ConfigureModLoadCheckpointForTests(checkpoint =>
+                    {
+                        if (checkpoint != ModLoadCheckpoint.ContextAttached)
+                            return;
+                        hotCheckpointRead = true;
+                        Assert(runtime.Content.FindAssets("txt").Any(asset => asset.SourceModId == firstOwner) &&
+                            !runtime.Content.FindAssets("txt").Any(asset => asset.SourceModId == secondOwner),
+                            "Hot Entry queries must use the previous complete owner inputs, excluding the entering owner.");
+                        Assert(runtime.Content.FindAssets("txt").Any(asset => asset.RelativePath == "added-after-startup.txt") == !queryDuringColdEntry,
+                            "An uninitialized hot Entry query indexes current files; an existing publication keeps its previous asset set until LoadMods completes.");
+                        Assert(runtime.Content.TryReadTextAsset("entry-query.txt", out string text) && text == "current file at first demand",
+                            "Text asset reads use current file bytes even when their asset index was already published.");
+                    });
+                    runtime.NotifyWorkshopModListChanged();
+                    Assert(hotCheckpointRead && runtime.Content.FindAssets("txt").Any(asset => asset.SourceModId == secondOwner),
+                        "The entering owner becomes query-visible only after the hot load completes.");
+                    runtime.NotifyRuntimeShutdown("ContentQuery Entry visibility test");
+                }
+                finally
+                {
+                    RestorePersistentRoot(previousRoot);
+                }
+            }
+        }
+
         private static void HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics()
         {
+            ContentQueryEntryUsesCompletedOwnerInputs();
             string? previousRoot = UseTempPersistentRoot();
             try
             {
@@ -1695,7 +1786,7 @@ namespace DTMAPI.UnitTests
                     Assert(runtime.Events.GetHandlerCleanupSnapshot().Slots.All(slot => !slot.ByOwner.ContainsKey(ownerId)), checkpoint + " failure must remove event roots.");
                     Assert(!GetContent(runtime).FindAssets("json").Any(asset => asset.SourceModId.Equals(ownerId, StringComparison.OrdinalIgnoreCase)), checkpoint + " failure must not publish owner content assets.");
                     Assert(runtime.ModOwnerLedgerSnapshot.ActiveTransactions == 0, checkpoint + " failure must close the owner transaction.");
-                    Assert(runtime.OwnerRequiresRestart(ownerId), checkpoint + " failure after assembly-load attempt should require restart.");
+                    Assert(runtime.OwnerRequiresRestart(ownerId), checkpoint + " failure after assembly-load attempt should require restart. " + string.Join(" | ", runtime.Diagnostics.GetErrors().Select(e => e.Message + ": " + e.Details)));
                     Assert(participant.CountOwnerResources(ownerId) == 0, checkpoint + " failure must leave zero participant roots.");
                     bool entryRan = (int)checkpoint >= (int)ModLoadCheckpoint.EntryReturned;
                     bool instanceCreated = (int)checkpoint >= (int)ModLoadCheckpoint.InstanceCreated;
@@ -1850,7 +1941,6 @@ namespace DTMAPI.UnitTests
                 ((InputService)GetInput(runtime)).CreateOwnerBound(owner.UniqueID).RegisterButton("F11");
                 menu.Register(owner, () => { }, () => { });
                 menu.AddParagraph(owner, () => "this getter must not survive failed load cleanup");
-                runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = owner.UniqueID + ".Animal" });
 
                 MethodInfo cleanup = typeof(DtmApiRuntime).GetMethod("CleanupFailedCodeModOwner", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?? throw new InvalidOperationException("CleanupFailedCodeModOwner should exist.");
@@ -1861,12 +1951,10 @@ namespace DTMAPI.UnitTests
                 Assert(runtime.ModRegistry.GetApi<IUnitProbeApi>(owner.UniqueID) == null, "Failed code-mod cleanup should remove owner-bound API registrations.");
                 Assert(!GetInput(runtime).GetRegisteredButtons().Contains("F11", StringComparer.OrdinalIgnoreCase), "Failed code-mod cleanup should remove owner-bound input registrations.");
                 Assert(menuRuntime.GetPage(owner.UniqueID) == null, "Failed code-mod cleanup should remove the failed mod's config page.");
-                Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Failed code-mod cleanup should remove owner-bound custom entity definitions.");
                 Assert(summary.Contains("eventHandlersRemoved=1", StringComparison.Ordinal) &&
                     summary.Contains("registryEntriesRemoved=", StringComparison.Ordinal) &&
                     summary.Contains("inputButtonsRemoved=1", StringComparison.Ordinal) &&
-                    summary.Contains("configPagesRemoved=1", StringComparison.Ordinal) &&
-                    summary.Contains("customEntitiesRemoved=1", StringComparison.Ordinal), "Failed code-mod cleanup summary should describe every owner-bound cleanup bucket.");
+                    summary.Contains("configPagesRemoved=1", StringComparison.Ordinal), "Failed code-mod cleanup summary should describe every current owner-bound cleanup bucket.");
             }
             finally
             {
@@ -1957,12 +2045,12 @@ namespace DTMAPI.UnitTests
                         prepareOwner) &&
                     CountCoreOwnerRootsForTest(
                         prepareRuntime,
-                        prepareOwner) ==
+                        prepareOwner) <
                         rootsBeforePrepareFailure &&
                     prepareParticipant.OwnerIds.Count == 0 &&
-                    !prepareRuntime.OwnerRequiresRestart(
+                    prepareRuntime.OwnerRequiresRestart(
                         prepareOwner),
-                    "A failed reason-aware deactivation preparation must retain the active instance and every owner root for an atomic retry. summary=" +
+                    "A failed preparation retains the instance and incomplete work, closes delivery/input roots and reports restart instead of pretending it restored Active. summary=" +
                     deferred);
                 string preparedRetry =
                     InvokeOwnerDeactivation(
@@ -2112,18 +2200,18 @@ namespace DTMAPI.UnitTests
                 DiscoveredMod discovered = runtime.DiscoveredMods.Single(mod => mod.Manifest.UniqueID == ownerId);
                 Assert(discovered.Source == "Workshop" && discovered.OfficialId == workshopOfficialId && PathsEqual(discovered.RootPath, workshopRoot), "The stale-Runtime fixture must be discovered only from the enabled Workshop package.");
                 Assert(discovered.Manifest.MinimumDTMApiVersion == "0.8.0" && !Directory.Exists(Path.Combine(persistentRoot, "MODS")), "The Workshop package must retain its future 0.8.0 minimum without an OfficialLocal shadow copy.");
-                Assert(!runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == ownerId), "A Workshop CodeMod requiring 0.8.0 must not load on the current 0.7.0 Runtime.");
+                Assert(!runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == ownerId), "A Workshop CodeMod requiring 0.8.0 must not load on the current candidate Runtime.");
                 Assert(AtomicOwnerProbeMod.ConstructorCount == 0 && AtomicOwnerProbeMod.EntryCount == 0, "The too-new Runtime contract must reject the CodeMod before construction and Entry.");
                 Assert(checkpoints.Count == 0, "MinimumDTMApiVersion rejection must occur before the first post-Assembly.LoadFrom load checkpoint.");
-                Assert(!GetPrivateField<HashSet<string>>(runtime, "loadedAssemblyOwnerIds").Contains(ownerId), "MinimumDTMApiVersion rejection must not record an assembly owner.");
-                Assert(!GetPrivateField<Dictionary<string, DtmMod>>(runtime, "modInstances").ContainsKey(ownerId), "MinimumDTMApiVersion rejection must not publish a Mod instance.");
+                Assert(!runtime.HasOwnerAssemblyLoadAttempt(ownerId), "MinimumDTMApiVersion rejection must not record an assembly owner.");
+                Assert(!runtime.HasOwnerInstance(ownerId), "MinimumDTMApiVersion rejection must not publish a Mod instance.");
                 Assert(!runtime.OwnerRequiresRestart(ownerId) && CountCoreOwnerRootsForTest(runtime, ownerId) == 0 && runtime.ModOwnerLedgerSnapshot.ActiveTransactions == 0, "Pre-assembly stale-Runtime rejection must leave zero restart state, owner roots and active transactions.");
 
                 RuntimeSnapshot snapshot = runtime.CreateSnapshot();
                 IDtmErrorInfo ownerError = snapshot.Errors.Single(error => error.Owner == ownerId);
                 Assert(ownerError.Message.Contains("前置版本过旧", StringComparison.Ordinal) &&
                     ownerError.Details.Contains("MinimumDTMApiVersion=0.8.0", StringComparison.Ordinal) &&
-                    ownerError.Details.Contains("installed runtime=0.7.0", StringComparison.Ordinal) &&
+                    ownerError.Details.Contains("installed runtime=" + DtmApiRuntime.ApiVersion, StringComparison.Ordinal) &&
                     ownerError.Details.Contains("Run 1_install_dtmapi.bat", StringComparison.Ordinal),
                     "The blocked Workshop Mod must show its required/installed versions and exact Runtime update guidance.");
                 IDtmModStatusInfo status = runtime.CreateDiagnosticsSnapshot().Mods.Single(mod => mod.UniqueID == ownerId);
@@ -2174,9 +2262,9 @@ namespace DTMAPI.UnitTests
 
                 string failedReport = runtime.ExportLogs();
                 string failedContext = ReadZipText(failedReport, "DTMAPI-runtime-context.txt");
-                string badImageFailure = failedContext.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .First(line => line.Contains("MANIFEST-LOAD-FAILURE owner=DTMAPI.ModScanner", StringComparison.Ordinal) && line.Contains("BadImageRetry", StringComparison.Ordinal));
-                Assert(badImageFailure.Contains("entry-assembly-metadata-invalid", StringComparison.Ordinal), "BadImage diagnostics must expose the stable metadata pre-load failure without creating an assembly side-effect or restart gate.");
+                Assert(failedContext.Contains("entry-assembly-metadata-invalid", StringComparison.Ordinal) &&
+                    runtime.DiscoveredMods.Any(mod => mod.Manifest.UniqueID == badImageOwnerId),
+                    "BadImage stays visible and reports metadata preflight failure without an assembly side-effect or restart gate.");
 
                 string validAssembly = typeof(AtomicOwnerProbeMod).Assembly.Location;
                 File.Copy(validAssembly, Path.Combine(missingDir, missingDllName), overwrite: true);
@@ -2325,7 +2413,6 @@ namespace DTMAPI.UnitTests
                 Assert(runtime.ModRegistry.GetApi<IUnitProbeApi>("DTMAPI.Tests.ThrowAfterRegister") == null, "Failed code-mod cleanup should remove APIs registered before Entry threw.");
                 Assert(!GetInput(runtime).GetRegisteredButtons().Contains("F11", StringComparer.OrdinalIgnoreCase), "Failed code-mod cleanup should remove input buttons registered before Entry threw.");
                 Assert(menuRuntime.GetPage("DTMAPI.Tests.ThrowAfterRegister") == null, "Failed code-mod cleanup should remove config pages registered before Entry threw.");
-                Assert(runtime.CustomEntities.GetAnimalSnapshot("DTMAPI.Tests.ThrowAfterRegister").RegisteredDefinitionCount == 0, "Failed code-mod cleanup should remove custom entities registered before Entry threw.");
                 Assert(!GetContent(runtime).FindAssets("json").Any(asset => asset.SourceModId.Equals("DTMAPI.Tests.ThrowAfterRegister", StringComparison.OrdinalIgnoreCase)), "A throwing Entry must not publish its owner content.");
 
                 string report = runtime.ExportLogs();
@@ -2867,185 +2954,6 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void FrozenCompatibilityApisPublishSeparateStabilityDispositionAndWarnings()
-        {
-            Type[] frozenTypes =
-            {
-                typeof(IActionCompletionApi),
-                typeof(ActionCompletionOptions),
-                typeof(IFishingAutomationApi),
-                typeof(FishingBiteWaitMode),
-                typeof(FishingResultMode),
-                typeof(FishingAnimationMode),
-                typeof(FishingAutomationOptions),
-                typeof(FishingAutomationState),
-                typeof(IActionSpeedApi),
-                typeof(ActionSpeedOptions),
-                typeof(IItemTooltipApi),
-                typeof(FishRoeTooltipOptions),
-                typeof(FishRoeDisplayInfo),
-                typeof(IAnimalViewerApi),
-                typeof(AnimalHusbandryProgressOptions),
-                typeof(IMachineProductionApi),
-                typeof(MachineDefinition),
-                typeof(MachineRecipeInput),
-                typeof(MachineOutputRule),
-                typeof(MachineRegisterResult),
-                typeof(MachineProductionState),
-                typeof(IEquipmentSlotsApi),
-                typeof(EquipmentSlotsOptions),
-                typeof(EquipmentSlotsRegisterResult),
-                typeof(EquipmentSlotsState),
-                typeof(EquipmentSlotInfo),
-                typeof(EquipmentSlotEquipResult),
-                typeof(EquipmentSlotsRecoveryResult),
-                typeof(ISaveSlotsApi),
-                typeof(SaveSlotsOptions),
-                typeof(SaveSlotsRegisterResult),
-                typeof(SaveSlotsState),
-                typeof(ICameraViewApi),
-                typeof(ICameraViewLease),
-                typeof(CameraViewRequest),
-                typeof(CameraViewResult),
-                typeof(CameraViewState),
-                typeof(ICameraZoomApi),
-                typeof(CameraZoomOptions),
-                typeof(CameraZoomRegisterResult),
-                typeof(CameraZoomResult),
-                typeof(CameraZoomState),
-                typeof(IChestLocatorEnhancerApi),
-                typeof(ChestLocatorEnhancerOptions),
-                typeof(ChestLocatorEnhancerRegisterResult),
-                typeof(ChestLocatorEnhancerState)
-            };
-
-            foreach (Type type in frozenTypes)
-            {
-                DtmApiStatusAttribute stability = type.GetCustomAttribute<DtmApiStatusAttribute>()
-                    ?? throw new InvalidOperationException(type.Name + " must publish stability metadata independently of disposition.");
-                Assert(stability.Status == DtmApiStatus.Experimental,
-                    type.Name + " must remain Experimental while its compatibility disposition is frozen.");
-
-                DtmApiDispositionAttribute disposition = type.GetCustomAttribute<DtmApiDispositionAttribute>()
-                    ?? throw new InvalidOperationException(type.Name + " must publish a frozen disposition.");
-                Assert(disposition.Disposition == DtmApiDisposition.Frozen && disposition.Since == "0.5.5",
-                    type.Name + " must publish the 0.5.5 Frozen disposition without changing its stability level.");
-
-                ObsoleteAttribute obsolete = type.GetCustomAttribute<ObsoleteAttribute>()
-                    ?? throw new InvalidOperationException(type.Name + " must carry a source warning while its ABI is retained.");
-                Assert(!obsolete.IsError && (obsolete.Message ?? string.Empty).Contains("frozen", StringComparison.OrdinalIgnoreCase),
-                    type.Name + " must use Obsolete(..., false) with an explicit frozen warning.");
-            }
-
-            Assert(typeof(IItemDisplayNameApi).GetCustomAttribute<DtmApiDispositionAttribute>() == null,
-                "An API without disposition metadata must retain the documented Open default instead of receiving an unrelated frozen classification.");
-        }
-
-        private static void CustomEntityRegistriesValidateRegistrationDuplicateCleanupAndSnapshots()
-        {
-            string? previousRoot = UseTempPersistentRoot();
-            try
-            {
-            string dir = NewTempGameDir();
-            var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
-            runtime.Start();
-
-            IModRegistry registry = GetModRegistry(runtime);
-            Assert(registry.GetApi<ICustomAnimalApi>("DTMAPI") != null, "Custom animal registry API should remain registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomMonsterApi>("DTMAPI") != null, "Custom monster registry API should remain registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomAttackApi>("DTMAPI") != null, "Custom attack registry API should remain registered by the runtime manifest.");
-            Assert(registry.GetApi<ICustomDroneApi>("DTMAPI") != null, "Custom drone registry API should remain registered by the runtime manifest.");
-
-            IManifest owner = new ManifestModel
-            {
-                Name = "Custom Entity Test",
-                Author = "DTMAPI",
-                Version = "1.0.0",
-                UniqueID = "DTMAPI.Tests.CustomEntity"
-            };
-
-            runtime.CustomEntities.AnimalLifecycleChanged += (_, __) => throw new InvalidOperationException("listener isolation probe");
-
-            CustomAnimalRegistrationResult invalidAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = "NotNamespaced" });
-            Assert(!invalidAnimal.Succeeded && invalidAnimal.Messages.Any(m => m.Code == "definition-id-not-namespaced"), "Invalid non-namespaced animal IDs should be rejected.");
-
-            string animalId = owner.UniqueID + ".Animal";
-            string monsterId = owner.UniqueID + ".Monster";
-            string attackId = owner.UniqueID + ".Attack";
-            string droneId = owner.UniqueID + ".Drone";
-            CustomAnimalRegistrationResult animal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition
-            {
-                SpeciesId = animalId,
-                DisplayName = TestText("Animal"),
-                Diet = new CustomAnimalDietPolicy { AcceptedItemIds = new[] { "hay" }, UnitsPerFeeding = 1 },
-                Excrement = new CustomAnimalExcrementPolicy { Enabled = true, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "poop", MinStack = 1, MaxStack = 1 } } },
-                Breeding = new CustomAnimalBreedingPolicy { Enabled = true, CompatibleSpeciesIds = new[] { animalId }, OffspringCount = 1 },
-                HiddenProducts = new[] { new CustomAnimalProductRule { ProductId = owner.UniqueID + ".HiddenProduct", RequiredProgress = 100, Outputs = new[] { new CustomAnimalItemOutput { ItemId = "hidden", MinStack = 1, MaxStack = 1 } } } },
-                Persistence = TestPersistence()
-            });
-            Assert(animal.Succeeded, "Valid animal definition should register.");
-            Assert(runtime.CreateSnapshot().Errors.Any(e => e.Owner == owner.UniqueID && e.Message.Contains("lifecycle listener")), "Throwing lifecycle listeners should be captured with owner attribution.");
-
-            CustomAnimalRegistrationResult duplicateAnimal = runtime.CustomEntities.RegisterSpecies(owner, new CustomAnimalSpeciesDefinition { SpeciesId = animalId });
-            Assert(!duplicateAnimal.Succeeded && duplicateAnimal.FailureReason == "duplicate-definition-id", "Duplicate animal definition IDs should be rejected.");
-
-            CustomAttackRegistrationResult attack = runtime.CustomEntities.RegisterAttack(owner, new CustomAttackDefinition
-            {
-                AttackId = attackId,
-                Damage = new CustomDamagePayload { Amount = 2, DamageType = "test" },
-                Pattern = new CustomBarragePatternDefinition { Kind = CustomAttackPatternKind.Barrage, ProjectileCount = 3, DeterministicRandomSeed = true }
-            });
-            Assert(attack.Succeeded, "Valid attack definition should register.");
-
-            CustomMonsterRegistrationResult monster = runtime.CustomEntities.RegisterMonster(owner, new CustomMonsterDefinition
-            {
-                MonsterId = monsterId,
-                SpawnRules = new[] { new CustomMonsterSpawnRule { RuleId = owner.UniqueID + ".Spawn", RoomTags = new[] { "test" }, Probability = 1 } },
-                AttackSlots = new[] { new CustomMonsterAttackSlot { SlotId = "primary", AttackId = attackId, CooldownSeconds = 1, Range = 5 } },
-                Loot = new[] { new CustomMonsterLootRule { ItemId = "test-loot", MinStack = 1, MaxStack = 1, Chance = 1 } },
-                Persistence = TestPersistence()
-            });
-            Assert(monster.Succeeded, "Valid monster definition should register.");
-            CustomMonsterRegistrationResult spawnTable = runtime.CustomEntities.RegisterSpawnTable(owner, new CustomMonsterSpawnTableDefinition { SpawnTableId = owner.UniqueID + ".SpawnTable", MonsterIds = new[] { monsterId } });
-            Assert(spawnTable.Succeeded, "Valid monster spawn table should register.");
-
-            CustomDroneRegistrationResult drone = runtime.CustomEntities.RegisterDrone(owner, new CustomDroneDefinition
-            {
-                DroneId = droneId,
-                SupportedModes = new[] { CustomDroneBehaviorMode.Follow, CustomDroneBehaviorMode.Guard, CustomDroneBehaviorMode.Attack },
-                EquipmentSlots = new[] { new CustomDroneEquipmentSlotDefinition { SlotId = "weapon", AllowedItemTags = new[] { "weapon" } } },
-                AttackIds = new[] { attackId },
-                Persistence = TestPersistence()
-            });
-            Assert(drone.Succeeded, "Valid drone definition should register.");
-
-            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 1, "Animal snapshot should count registered definitions.");
-            Assert(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RuntimeStatus == CustomEntityRuntimeStatus.ConfiguredNoRuntimeInstance, "Monster snapshot should report configured with no runtime instance.");
-            Assert(runtime.CustomEntities.GetAttackStatus(owner.UniqueID).Status == "configured-no-runtime-instance", "Attack status should report configured-no-runtime-instance.");
-            Assert(runtime.CustomEntities.GetDroneStatus(owner.UniqueID).FailureReason == "runtime-creation-blocked", "Drone status should expose runtime creation blocker.");
-
-            Assert(IsBlocked(runtime.CustomEntities.RequestSpawn(owner, new CustomAnimalSpawnRequest { SpeciesId = animalId })), "Animal spawn should return runtime-creation-blocked before native adapters are verified.");
-            Assert(IsBlocked(runtime.CustomEntities.RequestSpawn(owner, new CustomMonsterSpawnRequest { MonsterId = monsterId })), "Monster spawn should return runtime-creation-blocked before native adapters are verified.");
-            Assert(IsBlocked(runtime.CustomEntities.ExecuteAttack(owner, new CustomAttackSpawnRequest { AttackId = attackId })), "Attack execution should return runtime-creation-blocked before native adapters are verified.");
-            Assert(IsBlocked(runtime.CustomEntities.RequestSummon(owner, new CustomDroneSummonRequest { DroneId = droneId })), "Drone summon should return runtime-creation-blocked before native adapters are verified.");
-
-            runtime.NotifyLoadGameRequested(2);
-            runtime.NotifySaveLoaded(isNewGame: false);
-            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).ActiveRuntimeInstanceCount == 0, "Save-load boundary should not keep stale custom animal runtime instances.");
-
-            int removed = runtime.CustomEntities.RemoveOwner(owner.UniqueID, "unit test cleanup");
-            Assert(removed >= 5, "Owner cleanup should remove four definitions plus the monster spawn table.");
-            Assert(runtime.CustomEntities.GetAnimalSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Animal definitions should be removed by owner cleanup.");
-            Assert(runtime.CustomEntities.GetMonsterSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Monster definitions should be removed by owner cleanup.");
-            Assert(runtime.CustomEntities.GetAttackSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Attack definitions should be removed by owner cleanup.");
-            Assert(runtime.CustomEntities.GetDroneSnapshot(owner.UniqueID).RegisteredDefinitionCount == 0, "Drone definitions should be removed by owner cleanup.");
-            }
-            finally
-            {
-                RestorePersistentRoot(previousRoot);
-            }
-        }
-
         private static void PrepareFileSinkFailure(string gameDir)
         {
             string latestLogPath = Path.Combine(gameDir, "DTMAPI", "logs", "latest.log");
@@ -3205,32 +3113,6 @@ namespace DTMAPI.UnitTests
             File.WriteAllText(Path.Combine(modDir, "manifest.json"), json);
         }
 
-        private static bool IsBlocked(CustomEntityRequestResult result)
-        {
-            return result != null && !result.Succeeded && result.FailureReason == "runtime-creation-blocked" && result.RuntimeStatus == CustomEntityRuntimeStatus.RuntimeCreationBlocked;
-        }
-
-        private static CustomEntityLocalizedText TestText(string text)
-        {
-            return new CustomEntityLocalizedText
-            {
-                Default = text,
-                English = text,
-                SimplifiedChinese = text
-            };
-        }
-
-        private static CustomEntityPersistencePolicy TestPersistence()
-        {
-            return new CustomEntityPersistencePolicy
-            {
-                Kind = CustomEntityPersistenceKind.SaveScoped,
-                SchemaVersion = 1,
-                RemoveInstancesWhenOwnerMissing = true,
-                SaveKeys = new[] { new CustomEntitySaveDataKey { Key = "state", Version = 1 } }
-            };
-        }
-
         private static IConfigHelper GetConfig(DtmApiRuntime runtime)
         {
             PropertyInfo? configProperty = typeof(DtmApiRuntime).GetProperty("Config", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3299,6 +3181,66 @@ namespace DTMAPI.UnitTests
         public interface ISecondProbeApi
         {
             string Owner { get; }
+        }
+
+        private static void RegistryLateFactoryResultsAreDiscarded()
+        {
+            foreach (string operation in new[] { "provider-close", "consumer-close", "provider-replace" })
+            {
+                var registry = new ModRegistryService();
+                var provider = new ManifestModel { UniqueID = "DTMAPI.Tests.LateProvider" };
+                var consumer = new ManifestModel { UniqueID = "DTMAPI.Tests.LateConsumer" };
+                bool active = true;
+                var factory = new LateFactoryProbe(() =>
+                {
+                    if (operation == "consumer-close")
+                    {
+                        active = false;
+                        registry.RemoveOwner(consumer.UniqueID);
+                    }
+                    else
+                    {
+                        registry.RemoveOwner(provider.UniqueID);
+                        if (operation == "provider-replace")
+                            registry.RegisterApiForOwner<IUnitProbeApi>(provider, new DualProbeApi("replacement"));
+                    }
+                });
+                registry.RegisterApiForOwner<IUnitProbeApi>(provider, factory);
+                IModRegistry owned = registry.CreateOwnerBoundRegistry(consumer, () =>
+                {
+                    if (!active) throw new InvalidOperationException("consumer inactive");
+                });
+                bool rejected = false;
+                try { owned.GetApi<IUnitProbeApi>(provider.UniqueID); }
+                catch (InvalidOperationException ex) { rejected = ex.Message.Contains("inactive", StringComparison.Ordinal); }
+                Assert(rejected && factory.Facade.Deactivated && registry.CountOwner(consumer.UniqueID) == 0,
+                    "A factory result after " + operation + " must be deactivated and never retained as a consumer facade.");
+                if (operation == "provider-replace")
+                    Assert(registry.GetApi<IUnitProbeApi>(provider.UniqueID)?.Owner == "replacement",
+                        "Discarding an old factory result must not remove the replacement provider API.");
+                registry.RemoveOwner(provider.UniqueID);
+                Assert(registry.TotalRootCount == 0, "Late-factory rejection must leave no hidden API or facade roots.");
+            }
+        }
+
+        private sealed class LateFactoryProbe : IUnitProbeApi, IOwnerBoundApiFactory
+        {
+            private readonly Action duringCreate;
+            internal LateFactoryProbe(Action duringCreate) { this.duringCreate = duringCreate; }
+            public string Owner => "factory";
+            internal LateFacadeProbe Facade { get; } = new LateFacadeProbe();
+            public object CreateOwnerBoundApi(Type apiType, IManifest consumer, Action ensureOwnerActive)
+            {
+                duringCreate();
+                return Facade;
+            }
+        }
+
+        private sealed class LateFacadeProbe : IUnitProbeApi, IOwnerBoundApiFacade
+        {
+            public string Owner => "facade";
+            internal bool Deactivated { get; private set; }
+            public void Deactivate() { Deactivated = true; }
         }
 
         public sealed class DualProbeApi : IUnitProbeApi, ISecondProbeApi

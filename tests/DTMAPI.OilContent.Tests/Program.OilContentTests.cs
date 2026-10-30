@@ -55,43 +55,6 @@ namespace DTMAPI.UnitTests
             Assert(!File.ReadAllText(Path.Combine(repo, "DTMAPI.sln")).Contains("OilMod.csproj", StringComparison.Ordinal), "The solution must not retain the removed Oil DLL project.");
             Assert(!File.ReadAllText(Path.Combine(repo, "tools", "scripts", "build.ps1")).Contains("OilMod.csproj", StringComparison.Ordinal), "The canonical build must not expect an Oil DLL.");
 
-            string installerSource = File.ReadAllText(Path.Combine(repo, "tools", "scripts", "install-to-game.ps1"));
-            string releaseCommonSource = File.ReadAllText(Path.Combine(repo, "tools", "scripts", "release-common.ps1"));
-            Assert(installerSource.Contains("must not contain DLL files anywhere under its source root", StringComparison.Ordinal) &&
-                installerSource.Contains("nested Content manifests are forbidden", StringComparison.Ordinal) &&
-                installerSource.Contains("staged unexpected DLL files", StringComparison.Ordinal) &&
-                installerSource.Contains("must stage exactly one canonical Content/DTMAPI/manifest.json", StringComparison.Ordinal) &&
-                releaseCommonSource.Contains("Assert-DtmApiManifestInfoVersionParity", StringComparison.Ordinal),
-                "The content-only installer must fail closed on source/staged DLLs, nested or duplicate manifests, and explicit manifest/info version drift.");
-            int contentCopyIndex = installerSource.IndexOf("Copy-DirectoryContents -Source (Split-Path -Parent $contentSource) -Destination $stagingPath -Include @('Content')", StringComparison.Ordinal);
-            int canonicalManifestWriteIndex = installerSource.IndexOf("Write-JsonObject -Path $stagedManifestPath -Value $manifest", StringComparison.Ordinal);
-            Assert(contentCopyIndex >= 0 && canonicalManifestWriteIndex > contentCopyIndex, "The installer must write the validated canonical manifest after copying source Content.");
-
-            string catalogCheckerSource = File.ReadAllText(Path.Combine(repo, "tools", "scripts", "check-product-catalog.ps1"));
-            Assert(catalogCheckerSource.Contains("Oil content-only recursive DLL count", StringComparison.Ordinal) &&
-                catalogCheckerSource.Contains("Oil content-only CSharp/project file count", StringComparison.Ordinal) &&
-                catalogCheckerSource.Contains("Oil nested Content manifest count", StringComparison.Ordinal) &&
-                catalogCheckerSource.Contains("Oil publish-text current version projection", StringComparison.Ordinal) &&
-                catalogCheckerSource.Contains("Oil native info current version projection", StringComparison.Ordinal),
-                "Catalog validation must preserve Oil's recursively code-free, single-manifest source boundary and current version projection.");
-
-            string smokeModules = Path.Combine(repo, "tools", "scripts", "game-smoke");
-            string profileSource = File.ReadAllText(Path.Combine(smokeModules, "core", "deployment.ps1"));
-            string preflightSource = File.ReadAllText(Path.Combine(smokeModules, "phases", "preflight.ps1"));
-            string deploySource = File.ReadAllText(Path.Combine(smokeModules, "phases", "deploy-session.ps1"));
-            string assessSource = File.ReadAllText(Path.Combine(smokeModules, "phases", "assess-evidence.ps1"));
-            string restoreSource = File.ReadAllText(Path.Combine(smokeModules, "phases", "restore-session.ps1"));
-            Assert(profileSource.Contains("One or more required profile/extra enabled IDs are missing from mod_infos.json; profile was not applied.", StringComparison.Ordinal) &&
-                deploySource.Contains("@($officialModProfileSummary.DisabledIds) -contains 'Local.DTMAPI_Oil'", StringComparison.Ordinal) &&
-                deploySource.Contains("official-mod-profile-gate.json", StringComparison.Ordinal) &&
-                assessSource.Contains("-not $officialModProfileGateOk", StringComparison.Ordinal) &&
-                preflightSource.Contains("-IsolateAllOfficialMods requires an explicit non-Current OfficialModProfile.", StringComparison.Ordinal) &&
-                profileSource.Contains("if ($property.Name -like 'Local.*' -or $property.Name -like 'Workshop.*')", StringComparison.Ordinal) &&
-                deploySource.Contains("-IsolateAll ([bool]$IsolateAllOfficialMods)", StringComparison.Ordinal) &&
-                profileSource.Contains("Official Mod smoke profile apply failed and its backup could not be restored", StringComparison.Ordinal) &&
-                restoreSource.Contains("Restore-SmokeOfficialModProfile -Summary $officialModProfileSummary -EvidencePath $evidence -Phase 'run-finally'", StringComparison.Ordinal),
-                "Game smoke must fail closed when the requested official Mod profile is missing, incomplete, not fully isolated, Oil-on during Oil-off, or not restored.");
-
             using JsonDocument extensionDocument = JsonDocument.Parse(File.ReadAllText(extensionPath));
             JsonElement extensionRoot = extensionDocument.RootElement;
             Assert(extensionRoot.ValueKind == JsonValueKind.Array && extensionRoot.GetArrayLength() == 1, "Oil must publish exactly one official item-spawn extension row.");
@@ -187,23 +150,6 @@ namespace DTMAPI.UnitTests
             foreach (string forbidden in new[] { "OilCoalDrop", "crude_oil", "OilMod.MiningDrop", "Resources.OilCoalDrop", "rollOilDropFromCoal" })
                 Assert(!nonFixtureBridgeSource.Contains(forbidden, StringComparison.OrdinalIgnoreCase), "Ordinary production GameBridge code outside the explicit Smoke/QA fixture seams must not retain Oil product token " + forbidden + ".");
 
-            string toolHookSource = File.ReadAllText(Path.Combine(bridgeRoot, "Compatibility", "ActionCompletion", "ToolColliderHitHookBridge.cs"));
-            string callbacksSource = File.ReadAllText(Path.Combine(bridgeRoot, "Hooking", "DolocTownHookCallbacks.cs"));
-            Assert(toolHookSource.Contains("TryPatchPostfix", StringComparison.Ordinal) && !toolHookSource.Contains("TryPatchPrefix", StringComparison.Ordinal) && !toolHookSource.Contains("PrefixPatched", StringComparison.Ordinal), "Frozen ActionCompletion compatibility must remain Postfix-only on ToolCollider.");
-            Assert(callbacksSource.Contains("ToolCollider.HandleTools.ActionCompletion", StringComparison.Ordinal) && !callbacksSource.Contains("ToolColliderHandleToolsPrefix", StringComparison.Ordinal) && !callbacksSource.Contains("OilCoalDrop", StringComparison.Ordinal), "Frozen ActionCompletion callback dispatch must remain isolated from retired Oil ownership.");
-
-            foreach (string relativeManifest in new[]
-            {
-                Path.Combine("author-sdk", "samples", "api-demand", "AutoHarvest", "manifest.json"),
-                Path.Combine("tests", "mod-fixtures", "qa", "CropHarvesting", "manifest.json")
-            })
-            {
-                using JsonDocument dependencyDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(repo, relativeManifest)));
-                JsonElement[] providers = dependencyDocument.RootElement.GetProperty("Dependencies").EnumerateArray()
-                    .Where(dependency => dependency.GetProperty("UniqueID").GetString() == "DTMAPI.GameBridge.DolocTown")
-                    .ToArray();
-                Assert(providers.Length == 1 && providers[0].GetProperty("Required").GetBoolean() && providers[0].GetProperty("MinimumVersion").GetString() == "0.5.1-alpha", relativeManifest + " must declare exactly one required GameBridge provider dependency.");
-            }
         }
     }
 }

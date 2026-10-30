@@ -44,7 +44,7 @@ namespace DTMAPI.MoreEquipmentSlots
             string.Empty;
     }
 
-    internal sealed class MoreEquipmentSlotsNativeRuntime
+    internal sealed partial class MoreEquipmentSlotsNativeRuntime
     {
         private const BindingFlags AllMembers =
             BindingFlags.Public |
@@ -61,8 +61,9 @@ namespace DTMAPI.MoreEquipmentSlots
         private readonly EquipmentSlotNativePlacement placement =
             new EquipmentSlotNativePlacement(
                 new DolocTownItemPlacementGateway());
-        private readonly List<NativeFunctionLease> functionLeases =
-            new List<NativeFunctionLease>();
+        private readonly EquipmentSlotEffects functionLeases = new EquipmentSlotEffects();
+        private readonly EquipmentSlotNativeItem items = new EquipmentSlotNativeItem(typeof(DolocAPI));
+        private readonly Dictionary<string, object> nativeItems = new Dictionary<string, object>();
         private readonly List<UiLease> uiLeases =
             new List<UiLease>();
         private UiSession? uiSession;
@@ -88,6 +89,7 @@ namespace DTMAPI.MoreEquipmentSlots
         private bool newGamePending;
         private bool journalRecoveryBlocked;
         private bool workingDirty;
+        private bool stateUpgradePending;
         private PendingGameplayPlacement?
             pendingGameplayPlacement;
         private EquipmentSlotNativeMutationOutcomeUnknownException?
@@ -128,8 +130,8 @@ namespace DTMAPI.MoreEquipmentSlots
         }
 
         internal string StatusSummary =>
-            "enabled=" +
-            config.Enabled +
+            "ownerActive=" +
+            !deactivated +
             ";slotCount=" +
             MoreEquipmentSlotsProductContract.FixedSlotCount +
             ";patches=" +
@@ -141,87 +143,18 @@ namespace DTMAPI.MoreEquipmentSlots
             ";message=" +
             lastMessage;
 
-        internal void Configure(
-            MoreEquipmentSlotsConfig next,
-            string reason)
+        internal void Configure(MoreEquipmentSlotsConfig next, string reason)
         {
-            if (deactivated)
-            {
-                throw new ObjectDisposedException(
-                    nameof(MoreEquipmentSlotsNativeRuntime));
-            }
-            MoreEquipmentSlotsConfig requested =
-                CloneConfig(next);
-            bool wasEnabled = config.Enabled;
-            if (requested.Enabled)
-            {
-                config = requested;
-                hooks.InstallAtomically(this);
-                ApplyStoredFunctions("configure " + reason);
-            }
-            else
-            {
-                PrepareConfiguration(
-                    requested,
-                    reason);
-                var failures = new List<Exception>();
-                try
-                {
-                    ClearNativeAndUi(
-                        "configuration disabled " + reason);
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
-                try
-                {
-                    hooks.UnpatchOwnedHooks(this);
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
-                if (failures.Count > 0)
-                {
-                    TryRestoreEnabledRuntimeAfterConfigurationFailure(
-                        wasEnabled,
-                        failures);
-                    throw new AggregateException(
-                        "MoreEquipmentSlots configuration disable was incomplete.",
-                        failures);
-                }
-                try
-                {
-                    StageAllOccupiedForRecovery(
-                        "configuration disabled " + reason);
-                }
-                catch (Exception stagingFailure)
-                {
-                    failures.Add(stagingFailure);
-                    TryRestoreEnabledRuntimeAfterConfigurationFailure(
-                        wasEnabled,
-                        failures);
-                    throw new AggregateException(
-                        "MoreEquipmentSlots configuration disable could not stage committed owner recovery.",
-                        failures);
-                }
-                config = requested;
-            }
+            if (deactivated) throw new ObjectDisposedException(nameof(MoreEquipmentSlotsNativeRuntime));
+            config = CloneConfig(next);
+            hooks.InstallAtomically(this);
+            ApplyStoredFunctions("configure " + reason);
             PublishLifecycle();
         }
 
-        internal void PrepareConfiguration(
-            MoreEquipmentSlotsConfig next,
-            string reason)
+        internal void PrepareConfiguration(MoreEquipmentSlotsConfig next, string reason)
         {
-            MoreEquipmentSlotsConfig requested =
-                CloneConfig(next);
-            if (!requested.Enabled)
-            {
-                ValidateOwnerDeactivation(
-                    "configuration disabled " + reason);
-            }
+            if (deactivated) throw new ObjectDisposedException(nameof(MoreEquipmentSlotsNativeRuntime));
         }
 
         internal void OnSaveLoaded(int? slot) =>
@@ -233,73 +166,14 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             ResetTransientRoots("SaveLoaded");
             ClearLoadedSaveState();
-            if (isNewGame)
-            {
-                InitializeNewGame(slot);
-                return;
-            }
-            if (!slot.HasValue || slot.Value < 0)
+            if (!isNewGame && (!slot.HasValue || slot.Value < 0))
             {
                 lastMessage = "SaveLoaded without archive.";
                 return;
             }
-
-            archiveIndex = slot.Value;
-            scope =
-                DolocTownItemPlacementGateway.ReadCurrentScope(
-                    archiveIndex);
-            sidecarPath = BuildSidecarPath(archiveIndex);
-            string migrationMessage;
-            try
-            {
-                document = store.LoadOrMigrate(
-                    sidecarPath,
-                    BuildLegacyGlobalSidecarPath(),
-                    scope,
-                    out migrationMessage);
-            }
-            catch (Exception ex)
-            {
-                monitor.Log(
-                    "MoreEquipmentSlots storage load failed closed " +
-                    "archive=" +
-                    archiveIndex.ToString(
-                        CultureInfo.InvariantCulture) +
-                    "; playerIdentityPresent=" +
-                    (!string.IsNullOrWhiteSpace(
-                        scope.CustomPlayerName) ||
-                     !string.IsNullOrWhiteSpace(
-                        scope.PlayerName)) +
-                    "; saveClock=" +
-                    (scope.TotalGameSeconds.HasValue
-                        ? scope.TotalGameSeconds.Value.ToString(
-                            CultureInfo.InvariantCulture)
-                        : "missing") +
-                    "; sidecar=" +
-                    sidecarPath +
-                    "; error=" +
-                    ex,
-                    LogLevel.Error);
-                throw;
-            }
-            if (!string.IsNullOrWhiteSpace(migrationMessage))
-            {
-                monitor.Log(
-                    "MoreEquipmentSlots storage migration: " +
-                    migrationMessage);
-            }
-            RecoverDurableJournal("SaveLoaded");
-            RecoverGameplayCandidate("SaveLoaded");
-            workingSlots =
-                EquipmentSlotGameplayCandidateCoordinator
-                    .CloneSlots(document.Slots);
-            workingDirty = false;
-            RehydrateWorkingTraits("SaveLoaded");
-            if (config.Enabled)
-                ApplyStoredFunctions("SaveLoaded");
-            lastMessage =
-                "SaveLoaded archive=" + archiveIndex + ".";
-            PublishLifecycle();
+            int candidateSlot = EquipmentSlotEmbeddedEntry.RequireScope(slot, isNewGame,
+                DolocTownItemPlacementGateway.ReadCurrentArchiveIndex(), readSaveEpoch?.Invoke());
+            LoadEmbedded(candidateSlot, isNewGame);
         }
 
         private void InitializeNewGame(int? eventSlot)
@@ -340,7 +214,7 @@ namespace DTMAPI.MoreEquipmentSlots
             workingDirty = false;
             newGamePending = true;
             RehydrateWorkingTraits("NewGame");
-            if (config.Enabled)
+            if (!deactivated)
                 ApplyStoredFunctions("NewGame");
             lastMessage =
                 "NewGame initialized archive=" +
@@ -394,6 +268,8 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private void ClearLoadedSaveState()
         {
+            embeddedSession?.Dispose();
+            embeddedSession = null;
             archiveIndex = -1;
             document = null;
             workingSlots = null;
@@ -411,289 +287,12 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal void OnSaveSaving(int? slot)
         {
-            if (!MatchesLoadedSlot(slot) ||
-                document == null)
-            {
-                return;
-            }
-            bool recoveringNewGameCandidate =
-                newGamePending &&
-                document.GameplayCandidate != null;
-            ReconcilePendingGameplayPlacement(
-                "SaveSaving");
-            ReconcilePendingGameplayIncomingWithdrawal(
-                "SaveSaving");
-            ReconcilePendingJournalPlacements(
-                "SaveSaving");
-            if (document.GameplayCandidate != null)
-            {
-                RecoverGameplayCandidate("SaveSaving reentry");
-                if (document.GameplayCandidate != null ||
-                    journalRecoveryBlocked)
-                {
-                    throw new InvalidOperationException(
-                        "MoreEquipmentSlots refused native SaveGame because an ambiguous gameplay candidate remains fail-closed.");
-                }
-            }
-            if (recoveringNewGameCandidate &&
-                document.GameplayCandidate == null &&
-                DolocTownItemPlacementGateway
-                    .NativeCurrentSaveExists(archiveIndex))
-            {
-                newGamePending = false;
-                lastMessage =
-                    "Recovered the first native NewGame commit before a repeated SaveSaving boundary.";
-            }
-            if (newGamePending)
-                RefreshNewGameScopeBeforeFirstSave();
-            if ((workingDirty || newGamePending) &&
-                document.GameplayCandidate == null &&
-                document.Journal == null)
-            {
-                string gameplayPreFingerprint =
-                    CapturePreSaveFingerprint();
-                EquipmentSlotGameplayCandidateCoordinator
-                    .Prepare(
-                        document,
-                        RequireWorkingSlots(),
-                        gameplayPreFingerprint,
-                        itemId => Observe(
-                            itemId,
-                            gameplayPreFingerprint));
-                PersistDocument(
-                    "SaveSaving gameplay candidate");
-                pendingNativeSave = true;
-                PublishLifecycle();
-                return;
-            }
-            if (document.Journal == null)
-                return;
-            if (journalRecoveryBlocked)
-            {
-                pendingNativeSave = false;
-                monitor.Log(
-                    "MoreEquipmentSlots retained an ambiguous durable journal fail-closed; SaveSaving will not replay or promote it in this session.",
-                    LogLevel.Error);
-                throw new InvalidOperationException(
-                    "MoreEquipmentSlots refused native SaveGame because an ambiguous durable journal remains fail-closed.");
-            }
-
-            EquipmentSlotTransactionJournal journal =
-                document.Journal;
-            string preFingerprint =
-                CapturePreSaveFingerprint();
-            if (!journal.AttemptStarted)
-            {
-                EquipmentSlotTransactionCoordinator.StartAttempt(
-                    document,
-                    preFingerprint,
-                    itemId => Observe(itemId, preFingerprint));
-                PersistDocument("SaveSaving prepared");
-            }
-
-            for (int index = 0;
-                 index < journal.Escrow.Count;
-                 index++)
-            {
-                EquipmentSlotEscrowEntry escrow =
-                    journal.Escrow[index];
-                if (escrow.AttemptCompleted)
-                    continue;
-                NativePlacementResult result;
-                try
-                {
-                    result =
-                        placement.PlaceOneWithImmediateEvidence(
-                            escrow.ItemId);
-                }
-                catch (
-                    EquipmentSlotNativeMutationOutcomeUnknownException
-                        ex)
-                {
-                    pendingJournalPlacements[index] = ex;
-                    journalRecoveryBlocked = true;
-                    pendingNativeSave = false;
-                    monitor.Log(
-                        "MoreEquipmentSlots retained durable escrow after a native placement outcome became unknown; SaveGame is blocked until exact evidence reconciles item=" +
-                        escrow.ItemId +
-                        " transaction=" +
-                        journal.TransactionId +
-                        ".",
-                        LogLevel.Error);
-                    PublishLifecycle();
-                    throw;
-                }
-                NativeRecoveryObservation after =
-                    ObservationAfterPlacement(
-                        preFingerprint,
-                        escrow,
-                        result);
-                EquipmentSlotTransactionCoordinator
-                    .RecordPlacement(
-                        journal,
-                        index,
-                        result,
-                        after);
-                lastPlacement = result.Kind;
-                monitor.Log(
-                    "MoreEquipmentSlots SaveSaving placement outcome=" +
-                    result.Kind +
-                    " item=" +
-                    escrow.ItemId +
-                    " transaction=" +
-                    journal.TransactionId +
-                    " " +
-                    result.Message);
-            }
-
-            if (journal.Replacements.Count > 0 &&
-                !journal.IncomingAttemptCompleted)
-            {
-                string incomingItemId =
-                    journal.Replacements[0].ItemId;
-                bool fromNativeBuffer = false;
-                bool withdrawn = false;
-                if (EquipmentSlotTransactionCoordinator
-                    .CanWithdrawIncoming(journal))
-                {
-                    try
-                    {
-                        bool bufferAttempted =
-                            TryTakeMatchingNativeBuffer(
-                                incomingItemId,
-                                out bool bufferSucceeded);
-                        fromNativeBuffer = bufferAttempted;
-                        withdrawn =
-                            bufferAttempted
-                                ? bufferSucceeded
-                                : placement.TryWithdrawOne(
-                                    incomingItemId);
-                    }
-                    catch (
-                        EquipmentSlotNativeMutationOutcomeUnknownException
-                            ex)
-                    {
-                        pendingJournalPlacements[-1] = ex;
-                        journalRecoveryBlocked = true;
-                        pendingNativeSave = false;
-                        monitor.Log(
-                            "MoreEquipmentSlots retained the durable replacement journal after incoming withdrawal became outcome-unknown; this process will not replay it item=" +
-                            incomingItemId +
-                            " transaction=" +
-                            journal.TransactionId +
-                            ".",
-                            LogLevel.Error);
-                        PublishLifecycle();
-                        throw;
-                    }
-                }
-                NativeRecoveryObservation afterIncoming =
-                    Observe(incomingItemId, preFingerprint);
-                int sameItemOutgoingBackpackCount = 0;
-                foreach (EquipmentSlotEscrowEntry escrow in
-                    journal.Escrow)
-                {
-                    if (string.Equals(
-                            escrow.ItemId,
-                            incomingItemId,
-                            StringComparison.Ordinal) &&
-                        escrow.AttemptCompleted &&
-                        escrow.Placement ==
-                            NativePlacementKind.Backpack)
-                    {
-                        sameItemOutgoingBackpackCount++;
-                    }
-                }
-                int expectedBackpackCount =
-                    journal.IncomingBeforeBackpackCount +
-                    sameItemOutgoingBackpackCount +
-                    (fromNativeBuffer ? 0 : -1);
-                bool exactWithdrawal =
-                    withdrawn &&
-                    afterIncoming.BackpackCount ==
-                        Math.Max(0, expectedBackpackCount);
-                EquipmentSlotTransactionCoordinator
-                    .RecordIncomingWithdrawal(
-                        journal,
-                        exactWithdrawal,
-                        afterIncoming.BackpackCount,
-                        fromNativeBuffer);
-            }
-
-            // This second durable prepared write records exact per-item
-            // destinations before the synchronous native SaveGame continues.
-            PersistDocument("SaveSaving placement outcomes");
-            pendingNativeSave = true;
-            PublishLifecycle();
+            if (embeddedSession != null && slot == archiveIndex) StageEmbeddedWorking();
         }
 
         internal void OnSaveSaved(int? slot)
         {
-            if (!pendingNativeSave ||
-                !MatchesLoadedSlot(slot) ||
-                document == null)
-            {
-                return;
-            }
-
-            AdvanceCommittedScopeAfterNativeSave();
-            string postFingerprint =
-                DolocTownItemPlacementGateway
-                    .GetNativeSaveFingerprint(archiveIndex);
-            if (document.GameplayCandidate != null)
-            {
-                EquipmentSlotGameplayCandidateCoordinator
-                    .PromoteCommitted(
-                        document,
-                        postFingerprint,
-                        nativeSaveConfirmed: true);
-                PersistDocument(
-                    "SaveSaved gameplay committed tombstone");
-                EquipmentSlotGameplayCandidateCoordinator
-                    .FinalizeCommitted(document);
-                PersistDocument(
-                    "SaveSaved gameplay cleanup");
-                workingSlots =
-                    EquipmentSlotGameplayCandidateCoordinator
-                        .CloneSlots(document.Slots);
-                workingDirty = false;
-                pendingNativeSave = false;
-                newGamePending = false;
-                journalRecoveryBlocked = false;
-                if (config.Enabled)
-                    ApplyStoredFunctions("SaveSaved");
-                PublishLifecycle();
-                return;
-            }
-            if (document.Journal == null)
-                return;
-            EquipmentSlotTransactionJournal journal =
-                document.Journal;
-            EquipmentSlotTransactionCoordinator
-                .PromoteCommittedTombstone(
-                    document,
-                    postFingerprint);
-            PersistDocument("SaveSaved committed tombstone");
-            monitor.Log(
-                "MoreEquipmentSlots SaveSaved journal promotion transaction=" +
-                journal.TransactionId +
-                " generation=" +
-                document.Generation +
-                ".");
-            LogCommittedDestinations(journal);
-            EquipmentSlotTransactionCoordinator
-                .FinalizeCommitted(document);
-            PersistDocument("SaveSaved tombstone finalized");
-            workingSlots =
-                EquipmentSlotGameplayCandidateCoordinator
-                    .CloneSlots(document.Slots);
-            workingDirty = false;
-            pendingNativeSave = false;
-            newGamePending = false;
-            journalRecoveryBlocked = false;
-            if (config.Enabled)
-                ApplyStoredFunctions("SaveSaved");
-            PublishLifecycle();
+            if (embeddedSession != null && slot == archiveIndex) CompleteEmbeddedSave();
         }
 
         private void AdvanceCommittedScopeAfterNativeSave()
@@ -739,7 +338,7 @@ namespace DTMAPI.MoreEquipmentSlots
             string itemId,
             int slotIndex)
         {
-            if (!config.Enabled ||
+            if (deactivated ||
                 document == null ||
                 document.Journal != null ||
                 document.GameplayCandidate != null ||
@@ -756,21 +355,23 @@ namespace DTMAPI.MoreEquipmentSlots
                 return false;
             }
 
-            EquipmentSlotStorageEntry replacement =
-                BuildStorageEntry(itemId.Trim(), slotIndex);
+            CaptureWorkingItems();
+            object? incoming = null;
+            if (TryGetNativeInventoryBuffer(out _, out object? held) && held != null &&
+                ReadString(held, "name") == itemId.Trim()) incoming = held;
+            incoming ??= items.FindBackpack(itemId.Trim());
+            if (incoming == null) return false;
+            EquipmentSlotStorageEntry replacement = BuildStorageEntry(incoming, slotIndex);
             EquipmentSlotStorageEntry slot =
                 RequireSlot(slotIndex);
             bool outgoingReleased = false;
             if (slot.IsOccupied)
             {
-                string fingerprint =
-                    CapturePreSaveFingerprint();
                 NativePlacementResult outgoing;
                 try
                 {
                     outgoing =
-                        placement.PlaceOneWithImmediateEvidence(
-                            slot.ItemId);
+                        placement.PlaceOneWithImmediateEvidence(slot);
                 }
                 catch (
                     EquipmentSlotNativeMutationOutcomeUnknownException
@@ -780,7 +381,6 @@ namespace DTMAPI.MoreEquipmentSlots
                         new PendingGameplayPlacement(
                             slotIndex,
                             slot.ItemId,
-                            fingerprint,
                             ex);
                     lastMessage =
                         "Replacement paused because the outgoing native placement outcome is unknown; retry is blocked until exact evidence reconciles it.";
@@ -829,8 +429,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 withdrawn =
                     bufferAttempted
                         ? bufferSucceeded
-                        : placement.TryWithdrawOne(
-                            replacement.ItemId);
+                        : TryWithdrawExactItem(incoming, replacement.ItemId);
             }
             catch (
                 EquipmentSlotNativeMutationOutcomeUnknownException
@@ -841,8 +440,6 @@ namespace DTMAPI.MoreEquipmentSlots
                 {
                     MarkWorkingDirty(
                         "replacement incoming withdrawal became outcome-unknown");
-                    ClearFunctions(
-                        "EquipFromBackpack incoming outcome unknown");
                     ApplyStoredFunctions(
                         "EquipFromBackpack incoming outcome unknown");
                 }
@@ -863,8 +460,6 @@ namespace DTMAPI.MoreEquipmentSlots
                 {
                     MarkWorkingDirty(
                         "replacement incoming item remained in native storage");
-                    ClearFunctions(
-                        "EquipFromBackpack incoming unavailable");
                     ApplyStoredFunctions(
                         "EquipFromBackpack incoming unavailable");
                 }
@@ -873,10 +468,9 @@ namespace DTMAPI.MoreEquipmentSlots
                 return false;
             }
 
-            RequireWorkingSlots()[slotIndex] =
-                CloneStorageEntry(replacement);
+            nativeItems[replacement.ItemState!.InstanceId] = incoming;
+            RequireWorkingSlots()[slotIndex] = CloneStorageEntry(replacement);
             MarkWorkingDirty("EquipFromBackpack");
-            ClearFunctions("EquipFromBackpack");
             ApplyStoredFunctions("EquipFromBackpack");
             lastMessage =
                 "Working equipment changed; committed sidecar waits for SaveSaved.";
@@ -885,6 +479,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal bool RequestUnequip(int slotIndex)
         {
+            CaptureWorkingItems();
             if (document == null ||
                 document.Journal != null ||
                 document.GameplayCandidate != null ||
@@ -904,14 +499,11 @@ namespace DTMAPI.MoreEquipmentSlots
             if (!slot.IsOccupied)
                 return true;
 
-            string fingerprint =
-                CapturePreSaveFingerprint();
             NativePlacementResult result;
             try
             {
                 result =
-                    placement.PlaceOneWithImmediateEvidence(
-                        slot.ItemId);
+                    placement.PlaceOneWithImmediateEvidence(slot);
             }
             catch (
                 EquipmentSlotNativeMutationOutcomeUnknownException
@@ -921,7 +513,6 @@ namespace DTMAPI.MoreEquipmentSlots
                     new PendingGameplayPlacement(
                         slotIndex,
                         slot.ItemId,
-                        fingerprint,
                         ex);
                 lastMessage =
                     "Unequip retained its Working slot and blocked retry because the native placement outcome is unknown.";
@@ -958,7 +549,6 @@ namespace DTMAPI.MoreEquipmentSlots
             }
             slot.Clear();
             MarkWorkingDirty("RequestUnequip");
-            ClearFunctions("RequestUnequip");
             ApplyStoredFunctions("RequestUnequip");
             lastMessage =
                 "Working equipment changed; committed sidecar waits for SaveSaved.";
@@ -996,7 +586,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     FunctionCount = functionLeases.Count,
                     CallbackCount =
                         hooks.IsInstalled ? 1 : 0,
-                    RootCount = uiSession != null ? 1 : 0,
+                    RootCount = nativeItems.Count + (uiSession != null ? 1 : 0),
                     UiVisible =
                         uiSession?.Visible == true &&
                         uiSession?.LayoutBlocked != true,
@@ -1014,12 +604,13 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal void ReturnedToTitle()
         {
+            embeddedSession?.Dispose();
+            embeddedSession = null;
             Exception? cleanupFailure = null;
             try
             {
                 RecoverGameplayCandidate(
                     "ReturnedToTitle");
-                ResetTransientRoots("ReturnedToTitle");
             }
             catch (Exception ex)
             {
@@ -1027,6 +618,8 @@ namespace DTMAPI.MoreEquipmentSlots
             }
             finally
             {
+                try { ResetTransientRoots("ReturnedToTitle"); }
+                catch (Exception ex) { cleanupFailure = cleanupFailure == null ? ex : new AggregateException(cleanupFailure, ex); }
                 archiveIndex = -1;
                 document = null;
                 workingSlots = null;
@@ -1095,6 +688,11 @@ namespace DTMAPI.MoreEquipmentSlots
             pendingGameplayIncomingWithdrawal = null;
             pendingJournalPlacements.Clear();
             invalidTraitSlots.Clear();
+            nativeItems.Clear();
+            embeddedSession?.Dispose();
+            embeddedSession = null;
+            configDialogs = null;
+            dialogOwner = null;
             deactivated = true;
             string summary = BuildLifecycleSummary(
                 callbacksOverride: 0,
@@ -1130,7 +728,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal void ApplyAfterNativeReload(object manager)
         {
-            if (!config.Enabled ||
+            if (deactivated ||
                 suppressNativeReloadReapply ||
                 manager == null)
                 return;
@@ -1154,7 +752,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         internal DolocTown.IAgentEquipmentShieldItem?
             GetNativeShieldAdapter() =>
-            config.Enabled && FindTailShield() != null
+            !deactivated && FindTailShield() != null
                 ? nativeShieldAdapter
                 : null;
 
@@ -1185,7 +783,7 @@ namespace DTMAPI.MoreEquipmentSlots
             blockedDamage = 0;
             EquipmentSlotStorageEntry? shield =
                 FindTailShield();
-            if (!config.Enabled || shield == null)
+            if (deactivated || shield == null)
                 return false;
 
             int defendedDamage = Math.Max(
@@ -1197,8 +795,8 @@ namespace DTMAPI.MoreEquipmentSlots
             int available = Math.Max(0, shield.ShieldValue);
             if (available > defendedDamage)
             {
-                shield.ShieldValue =
-                    available - defendedDamage;
+                EquipmentSlotNativeItem.Call(GetWorkingItem(shield), "SetShieldValue", available - defendedDamage);
+                shield.ShieldValue = available - defendedDamage;
                 blockedDamage = defendedDamage;
                 MarkWorkingDirty(
                     "native shield interface absorbed attack");
@@ -1224,8 +822,8 @@ namespace DTMAPI.MoreEquipmentSlots
             int officialPassiveCount,
             string reason)
         {
-            if (!config.Enabled ||
-                document == null ||
+            if (deactivated ||
+                (document == null && embeddedSession == null) ||
                 accessoriesBar == null)
             {
                 return;
@@ -1284,6 +882,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     nameof(nativeSelectables));
             UiSession? session = uiSession;
             if (session == null ||
+                document == null ||
                 session.LayoutBlocked ||
                 !session.Visible ||
                 !ReferenceEquals(
@@ -1351,10 +950,11 @@ namespace DTMAPI.MoreEquipmentSlots
             ";hooks=" +
             (hooksOverride ?? InstalledPatchCount) +
             ";roots=" +
-            (uiSession != null ? 1 : 0);
+            (nativeItems.Count + (uiSession != null ? 1 : 0));
 
         private void StageAllOccupiedForRecovery(string reason)
         {
+            if (embeddedSession != null) return;
             if (document == null ||
                 document.Journal != null ||
                 document.GameplayCandidate != null)
@@ -1379,6 +979,7 @@ namespace DTMAPI.MoreEquipmentSlots
                 {
                     SchemaVersion = document.SchemaVersion,
                     Scope = document.Scope.Clone(),
+                    LegacyMigration = document.LegacyMigration?.Clone(),
                     Generation = document.Generation,
                     Slots =
                         EquipmentSlotGameplayCandidateCoordinator
@@ -1414,6 +1015,12 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private void ValidateOwnerDeactivation(string reason)
         {
+            if (embeddedSession != null)
+            {
+                StageEmbeddedWorking();
+                return;
+            }
+            CaptureWorkingItems();
             if (workingDirty ||
                 document?.GameplayCandidate != null ||
                 journalRecoveryBlocked ||
@@ -1659,29 +1266,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private void PersistDocument(string reason)
         {
-            if (document == null ||
-                string.IsNullOrWhiteSpace(sidecarPath))
-            {
-                throw new InvalidOperationException(
-                    "A loaded archive is required before protected equipment-slot storage can change.");
-            }
-            long previousGeneration =
-                document.Generation;
-            document.Generation++;
-            try
-            {
-                store.WriteAtomic(sidecarPath, document);
-                lastMessage =
-                    reason +
-                    " generation=" +
-                    document.Generation;
-            }
-            catch
-            {
-                document.Generation =
-                    previousGeneration;
-                throw;
-            }
+            throw new InvalidOperationException("The normal MES product cannot persist legacy sidecar gameplay. reason=" + reason);
         }
 
         private string BuildSidecarPath(int slot) =>
@@ -1749,35 +1334,21 @@ namespace DTMAPI.MoreEquipmentSlots
                 "; Working differs from the last committed sidecar.";
         }
 
-        private static EquipmentSlotStorageEntry CloneStorageEntry(
-            EquipmentSlotStorageEntry source) =>
-            new EquipmentSlotStorageEntry
-            {
-                Index = source.Index,
-                ItemId = source.ItemId,
-                DisplayName = source.DisplayName,
-                SkillId = source.SkillId,
-                DefenseBonus = source.DefenseBonus,
-                IsShield = source.IsShield,
-                ShieldValue = source.ShieldValue,
-                ShieldMaxValue = source.ShieldMaxValue,
-                ShieldDefend = source.ShieldDefend
-            };
+        private static EquipmentSlotStorageEntry CloneStorageEntry(EquipmentSlotStorageEntry source) => source.Clone();
 
         private static MoreEquipmentSlotsConfig CloneConfig(
             MoreEquipmentSlotsConfig? source) =>
             new MoreEquipmentSlotsConfig
             {
-                Enabled = source?.Enabled ?? true,
                 VerboseLogging =
                     source?.VerboseLogging ?? false
             };
 
         private EquipmentSlotStorageEntry BuildStorageEntry(
-            string itemId,
+            object item,
             int slotIndex)
         {
-            object item = GenerateNativeItem(itemId);
+            string itemId = ReadString(item, "name");
             Type itemType = item.GetType();
             bool isPassive =
                 IsTypeOrBase(itemType, "DolocTown.ItemPassive");
@@ -1856,257 +1427,167 @@ namespace DTMAPI.MoreEquipmentSlots
                 DefenseBonus = defense,
                 IsShield = shield,
                 ShieldMaxValue = shieldMax,
-                ShieldValue = shieldMax,
-                ShieldDefend = shieldDefend
+                ShieldValue = shield ? EquipmentSlotNativeItem.ReadInt(item, "ShieldValue") : 0,
+                ShieldDefend = shieldDefend,
+                ItemState = items.Capture(item)
             };
+        }
+
+        private object GetWorkingItem(EquipmentSlotStorageEntry slot)
+        {
+            if (!slot.IsOccupied) throw new InvalidOperationException("Empty equipment slot.");
+            if (slot.ItemState != null && nativeItems.TryGetValue(slot.ItemState.InstanceId, out object item))
+                return item;
+            item = items.Restore(slot);
+            if (slot.ItemState == null)
+            {
+                slot.ItemState = items.Capture(item);
+                // Materializing an old committed representation is not a
+                // gameplay mutation. Preserve the derived baseline separately.
+                if (document?.Slots[slot.Index].ItemId == slot.ItemId)
+                    document.Slots[slot.Index].ItemState = slot.ItemState.Clone();
+                stateUpgradePending = true;
+            }
+            nativeItems.Add(slot.ItemState.InstanceId, item);
+            return item;
+        }
+
+        private void CaptureWorkingItems()
+        {
+            if (workingSlots == null) return;
+            foreach (EquipmentSlotStorageEntry slot in workingSlots)
+            {
+                if (!slot.IsOccupied || invalidTraitSlots.Contains(slot.Index)) continue;
+                object item = GetWorkingItem(slot);
+                EquipmentSlotItemState snapshot = items.Capture(item, slot.ItemState!.InstanceId);
+                int shield = slot.IsShield ? EquipmentSlotNativeItem.ReadInt(item, "ShieldValue") : 0;
+                if (!EquipmentSlotItemState.Same(slot.ItemState, snapshot) || slot.ShieldValue != shield)
+                {
+                    slot.ItemState = snapshot;
+                    slot.ShieldValue = shield;
+                    MarkWorkingDirty("native equipment state changed");
+                }
+            }
         }
 
         private void RehydrateWorkingTraits(string reason)
         {
-            if (workingSlots == null)
-                return;
-            bool changed = false;
-            foreach (EquipmentSlotStorageEntry slot in
-                workingSlots)
+            if (workingSlots == null) return;
+            foreach (EquipmentSlotStorageEntry slot in workingSlots)
             {
-                if (!slot.IsOccupied)
-                    continue;
+                if (!slot.IsOccupied) continue;
                 try
                 {
-                    EquipmentSlotStorageEntry native =
-                        BuildStorageEntry(
-                            slot.ItemId,
-                            slot.Index);
-                    int shieldValue =
-                        slot.IsShield &&
-                        native.IsShield &&
-                        slot.ShieldMaxValue > 0
-                            ? Math.Min(
-                                Math.Max(
-                                    0,
-                                    slot.ShieldValue),
-                                native.ShieldMaxValue)
-                            : native.ShieldValue;
-                    if (string.Equals(
-                            slot.DisplayName,
-                            native.DisplayName,
-                            StringComparison.Ordinal) &&
-                        string.Equals(
-                            slot.SkillId,
-                            native.SkillId,
-                            StringComparison.Ordinal) &&
-                        slot.DefenseBonus ==
-                            native.DefenseBonus &&
-                        slot.IsShield == native.IsShield &&
-                        slot.ShieldValue == shieldValue &&
-                        slot.ShieldMaxValue ==
-                            native.ShieldMaxValue &&
-                        slot.ShieldDefend ==
-                            native.ShieldDefend)
-                    {
-                        invalidTraitSlots.Remove(slot.Index);
-                        continue;
-                    }
-
-                    slot.DisplayName =
-                        native.DisplayName;
-                    slot.SkillId = native.SkillId;
-                    slot.DefenseBonus =
-                        native.DefenseBonus;
-                    slot.IsShield = native.IsShield;
-                    slot.ShieldValue = shieldValue;
-                    slot.ShieldMaxValue =
-                        native.ShieldMaxValue;
-                    slot.ShieldDefend =
-                        native.ShieldDefend;
+                    object item = GetWorkingItem(slot);
+                    EquipmentSlotStorageEntry traits = BuildStorageEntry(item, slot.Index);
+                    if (slot.DisplayName != traits.DisplayName || slot.SkillId != traits.SkillId ||
+                        slot.DefenseBonus != traits.DefenseBonus || slot.IsShield != traits.IsShield ||
+                        slot.ShieldValue != traits.ShieldValue || slot.ShieldMaxValue != traits.ShieldMaxValue ||
+                        slot.ShieldDefend != traits.ShieldDefend)
+                        MarkWorkingDirty("native equipment traits refreshed " + reason);
+                    slot.DisplayName = traits.DisplayName;
+                    slot.SkillId = traits.SkillId;
+                    slot.DefenseBonus = traits.DefenseBonus;
+                    slot.IsShield = traits.IsShield;
+                    slot.ShieldValue = traits.ShieldValue;
+                    slot.ShieldMaxValue = traits.ShieldMaxValue;
+                    slot.ShieldDefend = traits.ShieldDefend;
                     invalidTraitSlots.Remove(slot.Index);
-                    changed = true;
                 }
                 catch (Exception ex)
                 {
                     invalidTraitSlots.Add(slot.Index);
-                    monitor.Log(
-                        "MoreEquipmentSlots retained protected item '" +
-                        slot.ItemId +
-                        "' and its durable traits unchanged, but disabled its product effect for this session because native traits could not be refreshed during " +
-                        reason +
-                        ": " +
-                        ex.Message,
-                        LogLevel.Error);
+                    monitor.Log("MoreEquipmentSlots retained item " + slot.ItemId +
+                        " without activating unreadable native state during " + reason + ": " + ex.Message, LogLevel.Error);
                 }
             }
-            if (changed)
-                MarkWorkingDirty(
-                    "native traits refreshed " + reason);
         }
 
         private void ApplyStoredFunctions(string reason)
         {
-            if (!config.Enabled || document == null)
-                return;
+            if (deactivated || document == null) return;
             object? manager = GetEquipmentManager();
-            if (manager == null)
-                return;
-            ClearFunctions(
-                "reapply " + reason,
-                deferNativeReload: true);
-            IDictionary? functions =
-                Read(manager, "functions") as IDictionary;
-            if (functions == null)
-            {
-                suppressNativeReloadReapply = true;
-                try
-                {
-                    InvokeNoArg(manager, "ReloadParams");
-                }
-                finally
-                {
-                    suppressNativeReloadReapply = false;
-                }
-                return;
-            }
-
-            foreach (EquipmentSlotStorageEntry slot in
-                RequireWorkingSlots())
-            {
-                if (!slot.IsOccupied ||
-                    invalidTraitSlots.Contains(slot.Index) ||
-                    !MoreEquipmentSlotsEffectPolicy
-                        .ShouldCreateNativeFunction(
-                            slot.IsShield,
-                            slot.SkillId))
-                {
-                    continue;
-                }
-                try
-                {
-                    object item =
-                        GenerateNativeItem(slot.ItemId);
-                    Type functionType =
-                        typeof(DolocAPI).Assembly.GetType(
-                            "DolocTown.AgentEquipmentFunction",
-                            throwOnError: false) ??
-                        throw new TypeLoadException(
-                            "AgentEquipmentFunction");
-                    MethodInfo create =
-                        functionType.GetMethod(
-                            "CreateAgentEquipmentFunction",
-                            BindingFlags.Public |
-                            BindingFlags.Static) ??
-                        throw new MissingMethodException(
-                            functionType.FullName,
-                            "CreateAgentEquipmentFunction");
-                    object?[] args =
-                    {
-                        item,
-                        manager,
-                        slot.SkillId,
-                        null
-                    };
-                    object? created =
-                        create.Invoke(null, args);
-                    if (created is bool ok &&
-                        ok &&
-                        args[3] != null)
-                    {
-                        functions[item] = args[3];
-                        functionLeases.Add(
-                            new NativeFunctionLease(
-                                functions,
-                                item,
-                                args[3]!));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    monitor.Log(
-                        "MoreEquipmentSlots function apply failed item=" +
-                        slot.ItemId +
-                        " " +
-                        ex.GetType().Name +
-                        ": " +
-                        ex.Message,
-                        LogLevel.Error);
-                }
-            }
-            suppressNativeReloadReapply = true;
+            if (manager == null) return;
+            IDictionary functions = Read(manager, "functions") as IDictionary ??
+                throw new InvalidOperationException("Native equipment functions are unavailable.");
+            CaptureWorkingItems();
+            var desired = new List<EquipmentSlotEffects.EffectInput>();
+            foreach (EquipmentSlotStorageEntry slot in RequireWorkingSlots())
+                if (slot.IsOccupied && !invalidTraitSlots.Contains(slot.Index) &&
+                    MoreEquipmentSlotsEffectPolicy.ShouldCreateNativeFunction(slot.IsShield, slot.SkillId))
+                    desired.Add(new EquipmentSlotEffects.EffectInput(slot.Index, GetWorkingItem(slot), slot.SkillId));
+            var failures = new List<Exception>();
             try
             {
-                InvokeNoArg(manager, "ReloadParams");
+                functionLeases.Reconcile(functions, desired, (item, skill) =>
+                {
+                    Type type = typeof(DolocAPI).Assembly.GetType("DolocTown.AgentEquipmentFunction", true)!;
+                    MethodInfo create = type.GetMethod("CreateAgentEquipmentFunction", BindingFlags.Public | BindingFlags.Static) ??
+                        throw new MissingMethodException(type.FullName, "CreateAgentEquipmentFunction");
+                    object?[] args = { item, manager, skill, null };
+                    if (!(create.Invoke(null, args) is bool ok) || !ok || args[3] == null)
+                        throw new InvalidOperationException("Native equipment function creation rejected " + skill);
+                    return args[3]!;
+                });
             }
-            finally
-            {
-                suppressNativeReloadReapply = false;
-            }
-            ApplyAfterNativeReload(manager);
+            catch (Exception ex) { failures.Add(ex); }
+            var activeIds = new HashSet<string>();
+            foreach (EquipmentSlotStorageEntry slot in RequireWorkingSlots())
+                if (slot.ItemState != null) activeIds.Add(slot.ItemState.InstanceId);
+            foreach (string id in new List<string>(nativeItems.Keys))
+                if (!activeIds.Contains(id)) nativeItems.Remove(id);
+            try { ReloadEquipmentParameters(manager); }
+            catch (Exception ex) { failures.Add(ex); }
             PublishLifecycle();
+            if (failures.Count > 0)
+                throw new AggregateException("Equipment effects could not be applied during " + reason + ".", failures);
         }
 
-        private void ClearFunctions(
-            string reason,
-            bool deferNativeReload = false)
+        private void ReloadEquipmentParameters(object manager, bool includeProductDefense = true)
+        {
+            suppressNativeReloadReapply = true;
+            try { EquipmentSlotNativeItem.Call(manager, "ReloadParams"); }
+            finally { suppressNativeReloadReapply = false; }
+            if (includeProductDefense) ApplyAfterNativeReload(manager);
+        }
+
+        private void ClearFunctions(string reason, bool deferNativeReload = false)
         {
             var failures = new List<Exception>();
-            object? manager = GetEquipmentManager();
-            foreach (NativeFunctionLease lease in
-                functionLeases)
+            try { functionLeases.Clear(); }
+            catch (Exception ex) { failures.Add(ex); }
+            try
             {
-                try
-                {
-                    lease.RemoveAndDispose();
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
+                object? manager = GetEquipmentManager();
+                if (manager != null && !deferNativeReload) ReloadEquipmentParameters(manager, false);
             }
-            functionLeases.Clear();
-            if (manager != null &&
-                (!deferNativeReload || failures.Count > 0))
-            {
-                suppressNativeReloadReapply = true;
-                try
-                {
-                    InvokeNoArg(manager, "ReloadParams");
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
-                finally
-                {
-                    suppressNativeReloadReapply = false;
-                }
-            }
+            catch (Exception ex) { failures.Add(ex); }
             if (failures.Count > 0)
-            {
-                throw new AggregateException(
-                    "MoreEquipmentSlots could not clear exact product function roots for " +
-                    reason +
-                    ".",
-                    failures);
-            }
+                throw new AggregateException("Equipment effects could not be cleared during " + reason + ".", failures);
         }
 
         private void ClearNativeAndUi(string reason)
         {
-            Exception? functionFailure = null;
+            var failures = new List<Exception>();
             try
             {
                 ClearFunctions(reason);
             }
             catch (Exception ex)
             {
-                functionFailure = ex;
+                failures.Add(ex);
             }
-            ClearUi(reason);
-            if (functionFailure != null)
-                throw functionFailure;
+            try { ClearUi(reason); }
+            catch (Exception ex) { failures.Add(ex); }
+            if (failures.Count > 0)
+                throw new AggregateException("Equipment cleanup was incomplete during " + reason + ".", failures);
         }
 
         private void ResetTransientRoots(string reason)
         {
             ClearNativeAndUi(reason);
+            nativeItems.Clear();
+            stateUpgradePending = false;
             pendingNativeSave = false;
             monitor.Log(
                 "MoreEquipmentSlots UI lifecycle cleared reason=" +
@@ -2121,14 +1602,11 @@ namespace DTMAPI.MoreEquipmentSlots
             internal PendingGameplayPlacement(
                 int slotIndex,
                 string itemId,
-                string preSaveFingerprint,
                 EquipmentSlotNativeMutationOutcomeUnknownException
                     outcome)
             {
                 SlotIndex = slotIndex;
                 ItemId = itemId ?? string.Empty;
-                PreSaveFingerprint =
-                    preSaveFingerprint ?? string.Empty;
                 Outcome = outcome ??
                     throw new ArgumentNullException(
                         nameof(outcome));
@@ -2137,8 +1615,6 @@ namespace DTMAPI.MoreEquipmentSlots
             internal int SlotIndex { get; }
 
             internal string ItemId { get; }
-
-            internal string PreSaveFingerprint { get; }
 
             internal
                 EquipmentSlotNativeMutationOutcomeUnknownException
@@ -2407,7 +1883,8 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             SetUnityActive(
                 session.ProductRowRoot,
-                !session.LayoutBlocked && session.Visible);
+                !session.LayoutBlocked && session.Visible && document != null);
+            RefreshEmbeddedChoiceUi(session);
         }
 
         private void BlockUiLayout(
@@ -2444,6 +1921,7 @@ namespace DTMAPI.MoreEquipmentSlots
             foreach (UiLease lease in uiLeases)
                 lease.ClearListeners();
             uiLeases.Clear();
+            ClearEmbeddedChoiceUi(session);
             DestroyUnityObject(session?.ProductRowRoot);
             uiSession = null;
             monitor.Log(
@@ -2454,6 +1932,8 @@ namespace DTMAPI.MoreEquipmentSlots
 
         private void RenderCurrentUi(string reason)
         {
+            if (uiSession != null) RefreshEmbeddedChoiceUi(uiSession);
+            if (workingSlots == null) return;
             if (uiLeases.Count == 0)
                 return;
             foreach (UiLease lease in uiLeases)
@@ -2609,6 +2089,26 @@ namespace DTMAPI.MoreEquipmentSlots
                 EquipFromBackpack(itemId, slotIndex);
         }
 
+        private bool TryWithdrawExactItem(object item, string itemId)
+        {
+            var gateway = new DolocTownItemPlacementGateway();
+            int before = gateway.CountBackpack(itemId);
+            int mail = gateway.CountUnacceptedMail(itemId);
+            try
+            {
+                object? taken = items.Withdraw(item);
+                int after = gateway.CountBackpack(itemId);
+                if (ReferenceEquals(taken, item) && after == before - 1) return true;
+                if (taken == null && after == before) return false;
+                throw new InvalidOperationException("Contradictory exact-item withdrawal result.");
+            }
+            catch (Exception ex)
+            {
+                throw EquipmentSlotNativeMutationEvidence.Unknown(itemId, 1, before, mail,
+                    "Exact-item withdrawal may have begun.", ex);
+            }
+        }
+
         private static bool TryTakeMatchingNativeBuffer(
             string itemId,
             out bool succeeded)
@@ -2669,7 +2169,7 @@ namespace DTMAPI.MoreEquipmentSlots
                     ex);
             }
             succeeded =
-                taken != null &&
+                ReferenceEquals(taken, currentItem) && taken != null &&
                 string.Equals(
                     ReadString(taken, "name"),
                     itemId,
@@ -2706,7 +2206,7 @@ namespace DTMAPI.MoreEquipmentSlots
             EquipmentSlotStorageEntry slot =
                 RequireSlot(slotIndex);
             object? nativeItem = slot.IsOccupied
-                ? GenerateNativeItem(slot.ItemId)
+                ? GetWorkingItem(slot)
                 : null;
             UiLease? lease = FindUiLease(slotIndex);
             if (lease != null)
@@ -3329,6 +2829,8 @@ namespace DTMAPI.MoreEquipmentSlots
             int count = 0;
             foreach (UiLease lease in uiLeases)
                 count += lease.ListenerRoots.Count;
+            foreach (UiLease lease in choiceListeners)
+                count += lease.ListenerRoots.Count;
             return count;
         }
 
@@ -3336,45 +2838,6 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             MoreEquipmentSlotsCallbacks.PublishLifecycleSummary(
                 BuildLifecycleSummary());
-        }
-
-        private static object GenerateNativeItem(string itemId)
-        {
-            Type type =
-                typeof(DolocAPI).Assembly.GetType(
-                    "DolocTown.ItemFactory",
-                    throwOnError: false) ??
-                throw new TypeLoadException(
-                    "DolocTown.ItemFactory");
-            MethodInfo? generate = null;
-            foreach (MethodInfo method in type.GetMethods(
-                BindingFlags.Public | BindingFlags.Static))
-            {
-                ParameterInfo[] parameters = method.GetParameters();
-                if (method.Name ==
-                    "GenerateItem" &&
-                    parameters.Length == 3 &&
-                    parameters[0].ParameterType ==
-                        typeof(string) &&
-                    parameters[1].ParameterType ==
-                        typeof(int) &&
-                    parameters[2].IsOut)
-                {
-                    generate = method;
-                    break;
-                }
-            }
-            if (generate == null)
-            {
-                throw new MissingMethodException(
-                    type.FullName,
-                    "GenerateItem(string,int,out Item)");
-            }
-            object?[] args = { itemId, 1, null };
-            generate.Invoke(null, args);
-            return args[2] ??
-                throw new InvalidOperationException(
-                    "Native item generation returned null.");
         }
 
         private static object? GetEquipmentManager()
@@ -3417,9 +2880,6 @@ namespace DTMAPI.MoreEquipmentSlots
         {
             try
             {
-                ClearFunctions(
-                    "shield break",
-                    deferNativeReload: true);
                 ApplyStoredFunctions("shield break");
             }
             catch (Exception ex)
@@ -3673,30 +3133,6 @@ namespace DTMAPI.MoreEquipmentSlots
             !string.IsNullOrWhiteSpace(first)
                 ? first
                 : second ?? string.Empty;
-
-        private sealed class NativeFunctionLease
-        {
-            private readonly IDictionary dictionary;
-            private readonly object item;
-            private readonly object function;
-
-            internal NativeFunctionLease(
-                IDictionary dictionary,
-                object item,
-                object function)
-            {
-                this.dictionary = dictionary;
-                this.item = item;
-                this.function = function;
-            }
-
-            internal void RemoveAndDispose()
-            {
-                if (dictionary.Contains(item))
-                    dictionary.Remove(item);
-                InvokeNoArg(function, "Dispose");
-            }
-        }
 
         private sealed class UiLease
         {

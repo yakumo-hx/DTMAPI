@@ -17,6 +17,12 @@ namespace DTMAPI.MoreEquipmentSlots
         bool TryCostBackpack(string itemId);
     }
 
+    internal interface INativeItemStatePlacementGateway
+    {
+        bool TryPlaceBackpackOnly(EquipmentSlotStorageEntry item);
+        bool TrySendMail(EquipmentSlotStorageEntry item);
+    }
+
     internal sealed class EquipmentSlotNativePlacement
     {
         private readonly INativeItemPlacementGateway gateway;
@@ -34,7 +40,11 @@ namespace DTMAPI.MoreEquipmentSlots
                 gateway.CountBackpack(itemId),
                 gateway.CountUnacceptedMail(itemId));
 
-        internal NativePlacementResult PlaceOne(string itemId)
+        internal NativePlacementResult PlaceOne(string itemId) => PlaceOne(itemId, null);
+
+        internal NativePlacementResult PlaceOne(EquipmentSlotStorageEntry item) => PlaceOne(item.ItemId, item);
+
+        private NativePlacementResult PlaceOne(string itemId, EquipmentSlotStorageEntry? item)
         {
             if (string.IsNullOrWhiteSpace(itemId))
             {
@@ -50,7 +60,9 @@ namespace DTMAPI.MoreEquipmentSlots
             try
             {
                 backpackReported =
-                    gateway.TryPlaceBackpackOnly(itemId);
+                    item != null
+                        ? RequireStateGateway().TryPlaceBackpackOnly(item)
+                        : gateway.TryPlaceBackpackOnly(itemId);
             }
             catch (Exception ex)
             {
@@ -100,7 +112,9 @@ namespace DTMAPI.MoreEquipmentSlots
             bool mailReported;
             try
             {
-                mailReported = gateway.TrySendMail(itemId);
+                mailReported = item != null
+                    ? RequireStateGateway().TrySendMail(item)
+                    : gateway.TrySendMail(itemId);
             }
             catch (Exception ex)
             {
@@ -169,6 +183,16 @@ namespace DTMAPI.MoreEquipmentSlots
                 return ResolveUnknown(pending);
             }
         }
+
+        internal NativePlacementResult PlaceOneWithImmediateEvidence(EquipmentSlotStorageEntry item)
+        {
+            try { return PlaceOne(item); }
+            catch (EquipmentSlotNativeMutationOutcomeUnknownException pending) { return ResolveUnknown(pending); }
+        }
+
+        private INativeItemStatePlacementGateway RequireStateGateway() =>
+            gateway as INativeItemStatePlacementGateway ??
+            throw new InvalidOperationException("This native gateway cannot preserve equipment instance state.");
 
         internal NativePlacementResult ResolveUnknown(
             EquipmentSlotNativeMutationOutcomeUnknownException
@@ -351,14 +375,14 @@ namespace DTMAPI.MoreEquipmentSlots
     }
 
     internal sealed class DolocTownItemPlacementGateway :
-        INativeItemPlacementGateway
+        INativeItemPlacementGateway, INativeItemStatePlacementGateway
     {
         private const BindingFlags AllMembers =
             BindingFlags.Public |
             BindingFlags.NonPublic |
             BindingFlags.Instance |
             BindingFlags.Static;
-        private static readonly Type DolocApiType = typeof(DolocAPI);
+        private static readonly Type DolocApiType = EquipmentSlotNativeItem.ResolveApiType();
         private static readonly MethodInfo CountItemMethod =
             DolocApiType.GetMethod(
                 "CountItem",
@@ -411,6 +435,18 @@ namespace DTMAPI.MoreEquipmentSlots
                 null,
                 new object[] { itemId, 1, false });
             return result is bool placed && placed;
+        }
+
+        public bool TryPlaceBackpackOnly(EquipmentSlotStorageEntry item) =>
+            new EquipmentSlotNativeItem(DolocApiType).Place(item);
+
+        public bool TrySendMail(EquipmentSlotStorageEntry item)
+        {
+            // Native mail stores only an ID/count reward. Keep stateful items
+            // protected until backpack capacity is available.
+            var native = new EquipmentSlotNativeItem(DolocApiType);
+            if (item.IsShield || !(item.ItemState ?? native.Capture(native.Restore(item))).CanUseIdOnlyMail) return false;
+            return TrySendMail(item.ItemId);
         }
 
         public bool TrySendMail(string itemId)

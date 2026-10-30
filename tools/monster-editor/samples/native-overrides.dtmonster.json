@@ -1,0 +1,25 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterOverridePack",
+    "name": "原版怪物覆盖示例",
+    "author": "Author Pack",
+    "version": "0.1.0"
+  },
+  "monsters": [],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "nativeOverrides": [
+    {
+      "id": "armor",
+      "targetId": "bee",
+      "fields": {
+        "defense": 18,
+        "hurtDuration": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "audio": {
+    "resources": [
+      {
+        "key": "bad_apple",
+        "path": "PackData/audio/candidate-badapple.wav",
+        "stream": true
+      },
+      {
+        "key": "iroha",
+        "path": "PackData/audio/pool-iroha.wav",
+        "stream": true
+      },
+      {
+        "key": "tsuki",
+        "path": "PackData/audio/pool-tsuki.wav",
+        "stream": true
+      }
+    ],
+    "events": [
+      {
+        "key": "bad_apple",
+        "resource": "bad_apple",
+        "use": "music",
+        "nativeEvent": "DTMAPI_MUSIC_BAD_APPLE",
+        "volumeDb": -31.6,
+        "route": "Music"
+      },
+      {
+        "key": "iroha",
+        "resource": "iroha",
+        "use": "music",
+        "nativeEvent": "DTMAPI_MUSIC_IROHA",
+        "volumeDb": -27.9,
+        "route": "Music"
+      },
+      {
+        "key": "tsuki",
+        "resource": "tsuki",
+        "use": "music",
+        "nativeEvent": "DTMAPI_MUSIC_TSUKI",
+        "volumeDb": -31.1,
+        "route": "Music"
+      }
+    ]
+  }
+}

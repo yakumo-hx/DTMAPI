@@ -56,7 +56,8 @@ public static class PlayerDoctorApplication
             {
                 ScanContext = command.ScanContext,
                 InstalledDtmApiVersion = installedVersion,
-                ContextFindings = contextFindings
+                ContextFindings = contextFindings,
+                VerifyReadOnlyTreeHash = command.Deep
             });
             string human = DoctorReportFormatter.ToHuman(report);
             string json = DoctorReportFormatter.ToJson(report);
@@ -97,7 +98,8 @@ public static class PlayerDoctorApplication
             : new[]
             {
                 Path.Combine(root, "BepInEx", "plugins"),
-                Path.Combine(root, "Mods")
+                Path.Combine(root, "Mods"),
+                Path.Combine(Environment.GetEnvironmentVariable("DTMAPI_DOLOC_PERSISTENT_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData/LocalLow/RedSawGames/DolocTown"), "MODS")
             };
         foreach (string output in outputs)
         {
@@ -136,13 +138,13 @@ DTMAPI Player Doctor - read-only player installation diagnostics
 Usage:
   dtmapi-player-doctor inspect --game-root PATH [--runtime-version VERSION | --runtime-missing]
       [--scan-context installed-game|package-artifact]
-      [--json-output PATH] [--text-output PATH] [--summary-output PATH] [--quiet]
+      [--json-output PATH] [--text-output PATH] [--summary-output PATH] [--quiet] [--deep]
   dtmapi-player-doctor help
   dtmapi-player-doctor version
 
-When no Runtime option is supplied, inspect cross-checks DTMAPI/install-state.json,
-DTMAPI/release-manifest.json, and all five installed Runtime DLL FileVersions. It
-reports missing or inconsistent sources and never selects one conflicting source.
+When no Runtime option is supplied, inspect reads the installed Core version and
+reports component/receipt problems separately. Normal inspection opens selected
+code without tree hashes. --deep additionally compares the input tree before/after.
 
 Exit codes: 0 = completed without errors; 2 = completed with Doctor errors;
 1 = usage or tool failure. The tool never loads scanned DLLs and never installs,
@@ -160,6 +162,7 @@ outside the scanned plugin/Mods or package-artifact tree.
         public string JsonOutputPath { get; private set; } = string.Empty;
         public string TextOutputPath { get; private set; } = string.Empty;
         public string SummaryOutputPath { get; private set; } = string.Empty;
+        public bool Deep { get; private set; }
         public bool Quiet { get; private set; }
         public bool Help { get; private set; }
 
@@ -175,6 +178,8 @@ outside the scanned plugin/Mods or package-artifact tree.
                     command.Help = true;
                     continue;
                 }
+                if (option.Equals("--deep", StringComparison.OrdinalIgnoreCase))
+                { RequireUnique(seen, option); command.Deep = true; continue; }
                 if (option.Equals("--quiet", StringComparison.OrdinalIgnoreCase))
                 {
                     RequireUnique(seen, option);

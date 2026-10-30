@@ -7,7 +7,17 @@ namespace DTMAPI.MultiPlatformInstaller;
 
 internal static class StatusAction
 {
-    public static StatusReport Evaluate(PackageLayout package, string gameDir, PlatformEnvironment platform)
+    public static StatusReport Evaluate(string packageRoot, string gameDir, PlatformEnvironment platform)
+    {
+        PackageLayout? package = null;
+        string? packageFailure = null;
+        try { package = PackageLayout.Load(packageRoot); }
+        catch (InstallerException ex) when (ex.Code == InstallerCodes.PackageInvalid)
+        { packageFailure = ex.Detail; }
+        return Evaluate(package, gameDir, platform, packageFailure);
+    }
+
+    public static StatusReport Evaluate(PackageLayout? package, string gameDir, PlatformEnvironment platform, string? packageFailure = null)
     {
         StatusReport report = new()
         {
@@ -23,10 +33,16 @@ internal static class StatusAction
             foreach (TransactionInspection item in transactions)
                 report.Findings.Add($"Transaction={item.Kind}; Path={item.Root}; Detail={item.Detail}");
         }
-        else
+        else if (package is not null)
         {
             EvaluateFiles(package, gameDir, report);
         }
+        else
+        {
+            report.Files = FileHealth.Blocked;
+        }
+        if (packageFailure is not null)
+            report.Findings.Add("PACKAGE_UNAVAILABLE: " + packageFailure);
 
         report.LaunchIntegration = platform.GetLaunchIntegration(out string launchDetail);
         report.Findings.Add(launchDetail);

@@ -300,15 +300,8 @@ namespace DTMAPI.Core.Services
 
         internal void DispatchButtonReleasedToOwners(IReadOnlyList<string> ownerIds, string button)
         {
-            if (ownerIds == null)
-                return;
-            for (int index = 0; index < ownerIds.Count; index++)
-            {
-                string ownerId = ownerIds[index];
-                if (!TryPrepareOwnerDispatch(buttonReleased, ownerId, "DTMAPI.Core.Input.ReleaseSettlement", out var preparation))
-                    continue;
-                DispatchPreparedToOwner(buttonReleased, new ButtonReleasedEventArgs(button), preparation, ownerId);
-            }
+            if (TryPrepareRecipients(buttonReleased, ownerIds, out var preparation, out string[] recipients))
+                DispatchPrepared(buttonReleased, new ButtonReleasedEventArgs(button), preparation, coalesceKey: null, recipients);
         }
 
         public void DispatchKeybindPressed(string ownerId, string keybindId, DtmKeybindList keybinds, string triggerButton)
@@ -339,19 +332,8 @@ namespace DTMAPI.Core.Services
 
         internal void DispatchKeybindReleasedToOwners(IReadOnlyList<string> ownerIds, string ownerId, string keybindId, DtmKeybindList keybinds, string triggerButton)
         {
-            if (ownerIds == null)
-                return;
-            for (int index = 0; index < ownerIds.Count; index++)
-            {
-                string targetOwnerId = ownerIds[index];
-                if (!TryPrepareOwnerDispatch(keybindReleased, targetOwnerId, "DTMAPI.Core.Input.ReleaseSettlement", out var preparation))
-                    continue;
-                DispatchPreparedToOwner(
-                    keybindReleased,
-                    new KeybindReleasedEventArgs(ownerId, keybindId, keybinds, triggerButton),
-                    preparation,
-                    targetOwnerId);
-            }
+            if (TryPrepareRecipients(keybindReleased, ownerIds, out var preparation, out string[] recipients))
+                DispatchPrepared(keybindReleased, new KeybindReleasedEventArgs(ownerId, keybindId, keybinds, triggerButton), preparation, coalesceKey: null, recipients);
         }
 
         public void DispatchSaveLoaded(int? saveSlot, bool isNewGame)
@@ -563,6 +545,17 @@ namespace DTMAPI.Core.Services
             return TryPrepareBoundary(slot.EventName, membership, EventDispatchPolicy.Direct, producerOwner, out preparation);
         }
 
+        private bool TryPrepareRecipients<TArgs>(EventSlot<TArgs> slot, IReadOnlyList<string> ownerIds,
+            out EventDispatchPreparation<TArgs> preparation, out string[] recipients) where TArgs : EventArgs
+        {
+            recipients = ownerIds == null ? Array.Empty<string>() : ownerIds
+                .Where(owner => !string.IsNullOrWhiteSpace(owner)).Select(owner => owner.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            preparation = default;
+            return recipients.Length > 0 && TryPrepareDispatch(slot, EventDispatchPolicy.Direct,
+                "DTMAPI.Core.Input.ReleaseSettlement", out preparation);
+        }
+
         private bool TryPrepareBoundary<TArgs>(
             string eventName,
             EventMembershipSnapshot<TArgs> membership,
@@ -597,13 +590,14 @@ namespace DTMAPI.Core.Services
             EventSlot<TArgs> slot,
             TArgs args,
             EventDispatchPreparation<TArgs> preparation,
-            string? coalesceKey) where TArgs : EventArgs
+            string? coalesceKey,
+            string[]? recipients = null) where TArgs : EventArgs
         {
             publicationPreparedForTests?.Invoke(slot.EventName);
             slot.RecordEventArgsCreated();
             if (!preparation.Queue)
             {
-                slot.Dispatch(this, args, preparation.Membership);
+                slot.Dispatch(this, args, preparation.Membership, recipients);
                 RecordDispatched(slot.EventName, preparation.Phase, preparation.ProducerThreadId);
                 return;
             }
@@ -616,7 +610,8 @@ namespace DTMAPI.Core.Services
                 preparation.ProducerThreadId,
                 preparation.ProducerOwner,
                 preparation.Policy,
-                NormalizeCoalesceKey(slot.EventName, coalesceKey, preparation.Policy)));
+                NormalizeCoalesceKey(slot.EventName, coalesceKey, preparation.Policy),
+                recipients));
         }
 
         private int DispatchPreparedToOwner<TArgs>(
@@ -922,10 +917,9 @@ namespace DTMAPI.Core.Services
                 }
 
                 string owner = ownerId.Trim();
-                foreach (OwnedHandler<TArgs> entry in membership.Handlers)
+                foreach (OwnedHandler<TArgs> entry in membership.ForOwner(owner))
                 {
-                    if (!entry.IsTerminallyCancelled &&
-                        entry.Owner.Equals(owner, StringComparison.OrdinalIgnoreCase))
+                    if (!entry.IsTerminallyCancelled)
                     {
                         return true;
                     }
@@ -977,7 +971,6 @@ namespace DTMAPI.Core.Services
                     return;
 
                 EnsureTransitionMutationAllowed();
-                ensureOwnerActive();
                 TransitionPublication transition = default;
                 lock (gate)
                 {
@@ -1174,9 +1167,13 @@ namespace DTMAPI.Core.Services
                 Interlocked.Increment(ref eventArgsCreated);
             }
 
-            public void Dispatch(object sender, TArgs args, EventMembershipSnapshot<TArgs> membership)
+            public void Dispatch(object sender, TArgs args, EventMembershipSnapshot<TArgs> membership, string[]? recipients = null)
             {
-                DispatchCore(sender, args, ownerId: null, membership, deliveredOwners: null);
+                if (recipients == null)
+                    DispatchCore(sender, args, ownerId: null, membership, deliveredOwners: null);
+                else
+                    foreach (string owner in recipients)
+                        DispatchCore(sender, args, owner, membership, deliveredOwners: null);
             }
 
             public int DispatchOwner(object sender, TArgs args, string ownerId, EventMembershipSnapshot<TArgs> membership)
@@ -1207,10 +1204,9 @@ namespace DTMAPI.Core.Services
                 bool measureTiming = measureHandlerTiming();
 
                 int dispatchedHandlers = 0;
-                foreach (OwnedHandler<TArgs> entry in membership.Handlers)
+                foreach (OwnedHandler<TArgs> entry in ownerId == null ? membership.Handlers : membership.ForOwner(ownerId))
                 {
-                    if (entry.IsTerminallyCancelled ||
-                        (ownerId != null && !entry.Owner.Equals(ownerId, StringComparison.OrdinalIgnoreCase)))
+                    if (entry.IsTerminallyCancelled)
                         continue;
 
                     dispatchedHandlers++;
@@ -1471,6 +1467,7 @@ namespace DTMAPI.Core.Services
             private readonly EventSlot<TArgs> slot;
             private readonly TArgs args;
             private readonly EventMembershipSnapshot<TArgs> membership;
+            private readonly string[]? recipients;
 
             public QueuedEventDispatch(
                 EventSlot<TArgs> slot,
@@ -1480,17 +1477,19 @@ namespace DTMAPI.Core.Services
                 int producerThreadId,
                 string producerOwner,
                 EventDispatchPolicy policy,
-                string coalesceKey)
+                string coalesceKey,
+                string[]? recipients)
                 : base(slot.EventName, phase, producerThreadId, producerOwner, policy, coalesceKey)
             {
                 this.slot = slot;
                 this.args = args;
                 this.membership = membership;
+                this.recipients = recipients;
             }
 
             public override void Execute(EventManager manager)
             {
-                slot.Dispatch(manager, args, membership);
+                slot.Dispatch(manager, args, membership, recipients);
                 manager.RecordDispatched(EventName, Phase, Thread.CurrentThread.ManagedThreadId);
             }
         }
@@ -1544,13 +1543,19 @@ namespace DTMAPI.Core.Services
 
         private sealed class EventMembershipSnapshot<TArgs> where TArgs : EventArgs
         {
+            private readonly Dictionary<string, OwnedHandler<TArgs>[]> byOwner;
             public static EventMembershipSnapshot<TArgs> Empty { get; } = new EventMembershipSnapshot<TArgs>(0, Array.Empty<OwnedHandler<TArgs>>());
 
             public EventMembershipSnapshot(long version, OwnedHandler<TArgs>[] handlers)
             {
                 Version = Math.Max(0, version);
                 Handlers = handlers ?? Array.Empty<OwnedHandler<TArgs>>();
+                byOwner = Handlers.GroupBy(entry => entry.Owner, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
             }
+
+            public OwnedHandler<TArgs>[] ForOwner(string owner) =>
+                byOwner.TryGetValue(owner, out OwnedHandler<TArgs>[] entries) ? entries : Array.Empty<OwnedHandler<TArgs>>();
 
             public long Version { get; }
             public OwnedHandler<TArgs>[] Handlers { get; }

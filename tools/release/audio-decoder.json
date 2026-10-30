@@ -1,0 +1,18 @@
+{
+  "version": "8.1.3-dtmapi-audio1",
+  "profile": "audio1",
+  "sourceCommit": "92611900bb",
+  "sourceUrl": "https://github.com/FFmpeg/FFmpeg/archive/92611900bb.tar.gz",
+  "buildRecipe": "tools/audio-decoder/build-minimal.sh",
+  "license": "LGPL-2.1-or-later; see LICENSE.txt",
+  "distributionNotes": "Audio-only FFmpeg built without GPL, nonfree or external codec libraries. The exact source archive and build recipe accompany local delivery as separately obtainable source materials. No player PATH, downloader or build tools are required.",
+  "toolchainPackages": [
+    "https://archive.ubuntu.com/ubuntu/pool/universe/b/binutils-mingw-w64/binutils-mingw-w64-x86-64_2.41.90.20240122-1ubuntu1%2b11.4_amd64.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-base_13.2.0-6ubuntu1%2b26.1_amd64.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-x86-64-posix_13.2.0-6ubuntu1%2b26.1_amd64.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/g/gcc-mingw-w64/gcc-mingw-w64-x86-64-posix-runtime_13.2.0-6ubuntu1%2b26.1_amd64.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/m/mingw-w64/mingw-w64-common_11.0.1-3build1_all.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/m/mingw-w64/mingw-w64-x86-64-dev_11.0.1-3build1_all.deb",
+    "https://archive.ubuntu.com/ubuntu/pool/universe/n/nasm/nasm_2.16.01-1build1_amd64.deb"
+  ]
+}

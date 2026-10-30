@@ -2,12 +2,13 @@ using System;
 using System.Reflection;
 using global::DTMAPI.Abstractions;
 using HarmonyLib;
+using DolocTown;
 
 namespace Yuuka.DTMAPI.FishBreedingAssistant
 {
     internal sealed class FishBreedingHookInstaller
     {
-        internal const string HarmonyOwner = "dtmapi.mod.yuuka.dtmapi.fishbreedingassistant";
+        internal const string HarmonyOwner = "Yuuka.DTMAPI.FishBreedingAssistant.Native";
         private const string GameBridgeOwner = "dtmapi.gamebridge.doloctown";
         private const int ExpectedPatchCount = 1;
         private readonly IMonitor monitor;
@@ -21,10 +22,7 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
         {
             if (IsInstalled)
                 return;
-            Assembly gameAssembly = typeof(DolocAPI).Assembly;
-            Type itemType = gameAssembly.GetType("DolocTown.Item", throwOnError: false)
-                ?? throw new TypeLoadException("FishBreedingAssistant could not resolve DolocTown.Item.");
-            MethodInfo target = itemType.GetProperty("title", BindingFlags.Public | BindingFlags.Instance)?.GetMethod
+            MethodInfo target = typeof(Item).GetProperty("title", BindingFlags.Public | BindingFlags.Instance)?.GetMethod
                 ?? throw new MissingMethodException("DolocTown.Item", "get_title");
             MethodInfo callback = typeof(FishBreedingCallbacks).GetMethod(nameof(FishBreedingCallbacks.ItemTitlePostfix), BindingFlags.Public | BindingFlags.Static)
                 ?? throw new MissingMethodException(typeof(FishBreedingCallbacks).FullName, nameof(FishBreedingCallbacks.ItemTitlePostfix));
@@ -50,7 +48,7 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
             try
             {
                 if (harmony != null)
-                    UnpatchExactOwner(harmony);
+                    harmony.UnpatchSelf();
             }
             finally
             {
@@ -71,17 +69,5 @@ namespace Yuuka.DTMAPI.FishBreedingAssistant
             }
         }
 
-        private static void UnpatchExactOwner(Harmony ownerHarmony)
-        {
-            foreach (MethodInfo method in typeof(Harmony).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-            {
-                ParameterInfo[] parameters = method.GetParameters();
-                if (method.Name != "UnpatchAll" || parameters.Length != 1 || parameters[0].ParameterType != typeof(string))
-                    continue;
-                method.Invoke(method.IsStatic ? null : ownerHarmony, new object[] { HarmonyOwner });
-                return;
-            }
-            throw new MissingMethodException(typeof(Harmony).FullName, "UnpatchAll(string)");
-        }
     }
 }

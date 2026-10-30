@@ -1,0 +1,75 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterPhysicalPack",
+    "name": "身体、移动与原生感知",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "large",
+      "templateId": "amoeba",
+      "overrides": {
+        "health": 500,
+        "defense": null,
+        "tint": "#4080FF",
+        "display": {
+          "name": "大体型变形虫",
+          "nameplate": true,
+          "healthBar": "Damaged"
+        }
+      },
+      "body": {
+        "scale": 2.5
+      },
+      "movement": {
+        "moveSpeed": 4,
+        "jumpSpeed": 8
+      },
+      "behavior": {
+        "mode": "inherit-native",
+        "id": ""
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "sentry",
+      "templateId": "bee",
+      "overrides": {
+        "health": null,
+        "defense": null
+      },
+      "movement": {
+        "moveSpeed": 3,
+        "maxAcceleration": 8
+      },
+      "sight": {
+        "rangeScale": 1.75,
+        "enemyThreshold": 1,
+        "minAlertAddition": 2,
+        "maxAlertAddition": 3,
+        "tooFarDistance": 25
+      },
+      "behavior": {
+        "mode": "inherit-native",
+        "id": ""
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

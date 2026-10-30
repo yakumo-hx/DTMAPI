@@ -31,7 +31,7 @@ namespace DTMAPI.UnitTests
                 }
 
                 DirectoryInfo? repository = new DirectoryInfo(AppContext.BaseDirectory);
-                while (repository != null && !File.Exists(Path.Combine(repository.FullName, "PROJECT.md")))
+                while (repository != null && !(File.Exists(Path.Combine(repository.FullName, "DTMAPI.sln")) && File.Exists(Path.Combine(repository.FullName, "global.json"))))
                     repository = repository.Parent;
                 string mapPath = Path.Combine(repository?.FullName
                     ?? throw new InvalidOperationException("Could not locate the Unit suite map repository."),

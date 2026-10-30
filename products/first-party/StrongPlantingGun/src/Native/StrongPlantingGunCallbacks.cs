@@ -41,18 +41,16 @@ namespace DTMAPI.StrongPlantingGun
             object __instance) =>
             runtime?.HandleToolUse(__instance) ?? true;
 
-        public static bool FarmingGunUiStateHandlePlaceToOtherSidePrefix(
-            object __instance,
-            int __0) =>
-            runtime?.HandleUiPlaceToOtherSide(
-                __instance,
-                __0) ?? true;
+        public static bool ItemFarmingGunRefreshCellTipPrefix(object __instance) =>
+            runtime?.RefreshMaterialPreview(__instance) ?? true;
 
-        public static bool FarmingGunUiStateHandleSwapOneItemPrefix(
-            object __instance,
-            int __0) =>
-            runtime?.HandleUiSwapOneItem(
-                __instance,
-                __0) ?? true;
+        public static void ItemFarmingGunOpenContainerUiPrefix(object __instance) =>
+            runtime?.PrepareGun(__instance, "ItemFarmingGun.OpenContainerUI");
+
+        public static bool ItemFarmingGunInitCellTipPrefix(object __instance) =>
+            runtime?.CanInitializePreview(__instance) ?? true;
+
+        public static object FarmingGunArea(object function) =>
+            runtime?.GetPreviewArea(function) ?? function.GetType().GetProperty("Area")!.GetValue(function, null)!;
     }
 }

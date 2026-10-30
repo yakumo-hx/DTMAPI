@@ -126,6 +126,7 @@ namespace DTMAPI.UnitTests
 
         private static void PlatformResourcesCloseInReverseOrderAndRetryFailures()
         {
+            OwnedCleanupAuthorExampleUsesActualPlatformResources();
             var f = new PlatformFixture();
             var resources = f.Service<IDtmOwnedResources>("A");
             var scheduler = f.Service<IDtmScheduler>("A");
@@ -150,6 +151,29 @@ namespace DTMAPI.UnitTests
             Assert(retry.RemainingResources == 0 && attempts == 2 && failed.Status == DtmResourceStatus.Disposed, "Only failed resources retry; successful releases never repeat.");
             var newOwner = f.Service<IDtmScheduler>("A");
             Assert(!ReferenceEquals(newOwner, scheduler) && scheduler.Post(() => { }).Status == DtmWorkStatus.Rejected, "A new activation cannot reactivate an old facade.");
+        }
+
+        private static void OwnedCleanupAuthorExampleUsesActualPlatformResources()
+        {
+            var f = new PlatformFixture();
+            var demo = new Samples.OwnedCleanup.CleanupDemo(f.Service<IDtmOwnedResources>("Example"));
+            Assert(demo.Close().Contains("motion=Failed", StringComparison.Ordinal) && !demo.HookAttached && !demo.CallbacksActive,
+                "The runnable author example must detach hooks despite a restoration failure and report that failure.");
+            Assert(demo.Close().Contains("motion=Disposed", StringComparison.Ordinal) && demo.Rate == 1 && demo.RestoreAttempts == 2 && demo.UnpatchAttempts == 1,
+                "Only the failed example restoration retries through the actual platform token.");
+            demo.Close();
+            Assert(demo.RestoreAttempts == 2 && demo.UnpatchAttempts == 1, "Completed example cleanup is idempotent.");
+            var failedOwner = new Samples.OwnedCleanup.CleanupDemo(f.Service<IDtmOwnedResources>("OwnerClose"));
+            var first = f.Runtime.RemoveOwner("OwnerClose", ModOwnerCleanupReason.Unload);
+            Assert(first.FailureCount == 1 && first.RemainingResources == 1 && !failedOwner.HookAttached,
+                "Owner shutdown must retain the example's actual failed native restoration in its final result.");
+            var second = f.Runtime.RemoveOwner("OwnerClose", ModOwnerCleanupReason.Unload);
+            Assert(second.FailureCount == 0 && second.RemainingResources == 0 && failedOwner.Rate == 1,
+                "A closed owner's failed restoration can finish on the next cleanup pass.");
+            var newOwner = new Samples.OwnedCleanup.CleanupDemo(f.Service<IDtmOwnedResources>("OwnerClose"));
+            failedOwner.Close();
+            Assert(newOwner.Rate == 3 && newOwner.HookAttached, "An old example handle cannot restore the replacement activation.");
+            newOwner.Close(); newOwner.Close();
         }
 
         private static void PlatformCommandsParseDispatchAndIsolateOwners()

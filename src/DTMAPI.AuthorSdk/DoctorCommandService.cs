@@ -7,7 +7,7 @@ internal static class DoctorCommandService
 {
     public static async Task<int> RunAsync(ParsedCommand command, TextWriter output)
     {
-        command.RequireOnlyOptions();
+        command.RequireOnlyOptions("deep");
         if (command.Positionals.Count != 1)
             throw new CommandLineException("doctor requires exactly one directory or ZIP path.");
 
@@ -22,8 +22,8 @@ internal static class DoctorCommandService
                 Directory.CreateDirectory(staging);
                 try
                 {
-                    DeploymentPackage.ExtractZip(root, staging);
-                    report = new DoctorEngine().Inspect(staging, new DoctorOptions { ScanContext = DoctorScanContext.PackageArtifact });
+                    OptionalTools.Extract(root, staging);
+                    report = new DoctorEngine().Inspect(staging, new DoctorOptions { ScanContext = DoctorScanContext.PackageArtifact, VerifyReadOnlyTreeHash = command.HasOption("deep") });
                 }
                 catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
                 {
@@ -31,7 +31,7 @@ internal static class DoctorCommandService
                         Findings = new[] { new DoctorFinding { Code = "SDK-DOCTOR-ZIP", Severity = DoctorSeverity.Error, Path = root, Message = ex.Message } } };
                 }
             }
-            else report = new DoctorEngine().Inspect(root);
+            else report = new DoctorEngine().Inspect(root, new DoctorOptions { VerifyReadOnlyTreeHash = command.HasOption("deep") });
             string rendered = command.Json ? DoctorReportFormatter.ToJson(report) : DoctorReportFormatter.ToHuman(report);
             // Reports name the archive member, never an already deleted temporary path.
             if (staging != null)

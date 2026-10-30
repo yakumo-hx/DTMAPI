@@ -51,6 +51,7 @@ internal sealed class ParsedCommand
                     throw new CommandLineException("Empty option name.");
                 if (key.Equals("force", StringComparison.OrdinalIgnoreCase) || key.Equals("adopt", StringComparison.OrdinalIgnoreCase))
                     throw new CommandLineException("Author SDK 0.1.0 intentionally has no --force or --adopt operation.");
+                if (key is "replace" or "clean" or "deep") { if (!options.TryAdd(key, "true")) throw new CommandLineException("Duplicate option: " + key); continue; }
                 if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
                     throw new CommandLineException("Option --" + key + " requires a value.");
                 if (!options.TryAdd(key, args[++i]))

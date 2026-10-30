@@ -1,306 +1,126 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
+using DolocTown;
+using DolocTown.GameData;
 using global::DTMAPI.Abstractions;
-using static Yuuka.DTMAPI.OneActionComplete.NativeAccess;
+using UnityEngine;
 
 namespace Yuuka.DTMAPI.OneActionComplete
 {
     internal sealed class OneActionEngine
     {
-        private readonly HashSet<string> logged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private ActionPolicy policy;
-
-        internal OneActionEngine(IDtmHelper helper)
-        {
-            Monitor = (helper ?? throw new ArgumentNullException(nameof(helper))).Monitor;
-        }
-
+        private OneActionConfig policy = new OneActionConfig();
+        internal OneActionEngine(IMonitor monitor) => Monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
         internal IMonitor Monitor { get; }
 
-        internal void Configure(OneActionConfig config)
+        // Config menu edits are a draft until its Save callback applies a copy.
+        internal void Configure(OneActionConfig config) => policy = config.Copy();
+
+        internal ToolHit? BeginToolHit(ItemTool? tool, Collider2D? collider)
         {
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
-            policy = new ActionPolicy(config);
-            logged.Clear();
+            if (tool == null || collider == null) return null;
+            DungeonResource? resource = collider.GetComponent<DungeonResourceRenderer>()?.DungeonResource;
+            return resource == null || resource.IsRemoved || resource.currentHealth <= 0 || !Matches(resource)
+                ? null : new ToolHit(resource, tool);
         }
 
-        internal void ResetBoundary(string reason)
+        internal void CompleteToolHit(ToolHit? hit)
         {
-            logged.Clear();
-            if (policy.VerboseLogging)
-                Monitor.Log("OneActionComplete boundary reset reason=" + (reason ?? string.Empty) + ".");
-        }
+            if (hit == null) return;
+            DungeonResource resource = hit.Resource;
+            // Scope the evidence to this HandleTools invocation. A zero chop
+            // counter on a second target cannot reuse the first accepted hit.
+            if (resource.IsRemoved || resource.currentHealth <= 0 ||
+                resource.currentHealth >= hit.Health || !Matches(resource)) return;
 
-        internal bool ApplyToolHit(object toolCollider, object collider)
-        {
-            if (!policy.ToolRoute || toolCollider == null || collider == null)
-                return false;
-
-            object? resource = TryGetDungeonResourceFromCollider(collider);
-            if (resource == null || IsRemoved(resource) || !MatchesResource(resource))
-                return false;
-            int currentHealth = ReadInt(resource, "currentHealth", 0);
-            if (currentHealth <= 0)
-                return false;
-
-            object? currentTool = ReadMember(toolCollider, "currentTool");
-            object? hitPoint = ReadMember(resource, "PositionCenter");
-            Type? fellDataType = ResolveType("DolocTown.ResourceFellData, Assembly-CSharp");
-            if (currentTool == null || hitPoint == null || fellDataType == null)
-                return false;
-            if (!TryBuildValidatedFellData(fellDataType, resource, currentTool, hitPoint, out object? nativeFellData, out string rejectReason))
+            int extraHits = 0;
+            int remainingBound = resource.currentHealth;
+            while (!resource.IsRemoved && resource.currentHealth > 0 && extraHits < remainingBound)
             {
-                LogOnce("skip:" + ResourceName(resource) + ":" + ReadString(currentTool, "name") + ":" + rejectReason,
-                    "One-action tool hook skipped resource " + ResourceName(resource) + " tool=" + ReadString(currentTool, "name") + " reason=" + rejectReason + ".");
-                return false;
-            }
-
-            try
-            {
-                int toolLevel = ReadInt(nativeFellData!, "toolLevel", 0);
-                int nativeDamage = Math.Max(1, ReadInt(nativeFellData!, "Damage", currentHealth));
-                int requiredExtraHits = Math.Max(1, (int)Math.Ceiling(currentHealth / (double)nativeDamage));
-                int paidExtraHits = CostExtraToolHits(requiredExtraHits, out string energyReason);
-                if (paidExtraHits <= 0)
-                {
-                    LogOnce("energy:" + ResourceName(resource), "One-action tool hook skipped resource " + ResourceName(resource) + " reason=" + energyReason + ".");
-                    return false;
-                }
-
-                int damage = Math.Min(currentHealth, paidExtraHits * nativeDamage);
-                object? fellData = Activator.CreateInstance(fellDataType, new object?[]
-                {
-                    ReadBool(nativeFellData!, "levelMatch", false),
-                    toolLevel,
-                    damage,
-                    hitPoint,
-                    ReadBool(nativeFellData!, "shouldCounterBack", true),
-                    ReadBool(nativeFellData!, "shouldRaiseToolTip", true),
-                    ReadMember(nativeFellData!, "overrideSpawnLut") as string ?? string.Empty,
-                    ReadMember(nativeFellData!, "extraItems")
-                });
-                MethodInfo? fell = FindMethod(resource.GetType(), "_Fell", 1);
-                if (fellData == null || fell == null)
-                    return false;
-                fell.Invoke(resource, new[] { fellData });
-                string summary = "resource=" + ResourceName(resource) + ", class=" + ResourceClass(resource) + ", tool=" + ReadString(currentTool, "name") + ", nativeDamage=" + nativeDamage + ", paidExtraHits=" + paidExtraHits + "/" + requiredExtraHits + ", damage=" + damage;
-                if (policy.VerboseLogging || logged.Add("complete:" + ResourceName(resource)))
-                    Monitor.Log("One-action tool hook completed " + summary + ".");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Monitor.Log("One-action tool completion failed closed: " + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
-                return false;
+                if (!DolocAPI.HasEnoughEnergyForUsingTool()) break;
+                var data = new ResourceFellData(resource, hit.Tool, resource.PositionCenter);
+                if (!data.Valid || !data.levelMatch || data.Damage <= 0 || !DolocAPI.CostToolEnergy()) break;
+                int before = resource.currentHealth;
+                extraHits++;
+                // One native hit per payment preserves equipment bonuses,
+                // tool-specific loot and the single terminal drop/removal call.
+                resource._Fell(data);
+                if (!resource.IsRemoved && resource.currentHealth >= before) break;
             }
         }
 
-        internal bool ApplyEquipmentFillAfterInteract()
+        internal FillAttempt? BeginEquipmentFill()
         {
-            if (!policy.FuelRoute && !policy.FeederRoute)
-                return false;
-            Type? dolocApi = ResolveType("DolocAPI, Assembly-CSharp");
-            object? equipment = ReadStaticMember(dolocApi, "SelectedEquipment");
-            object? item = ReadStaticMember(dolocApi, "SelectedItem");
-            if (equipment == null || item == null)
-                return false;
-            Type type = equipment.GetType();
-            if (policy.FuelRoute && IsTypeOrBase(type, "DolocTown.PowerGeneratorFuel"))
-                return FillFuel(equipment, item, dolocApi);
-            if (policy.FeederRoute && IsTypeOrBase(type, "DolocTown.Feeder"))
-                return FillFeeder(equipment, item, dolocApi);
-            return false;
+            Equipment? equipment = DolocAPI.SelectedEquipment;
+            Item? item = DolocAPI.SelectedItem;
+            if (equipment == null || item == null || !Matches(equipment) || !Suitable(equipment, item)) return null;
+            float progress = Progress(equipment);
+            return progress < 0 || Full(equipment) || float.IsNaN(progress) ? null
+                : new FillAttempt(equipment, item, Remaining(item), progress);
         }
 
-        private bool FillFuel(object generator, object firstItem, Type? dolocApi)
+        internal void CompleteEquipmentFill(FillAttempt? attempt)
         {
-            MethodInfo? suitable = FindMethod(generator.GetType(), "IsSuitableFuel", 1);
-            MethodInfo? addFuel = FindMethod(generator.GetType(), "AddFuel", 2);
-            if (suitable == null || addFuel == null || !InvokeBool(suitable, generator, firstItem))
-                return false;
-            double before = ReadDouble(generator, "FuelPercent", -1);
+            if (attempt == null || !Matches(attempt.Equipment) ||
+                !(Progress(attempt.Equipment) > attempt.Progress) || Remaining(attempt.Item) >= attempt.Count) return;
+
+            Equipment equipment = attempt.Equipment;
             int consumed = 0;
-            try
+            for (int guard = 0; guard < 99 && !Full(equipment); guard++)
             {
-                for (int guard = 0; guard < 99 && !IsFuelFull(generator); guard++)
+                Item? selected = DolocAPI.SelectedItem;
+                if (selected == null || !Suitable(equipment, selected)) break;
+                float before = Progress(equipment);
+                if (!selected.CostSelf(out Item paidItem, false)) break;
+                consumed++;
+                try
                 {
-                    object? selected = ReadStaticMember(dolocApi, "SelectedItem");
-                    object? proto = selected == null ? null : ReadMember(selected, "proto");
-                    if (selected == null || proto == null || !InvokeBool(suitable, generator, selected) || !TryCostSelf(selected))
-                        break;
-                    addFuel.Invoke(generator, new[] { proto, (object)true });
-                    consumed++;
+                    if (equipment is PowerGeneratorFuel fuel) fuel.AddFuel(paidItem.proto, true);
+                    else ((Feeder)equipment).AddFeeds(paidItem.proto);
                 }
-            }
-            catch (Exception ex)
-            {
-                Monitor.Log("One-action fuel fill failed closed after extraConsumed=" + consumed + ": " + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
-            }
-            if (consumed <= 0)
-                return false;
-            Monitor.Log("One-action fuel fill completed item=" + ItemName(firstItem) + " extraConsumed=" + consumed + " fuel=" + FormatRatio(before) + "->" + FormatRatio(ReadDouble(generator, "FuelPercent", -1)) + ".");
-            return true;
-        }
-
-        private bool FillFeeder(object feeder, object firstItem, Type? dolocApi)
-        {
-            MethodInfo? suitable = FindMethod(feeder.GetType(), "IsAnimalFeeds", 2);
-            MethodInfo? addFeeds = FindMethod(feeder.GetType(), "AddFeeds", 1);
-            object? firstProto = ReadMember(firstItem, "proto");
-            if (suitable == null || addFeeds == null || firstProto == null || !InvokeAnimalFeed(suitable, feeder, firstProto))
-                return false;
-            double before = ReadDouble(feeder, "progress", -1);
-            int consumed = 0;
-            try
-            {
-                for (int guard = 0; guard < 99 && ReadDouble(feeder, "progress", 0) < 0.999; guard++)
+                catch (Exception ex)
                 {
-                    object? selected = ReadStaticMember(dolocApi, "SelectedItem");
-                    object? proto = selected == null ? null : ReadMember(selected, "proto");
-                    if (selected == null || proto == null || !InvokeAnimalFeed(suitable, feeder, proto) || !TryCostSelf(selected))
-                        break;
-                    addFeeds.Invoke(feeder, new[] { proto });
-                    consumed++;
+                    // Native fill can mutate before a rendering exception.
+                    // Inspect that state, stop, and never blindly refund a paid item.
+                    Monitor.Log("One-action fill stopped after native exception; extraConsumed=" + consumed +
+                        "; progressAdvanced=" + (Progress(equipment) > before) + "; error=" + ex.Message, LogLevel.Warn);
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                Monitor.Log("One-action feeder fill failed closed after extraConsumed=" + consumed + ": " + ex.GetType().Name + ": " + ex.Message, LogLevel.Warn);
-            }
-            if (consumed <= 0)
-                return false;
-            Monitor.Log("One-action feeder fill completed item=" + ItemName(firstItem) + " extraConsumed=" + consumed + " progress=" + FormatRatio(before) + "->" + FormatRatio(ReadDouble(feeder, "progress", -1)) + ".");
-            return true;
-        }
-
-        private bool MatchesResource(object resource)
-        {
-            Type type = resource.GetType();
-            string fullName = type.FullName ?? type.Name;
-            string resourceClass = ResourceClass(resource);
-            return (policy.CompleteTrees && (IsTypeOrBase(type, "DolocTown.DungeonResourceTree") || IsTypeOrBase(type, "DolocTown.DungeonResourceTreeTrunk")))
-                || (policy.CompleteOres && (IsTypeOrBase(type, "DolocTown.DungeonResourceOre") || resourceClass.Equals("Ore", StringComparison.OrdinalIgnoreCase)))
-                || (policy.CompleteGarbage && (fullName.IndexOf("Garbage", StringComparison.OrdinalIgnoreCase) >= 0 || resourceClass.Equals("Garbage", StringComparison.OrdinalIgnoreCase)))
-                || (policy.CompleteWeeds && IsTypeOrBase(type, "DolocTown.DungeonResourceWeeds"));
-        }
-
-        private static bool TryBuildValidatedFellData(Type type, object resource, object tool, object hitPoint, out object? fellData, out string reason)
-        {
-            fellData = null;
-            reason = string.Empty;
-            try
-            {
-                fellData = Activator.CreateInstance(type, new[] { resource, tool, hitPoint });
-                if (fellData == null) { reason = "native-fell-data-null"; return false; }
-                if (!ReadBool(fellData, "Valid", false)) { reason = "tool-type-mismatch"; return false; }
-                if (!ReadBool(fellData, "levelMatch", false)) { reason = "tool-level-mismatch level=" + ReadInt(fellData, "toolLevel", -1); return false; }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                reason = ex.GetType().Name + ": " + ex.Message;
-                return false;
+                if (!(Progress(equipment) > before)) break;
             }
         }
 
-        private static int CostExtraToolHits(int required, out string reason)
+        private bool Matches(DungeonResource resource) =>
+            (policy.CompleteTrees && (resource is DungeonResourceTree || resource is DungeonResourceTreeTrunk)) ||
+            (policy.CompleteOres && resource is DungeonResourceOre) ||
+            (policy.CompleteGarbage && (resource is DungeonResourceBuildingsGarbage || resource is DungeonResourceModelMechanicalGarbage)) ||
+            (policy.CompleteWeeds && resource is DungeonResourceWeeds);
+
+        private bool Matches(Equipment equipment) =>
+            (policy.CompleteMachineFuel && equipment is PowerGeneratorFuel) || (policy.CompleteFeeder && equipment is Feeder);
+        // FuelPercent is display-only and clamps before the native reserve is full.
+        private static float Progress(Equipment equipment) => equipment is PowerGeneratorFuel
+            ? ((ElectronicComponentGeneratorFuel)equipment.IElectronicComponent).Fuel : ((Feeder)equipment).progress;
+        private static bool Full(Equipment equipment) => equipment is PowerGeneratorFuel
+            ? ((ElectronicComponentGeneratorFuel)equipment.IElectronicComponent).IsFull : ((Feeder)equipment).IsFeederFull;
+        private static bool Suitable(Equipment equipment, Item item) => equipment is PowerGeneratorFuel fuel
+            ? fuel.IsSuitableFuel(item) : ((Feeder)equipment).IsAnimalFeeds(item.proto, out int _);
+        private static int Remaining(Item item) => DolocAPI.archiveHandle.InventorySystem.inventory.IndexOf(item) < 0 ? 0 : item.count;
+
+        internal sealed class ToolHit
         {
-            Type? api = ResolveType("DolocAPI, Assembly-CSharp");
-            MethodInfo? hasEnergy = api?.GetMethod("HasEnoughEnergyForUsingTool", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
-            MethodInfo? costEnergy = api?.GetMethod("CostToolEnergy", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
-            if (hasEnergy == null || costEnergy == null)
-            {
-                reason = "native energy methods were not found";
-                return 0;
-            }
-            int paid = 0;
-            for (; paid < required; paid++)
-            {
-                if (!(hasEnergy.Invoke(null, null) is bool enough) || !enough)
-                    break;
-                if (!(costEnergy.Invoke(null, null) is bool charged) || !charged)
-                    break;
-            }
-            reason = paid == required ? "charged " + paid + " extra hit(s)" : "native energy rejected after " + paid + " extra hit(s)";
-            return paid;
+            internal ToolHit(DungeonResource resource, ItemTool tool) { Resource = resource; Tool = tool; Health = resource.currentHealth; }
+            internal DungeonResource Resource { get; }
+            internal ItemTool Tool { get; }
+            internal int Health { get; }
         }
 
-        private static bool InvokeBool(MethodInfo method, object target, object arg)
+        internal sealed class FillAttempt
         {
-            try { return method.Invoke(target, new[] { arg }) is bool result && result; }
-            catch { return false; }
-        }
-
-        private static bool InvokeAnimalFeed(MethodInfo method, object target, object proto)
-        {
-            try
-            {
-                object?[] args = { proto, 0 };
-                return method.Invoke(target, args) is bool result && result;
-            }
-            catch { return false; }
-        }
-
-        private static bool TryCostSelf(object item)
-        {
-            try
-            {
-                MethodInfo? withOut = FindMethod(item.GetType(), "CostSelf", 2);
-                if (withOut != null && withOut.GetParameters()[0].ParameterType.IsByRef)
-                {
-                    object?[] args = { null, false };
-                    return withOut.Invoke(item, args) is bool ok && ok;
-                }
-                MethodInfo? single = FindMethod(item.GetType(), "CostSelf", 1);
-                return single != null && single.Invoke(item, new object?[] { false }) != null;
-            }
-            catch { return false; }
-        }
-
-        private static bool IsFuelFull(object generator)
-        {
-            object? state = ReadMember(generator, "generatorFuel");
-            return (state != null && ReadBool(state, "IsFull", false)) || ReadDouble(generator, "FuelPercent", 0) >= 0.999;
-        }
-
-        private static string ItemName(object item)
-        {
-            string value = ReadString(item, "name");
-            return value.Length == 0 ? item.GetType().Name : value;
-        }
-
-        private void LogOnce(string key, string message)
-        {
-            if (logged.Add(key))
-                Monitor.Log(message);
-        }
-
-        private readonly struct ActionPolicy
-        {
-            internal ActionPolicy(OneActionConfig config)
-            {
-                Enabled = config.Enabled;
-                CompleteTrees = config.CompleteTrees;
-                CompleteOres = config.CompleteOres;
-                CompleteGarbage = config.CompleteGarbage;
-                CompleteWeeds = config.CompleteWeeds;
-                CompleteMachineFuel = config.CompleteMachineFuel;
-                CompleteFeeder = config.CompleteFeeder;
-                VerboseLogging = config.VerboseLogging;
-            }
-            internal bool Enabled { get; }
-            internal bool CompleteTrees { get; }
-            internal bool CompleteOres { get; }
-            internal bool CompleteGarbage { get; }
-            internal bool CompleteWeeds { get; }
-            internal bool CompleteMachineFuel { get; }
-            internal bool CompleteFeeder { get; }
-            internal bool VerboseLogging { get; }
-            internal bool ToolRoute => Enabled && (CompleteTrees || CompleteOres || CompleteGarbage || CompleteWeeds);
-            internal bool FuelRoute => Enabled && CompleteMachineFuel;
-            internal bool FeederRoute => Enabled && CompleteFeeder;
+            internal FillAttempt(Equipment equipment, Item item, int count, float progress) { Equipment = equipment; Item = item; Count = count; Progress = progress; }
+            internal Equipment Equipment { get; }
+            internal Item Item { get; }
+            internal int Count { get; }
+            internal float Progress { get; }
         }
     }
 }

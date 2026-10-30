@@ -65,6 +65,12 @@
       "audioFiles": ["oilfloater_pet_young.wav", "oilfloater_pet_adult.wav"]
     }
   ],
+  "hatchAdultJumpCompletion": {
+    "sourceFrame": "anim_animal_hatch_adult_jump_0.png",
+    "destinationFrame": "anim_animal_hatch_adult_jump_2.png",
+    "sha256": "04592973A50F1234224EF75647EB9692F2CC4D45023BF680423EC5541FDD223A",
+    "rule": "Reuse the existing 32x32 preparation pose for the return phase; keep prototype inputs read-only."
+  },
   "itemIcons": {
     "environmentOverride": "DTMAPI_ANIMAL_PACK_ICON_INPUT_ROOT",
     "defaultRoot": "E:/DolocTownUnity/ONIExtracted",

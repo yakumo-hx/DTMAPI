@@ -51,40 +51,40 @@ namespace DTMAPI.UnitTests
             var value = Read(json);
             Assert(value.OwnerId == "Test.Consumer" && value.Dependencies.Single().Required, "New manifest identity and dependency parsed.");
             Assert(Read("\uFEFF" + json).OwnerId == value.OwnerId, "UTF-8 BOM remains valid for the explicit new reader.");
-            Assert(Read("{\"Version\":\"legacy-alpha\",\"Dependencies\":[{\"IsRequired\":true}]}") == null, "No selector keeps the legacy reader.");
+            foreach (string empty in new[] { "", "\uFEFF", " \r\n", "\uFEFF\uFEFF", "{" })
+            {
+                try { Read(empty); throw new Exception("Broken JSON was accepted."); }
+                catch (InvalidDataException ex) { Assert(ex.Message.StartsWith("dependency-json-invalid", StringComparison.Ordinal), "Damaged dependency JSON reports the input category."); }
+            }
+            Assert(Read("{\"UniqueID\":\"Old.Mod\",\"Version\":\"legacy-alpha\",\"Dependencies\":[{\"UniqueID\":\"Provider\",\"IsRequired\":true}]}").Dependencies.Single().Required, "Old wire fields remain readable without a selector or proof.");
+            Assert(Read("{\"UniqueID\":\"Simple.Mod\"}").Dependencies.Count == 0, "Dependencies are optional.");
+            foreach (string selector in new[] { "2", "999", "\"damaged\"", "null", "{}", "true" })
+            {
+                var historical = Read(json.Replace("\"DependencyContractVersion\":1", "\"DependencyContractVersion\":" + selector));
+                Assert(historical.Dependencies.Single().Required && historical.Dependencies.Single().Range.Contains(PackageSemanticVersion.Parse("1.5.0")),
+                    "Historical tool fields cannot change an explicit dependency relationship.");
+                Assert(Read("{\"UniqueID\":\"Simple.Mod\",\"DependencyContractVersion\":" + selector + "}").Dependencies.Count == 0,
+                    "A package without dependencies does not need a dependency selector.");
+            }
             foreach (string invalid in new[]
             {
-                json.Replace("Version\":1", "Version\":2"), json.Replace("Version\":1", "Version\":\"1\""),
-                json.Replace("DependencyContractVersion", "dependencyContractVersion"),
-                json.Replace("\"Required\":true", "\"Required\":true,\"IsRequired\":true"),
                 json.Replace("\"Required\":true", "\"Required\":true,\"Required\":true"),
                 json.Replace("\"Required\":true", "\"Required\":\"true\""),
-                json.Replace("\"Required\":true", "\"Required\":true,\"MinimumVersion\":\"1.0.0\""),
                 json.Replace("\"includePrerelease\":false", "\"includePrerelease\":false,\"includePrerelease\":false"),
-                json.Replace("\"includePrerelease\":false", "\"unknown\":false"),
                 json.Replace("\"maximumExclusive\":\"2.0.0\"", "\"maximumExclusive\":null")
             }) PackageReject(() => Read(invalid));
         }
-
-        private static void PackageDependencyPlanBlocksRequiredClosureAndSharesOnlyExactBytes()
+        private static void PackageDependencyPlanOrdersDeclaredRelationships()
         {
             PackageModDependency Dep(string id, bool required = true) => new PackageModDependency(id, required, new PackageVersionRange("1.0.0", "2.0.0", false));
-            PackagePlanInput Node(string id, params PackageModDependency[] dependencies) => new PackagePlanInput { Id = id, Version = PackageSemanticVersion.Parse("1.0.0"), Dependencies = dependencies };
-            PackageAssemblyRecord Lib(string hash, string version = "1.0.0.0", string role = "shared-contract") => new PackageAssemblyRecord { Path = "lib/shared/Contract.dll", Role = role, Identity = new PackageAssemblyIdentity { Name = "Contract", AssemblyVersion = version }, Sha256 = hash };
+            PackagePlanInput Node(string id, params PackageModDependency[] dependencies) => new PackagePlanInput { Id = id, Version = "1.0.0", Dependencies = dependencies };
             var provider = Node("Test.Provider"); var consumer = Node("Test.Consumer", Dep(provider.Id)); var control = Node("Test.Control");
-            provider.Assemblies = new[] { Lib("same") }; consumer.Assemblies = new[] { Lib("same") };
-            PackageDependencyPlan Plan(params PackagePlanInput[] nodes) => PackageDependencyPlanner.Plan(nodes, new HashSet<string>(StringComparer.OrdinalIgnoreCase), Array.Empty<PackageResidentAssembly>());
+            PackageDependencyPlan Plan(params PackagePlanInput[] nodes) => PackageDependencyPlanner.Plan(nodes);
             var good = Plan(consumer, control, provider);
-            Assert(good.Blocked.Count == 0 && good.LoadOrder.ToList().IndexOf(provider.Id) < good.LoadOrder.ToList().IndexOf(consumer.Id) && good.AssemblyOwners.Count == 1, "One deterministic contract binding and provider-first order.");
-            foreach (var bad in new[] { Lib("different"), Lib("same", "2.0.0.0"), Lib("same", role: "entry") })
-            {
-                consumer.Assemblies = new[] { bad }; var plan = Plan(provider, consumer, control);
-                Assert(plan.Blocked.ContainsKey(provider.Id) && plan.Blocked.ContainsKey(consumer.Id) && plan.LoadOrder.SequenceEqual(new[] { control.Id }), "All conflict participants blocked while control survives.");
-            }
-            consumer.Assemblies = new[] { Lib("same") };
-            provider.PreflightFailure = "tampered library";
+            Assert(good.Blocked.Count == 0 && good.LoadOrder.ToList().IndexOf(provider.Id) < good.LoadOrder.ToList().IndexOf(consumer.Id), "The plan orders declared dependencies without selecting any DLL.");
+            provider.PreflightFailure = "required entry missing";
             var blocked = Plan(provider, consumer, control);
-            Assert(blocked.Blocked[consumer.Id].Contains(consumer.Id) && blocked.Blocked[consumer.Id].Contains("tampered library"), "Required failure chain reaches consumer.");
+            Assert(blocked.Blocked[consumer.Id].Contains(consumer.Id) && blocked.Blocked[consumer.Id].Contains("required entry missing"), "Required failure chain reaches consumer.");
             var optional = Node("Test.Optional", Dep(provider.Id, false));
             Assert(Plan(optional, provider).LoadOrder.Contains(optional.Id), "Optional consumer remains available after provider failure.");
             provider.PreflightFailure = "";
@@ -93,9 +93,6 @@ namespace DTMAPI.UnitTests
             a.Dependencies = new[] { Dep(b.Id, false) }; b.Dependencies = new[] { Dep(a.Id, false) };
             var forward = Plan(a, b); var reverse = Plan(b, a);
             Assert(forward.Blocked.Count == 0 && forward.LoadOrder.SequenceEqual(reverse.LoadOrder) && forward.Warnings.Single().Contains("optional-order-cycle-broken"), "Pure optional cycle has deterministic warning/order.");
-            var resident = new PackageResidentAssembly { Identity = Lib("same").Identity, Sha256 = "same", ProvenHostOrPlanSource = false };
-            var conflict = PackageDependencyPlanner.Plan(new[] { provider, consumer, control }, new HashSet<string>(), new[] { resident });
-            Assert(conflict.Blocked.Count == 2 && conflict.Blocked[provider.Id].Contains("resident-conflict/restart-required"), "Unknown resident provenance requires restart even with matching declared hash.");
         }
 
         private static void PackageReject(Action action)

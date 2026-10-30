@@ -14,14 +14,15 @@ namespace DTMAPI.Tooling.Metadata;
 /// </summary>
 public sealed class PeMetadataInspector
 {
-    public PeMetadataInspection Inspect(string path)
+    public PeMetadataInspection Inspect(string path, bool computeHash = true)
     {
         string fullPath = System.IO.Path.GetFullPath(path);
         string hash = string.Empty;
         try
         {
-            using (FileStream hashStream = ReadOnlyFiles.OpenSharedRead(fullPath))
-                hash = Convert.ToHexString(SHA256.HashData(hashStream));
+            if (computeHash)
+                using (FileStream hashStream = ReadOnlyFiles.OpenSharedRead(fullPath))
+                    hash = Convert.ToHexString(SHA256.HashData(hashStream));
 
             using FileStream stream = ReadOnlyFiles.OpenSharedRead(fullPath);
             using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);

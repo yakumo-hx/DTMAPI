@@ -46,7 +46,9 @@ namespace DTMAPI.UnitTests
             const string runId = "0123456789abcdef0123456789abcdef";
             string runRoot = Path.Combine(runtime.Paths.DtmApiPath, QaHostActivationLoader.HostDirectoryName, runId);
             Directory.CreateDirectory(runRoot);
-            string sourceDll = FindRepositoryFile(Path.Combine("src", "DTMAPI.GameBridge.DolocTown.QA", "bin", "Release", "netstandard2.0", QaHostActivationLoader.AssemblyFileName));
+            string configuration = typeof(Program).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
+                ?? throw new InvalidOperationException("The test executable must declare its build configuration.");
+            string sourceDll = FindRepositoryFile(Path.Combine("src", "DTMAPI.GameBridge.DolocTown.QA", "bin", configuration, "netstandard2.0", QaHostActivationLoader.AssemblyFileName));
             string stagedDll = Path.Combine(runRoot, QaHostActivationLoader.AssemblyFileName);
             File.Copy(sourceDll, stagedDll, overwrite: true);
             string settingsPath = Path.Combine(runRoot, QaHostActivationLoader.SettingsFileName);
@@ -108,7 +110,7 @@ namespace DTMAPI.UnitTests
                 ?? throw new InvalidOperationException("A valid QA activation receipt should create a prepared host.");
             Assert(string.IsNullOrEmpty(prepared.Factory.GetType().Assembly.Location), "The QA host must be loaded from the exact receipt-validated byte array instead of reopening its path.");
             AssertThrows<InvalidOperationException>(() => QaHostActivationLoader.LoadIfRequested(runtime), "A second activation attempt in the same AppDomain must reject the already-loaded reserved QA identity.");
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
+            var bridge = new DolocTownGameBridge(runtime, prepared);
             Assert(bridge.QaHostAttachedForTests && !bridge.QaHostStartedForTests, "QA participant should attach exactly once before bridge initialization.");
             int fixtureQuitCalls = 0;
             bridge.ApplicationQuitOverrideForTests = () =>
@@ -152,7 +154,7 @@ namespace DTMAPI.UnitTests
                 new ThrowingCloseQaHostFactory(),
                 new QaHostPreparationContext(closeFailureRuntime, closeFailureRunId, closeFailureRuntime.Paths.DtmApiPath, Array.Empty<byte>()),
                 new GameBridgeFixtureStartupOptions(closeFailureRunId));
-            var closeFailureBridge = new DolocTownGameBridge(closeFailureRuntime, null, closeFailurePrepared);
+            var closeFailureBridge = new DolocTownGameBridge(closeFailureRuntime, closeFailurePrepared);
             closeFailureBridge.StartQaHostForTests();
             closeFailureBridge.UpdateQaHostForTests();
             int failedCloseQuitCalls = 0;
@@ -190,7 +192,7 @@ namespace DTMAPI.UnitTests
                 new InitialSaveLoadDispositionQaHostFactory(),
                 new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
                 new GameBridgeFixtureStartupOptions(runId, saveSlot: 3));
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
+            var bridge = new DolocTownGameBridge(runtime, prepared);
             int attempts = 0;
             int continuations = 0;
             bridge.FixtureInitialSaveLoadRequestOverrideForTests = slot =>
@@ -219,7 +221,7 @@ namespace DTMAPI.UnitTests
                 new TerminalTitleDispositionQaHostFactory(),
                 new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
                 new GameBridgeFixtureStartupOptions(runId));
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
+            var bridge = new DolocTownGameBridge(runtime, prepared);
             int quitCalls = 0;
             bridge.ApplicationQuitOverrideForTests = () =>
             {
@@ -244,7 +246,7 @@ namespace DTMAPI.UnitTests
                 new QuitDispositionQaHostFactory(),
                 new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
                 new GameBridgeFixtureStartupOptions(runId));
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
+            var bridge = new DolocTownGameBridge(runtime, prepared);
             int quitCalls = 0;
             bridge.ApplicationQuitOverrideForTests = () =>
             {
@@ -270,7 +272,7 @@ namespace DTMAPI.UnitTests
                 new ThrowingUpdateQaHostFactory(closeAlwaysThrows: false),
                 new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
                 new GameBridgeFixtureStartupOptions(runId));
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
+            var bridge = new DolocTownGameBridge(runtime, prepared);
             int quitCalls = 0;
             bridge.ApplicationQuitOverrideForTests = () => quitCalls++;
 
@@ -284,37 +286,52 @@ namespace DTMAPI.UnitTests
 
         private static void QaPreRuntimeOwnerSurvivesPostRuntimeStartupFailureUntilShutdown()
         {
-            const string runId = "30303030303030303030303030303030";
-            string gameDir = NewTempGameDir();
-            var runtime = new DtmApiRuntime(new FakeHost(gameDir), new ConfigMenuRegistry());
-            var factory = new ThrowingStartPreRuntimeQaHostFactory();
-            var prepared = new PreparedQaHost(
-                factory,
-                new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
-                new GameBridgeFixtureStartupOptions(runId, requirePreRuntimeSaveIsolation: true));
-            var bridge = new DolocTownGameBridge(runtime, null, prepared);
-            int quitCalls = 0;
-            bridge.ApplicationQuitOverrideForTests = () =>
+            string? previousRoot = UseTempPersistentRoot();
+            try
             {
-                Assert(bridge.QaHostFailureObservedForTests && bridge.QaHostClosingForTests &&
-                    bridge.QaHostAttachedForTests && !bridge.QaHostClosedForTests && factory.Participant.CloseCount == 0,
-                    "A post-Runtime startup failure must request exit while retaining the prepared participant and its pre-Runtime owner.");
-                quitCalls++;
-            };
-
-            bridge.PrepareQaHostBeforeRuntimeStart();
-            AssertThrows<InvalidOperationException>(() => bridge.StartQaHostForTests(),
-                "The startup fixture must inject a participant Start failure after the pre-Runtime owner is prepared.");
-            bridge.RetainQaHostAndRequestApplicationQuitAfterRuntimeStartFailure("InvalidOperationException");
-
-            Assert(factory.Participant.PrepareCount == 1 && factory.Participant.CloseCount == 0 && quitCalls == 1 &&
-                bridge.QaHostFailureObservedForTests && bridge.QaHostClosingForTests &&
-                bridge.QaHostAttachedForTests && !bridge.QaHostClosedForTests,
-                "The pre-Runtime participant must remain attached exactly until process shutdown, and the bounded quit request must be idempotent across participant and Bootstrap failure boundaries.");
-
-            bridge.CloseQaHostForTests("unit-process-shutdown");
-            Assert(factory.Participant.CloseCount == 1 && bridge.QaHostClosedForTests && !bridge.QaHostAttachedForTests,
-                "The retained pre-Runtime owner must release exactly once at the explicit process-shutdown boundary.");
+                foreach (string failureAt in new[] { "prepare", "runtime", "participant" })
+                {
+                    const string runId = "30303030303030303030303030303030";
+                    var runtime = new DtmApiRuntime(new FakeHost(NewTempGameDir()), new ConfigMenuRegistry());
+                    var factory = new ThrowingStartPreRuntimeQaHostFactory();
+                    bool sourceCaptured = false, preparedBeforeRuntime = false, startedAfterRuntime = false;
+                    factory.Participant.OnPrepare = () =>
+                    {
+                        sourceCaptured = File.Exists(AuthorSourceStateStore.GetWorkshopSnapshotPath(runtime.Paths.GamePath));
+                        preparedBeforeRuntime = runtime.ModRegistry.GetApi<IDtmDiagnosticsApi>("DTMAPI") == null;
+                        if (failureAt == "prepare") throw new InvalidOperationException("injected prepare failure");
+                    };
+                    factory.Participant.OnStart = () => startedAfterRuntime = runtime.ModRegistry.GetApi<IDtmDiagnosticsApi>("DTMAPI") != null;
+                    var prepared = new PreparedQaHost(factory,
+                        new QaHostPreparationContext(runtime, runId, runtime.Paths.DtmApiPath, Array.Empty<byte>()),
+                        new GameBridgeFixtureStartupOptions(runId, requirePreRuntimeSaveIsolation: true));
+                    var bridge = new DolocTownGameBridge(runtime, prepared);
+                    int quitCalls = 0;
+                    bridge.ApplicationQuitOverrideForTests = () => quitCalls++;
+                    if (failureAt == "runtime")
+                    {
+                        Directory.CreateDirectory(runtime.Paths.DtmApiPath);
+                        File.WriteAllText(runtime.Paths.EvidencePath, "inject Paths.Ensure failure inside Runtime.Start");
+                    }
+                    var bootstrap = new BootstrapPlugin(runtime, bridge);
+                    bootstrap.Start();
+                    bootstrap.Start(); // A failed attempt must not repeat capture/prepare/start.
+                    bool enteredRuntime = failureAt != "prepare";
+                    Assert(sourceCaptured && preparedBeforeRuntime && (failureAt != "participant" || startedAfterRuntime),
+                        "Capture authority, prepare isolation, start Runtime, then initialize participant in order: " + failureAt);
+                    Assert(factory.Participant.PrepareCount == 1 &&
+                        factory.Participant.StartCount == (failureAt == "participant" ? 1 : 0),
+                        "Bootstrap must execute the ordered startup once and stop at the injected failure: " + failureAt);
+                    Assert(quitCalls == (enteredRuntime ? 1 : 0) &&
+                        factory.Participant.CloseCount == (enteredRuntime ? 0 : 1) &&
+                        bridge.QaHostAttachedForTests == enteredRuntime,
+                        "Before Runtime entry abort; after entry retain isolation until shutdown: " + failureAt);
+                    bridge.CloseQaHostForTests("unit-process-shutdown");
+                    Assert(factory.Participant.CloseCount == 1 && !bridge.QaHostAttachedForTests,
+                        "Shutdown releases the participant exactly once.");
+                }
+            }
+            finally { RestorePersistentRoot(previousRoot); }
         }
 
         private sealed class InitialSaveLoadDispositionQaHostFactory : IQaHostFactory
@@ -485,6 +502,9 @@ namespace DTMAPI.UnitTests
         private sealed class ThrowingStartPreRuntimeQaHostParticipant : IQaHostParticipant, IQaHostPreRuntimeParticipant
         {
             internal int PrepareCount { get; private set; }
+            internal int StartCount { get; private set; }
+            internal Action? OnPrepare { get; set; }
+            internal Action? OnStart { get; set; }
 
             internal int CloseCount { get; private set; }
 
@@ -493,10 +513,13 @@ namespace DTMAPI.UnitTests
             public void PrepareBeforeRuntimeStart()
             {
                 PrepareCount++;
+                OnPrepare?.Invoke();
             }
 
             public void Start()
             {
+                StartCount++;
+                OnStart?.Invoke();
                 throw new InvalidOperationException("intentional post-Runtime QA Start failure");
             }
 

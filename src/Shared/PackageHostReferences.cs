@@ -22,9 +22,10 @@ namespace DTMAPI.Internal.Authoring
             }
         }
         public static bool IsStrictHostReference(PackageAssemblyIdentity identity) => Keys.Contains(identity.Key)
-            || (identity.Name == "DTMAPI.Abstractions" && identity.AssemblyVersion == "0.5.3.0" && identity.Culture == "" && identity.PublicKeyToken == "");
+            || (identity.Name == "DTMAPI.Abstractions" && identity.AssemblyVersion == "0.5.3.0" && identity.Culture == "" && identity.PublicKeyToken == "")
+            || (identity.Name == "DTMAPI.AudioContent" && identity.AssemblyVersion == "0.1.0.0" && identity.Culture == "" && identity.PublicKeyToken == "");
         public static bool IsReserved(string name) => Names.Contains(name)
-            || new[] { "DTMAPI.Abstractions", "DTMAPI.Core", "DTMAPI.BepInExBootstrap", "DTMAPI.GameBridge.DolocTown", "DTMAPI.ModConfigMenu" }.Contains(name, StringComparer.OrdinalIgnoreCase)
+            || new[] { "DTMAPI.Abstractions", "DTMAPI.Core", "DTMAPI.BepInExBootstrap", "DTMAPI.GameBridge.DolocTown", "DTMAPI.ModConfigMenu", "DTMAPI.AudioContent", "DTMAPI.AudioContent.Authoring", "DTMAPI.AudioPreparation", "DTMAPI.Modules.Audio" }.Contains(name, StringComparer.OrdinalIgnoreCase)
             || name.Equals("Assembly-CSharp", StringComparison.OrdinalIgnoreCase)
             || name.Equals("Assembly-CSharp-firstpass", StringComparison.OrdinalIgnoreCase)
             || name.Equals("0Harmony", StringComparison.OrdinalIgnoreCase)

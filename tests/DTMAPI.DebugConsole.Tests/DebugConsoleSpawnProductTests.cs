@@ -33,6 +33,16 @@ namespace DTMAPI.UnitTests
                     runtime);
 
                 DolocAPI.CurrentRoom = null;
+                int nativeCount = actions.GetMonsterCatalog().Count;
+                Assert(nativeCount > 0, "Native monsters remain available without the optional provider.");
+                runtime.MonsterApi = new OptionalMonsterProvider();
+                var moduleEntry = actions.GetMonsterCatalog().Single(x => x.Id == "Author.Wilds:guard");
+                Assert(moduleEntry.IsModSource && moduleEntry.SourceId == "Author.Wilds" && moduleEntry.SourceDisplayName == "Wilds" && !moduleEntry.IsAvailable,
+                    "Optional definitions preserve source identity and current-room availability.");
+                runtime.MonsterApi = new OptionalMonsterProvider { Fail = true };
+                Assert(actions.GetMonsterCatalog().Count == nativeCount, "Optional provider failure must not erase the native catalog.");
+                runtime.MonsterApi = null;
+                Assert(actions.GetMonsterCatalog().Count == nativeCount, "Withdrawn optional definitions must not survive in a cached catalog.");
                 AnimalCatalogOption[] animals = actions
                     .GetAnimalCatalog()
                     .ToArray();
@@ -144,9 +154,20 @@ namespace DTMAPI.UnitTests
                 throw new InvalidOperationException(message);
         }
 
-        private sealed class DebugConsoleSpawnRuntime :
-            IDebugConsoleNativeRuntime
+        private sealed class OptionalMonsterProvider
         {
+            public bool Fail;
+            public object GetDefinitions()
+            {
+                if (Fail) throw new InvalidOperationException("provider unavailable");
+                return new { Success = true, Value = new[] { new { Id = "Author.Wilds:guard", DisplayName = "Guard", OwnerId = "Author.Wilds", SourceName = "Wilds", State = "Creatable" } } };
+            }
+        }
+        private sealed class DebugConsoleSpawnRuntime :
+            IDebugConsoleNativeRuntime, IMonsterConsoleRuntime
+        {
+            public object? MonsterApi;
+            public object? GetMonsterContentApi() => MonsterApi;
             public IMonitor Monitor => NullMonitor.Instance;
             public string NativeOwnerLabel => "unit-fixture";
             public IReadOnlyList<IContentItemInfo> GetIndexedItems() =>

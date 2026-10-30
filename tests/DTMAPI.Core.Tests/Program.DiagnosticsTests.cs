@@ -117,7 +117,7 @@ namespace DTMAPI.UnitTests
                 IDtmModStatusInfo dependencyError = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.NeedsMissingDependency");
                 Assert(!dependencyError.Loaded && dependencyError.Status == "error" && dependencyError.StatusCode == "missing-dependency" && dependencyError.Reason.Contains("缺少必需依赖"), "Diagnostics snapshot should expose dependency errors without parsing logs.");
                 IDtmModStatusInfo entryDllError = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.BrokenEntryDll");
-                Assert(!entryDllError.Loaded && entryDllError.Status == "error" && entryDllError.StatusCode == "entry-dll-error" && entryDllError.EntryDll == "BrokenEntryDll.txt" && entryDllError.Reason.Contains(".dll"), "Diagnostics snapshot should expose EntryDll errors and manifest entry fields.");
+                Assert(!entryDllError.Loaded && entryDllError.Status == "error" && entryDllError.StatusCode == "entry-dll-error" && entryDllError.EntryDll == "BrokenEntryDll.txt" && entryDllError.Reason.Contains("缺失"), "Diagnostics snapshot should expose actual missing-entry errors and manifest entry fields.");
                 Assert(diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.DiagnosticsFutureApi").StatusCode == "api-too-new", "Diagnostics snapshot should expose API version status codes.");
                 IDtmModStatusInfo throwingEntryStatus = diagnosticSnapshot.Mods.Single(m => m.UniqueID == "DTMAPI.Tests.ThrowingEntry");
                 Assert(throwingEntryStatus.StatusCode == "restart-required" && throwingEntryStatus.Reason.Contains("Prior diagnostics", StringComparison.Ordinal), "Diagnostics snapshot should expose the terminal restart-required state while retaining the original code-load failure context.");
@@ -696,9 +696,10 @@ namespace DTMAPI.UnitTests
                 DtmManagerViewModel model = DtmManagerViewModelFactory.FromSnapshot(snapshot, null, contentRegistry);
 
                 Assert(model.Mods.Count == 5, "Manager model should map mod status rows.");
-                Assert(model.Mods[0].UniqueID == "Blocked.Mod" && model.Mods[1].UniqueID == "Warning.Mod" && model.Mods[2].UniqueID == "Disabled.Mod" && model.Mods[3].UniqueID == "Example.Mod" && model.Mods[4].UniqueID == "ReasonOnly.Mod", "Manager mods should sort blocked, warning, disabled, then loaded rows using structured status.");
-                Assert(model.Mods[3].StatusCode == "loaded", "Manager mod row should keep structured status code.");
-                Assert(model.Mods[3].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
+                Assert(model.Mods.Select(m => m.UniqueID).SequenceEqual(new[] { "Blocked.Mod", "Warning.Mod", "Example.Mod", "ReasonOnly.Mod", "Disabled.Mod" }),
+                    "Enabled rows precede disabled rows, preserving existing status/source/name order within each group.");
+                Assert(model.Mods[2].StatusCode == "loaded", "Manager mod row should keep structured status code.");
+                Assert(model.Mods[2].RootPath == longRootPath, "Manager mod row should preserve long root paths.");
                 Assert(model.Mods[0].Dependencies.Count == 1 && model.Mods[0].Dependencies[0].UniqueID == "Missing.Provider" && model.Mods[0].HasDependencyIssue, "Manager mod rows should map authoritative dependency status from the content/manifest registry.");
                 Assert(ManagerPageRowFormatter.FormatModListRow(model.Mods[0]).Contains("deps=1 (1 issue)"), "Manager compact mod rows should expose dependency issue counts before truncation.");
                 Assert(ManagerPageRowFormatter.FormatModDetailLines(model.Mods[0]).Any(line => line.Contains("Missing.Provider>=2.0.0") && line.Contains("required-missing")), "Manager selected-mod details should expose dependency identity, minimum version, and resolved status.");

@@ -6,8 +6,9 @@ namespace DTMAPI.StrongPlantingGun
             int callbacks,
             int hooks,
             int cachedMembers,
-            int capacitySnapshots) =>
-            "listeners=0;callbacks=" +
+            int capacitySnapshots,
+            int listeners = 0) =>
+            "listeners=" + listeners + ";callbacks=" +
             callbacks +
             ";hooks=" +
             hooks +
@@ -17,6 +18,6 @@ namespace DTMAPI.StrongPlantingGun
             capacitySnapshots +
             ";roots=" +
             ((callbacks > 0 || hooks > 0 ? 1 : 0) +
-             capacitySnapshots);
+             capacitySnapshots + listeners);
     }
 }

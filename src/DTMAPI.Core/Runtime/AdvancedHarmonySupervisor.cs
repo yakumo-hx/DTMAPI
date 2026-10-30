@@ -9,26 +9,18 @@ using DTMAPI.Core.Manifesting;
 
 namespace DTMAPI.Core.Runtime
 {
-    internal sealed class AdvancedHarmonyViolationException : InvalidOperationException
-    {
-        public AdvancedHarmonyViolationException(string code, string message)
-            : base((code ?? "advanced-harmony-violation") + ": " + (message ?? string.Empty))
-        {
-            Code = code ?? "advanced-harmony-violation";
-        }
-
-        public string Code { get; }
-    }
 
     internal sealed class AdvancedHarmonyPatchRecord
     {
-        public AdvancedHarmonyPatchRecord(string owner, string target, string patchKind, string patchMethod, string patchModuleMvid)
+        public AdvancedHarmonyPatchRecord(string owner, string target, string patchKind, string patchMethod, string patchModuleMvid, MethodBase? targetMethod = null, MethodInfo? patch = null)
         {
             Owner = owner ?? string.Empty;
             Target = target ?? string.Empty;
             PatchKind = patchKind ?? string.Empty;
             PatchMethod = patchMethod ?? string.Empty;
             PatchModuleMvid = patchModuleMvid ?? string.Empty;
+            TargetMethod = targetMethod;
+            Patch = patch;
         }
 
         public string Owner { get; }
@@ -36,8 +28,14 @@ namespace DTMAPI.Core.Runtime
         public string PatchKind { get; }
         public string PatchMethod { get; }
         public string PatchModuleMvid { get; }
-        public string Key => Owner + "\u001f" + Target + "\u001f" + PatchKind + "\u001f" + PatchMethod;
+        internal MethodBase? TargetMethod { get; }
+        internal MethodInfo? Patch { get; }
         public string Format() => "owner=" + Owner + "; kind=" + PatchKind + "; target=" + Target + "; patch=" + PatchMethod;
+
+        internal bool SameContribution(AdvancedHarmonyPatchRecord other) =>
+            Owner == other.Owner && PatchKind == other.PatchKind &&
+            TargetMethod != null && Patch != null &&
+            Equals(TargetMethod, other.TargetMethod) && Equals(Patch, other.Patch);
 
         internal bool Targets(MethodBase target) =>
             target != null && Target.Equals(MethodIdentity(target), StringComparison.Ordinal);
@@ -109,7 +107,7 @@ namespace DTMAPI.Core.Runtime
     internal interface IAdvancedHarmonyInspector
     {
         AdvancedHarmonySnapshot Capture();
-        AdvancedHarmonyUnpatchResult UnpatchOwner(string harmonyOwner);
+        AdvancedHarmonyUnpatchResult UnpatchPatches(IReadOnlyList<AdvancedHarmonyPatchRecord> patches);
     }
 
     internal sealed class ReflectionAdvancedHarmonyInspector : IAdvancedHarmonyInspector
@@ -118,7 +116,8 @@ namespace DTMAPI.Core.Runtime
         {
             try
             {
-                Type harmonyType = FindHarmonyType();
+                Type? harmonyType = FindHarmonyType();
+                if (harmonyType == null) return AdvancedHarmonySnapshot.Captured();
                 MethodInfo getAllPatchedMethods = RequireStaticMethod(harmonyType, "GetAllPatchedMethods", 0);
                 MethodInfo getPatchInfo = RequireStaticMethod(harmonyType, "GetPatchInfo", 1);
                 var records = new List<AdvancedHarmonyPatchRecord>();
@@ -137,6 +136,7 @@ namespace DTMAPI.Core.Runtime
                     AddPatchKind(records, patchInfo, target, "Postfixes", "postfix");
                     AddPatchKind(records, patchInfo, target, "Transpilers", "transpiler");
                     AddPatchKind(records, patchInfo, target, "Finalizers", "finalizer");
+                    AddPatchKind(records, patchInfo, target, "ILManipulators", "ilmanipulator");
                 }
                 return new AdvancedHarmonySnapshot(true, records, string.Empty);
             }
@@ -147,52 +147,67 @@ namespace DTMAPI.Core.Runtime
             }
         }
 
-        public AdvancedHarmonyUnpatchResult UnpatchOwner(string harmonyOwner)
+        public AdvancedHarmonyUnpatchResult UnpatchPatches(IReadOnlyList<AdvancedHarmonyPatchRecord> patches)
         {
-            if (string.IsNullOrWhiteSpace(harmonyOwner))
-                return new AdvancedHarmonyUnpatchResult(false, 0, 0, "Canonical Harmony owner is empty.");
-            AdvancedHarmonySnapshot before = Capture();
-            if (!before.Available)
-                return new AdvancedHarmonyUnpatchResult(false, 0, 0, "Pre-cleanup capture failed: " + before.Failure);
-            int beforeCount = CountOwner(before, harmonyOwner);
+            if (patches.Count == 0) return new AdvancedHarmonyUnpatchResult(true, 0, 0, "No attributed patches.");
+            int remaining = patches.Count;
+            var failures = new List<string>();
             try
             {
-                Type harmonyType = FindHarmonyType();
-                MethodInfo? unpatch = harmonyType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance)
-                    .Where(method => method.Name.Equals("UnpatchAll", StringComparison.Ordinal))
-                    .SingleOrDefault(method =>
-                    {
-                        ParameterInfo[] parameters = method.GetParameters();
-                        return parameters.Length == 1 && parameters[0].ParameterType == typeof(string);
-                    });
+                Type harmonyType = FindHarmonyType() ?? throw new TypeLoadException("Harmony is no longer available for the observed patches.");
+                MethodInfo? unpatch = harmonyType.GetMethod("Unpatch", new[] { typeof(MethodBase), typeof(MethodInfo) });
                 if (unpatch == null)
-                    return new AdvancedHarmonyUnpatchResult(false, 0, beforeCount, "Exact owner-scoped Harmony.UnpatchAll(string) is unavailable; global cleanup was refused.");
-                object? instance = null;
-                if (!unpatch.IsStatic)
+                    return new AdvancedHarmonyUnpatchResult(false, 0, remaining, "Harmony method-specific cleanup unavailable; restart required.");
+                MethodInfo getPatchInfo = RequireStaticMethod(harmonyType, "GetPatchInfo", 1);
+                object instance = Activator.CreateInstance(harmonyType, "DTMAPI.Cleanup")!;
+                foreach (var group in patches.Where(p => p.TargetMethod != null && p.Patch != null).GroupBy(p => new { p.TargetMethod, p.Patch }))
                 {
-                    ConstructorInfo constructor = harmonyType.GetConstructor(new[] { typeof(string) })
-                        ?? throw new MissingMethodException(harmonyType.FullName, ".ctor(string)");
-                    instance = constructor.Invoke(new object[] { harmonyOwner });
+                    // Unpatch(target, method) removes every use of that method on
+                    // the target. Preserve it if any other contribution shares it.
+                    try
+                    {
+                        var current = ReadTarget(getPatchInfo, group.Key.TargetMethod!);
+                        if (current.Any(p => Equals(p.Patch, group.Key.Patch) && !patches.Any(p.SameContribution))) continue;
+                        unpatch.Invoke(unpatch.IsStatic ? null : instance, new object[] { group.Key.TargetMethod!, group.Key.Patch! });
+                    }
+                    catch (Exception ex) { failures.Add(Unwrap(ex).Message); }
                 }
-                unpatch.Invoke(instance, new object[] { harmonyOwner });
+                remaining = patches.Count(p => p.TargetMethod == null || p.Patch == null);
+                foreach (var target in patches.Where(p => p.TargetMethod != null && p.Patch != null).Select(p => p.TargetMethod!).Distinct())
+                {
+                    var expected = patches.Where(p => Equals(p.TargetMethod, target) && p.Patch != null).ToArray();
+                    try
+                    {
+                        var current = ReadTarget(getPatchInfo, target);
+                        remaining += expected.Count(p => current.Any(p.SameContribution));
+                    }
+                    catch (Exception ex)
+                    {
+                        remaining += expected.Length;
+                        failures.Add(Unwrap(ex).Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Exception failure = Unwrap(ex);
-                return new AdvancedHarmonyUnpatchResult(false, 0, beforeCount, failure.GetType().Name + ": " + failure.Message);
+                return new AdvancedHarmonyUnpatchResult(false, 0, remaining, failure.GetType().Name + ": " + failure.Message);
             }
+            return new AdvancedHarmonyUnpatchResult(remaining == 0 && failures.Count == 0, Math.Max(0, patches.Count - remaining), remaining,
+                "Method-specific Harmony cleanup; remaining=" + remaining + ". " + string.Join("; ", failures));
+        }
 
-            AdvancedHarmonySnapshot after = Capture();
-            if (!after.Available)
-                return new AdvancedHarmonyUnpatchResult(false, 0, beforeCount, "Post-cleanup capture failed: " + after.Failure);
-            int remaining = CountOwner(after, harmonyOwner);
-            int removed = Math.Max(0, beforeCount - remaining);
-            return new AdvancedHarmonyUnpatchResult(
-                remaining == 0,
-                removed,
-                remaining,
-                "Harmony owner-scoped cleanup owner=" + harmonyOwner + "; before=" + beforeCount.ToString(CultureInfo.InvariantCulture) +
-                "; removed=" + removed.ToString(CultureInfo.InvariantCulture) + "; remaining=" + remaining.ToString(CultureInfo.InvariantCulture) + ".");
+        private static List<AdvancedHarmonyPatchRecord> ReadTarget(MethodInfo getPatchInfo, MethodBase target)
+        {
+            var records = new List<AdvancedHarmonyPatchRecord>();
+            object? info = getPatchInfo.Invoke(null, new object[] { target });
+            if (info == null) return records;
+            AddPatchKind(records, info, target, "Prefixes", "prefix");
+            AddPatchKind(records, info, target, "Postfixes", "postfix");
+            AddPatchKind(records, info, target, "Transpilers", "transpiler");
+            AddPatchKind(records, info, target, "Finalizers", "finalizer");
+            AddPatchKind(records, info, target, "ILManipulators", "ilmanipulator");
+            return records;
         }
 
         private static void AddPatchKind(List<AdvancedHarmonyPatchRecord> records, object patchInfo, MethodBase target, string propertyName, string kind)
@@ -211,7 +226,7 @@ namespace DTMAPI.Core.Runtime
                     AdvancedHarmonyPatchRecord.MethodIdentity(target),
                     kind,
                     patchMethod == null ? "unknown" : AdvancedHarmonyPatchRecord.MethodIdentity(patchMethod),
-                    patchMethod == null ? string.Empty : ModuleMvid(patchMethod.Module)));
+                    patchMethod == null ? string.Empty : ModuleMvid(patchMethod.Module), target, patchMethod));
             }
         }
 
@@ -237,12 +252,12 @@ namespace DTMAPI.Core.Runtime
             }
         }
 
-        private static Type FindHarmonyType()
+        private static Type? FindHarmonyType()
         {
             Type? type = AppDomain.CurrentDomain.GetAssemblies()
                 .Select(assembly => assembly.GetType("HarmonyLib.Harmony", throwOnError: false, ignoreCase: false))
                 .FirstOrDefault(candidate => candidate != null);
-            return type ?? throw new TypeLoadException("HarmonyLib.Harmony is not loaded; Advanced Harmony supervision is unavailable.");
+            return type;
         }
 
         private static MethodInfo RequireStaticMethod(Type type, string name, int parameterCount)
@@ -263,272 +278,104 @@ namespace DTMAPI.Core.Runtime
 
     internal sealed class AdvancedHarmonySupervisor : IModOwnerCleanupParticipant
     {
-        private readonly Dictionary<string, AdvancedHarmonyOwnerState> states =
-            new Dictionary<string, AdvancedHarmonyOwnerState>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, OwnerState> states = new Dictionary<string, OwnerState>(StringComparer.OrdinalIgnoreCase);
         private IAdvancedHarmonyInspector inspector;
-        private AdvancedHarmonySnapshot? lastAcceptedSnapshot;
-
-        public AdvancedHarmonySupervisor(IAdvancedHarmonyInspector? inspector = null)
-        {
-            this.inspector = inspector ?? new ReflectionAdvancedHarmonyInspector();
-        }
-
+        public AdvancedHarmonySupervisor(IAdvancedHarmonyInspector? inspector = null) { this.inspector = inspector ?? new ReflectionAdvancedHarmonyInspector(); }
         public string ParticipantId => "DTMAPI.Core.AdvancedHarmonySupervisor";
 
         public void ConfigureInspectorForTests(IAdvancedHarmonyInspector value)
         {
-            if (states.Count != 0)
-                throw new InvalidOperationException("Advanced Harmony inspector cannot change after supervision begins.");
+            if (states.Count != 0) throw new InvalidOperationException("Cannot change the inspector while owners are registered.");
             inspector = value ?? throw new ArgumentNullException(nameof(value));
-            lastAcceptedSnapshot = null;
         }
 
         public void BeginLoad(string ownerId, ManagedModClassification classification)
         {
-            if (classification == null || !classification.IsAdvanced)
-                return;
-            if (states.ContainsKey(ownerId))
-                throw Violation("advanced-harmony-owner-mismatch", "Advanced owner supervision already exists for " + ownerId + ".");
-            AdvancedHarmonySnapshot before = RequireSnapshot();
-            string expectedOwner = classification.ExpectedHarmonyOwner;
-            if (classification.DeclarationProvenance == "sdk-native-contract-v1-verified"
-                || classification.DeclarationProvenance == "sdk-native-contract-v2-verified")
-                DTMAPI.Internal.Authoring.NativePackageContract.RequireOwner(ownerId, expectedOwner);
-            else if (!expectedOwner.StartsWith("dtmapi.mod.", StringComparison.Ordinal) || expectedOwner.Length == "dtmapi.mod.".Length)
-                throw Violation("advanced-harmony-owner-mismatch", "Canonical Harmony owner must use the non-empty dtmapi.mod.<uniqueid> namespace.");
-            if (before.Patches.Any(patch => patch.Owner.Equals(expectedOwner, StringComparison.Ordinal)))
-                throw Violation("advanced-harmony-owner-mismatch", "Canonical Harmony owner already has patches before Entry: " + expectedOwner + ".");
-            states.Add(ownerId, new AdvancedHarmonyOwnerState(ownerId, expectedOwner, string.Empty, before));
-            lastAcceptedSnapshot = before;
+            if (classification == null || !classification.IsCodeMod) return;
+            if (states.ContainsKey(ownerId)) throw new InvalidOperationException("Owner already active: " + ownerId);
+            states.Add(ownerId, new OwnerState(ownerId, classification.ExpectedHarmonyOwner));
         }
 
-        public void BindEntryAssembly(string ownerId, Assembly entryAssembly)
+        internal void RegisterRuntimeModule(string owner) => states.Add(owner, new OwnerState(owner, owner) { EntryCompleted = true });
+
+        // Observation can arrive before Entry or through normal CLR/custom loads.
+        // Its absence is an attribution gap, never a cold-start permission check.
+        internal void BindAssembly(string ownerId, Assembly assembly)
         {
-            if (!states.TryGetValue(ownerId, out AdvancedHarmonyOwnerState state))
-                throw Violation("advanced-harmony-owner-mismatch", "Advanced owner load supervision was not established before Assembly.LoadFrom for " + ownerId + ".");
-            if (state.EntryModuleMvid.Length > 0)
-                throw Violation("advanced-harmony-owner-mismatch", "Advanced entry assembly was already bound for " + ownerId + ".");
-            try
-            {
-                state.EntryModuleMvid = entryAssembly.ManifestModule.ModuleVersionId.ToString("D", CultureInfo.InvariantCulture);
-            }
-            catch (Exception ex)
-            {
-                throw Violation("advanced-entry-identity-mismatch", "Advanced entry Module MVID could not be read after load: " + ex.GetType().Name + ": " + ex.Message);
-            }
+            if (states.TryGetValue(ownerId, out var state)) state.Assemblies.Add(assembly);
         }
-
+        public void BindEntryAssembly(string ownerId, Assembly entryAssembly) => BindAssembly(ownerId, entryAssembly);
         public void BeginEntry(string ownerId, ManagedModClassification classification, Assembly entryAssembly)
-        {
-            BeginLoad(ownerId, classification);
-            BindEntryAssembly(ownerId, entryAssembly);
-        }
-
+        { BeginLoad(ownerId, classification); BindEntryAssembly(ownerId, entryAssembly); }
         public void CompleteEntry(string ownerId)
+        { if (states.TryGetValue(ownerId, out var state)) state.EntryCompleted = true; }
+
+        internal object ActivateInternalModule(string ownerId, Assembly implementation, Func<object> activate)
         {
-            if (!states.TryGetValue(ownerId, out AdvancedHarmonyOwnerState state))
-                return;
-            if (state.EntryModuleMvid.Length == 0)
-                throw Violation("advanced-entry-identity-mismatch", "Advanced entry assembly was not bound before Entry completion for " + ownerId + ".");
-            AdvancedHarmonySnapshot after = RequireSnapshot();
-            IReadOnlyList<AdvancedHarmonyPatchRecord> additions = Added(state.EntrySnapshot, after);
-            state.EntryCompleted = true;
-            state.LastObservedSnapshot = after;
-            TrackUnowned(state, additions);
-
-            AdvancedHarmonyPatchRecord[] wrongOwner = additions
-                .Where(patch => !patch.Owner.Equals(state.ExpectedHarmonyOwner, StringComparison.Ordinal))
-                .ToArray();
-            if (wrongOwner.Length > 0)
-                throw Violation("advanced-harmony-owner-mismatch", "Entry added patch(es) outside canonical owner " + state.ExpectedHarmonyOwner + ": " + Format(wrongOwner) + ".");
-
-            string[] duplicates = additions
-                .GroupBy(patch => patch.Key, StringComparer.Ordinal)
-                .Where(group => group.Count() > 1)
-                .Select(group => group.First().Format())
-                .ToArray();
-            if (duplicates.Length > 0)
-                throw Violation("advanced-harmony-duplicate-patch", "Entry added duplicate canonical patches: " + string.Join(" | ", duplicates) + ".");
-
-            foreach (IGrouping<string, AdvancedHarmonyPatchRecord> group in additions.GroupBy(patch => patch.Key, StringComparer.Ordinal))
-                state.AllowedReactivationPatchCounts[group.Key] = group.Count();
-            lastAcceptedSnapshot = after;
+            if (!states.TryGetValue(ownerId, out var state) || !state.EntryCompleted)
+                throw new InvalidOperationException("module-owner-inactive: " + ownerId);
+            state.Assemblies.Add(implementation);
+            // This snapshot bounds a partial module activation rollback. Ordinary
+            // Mod Entry takes no global before/after snapshots.
+            AdvancedHarmonySnapshot before = inspector.Capture();
+            try { return activate(); }
+            catch
+            {
+                AdvancedHarmonySnapshot after = inspector.Capture();
+                if (before.Available && after.Available)
+                {
+                    var additions = after.Patches.Where(p => !before.Patches.Any(p.SameContribution) && IsExclusive(state, p)).ToArray();
+                    inspector.UnpatchPatches(additions);
+                }
+                throw;
+            }
         }
 
+        // Explicit observation only: naming and multiple Harmony IDs are not violations.
         public IReadOnlyList<AdvancedHarmonyAuditIssue> AuditActiveOwners()
         {
-            AdvancedHarmonyOwnerState[] active = states.Values.Where(state => state.EntryCompleted).ToArray();
-            if (active.Length == 0)
-                return Array.Empty<AdvancedHarmonyAuditIssue>();
-            AdvancedHarmonySnapshot current = inspector.Capture();
-            if (!current.Available)
-            {
-                return active.Select(state => new AdvancedHarmonyAuditIssue(
-                    state.OwnerId,
-                    "advanced-harmony-unavailable",
-                    "Harmony patch snapshot failed during late audit: " + current.Failure + "."))
-                    .ToArray();
-            }
-            AdvancedHarmonySnapshot baseline = lastAcceptedSnapshot ?? current;
-            IReadOnlyList<AdvancedHarmonyPatchRecord> additions = Added(baseline, current);
-            lastAcceptedSnapshot = current;
-            if (additions.Count == 0)
-                return Array.Empty<AdvancedHarmonyAuditIssue>();
-            Dictionary<string, int> currentPatchCounts = current.Patches
-                .GroupBy(patch => patch.Key, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
-
-            var byOwner = new Dictionary<string, List<AdvancedHarmonyPatchRecord>>(StringComparer.OrdinalIgnoreCase);
-            foreach (AdvancedHarmonyPatchRecord patch in additions)
-            {
-                AdvancedHarmonyOwnerState? state = active.FirstOrDefault(candidate => patch.Owner.Equals(candidate.ExpectedHarmonyOwner, StringComparison.Ordinal));
-                if (state == null && patch.PatchModuleMvid.Length > 0)
-                {
-                    AdvancedHarmonyOwnerState[] moduleOwners = active
-                        .Where(candidate => candidate.EntryModuleMvid.Equals(patch.PatchModuleMvid, StringComparison.OrdinalIgnoreCase))
-                        .ToArray();
-                    if (moduleOwners.Length == 1)
-                        state = moduleOwners[0];
-                }
-                if (state == null)
-                    // The snapshot is process-global. A patch that matches neither a
-                    // canonical Advanced owner nor an Advanced entry-module MVID stays
-                    // owned by its Platform/Strict/External sibling and is not an
-                    // Advanced violation or cleanup candidate.
-                    continue;
-                if (patch.Owner.Equals(state.ExpectedHarmonyOwner, StringComparison.Ordinal) &&
-                    state.AllowedReactivationPatchCounts.TryGetValue(patch.Key, out int allowedCount) &&
-                    currentPatchCounts.TryGetValue(patch.Key, out int currentCount) &&
-                    currentCount <= allowedCount)
-                {
-                    // ProductNative may remove its exact Entry-observed patch set while
-                    // suspended at title and restore those same identities on save
-                    // re-entry. This is a lifecycle reactivation, not a new late patch.
-                    state.LastObservedSnapshot = current;
-                    continue;
-                }
-                if (!byOwner.TryGetValue(state.OwnerId, out List<AdvancedHarmonyPatchRecord>? ownerPatches))
-                {
-                    ownerPatches = new List<AdvancedHarmonyPatchRecord>();
-                    byOwner.Add(state.OwnerId, ownerPatches);
-                }
-                ownerPatches.Add(patch);
-                TrackUnowned(state, new[] { patch });
-                state.LastObservedSnapshot = current;
-            }
-
-            var issues = byOwner.Select(pair => new AdvancedHarmonyAuditIssue(
-                pair.Key,
-                "advanced-harmony-late-owner-drift",
-                "Advanced owner added Harmony patch(es) after Entry: " + Format(pair.Value) + "."))
-                .ToList();
-            return issues;
+            var current = inspector.Capture();
+            return current.Available ? Array.Empty<AdvancedHarmonyAuditIssue>() : new[] { new AdvancedHarmonyAuditIssue("", "harmony-not-checked", current.Failure) };
         }
 
         public ModOwnerCleanupParticipantResult RemoveOwner(string ownerId, ModOwnerCleanupReason reason)
         {
-            if (!states.TryGetValue(ownerId, out AdvancedHarmonyOwnerState state))
-                return ModOwnerCleanupParticipantResult.None("No Advanced Harmony supervision state for owner.");
-
-            AdvancedHarmonySnapshot current = inspector.Capture();
-            if (current.Available && !state.EntryCompleted)
+            if (!states.TryGetValue(ownerId, out var state)) return ModOwnerCleanupParticipantResult.None("No Harmony ownership observations for this owner.");
+            if (state.Assemblies.Count == 0)
             {
-                IReadOnlyList<AdvancedHarmonyPatchRecord> additions = Added(state.EntrySnapshot, current);
-                TrackUnowned(state, additions);
-            }
-            AdvancedHarmonyUnpatchResult cleanup = inspector.UnpatchOwner(state.ExpectedHarmonyOwner);
-            AdvancedHarmonySnapshot after = inspector.Capture();
-            int unownedRemaining = after.Available
-                ? CountKeys(after, state.UnownedPatchKeys)
-                : state.UnownedPatchKeys.Count;
-            int remaining = Math.Max(cleanup.Remaining, unownedRemaining);
-            int failureCount = cleanup.Success && after.Available && remaining == 0 ? 0 : 1;
-            string details = "code=" + (failureCount == 0 ? "advanced-harmony-cleanup-complete" : "advanced-harmony-cleanup-failed") +
-                "; expectedOwner=" + state.ExpectedHarmonyOwner +
-                "; unownedObserved=" + state.UnownedPatchKeys.Count.ToString(CultureInfo.InvariantCulture) +
-                "; unownedRemaining=" + unownedRemaining.ToString(CultureInfo.InvariantCulture) +
-                "; capture=" + (after.Available ? "ok" : after.Failure) +
-                "; restart=" + (failureCount == 0 ? "assembly-lifetime-policy" : "required-incomplete-harmony-cleanup") +
-                "; " + cleanup.Details;
-            if (failureCount == 0)
                 states.Remove(ownerId);
-            if (after.Available)
-                lastAcceptedSnapshot = after;
-            return new ModOwnerCleanupParticipantResult(cleanup.Removed, remaining, failureCount, details);
-        }
-
-        private AdvancedHarmonySnapshot RequireSnapshot()
-        {
-            AdvancedHarmonySnapshot snapshot = inspector.Capture();
-            if (!snapshot.Available)
-                throw Violation("advanced-harmony-unavailable", "Harmony patch snapshot failed: " + snapshot.Failure);
-            return snapshot;
-        }
-
-        private static IReadOnlyList<AdvancedHarmonyPatchRecord> Added(AdvancedHarmonySnapshot before, AdvancedHarmonySnapshot after)
-        {
-            var remaining = before.Patches
-                .GroupBy(patch => patch.Key, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
-            var additions = new List<AdvancedHarmonyPatchRecord>();
-            foreach (AdvancedHarmonyPatchRecord patch in after.Patches)
-            {
-                if (remaining.TryGetValue(patch.Key, out int count) && count > 0)
-                {
-                    remaining[patch.Key] = count - 1;
-                    continue;
-                }
-                additions.Add(patch);
+                return ModOwnerCleanupParticipantResult.None("No managed assembly was bound for this owner.");
             }
-            return additions;
+            AdvancedHarmonySnapshot current = inspector.Capture();
+            if (!current.Available)
+                return new ModOwnerCleanupParticipantResult(0, 0, 1, "Harmony cleanup not checked; restart required: " + current.Failure);
+            var attributed = current.Patches.Where(p => IsExclusive(state, p)).ToArray();
+            int unknown = current.Patches.Count(p => Owns(state, p) && !IsExclusive(state, p) ||
+                p.Patch == null && p.Owner.Equals(state.OwnerHint, StringComparison.Ordinal));
+            AdvancedHarmonyUnpatchResult cleanup = inspector.UnpatchPatches(attributed);
+            int remaining = cleanup.Remaining + unknown;
+            int failures = cleanup.Success && remaining == 0 ? 0 : 1;
+            if (failures == 0) states.Remove(ownerId);
+            return new ModOwnerCleanupParticipantResult(cleanup.Removed, remaining, failures,
+                "code=" + (failures == 0 ? "advanced-harmony-cleanup-complete" : "advanced-harmony-cleanup-failed") +
+                "; unknown=" + unknown + "; restart=" + (failures == 0 ? "assembly-lifetime-policy" : "required-incomplete-harmony-cleanup") + "; " + cleanup.Details);
         }
 
-        private static void TrackUnowned(AdvancedHarmonyOwnerState state, IEnumerable<AdvancedHarmonyPatchRecord> additions)
+        private bool IsExclusive(OwnerState state, AdvancedHarmonyPatchRecord patch) =>
+            Owns(state, patch) && !states.Values.Any(other => !ReferenceEquals(other, state) && Owns(other, patch));
+        private static bool Owns(OwnerState state, AdvancedHarmonyPatchRecord patch)
         {
-            foreach (AdvancedHarmonyPatchRecord patch in additions)
-            {
-                if (!patch.Owner.Equals(state.ExpectedHarmonyOwner, StringComparison.Ordinal))
-                    state.UnownedPatchKeys.Add(patch.Key);
-            }
+            return patch.Patch != null && state.Assemblies.Contains(patch.Patch.Module.Assembly);
         }
-
-        private static int CountKeys(AdvancedHarmonySnapshot snapshot, IReadOnlyCollection<string> keys)
+        private sealed class OwnerState
         {
-            if (keys.Count == 0)
-                return 0;
-            var lookup = new HashSet<string>(keys, StringComparer.Ordinal);
-            return snapshot.Patches.Count(patch => lookup.Contains(patch.Key));
-        }
-
-        private static string Format(IEnumerable<AdvancedHarmonyPatchRecord> patches) =>
-            string.Join(" | ", patches.Take(16).Select(patch => patch.Format()));
-
-        private static AdvancedHarmonyViolationException Violation(string code, string message) =>
-            new AdvancedHarmonyViolationException(code, message);
-
-        private sealed class AdvancedHarmonyOwnerState
-        {
-            public AdvancedHarmonyOwnerState(string ownerId, string expectedHarmonyOwner, string entryModuleMvid, AdvancedHarmonySnapshot entrySnapshot)
-            {
-                OwnerId = ownerId;
-                ExpectedHarmonyOwner = expectedHarmonyOwner;
-                EntryModuleMvid = entryModuleMvid;
-                EntrySnapshot = entrySnapshot;
-                LastObservedSnapshot = entrySnapshot;
-            }
-
-            public string OwnerId { get; }
-            public string ExpectedHarmonyOwner { get; }
-            public string EntryModuleMvid { get; set; }
-            public AdvancedHarmonySnapshot EntrySnapshot { get; }
-            public AdvancedHarmonySnapshot LastObservedSnapshot { get; set; }
-            public bool EntryCompleted { get; set; }
-            public Dictionary<string, int> AllowedReactivationPatchCounts { get; } =
-                new Dictionary<string, int>(StringComparer.Ordinal);
-            public HashSet<string> UnownedPatchKeys { get; } = new HashSet<string>(StringComparer.Ordinal);
+            internal OwnerState(string id, string hint) { Id = id; OwnerHint = hint; }
+            internal string Id { get; }
+            internal string OwnerHint { get; }
+            internal bool EntryCompleted { get; set; }
+            internal HashSet<Assembly> Assemblies { get; } = new HashSet<Assembly>();
         }
     }
-
     internal sealed class AdvancedHarmonyAuditIssue
     {
         public AdvancedHarmonyAuditIssue(string ownerId, string code, string details)

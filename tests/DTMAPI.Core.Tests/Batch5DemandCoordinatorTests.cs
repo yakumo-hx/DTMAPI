@@ -18,6 +18,35 @@ namespace DTMAPI.UnitTests
             ConcurrentFirstLastTransitionsDrainInMutationOrder();
             AuthoritativeDemandIsNeverDroppedAndDiagnosticDetailsStayBounded();
             LongOwnerDiagnosticsAreStableAndSummariesStayBoundedAcrossRoutes();
+            RejectedAggregateGrowthPreservesRootsAndCleanupReceipts();
+        }
+
+        private static void RejectedAggregateGrowthPreservesRootsAndCleanupReceipts()
+        {
+            var coordinator = new RuntimeDemandCoordinator();
+            int transitions = 0;
+            coordinator.DemandTransitioned += _ => transitions++;
+            coordinator.SetDemand("Camera", "Owner.A", RuntimeDemandSourceType.CapabilityLease, RuntimeDemandLifetime.Owner, "lease", int.MaxValue, "full");
+            bool rejected = false;
+            try
+            {
+                coordinator.SetDemand("Camera", "Owner.B", RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "restore", 1, "overflow");
+            }
+            catch (OverflowException) { rejected = true; }
+            Assert(rejected && coordinator.DemandEntryCount == 1 && coordinator.GetDemandCount("Camera") == int.MaxValue,
+                "Aggregate overflow must reject the whole acquisition without leaving an uncounted root.");
+            Assert(coordinator.GetOwnerDemandCount("Owner.B") == 0 && transitions == 1,
+                "A rejected acquisition must not publish an owner count or a transition.");
+            Assert(coordinator.RemoveOwner("Owner.A", "cleanup") == int.MaxValue && coordinator.DemandEntryCount == 0 && transitions == 2,
+                "Cleanup after a rejected acquisition must still release the original root exactly once.");
+
+            coordinator.SetDemand("Camera", "Owner.A", RuntimeDemandSourceType.CapabilityLease, RuntimeDemandLifetime.Owner, "lease", 2, "lease");
+            coordinator.SetDemand("Camera", "Owner.A", RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "restore", 3, "restore");
+            Assert(coordinator.RemoveCapabilityDemands("Camera", "shutdown") == 5 && coordinator.RemoveCapabilityDemands("Camera", "repeat") == 0,
+                "Capability cleanup must be idempotent across multiple owner roots.");
+            RuntimeDemandReceipt[] receipts = coordinator.GetSnapshot().Receipts.Where(item => item.Action == "CapabilityCleared").ToArray();
+            Assert(receipts.Length == 2 && receipts[0].PreviousCapabilityCount == 5 && receipts[0].CurrentCapabilityCount == receipts[1].PreviousCapabilityCount && receipts[1].CurrentCapabilityCount == 0,
+                "Cleanup receipts must describe successive changes to the authoritative aggregate.");
         }
 
         private static void PassiveCatalogRegistrationDoesNotActivateCapability()

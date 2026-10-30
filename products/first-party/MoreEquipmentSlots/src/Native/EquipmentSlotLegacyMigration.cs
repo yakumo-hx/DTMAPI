@@ -20,6 +20,21 @@ namespace DTMAPI.MoreEquipmentSlots
             out string sourceSha256,
             out string failure)
         {
+            document = null; sourceSha256 = string.Empty; failure = string.Empty;
+            var probe = EquipmentSlotStorageFormatClassifier.Probe(sourcePath);
+            if (probe.Format != EquipmentSlotStorageFormat.LegacyFlat && probe.Format != EquipmentSlotStorageFormat.PreSchemaGlobal)
+            {
+                failure = "legacy-format-required:" + probe.Format + ":" + probe.Failure;
+                return false;
+            }
+            try { return TryConvert(File.ReadAllBytes(sourcePath), expectedScope, globalSource, out document, out sourceSha256, out failure); }
+            catch (Exception ex) { failure = ex.GetType().Name + ": " + ex.Message; return false; }
+        }
+
+        // Read-only conversion of bytes already frozen by Core; never reopens a path.
+        internal static bool TryConvert(byte[] bytes, EquipmentSlotSaveScope expectedScope, bool globalSource,
+            out EquipmentSlotStorageDocument? document, out string sourceSha256, out string failure)
+        {
             document = null;
             sourceSha256 = string.Empty;
             failure = string.Empty;
@@ -29,7 +44,7 @@ namespace DTMAPI.MoreEquipmentSlots
 
             EquipmentSlotStorageFormatProbe probe =
                 EquipmentSlotStorageFormatClassifier.Probe(
-                    sourcePath);
+                    bytes);
             bool preSchema =
                 probe.Format ==
                     EquipmentSlotStorageFormat.PreSchemaGlobal;
@@ -54,7 +69,6 @@ namespace DTMAPI.MoreEquipmentSlots
             LegacyDocument? legacy;
             try
             {
-                byte[] bytes = File.ReadAllBytes(sourcePath);
                 sourceSha256 = ComputeSha256(bytes);
                 using (var stream = new MemoryStream(bytes, writable: false))
                 {

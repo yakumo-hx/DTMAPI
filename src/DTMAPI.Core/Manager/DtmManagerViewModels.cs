@@ -28,7 +28,8 @@ namespace DTMAPI.Core.Manager
                 ?? new Dictionary<string, ContentManifestRegistryRow>(StringComparer.OrdinalIgnoreCase);
             ManagerModRow[] mods = snapshot.Mods
                 .Select(mod => ManagerModRow.FromMod(mod, registryRows.TryGetValue(mod.UniqueID, out ContentManifestRegistryRow registryRow) ? registryRow : null))
-                .OrderBy(m => m.SortRank)
+                .OrderBy(m => m.IsDisabled ? 1 : 0)
+                .ThenBy(m => m.SortRank)
                 .ThenBy(m => m.Source, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase)
@@ -476,6 +477,7 @@ namespace DTMAPI.Core.Manager
             string refreshReason,
             int registryRowCount,
             int manifestIssueCount,
+            int scanFailureCount,
             int dependencyErrorCount,
             int dependencyWarningCount,
             int apiTooNewCount,
@@ -493,6 +495,7 @@ namespace DTMAPI.Core.Manager
             RefreshReason = refreshReason ?? string.Empty;
             RegistryRowCount = registryRowCount;
             ManifestIssueCount = manifestIssueCount;
+            ScanFailureCount = scanFailureCount;
             DependencyErrorCount = dependencyErrorCount;
             DependencyWarningCount = dependencyWarningCount;
             ApiTooNewCount = apiTooNewCount;
@@ -527,6 +530,7 @@ namespace DTMAPI.Core.Manager
                 registry?.Reason ?? string.Empty,
                 registry?.Rows.Count ?? 0,
                 registry?.ManifestDiagnosticCount ?? 0,
+                registry?.BadManifestCount ?? 0,
                 registry?.DependencyErrorCount ?? 0,
                 registry?.DependencyWarningCount ?? 0,
                 registry?.ApiTooNewCount ?? 0,
@@ -545,6 +549,7 @@ namespace DTMAPI.Core.Manager
         internal string RefreshReason { get; }
         internal int RegistryRowCount { get; }
         internal int ManifestIssueCount { get; }
+        internal int ScanFailureCount { get; }
         internal int DependencyErrorCount { get; }
         internal int DependencyWarningCount { get; }
         internal int ApiTooNewCount { get; }

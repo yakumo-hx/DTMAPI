@@ -4,9 +4,15 @@
   </PropertyGroup>
   <Import Project="../DTMAPI.UnitTests/Suite.props" />
   <ItemGroup>
+    <Compile Remove="NativeProbe/**/*.cs" />
+    <Compile Remove="StorageProbe/**/*.cs" />
+    <Compile Remove="NormalBackend/**/*.cs" />
     <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
-    <Compile Include="../../src/DTMAPI.GameBridge.DolocTown/Compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" Link="Compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" Link="Compatibility/EquipmentSlots/EquipmentSlotJournalRecoveryPolicy.cs" />
     <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotContracts.cs" Link="MoreEquipmentSlots/EquipmentSlotContracts.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotItemState.cs" Link="MoreEquipmentSlots/EquipmentSlotItemState.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotNativeItem.cs" Link="MoreEquipmentSlots/EquipmentSlotNativeItem.cs" />
+    <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotEffects.cs" Link="MoreEquipmentSlots/EquipmentSlotEffects.cs" />
     <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotTransactionJournal.cs" Link="MoreEquipmentSlots/EquipmentSlotTransactionJournal.cs" />
     <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotStorageFormatProbe.cs" Link="MoreEquipmentSlots/EquipmentSlotStorageFormatProbe.cs" />
     <Compile Include="../../products/first-party/MoreEquipmentSlots/src/Native/EquipmentSlotLegacyMigration.cs" Link="MoreEquipmentSlots/EquipmentSlotLegacyMigration.cs" />

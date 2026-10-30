@@ -22,13 +22,9 @@ namespace DTMAPI.GameBridge.DolocTown
         internal long OptionalDirectoryEnumerations { get; set; }
         internal long OptionalReflectionObjectSearches { get; set; }
         internal long OptionalRetainedCallbackWork { get; set; }
-        internal long CustomAnimalsRetainedCallbackWork { get; set; }
-        internal long AudioRetainedCallbackWork { get; set; }
         internal long OptionalHookInstallRequests { get; set; }
         internal long CameraEnvironmentResets { get; set; }
-        internal int CustomAnimalDefinitionCandidateBuilds { get; set; }
         internal int ContentQueryCandidateBuilds { get; set; }
-        internal long AudioPendingEntryVisits { get; set; }
         internal bool QaExplicitDemandActive { get; set; }
         internal bool QaUpdaterActive { get; set; }
         internal string[] ActiveOptionalDemandIds { get; set; } = Array.Empty<string>();

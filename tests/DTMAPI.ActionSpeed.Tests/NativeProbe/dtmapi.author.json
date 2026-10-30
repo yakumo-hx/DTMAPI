@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 4,
+  "projectKind": "CodeMod",
+  "codeModKind": "Advanced",
+  "targetDtmApiVersion": "0.7.0",
+  "projectFile": "ActionSpeedShortProbe.csproj",
+  "publish": {
+    "tags": [
+      "Mod",
+      "DTMAPI"
+    ],
+    "localizedName": {},
+    "localizedDescription": {}
+  },
+  "nativeReferences": {
+    "gameRoot": "C:/Games/Doloc Town",
+    "references": [
+      "DolocTown_Data/Managed/Assembly-CSharp.dll",
+      "DolocTown_Data/Managed/Assembly-CSharp-firstpass.dll",
+      "DolocTown_Data/Managed/UnityEngine.CoreModule.dll",
+      "BepInEx/core/0Harmony.dll",
+      "DolocTown_Data/Managed/UnityEngine.Physics2DModule.dll",
+      "DolocTown_Data/Managed/UnityEngine.AnimationModule.dll"
+    ],
+    "harmonyOwner": "DTMAPI.Internal.ActionSpeedShortProbe.Native",
+    "requiredMembers": [
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.Timer",
+        "kind": "field",
+        "name": "currentTime",
+        "isStatic": false,
+        "returnType": "[bcl]System.Single",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.Timer",
+        "kind": "field",
+        "name": "currentInterval",
+        "isStatic": false,
+        "returnType": "[bcl]System.Single",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.Timer",
+        "kind": "field",
+        "name": "currentRepeatCount",
+        "isStatic": false,
+        "returnType": "[bcl]System.Int32",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.AgentControllerState",
+        "kind": "field",
+        "name": "useItemTimer",
+        "isStatic": false,
+        "returnType": "[Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]DolocTown.Timer",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.AgentControllerState",
+        "kind": "method",
+        "name": "UseItemContinues",
+        "isStatic": false,
+        "returnType": "[bcl]System.Void",
+        "parameterTypes": [
+          "[bcl]System.Single"
+        ]
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocAPI",
+        "kind": "method",
+        "name": "SaveGame",
+        "isStatic": true,
+        "returnType": "[bcl]System.Boolean",
+        "parameterTypes": [
+          "[bcl]System.Int32"
+        ]
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.ItemSeed",
+        "kind": "method",
+        "name": "CheckCurrentSeasonValid",
+        "isStatic": false,
+        "returnType": "[bcl]System.Boolean",
+        "parameterTypes": [
+          "[bcl]System.Boolean"
+        ]
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.PowerGeneratorFuel",
+        "kind": "method",
+        "name": "OnInteract",
+        "isStatic": false,
+        "returnType": "[bcl]System.Void",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.Feeder",
+        "kind": "method",
+        "name": "OnInteract",
+        "isStatic": false,
+        "returnType": "[bcl]System.Void",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.AffectorElectric",
+        "kind": "method",
+        "name": "OnInteract",
+        "isStatic": false,
+        "returnType": "[bcl]System.Void",
+        "parameterTypes": []
+      },
+      {
+        "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "declaringType": "DolocTown.PlantBasin",
+        "kind": "method",
+        "name": "OnInteract",
+        "isStatic": false,
+        "returnType": "[bcl]System.Void",
+        "parameterTypes": []
+      },
+      {
+        "definition": {
+          "declaringType": {
+            "kind": "named",
+            "name": "DolocTown.EquipmentManager",
+            "assemblyIdentity": "Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+            "arity": 0
+          },
+          "kind": "field",
+          "name": "typeLut",
+          "isStatic": true,
+          "callingConvention": "default",
+          "typeParameters": [],
+          "methodParameters": [],
+          "returnType": {
+            "kind": "constructed",
+            "definition": {
+              "kind": "named",
+              "name": "System.Collections.Generic.Dictionary`2",
+              "assemblyIdentity": "bcl",
+              "arity": 2
+            },
+            "arguments": [
+              {
+                "kind": "named",
+                "name": "System.String",
+                "assemblyIdentity": "bcl",
+                "arity": 0
+              },
+              {
+                "kind": "named",
+                "name": "System.Type",
+                "assemblyIdentity": "bcl",
+                "arity": 0
+              }
+            ]
+          },
+          "parameterTypes": []
+        },
+        "typeArguments": [],
+        "methodArguments": [],
+        "contextTypeArity": 0,
+        "contextMethodArity": 0
+      }
+    ]
+  }
+}

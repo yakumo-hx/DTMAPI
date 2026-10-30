@@ -12,30 +12,7 @@ namespace DTMAPI.GameBridge.DolocTown
     internal enum GameBridgeRetainedCallbackDemand
     {
         None = 0,
-        FishingCompatibility = 1 << 0,
-        FishRoeTooltip = 1 << 1,
-        ChestLocatorEnhancer = 1 << 2,
-        SaveSlots = 1 << 3,
-        AnimalViewer = 1 << 5,
-        CustomAnimalAnimatorBridge = 1 << 6,
-        AudioReplacement = 1 << 7,
-        ActionSpeed = 1 << 8,
-        ActionCompletion = 1 << 9,
-        AgentStateToolExitShared = 1 << 10,
-        AgentStateInteractExitShared = 1 << 11,
-        AgentStateBaseExitShared = 1 << 12,
-        ToolColliderShared = 1 << 13,
-        ActionSpeedToolStages = 1 << 14,
-        ActionSpeedInteractionStages = 1 << 15,
-        AudioReplacementAnimalVoiceContext = 1 << 16,
         WorkshopAuthoring = 1 << 20,
-        ActionCompletionToolColliderOwned = 1 << 22,
-        ActionCompletionInteractExitOwned = 1 << 23,
-        ActionSpeedToolStagesOwned = 1 << 24,
-        ActionSpeedToolExitOwned = 1 << 25,
-        ActionSpeedInteractionStagesOwned = 1 << 26,
-        ActionSpeedInteractExitOwned = 1 << 27,
-        ActionSpeedBaseExitOwned = 1 << 28,
         ItemDisplayNameEnvironmentReset = 1 << 29
     }
 
@@ -73,49 +50,12 @@ namespace DTMAPI.GameBridge.DolocTown
             ConfigureDemandRoute(GameBridgeDemandRoutes.CoreUiContext, TimeSpan.Zero, RefreshUiContext, requestsHookInstall: false, null);
             ConfigureDemandRoute(GameBridgeDemandRoutes.ContentRefreshDrain, TimeSpan.Zero, UpdateContentRefreshGenerationDrain, requestsHookInstall: false, null);
             ConfigureDemandRoute(GameBridgeDemandRoutes.NativeUiLayoutDiagnostics, TimeSpan.FromMilliseconds(250), () => nativeUiLayoutDiagnosticsFeature?.Update(), requestsHookInstall: true, IsNativeUiLayoutHookRouteInstalled, IsAnyNativeUiLayoutHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.Camera, TimeSpan.Zero, () => cameraFeature?.Update(), requestsHookInstall: true, () => cameraFeature?.HookBridge.SetEnvCameraPatched == true);
             ConfigureDemandRoute(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => environmentResetHookBridge?.SetEnvCameraPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AnimalViewer, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => animalViewerFeature?.HookBridge.HooksReady == true, IsAnyAnimalViewerHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AnimalViewerSession, TimeSpan.FromMilliseconds(80), () => animalViewerFeature?.Update(), requestsHookInstall: false, null);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.FishRoeTooltip, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => fishRoeTooltipFeature?.HookBridge.AllPatched == true, IsAnyFishRoeHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ChestLocatorEnhancer, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => chestLocatorEnhancerFeature?.HookBridge.AvailableInventoriesPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ActionCompletion, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, IsActionCompletionDependencyClosureInstalled, IsAnyActionCompletionDependencyInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AgentStateToolExitShared, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => agentStateLifecycleHooks?.ToolExitPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AgentStateInteractExitShared, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => agentStateLifecycleHooks?.InteractExitPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AgentStateBaseExitShared, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => agentStateLifecycleHooks?.BaseExitPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ToolColliderShared, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => toolColliderHitHooks?.PostfixPatched == true);
 
-            ConfigureDemandRoute(GameBridgeDemandRoutes.FishingCompatibility, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, IsFishingCompatibilityHookRouteInstalled, IsAnyFishingCompatibilityHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.FishingCompatibilityUpdater, TimeSpan.Zero, () => fishingCompatibilityFeature?.Update(), requestsHookInstall: false, null);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.SaveSlots, TimeSpan.FromSeconds(3), () => saveSlotsFeature?.Update(), requestsHookInstall: false, null);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.SaveSlotsPendingRestore, TimeSpan.FromMilliseconds(750), () => saveSlotsFeature?.Update(), requestsHookInstall: false, null);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ActionSpeed, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, IsActionSpeedHookRouteInstalled, IsAnyActionSpeedHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ActionSpeedAutoFill, TimeSpan.Zero, () => actionSpeedFeature?.Update(), requestsHookInstall: false, null);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ActionSpeedToolStages, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => actionSpeedFeature?.HookBridge.ToolEnterPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.ActionSpeedInteractionStages, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => actionSpeedFeature?.HookBridge.InteractionStageHooksReady == true, IsAnyActionSpeedInteractionStageHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.CustomAnimalAnimatorBridge, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => customAnimalAnimatorBridgeFeature?.HookBridge.HooksReady == true, IsAnyCustomAnimalHookInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AudioReplacement, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, () => audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true, () => audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AudioReplacementAnimalVoiceContext, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, IsAudioReplacementAnimalVoiceContextInstalled, IsAnyAudioReplacementAnimalVoiceContextInstalled);
-            ConfigureDemandRoute(GameBridgeDemandRoutes.AudioReplacementPending, TimeSpan.Zero, UpdateAudioReplacementPendingWork, requestsHookInstall: false, null);
             ConfigureDemandRoute(GameBridgeDemandRoutes.WorkshopAuthoring, Timeout.InfiniteTimeSpan, null, requestsHookInstall: true, IsWorkshopAuthoringHookRouteInstalled, IsAnyWorkshopAuthoringHookInstalled);
             ConfigureDemandRoute(GameBridgeDemandRoutes.WorkshopPendingUploadPlan, TimeSpan.Zero, ProcessPendingDtmapiUploadPlanFallbacks, requestsHookInstall: false, null);
             ConfigureDemandRoute(GameBridgeDemandRoutes.QaHost, TimeSpan.Zero, () => qaHostFrameUpdate?.Invoke(), requestsHookInstall: false, null);
 
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.FishingCompatibility, GameBridgeRetainedCallbackDemand.FishingCompatibility);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.FishRoeTooltip, GameBridgeRetainedCallbackDemand.FishRoeTooltip);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ChestLocatorEnhancer, GameBridgeRetainedCallbackDemand.ChestLocatorEnhancer);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AnimalViewer, GameBridgeRetainedCallbackDemand.AnimalViewer);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.CustomAnimalAnimatorBridge, GameBridgeRetainedCallbackDemand.CustomAnimalAnimatorBridge);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AudioReplacement, GameBridgeRetainedCallbackDemand.AudioReplacement);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeRetainedCallbackDemand.ActionSpeed);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ActionCompletion, GameBridgeRetainedCallbackDemand.ActionCompletion);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AgentStateToolExitShared, GameBridgeRetainedCallbackDemand.AgentStateToolExitShared);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AgentStateInteractExitShared, GameBridgeRetainedCallbackDemand.AgentStateInteractExitShared);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AgentStateBaseExitShared, GameBridgeRetainedCallbackDemand.AgentStateBaseExitShared);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ToolColliderShared, GameBridgeRetainedCallbackDemand.ToolColliderShared);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ActionSpeedToolStages, GameBridgeRetainedCallbackDemand.ActionSpeedToolStages);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.ActionSpeedInteractionStages, GameBridgeRetainedCallbackDemand.ActionSpeedInteractionStages);
-            MapRetainedCallbackDemand(GameBridgeDemandRoutes.AudioReplacementAnimalVoiceContext, GameBridgeRetainedCallbackDemand.AudioReplacementAnimalVoiceContext);
             MapRetainedCallbackDemand(GameBridgeDemandRoutes.WorkshopAuthoring, GameBridgeRetainedCallbackDemand.WorkshopAuthoring);
             MapRetainedCallbackDemand(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset, GameBridgeRetainedCallbackDemand.ItemDisplayNameEnvironmentReset);
 
@@ -198,8 +138,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 route.RetainedCallbackDemand,
                 runtime.DemandCoordinator.HasDemand(capabilityId));
 
-            if (IsProductOwnedClosureRoute(capabilityId))
-                ReconcileProductOwnedClosureBits(ref nextMask);
 
             Volatile.Write(ref retainedCallbackDemandMask, nextMask);
         }
@@ -212,41 +150,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (runtime.DemandCoordinator.HasDemand(route.CapabilityId))
                     nextMask |= (int)route.RetainedCallbackDemand;
             }
-            ReconcileProductOwnedClosureBits(ref nextMask);
             Volatile.Write(ref retainedCallbackDemandMask, nextMask);
-        }
-
-        private void ReconcileProductOwnedClosureBits(ref int mask)
-        {
-            RuntimeDemandCoordinator coordinator = runtime.DemandCoordinator;
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionCompletionToolColliderOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionCompletion, GameBridgeDemandRoutes.ToolColliderShared, "action-completion-tool"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionCompletionInteractExitOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionCompletion, GameBridgeDemandRoutes.AgentStateInteractExitShared, "action-completion-interact-exit"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionSpeedToolStagesOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeDemandRoutes.ActionSpeedToolStages, "tool-stages"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionSpeedToolExitOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeDemandRoutes.AgentStateToolExitShared, "action-speed-tool-exit"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionSpeedInteractionStagesOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeDemandRoutes.ActionSpeedInteractionStages, "interaction-stages"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionSpeedInteractExitOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeDemandRoutes.AgentStateInteractExitShared, "action-speed-interact-exit"));
-            SetRetainedCallbackDemandBit(
-                ref mask,
-                GameBridgeRetainedCallbackDemand.ActionSpeedBaseExitOwned,
-                coordinator.HasCoOwnedDemand(GameBridgeDemandRoutes.ActionSpeed, GameBridgeDemandRoutes.AgentStateBaseExitShared, "action-speed-base-exit"));
         }
 
         private static void SetRetainedCallbackDemandBit(
@@ -259,18 +163,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 mask |= bit;
             else
                 mask &= ~bit;
-        }
-
-        private static bool IsProductOwnedClosureRoute(string capabilityId)
-        {
-            return capabilityId.Equals(GameBridgeDemandRoutes.ActionCompletion, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.ActionSpeed, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.ToolColliderShared, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.AgentStateToolExitShared, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.AgentStateInteractExitShared, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.AgentStateBaseExitShared, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.ActionSpeedToolStages, StringComparison.OrdinalIgnoreCase) ||
-                capabilityId.Equals(GameBridgeDemandRoutes.ActionSpeedInteractionStages, StringComparison.OrdinalIgnoreCase);
         }
 
         private void CommitPendingDemandRoutesAtFrameBoundary()
@@ -455,59 +347,42 @@ namespace DTMAPI.GameBridge.DolocTown
             if (!demandRoutingInitialized)
                 return;
             runtime.DemandCoordinator.DemandTransitioned -= OnRuntimeDemandTransitioned;
+            runtime.DemandCoordinator.DemandStateChangedSynchronously -= OnRuntimeDemandStateChangedSynchronously;
+            var failures = new List<Exception>();
             foreach (string capabilityId in demandRoutes.Keys)
-                runtime.DemandCoordinator.RemoveCapabilityDemands(capabilityId, "GameBridge shutdown " + (reason ?? string.Empty));
+            {
+                try { runtime.DemandCoordinator.RemoveCapabilityDemands(capabilityId, "GameBridge shutdown " + (reason ?? string.Empty)); }
+                catch (Exception ex) { failures.Add(ex); }
+            }
             foreach (GameBridgeDemandRoute route in demandRoutes.Values)
             {
-                bool installed = route.IsAnyPatchInstalled?.Invoke() == true;
+                bool installed = false;
+                bool probeFailed = false;
+                try { installed = route.IsAnyPatchInstalled?.Invoke() == true; }
+                catch (Exception ex) { probeFailed = true; failures.Add(ex); }
                 runtime.DemandCoordinator.SetRouteState(
                     route.CapabilityId,
-                    installed ? RuntimeCapabilityLifecycleState.ProcessPinnedDormant : RuntimeCapabilityLifecycleState.Stopped,
-                    installed ? RuntimeCapabilityPatchState.ProcessPinned : RuntimeCapabilityPatchState.Removed,
-                    RuntimeCapabilityRestartPolicy.None,
+                    probeFailed ? RuntimeCapabilityLifecycleState.RestartRequired : installed ? RuntimeCapabilityLifecycleState.ProcessPinnedDormant : RuntimeCapabilityLifecycleState.Stopped,
+                    probeFailed ? RuntimeCapabilityPatchState.Failed : installed ? RuntimeCapabilityPatchState.ProcessPinned : RuntimeCapabilityPatchState.Removed,
+                    probeFailed ? RuntimeCapabilityRestartPolicy.RestartRequired : RuntimeCapabilityRestartPolicy.None,
                     updaterActive: false,
                     "GameBridge shutdown " + (reason ?? string.Empty));
                 route.UpdaterActive = false;
                 route.DemandActive = false;
             }
             activeDemandUpdaterSnapshot = Array.Empty<GameBridgeDemandRoute>();
-            runtime.DemandCoordinator.DemandStateChangedSynchronously -= OnRuntimeDemandStateChangedSynchronously;
             Volatile.Write(ref retainedCallbackDemandMask, 0);
             lock (demandRouteGate)
                 pendingDemandRouteIds.Clear();
             demandRoutingInitialized = false;
+            if (failures.Count > 0)
+                throw new AggregateException("GameBridge demand cleanup or patch-state observation failed.", failures);
         }
 
         private void UpdateContentRefreshGenerationDrain()
         {
             // G1/G2 own generation dirtiness. IsDirty is a zero-allocation gate;
             // no optional feature updater is invoked in the steady no-demand case.
-            if (runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.CustomAnimals))
-                customAnimalAnimatorBridgeFeature?.Update();
-
-            if (runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement))
-            {
-                audioReplacementFeature?.Update();
-                SetAudioReplacementPendingDemand(audioReplacementFeature?.Service.HasPendingRuntimeWork == true, "audio content generation consumed");
-            }
-        }
-
-        private void UpdateAudioReplacementPendingWork()
-        {
-            AudioReplacementService? service = audioReplacementFeature?.Service;
-            if (service == null)
-            {
-                SetAudioReplacementPendingDemand(false, "audio service unavailable");
-                return;
-            }
-
-            service.Update();
-            SetAudioReplacementPendingDemand(service.HasPendingRuntimeWork, "audio pending updater reconciliation");
-        }
-
-        private void SetAudioReplacementPendingDemand(bool active, string reason)
-        {
-            GameBridgeDemandRoutes.SetOwnerDemand(runtime, GameBridgeDemandRoutes.AudioReplacementPending, GameBridgeDemandRoutes.OperationOwner, RuntimeDemandSourceType.CapabilityOperation, RuntimeDemandLifetime.Operation, "pending-load-or-context", active, reason);
         }
 
         private AuthorSessionOperationResult HandleDemandedAuthorSessionRequest(AuthorSessionRequest request)
@@ -547,9 +422,6 @@ namespace DTMAPI.GameBridge.DolocTown
             return feature != null && (feature.HomePageRenderTextMenuPatched || feature.MainMenuPanelStartShowPatched || feature.MenuUiSetCapacityPatched);
         }
 
-        private bool IsAnyAnimalViewerHookInstalled() => animalViewerFeature != null &&
-            (animalViewerFeature.HookBridge.FullInfoDataPatched || animalViewerFeature.HookBridge.ViewerShowPrefixPatched || animalViewerFeature.HookBridge.ViewerShowPatched || animalViewerFeature.HookBridge.PanelUnregisterPatched);
-
         private bool IsCoreLifecycleHookRouteInstalled() => CoreHookTargetsReady;
 
         private bool IsAnyCoreLifecycleHookInstalled() =>
@@ -563,60 +435,10 @@ namespace DTMAPI.GameBridge.DolocTown
             returnHomePatched ||
             workshopReloadPatched;
 
-        private bool IsAnyFishRoeHookInstalled() => fishRoeTooltipFeature != null &&
-            (fishRoeTooltipFeature.HookBridge.TitlePatched || fishRoeTooltipFeature.HookBridge.DescriptionPatched || fishRoeTooltipFeature.HookBridge.DetailPatched);
-
-        private bool IsAnyActionCompletionDependencyInstalled() => toolColliderHitHooks?.PostfixPatched == true || agentStateLifecycleHooks?.InteractExitPatched == true;
-
-        private bool IsAnyActionSpeedHookInstalled() => actionSpeedFeature != null &&
-            (actionSpeedFeature.HookBridge.ToolEnterPatched || actionSpeedFeature.HookBridge.ToolExitPatched || actionSpeedFeature.HookBridge.InteractEnterPatched || actionSpeedFeature.HookBridge.InteractExitPatched || actionSpeedFeature.HookBridge.EatEnterPatched || actionSpeedFeature.HookBridge.UseItemContinuesPatched || actionSpeedFeature.HookBridge.InteractContinuesPatched || actionSpeedFeature.HookBridge.AnimalRendererInteractPatched || actionSpeedFeature.HookBridge.BaseExitPatched);
-
-        private bool IsAnyActionSpeedInteractionStageHookInstalled() => actionSpeedFeature != null &&
-            (actionSpeedFeature.HookBridge.InteractEnterPatched || actionSpeedFeature.HookBridge.EatEnterPatched || actionSpeedFeature.HookBridge.UseItemContinuesPatched || actionSpeedFeature.HookBridge.InteractContinuesPatched || actionSpeedFeature.HookBridge.AnimalRendererInteractPatched);
-
-        private bool IsActionSpeedHookRouteInstalled()
-        {
-            ActionSpeedService? service = actionSpeedFeature?.Service;
-            ActionSpeedHookBridge? hooks = actionSpeedFeature?.HookBridge;
-            if (service == null || hooks == null || (!service.RequiresToolHooks && !service.RequiresInteractionHooks))
-                return false;
-            bool toolReady = !service.RequiresToolHooks || (hooks.ToolEnterPatched && hooks.ToolExitPatched);
-            bool interactionReady = !service.RequiresInteractionHooks ||
-                (hooks.InteractionStageHooksReady &&
-                 (!service.RequiresInteractExit || hooks.InteractExitPatched) &&
-                 (!service.RequiresBaseExit || hooks.BaseExitPatched));
-            return toolReady && interactionReady;
-        }
-
-        private bool IsAudioReplacementAnimalVoiceContextInstalled() => audioReplacementFeature?.HookBridge.AnimalPlayAnimalSoundPrefixPatched == true &&
-            audioReplacementFeature.HookBridge.AnimalPlayAnimalSoundPostfixPatched;
-
-        private bool IsAnyAudioReplacementAnimalVoiceContextInstalled() => audioReplacementFeature != null &&
-            (audioReplacementFeature.HookBridge.AnimalPlayAnimalSoundPrefixPatched || audioReplacementFeature.HookBridge.AnimalPlayAnimalSoundPostfixPatched);
-
-        private bool IsAnyCustomAnimalHookInstalled() => customAnimalAnimatorBridgeFeature != null &&
-            (customAnimalAnimatorBridgeFeature.HookBridge.AnimatorAssetTryLoadPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalAIDefaultAnyStatePatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalOnRenderPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalDebugSetAdultPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalRendererOnRecyclePatched || customAnimalAnimatorBridgeFeature.HookBridge.SpriteOverrideTryGetModOverrideSpritePatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalSleepPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalWakeUpPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalCallToRoomPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalRendererOnFellPrefixPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalRendererOnFellPostfixPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalRendererPlayAnimationPatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalRendererFixedUpdatePatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalAIMakeDecisionFreeTimePatched || customAnimalAnimatorBridgeFeature.HookBridge.AnimalControllerOnUpdatePatched);
 
         private bool IsWorkshopAuthoringHookRouteInstalled() => workshopLocalUploadDisplayPatched && workshopUploadPlanBusyFallbackPatched && workshopUploadPlanKnownIdFallbackPatched;
 
         private bool IsAnyWorkshopAuthoringHookInstalled() => workshopLocalUploadDisplayPatched || workshopUploadPlanBusyFallbackPatched || workshopUploadPlanKnownIdFallbackPatched;
-
-        private bool IsActionCompletionDependencyClosureInstalled()
-        {
-            if (!HasGameBridgeDemand(GameBridgeDemandRoutes.ActionCompletion))
-                return false;
-            bool toolRequired = HasGameBridgeDemand(GameBridgeDemandRoutes.ToolColliderShared);
-            bool lifecycleRequired = HasGameBridgeDemand(GameBridgeDemandRoutes.AgentStateInteractExitShared);
-            return (!toolRequired || toolColliderHitHooks?.PostfixPatched == true) &&
-                (!lifecycleRequired || agentStateLifecycleHooks?.InteractExitPatched == true);
-        }
-
-        private bool IsFishingCompatibilityHookRouteInstalled()
-        {
-            return !fishingCompatibilityHooksRequired || fishingCompatibilityHooksReady;
-        }
-
-        private bool IsAnyFishingCompatibilityHookInstalled() => fishingCompatibilityReadyEnterPatched || fishingCompatibilityCastEnterPatched || fishingCompatibilityWaitEnterPatched || fishingCompatibilityWaitPlayPatched || fishingCompatibilityMiniGameStartPatched || fishingCompatibilityMiniGameUpdatePatched || fishingCompatibilityMiniGameStopPatched || fishingCompatibilityPullEnterPatched || fishingCompatibilityPullExitPatched || fishingCompatibilityBaseExitPatched;
 
         internal Batch5NoDemandRuntimeSnapshot CaptureBatch5NoDemandRuntimeSnapshot()
         {
@@ -654,8 +476,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 })
                 .ToArray();
 
-            long customCallbackWork = customAnimalAnimatorBridgeFeature?.Service.RetainedCallbackWorkCountForTest ?? 0L;
-            long audioCallbackWork = audioReplacementFeature?.Service.RetainedCallbackWorkCountForTest ?? 0L;
             return new Batch5NoDemandRuntimeSnapshot
             {
                 RuntimeUpdateTicks = runtime.RuntimeUpdateTickCount,
@@ -668,30 +488,20 @@ namespace DTMAPI.GameBridge.DolocTown
                 EventSnapshotRebuilds = events.SnapshotRebuilds,
                 EventZeroListenerBypasses = events.ZeroListenerBypasses,
                 ActiveUpdaterMembershipSnapshotRebuilds = activeDemandUpdaterSnapshotRebuildCount,
-                OptionalPerFeatureProjectionBuilds =
-                    (customAnimalAnimatorBridgeFeature?.Service.ContentProjectionBuildCountForTest ?? 0L) +
-                    (audioReplacementFeature?.Service.ContentProjectionBuildCountForTest ?? 0L),
+                OptionalPerFeatureProjectionBuilds = 0L,
                 OptionalNativeUpdaterInvocations = demandRoutes.Values
                     .Where(route => route.Outcome != RuntimeCapabilityOutcome.Mandatory &&
                         !route.CapabilityId.Equals(GameBridgeDemandRoutes.QaHost, StringComparison.OrdinalIgnoreCase))
                     .Sum(route => route.DispatchCount),
                 QaObserverUpdaterInvocations = demandRoutes.TryGetValue(GameBridgeDemandRoutes.QaHost, out GameBridgeDemandRoute qaRoute) ? qaRoute.DispatchCount : 0L,
                 MandatoryUpdaterInvocations = demandRoutes.Values.Where(route => route.Outcome == RuntimeCapabilityOutcome.Mandatory).Sum(route => route.DispatchCount),
-                OptionalFeatureFileStatusCalls =
-                    (customAnimalAnimatorBridgeFeature?.Service.OptionalFileStatusCallCount ?? 0L) +
-                    (audioReplacementFeature?.Service.OptionalFileStatusCallCount ?? 0L) +
-                    optionalAuthorFileStatusCallCount + optionalWorkshopFileStatusCallCount,
-                OptionalDirectoryEnumerations =
-                    optionalAuthorDirectoryEnumerationCount,
+                OptionalFeatureFileStatusCalls = optionalWorkshopFileStatusCallCount,
+                OptionalDirectoryEnumerations = 0L,
                 OptionalReflectionObjectSearches = 0L,
-                OptionalRetainedCallbackWork = customCallbackWork + audioCallbackWork,
-                CustomAnimalsRetainedCallbackWork = customCallbackWork,
-                AudioRetainedCallbackWork = audioCallbackWork,
+                OptionalRetainedCallbackWork = 0L,
                 OptionalHookInstallRequests = optionalHookInstallRequestCount,
                 CameraEnvironmentResets = environmentResetCount,
-                CustomAnimalDefinitionCandidateBuilds = customAnimalAnimatorBridgeFeature?.Service.DefinitionCandidateBuildCountForTest ?? 0,
                 ContentQueryCandidateBuilds = runtime.Content.CandidateBuildCountForTest,
-                AudioPendingEntryVisits = audioReplacementFeature?.Service.PendingEntryVisitCountForTest ?? 0L,
                 QaExplicitDemandActive = qaDemand != null &&
                     qaDemand.TotalDemand > 0 &&
                     qaDemand.BySource.TryGetValue(RuntimeDemandSourceType.ExplicitQa, out int explicitQaDemand) && explicitQaDemand > 0,

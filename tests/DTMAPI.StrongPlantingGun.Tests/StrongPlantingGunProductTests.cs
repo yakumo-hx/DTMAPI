@@ -1,15 +1,20 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using DTMAPI.StrongPlantingGun;
 
 namespace DTMAPI.UnitTests
 {
     internal static class StrongPlantingGunProductTests
     {
-        internal static void RunAll()
+        internal static void RunAll() => RunAll(null);
+
+        internal static void RunAll(string? fixtureExecutable)
         {
             ProductContractIsFixed();
+            RangeInputsAreBoundedIntegers();
+            RangeConfigRoundTripsThroughContractSerializer();
             FiveTargetOwnerDecisionsFailClosed();
             ExactOwnerObservationIsTruthful();
             LogGateIsBounded();
@@ -17,36 +22,65 @@ namespace DTMAPI.UnitTests
             RepeatedCachedLookupHasAShortAllocationGate();
             CapacityAndCleanupContractsPreserveNativeState();
             LifecycleSummaryReachesExactZero();
-            PhysicalProductionHookLifecycleFixturePasses();
+            PhysicalProductionHookLifecycleFixturePasses(fixtureExecutable);
+        }
+
+        private static void RangeInputsAreBoundedIntegers()
+        {
+            Assert(new StrongPlantingGunConfig().Range == 7, "Range default must match current native 7.");
+            for (int n = 7; n <= 15; n++) Assert(StrongPlantingGunConfig.Normalize(n) == n, "Valid integer range changed.");
+            foreach (double n in new[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity, 7.5, -1d, 0d, 6d })
+                Assert(StrongPlantingGunConfig.Normalize(n) == 7, "Invalid/fractional/below-native value did not use 7.");
+            foreach (double n in new[] { 16d, (double)int.MaxValue, 1e100 })
+                Assert(StrongPlantingGunConfig.Normalize(n) == 15, "Above-maximum integer did not clamp to 15.");
+        }
+
+        private static void RangeConfigRoundTripsThroughContractSerializer()
+        {
+            var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(StrongPlantingGunConfig));
+            using (var stream = new MemoryStream())
+            {
+                serializer.WriteObject(stream, new StrongPlantingGunConfig { Range = 15 });
+                stream.Position = 0;
+                var restored = (StrongPlantingGunConfig)serializer.ReadObject(stream)!;
+                Assert(restored.Range == 15, "The actual config serializer must read and write the public range contract.");
+            }
+            using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("{\"Range\":6.5,\"Enabled\":false}")))
+            {
+                var restored = (StrongPlantingGunConfig)serializer.ReadObject(stream)!;
+                Assert(StrongPlantingGunConfig.Normalize(restored.Range) == 7, "Legacy flags must not prevent fractional range fallback.");
+            }
         }
 
         private static void ProductContractIsFixed()
         {
             Assert(
-                StrongPlantingGunProductContract.FixedSlotCount == 3,
-                "ProductNative must remain fixed at three slots.");
+                StrongPlantingGunProductContract.FixedSlotCount == 4,
+                "ProductNative must remain fixed at four slots.");
             Assert(
-                StrongPlantingGunProductContract.ExpectedHookCount == 5,
-                "Two constructors plus tool/place/swap must remain five concrete patches.");
+                StrongPlantingGunProductContract.ExpectedHookCount == 15,
+                "The exact constructors, tool, preview and nine container adapters must remain fifteen patches.");
             Assert(
                 StrongPlantingGunProductContract.HarmonyOwner ==
+                    "DTMAPI.StrongPlantingGunMod.Native" &&
+                StrongPlantingGunProductContract.LegacyProductOwner ==
                     "dtmapi.mod.dtmapi.strongplantinggunmod",
-                "Canonical Harmony owner drifted.");
+                "V2 product owner or its conflicting legacy owner drifted.");
         }
 
         private static void FiveTargetOwnerDecisionsFailClosed()
         {
-            bool[] empty = new bool[5];
+            bool[] empty = new bool[15];
             Assert(
                 StrongPlantingGunHookOwnership.DecideInstall(
                     empty,
                     empty) ==
                 StrongPlantingGunInstallDecision.Install,
-                "An empty five-target set should install.");
+                "An empty fifteen-target set should install.");
 
-            for (int index = 0; index < 5; index++)
+            for (int index = 0; index < 15; index++)
             {
-                var compatibility = new bool[5];
+                var compatibility = new bool[15];
                 compatibility[index] = true;
                 Assert(
                     StrongPlantingGunHookOwnership.DecideInstall(
@@ -56,7 +90,7 @@ namespace DTMAPI.UnitTests
                         .RejectCompatibilityOwner,
                     "Either load order must reject any legacy owner target.");
 
-                var partialProduct = new bool[5];
+                var partialProduct = new bool[15];
                 partialProduct[index] = true;
                 Assert(
                     StrongPlantingGunHookOwnership.DecideInstall(
@@ -70,14 +104,7 @@ namespace DTMAPI.UnitTests
             Assert(
                 StrongPlantingGunHookOwnership.DecideInstall(
                     empty,
-                    new[]
-                    {
-                        true,
-                        true,
-                        true,
-                        true,
-                        true
-                    }) ==
+                    Enumerable.Repeat(true, 15).ToArray()) ==
                 StrongPlantingGunInstallDecision
                     .RejectDuplicateProductOwner,
                 "A complete existing ProductNative set must reject duplicate install.");
@@ -87,7 +114,7 @@ namespace DTMAPI.UnitTests
         {
             StrongPlantingGunObservedHookState empty =
                 StrongPlantingGunHookOwnership.Observe(
-                    new bool[5]);
+                    new bool[15]);
             Assert(
                 !empty.IsInstalled &&
                 empty.InstalledPatchCount == 0 &&
@@ -96,14 +123,7 @@ namespace DTMAPI.UnitTests
 
             StrongPlantingGunObservedHookState partial =
                 StrongPlantingGunHookOwnership.Observe(
-                    new[]
-                    {
-                        true,
-                        true,
-                        false,
-                        false,
-                        false
-                    });
+                    Enumerable.Range(0, 15).Select(i => i < 2).ToArray());
             Assert(
                 !partial.IsInstalled &&
                 partial.InstalledPatchCount == 2 &&
@@ -112,19 +132,12 @@ namespace DTMAPI.UnitTests
 
             StrongPlantingGunObservedHookState complete =
                 StrongPlantingGunHookOwnership.Observe(
-                    new[]
-                    {
-                        true,
-                        true,
-                        true,
-                        true,
-                        true
-                    });
+                    Enumerable.Repeat(true, 15).ToArray());
             Assert(
                 complete.IsInstalled &&
-                complete.InstalledPatchCount == 5 &&
+                complete.InstalledPatchCount == 15 &&
                 !complete.HasPartialOwnerSet,
-                "Only all five owners may report installed.");
+                "Only all fifteen owners may report installed.");
         }
 
         private static void LogGateIsBounded()
@@ -208,12 +221,12 @@ namespace DTMAPI.UnitTests
         {
             Assert(
                 StrongPlantingGunProductContract
-                    .GetTargetInventoryCapacity(1) == 3,
-                "An ordinary one-slot gun must expand to three.");
+                    .GetTargetInventoryCapacity(1) == 4,
+                "An ordinary one-slot gun must expand to four.");
             Assert(
                 StrongPlantingGunProductContract
                     .GetTargetInventoryCapacity(7) == 7,
-                "A JSON inventory already larger than three must never shrink.");
+                "A JSON inventory already larger than four must never shrink.");
 
             bool unpatchCalled = false;
             var failures =
@@ -248,10 +261,10 @@ namespace DTMAPI.UnitTests
         }
 
         private static void
-            PhysicalProductionHookLifecycleFixturePasses()
+            PhysicalProductionHookLifecycleFixturePasses(string? fixtureExecutable)
         {
             string executable =
-                Path.Combine(
+                fixtureExecutable ?? Path.Combine(
                     FindRepositoryRoot(),
                     "tests",
                     "DTMAPI.UnitTests",
@@ -314,10 +327,7 @@ namespace DTMAPI.UnitTests
                 new DirectoryInfo(AppContext.BaseDirectory);
             while (current != null)
             {
-                if (File.Exists(
-                    Path.Combine(
-                        current.FullName,
-                        "PROJECT.md")))
+                if ((File.Exists(Path.Combine(current.FullName, "DTMAPI.sln")) && File.Exists(Path.Combine(current.FullName, "global.json"))))
                 {
                     return current.FullName;
                 }

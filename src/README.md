@@ -12,6 +12,6 @@
 | AuthorSdk, Tooling.Metadata | Author CLI, target selection, validation, build and packaging |
 | InstallDoctor, PlayerDoctor, MultiPlatformInstaller | Installation diagnostics and supported installer routes |
 
-ContentPatcher, ConsoleCommands and TemplateMod are README placeholders, not current build projects. Actual build membership belongs to [the solution](../DTMAPI.sln). Product implementations are located by the [Catalog](../tools/release/dtmapi-product-catalog.json).
+ContentPatcher, ConsoleCommands and TemplateMod are README placeholders, not current build projects. Actual build membership belongs to [the solution](../DTMAPI.sln). Independent implementations live under [products/first-party](../products/first-party). Product-owned frozen implementations live in their respective `compatibility/` directories; the optional compatibility host links them without changing their assembly identity.
 
-[PROJECT](../PROJECT.md) owns native responsibility and Mod identity. Game-loaded code stays netstandard2.0; native research is reference-only and never copied into this rebuild.
+Game-loaded code stays netstandard2.0; native research is reference-only and never copied into this rebuild. See the [SDK](../author-sdk/README.md) for managed Mod identity, packaging and author contracts. Game-owned objects retain their native lifecycle and save semantics.

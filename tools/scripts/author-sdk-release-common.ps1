@@ -1,20 +1,5 @@
 Set-StrictMode -Version 2.0
 
-function Get-AuthorSdkApiStatusProjection {
-    param([string] $SourcePath)
-    $source = [IO.File]::ReadAllText($SourcePath).Replace("`r`n", "`n")
-    # Preserve authoritative prose and headings. Repository evidence is identified
-    # as source-only text rather than a broken mandatory link in the portable SDK.
-    $body = [regex]::Replace($source, '\[([^\]]+)\]\(([^)]+)\)', [System.Text.RegularExpressions.MatchEvaluator]{
-        param($match)
-        $target = $match.Groups[2].Value
-        if ($target -match '^(https?://|#)') { return $match.Value }
-        return $match.Groups[1].Value + ' (repository evidence: `' + $target + '`)'
-    })
-    $hash = Get-AuthorSdkSha256 -Path $SourcePath
-    return "<!-- Generated from docs/api/public-api-matrix.md; source SHA-256: $hash. Do not edit this projection. -->`n`n" + $body
-}
-
 function Get-AuthorSdkSha256 {
     param([Parameter(Mandatory = $true)] [string] $Path)
 
@@ -109,6 +94,7 @@ function Get-AuthorSdkTargetCatalog {
         }
         $apiTarget = [string]$target.apiTarget
         if ($apiTarget -notmatch '^\d+\.\d+\.\d+$' -or -not $seen.Add($apiTarget)) { throw "Invalid or duplicate Author SDK API target: $apiTarget" }
+        if ([version]$apiTarget -lt [version]'0.6.0') { throw "API targets before 0.6.0 are retired and cannot enter the current SDK catalog: $apiTarget" }
         if ([string]$target.state -cnotin @('available', 'planned')) { throw "Unsupported Author SDK target state: $($target.state)" }
         if ([string]$target.targetFramework -cne 'netstandard2.0') { throw "Unsupported target framework for $apiTarget." }
         if ([string]$target.minimumRuntimeVersion -notmatch '^\d+\.\d+\.\d+$' -or
@@ -147,7 +133,7 @@ function Get-AuthorSdkTargetCatalog {
 function Get-AuthorSdkAvailableTargets {
     param(
         [Parameter(Mandatory = $true)] $Catalog,
-        [string] $SdkVersion = '0.1.0'
+        [Parameter(Mandatory = $true)] [string] $SdkVersion
     )
 
     $targets = @($Catalog.targets | Where-Object { [string]$_.state -ceq 'available' -and @($_.sdkVersions) -ccontains $SdkVersion } | Sort-Object { [version]$_.apiTarget })
@@ -157,14 +143,28 @@ function Get-AuthorSdkAvailableTargets {
     return $targets
 }
 
+function Resolve-AuthorSdkTarget {
+    param([Parameter(Mandatory = $true)] [string] $RepoRoot, [string] $ApiTarget = '')
+
+    if ($ApiTarget -match '^\d+\.\d+\.\d+$' -and [version]$ApiTarget -lt [version]'0.6.0') {
+        throw "API targets before 0.6.0 are retired; this SDK does not prepare or provide target $ApiTarget."
+    }
+    $catalog = Get-AuthorSdkTargetCatalog -RepoRoot $RepoRoot
+    if (-not $ApiTarget) { $ApiTarget = [string]$catalog.defaultTarget }
+    $targets = @(Get-AuthorSdkAvailableTargets -Catalog $catalog -SdkVersion (Get-AuthorSdkReleaseVersion -RepoRoot $RepoRoot))
+    $selected = @($targets | Where-Object { $_.apiTarget -ceq $ApiTarget })
+    if ($selected.Count -ne 1) { throw "No available API target in this SDK: $ApiTarget" }
+    return $selected[0]
+}
+
 function Get-AuthorSdkContract {
     param(
         [Parameter(Mandatory = $true)] [string] $RepoRoot,
-        $Target = $null
+        [Parameter(Mandatory = $true)] $Target
     )
 
-    # Keep the no-Target entry point bound to the immutable legacy contract.
-    $relativePath = if ($null -eq $Target) { 'compatibility/0.5.5/compatibility.contract.json' } else { [string]$Target.contractPath }
+    if ([version]$Target.apiTarget -lt [version]'0.6.0') { throw 'API targets before 0.6.0 are retired.' }
+    $relativePath = [string]$Target.contractPath
     $assetRoot = Join-Path $RepoRoot 'author-sdk'
     $path = Assert-AuthorSdkChildPath -Root $assetRoot -Path (Join-Path $assetRoot $relativePath) -Label 'compatibility contract'
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -183,8 +183,8 @@ function Get-AuthorSdkContract {
             throw "Compatibility contract is missing '$property': $path"
         }
     }
-    $expectedSdk = if ($null -eq $Target) { '0.1.0' } else { [string]$Target.payloadSdkVersion }
-    $expectedTarget = if ($null -eq $Target) { '0.5.5' } else { [string]$Target.apiTarget }
+    $expectedSdk = [string]$Target.payloadSdkVersion
+    $expectedTarget = [string]$Target.apiTarget
     if ([int]$contract.schemaVersion -ne 1 -or [string]$contract.sdkVersion -cne $expectedSdk -or [string]$contract.targetRuntimeVersion -cne $expectedTarget) {
         throw "Compatibility contract must bind payload SDK $expectedSdk and API target $expectedTarget."
     }

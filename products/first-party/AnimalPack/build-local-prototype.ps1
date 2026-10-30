@@ -162,11 +162,12 @@ if (Test-Path -LiteralPath $outputFull) {
 
 $null = New-Item -ItemType Directory -Path $outputFull -Force
 Copy-Item -LiteralPath (Join-Path $productRoot 'Content') -Destination $outputFull -Recurse
+Copy-Item -LiteralPath (Join-Path $productRoot 'PackData') -Destination $outputFull -Recurse
 Copy-Item -LiteralPath (Join-Path $productRoot 'official-info.json') -Destination (Join-Path $outputFull 'info.json')
 
 $dtmapiOutput = Join-Path $outputFull 'Content\DTMAPI'
 $spriteOutput = Join-Path $outputFull 'Content\Sprites'
-$audioOutput = Join-Path $outputFull 'Content\Audio'
+$audioOutput = Join-Path $outputFull 'PackData\audio'
 $null = New-Item -ItemType Directory -Path $dtmapiOutput -Force
 $null = New-Item -ItemType Directory -Path $spriteOutput -Force
 $null = New-Item -ItemType Directory -Path $audioOutput -Force
@@ -176,31 +177,15 @@ $copiedPngCount = 0
 $copiedWavCount = 0
 foreach ($brandingProperty in @($assetConfig.branding.PSObject.Properties)) {
     $branding = $brandingProperty.Value
-    $sourceFull = [IO.Path]::GetFullPath([string]$branding.source)
     $destinationRelative = ([string]$branding.destination).Replace('/', [IO.Path]::DirectorySeparatorChar)
     if ([IO.Path]::IsPathRooted($destinationRelative) -or $destinationRelative -cne (Split-Path -Leaf $destinationRelative)) {
         throw "Branding destination must be a root-level file name. Requested: '$destinationRelative'."
     }
     $productAssetFull = [IO.Path]::GetFullPath((Join-Path $productRoot $destinationRelative))
-    foreach ($requiredBrandingPath in @($sourceFull, $productAssetFull)) {
-        if (-not (Test-Path -LiteralPath $requiredBrandingPath -PathType Leaf)) {
-            throw "Missing branding asset '$($brandingProperty.Name)': $requiredBrandingPath"
-        }
-    }
-
-    $expectedSourceHash = ([string]$branding.sha256).ToUpperInvariant()
-    $actualSourceHash = (Get-FileHash -LiteralPath $sourceFull -Algorithm SHA256).Hash.ToUpperInvariant()
-    if ($actualSourceHash -cne $expectedSourceHash) {
-        throw "Branding source hash mismatch for '$($brandingProperty.Name)'. Expected '$expectedSourceHash'; actual '$actualSourceHash'."
-    }
-    $sourceImage = [System.Drawing.Image]::FromFile($sourceFull)
-    try {
-        if ($sourceImage.Width -ne [int]$branding.sourceWidth -or $sourceImage.Height -ne [int]$branding.sourceHeight) {
-            throw "Branding source dimensions mismatch for '$($brandingProperty.Name)'. Expected '$($branding.sourceWidth)x$($branding.sourceHeight)'; actual '$($sourceImage.Width)x$($sourceImage.Height)'."
-        }
-    }
-    finally {
-        $sourceImage.Dispose()
+    # The checked-in PNG is the assembly input. Original JPEG metadata remains
+    # provenance only and need not be available on the build machine.
+    if (-not (Test-Path -LiteralPath $productAssetFull -PathType Leaf)) {
+        throw "Missing product branding asset '$($brandingProperty.Name)': $productAssetFull"
     }
 
     $expectedOutputHash = ([string]$branding.outputSha256).ToUpperInvariant()
@@ -239,6 +224,9 @@ foreach ($animal in @($assetConfig.animals)) {
     $sourceSprites = Join-Path $sourceRoot 'Content\Sprites'
     $sourceAudio = Join-Path $sourceRoot 'Content\Audio'
     $frameManifest = Join-Path $sourceSprites ([string]$animal.frameManifest)
+    if ([string]$animal.speciesId -ceq 'hatch') {
+        $frameManifest = Join-Path $productRoot 'Content\Sprites\hatch_frame_manifest.json'
+    }
     foreach ($requiredAnimalPath in @($sourceRoot, $sourceSprites, $sourceAudio, $frameManifest)) {
         if (-not (Test-Path -LiteralPath $requiredAnimalPath)) {
             throw "Missing local prototype input for species '$($animal.speciesId)': $requiredAnimalPath"
@@ -264,6 +252,17 @@ foreach ($animal in @($assetConfig.animals)) {
         $copiedWavCount++
     }
 }
+
+# This product's chicken-template jump needs a return frame. Reuse its own
+# preparation pose; never write the local prototype package or resample art.
+$hatchCompletion = $assetConfig.hatchAdultJumpCompletion
+$hatchSourceFrame = Join-Path $spriteOutput ([string]$hatchCompletion.sourceFrame)
+$hatchReturnFrame = Join-Path $spriteOutput ([string]$hatchCompletion.destinationFrame)
+if ((Get-FileHash -LiteralPath $hatchSourceFrame -Algorithm SHA256).Hash -cne [string]$hatchCompletion.sha256) {
+    throw "Hatch jump preparation source changed: $hatchSourceFrame"
+}
+if (-not (Test-Path -LiteralPath $hatchReturnFrame -PathType Leaf)) { $copiedPngCount++ }
+Copy-Item -LiteralPath $hatchSourceFrame -Destination $hatchReturnFrame -Force
 
 $itemIconRootPrefix = $itemIconRootFull.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 $itemIconDestinations = @{}
@@ -341,14 +340,15 @@ if ($actualStationOutputHash -cne $expectedStationOutputHash) {
 }
 $copiedPngCount++
 
-$legacyMarker = Join-Path $dtmapiOutput 'dtmapi-package.json'
-if (Test-Path -LiteralPath $legacyMarker) {
-    throw "The unified package must not contain the legacy marker: $legacyMarker"
+$packageMarker = Join-Path $dtmapiOutput 'dtmapi-package.json'
+if (Test-Path -LiteralPath $packageMarker) {
+    throw "Assembly input must not contain SDK-generated package bindings: $packageMarker"
 }
 
 $fileCount = @(Get-ChildItem -LiteralPath $outputFull -Recurse -File).Count
 $byteCount = (@(Get-ChildItem -LiteralPath $outputFull -Recurse -File | Measure-Object -Property Length -Sum).Sum)
 Write-Output "AnimalPack local prototype assembled."
+Write-Output 'Content directory is directly loadable with the current Runtime 0.7.5; SDK packaging is optional.'
 Write-Output "Output: $outputFull"
 Write-Output "Files: $fileCount; bytes: $byteCount; copied PNG: $copiedPngCount; copied WAV: $copiedWavCount"
 Write-Output "Distribution policy: $($assetConfig.distributionPolicy)"

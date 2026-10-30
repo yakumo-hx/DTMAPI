@@ -2,7 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AssemblyName>EquipmentSlotsLegacyTargetFixture</AssemblyName>
+    <!-- Reuse existing test friend access in this separately executed fixture. -->
+    <AssemblyName>DTMAPI.UnitTests</AssemblyName>
     <RootNamespace>DTMAPI.EquipmentSlotsLegacyTargetFixture</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>

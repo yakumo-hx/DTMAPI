@@ -1,0 +1,54 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterNativeCallsPack",
+    "name": "原生召唤示例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "carrier",
+      "templateId": "aircraft",
+      "overrides": {},
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "seed",
+      "templateId": "seed_carrier",
+      "overrides": {},
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkSkill01",
+          "windupGameSeconds": 0.6,
+          "call": {
+            "minCount": 2,
+            "maxCount": 2,
+            "roomLimit": 5
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

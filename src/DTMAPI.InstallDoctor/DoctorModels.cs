@@ -50,7 +50,8 @@ public enum DoctorMinimumVersionStatus
 
 public enum DoctorManagedIdentity
 {
-    Unknown,
+    CodeMod = 9,
+    Unknown = 0,
     DtmApiRuntime,
     StrictCodeMod,
     LegacyNativeCodeMod,

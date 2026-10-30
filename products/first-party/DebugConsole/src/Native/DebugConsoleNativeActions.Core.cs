@@ -28,30 +28,13 @@ namespace DTMAPI.DebugConsole
         private object? movementOwner;
         private string movementLeaseOwnerId = string.Empty;
         private bool movementLeaseActive;
-        private double timeScaleMultiplier = 1d;
-        private string timeScaleLeaseOwnerId = string.Empty;
-        private double timeScaleOriginalMultiplier = 1d;
-        private double timeScaleAppliedMultiplier = 1d;
-        private double timeScalePriorAppliedMultiplier = 1d;
-        private bool timeScaleMutationUncertain;
-        private bool timeScaleLeaseActive;
-        private bool creativeEnabled;
-        private string creativeLeaseOwnerId = string.Empty;
-        private bool creativeSnapshotValid;
-        private bool originalIgnoreMaterialCost;
-        private bool originalSkipMoneyVerify;
-        private bool originalIgnoreSpiritCost;
-        private bool creativeAttemptedMaterial;
-        private bool creativeAttemptedShop;
-        private bool creativeAttemptedSpirit;
-        private bool creativeMutationUncertain;
         private IReadOnlyList<InventoryDebugItem>? inventoryCatalog;
         private IReadOnlyList<InventoryDebugSourceGroup>? inventorySourceGroups;
         private IReadOnlyList<SpawnCatalogOption>? monsterCatalog;
         private IReadOnlyList<AnimalCatalogOption>? animalCatalog;
-        private readonly Dictionary<string, object> monsterProtos =
+        private Dictionary<string, object> monsterProtos =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, object> animalProtos =
+        private Dictionary<string, object> animalProtos =
             new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         private WeatherPanelSnapshot? weatherSnapshotCache;
         private DateTimeOffset weatherSnapshotExpiresAtUtc = DateTimeOffset.MinValue;
@@ -91,20 +74,17 @@ namespace DTMAPI.DebugConsole
         }
 
         internal string BuildLeaseSummary() =>
-            "movement=" +
-            movementMultiplier.ToString("0.###", CultureInfo.InvariantCulture) +
-            "/active=" + movementLeaseActive.ToString(CultureInfo.InvariantCulture) +
-            "; timeScale=" +
-            timeScaleMultiplier.ToString("0.###", CultureInfo.InvariantCulture) +
-            "/active=" + timeScaleLeaseActive.ToString(CultureInfo.InvariantCulture) +
-            "/uncertain=" + timeScaleMutationUncertain.ToString(CultureInfo.InvariantCulture) +
-            "; creative=" +
-            creativeEnabled.ToString(CultureInfo.InvariantCulture) +
-            "/snapshot=" + creativeSnapshotValid.ToString(CultureInfo.InvariantCulture) +
-            "/uncertain=" + creativeMutationUncertain.ToString(CultureInfo.InvariantCulture);
+            "movement=" + movementMultiplier.ToString("0.###", CultureInfo.InvariantCulture) +
+            "/active=" + movementLeaseActive + "; timeScale=" + timeScaleMultiplier +
+            "/active=" + timeScaleLeaseActive + "/uncertain=" + timeScaleMutationUncertain +
+            "; god=" + GodModeEnabled;
 
         internal void Update()
         {
+            if (!IsCurrentSaveSession)
+                return;
+            if (godEnabled)
+                RefillGodVitals();
             if (!movementLeaseActive)
                 return;
             object? current = ResolvePlayerBody();
@@ -114,7 +94,7 @@ namespace DTMAPI.DebugConsole
             movementOwner = current;
         }
 
-        internal bool NeedsUpdate => movementLeaseActive;
+        internal bool NeedsUpdate => movementLeaseActive || godEnabled;
 
         internal void InvalidateCatalogs()
         {
@@ -130,6 +110,7 @@ namespace DTMAPI.DebugConsole
 
         internal void RestoreTransientState(string reason)
         {
+            StopGodMode();
             var failures = new List<string>();
             MovementSpeedResult movement = ResetMovement(reason);
             if (!movement.Success)
@@ -137,28 +118,10 @@ namespace DTMAPI.DebugConsole
             TimeScaleDebugResult timeScale = ResetTimeScaleCore(reason);
             if (!timeScale.Success)
                 failures.Add("timeScale=" + FirstFailure(timeScale.FailureReason, timeScale.Message));
-            if (!RestoreCreative(reason, out string creativeFailure))
-                failures.Add("creative=" + creativeFailure);
             if (failures.Count > 0)
             {
                 throw new InvalidOperationException(
                     "DebugConsole transient restoration remains pending: " +
-                    string.Join("; ", failures) + ".");
-            }
-        }
-
-        internal void RestoreModalScopedState(string reason)
-        {
-            var failures = new List<string>();
-            TimeScaleDebugResult timeScale = ResetTimeScaleCore(reason);
-            if (!timeScale.Success)
-                failures.Add("timeScale=" + FirstFailure(timeScale.FailureReason, timeScale.Message));
-            if (!RestoreCreative(reason, out string creativeFailure))
-                failures.Add("creative=" + creativeFailure);
-            if (failures.Count > 0)
-            {
-                throw new InvalidOperationException(
-                    "DebugConsole modal-scoped restoration remains pending: " +
                     string.Join("; ", failures) + ".");
             }
         }
@@ -171,8 +134,8 @@ namespace DTMAPI.DebugConsole
                  movementLeaseOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? 1 : 0) +
                 (timeScaleLeaseActive &&
                  timeScaleLeaseOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? 1 : 0) +
-                ((creativeEnabled || creativeSnapshotValid) &&
-                 creativeLeaseOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? 1 : 0);
+                (godEnabled &&
+                 godOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase) ? 1 : 0);
         }
 
         internal int RemoveOwner(string ownerId, string reason)
@@ -198,13 +161,10 @@ namespace DTMAPI.DebugConsole
                 else
                     failures.Add("timeScale=" + FirstFailure(result.FailureReason, result.Message));
             }
-            if ((creativeEnabled || creativeSnapshotValid) &&
-                creativeLeaseOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
+            if (godEnabled && godOwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
             {
-                if (RestoreCreative("owner cleanup " + reason, out string failure))
-                    removed++;
-                else
-                    failures.Add("creative=" + failure);
+                StopGodMode();
+                removed++;
             }
             if (failures.Count > 0)
             {
@@ -220,6 +180,19 @@ namespace DTMAPI.DebugConsole
                 ? (message ?? string.Empty)
                 : reason + (string.IsNullOrWhiteSpace(message) ? string.Empty : ": " + message);
 
+        public IReadOnlyList<InventoryDebugSourceGroup> GetSources()
+        {
+            try
+            {
+                return InventorySourceGroups();
+            }
+            catch (Exception error)
+            {
+                runtime.Error("inventory-enumeration", error);
+                return Array.Empty<InventoryDebugSourceGroup>();
+            }
+        }
+
         public InventoryDebugPage GetItems(InventoryDebugQuery query)
         {
             query ??= new InventoryDebugQuery();
@@ -231,12 +204,7 @@ namespace DTMAPI.DebugConsole
                 string search = (query.SearchText ?? string.Empty).Trim();
                 string source = (query.SourceId ?? string.Empty).Trim();
                 string category = (query.Category ?? string.Empty).Trim();
-                long requestedStart = (long)page * size;
-                var requestedItems = new List<InventoryDebugItem>(size);
-                var tail = new InventoryDebugItem[size];
-                int tailCount = 0;
-                int tailNext = 0;
-                int total = 0;
+                var slice = new CatalogPageAccumulator<InventoryDebugItem>(page, size);
                 for (int index = 0; index < items.Count; index++)
                 {
                     InventoryDebugItem item = items[index];
@@ -259,49 +227,19 @@ namespace DTMAPI.DebugConsole
                         continue;
                     }
 
-                    long matchIndex = total;
-                    total++;
-                    if (matchIndex >= requestedStart &&
-                        requestedItems.Count < size)
-                    {
-                        requestedItems.Add(item);
-                    }
-                    tail[tailNext] = item;
-                    tailNext = (tailNext + 1) % size;
-                    if (tailCount < size)
-                        tailCount++;
+                    slice.Add(item);
                 }
 
-                int pages = Math.Max(
-                    1,
-                    (int)Math.Ceiling(total / (double)size));
-                int resolvedPage = Math.Min(page, pages - 1);
-                IReadOnlyList<InventoryDebugItem> pageItems;
-                if (resolvedPage == page)
-                    pageItems = requestedItems.ToArray();
-                else
-                {
-                    int resolvedCount = total - resolvedPage * size;
-                    var resolvedItems = new InventoryDebugItem[resolvedCount];
-                    int oldest = tailCount < size ? 0 : tailNext;
-                    int skip = tailCount - resolvedCount;
-                    for (int index = 0; index < resolvedCount; index++)
-                    {
-                        resolvedItems[index] =
-                            tail[(oldest + skip + index) % size];
-                    }
-                    pageItems = resolvedItems;
-                }
-
+                IReadOnlyList<InventoryDebugItem> pageItems = slice.Complete();
                 return new InventoryDebugPage
                 {
                     Items = pageItems,
                     Categories = StableItemCategories,
                     Sources = InventorySourceGroups(),
-                    Page = resolvedPage,
+                    Page = slice.Page,
                     PageSize = size,
-                    TotalItems = total,
-                    TotalPages = pages,
+                    TotalItems = slice.TotalItems,
+                    TotalPages = slice.TotalPages,
                     Status = "ok"
                 };
             }

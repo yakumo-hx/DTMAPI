@@ -1,8 +1,8 @@
 {
-  "name": "DTMAPI 强力种植枪",
+  "name": "DTMAPI 强力农用喷枪",
   "author": "Yuuka",
   "version": "1.0.0",
-  "description": "依赖 DTMAPI。\n让官方种植枪固定携带种子、薄膜和肥料三个槽位。",
+  "description": "依赖 DTMAPI。四个通用槽接收种子、肥料、塑料膜与瓶装水，使用原生容器操作；范围可设为7～15格，沿原生偏移和朝向。内部 0.7.5 切片，尚未发行。",
   "tags": [
     "Mod",
     "Utility",
@@ -12,13 +12,13 @@
     "Chinese"
   ],
   "localized_name": {
-    "schinese": "DTMAPI 强力种植枪",
-    "tchinese": "DTMAPI 強力種植槍",
-    "english": "DTMAPI Strong Planting Gun"
+    "schinese": "DTMAPI 强力农用喷枪",
+    "tchinese": "DTMAPI 強力農用噴槍",
+    "english": "DTMAPI Strong Farming Gun"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n让官方种植枪固定携带种子、薄膜和肥料三个槽位。",
-    "tchinese": "依賴 DTMAPI。\n讓官方種植槍固定攜帶種子、薄膜和肥料三個槽位。",
-    "english": "Requires DTMAPI.\nGives the official farming gun fixed seed, film, and fertilizer slots."
+    "schinese": "依赖 DTMAPI。四个通用槽接收种子、肥料、塑料膜与瓶装水，使用原生容器操作；范围可设为7～15格，沿原生偏移和朝向。内部 0.7.5 切片，尚未发行。",
+    "tchinese": "依賴 DTMAPI。四個通用槽接收種子、肥料、塑膠膜與瓶裝水，使用原生容器操作；範圍可設為7～15格，沿原生偏移和朝向。內部 0.7.5 切片，尚未發行。",
+    "english": "Requires DTMAPI. Four general material slots with native container interaction and a 7–15 tile range using native offset and facing. Internal 0.7.5 slice, not yet released."
   }
 }

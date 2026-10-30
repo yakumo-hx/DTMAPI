@@ -121,7 +121,7 @@ internal sealed class RuntimeTransaction
 
     public void PrepareForInstall() => RecoverForMutation();
 
-    public void AssertSafeForUninstall() => RecoverForMutation();
+
 
     private void RecoverForMutation()
     {
@@ -328,136 +328,6 @@ internal sealed class RuntimeTransaction
                 "A local file operation failed during installation. This Runtime mutation was rolled back; this is usually not a firewall problem.",
                 ex.Message, ex);
         }
-    }
-
-    public UninstallExecutionResult ExecuteUninstall(IEnumerable<string> rawAllowlist)
-    {
-        string stamp = CreateStamp();
-        string finalBackupRoot = FileSystemSafety.CombineUnder(_gameDir, "DTMAPI/backups/uninstall-" + stamp);
-        string statePath = FileSystemSafety.CombineUnder(_gameDir, "DTMAPI/uninstall-state-" + stamp + ".json");
-        List<string> allowlist = rawAllowlist
-            .Select(FileSystemSafety.NormalizeRelativePath)
-            .Distinct(PathComparer())
-            .OrderBy(item => item, StringComparer.Ordinal)
-            .ToList();
-        TransactionReceiptV1 receipt = new()
-        {
-            TransactionId = stamp,
-            CreatedAtUtc = DateTime.UtcNow.ToString("O"),
-            GameDir = _gameDir,
-            Engine = UninstallEngine,
-            Phase = "Prepared"
-        };
-        UninstallStateV1 state = new()
-        {
-            RemovedAtUtc = DateTime.UtcNow.ToString("O"),
-            GameDir = _gameDir,
-            BackupRoot = finalBackupRoot
-        };
-
-        foreach (string relative in allowlist)
-        {
-            string target = FileSystemSafety.CombineUnder(_gameDir, relative);
-            if (Directory.Exists(target))
-                throw new InstallerException(InstallerCodes.LocalAccess, 3,
-                    "卸载目标被同名目录占用，操作已停止。",
-                    "An uninstall target is occupied by a directory; the action stopped.", target);
-            if (!File.Exists(target))
-            {
-                state.Preserved.Add("missing: " + relative);
-                continue;
-            }
-
-            FileSystemSafety.AssertNoLinksOnExistingPath(_gameDir, target);
-            FileInfo info = new(target);
-            int ordinal = receipt.Operations.Count;
-            receipt.Operations.Add(new TransactionOperation
-            {
-                Ordinal = ordinal,
-                TargetRelativePath = relative,
-                CandidateRelativePath = "candidate/" + ordinal.ToString("D4") + ".bin",
-                BackupRelativePath = "backup/" + ordinal.ToString("D4") + ".bin",
-                CandidateSha256 = FileSystemSafety.Sha256(target),
-                CandidateLength = info.Length,
-                HadOriginal = true,
-                State = "Pending"
-            });
-            state.Removed.Add(relative);
-        }
-
-        if (receipt.Operations.Count == 0)
-        {
-            state.NoOp = true;
-            FileSystemSafety.EnsureDirectoryUnder(_gameDir, FileSystemSafety.CombineUnder(_gameDir, "DTMAPI"));
-            WriteUninstallState(statePath, state);
-            return new UninstallExecutionResult { State = state, BackupRoot = finalBackupRoot };
-        }
-
-        // Validate the long-lived destination before any live Runtime file is
-        // moved. A pre-existing junction/symlink must fail with zero removals.
-        FileSystemSafety.EnsureDirectoryUnder(_gameDir,
-            FileSystemSafety.CombineUnder(_gameDir, "DTMAPI/backups"));
-        string transactionRoot = FileSystemSafety.CombineUnder(_gameDir, CanonicalPrefix + stamp);
-        string receiptPath = Path.Combine(transactionRoot, "transaction.json");
-        try
-        {
-            CreateVisibleTransaction(transactionRoot, receipt);
-        }
-        catch (Exception ex)
-        {
-            throw new InstallerException(InstallerCodes.TransactionGenesis, 3,
-                "无法建立第一份卸载恢复凭据；游戏文件尚未修改。",
-                "The first uninstall recovery receipt could not be established; game files were not changed.", ex.Message, ex);
-        }
-
-        try
-        {
-            FileSystemSafety.EnsureDirectoryUnder(transactionRoot, Path.Combine(transactionRoot, "backup"));
-            foreach (TransactionOperation operation in receipt.Operations)
-            {
-                string target = FileSystemSafety.CombineUnder(_gameDir, operation.TargetRelativePath);
-                string backup = FileSystemSafety.CombineUnder(transactionRoot, operation.BackupRelativePath);
-                operation.State = "MovingOriginal";
-                receipt.Phase = "Committing";
-                WriteReceipt(receiptPath, receipt);
-
-                FileSystemSafety.AssertNoLinksOnExistingPath(_gameDir, target);
-                FileSystemSafety.EnsureDirectoryUnder(transactionRoot, Path.GetDirectoryName(backup)!);
-                File.Move(target, backup);
-                if (!FileSystemSafety.Matches(backup, operation.CandidateLength, operation.CandidateSha256))
-                    throw new InvalidDataException("Uninstall backup failed integrity validation: " + backup);
-                operation.State = "OriginalMoved";
-                WriteReceipt(receiptPath, receipt);
-            }
-
-            WriteUninstallState(Path.Combine(transactionRoot, "uninstall-state.json"), state);
-            receipt.Phase = "Committed";
-            WriteReceipt(receiptPath, receipt);
-            return FinalizeCommittedUninstall(transactionRoot, receipt, state);
-        }
-        catch (Exception ex)
-        {
-            try
-            {
-                if (string.Equals(receipt.Phase, "Committed", StringComparison.Ordinal))
-                    return FinalizeCommittedUninstall(transactionRoot, receipt, state);
-                RollbackUninstall(transactionRoot, receipt);
-            }
-            catch (Exception recoveryError)
-            {
-                throw new InstallerException(InstallerCodes.TransactionBlocked, 3,
-                    "卸载失败，并且自动恢复未能完整完成。请保留事务目录。",
-                    "Uninstall failed and automatic recovery could not complete. Preserve the transaction directory.",
-                    ex.Message + " | Recovery: " + recoveryError.Message, ex);
-            }
-
-            throw new InstallerException(InstallerCodes.LocalAccess, 3,
-                "卸载遇到本地文件访问失败，已恢复本次移动。通常这不是防火墙问题。",
-                "Uninstall hit a local file-access failure and restored this action's moves; this is usually not a firewall problem.",
-                ex.Message, ex);
-        }
-
-        throw new InvalidOperationException("Unreachable uninstall transaction state.");
     }
 
     private TransactionInspection InspectTransactionRoot(string root, string stamp, bool isPreviewPrefix)

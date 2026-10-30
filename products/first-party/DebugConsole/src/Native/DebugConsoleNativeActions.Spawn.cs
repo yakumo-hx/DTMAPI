@@ -28,7 +28,7 @@ namespace DTMAPI.DebugConsole
                         ? string.Empty
                         : "native-host-unavailable";
                 }
-                return monsterCatalog;
+                return monsterCatalog.Concat(ModuleMonsters()).ToArray();
             }
             catch (Exception error)
             {
@@ -69,16 +69,19 @@ namespace DTMAPI.DebugConsole
             object? assets = Native.Read(api, "assets");
             object? monsters = Native.Read(assets, "monsters");
             var options = new List<SpawnCatalogOption>();
-            foreach (object proto in Native.Enumerate(Native.Read(monsters, "TotalProtos")))
+            var protos = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            object rows = Native.Read(monsters, "TotalProtos")
+                ?? throw new InvalidOperationException("Native monster catalog is not ready.");
+            foreach (object proto in Native.Enumerate(rows))
             {
                 string id = Native.TextFirst(
                     proto,
                     "Name",
                     "SpawnId",
                     "Id");
-                if (id.Length == 0 || monsterProtos.ContainsKey(id))
+                if (id.Length == 0 || id.StartsWith("dtm_mc_", StringComparison.Ordinal) || protos.ContainsKey(id))
                     continue;
-                monsterProtos[id] = proto;
+                protos[id] = proto;
                 object? document = TableGetOrDefault("TbMonsterDocument", id);
                 object? spriteAsset = Native.Read(document, "UiSpriteAsset");
                 options.Add(new SpawnCatalogOption
@@ -94,9 +97,11 @@ namespace DTMAPI.DebugConsole
                     Icon = Native.Read(spriteAsset, "Asset")
                 });
             }
-            monsterCatalog = options
+            SpawnCatalogOption[] completed = options
                 .OrderBy(option => option.Id, StringComparer.Ordinal)
                 .ToArray();
+            monsterProtos = protos;
+            monsterCatalog = completed;
         }
 
         private void EnsureAnimalCatalog()
@@ -115,13 +120,15 @@ namespace DTMAPI.DebugConsole
                     group => group.First(),
                     StringComparer.OrdinalIgnoreCase);
             var options = new List<AnimalCatalogOption>();
-            foreach (object proto in Native.Enumerate(
-                Native.TableList("TbAnimal")))
+            var protos = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            object rows = Native.TableList("TbAnimal")
+                ?? throw new InvalidOperationException("Native animal catalog is not ready.");
+            foreach (object proto in Native.Enumerate(rows))
             {
                 string id = Native.Text(proto, "Id").Trim();
-                if (id.Length == 0 || animalProtos.ContainsKey(id))
+                if (id.Length == 0 || id.StartsWith("dtm_mc_", StringComparison.Ordinal) || protos.ContainsKey(id))
                     continue;
-                animalProtos[id] = proto;
+                protos[id] = proto;
                 contentSources.TryGetValue(
                     id,
                     out AnimalContentSource? contentSource);
@@ -158,7 +165,9 @@ namespace DTMAPI.DebugConsole
                     });
                 }
             }
-            animalCatalog = options.ToArray();
+            AnimalCatalogOption[] completed = options.ToArray();
+            animalProtos = protos;
+            animalCatalog = completed;
         }
 
         private object? TableGetOrDefault(string tableName, string id)
@@ -322,7 +331,7 @@ namespace DTMAPI.DebugConsole
             int count)
         {
             monsterId = (monsterId ?? string.Empty).Trim();
-            count = Math.Max(1, Math.Min(10, count));
+            count = Math.Max(1, Math.Min(100, count));
             var result = new SpawnDebugResult
             {
                 SpawnId = monsterId,
@@ -331,6 +340,8 @@ namespace DTMAPI.DebugConsole
             try
             {
                 EnsureMonsterCatalog();
+                var moduleOption = ModuleMonsters().FirstOrDefault(value => value.Id.Equals(monsterId, StringComparison.Ordinal));
+                if (moduleOption != null) return SpawnModuleMonster(moduleOption, result);
                 SpawnCatalogOption? option = monsterCatalog!.FirstOrDefault(value =>
                     value.Id.Equals(monsterId, StringComparison.OrdinalIgnoreCase));
                 object? host = Native.CurrentRoom;
@@ -440,7 +451,7 @@ namespace DTMAPI.DebugConsole
             int count)
         {
             cardId = (cardId ?? string.Empty).Trim();
-            count = Math.Max(1, Math.Min(10, count));
+            count = Math.Max(1, Math.Min(100, count));
             var result = new SpawnDebugResult
             {
                 SpawnId = cardId,

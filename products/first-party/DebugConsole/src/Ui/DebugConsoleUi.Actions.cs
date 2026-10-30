@@ -360,6 +360,7 @@ namespace DTMAPI.DebugConsole
 
         private void ResetSaveConfirmation()
         {
+            ResetDeleteConfirmation();
             saveConfirmationArmed = false;
             saveConfirmationExpiresAtUtc = DateTimeOffset.MinValue;
         }
@@ -392,9 +393,7 @@ namespace DTMAPI.DebugConsole
         {
             if (advancedApi == null || ownerManifest == null)
                 return;
-            TimeScaleDebugResult result = multiplier <= 1
-                ? advancedApi.ResetTimeScale(ownerManifest, "debug-console")
-                : advancedApi.SetTimeScale(ownerManifest, multiplier);
+            TimeScaleDebugResult result = advancedApi.SetTimeScale(ownerManifest, multiplier);
             statusMessage = result.Success
                 ? string.Format(T("debug.advanced.scaleChanged", "Time scale {0:0.#}x"), result.AfterMultiplier)
                 : string.Format(T("debug.advanced.scaleFailed", "Time scale failed: {0}"), FirstText(result.FailureReason, result.Message));
@@ -463,31 +462,32 @@ namespace DTMAPI.DebugConsole
         {
             if (advancedApi == null || ownerManifest == null)
                 return;
-            CropMaturityResult result = advancedApi.MatureAllCrops(ownerManifest);
-            statusMessage = result.Success
-                ? string.Format(T("debug.advanced.cropsChanged", "Crops {0}/{1}"), result.CropsMatured, result.PlantBasinsVisited)
-                : string.Format(T("debug.advanced.cropsFailed", "Crops failed: {0}"), FirstText(result.FailureReason, result.Message));
+            RoomCropMaturityResult result = advancedApi.MatureAllCrops(ownerManifest,
+                DebugConsoleConfig.NormalizeCropRadius(cropMaturityRadius()));
+            statusMessage = string.Format(T("debug.advanced.cropsSummary",
+                "Radius {0}: {1} basins ({2} grass), {3} targets; new {4} crops/trees + {5} grass; already {6}, empty/dead {7}, invalid {8}, failed {9}, unexecuted {10}."),
+                result.Radius, result.CandidateBasins, result.GrassBasins, result.Targets.Count,
+                result.CropsMatured, result.GrassMatured, result.AlreadyMature, result.EmptyOrDead,
+                result.Invalidated, result.Failed, result.Unexecuted);
+            if (result.FailureReason.Length > 0)
+                statusMessage += " " + string.Format(T("debug.advanced.cropsFailed", "Crops failed: {0}"), result.FailureReason);
             SetStatusMessage(statusMessage, false);
         }
 
-        private void ToggleCreativeMode()
+        private void ToggleGodMode()
         {
             if (advancedApi == null || ownerManifest == null)
                 return;
-            bool next = !advancedApi.GetCreativeModeState().Enabled;
-            CreativeModeResult result = advancedApi.SetCreativeMode(ownerManifest, next);
+            bool next = !advancedApi.GodModeEnabled;
+            DebugCommandResult result = advancedApi.SetGodMode(ownerManifest, next);
             statusMessage = result.Success
                 ? result.Message
-                : string.Format(T("debug.advanced.creativeFailed", "Creative failed: {0}"), FirstText(result.FailureReason, result.Message));
+                : string.Format(T("debug.advanced.godFailed", "God mode failed: {0}"), FirstText(result.FailureReason, result.Message));
             dirtyRegions |= UiDirtyRegion.Advanced | UiDirtyRegion.Status;
         }
 
         private bool TryGiveRightClickItem(InventoryDebugItem item, string source)
         {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            if ((now - lastRightClickGiveAt).TotalMilliseconds < 200)
-                return true;
-            lastRightClickGiveAt = now;
             if (!item.CanGive)
             {
                 SetStatusMessage(FormatItemHover(item), rebuild: false);
@@ -495,7 +495,7 @@ namespace DTMAPI.DebugConsole
             }
 
             runtime.RuntimeMonitor.Log("Debug console right-click give source=" + source + " item=" + item.Id + ".");
-            GiveItem(item, 10, rightClick: true);
+            GiveItem(item, GetRightClickCount(), rightClick: true);
             return true;
         }
 
@@ -617,7 +617,7 @@ namespace DTMAPI.DebugConsole
             InventoryGiveResult result = inventoryApi.GiveItem(ownerManifest, item.Id, count);
             statusMessage = result.Success
                 ? string.Format(T(rightClick ? "debug.items.gaveRightClick" : "debug.items.gave", rightClick ? "Right-click gave {0} x {1}" : "Gave {0} x {1}"), result.GivenCount, FirstText(result.DisplayName, result.ItemId))
-                : string.Format(T("debug.items.failed", "Give failed: {0}"), FirstText(result.FailureReason, result.Message));
+                : string.Format(T("debug.items.partial", "Requested {0}, gave {1}: {2}. Stopped: {3}"), result.RequestedCount, result.GivenCount, FirstText(result.DisplayName, result.ItemId), FirstText(result.FailureReason, result.Message));
             runtime.SetHookStatus(
                 "DebugConsole.LastGive",
                 result.Success ? "verified" : "failed",

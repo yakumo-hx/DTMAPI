@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using static DTMAPI.Internal.Authoring.NativeGenericSignature;
 
 namespace DTMAPI.Internal.Authoring
 {
@@ -48,14 +49,25 @@ namespace DTMAPI.Internal.Authoring
         }
         internal static string Key(XElement element)
         {
-            XElement Canon(XElement node)
+            // Serialize the same canonical JSON directly. Cloning every subtree
+            // at every recursion level repeats work proportional to its depth.
+            void WriteNode(XmlWriter writer, XElement node, string name)
             {
-                var copy = new XElement(node);
-                if ((string?)node.Attribute("type") == "object") { copy.RemoveNodes(); copy.Add(node.Elements().OrderBy(e => e.Name.LocalName, StringComparer.Ordinal).Select(Canon)); }
-                else if (node.HasElements) { copy.RemoveNodes(); copy.Add(node.Elements().Select(Canon)); }
-                return copy;
+                writer.WriteStartElement(name);
+                foreach (var attribute in node.Attributes()) writer.WriteAttributeString(attribute.Name.LocalName, attribute.Value);
+                if ((string?)node.Attribute("type") == "object")
+                    foreach (var child in node.Elements().OrderBy(e => e.Name.LocalName, StringComparer.Ordinal)) WriteNode(writer, child, child.Name.LocalName);
+                else if (node.HasElements)
+                    foreach (var child in node.Elements()) WriteNode(writer, child, child.Name.LocalName);
+                else if (!node.IsEmpty) writer.WriteString(node.Value);
+                writer.WriteEndElement();
             }
-            return Encoding.UTF8.GetString(Write(Canon(element)));
+            using (var output = new MemoryStream())
+            {
+                using (var writer = JsonReaderWriterFactory.CreateJsonWriter(output, Encoding.UTF8, false))
+                { WriteNode(writer, element, "root"); writer.Flush(); }
+                return Encoding.UTF8.GetString(output.ToArray());
+            }
         }
 
         // Exact verified framework identities only. The reference inventory is shared
@@ -73,6 +85,9 @@ namespace DTMAPI.Internal.Authoring
                 // Unity CoreModule in build 25163613 encodes its BCL signatures against
                 // mscorlib 2.0; the supported Mono host resolves them through mscorlib 4.0.
                 identities.Add("mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
+                // Assembly-CSharp in build 25163613 uses this exact facade identity.
+                // Only native signature spelling is normalized; author outputs remain netstandard2.0.
+                identities.Add("netstandard, Version=2.1.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
                 return identities;
             }
         });
@@ -188,9 +203,15 @@ namespace DTMAPI.Internal.Authoring
                 method.IsGenericMethodDefinition ? method.GetGenericArguments().Select(ReflectConstraint) : new XElement[0],
                 method is MethodInfo info ? ReflectType(info.ReturnType) : Named("System.Void", "bcl"), parameters.Select(p => ReflectType(p.ParameterType)));
         }
-        internal static bool Contains(Assembly host, XElement use)
+    }
+
+    // Matches one validated open definition against the actual resident Assembly.
+    // The caller validates each complete use; this seam does no admission or caching.
+    internal static class NativeGenericDefinitionQuery
+    {
+        internal static bool Contains(Assembly host, XElement definition)
         {
-            Validate(use); var definition = Get(use, "definition"); var declaring = Get(definition, "declaringType");
+            var declaring = Get(definition, "declaringType");
             if (Text(Get(declaring, "assemblyIdentity")) != host.FullName) return false;
             var type = host.GetType(Text(Get(declaring, "name")), false, false); if (type == null) return false;
             string key = Key(definition), kind = Text(Get(definition, "kind"));

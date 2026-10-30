@@ -1,5 +1,6 @@
 [CmdletBinding()]
-param([switch] $NoProvision, [string] $ApiTarget = '0.5.5')
+param([switch] $NoProvision, [string] $ApiTarget = '0.7.0')
+if ([version]$ApiTarget -lt [version]'0.6.0') { throw 'Pre-0.6 SDK compatibility checks are retired; select a supported current target.' }
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/common.ps1"
 . "$PSScriptRoot/author-sdk-release-common.ps1"
@@ -20,6 +21,16 @@ function Expect-CompatibilityFailure([scriptblock] $Action, [string] $Message) {
 }
 try {
     $env:DTMAPI_AUTHOR_SDK_FROZEN_ABSTRACTIONS_DLL = $null
+    $catalog = Get-AuthorSdkTargetCatalog -RepoRoot $repo
+    Assert-Compatibility ((Resolve-AuthorSdkTarget -RepoRoot $repo).apiTarget -ceq $catalog.defaultTarget) 'Default preparation did not select the catalog default.'
+    foreach ($retired in @('0.5.3', '0.5.5', '0.5.9')) {
+        $refusedOutput = Join-Path $testRoot $retired
+        $message = ''
+        try { Prepare-DtmApiAuthorSdkCompatibility -RepoRoot $repo -ApiTarget $retired -DotNetExe 'must-not-run.exe' -OutputRoot $refusedOutput | Out-Null }
+        catch { $message = $_.Exception.Message }
+        Assert-Compatibility ($message -like '*before 0.6.0 are retired*') 'Retired target was not refused before accessing the toolchain.'
+        Assert-Compatibility (-not (Test-Path -LiteralPath $refusedOutput)) 'Retired preparation created output.'
+    }
     $target = @((Get-AuthorSdkTargetCatalog -RepoRoot $repo).targets | Where-Object apiTarget -CEQ $ApiTarget)[0]
     $contract = Get-AuthorSdkContract -RepoRoot $repo -Target $target
     $output = Join-Path $testRoot 'prepared'
@@ -36,7 +47,7 @@ try {
     Assert-Compatibility (-not $repaired.reused -and (Get-AuthorSdkSha256 -Path $repaired.abstractionsPath) -ceq $contract.abstractionsSha256) 'Damaged cache did not rebuild to the exact frozen bytes.'
     $propsPath = Join-Path $repaired.compatibilityRoot 'DTMAPI.Author.props'
     $manifestPath = Join-Path $repaired.compatibilityRoot 'compatibility.json'
-    $receiptPath = Join-Path $output $(if ($ApiTarget -ceq '0.5.5') { 'compatibility.preparation.json' } else { "$ApiTarget.compatibility.preparation.json" })
+    $receiptPath = Join-Path $output "$ApiTarget.compatibility.preparation.json"
     $saved = @{}
     foreach ($path in @($propsPath, $manifestPath, $receiptPath)) { $saved[$path] = [IO.File]::ReadAllBytes($path) }
     [IO.File]::AppendAllText($propsPath, '<!-- coherently altered local cache -->')

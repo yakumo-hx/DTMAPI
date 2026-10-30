@@ -10,6 +10,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             lock (hookGate)
             {
+                if (shutdownCleanupRan) return;
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 if (!saveLoadedPatched && !saveLoadedEventSubscribed)
                 {
@@ -199,6 +200,7 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
         {
+            if (shutdownCleanupRan) return;
             string? assemblyName = args.LoadedAssembly.GetName().Name;
             if (assemblyName == "Assembly-CSharp")
             {
@@ -216,15 +218,19 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void RequestHookInstall(string reason)
         {
-            if (!runtime.RefactorOptions.HookInstallScheduler)
+            if (shutdownCleanupRan) return;
+            if ((reason ?? string.Empty).StartsWith("DemandActivated", StringComparison.OrdinalIgnoreCase))
+                EnsureHookRetrySources(reason ?? string.Empty);
+
+            // The option controls immediate main-thread requests, not retry lifetime.
+            // AssemblyLoad can arrive on a worker and must not install native hooks there.
+            if (!runtime.RefactorOptions.HookInstallScheduler && runtime.IsRuntimeThread)
             {
                 InstallHarmonyHooks();
                 PublishHookReadinessStatuses("LegacyDirectInstall:" + (reason ?? string.Empty));
+                StopHookRetrySources("LegacyDirectInstallComplete");
                 return;
             }
-
-            if ((reason ?? string.Empty).StartsWith("DemandActivated", StringComparison.OrdinalIgnoreCase))
-                EnsureHookRetrySources(reason ?? string.Empty);
 
             hookInstallScheduler.Request(
                 reason ?? string.Empty,
@@ -243,16 +249,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 AppDomain.CurrentDomain.AssemblyLoad += OnAssemblyLoad;
                 assemblyLoadSubscribed = true;
             }
-            if (hookRetryTimer == null)
-                hookRetryTimer = new System.Threading.Timer(_ => RequestHookInstall("RetryTimer"), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+            hookInstallScheduler.StartRetry();
         }
 
         private bool ProcessPendingHookInstallRequests(string reason)
         {
-            if (!runtime.RefactorOptions.HookInstallScheduler)
+            if (shutdownCleanupRan || !runtime.IsRuntimeThread)
                 return false;
-            if (!runtime.IsRuntimeThread)
-                return false;
+            hookInstallScheduler.PollRetry(runtime.CurrentRuntimePhase, runtime.RuntimeThreadId);
             if (!hookInstallScheduler.HasPending)
             {
                 hookSchedulerIdleFrameFastPathCount++;
@@ -275,8 +279,7 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             if (!force && (!CoreHookTargetsReady || HasUnreadyDemandedHookRoutes()))
                 return;
-            hookRetryTimer?.Dispose();
-            hookRetryTimer = null;
+            hookInstallScheduler.StopRetry();
             if (assemblyLoadSubscribed)
             {
                 AppDomain.CurrentDomain.AssemblyLoad -= OnAssemblyLoad;
@@ -297,21 +300,31 @@ namespace DTMAPI.GameBridge.DolocTown
             if (shutdownCleanupRan)
                 return;
             shutdownCleanupRan = true;
+            hookInstallScheduler.Close();
 
-            CloseQaHostParticipant("shutdown:" + (reason ?? string.Empty));
-            debugActionApi.ShutdownIfLoaded(
-                "GameBridge shutdown " + (reason ?? string.Empty));
+            int failures = 0;
+            void Release(string operation, Action action)
+            {
+                try { action(); }
+                catch (Exception ex)
+                {
+                    failures++;
+                    runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Shutdown step failed: " + operation, ex.ToString());
+                }
+            }
+            Release("QA participant", () => CloseQaHostParticipant("shutdown:" + (reason ?? string.Empty)));
+            Release("audio startup policies", () => { audioStartupPolicies?.Dispose(); audioStartupPolicies = null; });
 
             lock (hookGate)
             {
-                StopHookRetrySources("Shutdown:" + (reason ?? string.Empty), force: true);
-                TryUnsubscribeSaveLoadedUnityEvent(reason ?? string.Empty);
+                Release("hook retry sources", () => StopHookRetrySources("Shutdown:" + (reason ?? string.Empty), force: true));
+                Release("save-loaded listener", () => TryUnsubscribeSaveLoadedUnityEvent(reason ?? string.Empty));
             }
 
             // Classify the route only after removable UnityEvent listeners have gone.
             // Harmony patches have no proven independent rollback and therefore remain
             // authoritative ProcessPinnedDormant physical roots at shutdown.
-            ReleaseGameBridgeDemandRouting("shutdown:" + (reason ?? string.Empty));
+            Release("demand routing", () => ReleaseGameBridgeDemandRouting("shutdown:" + (reason ?? string.Empty)));
 
             if (ReferenceEquals(DolocTownHookCallbacks.Bridge, this))
                 DolocTownHookCallbacks.Bridge = null;
@@ -320,9 +333,9 @@ namespace DTMAPI.GameBridge.DolocTown
             HarmonyReflectionPatcher.ClearStaticCallbacks();
             runtime.SetHookStatus(
                 "GameBridge.ShutdownCleanup",
-                "verified",
+                failures == 0 ? "verified" : "failed",
                 "Unity OnApplicationQuit",
-                "Stopped hook retry sources, released DTMAPI static hook roots, and removed DTMAPI-owned UnityEvent listeners. QA scenario cleanup is owned by the optional participant. reason=" + (reason ?? string.Empty));
+                "Shutdown steps completed; failures=" + failures + ". QA scenario cleanup is owned by the optional participant. reason=" + (reason ?? string.Empty));
         }
 
         private void PublishHookSchedulerStatus(string operation)
@@ -340,7 +353,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 "Refactor.HookInstallScheduler",
                 runtime.RefactorOptions.HookInstallScheduler ? "observed" : "disabled",
                 "DTMAPI.GameBridge.DolocTown HookInstallScheduler",
-                runtime.RefactorOptions.HookInstallScheduler ? snapshot.FormatSummary() : "Hook install scheduler disabled; legacy direct install path is active.");
+                runtime.RefactorOptions.HookInstallScheduler ? snapshot.FormatSummary() : "Hook install scheduler disabled; main-thread direct install and frame retries are active. " + snapshot.FormatSummary());
             runtime.SetHookStatus(
                 "Refactor.OffThreadHookRequests",
                 snapshot.OffThreadRequests == 0 ? "ok" : "observed",
@@ -353,8 +366,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 snapshot.AssemblySummary);
             runtime.SetHookStatus(
                 "Refactor.RetryTimerAlive",
-                hookRetryTimer != null ? "active" : "released",
-                "System.Threading.Timer hook retry",
+                "released",
+                "GameBridge frame retry (no background timer)",
                 snapshot.RetrySummary);
         }
 
@@ -414,10 +427,10 @@ namespace DTMAPI.GameBridge.DolocTown
                 BuildFeatureHookReadinessSummary(),
                 BuildSmokeDiagnosticsHookReadinessSummary(),
                 "assemblyLoadSubscribed=" + (assemblyLoadSubscribed ? "true" : "false") + "; policy=" + (CoreHookTargetsReady ? "released-after-core-ready" : "active-until-core-ready"),
-                "retryTimerAlive=" + (hookRetryTimer != null ? "true" : "false") + "; policy=" + (CoreHookTargetsReady ? "released-after-core-ready" : "active-until-core-ready"),
+                "retryTimerAlive=false; frameRetryActive=" + hookInstallScheduler.RetryActive.ToString().ToLowerInvariant() + "; policy=until-core-and-demanded-routes-ready",
                 AllHookTargetsReady,
                 assemblyLoadSubscribed,
-                hookRetryTimer != null);
+                false);
         }
 
         private bool CoreHookTargetsReady => coreHookTargetsReadyOverrideForTests ??
@@ -446,48 +459,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void SetCoreHookReadinessOverrideForTests(bool? value) => coreHookTargetsReadyOverrideForTests = value;
 
-        internal bool HookRetrySourcesAliveForTests => hookRetryTimer != null || assemblyLoadSubscribed;
+        internal bool HookRetrySourcesAliveForTests => hookInstallScheduler.RetryActive || assemblyLoadSubscribed;
 
         internal void RequestHookInstallForTests(string reason) => RequestHookInstall(reason);
 
-        private bool FeatureHookTargetsReady
-        {
-            get
-            {
-                bool[] states =
-                {
-                    environmentResetHookBridge?.SetEnvCameraPatched == true,
-                    audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true,
-                    actionSpeedToolEnterPatched,
-                    actionSpeedToolExitPatched,
-                    actionSpeedInteractEnterPatched,
-                    actionSpeedInteractExitPatched,
-                    actionSpeedEatEnterPatched,
-                    actionSpeedUseItemContinuesPatched,
-                    actionSpeedInteractContinuesPatched,
-                    actionSpeedAnimalRendererInteractPatched,
-                    actionSpeedBaseExitPatched,
-                    toolColliderHitPostfixPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityReadyEnterPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityCastEnterPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityWaitEnterPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityWaitPlayPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameStartPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameUpdatePatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityMiniGameStopPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityPullEnterPatched,
-                    !fishingCompatibilityHooksRequired || fishingCompatibilityPullExitPatched,
-                    fishRoeTitlePatched,
-                    fishRoeDescriptionPatched,
-                    fishRoeDetailPatched,
-                    animalFullInfoDataPatched,
-                    animalViewerShowPrefixPatched,
-                    animalViewerShowPatched,
-                    animalPanelUnregisterPatched
-                };
-                return states.All(state => state);
-            }
-        }
+        private bool FeatureHookTargetsReady => DemandedFeatureHookTargetsReady;
 
         private bool DemandedFeatureHookTargetsReady
         {
@@ -514,48 +490,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 "; WorkshopModUiCommit=" + (IsWorkshopCommitHookReady ? "ready" : "pending");
         }
 
-        private string BuildFeatureHookReadinessSummary()
-        {
-            int ready = 0;
-            int total = fishingCompatibilityHooksRequired ? 31 : 22;
-            if (environmentResetHookBridge?.SetEnvCameraPatched == true) ready++;
-            if (audioReplacementFeature?.HookBridge.InternalPostSoundEventPatched == true) ready++;
-            if (actionSpeedToolEnterPatched) ready++;
-            if (actionSpeedToolExitPatched) ready++;
-            if (actionSpeedInteractEnterPatched) ready++;
-            if (actionSpeedInteractExitPatched) ready++;
-            if (actionSpeedEatEnterPatched) ready++;
-            if (actionSpeedUseItemContinuesPatched) ready++;
-            if (actionSpeedInteractContinuesPatched) ready++;
-            if (actionSpeedAnimalRendererInteractPatched) ready++;
-            if (actionSpeedBaseExitPatched) ready++;
-            if (toolColliderHitPostfixPatched) ready++;
-            if (fishingCompatibilityHooksRequired)
-            {
-                if (fishingCompatibilityReadyEnterPatched) ready++;
-                if (fishingCompatibilityCastEnterPatched) ready++;
-                if (fishingCompatibilityWaitEnterPatched) ready++;
-                if (fishingCompatibilityWaitPlayPatched) ready++;
-                if (fishingCompatibilityMiniGameStartPatched) ready++;
-                if (fishingCompatibilityMiniGameUpdatePatched) ready++;
-                if (fishingCompatibilityMiniGameStopPatched) ready++;
-                if (fishingCompatibilityPullEnterPatched) ready++;
-                if (fishingCompatibilityPullExitPatched) ready++;
-            }
-            if (fishRoeTitlePatched) ready++;
-            if (fishRoeDescriptionPatched) ready++;
-            if (fishRoeDetailPatched) ready++;
-            if (animalFullInfoDataPatched) ready++;
-            if (animalViewerShowPrefixPatched) ready++;
-            if (animalViewerShowPatched) ready++;
-            if (animalPanelUnregisterPatched) ready++;
-            return "ready=" + (ready == total ? "true" : "false") +
-                "; readyCount=" + ready +
-                "; total=" + total +
-                "; fishing=" + (fishingCompatibilityHooksRequired ? "active-hooks-required" : "inactive/no-consumer") +
-                "; policy=legacy-22-or-31-physical-subset" +
-                "; optional-does-not-block-core=true";
-        }
+        private string BuildFeatureHookReadinessSummary() => BuildDemandedFeatureHookReadinessSummary();
 
         private string BuildDemandedFeatureHookReadinessSummary()
         {
@@ -566,9 +501,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 "; policy=demanded-routes-only";
         }
 
-        private string BuildSmokeDiagnosticsHookReadinessSummary()
-        {
-            return "ready=true; readyCount=0; total=0; owner=ProductNative-or-optional-Compatibility; mandatoryGameBridgeTargets=none";
-        }
+        private string BuildSmokeDiagnosticsHookReadinessSummary() => "ready=true; readyCount=0; total=0; owner=ProductNative; mandatoryGameBridgeTargets=none";
     }
 }

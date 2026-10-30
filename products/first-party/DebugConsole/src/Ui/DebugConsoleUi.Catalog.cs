@@ -51,18 +51,14 @@ namespace DTMAPI.DebugConsole
                     ? advancedApi?.GetAnimalCatalog() ??
                         Array.Empty<AnimalCatalogOption>()
                     : Array.Empty<AnimalCatalogOption>();
-            InventoryDebugPage page = inventoryApi.GetItems(
+            InventoryDebugPage? page = virtualCategory ? null : inventoryApi.GetItems(
                 new InventoryDebugQuery
                 {
-                    SearchText = virtualCategory
-                        ? string.Empty
-                        : normalizedSearch,
-                    Category = virtualCategory
-                        ? string.Empty
-                        : category ?? string.Empty,
+                    SearchText = normalizedSearch,
+                    Category = category ?? string.Empty,
                     SourceId = normalizedSource,
                     IncludeUnavailable = true,
-                    Page = virtualCategory ? 0 : itemPage,
+                    Page = itemPage,
                     PageSize = pageSize
                 });
 
@@ -79,7 +75,7 @@ namespace DTMAPI.DebugConsole
             AddSectionLabel(panelRoot!, "DTMAPI.DebugConsole.Items.SourceTitle", T("debug.items.sourceColumn", "Source"), sourceX, filterTop, 150, 26);
             InventoryDebugSourceGroup[] sources =
                 GetUnifiedCatalogSources(
-                    page.Sources,
+                    page?.Sources ?? inventoryApi.GetSources(),
                     monsterEntries,
                     animalEntries);
             int sourceTotalPages = Math.Max(1, (int)Math.Ceiling(sources.Length / (double)sourcePageSize));
@@ -162,13 +158,15 @@ namespace DTMAPI.DebugConsole
                 {
                     if (!CatalogSourceMatches(
                         normalizedSource,
-                        SourceFilterBase,
-                        isModSource: false) ||
+                        option.SourceId,
+                        option.IsModSource) ||
                         !CatalogMatches(
                         normalizedSearch,
                         option.Id,
                         option.DisplayName,
-                        option.Category))
+                        option.Category,
+                        option.SourceDisplayName,
+                        option.SourceId))
                     {
                         continue;
                     }
@@ -243,12 +241,13 @@ namespace DTMAPI.DebugConsole
             }
             else
             {
-                itemPage = page.Page;
-                totalItems = page.TotalItems;
-                totalPages = page.TotalPages;
-                currentPage = page.Page;
+                InventoryDebugPage itemResults = page!;
+                itemPage = itemResults.Page;
+                totalItems = itemResults.TotalItems;
+                totalPages = itemResults.TotalPages;
+                currentPage = itemResults.Page;
                 int index = 0;
-                foreach (InventoryDebugItem item in page.Items)
+                foreach (InventoryDebugItem item in itemResults.Items)
                 {
                     int col = index % columns;
                     int row = index / columns;
@@ -268,7 +267,7 @@ namespace DTMAPI.DebugConsole
             HideUnusedCatalogCells(Math.Min(pageSize, totalItems - currentPage * pageSize));
 
             AddText(panelRoot!, "DTMAPI.DebugConsole.Items.Count", string.Format(T("debug.catalog.count", "{0} entries | page {1}/{2}"), totalItems, currentPage + 1, totalPages), 14, Color(0.78f, 0.82f, 0.84f, 1f), TextAnchorMiddleLeft, 520, top + 2, 220, 34);
-            AddText(panelRoot!, "DTMAPI.DebugConsole.Items.ClickHint", T("debug.catalog.leftRightHint", "Left-click: 1 | Right-click: 10"), 12, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleLeft, 738, top + 2, 242, 34);
+            AddText(panelRoot!, "DTMAPI.DebugConsole.Items.ClickHint", string.Format(T("debug.catalog.leftRightHint", "Left-click: 1 | Right-click: {0}"), GetRightClickCount()), 12, Color(0.70f, 0.78f, 0.80f, 1f), TextAnchorMiddleLeft, 738, top + 2, 242, 34);
 
             float pitchWidth = (float)DebugConsoleLayout.CatalogCellPitch;
             float pagerY = -(float)(
@@ -388,7 +387,7 @@ namespace DTMAPI.DebugConsole
                     DisplayName = T("debug.items.sourceBase", "Base"),
                     SourceKind = "Vanilla"
                 },
-                monsterEntries.Count +
+                monsterEntries.Count(option => !option.IsModSource) +
                     animalEntries.Count(option => !option.IsModSource));
             AddCatalogSourceCount(
                 sources,
@@ -403,7 +402,10 @@ namespace DTMAPI.DebugConsole
                     EnablementKnown = modAnimals.All(option =>
                         option.SourceEnablementKnown)
                 },
-                modAnimals.Length);
+                modAnimals.Length + monsterEntries.Count(option => option.IsModSource));
+            foreach (var group in monsterEntries.Where(option => option.IsModSource).GroupBy(option => option.SourceId, StringComparer.OrdinalIgnoreCase))
+                AddCatalogSourceCount(sources, new InventoryDebugSourceGroup { Id = group.Key, DisplayName = group.First().SourceDisplayName,
+                    SourceKind = "DTMAPI", IsModSource = true, Enabled = true, EnablementKnown = true }, group.Count());
             foreach (IGrouping<string, AnimalCatalogOption> group in modAnimals
                 .Where(option =>
                     !string.IsNullOrWhiteSpace(option.SourceId))
@@ -858,16 +860,16 @@ namespace DTMAPI.DebugConsole
             }
             else
             {
-                CreativeModeState creative = advancedApi.GetCreativeModeState();
-                string creativeLabel = creative.Enabled
-                    ? T("debug.creative.on", "Creative on")
-                    : T("debug.creative.off", "Creative off");
+                bool godEnabled = advancedApi.GodModeEnabled;
+                string godLabel = godEnabled
+                    ? T("debug.god.on", "God mode on")
+                    : T("debug.god.off", "God mode off");
                 AddText(
                     panelRoot!,
                     "DTMAPI.DebugConsole.Advanced.State",
-                    creativeLabel,
+                    godLabel,
                     12,
-                    creative.Enabled
+                    godEnabled
                         ? Color(0.74f, 1f, 0.82f, 1f)
                         : Color(0.70f, 0.78f, 0.80f, 1f),
                     TextAnchorMiddleLeft,
@@ -882,11 +884,13 @@ namespace DTMAPI.DebugConsole
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.Month", T("debug.advanced.month", "+1 month"), () => AdvanceAdvancedTime(AdvancedTimeAdvanceKind.Month, 1), Color(0.12f, 0.28f, 0.42f, 1f), 76f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.Scale4", T("debug.advanced.scale4", "4x time"), () => SetDebugTimeScale(4), Color(0.13f, 0.15f, 0.17f, 1f), 60f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.ScaleReset", T("debug.advanced.scaleReset", "1x"), () => SetDebugTimeScale(1), Color(0.13f, 0.15f, 0.17f, 1f), 48f, controlHeight);
+                CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.ScaleCustom", T("debug.advanced.scaleCustom", "Custom time"), () => SetDebugTimeScale(customTimeMultiplier()), Color(0.13f, 0.15f, 0.17f, 1f), 100f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.Money", T("debug.advanced.money", "+money"), () => AddDebugMoney(10000), Color(0.14f, 0.34f, 0.20f, 1f), 72f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.TechPoint", T("debug.advanced.techPoint", "+tech"), AddTechnologyPoints, Color(0.18f, 0.28f, 0.44f, 1f), 66f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.UnlockTech", T("debug.advanced.unlockTech", "Tech tree"), UnlockAllTechTrees, Color(0.18f, 0.28f, 0.44f, 1f), 80f, controlHeight);
                 CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.MatureCrops", T("debug.advanced.matureCrops", "Crops"), MatureAllCrops, Color(0.17f, 0.32f, 0.22f, 1f), 60f, controlHeight);
-                CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.Creative", creative.Enabled ? T("debug.advanced.creativeOff", "Creative off") : T("debug.advanced.creativeOn", "Creative on"), ToggleCreativeMode, creative.Enabled ? Color(0.36f, 0.24f, 0.12f, 1f) : Color(0.17f, 0.32f, 0.22f, 1f), 72f, controlHeight);
+                CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.DeleteStack", T("debug.delete.button", "Delete held stack"), PrepareSelectedStackDelete, Color(0.46f, 0.17f, 0.13f, 1f), 106f, controlHeight);
+                CreateWrappedActionButton(ref actionX, ref actionY, x, x + sidePanelWidth, "DTMAPI.DebugConsole.Advanced.God", godEnabled ? T("debug.advanced.godOff", "Disable god mode") : T("debug.advanced.godOn", "Enable god mode"), ToggleGodMode, godEnabled ? Color(0.36f, 0.24f, 0.12f, 1f) : Color(0.17f, 0.32f, 0.22f, 1f), 72f, controlHeight);
             }
         }
 
@@ -1016,14 +1020,14 @@ namespace DTMAPI.DebugConsole
         {
             CatalogCell cell = catalogCells[index];
             string hover = option.IsAvailable
-                ? option.DisplayName + " / " + option.Id
+                ? option.DisplayName + " / " + option.Id + " / " + option.SourceDisplayName
                 : TranslateSpawnUnavailable(option.UnavailableReason, isAnimal: false);
             cell.BindMonster(option, hover);
             BindCatalogVisual(
                 cell,
                 option.Icon,
                 option.DisplayName,
-                string.Empty,
+                option.IsModSource ? option.SourceDisplayName : string.Empty,
                 option.IsAvailable ? string.Empty : T("debug.items.notLoaded.short", "off"),
                 "?",
                 option.IsAvailable ? Color(0.080f, 0.075f, 0.090f, 1f) : Color(0.055f, 0.055f, 0.060f, 1f),
@@ -1194,66 +1198,6 @@ namespace DTMAPI.DebugConsole
 
         private static void NoOpPointer(object? value)
         {
-        }
-
-        private sealed class CatalogPageAccumulator<T>
-            where T : class
-        {
-            private readonly int requestedPage;
-            private readonly int pageSize;
-            private readonly List<T> requestedItems;
-            private readonly T?[] tail;
-            private int tailCount;
-            private int tailNext;
-
-            internal CatalogPageAccumulator(int page, int size)
-            {
-                requestedPage = Math.Max(0, page);
-                pageSize = Math.Max(1, size);
-                requestedItems = new List<T>(pageSize);
-                tail = new T?[pageSize];
-            }
-
-            internal int Page { get; private set; }
-            internal int TotalItems { get; private set; }
-            internal int TotalPages { get; private set; } = 1;
-
-            internal void Add(T item)
-            {
-                long index = TotalItems;
-                TotalItems++;
-                long requestedStart = (long)requestedPage * pageSize;
-                if (index >= requestedStart &&
-                    requestedItems.Count < pageSize)
-                {
-                    requestedItems.Add(item);
-                }
-                tail[tailNext] = item;
-                tailNext = (tailNext + 1) % pageSize;
-                if (tailCount < pageSize)
-                    tailCount++;
-            }
-
-            internal IReadOnlyList<T> Complete()
-            {
-                TotalPages = Math.Max(
-                    1,
-                    (int)Math.Ceiling(TotalItems / (double)pageSize));
-                Page = Math.Min(requestedPage, TotalPages - 1);
-                if (Page == requestedPage)
-                    return requestedItems;
-
-                int resolvedCount = TotalItems - Page * pageSize;
-                var resolved = new T[resolvedCount];
-                int oldest = tailCount < pageSize ? 0 : tailNext;
-                int skip = tailCount - resolvedCount;
-                for (int index = 0; index < resolvedCount; index++)
-                {
-                    resolved[index] = tail[
-                        (oldest + skip + index) % pageSize]!;
-                }
-                return resolved;
-            }
         }
 
     }

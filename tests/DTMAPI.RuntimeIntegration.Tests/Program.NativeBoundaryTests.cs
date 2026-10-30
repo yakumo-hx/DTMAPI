@@ -41,22 +41,14 @@ namespace DTMAPI.UnitTests
 
         private static string FindRepositoryFile(string relativePath)
         {
-            foreach (string start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
-            {
-                var current = new DirectoryInfo(Path.GetFullPath(start));
-                while (current != null)
-                {
-                    string candidate = Path.Combine(current.FullName, relativePath);
-                    if (File.Exists(candidate))
-                        return candidate;
-                    current = current.Parent;
-                }
-            }
+            string candidate = Path.Combine(FindRepositoryRoot(), relativePath);
+            if (File.Exists(candidate)) return candidate;
             throw new FileNotFoundException("Could not locate repository QA build output.", relativePath);
         }
 
         private static void HookInstallSchedulerCoalescesExternalRequests()
         {
+            HookRetriesUseTheFrameClockAndClosePermanently();
             int runtimeThreadId = Thread.CurrentThread.ManagedThreadId;
             var scheduler = new HookInstallScheduler();
 
@@ -86,6 +78,31 @@ namespace DTMAPI.UnitTests
             Assert(requests.Any(r => r.Key == "AssemblyLoad" && r.Count == 2), "AssemblyLoad requests should be merged under one key.");
             Assert(requests.Any(r => r.Key == "RetryTimer" && r.Count == 2), "Retry timer requests should be merged under one key.");
             Assert(scheduler.GetSnapshot(true, "ready=6/6", "ready=1/1", "ready=1/1", "subscribed=false", "alive=false", true, false, false).Pending == 0, "Scheduler pending queue should be empty after consume.");
+        }
+
+        private static void HookRetriesUseTheFrameClockAndClosePermanently()
+        {
+            double now = 10;
+            var scheduler = new HookInstallScheduler(() => now);
+            scheduler.StartRetry();
+            now = 11;
+            scheduler.PollRetry("title", 1);
+            Assert(!scheduler.HasPending, "No Hook retry may run before its two-second deadline.");
+            now = 12;
+            scheduler.PollRetry("title", 1);
+            scheduler.PollRetry("title", 1);
+            Assert(scheduler.ConsumePending().Length == 1, "A due frame schedules one retry, without a background worker or duplicate due work.");
+            scheduler.StopRetry();
+            now = 30;
+            scheduler.PollRetry("next-session", 1);
+            Assert(!scheduler.HasPending && !scheduler.RetryActive, "Stopped retries cannot bleed into a later session.");
+            scheduler.StartRetry();
+            scheduler.Close();
+            scheduler.Request("AssemblyLoad:late", "shutdown", 2, 1);
+            scheduler.StartRetry();
+            now = 60;
+            scheduler.PollRetry("shutdown", 1);
+            Assert(!scheduler.HasPending && !scheduler.RetryActive, "A closed scheduler rejects every late request and cannot restart.");
         }
 
         private static void InputNativeEdgeLatchRetainsAndConsumesShortTapOnce()
@@ -139,41 +156,25 @@ namespace DTMAPI.UnitTests
             InputButtonSample nextPress = ReflectedUnityInput.SampleButtonCached("F6");
             Assert(nextPress.PressedEdge && nextPress.IsDownNow, "A new press after release must still dispatch normally.");
             ReflectedUnityInput.ClearTransientState();
-        }
 
-        private static void GameBridgeOwnerCleanupRemovesConfiguredFishingPolicy()
-        {
-            string? previousRoot = UseTempPersistentRoot();
-            try
-            {
-                string dir = NewTempGameDir();
-                var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
-                var bridge = new DolocTownGameBridge(runtime);
-                var owner = new ManifestModel
-                {
-                    Name = "Failed AutoFishing Consumer",
-                    Author = "DTMAPI",
-                    Version = "1.0.0",
-                    UniqueID = "DTMAPI.Tests.FailedAutoFishingConsumer",
-                    Type = "CodeMod"
-                };
-                IFishingAutomationApi api = runtime.ModRegistry.GetApi<IFishingAutomationApi>("DTMAPI.GameBridge.DolocTown")
-                    ?? throw new InvalidOperationException("Fishing compatibility API should be registered by GameBridge.");
-                api.Configure(owner, new FishingAutomationOptions());
-                Assert(api.GetStatus(owner.UniqueID).Status == "configured", "Configure should store a compatibility policy without activation.");
-
-                MethodInfo cleanup = typeof(DtmApiRuntime).GetMethod("CleanupFailedCodeModOwner", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException("CleanupFailedCodeModOwner should exist.");
-                string summary = (string)(cleanup.Invoke(runtime, new object[] { owner.UniqueID, string.Empty }) ?? string.Empty);
-
-                Assert(api.GetStatus(owner.UniqueID).Status == "inactive/no-consumer", "Core-to-GameBridge owner cleanup should remove configured fishing policy after failed Entry.");
-                Assert(summary.Contains("participantResourcesRemoved=3", StringComparison.Ordinal), "Failed owner cleanup should report removal of the frozen compatibility option, status, and one-time warning roots without a ProductNative state root.");
-                Assert(!runtime.ResourceLifecycleSnapshot.Records.Any(record => record.OwnerId.Equals(owner.UniqueID, StringComparison.OrdinalIgnoreCase)), "Failed owner cleanup should leave no owner-scoped fishing lifecycle record.");
-            }
-            finally
-            {
-                RestorePersistentRoot(previousRoot);
-            }
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", true, false, false) });
+            InputButtonSample firstHeld = ReflectedUnityInput.SampleButtonCached("F6");
+            Assert(firstHeld.IsDownNow && !firstHeld.PressedEdge, "First observing a held key without a native edge must not invent a press.");
+            ReflectedUnityInput.LatchInputSamplesForTest(Array.Empty<InputButtonSample>());
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", true, false, false) });
+            InputButtonSample resumedHeld = ReflectedUnityInput.SampleButtonCached("F6");
+            Assert(resumedHeld.IsDownNow && !resumedHeld.PressedEdge, "Resuming a pruned held key must preserve the absence of a new edge.");
+            ReflectedUnityInput.LatchInputSamplesForTest(Array.Empty<InputButtonSample>());
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", true, true, false) });
+            Assert(ReflectedUnityInput.SampleButtonCached("F6").PressedEdge, "A genuine first press after pruning must remain deliverable.");
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", false, false, false) });
+            Assert(ReflectedUnityInput.SampleButtonCached("F6").ReleasedEdge, "Continuous sampled release remains inferable.");
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", true, false, false) });
+            Assert(ReflectedUnityInput.SampleButtonCached("F6").PressedEdge, "Continuous sampled neutral-to-held transition remains inferable.");
+            ReflectedUnityInput.LatchInputSamplesForTest(new[] { new InputButtonSample("F6", true, true, true) });
+            InputButtonSample rapid = ReflectedUnityInput.SampleButtonCached("F6");
+            Assert(rapid.PressedEdge && rapid.ReleasedEdge && rapid.IsDownNow, "A real rapid release/repress retains both edges.");
+            ReflectedUnityInput.ClearTransientState();
         }
 
         private static void TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu()
@@ -191,6 +192,107 @@ namespace DTMAPI.UnitTests
             runtime.UI.OpenDtmApiStatusPage();
             resetBoundary.Invoke(titleHost, new object[] { "title hidden" });
             Assert(!runtime.UI.IsOpen, "The hidden title host must still close its own DTMAPI manager page.");
+            HiddenTitleSettingsSettleAndStillProcessNewBoundaryWork();
+        }
+
+        private static void HiddenTitleSettingsSettleAndStillProcessNewBoundaryWork()
+        {
+            var menu = new ConfigMenuRegistry();
+            var host = new FakeHost(NewTempGameDir());
+            var runtime = new DtmApiRuntime(host, menu);
+            // This fixture intentionally does not Start the runtime, whose constructor installs a NullMonitor.
+            typeof(DtmApiRuntime).GetProperty(nameof(DtmApiRuntime.RuntimeMonitor))!.SetValue(runtime,
+                new FileMonitor(host, "DTMAPI", Path.Combine(host.GamePath, "hidden-title.log")));
+            var titleHost = CreateMountedTitleUi(runtime, menu, out FakeTitleGameObject panel, out FakeTitleGameObject button);
+            runtime.UI.SetUiContext("NormalGameState", false, true, "hidden title regression");
+            runtime.UI.OpenDtmApiStatusPage();
+            titleHost.Update();
+            Assert(!runtime.UI.IsOpen && !panel.activeInHierarchy && button.activeInHierarchy,
+                "Leaving title must close its owned menu and hide the panel.");
+            int resets = panel.SetActiveCalls;
+            titleHost.Update();
+            titleHost.Update();
+            Assert(panel.SetActiveCalls == resets && button.SetActiveCalls == resets,
+                "A settled hidden title must not repeat panel or button SetActive each frame.");
+
+            runtime.UI.OpenCustomMenu("DTMAPI.DebugConsole");
+            titleHost.Update();
+            Assert(runtime.UI.IsOpen && runtime.UI.ActiveMenuId == "DTMAPI.DebugConsole" && panel.SetActiveCalls == resets,
+                "Another owner's menu must remain open while the title host is idle.");
+            runtime.UI.Close();
+            runtime.UI.OpenDtmApiStatusPage();
+            titleHost.Update();
+            Assert(!runtime.UI.IsOpen && panel.SetActiveCalls == ++resets,
+                "A new owned menu request while already hidden must still be closed.");
+
+            var barrier = GetPrivateField<EditRenderBarrier>(titleHost, "editRenderBarrier");
+            barrier.Defer();
+            titleHost.Update();
+            Assert(!barrier.IsPending && panel.SetActiveCalls == ++resets,
+                "A deferred edit arriving while hidden must not survive into the next title session.");
+
+            var cancellation = new CancellationTokenSource();
+            CancellationToken token = cancellation.Token;
+            var pending = new System.Threading.Tasks.TaskCompletionSource<DtmCommandResult>();
+            SetPrivateField(titleHost, "platformCommandCancellation", cancellation);
+            SetPrivateField(titleHost, "pendingPlatformCommand", pending.Task);
+            titleHost.Update();
+            Assert(token.IsCancellationRequested && panel.SetActiveCalls == ++resets,
+                "An unfinished command arriving while hidden must still be cancelled.");
+
+            var completed = System.Threading.Tasks.Task.FromResult(new DtmCommandResult(
+                "hidden-completion", "DTMAPI.Tests", new DtmWorkResult(DtmWorkStatus.Succeeded), new[] { "done" }));
+            SetPrivateField(titleHost, "pendingPlatformCommand", completed);
+            titleHost.Update();
+            int completionLogs = host.Logs.Count(line => line.Contains("Mod command request=hidden-completion", StringComparison.Ordinal));
+            int outputLines = GetPrivateField<string[]>(titleHost, "platformCommandOutput").Length;
+            string completionStatus = GetPrivateField<string>(titleHost, "statusMessage");
+            resets++;
+            Assert(completionLogs == 1, "Command polling must publish its completed result before cleanup; actual completion logs=" + completionLogs + ".");
+            Assert(outputLines == 0, "Completed command output must not leak into the next title session; actual lines=" + outputLines + ".");
+            Assert(completionStatus.Length == 0, "Completed command status must not leak into the next title session; actual status=" + completionStatus + ".");
+            Assert(panel.SetActiveCalls == resets, "A completed command while hidden must run one boundary cleanup; expected=" + resets + "; actual=" + panel.SetActiveCalls + ".");
+
+            var manifest = new ManifestModel { Name = "Hidden draft", Author = "DTMAPI", Version = "1.0.0", UniqueID = "DTMAPI.Tests.HiddenDraft" };
+            bool enabled = false;
+            menu.Register(manifest, () => enabled = false, () => { });
+            menu.AddBoolOption(manifest, () => "Enabled", () => "", () => enabled, value => enabled = value);
+            IConfigMenuRuntime menuRuntime = menu;
+            IConfigMenuPage page = menuRuntime.GetPage(manifest.UniqueID)!;
+            menuRuntime.BeginEditing(manifest.UniqueID);
+            Assert(page.Items[0].TrySetPendingValue("true", out _), "The test must create a real pending config draft.");
+            SetPrivateField(titleHost, "selectedConfigModId", manifest.UniqueID);
+            titleHost.Update();
+            Assert(!page.HasPendingChanges && !enabled && panel.SetActiveCalls == ++resets,
+                "A new selected-page draft while already hidden must be cancelled without applying it.");
+            titleHost.Update();
+            Assert(panel.SetActiveCalls == resets, "A cancelled draft must return the hidden host to its settled state.");
+
+            titleHost.ResetForSaveBoundary(1, false);
+            Assert(panel.SetActiveCalls == ++resets, "An explicit Save boundary must still run cleanup even after the title has settled.");
+            titleHost.ResetForTitleBoundary();
+            Assert(panel.SetActiveCalls == ++resets, "An explicit Title boundary must still run cleanup even after the title has settled.");
+            panel.Destroyed = true;
+            titleHost.Update();
+            Assert(!GetPrivateField<bool>(titleHost, "initialized"),
+                "Hidden steady state must keep detecting native destruction of mounted UI objects.");
+            titleHost.Shutdown("hidden boundary test");
+            Assert(GetPrivateField<bool>(titleHost, "inputOwnerClosed"), "Shutdown must still close the title input owner.");
+        }
+
+        private static ReflectedTitleMenuSettingsUi CreateMountedTitleUi(DtmApiRuntime runtime, ConfigMenuRegistry menu,
+            out FakeTitleGameObject panel, out FakeTitleGameObject button)
+        {
+            var titleHost = new ReflectedTitleMenuSettingsUi(runtime, menu);
+            SetPrivateField(titleHost, "inputSettingsRegistered", true);
+            SetPrivateField(titleHost, "initialized", true);
+            SetPrivateField(titleHost, "objectType", typeof(FakeTitleUnityObject));
+            SetPrivateField(titleHost, "gameObjectType", typeof(FakeTitleGameObject));
+            SetPrivateField(titleHost, "root", new FakeTitleGameObject());
+            SetPrivateField(titleHost, "panelRoot", panel = new FakeTitleGameObject());
+            SetPrivateField(titleHost, "titleButtonRoot", button = new FakeTitleGameObject());
+            SetPrivateField(titleHost, "panelContentRoot", new FakeTitleGameObject());
+            return titleHost;
         }
 
         private static void TitleSettingsEventSystemDoesNotChooseInputSystemModuleWhenNotReady()
@@ -213,6 +315,101 @@ namespace DTMAPI.UnitTests
             selected = (bool)(select.Invoke(ui, args) ?? true);
             Assert(!selected, "Title UI should defer EventSystem creation instead of creating InputSystemUIInputModule when no safe module is available.");
             Assert(((string?)args[1] ?? string.Empty).Contains("not initialized", StringComparison.OrdinalIgnoreCase), "Deferred title EventSystem creation should explain the Input System state.");
+            TitleSettingsBorrowedEventSystemFollowsNativeLifetime();
+        }
+
+        private static void TitleSettingsBorrowedEventSystemFollowsNativeLifetime()
+        {
+            FakeTitleUnityObject.SceneSystems.Clear();
+            FakeTitleUnityObject.FindOneCalls = FakeTitleUnityObject.FindAllCalls = 0;
+            var menu = new ConfigMenuRegistry();
+            var runtime = new DtmApiRuntime(new FakeHost(NewTempGameDir()), menu);
+            var titleHost = CreateMountedTitleUi(runtime, menu, out _, out _);
+            SetPrivateField(titleHost, "eventSystemType", typeof(FakeTitleEventSystem));
+            MethodInfo ensure = typeof(ReflectedTitleMenuSettingsUi).GetMethod("EnsureEventSystem", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var first = new FakeTitleEventSystem();
+            FakeTitleUnityObject.SceneSystems.Add(first);
+            ensure.Invoke(titleHost, null);
+            ensure.Invoke(titleHost, null);
+            Assert(FakeTitleUnityObject.FindOneCalls == 1 && FakeTitleUnityObject.FindAllCalls == 0,
+                "An alive active borrowed scene EventSystem must avoid repeated global searches.");
+            first.Destroyed = true;
+            var second = new FakeTitleEventSystem();
+            FakeTitleUnityObject.SceneSystems.Add(second);
+            ensure.Invoke(titleHost, null);
+            Assert(ReferenceEquals(GetPrivateField<object>(titleHost, "borrowedEventSystem"), second) && FakeTitleUnityObject.FindOneCalls == 2,
+                "A Unity-destroyed borrowed component must be replaced by the scene's new EventSystem.");
+            second.gameObject.activeInHierarchy = false;
+            var third = new FakeTitleEventSystem();
+            FakeTitleUnityObject.SceneSystems.Add(third);
+            ensure.Invoke(titleHost, null);
+            Assert(ReferenceEquals(GetPrivateField<object>(titleHost, "borrowedEventSystem"), third) && FakeTitleUnityObject.FindOneCalls == 3,
+                "A deactivated scene EventSystem must stop suppressing a fresh active scene lookup.");
+            titleHost.ResetForSaveBoundary(1, false);
+            ensure.Invoke(titleHost, null);
+            titleHost.ResetForTitleBoundary();
+            ensure.Invoke(titleHost, null);
+            Assert(!third.Destroyed && !third.gameObject.Destroyed && FakeTitleUnityObject.FindOneCalls == 5,
+                "Save and Title boundaries must invalidate the borrowed reference without destroying the native owner.");
+
+            titleHost.ResetForTitleBoundary();
+            FakeTitleUnityObject.SceneSystems.Clear();
+            var owned = new FakeTitleEventSystem();
+            FakeTitleUnityObject.SceneSystems.Add(owned);
+            SetPrivateField(titleHost, "eventSystemRoot", owned.gameObject);
+            SetPrivateField(titleHost, "eventSystemComponent", owned);
+            ensure.Invoke(titleHost, null);
+            Assert(!owned.gameObject.Destroyed && FakeTitleUnityObject.FindAllCalls == 1,
+                "An owned fallback must remain alive when no native scene EventSystem exists.");
+            FakeTitleUnityObject.SceneSystems.Add(third);
+            ensure.Invoke(titleHost, null);
+            int finds = FakeTitleUnityObject.FindOneCalls + FakeTitleUnityObject.FindAllCalls;
+            ensure.Invoke(titleHost, null);
+            Assert(owned.gameObject.Destroyed && !third.Destroyed && !third.gameObject.Destroyed &&
+                ReferenceEquals(GetPrivateField<object>(titleHost, "borrowedEventSystem"), third) &&
+                FakeTitleUnityObject.FindOneCalls + FakeTitleUnityObject.FindAllCalls == finds,
+                "The fallback must still yield to a newly available native EventSystem, then reuse it without more global searches.");
+            titleHost.Shutdown("borrowed EventSystem test");
+            Assert(!third.Destroyed && !third.gameObject.Destroyed, "Shutdown must never destroy a borrowed native EventSystem.");
+            FakeTitleUnityObject.SceneSystems.Clear();
+        }
+
+        // These doubles model Unity's destroyed-object equality and active-only scene searches.
+        private class FakeTitleUnityObject
+        {
+            internal static readonly List<FakeTitleEventSystem> SceneSystems = new List<FakeTitleEventSystem>();
+            internal static int FindOneCalls, FindAllCalls;
+            internal bool Destroyed;
+            public static FakeTitleUnityObject? FindObjectOfType(Type type)
+            {
+                FindOneCalls++;
+                return SceneSystems.FirstOrDefault(item => type.IsInstanceOfType(item) && !item.Destroyed && !item.gameObject.Destroyed && item.gameObject.activeInHierarchy);
+            }
+            public static FakeTitleUnityObject[] FindObjectsOfType(Type type)
+            {
+                FindAllCalls++;
+                return SceneSystems.Where(item => type.IsInstanceOfType(item) && !item.Destroyed && !item.gameObject.Destroyed && item.gameObject.activeInHierarchy).ToArray();
+            }
+            public static void Destroy(FakeTitleUnityObject value) => value.Destroyed = true;
+            public static bool operator ==(FakeTitleUnityObject? left, FakeTitleUnityObject? right)
+            {
+                bool leftNull = left is null || left.Destroyed;
+                bool rightNull = right is null || right.Destroyed;
+                return leftNull || rightNull ? leftNull && rightNull : ReferenceEquals(left, right);
+            }
+            public static bool operator !=(FakeTitleUnityObject? left, FakeTitleUnityObject? right) => !(left == right);
+            public override bool Equals(object? value) => ReferenceEquals(this, value);
+            public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+        }
+        private sealed class FakeTitleGameObject : FakeTitleUnityObject
+        {
+            public bool activeInHierarchy { get; set; } = true;
+            internal int SetActiveCalls;
+            public void SetActive(bool active) { SetActiveCalls++; activeInHierarchy = active; }
+        }
+        private sealed class FakeTitleEventSystem : FakeTitleUnityObject
+        {
+            public FakeTitleGameObject gameObject { get; } = new FakeTitleGameObject();
         }
 
         private sealed class FakeInputSystemUiInputModule { }
@@ -283,19 +480,8 @@ namespace DTMAPI.UnitTests
             Assembly bridgeAssembly = typeof(DolocTownGameBridge).Assembly;
             string[] ownerRetainingTypes =
             {
-                "DTMAPI.GameBridge.DolocTown.ActionSpeedService",
-                "DTMAPI.GameBridge.DolocTown.ActionCompletionService",
-                "DTMAPI.GameBridge.DolocTown.AnimalViewerService",
-                "DTMAPI.GameBridge.DolocTown.AudioReplacementService",
-                "DTMAPI.GameBridge.DolocTown.CameraFeature",
-                "DTMAPI.GameBridge.DolocTown.ChestLocatorEnhancerService",
                 "DTMAPI.GameBridge.DolocTown.CropHarvestingService",
-                "DTMAPI.GameBridge.DolocTown.CustomAnimalAnimatorBridgeService",
-                "DTMAPI.GameBridge.DolocTown.DebugActionCompatibilityProxy",
-                "DTMAPI.GameBridge.DolocTown.DebugConsoleCompatibilityProxy",
-                "DTMAPI.GameBridge.DolocTown.FishRoeTooltipService",
-                "DTMAPI.GameBridge.DolocTown.SaveSlotsService",
-                "DTMAPI.GameBridge.DolocTown.FishingAutomationCompatibilityFeature"
+                "DTMAPI.GameBridge.DolocTown.EquipmentSlotsService"
             };
             foreach (string typeName in ownerRetainingTypes)
             {
@@ -602,10 +788,13 @@ namespace DTMAPI.UnitTests
                 Assert(failingSelected.NativeSubscriptionVerified && failingSelected.OfficialEnabled,
                     "Verified subscription/root should retain the official enabled state when optional native-info enrichment fails.");
                 string failingPersisted = File.ReadAllText(AuthorSourceStateStore.GetWorkshopSnapshotPath(failingGameDir));
-                Assert(failingPersisted.Contains("\"available\":true", StringComparison.OrdinalIgnoreCase) &&
-                    failingPersisted.Contains("\"nativeInfoAvailable\":false", StringComparison.OrdinalIgnoreCase) &&
-                    failingPersisted.Contains(JsonEscapeForTest(failingWorkshopRoot), StringComparison.OrdinalIgnoreCase) &&
-                    failingPersisted.Contains("GetAllValidModInfos enrichment failed", StringComparison.Ordinal),
+                using JsonDocument persistedSnapshot = JsonDocument.Parse(failingPersisted);
+                JsonElement persistedSubscription = persistedSnapshot.RootElement.GetProperty("subscriptions").EnumerateArray()
+                    .Single(row => row.GetProperty("workshopId").GetString() == failingWorkshopId.ToString(CultureInfo.InvariantCulture));
+                Assert(persistedSnapshot.RootElement.GetProperty("available").GetBoolean() &&
+                    !persistedSubscription.GetProperty("nativeInfoAvailable").GetBoolean() &&
+                    persistedSubscription.GetProperty("installPath").GetString() == failingWorkshopRoot &&
+                    persistedSnapshot.RootElement.GetProperty("failure").GetString()!.Contains("GetAllValidModInfos enrichment failed", StringComparison.Ordinal),
                     "Partial native-info failure evidence must persist an available required snapshot, exact root, nullable enablement and stage-qualified failure.");
                 failingRuntime.NotifyRuntimeShutdown("unit-native-info-failure");
 
@@ -807,7 +996,21 @@ namespace DTMAPI.UnitTests
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
             Assert(missing["diskEntrySha256"] == "unavailable" && missing["residentMatchesDiskMvid"] == "unavailable",
                 "Missing code produces unavailable observation rather than fabricated match.");
+            File.Copy(path, copy);
+            var loadContext = new System.Runtime.Loader.AssemblyLoadContext("AuthorObservation", isCollectible: true);
+            try
+            {
+                string loadedMvid = loadContext.LoadFromAssemblyPath(copy).ManifestModule.ModuleVersionId.ToString("D");
+                File.Move(copy, copy + ".previous");
+                var rebuilding = AuthorAssemblyObservation.Read(Selected(copyRoot, "never-loaded.dll"))
+                    .ToDictionary(pair => pair.Key, pair => pair.Value);
+                Assert(rebuilding["diskEntrySha256"] == "unavailable" && rebuilding["diskEntryMvid"] == "unavailable" &&
+                    rebuilding["residentEntryMvid"] == loadedMvid && rebuilding["residentMatchesDiskMvid"] == "unavailable",
+                    "A DLL moved during a rebuild must not hide the module already resident in this process.");
+            }
+            finally { loadContext.Unload(); }
         }
+
 
         private static void ExplicitAuthorSessionAuthorizesWorkshopValidationAndClosesAtTitle()
         {
@@ -831,7 +1034,6 @@ namespace DTMAPI.UnitTests
                 WriteOfficialModInfos(
                     persistentRoot,
                     new OfficialModInfoTestEntry("Workshop." + workshopId.ToString(CultureInfo.InvariantCulture), true, "Workshop"));
-                string treeSha256 = AuthorFileTreeDigest.Compute(workshopRoot);
                 WriteAuthorSourceSelectionState(
                     gameDir,
                     uniqueId,
@@ -866,8 +1068,9 @@ namespace DTMAPI.UnitTests
                 DiscoveredMod selected = runtime.CreateSnapshot().DiscoveredMods.Single(mod => mod.Manifest.UniqueID == uniqueId);
                 Assert(selected.Source == "Workshop" && selected.NativeSubscriptionVerified, "The CLI-produced Workshop Validation state plus an active author session and native snapshot should authorize the native-installed Workshop source without inventing an offline tree/path assertion.");
 
+                using var editingAsset = new FileStream(Path.Combine(workshopRoot, "editing-asset.bin"), FileMode.Create, FileAccess.ReadWrite, FileShare.None);
                 string requestId = Guid.NewGuid().ToString("N");
-                string request = BuildAuthorSessionRequest(gameDir, sessionId, token, requestId, uniqueId, workshopRoot, treeSha256, "get-source-snapshot");
+                string request = BuildAuthorSessionRequest(gameDir, sessionId, token, requestId, uniqueId, workshopRoot, "get-source-snapshot");
                 string response = string.Empty;
                 Exception? clientFailure = null;
                 var clientThread = new Thread(() =>
@@ -886,6 +1089,7 @@ namespace DTMAPI.UnitTests
                 DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(5);
                 while ((runtime.AuthorSessionSnapshot?.Pending ?? 0) == 0 && clientFailure == null && DateTimeOffset.UtcNow < deadline)
                     Thread.Sleep(10);
+                if (clientFailure != null) throw new InvalidOperationException("Author-session client could not connect.", clientFailure);
                 Assert((runtime.AuthorSessionSnapshot?.Pending ?? 0) == 1, "Authenticated pipe work should be queued without executing on the listener thread.");
 
                 string concurrentRequest = BuildAuthorSessionRequest(
@@ -895,7 +1099,6 @@ namespace DTMAPI.UnitTests
                     Guid.NewGuid().ToString("N"),
                     uniqueId,
                     workshopRoot,
-                    treeSha256,
                     "get-source-snapshot");
                 string concurrent = SendAuthorSessionRequest(pipeName, concurrentRequest);
                 Assert(concurrent.Contains("owner-request-concurrent", StringComparison.Ordinal), "A second in-flight request for the same owner should be rejected before Runtime mutation.");
@@ -925,7 +1128,7 @@ namespace DTMAPI.UnitTests
 
                 string replay = SendAuthorSessionRequest(pipeName, request);
                 Assert(replay.Contains("request-replay", StringComparison.Ordinal), "A reused requestId should be rejected deterministically as a replay.");
-                string wrongTokenRequest = BuildAuthorSessionRequest(gameDir, sessionId, new string('B', 48), Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, treeSha256, "get-source-snapshot");
+                string wrongTokenRequest = BuildAuthorSessionRequest(gameDir, sessionId, new string('B', 48), Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, "get-source-snapshot");
                 string wrongToken = SendAuthorSessionRequest(pipeName, wrongTokenRequest);
                 Assert(wrongToken.Contains("authentication-failed", StringComparison.Ordinal), "A wrong author-session token should fail before Runtime queueing.");
 
@@ -936,7 +1139,6 @@ namespace DTMAPI.UnitTests
                     Guid.NewGuid().ToString("N"),
                     uniqueId,
                     workshopRoot,
-                    treeSha256,
                     "get-source-snapshot",
                     runtimeVersion: "0.5.4");
                 string wrongRuntime = SendAuthorSessionRequest(pipeName, wrongRuntimeRequest);
@@ -949,7 +1151,6 @@ namespace DTMAPI.UnitTests
                     Guid.NewGuid().ToString("N"),
                     uniqueId,
                     workshopRoot,
-                    treeSha256,
                     "get-source-snapshot",
                     requestGameRoot: gameDir + "-other");
                 string wrongGameRoot = SendAuthorSessionRequest(pipeName, wrongGameRootRequest);
@@ -958,20 +1159,14 @@ namespace DTMAPI.UnitTests
                 string selectedRootMismatch = SendAuthorSessionRequestThroughRuntime(
                     runtime,
                     pipeName,
-                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot + "-other", treeSha256, "get-source-snapshot"));
+                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot + "-other", "get-source-snapshot"));
                 Assert(selectedRootMismatch.Contains("selected-root-mismatch", StringComparison.Ordinal), "Runtime should revalidate the selected source root on its own thread.");
-
-                string treeHashMismatch = SendAuthorSessionRequestThroughRuntime(
-                    runtime,
-                    pipeName,
-                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, new string('0', 64), "get-source-snapshot"));
-                Assert(treeHashMismatch.Contains("source-tree-hash-mismatch", StringComparison.Ordinal), "Runtime should rehash the selected tree immediately before an author operation.");
 
                 string restartRequired = SendAuthorSessionRequestThroughRuntime(
                     runtime,
                     pipeName,
-                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, treeSha256, "reload-content"));
-                Assert(restartRequired.Contains("restart-required", StringComparison.Ordinal), "Content without the reviewed Audio owner should return a deterministic restart-required result.");
+                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, "reload-content"));
+                Assert(restartRequired.Contains("restart-required", StringComparison.Ordinal), "Content without a transactional reload owner should return a deterministic restart-required result.");
 
                 runtime.UpdateNativeWorkshopSubscriptions(
                     available: true,
@@ -991,7 +1186,7 @@ namespace DTMAPI.UnitTests
                 string disabledReload = SendAuthorSessionRequestThroughRuntime(
                     runtime,
                     pipeName,
-                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, treeSha256, "reload-content"));
+                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, "reload-content"));
                 Assert(disabledReload.Contains("source-not-selected", StringComparison.Ordinal), "Enabled-first arbitration must remove a native-disabled Workshop source from author-session selection instead of allowing the session to reactivate it.");
 
                 runtime.NotifyReturnedToTitle();
@@ -1163,7 +1358,7 @@ namespace DTMAPI.UnitTests
                 string response = SendAuthorSessionRequestThroughRuntime(
                     runtime,
                     pipeName,
-                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, treeSha256, "reload-content"));
+                    BuildAuthorSessionRequest(gameDir, sessionId, token, Guid.NewGuid().ToString("N"), uniqueId, workshopRoot, "reload-content"));
                 Assert(response.Contains("source-not-active", StringComparison.Ordinal), "An explicit session must not bypass Runtime dependency gates when reloading content.");
                 runtime.NotifyRuntimeShutdown("unit-dependency-blocked-author-session");
             }
@@ -1181,7 +1376,6 @@ namespace DTMAPI.UnitTests
             string requestId,
             string uniqueId,
             string selectedRoot,
-            string expectedTreeSha256,
             string operation,
             string? runtimeVersion = null,
             string? requestGameRoot = null)
@@ -1193,7 +1387,6 @@ namespace DTMAPI.UnitTests
                 "\", \"requestId\": \"" + requestId +
                 "\", \"uniqueId\": \"" + JsonEscapeForTest(uniqueId) +
                 "\", \"selectedRoot\": \"" + JsonEscapeForTest(selectedRoot) +
-                "\", \"expectedTreeSha256\": \"" + expectedTreeSha256 +
                 "\", \"operation\": \"" + operation + "\" }";
         }
 
@@ -1368,54 +1561,6 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void CustomEntityApisAreExperimentalFrozenAndCoreOwned()
-        {
-            Type[] apiTypes =
-            {
-                typeof(ICustomAnimalApi),
-                typeof(ICustomMonsterApi),
-                typeof(ICustomAttackApi),
-                typeof(ICustomDroneApi)
-            };
-            foreach (Type apiType in apiTypes)
-            {
-                DtmApiStatusAttribute stability = apiType.GetCustomAttribute<DtmApiStatusAttribute>()
-                    ?? throw new InvalidOperationException(apiType.Name + " must publish explicit stability metadata.");
-                DtmApiDispositionAttribute disposition = apiType.GetCustomAttribute<DtmApiDispositionAttribute>()
-                    ?? throw new InvalidOperationException(apiType.Name + " must publish explicit disposition metadata.");
-                ObsoleteAttribute warning = apiType.GetCustomAttribute<ObsoleteAttribute>()
-                    ?? throw new InvalidOperationException(apiType.Name + " must warn new source consumers while retaining its ABI.");
-                Assert(stability.Status == DtmApiStatus.Experimental,
-                    apiType.Name + " must be Experimental because its native runtime verbs remain blocked.");
-                Assert(disposition.Disposition == DtmApiDisposition.Frozen && disposition.Since == "0.5.5",
-                    apiType.Name + " must be Frozen for adoption while retaining its existing binary identity.");
-                Assert(!warning.IsError && (warning.Message ?? string.Empty).Contains("frozen", StringComparison.OrdinalIgnoreCase),
-                    apiType.Name + " must use a non-error frozen source warning.");
-            }
-
-            string? previousRoot = UseTempPersistentRoot();
-            try
-            {
-                var runtime = new DtmApiRuntime(new FakeHost(NewTempGameDir()), new ConfigMenuRegistry());
-                runtime.Start();
-                _ = new DolocTownGameBridge(runtime);
-                Assert(runtime.ModRegistry.GetApi<ICustomAnimalApi>("DTMAPI") != null &&
-                    runtime.ModRegistry.GetApi<ICustomMonsterApi>("DTMAPI") != null &&
-                    runtime.ModRegistry.GetApi<ICustomAttackApi>("DTMAPI") != null &&
-                    runtime.ModRegistry.GetApi<ICustomDroneApi>("DTMAPI") != null,
-                    "The frozen registry ABI must remain available from its DTMAPI Core provider.");
-                Assert(runtime.ModRegistry.GetApi<ICustomAnimalApi>("DTMAPI.GameBridge.DolocTown") == null &&
-                    runtime.ModRegistry.GetApi<ICustomMonsterApi>("DTMAPI.GameBridge.DolocTown") == null &&
-                    runtime.ModRegistry.GetApi<ICustomAttackApi>("DTMAPI.GameBridge.DolocTown") == null &&
-                    runtime.ModRegistry.GetApi<ICustomDroneApi>("DTMAPI.GameBridge.DolocTown") == null,
-                    "GameBridge must not advertise a second CustomEntity provider identity for the same Core registry instance.");
-            }
-            finally
-            {
-                RestorePersistentRoot(previousRoot);
-            }
-        }
-
         private static void GameBridgeFeatureContractsReflectDemandRouting()
         {
             string? previousRoot = UseTempPersistentRoot();
@@ -1425,7 +1570,6 @@ namespace DTMAPI.UnitTests
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 var bridge = new DolocTownGameBridge(runtime);
                 object[] features = GetGameBridgeFeaturesForTests(bridge);
-                Assert(features.Length == 14, "All current GameBridge features should be represented in the component contract list; product rehomes must not leave a phantom feature count.");
 
                 var featureIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (object feature in features)
@@ -1453,6 +1597,15 @@ namespace DTMAPI.UnitTests
                 }
 
                 Assert(featureIds.Count == features.Length, "Every GameBridge feature contract id should be unique.");
+                Assert(featureIds.SetEquals(new[] { "ItemDisplayName", "EquipmentSlots", "NativeUiLayoutDiagnostics", "CropHarvesting" }),
+                    "Only current shared features and supported equipment data recovery belong to the GameBridge feature set.");
+                Assert(!featureIds.Contains("AudioReplacement"), "GameBridge must not retain an active legacy audio feature.");
+                foreach (string retired in new[] { "IAudioReplacementApi", "AudioReplacementOptions", "AudioReplacementRegisterResult", "AudioReplacementState", "AudioReplacementEntryInfo" })
+                    Assert(typeof(IManifest).Assembly.GetType("DTMAPI.Abstractions." + retired) == null, "The current author contract must not expose retired audio type " + retired + ".");
+                Assert(typeof(DolocTownGameBridge).Assembly.GetType("DTMAPI.GameBridge.DolocTown.AudioReplacementService") == null &&
+                    typeof(DolocTownHookCallbacks).GetMethod("WwiseInternalPostSoundEventPrefix") == null &&
+                    typeof(DolocTownHookCallbacks).GetMethod("AnimalPlayAnimalSoundPrefix") == null,
+                    "The legacy audio executor and retained callbacks must be absent while other feature contracts remain available.");
                 Assert(typeof(DolocTownGameBridge).GetMethod("UpdateGameBridgeFeatures", BindingFlags.NonPublic | BindingFlags.Instance) == null,
                     "The unused feature-wide update broadcaster must be physically removed.");
                 Assert(typeof(DolocTownGameBridge).Assembly.GetType("DTMAPI.GameBridge.DolocTown.GameBridgeFeatureUpdateBucket", throwOnError: false) == null,
@@ -1473,12 +1626,13 @@ namespace DTMAPI.UnitTests
         {
             string? previousRoot = UseTempPersistentRoot();
             DolocTownGameBridge? bridge = null;
-            DolocTownGameBridge? cameraDisabledBridge = null;
             try
             {
                 string dir = NewTempGameDir();
                 var runtime = new DtmApiRuntime(new FakeHost(dir), new ConfigMenuRegistry());
                 var calls = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                string? language = "zh-CN";
+                bool languageThrows = false;
                 var service = new ItemDisplayNameService(runtime, itemId =>
                 {
                     calls.TryGetValue(itemId, out int count);
@@ -1488,12 +1642,31 @@ namespace DTMAPI.UnitTests
                     if (itemId.Equals("transient", StringComparison.OrdinalIgnoreCase) && count == 0)
                         throw new InvalidOperationException("transient native lookup failure");
                     return itemId + "-title-" + (count + 1).ToString(CultureInfo.InvariantCulture);
-                }, () => true);
+                }, () => true, () => languageThrows ? throw new InvalidOperationException("language unavailable") : language);
 
                 Assert(service.TryGetDisplayName("fish", out string first) && first == "fish-title-1",
                     "IItemDisplayNameApi should return a successful non-empty native title.");
                 Assert(service.TryGetDisplayName("FISH", out string cached) && cached == first && calls["fish"] == 1,
                     "Successful item display names should be cached case-insensitively.");
+
+                language = "en";
+                Assert(service.TryGetDisplayName("fish", out string translated) && translated == "fish-title-2" && calls["fish"] == 2,
+                    "The first query after a language change must re-read the native title without waiting for a scene transition.");
+                Assert(service.TryGetDisplayName("fish", out string cachedTranslation) && cachedTranslation == translated && calls["fish"] == 2,
+                    "Subsequent queries may cache the new language's title.");
+                language = null;
+                Assert(service.TryGetDisplayName("fish", out string withoutLanguage) && withoutLanguage == "fish-title-3",
+                    "Unknown language must discard a previously cached title and return a fresh native result.");
+                Assert(service.TryGetDisplayName("fish", out _) && calls["fish"] == 4 &&
+                    runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 0,
+                    "Unknown language must never cache or retain cache-lifecycle demand.");
+                language = "en";
+                Assert(service.TryGetDisplayName("fish", out _) && calls["fish"] == 5,
+                    "Language recovery must re-query before caching again.");
+                languageThrows = true;
+                Assert(service.TryGetDisplayName("fish", out string languageFailure) && languageFailure == "fish-title-6",
+                    "A language-reader exception must not return a stale cached value or hide a successful native title.");
+                languageThrows = false;
 
                 Assert(!service.TryGetDisplayName("missing", out string missing1) && missing1.Length == 0,
                     "Missing item IDs should fail closed.");
@@ -1514,206 +1687,28 @@ namespace DTMAPI.UnitTests
                 service.Clear("standalone fixture complete");
 
                 bridge = new DolocTownGameBridge(runtime);
-                var bridgeFeature = GetPrivateField<ItemDisplayNameFeature>(bridge, "itemDisplayNameFeature");
-                int bridgeResolverCalls = 0;
-                SetPrivateField(bridgeFeature.Service, "resolveDisplayName", new Func<string, string?>(itemId =>
-                {
-                    bridgeResolverCalls++;
-                    return itemId + "-bridge-title";
-                }));
-                var bridgeCache = GetPrivateField<Dictionary<string, string>>(bridgeFeature.Service, "cache");
+                var feature = GetPrivateField<ItemDisplayNameFeature>(bridge, "itemDisplayNameFeature");
+                SetPrivateField(feature.Service, "resolveLanguage", new Func<string?>(() => "zh-CN"));
+                int lookups = 0;
+                SetPrivateField(feature.Service, "resolveDisplayName", new Func<string, string?>(id => id + ++lookups));
+                var cache = GetPrivateField<Dictionary<string, string>>(feature.Service, "cache");
                 DolocTownHookCallbacks.Runtime = runtime;
                 DolocTownHookCallbacks.Bridge = bridge;
-
+                Assert(feature.Service.TryGetDisplayName("item", out _) && cache.Count == 0,
+                    "A successful lookup stays uncached until its actual reset callback is installed.");
+                Assert(runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 1,
+                    "ItemDisplayName alone requests the shared environment-reset hook.");
+                bridge.CommitPendingDemandRoutesForTests();
+                Assert(bridge.OptionalHookInstallRequestCountForTests == 1, "One current route requests its physical hook.");
+                var hook = GetPrivateField<EnvironmentResetHookBridge>(bridge, "environmentResetHookBridge");
+                SetPrivateProperty(hook, "SetEnvCameraPatched", true);
+                bridge.RefreshDemandRoutePatchStatesForTests("physical hook ready");
+                Assert(feature.Service.TryGetDisplayName("item", out _) && cache.Count == 1, "Installed reset callback permits positive caching.");
                 int resetBefore = bridge.EnvironmentResetCountForTests;
                 DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix();
-                Assert(bridge.EnvironmentResetCountForTests == resetBefore,
-                    "The retained SetEnvCamera callback should remain asleep before ItemDisplayName has a successful cached result.");
-
-                Assert(bridgeFeature.Service.TryGetDisplayName("unit-environment-reset-cache", out string bridgeTitle) &&
-                    bridgeTitle == "unit-environment-reset-cache-bridge-title" && bridgeResolverCalls == 1,
-                    "The bridge-owned ItemDisplayName service should return a successful native title while arming its cache lifecycle route.");
-                Assert(bridgeCache.Count == 0,
-                    "ItemDisplayName must fail closed by retaining no cache entry before the physical environment-reset Hook is ready.");
-                Assert(runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 1 &&
-                    runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.Camera) == 0,
-                    "A successful ItemDisplayName lookup should arm only its environment-reset route without activating Camera demand.");
-                Assert(bridge.HasRetainedCallbackDemand(GameBridgeRetainedCallbackDemand.ItemDisplayNameEnvironmentReset),
-                    "The ItemDisplayName environment-reset callback bit must publish synchronously before any cache entry is retained.");
-                RuntimeCapabilityDescriptor itemResetDescriptor = GameBridgeDemandRoutes.Catalog.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset, StringComparison.OrdinalIgnoreCase));
-                RuntimeCapabilityDescriptor cameraDescriptor = GameBridgeDemandRoutes.Catalog.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.Camera, StringComparison.OrdinalIgnoreCase));
-                Assert(itemResetDescriptor.UpdaterCadence == "none" &&
-                    itemResetDescriptor.HookRouteId == "camera.set-env" &&
-                    cameraDescriptor.HookRouteId == "camera.compatibility.set-env" &&
-                    itemResetDescriptor.HookRouteId != cameraDescriptor.HookRouteId,
-                    "ItemDisplayName must retain its shared environment-reset SetEnvCamera route without inheriting the frozen Camera compatibility updater or owner.");
-
-                string bridgeFeatureSource = File.ReadAllText(Path.Combine(
-                    FindRepositoryRoot(),
-                    "src",
-                    "DTMAPI.GameBridge.DolocTown",
-                    "DolocTownGameBridge.Features.cs"));
-                Assert(bridgeFeatureSource.Contains(
-                    "InstallDemandedEnvironmentResetHook(patcher);",
-                    StringComparison.Ordinal),
-                    "ItemDisplayName demand must retain its dedicated shared environment-reset physical installer.");
-                string environmentResetHookSource = File.ReadAllText(Path.Combine(
-                    FindRepositoryRoot(),
-                    "src",
-                    "DTMAPI.GameBridge.DolocTown",
-                    "Features",
-                    "EnvironmentReset",
-                    "EnvironmentResetHookBridge.cs"));
-                Assert(environmentResetHookSource.Contains("\"DolocAPI, Assembly-CSharp\"", StringComparison.Ordinal) &&
-                    environmentResetHookSource.Contains("\"SetEnvCamera\"", StringComparison.Ordinal) &&
-                    environmentResetHookSource.Contains(nameof(DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix), StringComparison.Ordinal),
-                    "The shared physical owner must keep the exact DolocAPI.SetEnvCamera Postfix target and production callback.");
-
-                MethodInfo demandedPhysicalCounts = typeof(DolocTownGameBridge).GetMethod(
-                    "GetDemandedHookRouteCounts",
-                    BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException("Demanded physical Hook count helper should exist.");
-                object?[] itemOnlyPhysicalArgs = { 0, 0 };
-                demandedPhysicalCounts.Invoke(bridge, itemOnlyPhysicalArgs);
-                int itemOnlyPhysicalTotal = (int)(itemOnlyPhysicalArgs[1] ?? 0);
-
-                const string cameraRouteOwner = "DTMAPI.Tests.ItemDisplayName.SharedHookDedup";
-                GameBridgeDemandRoutes.SetOwnerDemand(
-                    runtime,
-                    GameBridgeDemandRoutes.Camera,
-                    cameraRouteOwner,
-                    RuntimeDemandSourceType.CapabilityLease,
-                    RuntimeDemandLifetime.Owner,
-                    "shared-hook-dedup",
-                    true,
-                    "unit shared physical Hook request deduplication");
-
-                bridge.CommitPendingDemandRoutesForTests();
-                RuntimeCapabilityDemandSnapshot resetRoute = runtime.DemandCoordinator.GetSnapshot().Capabilities.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset, StringComparison.OrdinalIgnoreCase));
-                Assert(resetRoute.LifecycleState == RuntimeCapabilityLifecycleState.Activating &&
-                    resetRoute.PatchState == RuntimeCapabilityPatchState.NotInstalled,
-                    "The cache-lifecycle route should request its shared native Hook and remain activating until that physical Hook is installed.");
-                RuntimeCapabilityDemandSnapshot cameraRoute = runtime.DemandCoordinator.GetSnapshot().Capabilities.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.Camera, StringComparison.OrdinalIgnoreCase));
-                Assert(cameraRoute.LifecycleState == RuntimeCapabilityLifecycleState.Activating &&
-                    cameraRoute.PatchState == RuntimeCapabilityPatchState.NotInstalled,
-                    "Frozen Camera compatibility should report activating while its separately owned physical Hook is unavailable.");
-                Assert(bridge.OptionalHookInstallRequestCountForTests == 2,
-                    "Simultaneous Camera compatibility and ItemDisplayName demand should request their two distinct physical owners exactly once each.");
-                object?[] demandedPhysicalArgs = { 0, 0 };
-                demandedPhysicalCounts.Invoke(bridge, demandedPhysicalArgs);
-                Assert((int)(demandedPhysicalArgs[1] ?? 0) == itemOnlyPhysicalTotal + 1,
-                    "Adding frozen Camera compatibility beside ItemDisplayName must add its separate compatibility HookRouteId.");
-
-                Assert(bridgeFeature.Service.TryGetDisplayName("unit-environment-reset-cache", out bridgeTitle) &&
-                    bridgeResolverCalls == 2 && bridgeCache.Count == 0,
-                    "Repeated successful lookups must remain uncached while the physical environment-reset Hook is unavailable.");
-
-                var sharedEnvironmentResetHook = GetPrivateField<EnvironmentResetHookBridge>(bridge, "environmentResetHookBridge");
-                SetPrivateProperty(sharedEnvironmentResetHook, "SetEnvCameraPatched", true);
-                bridge.RefreshDemandRoutePatchStatesForTests("unit shared environment-reset Hook ready");
-                resetRoute = runtime.DemandCoordinator.GetSnapshot().Capabilities.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset, StringComparison.OrdinalIgnoreCase));
-                Assert(resetRoute.LifecycleState == RuntimeCapabilityLifecycleState.Active &&
-                    resetRoute.PatchState == RuntimeCapabilityPatchState.Installed,
-                    "The ItemDisplayName cache route may become active only after its shared physical Hook reports installed.");
-                cameraRoute = runtime.DemandCoordinator.GetSnapshot().Capabilities.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.Camera, StringComparison.OrdinalIgnoreCase));
-                Assert(cameraRoute.LifecycleState == RuntimeCapabilityLifecycleState.Activating &&
-                    cameraRoute.PatchState == RuntimeCapabilityPatchState.NotInstalled,
-                    "ItemDisplayName shared-Hook readiness must not claim that the separate Camera compatibility owner is installed.");
-                CameraFeature cameraFeature = bridge.CameraFeature
-                    ?? throw new InvalidOperationException("Camera compatibility feature should exist for the distinct-owner fixture.");
-                SetPrivateProperty(cameraFeature.HookBridge, "SetEnvCameraPatched", true);
-                bridge.RefreshDemandRoutePatchStatesForTests("unit Camera compatibility Hook ready");
-                cameraRoute = runtime.DemandCoordinator.GetSnapshot().Capabilities.Single(item =>
-                    item.CapabilityId.Equals(GameBridgeDemandRoutes.Camera, StringComparison.OrdinalIgnoreCase));
-                Assert(cameraRoute.LifecycleState == RuntimeCapabilityLifecycleState.Active &&
-                    cameraRoute.PatchState == RuntimeCapabilityPatchState.Installed,
-                    "Camera compatibility may become active only after its own exact Hook owner reports installed.");
-                Assert(bridgeFeature.Service.TryGetDisplayName("unit-environment-reset-cache", out bridgeTitle) &&
-                    bridgeResolverCalls == 3 && bridgeCache.ContainsKey("unit-environment-reset-cache"),
-                    "A successful title may enter the positive cache after the shared physical Hook becomes ready.");
-                Assert(bridgeFeature.Service.TryGetDisplayName("UNIT-ENVIRONMENT-RESET-CACHE", out string cachedBridgeTitle) &&
-                    cachedBridgeTitle == bridgeTitle && bridgeResolverCalls == 3,
-                    "The Hook-guarded bridge cache should serve later case-insensitive hits without another native lookup.");
-                GameBridgeDemandRoutes.SetOwnerDemand(
-                    runtime,
-                    GameBridgeDemandRoutes.Camera,
-                    cameraRouteOwner,
-                    RuntimeDemandSourceType.CapabilityLease,
-                    RuntimeDemandLifetime.Owner,
-                    "shared-hook-dedup",
-                    false,
-                    "unit shared physical Hook request deduplication complete");
-                bridge.CommitPendingDemandRoutesForTests();
-
-                DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix();
-                Assert(!bridgeCache.ContainsKey("unit-environment-reset-cache") &&
-                    bridge.EnvironmentResetCountForTests == resetBefore + 1,
-                    "The real SetEnvCamera callback should enter GameBridge and invalidate the shared item display-name cache.");
-                Assert(runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 0 &&
-                    !bridge.HasRetainedCallbackDemand(GameBridgeRetainedCallbackDemand.ItemDisplayNameEnvironmentReset),
-                    "EnvironmentReset should release the ItemDisplayName cache-owned route synchronously after clearing the final entry.");
-                IHookStatusInfo cacheClearStatus = runtime.Diagnostics.GetHookStatuses().Single(item =>
-                    item.HookId.Equals("SharedNative.ItemDisplayNameEnvironmentReset", StringComparison.OrdinalIgnoreCase));
-                Assert(cacheClearStatus.Status == "cleared" &&
-                    cacheClearStatus.Source.Contains("EnvironmentReset DolocAPI.SetEnvCamera", StringComparison.OrdinalIgnoreCase) &&
-                    cacheClearStatus.Details.Contains("demandReleased=true", StringComparison.OrdinalIgnoreCase),
-                    "The real SetEnvCamera route should publish the cache and demand clear evidence used by bounded game acceptance.");
-                DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix();
-                Assert(bridge.EnvironmentResetCountForTests == resetBefore + 1,
-                    "The retained SetEnvCamera callback should return to its zero-demand fast path after cache invalidation.");
-                Assert(runtime.Diagnostics.GetHookStatuses().Single(item =>
-                        item.HookId.Equals("SharedNative.ItemDisplayNameEnvironmentReset", StringComparison.OrdinalIgnoreCase)).Source == cacheClearStatus.Source,
-                    "A later zero-demand callback must not overwrite the causal SetEnvCamera cache-clear evidence.");
-
-                string cameraDisabledDir = NewTempGameDir();
-                var cameraDisabledRuntime = new DtmApiRuntime(new FakeHost(cameraDisabledDir), new ConfigMenuRegistry());
-                const string cameraDisabledRunId = "51515151515151515151515151515151";
-                var cameraDisabledPrepared = new PreparedQaHost(
-                    new PassiveQaHostFactory(),
-                    new QaHostPreparationContext(cameraDisabledRuntime, cameraDisabledRunId, cameraDisabledRuntime.Paths.DtmApiPath, Array.Empty<byte>()),
-                    new GameBridgeFixtureStartupOptions(cameraDisabledRunId, disabledFeatureIds: new[] { "Camera" }));
-                cameraDisabledBridge = new DolocTownGameBridge(cameraDisabledRuntime, null, cameraDisabledPrepared);
-                Assert(cameraDisabledBridge.CameraFeature == null,
-                    "The QA isolation fixture must actually omit CameraFeature for the shared-owner independence proof.");
-                var disabledSharedHook = GetPrivateField<EnvironmentResetHookBridge>(cameraDisabledBridge, "environmentResetHookBridge");
-                var disabledItemFeature = GetPrivateField<ItemDisplayNameFeature>(cameraDisabledBridge, "itemDisplayNameFeature");
-                SetPrivateField(disabledItemFeature.Service, "resolveDisplayName", new Func<string, string?>(itemId => itemId + "-camera-disabled-title"));
-                var cameraDisabledCache = GetPrivateField<Dictionary<string, string>>(disabledItemFeature.Service, "cache");
-                Assert(disabledItemFeature.Service.TryGetDisplayName("camera-disabled-item", out string cameraDisabledTitle) &&
-                    cameraDisabledTitle == "camera-disabled-item-camera-disabled-title" &&
-                    cameraDisabledCache.Count == 0,
-                    "Camera-disabled ItemDisplayName should return the native title but remain uncached before its independent shared Hook is ready.");
-                cameraDisabledBridge.CommitPendingDemandRoutesForTests();
-                Assert(cameraDisabledBridge.OptionalHookInstallRequestCountForTests == 1,
-                    "Item-only demand must request the shared physical environment-reset Hook when CameraFeature is absent.");
-                cameraDisabledBridge.UpdateRuntimeAutomation();
-                IHookStatusInfo disabledHookStatus = cameraDisabledRuntime.Diagnostics.GetHookStatuses().Single(item =>
-                    item.HookId.Equals("SharedNative.EnvironmentReset", StringComparison.OrdinalIgnoreCase));
-                Assert(!disabledSharedHook.SetEnvCameraPatched &&
-                    disabledHookStatus.Status == "pending" &&
-                    disabledHookStatus.Details.Contains("remains uncached", StringComparison.OrdinalIgnoreCase),
-                    "The Camera-disabled Item-only route must reach the shared physical installer and remain fail-closed when the native target is unavailable.");
-                SetPrivateProperty(disabledSharedHook, "SetEnvCameraPatched", true);
-                cameraDisabledBridge.RefreshDemandRoutePatchStatesForTests("unit Camera-disabled shared Hook ready");
-                Assert(disabledItemFeature.Service.TryGetDisplayName("camera-disabled-item", out cameraDisabledTitle) &&
-                    cameraDisabledCache.Count == 1,
-                    "ItemDisplayName must retain its guarded positive cache after the independent shared Hook becomes ready with CameraFeature absent.");
-                DolocTownHookCallbacks.Runtime = cameraDisabledRuntime;
-                DolocTownHookCallbacks.Bridge = cameraDisabledBridge;
-                int cameraDisabledResetBefore = cameraDisabledBridge.EnvironmentResetCountForTests;
-                DolocTownHookCallbacks.DolocApiSetEnvCameraPostfix();
-                Assert(cameraDisabledCache.Count == 0 &&
-                    cameraDisabledBridge.EnvironmentResetCountForTests == cameraDisabledResetBefore + 1 &&
-                    cameraDisabledRuntime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 0 &&
-                    !cameraDisabledBridge.HasRetainedCallbackDemand(GameBridgeRetainedCallbackDemand.ItemDisplayNameEnvironmentReset),
-                    "The real static callback entry must clear ItemDisplayName and release its route even when CameraFeature is absent.");
-
+                Assert(cache.Count == 0 && bridge.EnvironmentResetCountForTests == resetBefore + 1 &&
+                    runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.ItemDisplayNameEnvironmentReset) == 0,
+                    "The native callback clears names and releases cache demand independently of removed Camera APIs.");
                 Exception? offThreadFailure = null;
                 var thread = new Thread(() =>
                 {
@@ -1735,7 +1730,6 @@ namespace DTMAPI.UnitTests
             {
                 try
                 {
-                    cameraDisabledBridge?.Shutdown("ItemDisplayName Camera-disabled focused Unit cleanup");
                     bridge?.Shutdown("ItemDisplayName focused Unit cleanup");
                 }
                 finally
@@ -1766,7 +1760,6 @@ namespace DTMAPI.UnitTests
                 Assert(summary.Contains("featureFanout={", StringComparison.Ordinal), "Final health summary should include direct feature fanout counters.");
                 Assert(!summary.Contains("buckets={", StringComparison.Ordinal), "Final health summary must not retain the retired bucket distribution.");
                 Assert(!summary.Contains("updateDispatch={", StringComparison.Ordinal), "Final health summary must not retain the retired update-dispatch model.");
-                Assert(summary.Contains("nativeUi={", StringComparison.Ordinal), "Final health summary should include native handle/UI counters.");
                 Assert(summary.Contains("ownerCounters={", StringComparison.Ordinal), "Final health summary should include owner input/event counters.");
                 Assert(summary.Contains("resourceLedger={", StringComparison.Ordinal), "Final health summary should include resource ledger summary.");
                 Assert(summary.Contains("saveLoad={", StringComparison.Ordinal), "Final health summary should include SaveLoad summary.");

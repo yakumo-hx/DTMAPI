@@ -7,6 +7,7 @@ namespace DTMAPI.DebugConsole
     {
         private static object? playerOwner;
         private static float multiplier = 1f;
+        internal static Func<bool>? SessionIsCurrent;
 
         internal static void SetMultiplier(
             object? player,
@@ -46,7 +47,7 @@ namespace DTMAPI.DebugConsole
             ref float __result)
         {
             float factor = Volatile.Read(ref multiplier);
-            if (factor == 1f)
+            if (factor == 1f || SessionIsCurrent?.Invoke() == false)
                 return;
             object? owner = Volatile.Read(ref playerOwner);
             if (ReferenceEquals(owner, __instance))

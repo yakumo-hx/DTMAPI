@@ -5,9 +5,8 @@ using DTMAPI.Core.Json;
 
 namespace DTMAPI.Core.Runtime
 {
-    // Keep the serialized contract name, member names, config path and diagnostic
-    // IDs stable. Only the internal CLR/file name describes the now-established
-    // Runtime subsystems instead of the historical refactor scaffold.
+    // Retain the config path and names of active Runtime subsystems. Retired
+    // diagnostic scaffolding is ignored when reading an older configuration.
     [DataContract(Name = "RefactorScaffoldOptions")]
     internal sealed class RuntimeSubsystemOptions
     {
@@ -17,23 +16,11 @@ namespace DTMAPI.Core.Runtime
         [DataMember(Name = "LifecycleObservation")]
         public bool? LifecycleObservationValue { get; set; }
 
-        [DataMember(Name = "ShadowContentRegistry")]
-        public bool? ShadowContentRegistryValue { get; set; }
-
-        [DataMember(Name = "ShadowResourceLoader")]
-        public bool? ShadowResourceLoaderValue { get; set; }
-
-        [DataMember(Name = "RegistryTakesOver")]
-        public bool? RegistryTakesOverValue { get; set; }
-
         [DataMember(Name = "ResourceLifecycleLedger")]
         public bool? ResourceLifecycleLedgerValue { get; set; }
 
         [DataMember(Name = "ResourceLifecycleCleanup")]
         public bool? ResourceLifecycleCleanupValue { get; set; }
-
-        [DataMember(Name = "ResourceLifecycleTitleAssetRelease")]
-        public bool? ResourceLifecycleTitleAssetReleaseValue { get; set; }
 
         [DataMember(Name = "HookInstallScheduler")]
         public bool? HookInstallSchedulerValue { get; set; }
@@ -79,17 +66,13 @@ namespace DTMAPI.Core.Runtime
 
         public bool LifecycleObservation => LifecycleObservationValue ?? true;
 
-        public bool ShadowContentRegistry => ShadowContentRegistryValue ?? true;
 
-        public bool ShadowResourceLoader => ShadowResourceLoaderValue ?? false;
 
-        public bool RegistryTakesOver => RegistryTakesOverValue ?? false;
 
         public bool ResourceLifecycleLedger => ResourceLifecycleLedgerValue ?? true;
 
         public bool ResourceLifecycleCleanup => ResourceLifecycleCleanupValue ?? true;
 
-        public bool ResourceLifecycleTitleAssetRelease => ResourceLifecycleTitleAssetReleaseValue ?? false;
 
         public bool HookInstallScheduler => HookInstallSchedulerValue ?? true;
 
@@ -124,12 +107,8 @@ namespace DTMAPI.Core.Runtime
             return new RuntimeSubsystemOptions
             {
                 LifecycleObservationValue = true,
-                ShadowContentRegistryValue = true,
-                ShadowResourceLoaderValue = false,
-                RegistryTakesOverValue = false,
                 ResourceLifecycleLedgerValue = true,
                 ResourceLifecycleCleanupValue = true,
-                ResourceLifecycleTitleAssetReleaseValue = false,
                 HookInstallSchedulerValue = true,
                 HookStatusQueueValue = true,
                 EventMainThreadBoundaryValue = true,
@@ -205,12 +184,8 @@ namespace DTMAPI.Core.Runtime
         public string ToSummary()
         {
             return "LifecycleObservation=" + (LifecycleObservation ? "true" : "false") +
-                "; ShadowContentRegistry=" + (ShadowContentRegistry ? "true" : "false") +
-                "; ShadowResourceLoader=" + (ShadowResourceLoader ? "true" : "false") +
-                "; RegistryTakesOver=" + (RegistryTakesOver ? "true" : "false") +
                 "; ResourceLifecycleLedger=" + (ResourceLifecycleLedger ? "true" : "false") +
                 "; ResourceLifecycleCleanup=" + (ResourceLifecycleCleanup ? "true" : "false") +
-                "; ResourceLifecycleTitleAssetRelease=" + (ResourceLifecycleTitleAssetRelease ? "true" : "false") +
                 "; HookInstallScheduler=" + (HookInstallScheduler ? "true" : "false") +
                 "; HookStatusQueue=" + (HookStatusQueue ? "true" : "false") +
                 "; EventMainThreadBoundary=" + (EventMainThreadBoundary ? "true" : "false") +
@@ -230,12 +205,8 @@ namespace DTMAPI.Core.Runtime
         private void NormalizeMissingValues()
         {
             LifecycleObservationValue = LifecycleObservation;
-            ShadowContentRegistryValue = ShadowContentRegistry;
-            ShadowResourceLoaderValue = ShadowResourceLoader;
-            RegistryTakesOverValue = RegistryTakesOver;
             ResourceLifecycleLedgerValue = ResourceLifecycleLedger;
             ResourceLifecycleCleanupValue = ResourceLifecycleCleanup;
-            ResourceLifecycleTitleAssetReleaseValue = ResourceLifecycleTitleAssetRelease;
             HookInstallSchedulerValue = HookInstallScheduler;
             HookStatusQueueValue = HookStatusQueue;
             EventMainThreadBoundaryValue = EventMainThreadBoundary;
@@ -255,12 +226,8 @@ namespace DTMAPI.Core.Runtime
         private void ApplyEnvironmentOverrides()
         {
             LifecycleObservationValue = ReadBoolOverride("DTMAPI_REFACTOR_LIFECYCLE_OBSERVATION", LifecycleObservationValue);
-            ShadowContentRegistryValue = ReadBoolOverride("DTMAPI_REFACTOR_SHADOW_CONTENT_REGISTRY", ShadowContentRegistryValue);
-            ShadowResourceLoaderValue = ReadBoolOverride("DTMAPI_REFACTOR_SHADOW_RESOURCE_LOADER", ShadowResourceLoaderValue);
-            RegistryTakesOverValue = ReadBoolOverride("DTMAPI_REFACTOR_REGISTRY_TAKES_OVER", RegistryTakesOverValue);
             ResourceLifecycleLedgerValue = ReadBoolOverride("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_LEDGER", ResourceLifecycleLedgerValue);
             ResourceLifecycleCleanupValue = ReadBoolOverride("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_CLEANUP", ResourceLifecycleCleanupValue);
-            ResourceLifecycleTitleAssetReleaseValue = ReadBoolOverride("DTMAPI_REFACTOR_RESOURCE_LIFECYCLE_TITLE_ASSET_RELEASE", ResourceLifecycleTitleAssetReleaseValue);
             HookInstallSchedulerValue = ReadBoolOverride("DTMAPI_REFACTOR_HOOK_INSTALL_SCHEDULER", HookInstallSchedulerValue);
             HookStatusQueueValue = ReadBoolOverride("DTMAPI_REFACTOR_HOOK_STATUS_QUEUE", HookStatusQueueValue);
             EventMainThreadBoundaryValue = ReadBoolOverride("DTMAPI_REFACTOR_EVENT_MAIN_THREAD_BOUNDARY", EventMainThreadBoundaryValue);

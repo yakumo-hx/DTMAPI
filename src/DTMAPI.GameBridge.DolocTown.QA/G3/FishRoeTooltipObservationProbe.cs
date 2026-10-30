@@ -7,7 +7,7 @@ using DTMAPI.Core.Runtime;
 
 namespace DTMAPI.GameBridge.DolocTown.QA
 {
-    internal sealed class FishRoeTooltipObservationProbe
+    internal sealed partial class FishRoeTooltipObservationProbe
     {
         private static readonly Batch6HarmonyPatchTarget[] ProductHarmonyTargets =
         {
@@ -15,14 +15,16 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         };
 
         private readonly GameBridgeFixtureAccess access;
+        private readonly bool productDisabled;
         private int queryCycles;
         private int clearCycles;
         private int environmentResetCountAtReadyQuery;
         private bool awaitingEnvironmentReset;
 
-        internal FishRoeTooltipObservationProbe(GameBridgeFixtureAccess access)
+        internal FishRoeTooltipObservationProbe(GameBridgeFixtureAccess access, bool productDisabled = false)
         {
             this.access = access ?? throw new ArgumentNullException(nameof(access));
+            this.productDisabled = productDisabled;
         }
 
         internal bool ShouldRunAfterSaveLoaded => !awaitingEnvironmentReset && queryCycles < 2;
@@ -35,6 +37,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                 throw new InvalidOperationException("Fish roe ItemDisplayName lifecycle query was requested outside its next save cycle.");
 
             string details = QueryProductTitle();
+            if (productDisabled) return details;
             queryCycles++;
             TryArmEnvironmentResetProof(repeatQueryAfterHookReady: false);
             return details + "; itemDisplayNameQueryCycle=" + queryCycles + "; environmentResetProof=" +
@@ -87,10 +90,16 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         {
             Batch6HarmonyOwnerInventory owner = Batch6AdvancedHarmonyOwnerObserver.Observe(
                 "Yuuka.DTMAPI.FishBreedingAssistant",
-                "dtmapi.mod.yuuka.dtmapi.fishbreedingassistant",
+                "Yuuka.DTMAPI.FishBreedingAssistant.Native",
                 ProductHarmonyTargets);
-            if (!owner.IsComplete || owner.ExactOwnerPatchCount != 1)
-                throw new InvalidOperationException("FishBreedingAssistant product owner did not own exactly one Item.get_title patch: " + owner.Details + ".");
+            if ((!productDisabled && (!owner.IsComplete || owner.ExactOwnerPatchCount != 1)) ||
+                (productDisabled && (owner.ProductAssemblyLoaded ||
+                    Batch6AdvancedHarmonyOwnerObserver.CountAllOwnerPatches("Yuuka.DTMAPI.FishBreedingAssistant.Native") != 0 ||
+                    Batch6AdvancedHarmonyOwnerObserver.CountAllOwnerPatches("dtmapi.mod.yuuka.dtmapi.fishbreedingassistant") != 0 ||
+                    access.Runtime.HasOwnerInstance("Yuuka.DTMAPI.FishBreedingAssistant"))))
+                throw new InvalidOperationException("FishBreedingAssistant owner state did not match official enablement; disabled=" + productDisabled + "; " + owner.Details + ".");
+            if (access.Runtime.CreateSnapshot().ConfigPages.Any(page => page.Manifest.UniqueID == "Yuuka.DTMAPI.FishBreedingAssistant"))
+                throw new InvalidOperationException("The title-only FishBreedingAssistant must not register a configuration page.");
 
             Type dolocApi = ResolveType("DolocAPI", "Assembly-CSharp")
                 ?? throw new MissingMemberException("DolocAPI was not visible.");
@@ -105,21 +114,7 @@ namespace DTMAPI.GameBridge.DolocTown.QA
                         (parameters.Length == 1 || parameters[1].ParameterType == typeof(int));
                 }) ?? throw new MissingMethodException("DolocAPI.GenerateItem(string, int) was not found.");
 
-            object item = generateItem.GetParameters().Length == 1
-                ? generateItem.Invoke(null, new object[] { roeItemId })
-                : generateItem.Invoke(null, new object[] { roeItemId, 1 });
-            if (item == null)
-                throw new InvalidOperationException("DolocAPI.GenerateItem returned null for " + roeItemId + ".");
-
-            item.GetType().GetMethod("SetFishName", BindingFlags.Public | BindingFlags.Instance)?.Invoke(item, new object[] { "fish" });
-            string title = item.GetType().GetProperty("title", BindingFlags.Public | BindingFlags.Instance)?.GetValue(item) as string ?? string.Empty;
-            string description = item.GetType().GetProperty("description", BindingFlags.Public | BindingFlags.Instance)?.GetValue(item) as string ?? string.Empty;
-            string detail = item.GetType().GetMethod("GetDetailInfo", BindingFlags.Public | BindingFlags.Instance)?.Invoke(item, null) as string ?? string.Empty;
-            if (!ContainsDecoration(title, description, detail))
-                throw new InvalidOperationException("Fish roe tooltip hooks did not append expected text.");
-
-            return "item=" + roeItemId + "; title=" + title + "; detail=" + detail.Replace(Environment.NewLine, " | ") +
-                "; productOwnerPatches=1; productOwnerTargets=1; transientOnly=true; owner=qa; fallback=false";
+            return VerifyTitleSemantics(dolocApi, generateItem, roeItemId);
         }
 
         private void TryArmEnvironmentResetProof(bool repeatQueryAfterHookReady)
@@ -167,11 +162,12 @@ namespace DTMAPI.GameBridge.DolocTown.QA
             access.Runtime.Diagnostics.GetHookStatuses().LastOrDefault(item =>
                 item.HookId.Equals(hookId, StringComparison.OrdinalIgnoreCase));
 
-        internal static bool ContainsDecoration(string title, string description, string detail)
+        internal static bool ContainsDecoration(string title, string expectedParent, string descriptionBefore, string descriptionAfter, string detailBefore, string detailAfter)
         {
-            return (title ?? string.Empty).IndexOf(" (", StringComparison.Ordinal) >= 0 ||
-                (description ?? string.Empty).IndexOf("Hatches:", StringComparison.Ordinal) >= 0 ||
-                (detail ?? string.Empty).IndexOf("Hatches:", StringComparison.Ordinal) >= 0;
+            return !string.IsNullOrWhiteSpace(expectedParent) &&
+                (title ?? string.Empty).EndsWith(" (" + expectedParent + ")", StringComparison.Ordinal) &&
+                string.Equals(descriptionBefore, descriptionAfter, StringComparison.Ordinal) &&
+                string.Equals(detailBefore, detailAfter, StringComparison.Ordinal);
         }
 
         private static string? FindFishRoeItemId()

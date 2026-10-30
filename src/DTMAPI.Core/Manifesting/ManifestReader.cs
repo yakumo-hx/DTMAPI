@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Diagnostics;
+using System.Text;
+using DTMAPI.Internal.Authoring;
 using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
 using DTMAPI.Core.Runtime;
@@ -14,15 +16,39 @@ namespace DTMAPI.Core.Manifesting
     {
         public ManifestModel Read(string path)
         {
-            IReadOnlyList<string> properties = JsonTopLevelPropertyReader.Read(path);
-            RejectMisCasedOrDuplicateWireField(properties, "Type");
-            RejectMisCasedOrDuplicateWireField(properties, "CodeModKind");
-
-            ManifestModel model = JsonFile.Read<ManifestModel>(path);
-            if (properties.Any(property => property.Equals("NativeContractVersion", StringComparison.OrdinalIgnoreCase)))
-                model.NativeContractSelected = DTMAPI.Internal.Authoring.NativePackageContract.Select(File.ReadAllBytes(path));
-            if (properties.Any(property => property.Equals("DependencyContractVersion", StringComparison.OrdinalIgnoreCase)))
-                model.DependencyContract = DTMAPI.Internal.Authoring.PackageDependencyContract.ReadManifest(File.ReadAllBytes(path));
+            byte[] bytes = File.ReadAllBytes(path);
+            string json;
+            using (var stream = new MemoryStream(bytes))
+            using (var text = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: true))
+                json = text.ReadToEnd();
+            IReadOnlyList<string> properties = PackageDependencyContract.Object(PackageDependencyContract.ReadJson(bytes)).Keys.ToArray();
+            ManifestModel model = JsonFile.Deserialize<ManifestModel>(json);
+            model.Normalize();
+            // Legacy format selector is only an ownership convention, never a proof requirement.
+            model.NativeContractSelected = properties.Contains("NativeContractVersion");
+            if (model.ManifestVersion != 0 && model.ManifestVersion != 2)
+                throw new InvalidDataException("manifest-format-unsupported: " + model.ManifestVersion + "; update DTMAPI.");
+            if (Version.TryParse(model.MinimumDTMApiVersion, out var minimum) && minimum > Version.Parse(DtmApiBuildVersion.ReleaseVersion))
+                return model; // Keep a visible api-too-new row; do not parse a newer runtime contract.
+            byte[]? infoBytes = null;
+            if (model.ManifestVersion == 2)
+            {
+                string root = RuntimePackage.FindRoot(path);
+                string info = Path.Combine(root, "info.json");
+                if (File.Exists(info))
+                {
+                    infoBytes = File.ReadAllBytes(info);
+                    var fields = PackageDocumentFacts.ReadInfo(infoBytes, out string warning);
+                    model.InfoReadWarning = warning;
+                    string Field(string key) => fields.TryGetValue(key, out var value) ? value : "";
+                    model.Name = Field("name"); model.Author = Field("author");
+                    model.Description = Field("description"); model.Version = Field("version");
+                }
+                else { model.Name = ""; model.Author = ""; model.Description = ""; model.Version = ""; }
+            }
+            model.DependencyContract = PackageDependencyContract.ReadManifest(bytes);
+            if (properties.Any(property => property.Equals("ContentPackFor", StringComparison.OrdinalIgnoreCase)))
+                model.ContentPackBinding = ContentPackBinding.Read(bytes);
             model.Normalize();
             if (string.IsNullOrWhiteSpace(model.UniqueID))
                 throw new InvalidDataException("manifest 缺少 UniqueID。");
@@ -33,20 +59,6 @@ namespace DTMAPI.Core.Manifesting
             return model;
         }
 
-        private static void RejectMisCasedOrDuplicateWireField(IReadOnlyList<string> properties, string canonicalName)
-        {
-            string[] matches = properties
-                .Where(name => string.Equals(name, canonicalName, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            if (matches.Length == 0)
-                return;
-            if (matches.Length != 1 || !string.Equals(matches[0], canonicalName, StringComparison.Ordinal))
-            {
-                throw new InvalidDataException(
-                    "manifest field " + canonicalName + " is case-sensitive and may appear exactly once; received " +
-                    string.Join(", ", matches) + ".");
-            }
-        }
     }
 
     internal sealed class ModScanner
@@ -57,6 +69,7 @@ namespace DTMAPI.Core.Manifesting
         private readonly RuntimePaths paths;
         private readonly ManifestReader reader = new ManifestReader();
         private readonly ManagedModClassifier classifier;
+        private readonly StartupPackageReadTransaction? packageReads;
         private readonly List<string> errors = new List<string>();
         private readonly List<string> warnings = new List<string>();
         private readonly List<AuthorSourceSelectionDecision> sourceSelectionDecisions = new List<AuthorSourceSelectionDecision>();
@@ -74,9 +87,11 @@ namespace DTMAPI.Core.Manifesting
             NativeWorkshopSubscriptionSnapshot? workshopSubscriptions = null,
             AuthorSourceSelectionState? authorSourceState = null,
             bool authorSessionActive = false,
-            bool includeLegacyDevelopmentRootForTests = false)
+            bool includeLegacyDevelopmentRootForTests = false,
+            StartupPackageReadTransaction? packageReads = null)
         {
             this.paths = paths;
+            this.packageReads = packageReads;
             classifier = new ManagedModClassifier(paths.GamePath);
             this.workshopSubscriptions = workshopSubscriptions ?? NativeWorkshopSubscriptionSnapshot.Unavailable("snapshot not supplied");
             this.authorSourceState = authorSourceState ?? new AuthorSourceSelectionState(paths.GamePath, false, string.Empty, Array.Empty<AuthorSourceSelection>(), string.Empty, string.Empty);
@@ -186,6 +201,7 @@ namespace DTMAPI.Core.Manifesting
             try
             {
                 ManifestModel manifest = reader.Read(manifestPath);
+                if (!string.IsNullOrEmpty(manifest.InfoReadWarning)) RecordWarning(manifest.UniqueID + ": " + manifest.InfoReadWarning);
                 if (manifest.UpdateKeyModels.Any(key => !string.IsNullOrWhiteSpace(key)))
                 {
                     RecordWarning(
@@ -290,13 +306,8 @@ namespace DTMAPI.Core.Manifesting
                         }
                     }
                 }
-                ManagedModClassification classification = classifier.Classify(
-                    manifest,
-                    dir,
-                    manifestPath,
-                    source,
-                    subscriptionVerified,
-                    workshopId);
+                // Source selection and enablement precede payload/native inspection.
+                ManagedModClassification classification = ManagedModClassifier.ClassifyDeclaredIdentity(manifest);
                 mods.Add(new DiscoveredMod(manifest, dir, manifestPath, source, workshopId, enabled, canDtmApiToggle, officialId, useOfficialEnablement, reason, subscriptionVerified, classification: classification, officialPriority: officialPriority));
             }
             catch (Exception ex)
@@ -307,14 +318,7 @@ namespace DTMAPI.Core.Manifesting
 
         private static string FindManifest(string dir)
         {
-            string dtm = Path.Combine(dir, "dtmapi.manifest.json");
-            if (File.Exists(dtm))
-                return dtm;
-            string standard = Path.Combine(dir, "manifest.json");
-            if (File.Exists(standard))
-                return standard;
-            string contentManifest = Path.Combine(dir, "Content", "DTMAPI", "manifest.json");
-            return File.Exists(contentManifest) ? contentManifest : string.Empty;
+            return PackageDocumentFacts.FindManifest(dir) ?? string.Empty;
         }
 
         private IReadOnlyList<DiscoveredMod> PreferSourceManagedDuplicates(IEnumerable<DiscoveredMod> mods)
@@ -342,6 +346,22 @@ namespace DTMAPI.Core.Manifesting
                     "; selected=" + DescribeDuplicateCandidate(ordered[0]) +
                     "; nativeSnapshot=" + workshopSubscriptions.Available;
                 DiscoveredMod selected = ordered[0].WithSelectionReason(outcome);
+                if (selected.OfficialEnabled)
+                {
+                    try
+                    {
+                        selected = selected.WithSelectionReason(outcome, classifier.Classify(
+                            selected.Manifest, selected.RootPath, selected.ManifestPath, selected.Source,
+                            selected.NativeSubscriptionVerified, selected.WorkshopId, packageReads));
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordError($"{selected.ManifestPath}: {ex.Message}");
+                        // Invalid selected sources never silently fall back to an ignored candidate.
+                        sourceSelectionDecisions.Add(new AuthorSourceSelectionDecision(id, mode, "blocked/package-invalid", null, candidates));
+                        continue;
+                    }
+                }
                 byId[id] = selected;
                 sourceSelectionDecisions.Add(new AuthorSourceSelectionDecision(id, mode, outcome, selected, candidates));
 

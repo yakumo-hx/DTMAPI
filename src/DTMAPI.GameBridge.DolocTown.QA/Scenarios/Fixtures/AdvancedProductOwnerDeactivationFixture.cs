@@ -12,13 +12,13 @@ namespace DTMAPI.GameBridge.DolocTown
         private const string ActionSpeedOwnerId = "Yuuka.DTMAPI.ActionSpeed";
         private const string OneActionOwnerId = "Yuuka.DTMAPI.OneActionComplete";
         private const string OneActionAssemblyName = "Yuuka.DTMAPI.OneActionComplete";
-        private const string OneActionHarmonyOwner = "dtmapi.mod.yuuka.dtmapi.oneactioncomplete";
+        private const string OneActionHarmonyOwner = "Yuuka.DTMAPI.OneActionComplete.Native";
         private const string FishBreedingOwnerId = "Yuuka.DTMAPI.FishBreedingAssistant";
         private const string FishBreedingAssemblyName = "Yuuka.DTMAPI.FishBreedingAssistant";
-        private const string FishBreedingHarmonyOwner = "dtmapi.mod.yuuka.dtmapi.fishbreedingassistant";
+        private const string FishBreedingHarmonyOwner = "Yuuka.DTMAPI.FishBreedingAssistant.Native";
         private const string AnimalHusbandryOwnerId = "Yuuka.DTMAPI.AnimalHusbandryProgress";
         private const string AnimalHusbandryAssemblyName = "Yuuka.DTMAPI.AnimalHusbandryProgress";
-        private const string AnimalHusbandryHarmonyOwner = "dtmapi.mod.yuuka.dtmapi.animalhusbandryprogress";
+        private const string AnimalHusbandryHarmonyOwner = "Yuuka.DTMAPI.AnimalHusbandryProgress.Native";
         private const string MoreSavesOwnerId = "DTMAPI.MoreSavesMod";
         private const string MoreSavesAssemblyName = "DTMAPI.MoreSaves";
         private const string MoreSavesHarmonyOwner = "dtmapi.mod.dtmapi.moresavesmod";
@@ -34,8 +34,8 @@ namespace DTMAPI.GameBridge.DolocTown
         private const string DebugConsoleHarmonyOwner = "dtmapi.mod.dtmapi.debugconsolemod";
         private static readonly Batch6HarmonyPatchTarget[] OneActionHarmonyTargets =
         {
-            new Batch6HarmonyPatchTarget("DolocTown.ToolCollider", "HandleTools", 1),
-            new Batch6HarmonyPatchTarget("DolocTown.AgentStateInteract", "OnExit", 0)
+            new Batch6HarmonyPatchTarget("DolocTown.ToolCollider", "HandleTools", 1, expectedOwnerPatchCount: 2),
+            new Batch6HarmonyPatchTarget("DolocTown.AgentStateInteract", "OnExit", 0, expectedOwnerPatchCount: 2)
         };
         private static readonly Batch6HarmonyPatchTarget[] FishBreedingHarmonyTargets =
         {
@@ -90,12 +90,12 @@ namespace DTMAPI.GameBridge.DolocTown
             try
             {
                 var requested = new HashSet<string>(requestedOwnerIds ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-                string[] supported = { ActionSpeedOwnerId, OneActionOwnerId, FishBreedingOwnerId, AnimalHusbandryOwnerId, MoreSavesOwnerId, ChestLocatorOwnerId, MoreEquipmentSlotsOwnerId, StrongPlantingGunOwnerId, ZoomProductOwnerId, MineOwnerId, DebugConsoleOwnerId };
+                if (requested.Contains(ActionSpeedOwnerId)) throw new NotSupportedException("ActionSpeed 1.x observer retired; use the product NativeProbe for 2.x.");
+                string[] supported = { OneActionOwnerId, FishBreedingOwnerId, AnimalHusbandryOwnerId, MoreSavesOwnerId, ChestLocatorOwnerId, MoreEquipmentSlotsOwnerId, StrongPlantingGunOwnerId, ZoomProductOwnerId, MineOwnerId, DebugConsoleOwnerId };
                 string[] unknown = requested.Where(ownerId => !supported.Contains(ownerId, StringComparer.OrdinalIgnoreCase)).ToArray();
                 if (requested.Count == 0 || unknown.Length > 0)
                     throw new InvalidOperationException("Advanced owner-deactivation fixture requires a non-empty supported owner set; unknown=" + string.Join("|", unknown) + ".");
 
-                bool actionSpeedRequested = requested.Contains(ActionSpeedOwnerId);
                 bool oneActionRequested = requested.Contains(OneActionOwnerId);
                 bool fishBreedingRequested = requested.Contains(FishBreedingOwnerId);
                 bool animalHusbandryRequested = requested.Contains(AnimalHusbandryOwnerId);
@@ -121,7 +121,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     return G4FixtureStepResult.Pending(
                         "Waiting for the requested third-save reload to publish SaveLoaded and verify StrongPlantingGun native JSON re-entry before Loader deactivation.");
                 }
-                Batch6ActionSpeedObservation? actionSpeedBefore = actionSpeedRequested ? ObserveActionSpeedProduct() : null;
                 Batch6HarmonyOwnerInventory? oneActionBefore = oneActionRequested ? Batch6AdvancedHarmonyOwnerObserver.Observe(
                     OneActionAssemblyName,
                     OneActionHarmonyOwner,
@@ -306,17 +305,21 @@ namespace DTMAPI.GameBridge.DolocTown
                     mineRequested
                         ? runtime.CountCoreOwnerRoots(MineOwnerId)
                         : 0;
+                Assembly? debugConsoleAssembly = debugConsoleRequested
+                    ? runtime.GetOwnerInstance(DebugConsoleOwnerId)?.GetType().Assembly
+                        ?? throw new InvalidOperationException("The current Y instance is missing.")
+                    : null;
                 Batch6HarmonyOwnerInventory? debugConsoleBefore =
                     debugConsoleRequested
                         ? Batch6AdvancedHarmonyOwnerObserver.Observe(
                             DebugConsoleAssemblyName,
                             DebugConsoleHarmonyOwner,
-                            DebugConsoleHarmonyTargets)
+                            DebugConsoleHarmonyTargets, debugConsoleAssembly)
                         : null;
                 int debugConsoleHarmonyBefore =
                     debugConsoleRequested
                         ? Batch6AdvancedHarmonyOwnerObserver.CountAllOwnerPatches(
-                            DebugConsoleHarmonyOwner)
+                            DebugConsoleHarmonyOwner, debugConsoleAssembly)
                         : 0;
                 int debugConsoleLoadedBefore =
                     debugConsoleRequested
@@ -327,16 +330,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         ? runtime.CountCoreOwnerRoots(DebugConsoleOwnerId)
                         : 0;
 
-                if (actionSpeedRequested && (!actionSpeedBefore!.ProductPresent || !actionSpeedBefore.ActualHarmonyOwnerReady ||
-                    actionSpeedBefore.InstalledPatchCount != 11 || !actionSpeedBefore.ProductCallbackRuntimePresent))
-                {
-                    throw new InvalidOperationException(
-                        "ActionSpeed did not reach the required pre-deactivation owner state. present=" + actionSpeedBefore.ProductPresent +
-                        "; internal=" + actionSpeedBefore.InstalledPatchCount +
-                        "; actual=" + actionSpeedBefore.CanonicalHarmonyPatchCount +
-                        "; targets=" + actionSpeedBefore.CanonicalHarmonyTargetCount + "/" + actionSpeedBefore.ResolvedHarmonyTargetCount +
-                        "; callback=" + actionSpeedBefore.ProductCallbackRuntimePresent + ".");
-                }
+
                 if (oneActionRequested && (!oneActionBefore!.IsComplete || !oneActionCallbackBefore ||
                     !runtime.HasOwnerInstance(OneActionOwnerId) || oneActionLoadedBefore != 1 || oneActionRootsBefore <= 0))
                 {
@@ -546,7 +540,7 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (debugConsoleRequested &&
                     (debugConsoleBefore!.ExactOwnerPatchCount != 3 ||
                      debugConsoleBefore.ExactOwnerTargetCount != 3 ||
-                     debugConsoleHarmonyBefore != 19 ||
+                     debugConsoleHarmonyBefore != 12 ||
                      !runtime.HasOwnerInstance(DebugConsoleOwnerId) ||
                      debugConsoleLoadedBefore != 1 ||
                      debugConsoleRootsBefore <= 0))
@@ -570,30 +564,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
 
                 var detailsParts = new List<string>();
-                if (actionSpeedRequested)
-                {
-                    string actionSpeedCleanup = runtime.DeactivateOwner(
-                        ActionSpeedOwnerId,
-                        ModOwnerCleanupReason.Unload,
-                        shutdown: false,
-                        transactionId: string.Empty);
-                    Batch6ActionSpeedObservation actionSpeedAfter = ObserveActionSpeedProduct();
-                    if (actionSpeedAfter.ProductPresent || actionSpeedAfter.CanonicalHarmonyPatchCount != 0 ||
-                        actionSpeedAfter.CanonicalHarmonyTargetCount != 0 || actionSpeedAfter.ProductCallbackRuntimePresent ||
-                        actionSpeedAfter.CoreOwnerRootCount != 0 || actionSpeedAfter.LoadedOwnerCount != 0 ||
-                        !CleanupSummaryProvesZero(actionSpeedCleanup))
-                    {
-                        throw new InvalidOperationException(
-                            "ActionSpeed Loader owner-deactivation cleanup was incomplete. present=" + actionSpeedAfter.ProductPresent +
-                            "; roots=" + actionSpeedAfter.CoreOwnerRootCount +
-                            "; loaded=" + actionSpeedAfter.LoadedOwnerCount +
-                            "; patches=" + actionSpeedAfter.CanonicalHarmonyPatchCount +
-                            "; targets=" + actionSpeedAfter.CanonicalHarmonyTargetCount +
-                            "; callback=" + actionSpeedAfter.ProductCallbackRuntimePresent +
-                            "; cleanup={" + actionSpeedCleanup + "}.");
-                    }
-                    detailsParts.Add("ActionSpeed=internal9+actual9+callback1->instance0+actual0+callback0+roots0");
-                }
 
                 if (oneActionRequested)
                 {
@@ -624,7 +594,7 @@ namespace DTMAPI.GameBridge.DolocTown
                             "; callback=" + oneActionCallbackAfter +
                             "; cleanup={" + oneActionCleanup + "}.");
                     }
-                    detailsParts.Add("OneActionComplete=actual2+callback1->instance0+actual0+callback0+roots0");
+                    detailsParts.Add("OneActionComplete=actual4+callback1->instance0+actual0+callback0+roots0");
                 }
 
                 if (fishBreedingRequested)
@@ -968,14 +938,14 @@ namespace DTMAPI.GameBridge.DolocTown
                         Batch6AdvancedHarmonyOwnerObserver.Observe(
                             DebugConsoleAssemblyName,
                             DebugConsoleHarmonyOwner,
-                            DebugConsoleHarmonyTargets);
+                            DebugConsoleHarmonyTargets, debugConsoleAssembly);
                     int debugConsoleLoadedAfter =
                         CountLoadedOwners(DebugConsoleOwnerId);
                     int debugConsoleRootsAfter =
                         runtime.CountCoreOwnerRoots(DebugConsoleOwnerId);
                     int debugConsoleHarmonyAfter =
                         Batch6AdvancedHarmonyOwnerObserver.CountAllOwnerPatches(
-                            DebugConsoleHarmonyOwner);
+                            DebugConsoleHarmonyOwner, debugConsoleAssembly);
                     if (runtime.HasOwnerInstance(DebugConsoleOwnerId) ||
                         debugConsoleLoadedAfter != 0 ||
                         debugConsoleRootsAfter != 0 ||
@@ -998,7 +968,7 @@ namespace DTMAPI.GameBridge.DolocTown
                             "; cleanup={" + debugConsoleCleanup + "}.");
                     }
                     detailsParts.Add(
-                        "DebugConsole=inSaveActual19+typedInput+modalUi->titleGated19+leases0->instance0+actual0+input0+ui0+roots0");
+                        "DebugConsole=inSaveActual12+typedInput+modalUi->titleGated12+leases0->instance0+actual0+input0+ui0+roots0");
                 }
 
                 string details =

@@ -76,8 +76,12 @@ namespace DTMAPI.ModConfigMenu
         public void BeginEditing()
         {
             ThrowIfInactive();
-            foreach (ConfigMenuItemBase item in ItemsInternal)
+            foreach (ConfigMenuItemBase item in ItemsInternal.ToArray())
+            {
+                ThrowIfInactive();
                 item.CaptureCommittedValue();
+            }
+            ThrowIfInactive();
             IsEditing = true;
         }
 
@@ -85,29 +89,21 @@ namespace DTMAPI.ModConfigMenu
         {
             if (!isActive)
                 return PendingPreviewScope.CreateInactive();
-            if (!TryReadCurrentValues("preview", out string[] previousValues))
+            if (!TryReadCurrentValues("preview", out ConfigValueSnapshot[] previousValues))
                 return PendingPreviewScope.CreateInactive();
 
-            var changedIndices = new List<int>();
-            for (int i = 0; i < ItemsInternal.Count; i++)
-            {
-                if (string.Equals(previousValues[i], ItemsInternal[i].PendingValue, StringComparison.Ordinal))
-                    continue;
-                changedIndices.Add(i);
-            }
-
-            if (changedIndices.Count == 0)
+            ConfigValueSnapshot[] changed = previousValues
+                .Where(value => !string.Equals(value.Value, value.Item.PendingValue, StringComparison.Ordinal)).ToArray();
+            if (changed.Length == 0)
                 return PendingPreviewScope.CreateInactive();
 
-            int[] changed = changedIndices.ToArray();
-            PendingPreviewScope scope = CreatePreviewScope(previousValues, changed);
+            PendingPreviewScope scope = CreatePreviewScope(changed);
             int appliedCount = 0;
-            for (int changeIndex = 0; changeIndex < changed.Length; changeIndex++)
+            foreach (ConfigValueSnapshot value in changed)
             {
-                int i = changed[changeIndex];
-                if (!isActive || i < 0 || i >= ItemsInternal.Count)
+                if (!isActive)
                     return PendingPreviewScope.CreateInactive();
-                ConfigMenuItemBase item = ItemsInternal[i];
+                ConfigMenuItemBase item = value.Item;
                 try
                 {
                     item.ApplyRawValue(item.PendingValue);
@@ -135,13 +131,16 @@ namespace DTMAPI.ModConfigMenu
             ThrowIfLocked();
             if (!IsEditing)
                 BeginEditing();
-            string[] previousValues = ReadCurrentValues("reset");
-            string[] previousPendingValues = CapturePendingValues();
+            ConfigValueSnapshot[] previousValues = ReadCurrentValues("reset");
+            ConfigValueSnapshot[] previousPendingValues = previousValues.Select(value => new ConfigValueSnapshot(value.Item, value.Item.PendingValue)).ToArray();
             try
             {
                 ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".reset", reset!);
-                foreach (ConfigMenuItemBase item in ItemsInternal)
+                foreach (ConfigValueSnapshot value in previousValues)
                 {
+                    if (!isActive)
+                        return;
+                    ConfigMenuItemBase item = value.Item;
                     try
                     {
                         item.CapturePendingFromGetter();
@@ -168,11 +167,14 @@ namespace DTMAPI.ModConfigMenu
             if (registry!.HasKeybindConflict(this))
                 throw new InvalidOperationException("存在按键冲突，无法保存配置。");
 
-            string[] previousValues = ReadCurrentValues("save");
+            ConfigValueSnapshot[] previousValues = ReadCurrentValues("save");
             try
             {
-                foreach (ConfigMenuItemBase item in ItemsInternal)
+                foreach (ConfigValueSnapshot value in previousValues)
                 {
+                    if (!isActive)
+                        return;
+                    ConfigMenuItemBase item = value.Item;
                     try
                     {
                         item.ApplyPendingValue();
@@ -183,6 +185,8 @@ namespace DTMAPI.ModConfigMenu
                         throw;
                     }
                 }
+                if (!isActive)
+                    return;
                 ConfigMenuCallbackRunner.Run(Manifest.UniqueID + ".save", save!);
                 if (!isActive)
                     return;
@@ -193,17 +197,24 @@ namespace DTMAPI.ModConfigMenu
                 throw new InvalidOperationException("Save failed and config values were rolled back: " + ConfigMenuCallbackRunner.Describe(ex), ex);
             }
 
-            foreach (ConfigMenuItemBase item in ItemsInternal)
-                item.CaptureCommittedValue();
-            IsEditing = true;
+            foreach (ConfigValueSnapshot value in previousValues)
+            {
+                if (!isActive)
+                    return;
+                value.Item.CaptureCommittedValue();
+            }
+            foreach (ConfigValueSnapshot value in previousValues) value.Item.CommitRestartState();
+            IsEditing = isActive;
         }
 
         public void Cancel()
         {
             ThrowIfInactive();
             var errors = new List<string>();
-            foreach (ConfigMenuItemBase item in ItemsInternal)
+            foreach (ConfigMenuItemBase item in ItemsInternal.ToArray())
             {
+                if (!isActive)
+                    return;
                 try
                 {
                     item.RestoreCommittedValue();
@@ -252,7 +263,7 @@ namespace DTMAPI.ModConfigMenu
             registry = null;
         }
 
-        private PendingPreviewScope CreatePreviewScope(string[] previousValues, int[] changedIndices)
+        private PendingPreviewScope CreatePreviewScope(ConfigValueSnapshot[] changed)
         {
             for (int i = previewScopes.Count - 1; i >= 0; i--)
             {
@@ -260,7 +271,7 @@ namespace DTMAPI.ModConfigMenu
                     previewScopes.RemoveAt(i);
             }
 
-            var scope = new PendingPreviewScope(this, previousValues, changedIndices);
+            var scope = new PendingPreviewScope(this, changed);
             previewScopes.Add(new WeakReference<PendingPreviewScope>(scope));
             return scope;
         }
@@ -297,48 +308,54 @@ namespace DTMAPI.ModConfigMenu
             }
         }
 
-        private string[] ReadCurrentValues(string operation)
+        private ConfigValueSnapshot[] ReadCurrentValues(string operation)
         {
-            if (TryReadCurrentValues(operation, out string[] values))
+            if (TryReadCurrentValues(operation, out ConfigValueSnapshot[] values))
                 return values;
             throw new InvalidOperationException("Failed to read current config values for " + operation + ".");
         }
 
-        private bool TryReadCurrentValues(string operation, out string[] values)
+        private bool TryReadCurrentValues(string operation, out ConfigValueSnapshot[] values)
         {
-            var result = new string[ItemsInternal.Count];
-            for (int i = 0; i < ItemsInternal.Count; i++)
+            ConfigMenuItemBase[] items = ItemsInternal.ToArray();
+            var result = new ConfigValueSnapshot[items.Length];
+            values = Array.Empty<ConfigValueSnapshot>();
+            for (int i = 0; i < items.Length; i++)
             {
+                if (!isActive)
+                    return false;
                 try
                 {
-                    result[i] = ItemsInternal[i].ReadCurrentValueForPreview();
+                    result[i] = new ConfigValueSnapshot(items[i], items[i].ReadCurrentValueForPreview());
                 }
                 catch (Exception ex)
                 {
-                    ItemsInternal[i].SetValidationError(operation + " read failed: " + ConfigMenuCallbackRunner.Describe(ex));
-                    values = Array.Empty<string>();
+                    items[i].SetValidationError(operation + " read failed: " + ConfigMenuCallbackRunner.Describe(ex));
                     return false;
                 }
             }
+            if (!isActive)
+                return false;
             values = result;
             return true;
         }
 
-        private void RestoreRawValues(string[] values, string operation)
+        private void RestoreRawValues(ConfigValueSnapshot[] values, string operation)
         {
             var errors = new List<string>();
-            int count = Math.Min(ItemsInternal.Count, values.Length);
-            for (int i = 0; i < count; i++)
+            foreach (ConfigValueSnapshot value in values)
             {
+                if (!isActive)
+                    break;
                 try
                 {
-                    ItemsInternal[i].ApplyRawValue(values[i]);
+                    value.Item.ApplyRawValue(value.Value);
                 }
                 catch (Exception ex)
                 {
                     string error = operation + " failed: " + ConfigMenuCallbackRunner.Describe(ex);
-                    ItemsInternal[i].SetValidationError(error);
-                    errors.Add(ItemsInternal[i].Name + ": " + error);
+                    value.Item.SetValidationError(error);
+                    errors.Add(value.Item.Name + ": " + error);
                 }
             }
 
@@ -346,19 +363,14 @@ namespace DTMAPI.ModConfigMenu
                 throw new InvalidOperationException(string.Join("; ", errors));
         }
 
-        private string[] CapturePendingValues()
+        private void RestorePendingValues(ConfigValueSnapshot[] values)
         {
-            return ItemsInternal.Select(item => item.PendingValue).ToArray();
+            if (isActive)
+                foreach (ConfigValueSnapshot value in values)
+                    value.Item.RestorePendingValue(value.Value);
         }
 
-        private void RestorePendingValues(string[] values)
-        {
-            int count = Math.Min(ItemsInternal.Count, values.Length);
-            for (int i = 0; i < count; i++)
-                ItemsInternal[i].RestorePendingValue(values[i]);
-        }
-
-        private void TryRollbackOrThrow(string[] values, string operation, Exception original)
+        private void TryRollbackOrThrow(ConfigValueSnapshot[] values, string operation, Exception original)
         {
             try
             {
@@ -374,24 +386,28 @@ namespace DTMAPI.ModConfigMenu
             }
         }
 
+        private readonly struct ConfigValueSnapshot
+        {
+            public ConfigValueSnapshot(ConfigMenuItemBase item, string value) { Item = item; Value = value; }
+            public ConfigMenuItemBase Item { get; }
+            public string Value { get; }
+        }
+
         private sealed class PendingPreviewScope : IDisposable
         {
             private ConfigMenuPage? page;
-            private string[] previousValues;
-            private int[] changedIndices;
+            private ConfigValueSnapshot[] changed;
             private bool disposed;
 
-            public PendingPreviewScope(ConfigMenuPage page, string[] previousValues, int[] changedIndices)
+            public PendingPreviewScope(ConfigMenuPage page, ConfigValueSnapshot[] changed)
             {
                 this.page = page;
-                this.previousValues = previousValues;
-                this.changedIndices = changedIndices;
+                this.changed = changed;
             }
 
             private PendingPreviewScope()
             {
-                previousValues = Array.Empty<string>();
-                changedIndices = Array.Empty<int>();
+                changed = Array.Empty<ConfigValueSnapshot>();
                 disposed = true;
             }
 
@@ -403,8 +419,7 @@ namespace DTMAPI.ModConfigMenu
             {
                 disposed = true;
                 page = null;
-                previousValues = Array.Empty<string>();
-                changedIndices = Array.Empty<int>();
+                changed = Array.Empty<ConfigValueSnapshot>();
             }
 
             public void Dispose()
@@ -414,36 +429,32 @@ namespace DTMAPI.ModConfigMenu
                 disposed = true;
 
                 ConfigMenuPage? currentPage = page;
-                string[] values = previousValues;
-                int[] indices = changedIndices;
-                page = null;
-                previousValues = Array.Empty<string>();
-                changedIndices = Array.Empty<int>();
+                ConfigValueSnapshot[] values = changed;
+                Deactivate();
 
                 if (currentPage == null || !currentPage.IsActive)
                     return;
 
                 int restored = 0;
                 string firstFailure = string.Empty;
-                for (int changeIndex = 0; changeIndex < indices.Length; changeIndex++)
+                foreach (ConfigValueSnapshot value in values)
                 {
-                    int i = indices[changeIndex];
-                    if (i < 0 || i >= currentPage.ItemsInternal.Count || i >= values.Length)
-                        continue;
+                    if (!currentPage.IsActive)
+                        break;
                     try
                     {
-                        currentPage.ItemsInternal[i].ApplyRawValue(values[i]);
+                        value.Item.ApplyRawValue(value.Value);
                         restored++;
                     }
                     catch (Exception ex)
                     {
-                        currentPage.ItemsInternal[i].SetValidationError("Preview restore failed: " + ConfigMenuCallbackRunner.Describe(ex));
+                        value.Item.SetValidationError("Preview restore failed: " + ConfigMenuCallbackRunner.Describe(ex));
                         if (string.IsNullOrWhiteSpace(firstFailure))
-                            firstFailure = "failedItem=" + currentPage.ItemsInternal[i].ItemId + "; " + ConfigMenuCallbackRunner.Describe(ex);
+                            firstFailure = "failedItem=" + value.Item.ItemId + "; " + ConfigMenuCallbackRunner.Describe(ex);
                     }
                 }
-                if (indices.Length > 0)
-                    currentPage.RecordPreviewAudit("restore", string.IsNullOrWhiteSpace(firstFailure), "changed=" + indices.Length.ToString(CultureInfo.InvariantCulture) + "; restored=" + restored.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrWhiteSpace(firstFailure) ? string.Empty : "; " + firstFailure));
+                if (values.Length > 0)
+                    currentPage.RecordPreviewAudit("restore", string.IsNullOrWhiteSpace(firstFailure), "changed=" + values.Length.ToString(CultureInfo.InvariantCulture) + "; restored=" + restored.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrWhiteSpace(firstFailure) ? string.Empty : "; " + firstFailure));
             }
         }
     }

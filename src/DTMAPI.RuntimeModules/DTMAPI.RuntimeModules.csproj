@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><AssemblyVersion>0.1.0.0</AssemblyVersion></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" Private="false" />
+    <ProjectReference Include="../DTMAPI.AudioContent/DTMAPI.AudioContent.csproj" Private="false" />
+    <ProjectReference Include="../DTMAPI.AudioContent.Authoring/DTMAPI.AudioContent.Authoring.csproj" Private="false" />
+    <ProjectReference Include="../DTMAPI.AnimalContent/DTMAPI.AnimalContent.csproj" Private="false" />
+    <ProjectReference Include="../DTMAPI.MonsterContent/DTMAPI.MonsterContent.csproj" Private="false" />
+    <ProjectReference Include="../DTMAPI.MonsterContent.Authoring/DTMAPI.MonsterContent.Authoring.csproj" Private="false" />
+    <Compile Include="../Shared/StrictJson.cs" Link="Content/StrictJson.cs" />
+  </ItemGroup>
+</Project>

@@ -8,9 +8,13 @@ namespace DTMAPI.MoreEquipmentSlots
     {
         internal const int FixedSlotCount = 3;
         internal const int ExpectedHookCount = 5;
-        internal const int StorageSchemaVersion = 3;
+        internal const int StorageSchemaVersion = 4;
+
+        internal static bool SupportsStorageSchema(int version) => version == 3 || version == StorageSchemaVersion;
         internal const string UniqueId = "DTMAPI.MoreEquipmentSlotsMod";
         internal const string HarmonyOwner =
+            "DTMAPI.MoreEquipmentSlotsMod.Native";
+        internal const string LegacyHarmonyOwner =
             "dtmapi.mod.dtmapi.moreequipmentslotsmod";
         internal const string CompatibilityOwner =
             "dtmapi.gamebridge.doloctown.equipmentslots.compatibility";
@@ -306,6 +310,8 @@ namespace DTMAPI.MoreEquipmentSlots
     [DataContract]
     internal sealed class EquipmentSlotLegacyMigrationStamp
     {
+        internal EquipmentSlotLegacyMigrationStamp Clone() => (EquipmentSlotLegacyMigrationStamp)MemberwiseClone();
+
         [DataMember(Name = "sourceKind", Order = 1)]
         public string SourceKind { get; set; } = string.Empty;
 
@@ -354,6 +360,17 @@ namespace DTMAPI.MoreEquipmentSlots
         [DataMember(Name = "shieldDefend", Order = 9)]
         public int ShieldDefend { get; set; }
 
+        [DataMember(Name = "itemState", Order = 10, EmitDefaultValue = false)]
+        public EquipmentSlotItemState? ItemState { get; set; }
+
+        internal EquipmentSlotStorageEntry Clone(int? index = null)
+        {
+            var copy = (EquipmentSlotStorageEntry)MemberwiseClone();
+            copy.Index = index ?? Index;
+            copy.ItemState = ItemState?.Clone();
+            return copy;
+        }
+
         internal bool IsOccupied =>
             !string.IsNullOrWhiteSpace(ItemId);
 
@@ -367,6 +384,7 @@ namespace DTMAPI.MoreEquipmentSlots
             ShieldValue = 0;
             ShieldMaxValue = 0;
             ShieldDefend = 0;
+            ItemState = null;
         }
     }
 
@@ -577,6 +595,17 @@ namespace DTMAPI.MoreEquipmentSlots
 
         [DataMember(Name = "shieldDefend", Order = 15)]
         public int ShieldDefend { get; set; }
+
+        [DataMember(Name = "itemState", Order = 16, EmitDefaultValue = false)]
+        public EquipmentSlotItemState? ItemState { get; set; }
+
+        internal EquipmentSlotStorageEntry ToSlot() => new EquipmentSlotStorageEntry
+        {
+            Index = SlotIndex, ItemId = ItemId, DisplayName = DisplayName,
+            SkillId = SkillId, DefenseBonus = DefenseBonus, IsShield = IsShield,
+            ShieldValue = ShieldValue, ShieldMaxValue = ShieldMaxValue,
+            ShieldDefend = ShieldDefend, ItemState = ItemState?.Clone()
+        };
 
         internal void Normalize()
         {

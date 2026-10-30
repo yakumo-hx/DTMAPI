@@ -11,45 +11,29 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
     internal static class Program
     {
         private const string ProductOwner =
-            "dtmapi.mod.dtmapi.strongplantinggunmod";
+            "DTMAPI.StrongPlantingGunMod.Native";
         private const string CompatibilityOwner =
             "dtmapi.gamebridge.doloctown";
         private const string UnrelatedOwner =
             "dtmapi.tests.strongplantinggun.unrelated";
 
-        private static readonly MethodBase[] Targets =
+        private const int PatchCount = 15;
+        private static readonly MethodBase[] Targets = BuildTargets();
+        private static MethodBase[] BuildTargets()
         {
-            typeof(DolocTown.ItemFarmingGun).GetConstructor(
-                new[]
-                {
-                    typeof(DolocTown.Config.Item.ItemInfo),
-                    typeof(int)
-                }) ?? throw new MissingMethodException(
-                    "ItemFarmingGun.ctor(ItemInfo,int)"),
-            typeof(DolocTown.ItemFarmingGun).GetConstructor(
-                new[]
-                {
-                    typeof(string),
-                    typeof(int),
-                    typeof(DolocTown.LinearInventory)
-                }) ?? throw new MissingMethodException(
-                    "ItemFarmingGun.ctor(string,int,LinearInventory)"),
-            typeof(DolocTown.ItemFarmingGun).GetMethod(
-                "OnUseAsTool",
-                BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new MissingMethodException(
-                    "ItemFarmingGun.OnUseAsTool"),
-            typeof(DolocTown.FarmingGunUiState).GetMethod(
-                "HandlePlaceToOtherSide",
-                BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new MissingMethodException(
-                    "FarmingGunUiState.HandlePlaceToOtherSide"),
-            typeof(DolocTown.FarmingGunUiState).GetMethod(
-                "HandleSwapOneItem",
-                BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new MissingMethodException(
-                    "FarmingGunUiState.HandleSwapOneItem")
-        };
+            var list = new List<MethodBase> {
+                typeof(DolocTown.ItemFarmingGun).GetConstructor(new[] { typeof(DolocTown.Config.Item.ItemInfo), typeof(int) })!,
+                typeof(DolocTown.ItemFarmingGun).GetConstructor(new[] { typeof(string), typeof(int), typeof(DolocTown.LinearInventory) })!,
+                typeof(DolocTown.ItemFarmingGun).GetMethod("OnUseAsTool")!,
+                typeof(DolocTown.ItemFarmingGun).GetMethod("RefreshCellTip")!,
+                typeof(DolocTown.ItemFarmingGun).GetMethod("OpenContainerUI")!
+            };
+            foreach (string name in new[] { "HandlePlaceToOtherSide", "HandleSwapOneItem", "OnBackpackItemClick",
+                "OnContainerItemClick", "HandleSwapHalfItems", "PutAll", "PutMax", "GetTipInBackpack", "GetTipInContainer" })
+                list.Add(typeof(DolocTown.FarmingGunUiState).GetMethod(name)!);
+            list.Add(typeof(DolocTown.ItemFarmingGun).GetMethod("InitCellTip")!);
+            return list.ToArray();
+        }
 
         private static readonly HarmonyMethod FixturePostfix =
             new HarmonyMethod(
@@ -71,8 +55,9 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
                 FailedRollbackPublishesRealResidue();
                 ExactOwnerUnpatchPreservesUnrelatedOwners();
                 FailedDeactivationPublishesRealResidue();
-                ToolAndUiFailuresRollBackAndSuppressOriginals();
-                ReceiverRollbackRestoresItemLockAndObservation();
+                NativeForwardingAndAllSlotPreview();
+                CostRequiresCurrentThreeParameterContract();
+                RangePreservesNativeAreaAndCancelsPendingBatch();
                 ConfigTitleAndDisposeLifecycleReachZero();
                 SaveLoadedPreparesJsonGunConstructedWhileSuspended();
                 SaveLoadedScanFailureRollsBackExactOwner();
@@ -90,190 +75,52 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             }
         }
 
-        private static void
-            FiveTargetsResolveAndProductionCallbacksExecute()
+
+
+        private static void FiveTargetsResolveAndProductionCallbacksExecute()
         {
             ResetOwners();
-            var runtime =
-                new StrongPlantingGunNativeRuntime(
-                    NullMonitor.Instance);
-            runtime.Configure(
-                EnabledConfig(),
-                "fixture pre-resolution");
-            AssertOwnerCount(ProductOwner, 5);
-            Assert(
-                runtime.InstalledPatchCount == 5,
-                "Production HookInstaller did not publish all five exact targets.");
-
-            var ordinary =
-                new DolocTown.ItemFarmingGun(
-                    new DolocTown.Config.Item.ItemInfo(),
-                    1);
-            Assert(
-                ordinary.inventory.capacity == 3 &&
-                ordinary.func.Capacity == 3 &&
-                runtime.CapacitySnapshotCount == 1,
-                "The real constructor Postfix did not execute ProductNative fixed-three preparation.");
-
-            var nativeJsonInventory =
-                new DolocTown.LinearInventory(7);
-            var json =
-                new DolocTown.ItemFarmingGun(
-                    "fixture-json",
-                    1,
-                    nativeJsonInventory);
-            Assert(
-                json.inventory.capacity == 7 &&
-                json.func.Capacity == 3 &&
-                runtime.CapacitySnapshotCount == 1,
-                "The JSON constructor Postfix did not retain the native inventory while applying fixed-three function policy. inventory=" +
-                json.inventory.capacity +
-                "; function=" +
-                json.func.Capacity +
-                "; snapshots=" +
-                runtime.CapacitySnapshotCount +
-                "; last=" +
-                runtime.LastMessage +
-                ".");
-            var ordinaryAfterJson =
-                new DolocTown.ItemFarmingGun(
-                    new DolocTown.Config.Item.ItemInfo(),
-                    1);
-            Assert(
-                ordinaryAfterJson.inventory.capacity == 3 &&
-                ordinaryAfterJson.func.Capacity == 3 &&
-                runtime.CapacitySnapshotCount == 1 &&
-                ReferenceEquals(ordinary.func, json.func) &&
-                ReferenceEquals(
-                    ordinary.func,
-                    ordinaryAfterJson.func),
-                "A subsequent ordinary gun did not retain the fixed-three ProductNative contract after a seven-slot JSON gun.");
-
-            runtime.DeactivateOwner("fixture constructor cleanup");
-            AssertOwnerCount(ProductOwner, 0);
-            Assert(
-                ordinary.func.Capacity == 1 &&
-                json.func.Capacity == 1 &&
-                ordinaryAfterJson.func.Capacity == 1,
-                "Owner cleanup did not restore the single shared proto function capacity to one.");
-            AssertLifecycleZero();
-        }
-
-        private static void
-            ReceiverRollbackRestoresItemLockAndObservation()
-        {
-            ResetOwners();
-            var runtime =
-                new StrongPlantingGunNativeRuntime(
-                    NullMonitor.Instance);
-            runtime.Configure(
-                EnabledConfig(),
-                "receiver rollback fixture");
-
-            var uiGun =
-                new DolocTown.ItemFarmingGun(
-                    new DolocTown.Config.Item.ItemInfo(),
-                    1);
-            var backpack =
-                new DolocTown.LinearInventory(3);
-            var seed =
-                new DolocTown.ItemSeed
-                {
-                    name = "locked-seed",
-                    count = 2
-                };
-            backpack.SetItem(0, seed);
-            backpack.SetSlotLocked(0, true);
-
-            DolocTown.InventoryReceiver throwing =
-                (index, item, locked) =>
-                    throw new InvalidOperationException(
-                        "fixture receiver failure");
-            bool throwingReceiverRegistered = false;
-            try
-            {
-                backpack.AddReceiver(throwing);
-            }
-            catch (InvalidOperationException)
-            {
-                throwingReceiverRegistered = true;
-            }
-            Assert(
-                throwingReceiverRegistered,
-                "The throwing receiver did not enter the native receiver list.");
-
-            var observer = new InventoryObserver(3);
-            backpack.AddReceiver(observer.Receive);
-            int baselineObservations =
-                observer.ObservationCount;
-            var ui =
-                new DolocTown.FarmingGunUiState(
-                    uiGun,
-                    backpack,
-                    seed,
-                    0);
-
-            ui.HandlePlaceToOtherSide(0);
-            Assert(
-                backpack.TotalCount() == 2 &&
-                ReferenceEquals(backpack.Read(0), seed) &&
-                backpack.GetSlotLocked(0) &&
-                uiGun.inventory.TotalCount() == 0 &&
-                ui.OriginalPlaceCount == 0,
-                "Receiver-triggered Take failure did not restore the exact item, count, slot lock, destination, and original-method suppression.");
-            Assert(
-                observer.ObservationCount >
-                    baselineObservations &&
-                ReferenceEquals(
-                    observer.LastItems[0],
-                    seed) &&
-                observer.LastCounts[0] == 2 &&
-                observer.LastLocks[0],
-                "A throwing native receiver prevented the later observer from receiving the rollback-synchronized item/count/lock state.");
-
-            backpack.RemoveReceiver(throwing);
-            backpack.RemoveReceiver(observer.Receive);
-            runtime.DeactivateOwner(
-                "receiver rollback fixture cleanup");
-            AssertOwnerCount(ProductOwner, 0);
-            AssertLifecycleZero();
+            var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance);
+            var older = new DolocTown.ItemFarmingGun("native-before-enable",1,new DolocTown.LinearInventory(1));
+            runtime.Configure("constructor fixture");
+            older.OpenContainerUI();
+            Assert(older.inventory.capacity == 4,"Direct UI entry did not prepare a previously constructed one-slot gun.");
+            AssertOwnerCount(ProductOwner, PatchCount);
+            var ordinary = new DolocTown.ItemFarmingGun(new DolocTown.Config.Item.ItemInfo(), 1);
+            var wide = new DolocTown.ItemFarmingGun("wide", 1, new DolocTown.LinearInventory(7));
+            var held = new DolocTown.ItemSeed { name = "held", count = 9 };
+            wide.inventory.SetItem(6, held);
+            Assert(ordinary.inventory.capacity == 4 && wide.inventory.capacity == 7 && wide.func.Capacity == 4,
+                "Native constructors did not expand four slots and preserve wider capacity.");
+            Assert(runtime.CapacitySnapshotCount == 1 && ReferenceEquals(ordinary.func, wide.func), "Shared function snapshot duplicated.");
+            runtime.DeactivateOwner("constructor cleanup");
+            Assert(ordinary.func.Capacity == 1 && wide.inventory.capacity == 7 && ReferenceEquals(wide.inventory.Read(6), held),
+                "Cleanup failed capacity restore or shrank held inventory.");
+            AssertOwnerCount(ProductOwner, 0); AssertLifecycleZero();
         }
 
         private static void CompatibilityFirstFailsClosed()
         {
-            ResetOwners();
-            InstallOwner(CompatibilityOwner, Targets);
-            var runtime =
-                new StrongPlantingGunNativeRuntime(
-                    NullMonitor.Instance);
-            AssertThrows<InvalidOperationException>(
-                () => runtime.Configure(
-                    EnabledConfig(),
-                    "compatibility first"),
-                "Compatibility-first ownership did not reject ProductNative before patching.");
-            AssertOwnerCount(ProductOwner, 0);
-            AssertOwnerCount(CompatibilityOwner, 5);
-            Cleanup(CompatibilityOwner);
+            foreach (string owner in new[] { CompatibilityOwner, StrongPlantingGunProductContract.LegacyProductOwner })
+            {
+                ResetOwners(); InstallOwner(owner, Targets);
+                var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance);
+                AssertThrows<InvalidOperationException>(() => runtime.Configure("conflict"), "Old owner overlap accepted.");
+                AssertOwnerCount(ProductOwner, 0); AssertOwnerCount(owner, PatchCount); Cleanup(owner);
+            }
         }
 
-        private static void
-            AtomicRollbackRemovesEveryInstalledTarget()
+        private static void AtomicRollbackRemovesEveryInstalledTarget()
         {
-            ResetOwners();
-            var runtime =
-                new StrongPlantingGunNativeRuntime(
-                    NullMonitor.Instance,
-                    ordinal => ordinal != 3);
-            AssertThrows<InvalidOperationException>(
-                () => runtime.Configure(
-                    EnabledConfig(),
-                    "rollback"),
-                "The injected third-target installation failure was not surfaced.");
-            AssertOwnerCount(ProductOwner, 0);
-            Assert(
-                runtime.InstalledPatchCount == 0,
-                "A successful atomic rollback published a non-zero owner count.");
-            AssertLifecycleZero();
+            for (int failAt = 1; failAt <= PatchCount; failAt++)
+            {
+                ResetOwners(); int boundary = failAt;
+                var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance, ordinal => ordinal != boundary);
+                AssertThrows<InvalidOperationException>(() => runtime.Configure("rollback " + boundary), "Partial install did not surface failure.");
+                AssertOwnerCount(ProductOwner, 0);
+                Assert(runtime.InstalledPatchCount == 0, "Partial install left an exact owner patch.");
+                AssertLifecycleZero();
+            }
         }
 
         private static void FailedRollbackPublishesRealResidue()
@@ -286,9 +133,7 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
                     () => throw new InvalidOperationException(
                         "fixture unpatch failure"));
             AssertThrows<AggregateException>(
-                () => runtime.Configure(
-                    EnabledConfig(),
-                    "failed rollback"),
+                () => runtime.Configure("failed rollback"),
                 "Install plus unpatch failure did not surface as an aggregate.");
             AssertOwnerCount(ProductOwner, 2);
             Assert(
@@ -304,14 +149,12 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
                         StringComparison.Ordinal) >= 0 &&
                 StrongPlantingGunCallbacks.LastLifecycleSummary
                     .EndsWith(
-                        "roots=1",
+                        "roots=1;pendingBatches=0;pendingCallbacks=0",
                         StringComparison.Ordinal),
                 "Failed rollback published a false zero lifecycle summary: " +
                 StrongPlantingGunCallbacks.LastLifecycleSummary);
             AssertThrows<InvalidOperationException>(
-                () => runtime.Configure(
-                    EnabledConfig(),
-                    "partial residue retry"),
+                () => runtime.Configure("partial residue retry"),
                 "A detached runtime with two residual owners did not block same-process re-enable.");
             AssertOwnerCount(ProductOwner, 2);
             Cleanup(ProductOwner);
@@ -325,15 +168,13 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             var runtime =
                 new StrongPlantingGunNativeRuntime(
                     NullMonitor.Instance);
-            runtime.Configure(
-                EnabledConfig(),
-                "unrelated co-owner");
-            AssertOwnerCount(ProductOwner, 5);
-            AssertOwnerCount(UnrelatedOwner, 5);
+            runtime.Configure("unrelated co-owner");
+            AssertOwnerCount(ProductOwner, PatchCount);
+            AssertOwnerCount(UnrelatedOwner, PatchCount);
 
             runtime.DeactivateOwner("exact owner");
             AssertOwnerCount(ProductOwner, 0);
-            AssertOwnerCount(UnrelatedOwner, 5);
+            AssertOwnerCount(UnrelatedOwner, PatchCount);
             AssertLifecycleZero();
             Cleanup(UnrelatedOwner);
         }
@@ -349,172 +190,34 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
                     unpatchOverride:
                         () => throw new InvalidOperationException(
                             "fixture deactivation unpatch failure"));
-            runtime.Configure(
-                EnabledConfig(),
-                "failed deactivation");
-            AssertOwnerCount(ProductOwner, 5);
+            runtime.Configure("failed deactivation");
+            AssertOwnerCount(ProductOwner, PatchCount);
             AssertThrows<AggregateException>(
                 () => runtime.DeactivateOwner(
                     "failed deactivation"),
                 "A real deactivation unpatch failure was not surfaced.");
-            AssertOwnerCount(ProductOwner, 5);
+            AssertOwnerCount(ProductOwner, PatchCount);
             Assert(
-                runtime.InstalledPatchCount == 5 &&
+                runtime.InstalledPatchCount == PatchCount &&
                 runtime.Status == "cleanup-failed-owned" &&
                 StrongPlantingGunCallbacks.LastLifecycleSummary
                     .IndexOf(
-                        "callbacks=0;hooks=5",
+                        "callbacks=0;hooks=15",
                         StringComparison.Ordinal) >= 0 &&
                 StrongPlantingGunCallbacks.LastLifecycleSummary
                     .EndsWith(
-                        "roots=1",
+                        "roots=1;pendingBatches=0;pendingCallbacks=0",
                         StringComparison.Ordinal),
-                "Failed deactivation published a false state instead of five real residual owners: status=" +
+                "Failed deactivation published a false state instead of fifteen real residual owners: status=" +
                 runtime.Status +
                 "; summary=" +
                 StrongPlantingGunCallbacks.LastLifecycleSummary);
             Cleanup(ProductOwner);
         }
 
-        private static void
-            ToolAndUiFailuresRollBackAndSuppressOriginals()
-        {
-            ResetOwners();
-            var monitor = new ThrowUiTransferMonitor();
-            var runtime =
-                new StrongPlantingGunNativeRuntime(monitor);
-            runtime.Configure(
-                EnabledConfig(verbose: true),
-                "transaction fixture");
 
-            var gun =
-                new DolocTown.ItemFarmingGun(
-                    new DolocTown.Config.Item.ItemInfo(),
-                    1);
-            var toolSeed =
-                new DolocTown.ItemSeed
-                {
-                    name = "tool-seed",
-                    count = 2
-                };
-            gun.inventory.SetItem(0, toolSeed);
-            gun.DoInteractResult = false;
-            gun.OnUseAsTool();
-            Assert(
-                gun.inventory.TotalCount() == 2 &&
-                gun.OriginalToolUseCount == 0,
-                "DoInteract=false after native cost did not restore the exact seed count or suppress the original tool method.");
 
-            gun.DoInteractResult = true;
-            gun.ThrowOnDoInteract = true;
-            gun.OnUseAsTool();
-            Assert(
-                gun.inventory.TotalCount() == 2 &&
-                gun.OriginalToolUseCount == 0,
-                "DoInteract throw after native cost did not restore the exact seed count or suppress the original tool method.");
-            gun.ThrowOnDoInteract = false;
-            gun.inventory.ThrowOnCostAfterMutation = true;
-            gun.OnUseAsTool();
-            Assert(
-                gun.inventory.TotalCount() == 2 &&
-                gun.OriginalToolUseCount == 0,
-                "Tool TryCostAtIndex throw after count mutation did not restore the exact seed count or suppress the original tool method.");
-            gun.inventory.ThrowOnCostAfterMutation = false;
 
-            var uiGun =
-                new DolocTown.ItemFarmingGun(
-                    new DolocTown.Config.Item.ItemInfo(),
-                    1);
-            var backpack =
-                new DolocTown.LinearInventory(3);
-            var uiSeed =
-                new DolocTown.ItemSeed
-                {
-                    name = "ui-seed",
-                    count = 2
-                };
-            backpack.SetItem(0, uiSeed);
-            var ui =
-                new DolocTown.FarmingGunUiState(
-                    uiGun,
-                    backpack,
-                    uiSeed,
-                    0);
-
-            backpack.ThrowOnTakeAfterMutation = true;
-            ui.HandlePlaceToOtherSide(0);
-            AssertUiRolledBack(
-                ui,
-                backpack,
-                uiGun.inventory,
-                expectedPlaceOriginals: 0,
-                expectedSwapOriginals: 0,
-                "Take throw after mutation");
-
-            backpack.ThrowOnTakeAfterMutation = false;
-            uiGun.inventory.ThrowOnPlaceAfterMutation = true;
-            ui.HandlePlaceToOtherSide(0);
-            AssertUiRolledBack(
-                ui,
-                backpack,
-                uiGun.inventory,
-                expectedPlaceOriginals: 0,
-                expectedSwapOriginals: 0,
-                "Place throw after mutation");
-
-            uiGun.inventory.ThrowOnPlaceAfterMutation = false;
-            backpack.ThrowOnCostAfterMutation = true;
-            ui.HandleSwapOneItem(0);
-            AssertUiRolledBack(
-                ui,
-                backpack,
-                uiGun.inventory,
-                expectedPlaceOriginals: 0,
-                expectedSwapOriginals: 0,
-                "UI TryCostAtIndex throw after count mutation");
-
-            backpack.ThrowOnCostAfterMutation = false;
-            ui.HandleSwapOneItem(0);
-            AssertUiRolledBack(
-                ui,
-                backpack,
-                uiGun.inventory,
-                expectedPlaceOriginals: 0,
-                expectedSwapOriginals: 0,
-                "UI receipt/log emit throw after mutation");
-
-            runtime.DeactivateOwner(
-                "transaction fixture cleanup");
-            AssertOwnerCount(ProductOwner, 0);
-            AssertLifecycleZero();
-        }
-
-        private static void AssertUiRolledBack(
-            DolocTown.FarmingGunUiState ui,
-            DolocTown.LinearInventory backpack,
-            DolocTown.LinearInventory gunInventory,
-            int expectedPlaceOriginals,
-            int expectedSwapOriginals,
-            string reason)
-        {
-            Assert(
-                backpack.TotalCount() == 2 &&
-                gunInventory.TotalCount() == 0 &&
-                ui.OriginalPlaceCount ==
-                    expectedPlaceOriginals &&
-                ui.OriginalSwapCount ==
-                    expectedSwapOriginals,
-                reason +
-                " did not preserve exactly two logical items, clear the destination, and suppress the original UI method. backpack=" +
-                backpack.TotalCount() +
-                "; gun=" +
-                gunInventory.TotalCount() +
-                "; placeOriginal=" +
-                ui.OriginalPlaceCount +
-                "; swapOriginal=" +
-                ui.OriginalSwapCount +
-                ".");
-        }
 
         private static void
             ConfigTitleAndDisposeLifecycleReachZero()
@@ -523,31 +226,20 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             var runtime =
                 new StrongPlantingGunNativeRuntime(
                     NullMonitor.Instance);
-            runtime.Configure(
-                EnabledConfig(),
-                "config enabled");
-            AssertOwnerCount(ProductOwner, 5);
-            runtime.Configure(
-                new StrongPlantingGunConfig
-                {
-                    Enabled = false
-                },
-                "config disabled");
+            runtime.Configure("config enabled");
+            AssertOwnerCount(ProductOwner, PatchCount);
+            runtime.DeactivateOwner("official owner disabled");
             AssertOwnerCount(ProductOwner, 0);
             AssertLifecycleZero();
 
-            runtime.Configure(
-                EnabledConfig(),
-                "same process restart");
-            AssertOwnerCount(ProductOwner, 5);
+            runtime.Configure("same process restart");
+            AssertOwnerCount(ProductOwner, PatchCount);
             runtime.SuspendForTitle("fixture title");
             AssertOwnerCount(ProductOwner, 0);
             AssertLifecycleZero();
 
-            runtime.Configure(
-                EnabledConfig(),
-                "post-title restart");
-            AssertOwnerCount(ProductOwner, 5);
+            runtime.Configure("post-title restart");
+            AssertOwnerCount(ProductOwner, PatchCount);
             var entry = new ModEntry();
             SetField(entry, "nativeRuntime", runtime);
             SetField(entry, "runtimeCreated", true);
@@ -564,9 +256,7 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             var runtime =
                 new StrongPlantingGunNativeRuntime(
                     NullMonitor.Instance);
-            runtime.Configure(
-                EnabledConfig(),
-                "pre-title");
+            runtime.Configure("pre-title");
             runtime.SuspendForTitle("fixture title");
             AssertOwnerCount(ProductOwner, 0);
 
@@ -585,13 +275,11 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             DolocAPI.archiveHandle =
                 new DolocTown.ArchiveHandle(backpack);
             int prepared =
-                runtime.ConfigureLoadedSaveBoundary(
-                    EnabledConfig(),
-                    "SaveLoaded");
+                runtime.ConfigureLoadedSaveBoundary("SaveLoaded");
             Assert(
                 prepared == 1 &&
-                jsonGun.inventory.capacity == 3 &&
-                jsonGun.func.Capacity == 3 &&
+                jsonGun.inventory.capacity == 4 &&
+                jsonGun.func.Capacity == 4 &&
                 runtime.CapacitySnapshotCount == 1,
                 "SaveLoaded did not prepare the already-deserialized backpack gun. prepared=" +
                 prepared +
@@ -602,7 +290,7 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
                 "; snapshots=" +
                 runtime.CapacitySnapshotCount +
                 ".");
-            AssertOwnerCount(ProductOwner, 5);
+            AssertOwnerCount(ProductOwner, PatchCount);
 
             runtime.DeactivateOwner(
                 "SaveLoaded fixture cleanup");
@@ -636,9 +324,7 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             bool failed = false;
             try
             {
-                runtime.ConfigureLoadedSaveBoundary(
-                    EnabledConfig(),
-                    "SaveLoaded failing scan");
+                runtime.ConfigureLoadedSaveBoundary("SaveLoaded failing scan");
             }
             catch (TargetInvocationException ex)
                 when (ex.InnerException is InvalidOperationException)
@@ -661,16 +347,124 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             DolocAPI.archiveHandle = null;
         }
 
-        private static StrongPlantingGunConfig EnabledConfig(
-            bool verbose = false) =>
-            new StrongPlantingGunConfig
+        private static void NativeForwardingAndAllSlotPreview()
+        {
+            ResetOwners();
+            var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance);
+            runtime.Configure("native forwarding");
+            var ui = new DolocTown.FarmingGunUiState();
+            foreach (MethodBase target in Targets.Skip(5).Take(9))
             {
-                Enabled = true,
-                IncludeSeeds = true,
-                IncludeFilms = true,
-                IncludeFertilizers = true,
-                VerboseLogging = verbose
-            };
+                object? result = target.Invoke(ui, target.GetParameters().Length == 0 ? null : new object[] { 2 });
+                Assert(ui.LastNativeOperation == target.Name, "Native base operation not reached: " + target.Name);
+                if (result is string[] tips) Assert(tips.SequenceEqual(new[] { "native-tip" }), "Native operation tips lost.");
+                var baseMethod = typeof(DolocTown.ContainerBaseUiState).GetMethod(target.Name)!;
+                Assert(Harmony.GetPatchInfo(baseMethod)?.Owners.Contains(ProductOwner) != true, "Shared base was patched.");
+            }
+            var gun = new DolocTown.ItemFarmingGun(new DolocTown.Config.Item.ItemInfo(), 1);
+            var context = new PreviewContext();
+            runtime.SetBatchContext(context);
+            DolocAPI.CurrentRoom = DolocAPI.archiveHandle = DolocAPI.agent = new object();
+            DolocAPI.SelectedItem = gun;
+            gun.inventory.SetItem(3, new DolocTown.ItemFilm { name = "film", count = 2 });
+            gun.RefreshCellTip(); Assert(gun.cellTip.CellTipValid, "Empty first slot hid a qualified later material.");
+            gun.inventory.SetItem(0, new DolocTown.ItemSeed { name = "seed", count = 2 });
+            gun.RefreshCellTip(); Assert(gun.cellTip.CellTipValid, "Rejected first material hid another material.");
+            gun.CheckCanInteractResult = false;
+            gun.RefreshCellTip(); Assert(!gun.cellTip.CellTipValid, "Rejected native qualification left preview valid.");
+            int queries = gun.EquipmentQueryCount;
+            gun.cellTip.CellTipValid = true;
+            DolocAPI.SelectedItem = new object();
+            gun.RefreshCellTip();
+            Assert(gun.EquipmentQueryCount == queries && gun.cellTip.CellTipValid, "A stale gun callback queried terrain or overwrote the shared preview.");
+            DolocAPI.SelectedItem = gun;
+            context.Snapshot = new DtmRuntimeContextSnapshot(Guid.Empty, 2, DtmRuntimePhase.LoadingWorld, 1, null);
+            gun.RefreshCellTip();
+            Assert(gun.EquipmentQueryCount == queries && gun.cellTip.CellTipValid, "Loading-world preview queried terrain or changed the tip.");
+            context.Snapshot = new DtmRuntimeContextSnapshot(Guid.Empty, 3, DtmRuntimePhase.WorldReady, 1, 2);
+            DolocAPI.CurrentRoom = null;
+            gun.RefreshCellTip();
+            Assert(gun.EquipmentQueryCount == queries, "Preview queried missing native room.");
+            DolocAPI.CurrentRoom = new object(); gun.CheckCanInteractResult = true;
+            gun.RefreshCellTip();
+            Assert(gun.EquipmentQueryCount == queries + 1 && gun.cellTip.CellTipValid, "Ready selected gun failed to resume material preview.");
+            context.Snapshot = new DtmRuntimeContextSnapshot(Guid.Empty, 4, DtmRuntimePhase.LoadingWorld, 1, null);
+            int count = gun.inventory.TotalCount();
+            gun.OnUseAsTool();
+            Assert(gun.OriginalToolUseCount == 0 && gun.inventory.TotalCount() == count, "Missing world context performed action or cost.");
+            runtime.DeactivateOwner("native forwarding cleanup");
+            ui.PutAll(); Assert(ui.LastNativeOperation == "legacy-PutAll", "Owner cleanup did not restore original override.");
+            Assert(gun.inventory.capacity == 4 && gun.func.Capacity == 1, "Cleanup shrank held inventory.");
+            AssertLifecycleZero();
+        }
+
+        private sealed class PreviewContext : IDtmRuntimeContext, IDisposable
+        {
+            public DtmRuntimeContextSnapshot Snapshot { get; set; } = new DtmRuntimeContextSnapshot(Guid.Empty, 1, DtmRuntimePhase.WorldReady, 1, 1);
+            public bool IsMainThread => true;
+            public IDisposable Subscribe(Action<DtmRuntimeContextSnapshot> changed) => this;
+            public void Dispose() { }
+        }
+
+        private static void CostRequiresCurrentThreeParameterContract()
+        {
+            var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance);
+            MethodInfo cost = typeof(StrongPlantingGunNativeRuntime).GetMethod("TryCostAtIndex", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var inventory = new DolocTown.LinearInventory(1);
+            inventory.SetItem(0, new DolocTown.ItemSeed { name = "seed", count = 1 });
+            Assert(cost.Invoke(runtime, new object[] { inventory, 0, 1, true }) is true && inventory.LastCostExactItem && inventory.TotalCount() == 0,
+                "The current cost contract did not receive exactItem or consume exactly one item.");
+            Assert(cost.Invoke(runtime, new object[] { inventory, 0, 1, true }) is false && inventory.TotalCount() == 0,
+                "A rejected native cost did not remain false with unchanged inventory.");
+            var unsupported = new TwoParameterCostInventory();
+            try
+            {
+                cost.Invoke(runtime, new object[] { unsupported, 0, 1, true });
+                throw new InvalidOperationException("Missing current cost signature was accepted.");
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is MissingMethodException missing && missing.Message.Contains("TryCostAtIndex(int,int,bool)")) { }
+            Assert(unsupported.Calls == 0, "The unsupported two-parameter cost method was invoked.");
+        }
+
+        private sealed class TwoParameterCostInventory
+        {
+            internal int Calls;
+            public bool TryCostAtIndex(int index, int count) { Calls++; return true; }
+        }
+
+        private static void RangePreservesNativeAreaAndCancelsPendingBatch()
+        {
+            ResetOwners();
+            var runtime = new StrongPlantingGunNativeRuntime(NullMonitor.Instance);
+            var context = new PreviewContext(); runtime.SetBatchContext(context);
+            runtime.Configure("range fixture");
+            var gun = new DolocTown.ItemFarmingGun(new DolocTown.Config.Item.ItemInfo(), 1);
+            DolocAPI.CurrentRoom = DolocAPI.agent = DolocAPI.archiveHandle = new object(); DolocAPI.SelectedItem = gun;
+            for (int n = 7; n <= 15; n++) {
+                runtime.ApplyRange(n); gun.InitCellTip();
+                Assert(gun.cellTip.CellSize.x == n && gun.cellTip.CellSize.y == n, "Native area read did not use integer range " + n);
+                Assert(gun.func.Area.x == 7 && gun.func.Area.y == 7 && gun.func.Offset.x == -3 && gun.func.Offset.y == 0, "Range mutated shared native Area/Offset.");
+            }
+            var stale = new DolocTown.ItemFarmingGun(new DolocTown.Config.Item.ItemInfo(), 1) { cellTip = gun.cellTip };
+            stale.InitCellTip(); Assert(gun.cellTip.CellSize.x == 15, "Old Init overwrote current shared size.");
+            context.Snapshot = new DtmRuntimeContextSnapshot(Guid.Empty, 2, DtmRuntimePhase.LoadingWorld, 1, null);
+            runtime.ApplyRange(8); gun.InitCellTip();
+            Assert(gun.cellTip.CellSize.x == 15, "Loading Init changed the shared tip.");
+            context.Snapshot = new DtmRuntimeContextSnapshot(Guid.Empty, 3, DtmRuntimePhase.WorldReady, 1, 2);
+            gun.InitCellTip(); Assert(gun.cellTip.CellSize.x == 8, "Ready Init did not apply latest range.");
+            Type batchType = typeof(StrongPlantingGunNativeRuntime).GetNestedType("ToolBatch", BindingFlags.NonPublic)!;
+            object pending = Activator.CreateInstance(batchType, BindingFlags.Instance | BindingFlags.NonPublic, null,
+                new object[] { gun, gun.inventory, DolocAPI.CurrentRoom, DolocAPI.archiveHandle, DolocAPI.agent, context.Snapshot, new object(), new object(), new object() }, null)!;
+            int effects = 0; var callback = new StrongPlantingGunToolCallback(() => effects++);
+            ((System.Collections.IList)batchType.GetField("Callbacks", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(pending)!).Add(callback);
+            SetField(runtime, "batch", pending);
+            runtime.ApplyRange(8); Assert(runtime.PendingBatchCount == 1 && callback.IsPending, "Unchanged effective range cancelled a batch.");
+            runtime.ApplyRange(15); callback.Invoke(); callback.Invoke();
+            Assert(runtime.PendingBatchCount == 0 && !callback.IsPending && effects == 0 && gun.cellTip.CellSize.x == 15, "Range change did not cancel old tickets before new preview.");
+            runtime.DeactivateOwner("range cleanup");
+            Assert(gun.func.Area.x == 7 && gun.func.Offset.x == -3 && gun.cellTip.CellSize.x == 7, "Owner cleanup did not restore native selected-gun preview.");
+            AssertOwnerCount(ProductOwner, 0); AssertLifecycleZero();
+        }
 
         private static void InstallOwner(
             string owner,
@@ -704,7 +498,7 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
         private static void AssertLifecycleZero() =>
             Assert(
                 StrongPlantingGunCallbacks.LastLifecycleSummary ==
-                "listeners=0;callbacks=0;hooks=0;cachedObjects=0;cachedMembers=0;capacitySnapshots=0;roots=0",
+                "listeners=0;callbacks=0;hooks=0;cachedObjects=0;cachedMembers=0;capacitySnapshots=0;roots=0;pendingBatches=0;pendingCallbacks=0",
                 "Lifecycle summary was not exact zero: " +
                 StrongPlantingGunCallbacks.LastLifecycleSummary);
 
@@ -714,7 +508,9 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
         private static void ResetOwners()
         {
             DolocAPI.archiveHandle = null;
+            DolocAPI.CurrentRoom = DolocAPI.agent = DolocAPI.SelectedItem = null;
             Cleanup(ProductOwner);
+            Cleanup(StrongPlantingGunProductContract.LegacyProductOwner);
             Cleanup(CompatibilityOwner);
             Cleanup(UnrelatedOwner);
             AssertOwnerCount(ProductOwner, 0);
@@ -779,64 +575,5 @@ namespace DTMAPI.StrongPlantingGunHarmonyOwnerFixture
             throw new InvalidOperationException(message);
         }
 
-        private sealed class ThrowUiTransferMonitor : IMonitor
-        {
-            public void Log(
-                string message,
-                LogLevel level = LogLevel.Info)
-            {
-                if ((message ?? string.Empty).IndexOf(
-                    "StrongPlantingGun UI transfer",
-                    StringComparison.Ordinal) >= 0)
-                {
-                    throw new InvalidOperationException(
-                        "fixture UI receipt emission failure");
-                }
-            }
-
-            public void LogOnce(
-                string key,
-                string message,
-                LogLevel level = LogLevel.Info)
-            {
-            }
-
-            public void LogException(
-                Exception exception,
-                string message)
-            {
-            }
-        }
-
-        private sealed class InventoryObserver
-        {
-            internal InventoryObserver(int capacity)
-            {
-                LastItems =
-                    new DolocTown.Item?[capacity];
-                LastCounts = new int[capacity];
-                LastLocks = new bool[capacity];
-            }
-
-            internal int ObservationCount { get; private set; }
-
-            internal DolocTown.Item?[] LastItems { get; }
-
-            internal int[] LastCounts { get; }
-
-            internal bool[] LastLocks { get; }
-
-            internal void Receive(
-                int index,
-                DolocTown.Item? item,
-                bool locked)
-            {
-                ObservationCount++;
-                LastItems[index] = item;
-                LastCounts[index] =
-                    item?.count ?? 0;
-                LastLocks[index] = locked;
-            }
-        }
     }
 }

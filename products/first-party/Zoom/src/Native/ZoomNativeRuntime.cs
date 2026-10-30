@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using global::DTMAPI.Abstractions;
+using DTMAPI.Abstractions;
+using UnityEngine;
 
 namespace DTMAPI.Zoom
 {
@@ -9,546 +9,274 @@ namespace DTMAPI.Zoom
     {
         private readonly IMonitor monitor;
         private readonly IZoomHookOwner hooks;
+        private readonly List<ZoomCameraHold> cameras = new List<ZoomCameraHold>();
+        private readonly List<ZoomSpriteHold> sprites = new List<ZoomSpriteHold>();
+        private readonly List<ZoomSpriteTarget> targets = new List<ZoomSpriteTarget>();
+        private ZoomCameraHold? camera;
         private ZoomConfig config = new ZoomConfig();
-        private double currentViewScale = 1d;
-        private double vanillaOrthographicSize;
-        private double appliedOrthographicSize;
-        private Func<double?>? readSizeOverride;
-        private Func<double, bool>? writeSizeOverride;
-        private Func<bool>? mainCameraAbsentOverride;
+        private object? background, preset, environment;
+        private bool dirty = true;
+        private bool deactivated, observing;
+        private long generation;
+        private int refreshDepth;
 
-        internal ZoomNativeRuntime(
-            IMonitor monitor,
-            IZoomHookOwner hooks)
+        internal ZoomNativeRuntime(IMonitor monitor, IZoomHookOwner hooks)
+        { this.monitor = monitor; this.hooks = hooks; }
+        internal event Action<bool>? ObservationChanged;
+        internal double CurrentViewScale { get; private set; } = 1d;
+        internal double VanillaOrthographicSize => camera?.Baseline ?? 0f;
+        internal double AppliedOrthographicSize => camera?.LastWrite ?? 0f;
+        internal int InstalledPatchCount => hooks.InstalledPatchCount;
+        internal bool IsHookInstalled => hooks.IsInstalled;
+        internal string Status { get; private set; } = "created";
+        internal string LastMessage { get; private set; } = string.Empty;
+        internal long DiscoveryCount { get; private set; }
+        internal long ScaleWriteCount { get; private set; }
+        internal int PendingRestoreCount => cameras.Count + sprites.FindAll(s => !s.Yielded).Count;
+
+        internal void Configure(ZoomConfig value, string reason)
         {
-            this.monitor = monitor ??
-                throw new ArgumentNullException(nameof(monitor));
-            this.hooks = hooks ??
-                throw new ArgumentNullException(nameof(hooks));
-            Status = "created";
-            LastMessage =
-                "Zoom ProductNative state has not been configured.";
+            if (deactivated) throw new ObjectDisposedException(nameof(ZoomNativeRuntime));
+            hooks.InstallAtomically(this);
+            config = value.Copy();
+            if (CurrentViewScale > config.MaxViewScale) SetViewScale(config.MaxViewScale, reason);
         }
-
-        internal bool Enabled => config.Enabled;
-
-        internal bool IsHookInstalled =>
-            hooks.IsInstalled;
-
-        internal int InstalledPatchCount =>
-            hooks.InstalledPatchCount;
-
-        internal double CurrentViewScale =>
-            currentViewScale;
-
-        internal double VanillaOrthographicSize =>
-            vanillaOrthographicSize;
-
-        internal double AppliedOrthographicSize =>
-            appliedOrthographicSize;
-
-        internal string Status { get; private set; }
-
-        internal string LastMessage { get; private set; }
-
-        internal string StatusSummary =>
-            string.Format(
-                CultureInfo.InvariantCulture,
-                "status={0}, enabled={1}, hook={2}, scale={3:0.###}, vanillaSize={4:0.###}, appliedSize={5:0.###}. {6}",
-                Status,
-                Enabled,
-                IsHookInstalled,
-                currentViewScale,
-                vanillaOrthographicSize,
-                appliedOrthographicSize,
-                LastMessage);
-
-        internal void Configure(
-            ZoomConfig value,
-            string reason)
+        internal bool Step(int direction, string reason) =>
+            SetViewScale(CurrentViewScale + config.Step * (direction < 0 ? -1d : 1d), reason);
+        internal bool SetViewScale(double value, string reason)
         {
-            ZoomConfig next =
-                (value ?? new ZoomConfig()).Copy();
-            config = next;
-            if (!next.Enabled)
+            if (deactivated) return false;
+            double next = double.IsNaN(value) || double.IsInfinity(value) ? 1d : Math.Max(1d, Math.Min(config.MaxViewScale, value));
+            if (next == 1d) { ResetToVanilla(reason); return true; }
+            if (CurrentViewScale == 1d) dirty = true;
+            CurrentViewScale = next;
+            try { Observe(); }
+            finally { UpdateObservation(); }
+            if (config.VerboseLogging) monitor.Log("Zoom scale=" + CurrentViewScale + " reason=" + reason + " status=" + Status);
+            return camera != null && CurrentViewScale == next;
+        }
+        internal void OnEnvironmentReset() { if (CurrentViewScale > 1d) { dirty = true; Tick(); } }
+        internal void OnNativeContentChanged() { if (CurrentViewScale > 1d) dirty = true; }
+        internal void BeforeBackgroundReload(object holder)
+        {
+            if (CurrentViewScale == 1d && sprites.Count == 0) return;
+            var failures = new List<Exception>();
+            for (int i = sprites.Count - 1; i >= 0; --i)
+                if (ReferenceEquals(sprites[i].Holder, holder)) ReleaseSpriteAt(i, failures);
+            dirty = true;
+            // Native content loading continues; a failed record cannot become a new baseline.
+            Report(failures);
+        }
+        internal void Tick()
+        {
+            try { Observe(); }
+            catch (Exception ex) { Status = "observation-failed"; LastMessage = ex.Message; }
+            finally { UpdateObservation(); }
+        }
+        private void Observe()
+        {
+            if (CurrentViewScale == 1d || deactivated) { RestoreAll(); return; }
+            var live = DolocAPI.mainCamera;
+            if (camera != null && (!camera.Camera || !ReferenceEquals(camera.Camera, live)))
             {
-                CleanupNativeAndHook(
-                    "config disabled " +
-                    (reason ?? string.Empty));
-                Status = "disabled";
-                return;
+                ++generation; refreshDepth = 0; camera = null; dirty = true;
             }
-
-            try
+            var failures = new List<Exception>();
+            for (int i = cameras.Count - 1; i >= 0; --i)
+                if (!ReferenceEquals(cameras[i], camera)) ReleaseCameraAt(i, failures);
+            Report(failures);
+            if (camera == null && live)
             {
-                hooks.InstallAtomically(this);
-                double previousScale = currentViewScale;
-                double targetScale = Clamp(
-                    currentViewScale,
-                    1d,
-                    config.MaxViewScale);
-                if (targetScale > 1.0001d ||
-                    (previousScale > 1.0001d &&
-                     targetScale <= 1.0001d))
+                if (cameras.Exists(c => ReferenceEquals(c.Camera, live))) return;
+                float size = live.orthographicSize;
+                if (!(size > 0f) || float.IsInfinity(size)) return;
+                camera = new ZoomCameraHold(live, size);
+                cameras.Add(camera); ++generation; dirty = true;
+            }
+            if (camera == null) { Status = "pending-camera"; return; }
+            if (camera.Camera.orthographicSize != camera.LastWrite)
+            {
+                // Neither SetEnvCamera nor RefreshResolution identifies an unknown size writer.
+                ResetToVanilla("observable external camera write");
+                Status = "camera-yielded"; return;
+            }
+            if (refreshDepth != 0) return;
+            WriteCamera(camera, (float)(camera.Baseline * CurrentViewScale));
+            var bg = DolocAPI.envBackgroundEx;
+            object? nextPreset = bg ? bg.CurrentPreset : null;
+            var env = DolocAPI.EnvCovariantController;
+            if (!ReferenceEquals(background, bg) || !ReferenceEquals(preset, nextPreset) || !ReferenceEquals(environment, env)) dirty = true;
+            background = bg; preset = nextPreset; environment = env;
+            if (dirty)
+            {
+                ZoomNativeAccess.Discover(targets); ++DiscoveryCount; dirty = false;
+                for (int i = sprites.Count - 1; i >= 0; --i)
+                    if (!targets.Exists(t => ReferenceEquals(t.Renderer, sprites[i].Renderer) && ReferenceEquals(t.Holder, sprites[i].Holder))) ReleaseSpriteAt(i, failures);
+                foreach (var target in targets)
+                    if (!sprites.Exists(s => ReferenceEquals(s.Renderer, target.Renderer))) sprites.Add(new ZoomSpriteHold(target, Aspect()));
+            }
+            float aspect = Aspect();
+            for (int i = sprites.Count - 1; i >= 0; --i)
+            {
+                var hold = sprites[i];
+                if (!hold.Renderer) { sprites.RemoveAt(i); continue; }
+                if (hold.Retiring)
                 {
-                    if (!ApplyScale(
-                            targetScale,
-                            "config " + reason))
-                    {
-                        return;
-                    }
+                    if (TryRestoreSprite(hold, failures)) { sprites.RemoveAt(i); dirty = true; }
+                    continue;
                 }
-                Status = "configured-product-native";
-                LastMessage =
-                    "Zoom ProductNative configured reason=" +
-                    (reason ?? string.Empty) +
-                    ".";
+                if (!ReferenceEquals(hold.Sprite, hold.Renderer.sprite))
+                {
+                    if (!TryRestoreSprite(hold, failures)) continue;
+                    sprites.RemoveAt(i);
+                    if (hold.Renderer.sprite && targets.Exists(t => ReferenceEquals(t.Renderer, hold.Renderer)))
+                    {
+                        hold = new ZoomSpriteHold(new ZoomSpriteTarget(hold.Renderer, hold.Holder), aspect);
+                        sprites.Insert(i, hold);
+                    }
+                    else continue;
+                }
+                if (hold.Yielded) continue;
+                Vector3 value = hold.Renderer.transform.localScale;
+                if (value.x != hold.LastX || value.y != hold.LastY) { hold.Yielded = true; continue; }
+                float x = (float)(hold.Baseline.x * CurrentViewScale * Math.Max(1f, aspect / hold.Aspect));
+                float y = (float)(hold.Baseline.y * CurrentViewScale);
+                if (value.x == x && value.y == y) continue;
+                try
+                {
+                    hold.Renderer.transform.localScale = new Vector3(x, y, value.z);
+                    hold.LastX = x; hold.LastY = y; ++ScaleWriteCount;
+                }
+                catch (Exception ex) { failures.Add(ex); }
             }
-            catch (Exception ex)
-            {
-                Status = hooks.IsInstalled
-                    ? "enable-failed-owned"
-                    : "enable-failed-closed";
-                LastMessage =
-                    "Zoom ProductNative enable failed: " +
-                    ex.GetType().Name +
-                    ": " +
-                    ex.Message;
-                throw;
-            }
+            Report(failures);
+            Status = failures.Count == 0 ? "applied-product-native" : "restore-or-write-pending";
         }
-
-        internal bool Step(
-            int direction,
-            string reason)
-        {
-            if (!config.Enabled)
-                return false;
-            double target = currentViewScale +
-                (config.Step * (direction < 0 ? -1d : 1d));
-            return SetViewScale(target, reason);
-        }
-
-        internal bool SetViewScale(
-            double value,
-            string reason)
-        {
-            if (!config.Enabled)
-                return false;
-            double targetScale = Clamp(
-                value,
-                1d,
-                config.MaxViewScale);
-            return ApplyScale(
-                targetScale,
-                reason ?? string.Empty);
-        }
-
-        internal void OnEnvironmentReset()
-        {
-            if (!config.Enabled)
-                return;
-
-            if (!TryReadOrthographicSize(
-                    out double nativeSize))
-            {
-                Status = "pending-camera";
-                LastMessage =
-                    "SetEnvCamera completed without an available main camera.";
-                return;
-            }
-
-            if (currentViewScale <= 1.0001d)
-            {
-                // While the product is at 1x, the live camera is entirely
-                // native-owned. A real environment change may therefore
-                // establish a new baseline for the next zoom request.
-                vanillaOrthographicSize = nativeSize;
-                appliedOrthographicSize = nativeSize;
-                Status = "vanilla";
-                LastMessage =
-                    "SetEnvCamera completed at 1x; refreshed the native playable-camera baseline.";
-                return;
-            }
-
-            // DolocAPI.SetEnvCamera does not normally write orthographicSize.
-            // If the value still equals our last write, preserve the original
-            // native baseline instead of multiplying the product's own output
-            // again. A distinct positive value is an explicit native-owner
-            // change and becomes the new baseline.
-            if (appliedOrthographicSize <= 0d ||
-                !NearlyEqual(
-                    nativeSize,
-                    appliedOrthographicSize))
-            {
-                vanillaOrthographicSize = nativeSize;
-            }
-            ApplyScale(
-                Clamp(
-                    currentViewScale,
-                    1d,
-                    config.MaxViewScale),
-                "DolocAPI.SetEnvCamera Postfix");
-        }
-
         internal void ResetToVanilla(string reason)
         {
-            RestoreVanilla(reason);
-            currentViewScale = 1d;
-            Status = config.Enabled
-                ? "configured-product-native"
-                : "disabled";
+            ++generation; refreshDepth = 0; CurrentViewScale = 1d; camera = null; dirty = true;
+            try { RestoreAll(); Status = "vanilla"; LastMessage = reason; }
+            finally { UpdateObservation(); }
         }
-
         internal void DeactivateOwner(string reason)
         {
-            CleanupNativeAndHook(
-                "OwnerDeactivation " +
-                (reason ?? string.Empty));
+            deactivated = true;
+            var failures = new List<Exception>();
+            try { ResetToVanilla(reason); } catch (Exception ex) { failures.Add(ex); }
+            try { ZoomCallbacks.Detach(this); } catch (Exception ex) { failures.Add(ex); }
+            try { hooks.UnpatchOwnedHooks(this); } catch (Exception ex) { failures.Add(ex); }
+            if (failures.Count != 0) throw new AggregateException("Zoom cleanup remains retryable.", failures);
             Status = "deactivated";
         }
-
-        internal void ConfigureNativeAccessForTests(
-            Func<double?>? reader,
-            Func<double, bool>? writer,
-            Func<bool>? mainCameraAbsent = null)
+        internal ZoomNativeRefreshState BeforeNativeRefreshResolution(object controller)
         {
-            readSizeOverride = reader;
-            writeSizeOverride = writer;
-            mainCameraAbsentOverride =
-                mainCameraAbsent;
+            if (deactivated || CurrentViewScale == 1d || camera == null ||
+                !ReferenceEquals(controller, DolocAPI.cameraController) || !ReferenceEquals(camera.Camera, DolocAPI.mainCamera)) return default;
+            if (camera.Camera.orthographicSize != camera.LastWrite)
+            { ResetToVanilla("external write before refresh"); return default; }
+            if (refreshDepth == 0) WriteCamera(camera, camera.Baseline);
+            ++refreshDepth;
+            return new ZoomNativeRefreshState(this, camera, controller, generation);
         }
-
-        internal ZoomNativeRefreshState BeforeNativeRefreshResolution()
+        internal Exception? AfterNativeRefreshResolution(ZoomNativeRefreshState state, Exception? nativeException)
         {
-            if (!config.Enabled || currentViewScale <= 1.0001d)
+            if (!ReferenceEquals(state.Runtime, this) || state.Generation != generation || !ReferenceEquals(state.Camera, camera) || refreshDepth == 0) return nativeException;
+            --refreshDepth;
+            if (refreshDepth != 0) return nativeException;
+            try
             {
-                if (TryReadOrthographicSize(out double nativeSize))
-                {
-                    vanillaOrthographicSize = nativeSize;
-                    appliedOrthographicSize = nativeSize;
-                }
-                return ZoomNativeRefreshState.Inactive(this);
+                if (!ReferenceEquals(state.Controller, DolocAPI.cameraController) || !ReferenceEquals(camera!.Camera, DolocAPI.mainCamera))
+                { ++generation; camera = null; dirty = true; return nativeException; }
+                if (camera.Camera.orthographicSize != camera.LastWrite)
+                { ResetToVanilla("external write during refresh"); return nativeException; }
+                WriteCamera(camera, (float)(camera.Baseline * CurrentViewScale)); dirty = true;
             }
-
-            if (!TryReadOrthographicSize(out double currentSize))
-            {
-                Status = "refresh-prefix-failed";
-                LastMessage = "Zoom could not read the live orthographic size before native RefreshResolution.";
-                throw new InvalidOperationException(LastMessage);
-            }
-
-            if (vanillaOrthographicSize <= 0d ||
-                appliedOrthographicSize <= 0d ||
-                !NearlyEqual(currentSize, appliedOrthographicSize))
-            {
-                // A value distinct from our last product write is a new native
-                // baseline. The original method must still run against that 1x
-                // value instead of a product-scaled camera.
-                vanillaOrthographicSize = currentSize;
-            }
-
-            var state = new ZoomNativeRefreshState(
-                this,
-                activeScale: currentViewScale,
-                baseline: vanillaOrthographicSize,
-                shouldReapply: true);
-            if (!TryWriteOrthographicSize(vanillaOrthographicSize))
-            {
-                Status = "refresh-prefix-failed";
-                LastMessage = "Zoom could not expose the native 1x baseline to CameraController.RefreshResolution.";
-                throw new InvalidOperationException(LastMessage);
-            }
-
-            appliedOrthographicSize = vanillaOrthographicSize;
-            return state;
-        }
-
-        internal Exception? AfterNativeRefreshResolution(
-            ZoomNativeRefreshState state,
-            Exception? nativeException)
-        {
-            if (!state.ShouldReapply || !ReferenceEquals(state.Runtime, this))
-                return nativeException;
-
-            double baseline = state.Baseline;
-            if (TryReadOrthographicSize(out double refreshedNativeSize) &&
-                refreshedNativeSize > 0d)
-            {
-                baseline = refreshedNativeSize;
-            }
-            if (baseline > 0d)
-                vanillaOrthographicSize = baseline;
-
-            double activeScale = config.Enabled
-                ? Clamp(currentViewScale, 1d, config.MaxViewScale)
-                : 1d;
-            double target = vanillaOrthographicSize * activeScale;
-            if (vanillaOrthographicSize <= 0d || !TryWriteOrthographicSize(target))
-            {
-                Status = "refresh-finalizer-failed";
-                LastMessage = "Zoom could not restore its orthographic-size presentation after native RefreshResolution.";
-                if (nativeException != null)
-                    return nativeException;
-                return new InvalidOperationException(LastMessage);
-            }
-
-            currentViewScale = activeScale;
-            appliedOrthographicSize = target;
-            Status = activeScale > 1.0001d
-                ? "applied-product-native"
-                : "vanilla";
-            LastMessage = string.Format(
-                CultureInfo.InvariantCulture,
-                "Native RefreshResolution used baseline={0:0.###}; restored view scale={1:0.###}; orthographicSize={2:0.###}.",
-                vanillaOrthographicSize,
-                activeScale,
-                target);
+            catch (Exception ex) { Status = "refresh-restore-pending"; LastMessage = ex.Message; return nativeException ?? ex; }
             return nativeException;
         }
-
-        private bool ApplyScale(
-            double targetScale,
-            string reason)
-        {
-            if (!TryReadOrthographicSize(
-                    out double currentSize))
-            {
-                Status = "pending-camera";
-                LastMessage =
-                    "Zoom could not resolve DolocAPI.mainCamera.orthographicSize.";
-                return false;
-            }
-
-            if (vanillaOrthographicSize <= 0d)
-                vanillaOrthographicSize = currentSize;
-
-            double target =
-                vanillaOrthographicSize *
-                targetScale;
-            if (!TryWriteOrthographicSize(target))
-            {
-                Status = "failed-closed";
-                LastMessage =
-                    "Zoom could not write DolocAPI.mainCamera.orthographicSize.";
-                return false;
-            }
-
-            currentViewScale = targetScale;
-            appliedOrthographicSize = target;
-            Status = targetScale > 1.0001d
-                ? "applied-product-native"
-                : "vanilla";
-            LastMessage = string.Format(
-                CultureInfo.InvariantCulture,
-                "Playable view scale={0:0.###}; orthographicSize={1:0.###}; reason={2}.",
-                targetScale,
-                target,
-                reason ?? string.Empty);
-            if (config.VerboseLogging)
-                monitor.Log("Zoom " + LastMessage);
-            return true;
-        }
-
-        private void CleanupNativeAndHook(string reason)
+        private void RestoreAll()
         {
             var failures = new List<Exception>();
-            bool nativeRestoreSucceeded = false;
+            for (int i = cameras.Count - 1; i >= 0; --i) ReleaseCameraAt(i, failures);
+            for (int i = sprites.Count - 1; i >= 0; --i) ReleaseSpriteAt(i, failures);
+            if (failures.Count != 0) { Report(failures); throw new AggregateException("Zoom native restoration pending.", failures); }
+            targets.Clear(); background = null; preset = null; environment = null;
+        }
+        private void ReleaseCameraAt(int index, List<Exception> failures)
+        {
+            var hold = cameras[index];
             try
             {
-                RestoreVanilla(reason);
-                nativeRestoreSucceeded = true;
+                if (hold.Camera && hold.Camera.orthographicSize == hold.LastWrite) WriteCamera(hold, hold.Baseline);
+                cameras.RemoveAt(index);
             }
-            catch (Exception ex)
-            {
-                failures.Add(ex);
-            }
-            TryCleanup(
-                () => ZoomCallbacks.Detach(this),
-                failures);
-            TryCleanup(
-                () => hooks.UnpatchOwnedHooks(this),
-                failures);
-            if (nativeRestoreSucceeded)
-            {
-                currentViewScale = 1d;
-                vanillaOrthographicSize = 0d;
-                appliedOrthographicSize = 0d;
-                LastMessage =
-                    "Zoom native state and exact owner cleared reason=" +
-                    reason +
-                    ".";
-            }
-            else
-            {
-                Status = hooks.IsInstalled
-                    ? "restore-failed-owner-retained"
-                    : "restore-failed-owner-unpatched";
-                LastMessage =
-                    "Zoom native restore failed; the captured snapshot remains retryable after exact-owner cleanup reason=" +
-                    reason +
-                    ".";
-            }
-            if (failures.Count == 1)
-                throw failures[0];
-            if (failures.Count > 1)
-            {
-                throw new AggregateException(
-                    "Zoom restoration, callback detach, and exact-owner unpatch encountered multiple failures.",
-                    failures);
-            }
+            catch (Exception ex) { failures.Add(ex); }
         }
-
-        private void RestoreVanilla(string reason)
+        private void ReleaseSpriteAt(int index, List<Exception> failures)
         {
-            if (vanillaOrthographicSize > 0d)
+            sprites[index].Retiring = true;
+            if (TryRestoreSprite(sprites[index], failures)) sprites.RemoveAt(index);
+        }
+        private bool TryRestoreSprite(ZoomSpriteHold hold, List<Exception> failures)
+        {
+            try
             {
-                if (!TryReadOrthographicSize(out _))
+                if (!hold.Renderer || hold.Yielded) return true;
+                Vector3 value = hold.Renderer.transform.localScale;
+                if (value.x != hold.LastX || value.y != hold.LastY) return true;
+                if (value.x != hold.Baseline.x || value.y != hold.Baseline.y)
                 {
-                    if (IsMainCameraDefinitelyAbsent())
-                    {
-                        // A null/destroyed title-transition camera cannot
-                        // retain the product's orthographic-size write.
-                        vanillaOrthographicSize = 0d;
-                        appliedOrthographicSize = 0d;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException(
-                            "Zoom could not read a live main camera while restoring the captured native orthographic size.");
-                    }
+                    hold.Renderer.transform.localScale = new Vector3(hold.Baseline.x, hold.Baseline.y, value.z);
+                    ++ScaleWriteCount;
                 }
-                else if (!TryWriteOrthographicSize(
-                             vanillaOrthographicSize))
-                {
-                    throw new InvalidOperationException(
-                        "Zoom could not restore the captured native orthographic size.");
-                }
+                return true;
             }
-            currentViewScale = 1d;
-            appliedOrthographicSize =
-                vanillaOrthographicSize;
-            LastMessage =
-                "Zoom restored the vanilla playable view reason=" +
-                (reason ?? string.Empty) +
-                ".";
+            catch (Exception ex) { failures.Add(ex); return false; }
         }
-
-        private bool TryReadOrthographicSize(
-            out double value)
+        private static void WriteCamera(ZoomCameraHold hold, float size)
         {
-            try
-            {
-                if (readSizeOverride != null)
-                {
-                    double? result = readSizeOverride();
-                    value = result ?? 0d;
-                    return result.HasValue &&
-                        result.Value > 0d;
-                }
-
-                return ZoomNativeAccess.TryReadOrthographicSize(
-                    out value);
-            }
-            catch
-            {
-                value = 0d;
-                return false;
-            }
+            if (hold.Camera.orthographicSize == size) return;
+            hold.Camera.orthographicSize = size; hold.LastWrite = size;
         }
-
-        private bool TryWriteOrthographicSize(
-            double value)
+        private static float Aspect() => DolocAPI.mainCamera && DolocAPI.mainCamera.aspect > 0f ? DolocAPI.mainCamera.aspect : 1f;
+        private void Report(List<Exception> failures)
+        { if (failures.Count != 0) { Status = "restore-or-write-pending"; LastMessage = failures[0].Message; } }
+        private void UpdateObservation()
         {
-            try
-            {
-                if (writeSizeOverride != null)
-                    return writeSizeOverride(value);
-                return ZoomNativeAccess
-                    .TryWriteOrthographicSize(value);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private bool IsMainCameraDefinitelyAbsent()
-        {
-            try
-            {
-                return mainCameraAbsentOverride != null
-                    ? mainCameraAbsentOverride()
-                    : ZoomNativeAccess
-                        .IsMainCameraDefinitelyAbsent();
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static double Clamp(
-            double value,
-            double min,
-            double max)
-        {
-            if (double.IsNaN(value) ||
-                double.IsInfinity(value))
-            {
-                return min;
-            }
-            return Math.Min(max, Math.Max(min, value));
-        }
-
-        private static bool NearlyEqual(
-            double left,
-            double right)
-        {
-            double scale = Math.Max(
-                1d,
-                Math.Max(
-                    Math.Abs(left),
-                    Math.Abs(right)));
-            return Math.Abs(left - right) <=
-                0.000001d * scale;
-        }
-
-        private static void TryCleanup(
-            Action action,
-            ICollection<Exception> failures)
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                failures.Add(ex);
-            }
+            bool next = !deactivated && (CurrentViewScale > 1d || cameras.Count != 0 || sprites.Count != 0);
+            if (next == observing) return;
+            observing = next; ObservationChanged?.Invoke(next);
         }
     }
-
+    internal sealed class ZoomCameraHold
+    {
+        internal ZoomCameraHold(Camera camera, float baseline) { Camera = camera; Baseline = LastWrite = baseline; }
+        internal readonly Camera Camera;
+        internal readonly float Baseline;
+        internal float LastWrite;
+    }
+    internal sealed class ZoomSpriteHold
+    {
+        internal ZoomSpriteHold(ZoomSpriteTarget target, float aspect)
+        {
+            Renderer = target.Renderer; Holder = target.Holder; Sprite = Renderer.sprite;
+            Baseline = Renderer.transform.localScale; LastX = Baseline.x; LastY = Baseline.y; Aspect = aspect;
+        }
+        internal readonly SpriteRenderer Renderer;
+        internal readonly object Holder;
+        internal readonly Sprite Sprite;
+        internal readonly Vector3 Baseline;
+        internal readonly float Aspect;
+        internal float LastX, LastY;
+        internal bool Yielded, Retiring;
+    }
     public readonly struct ZoomNativeRefreshState
     {
-        internal ZoomNativeRefreshState(
-            ZoomNativeRuntime runtime,
-            double activeScale,
-            double baseline,
-            bool shouldReapply)
-        {
-            Runtime = runtime;
-            ActiveScale = activeScale;
-            Baseline = baseline;
-            ShouldReapply = shouldReapply;
-        }
-
+        internal ZoomNativeRefreshState(ZoomNativeRuntime runtime, ZoomCameraHold camera, object controller, long generation)
+        { Runtime = runtime; Camera = camera; Controller = controller; Generation = generation; }
         internal ZoomNativeRuntime? Runtime { get; }
-        internal double ActiveScale { get; }
-        internal double Baseline { get; }
-        internal bool ShouldReapply { get; }
-
-        internal static ZoomNativeRefreshState Inactive(ZoomNativeRuntime runtime) =>
-            new ZoomNativeRefreshState(runtime, 1d, 0d, shouldReapply: false);
+        internal ZoomCameraHold? Camera { get; }
+        internal object? Controller { get; }
+        internal long Generation { get; }
     }
 }

@@ -138,8 +138,18 @@ public static class DolocAPI
         return true;
     }
 
+    public static readonly System.Collections.Generic.List<DolocTown.Item> Instances = new System.Collections.Generic.List<DolocTown.Item>();
+
+    public static bool TryPlaceInBackpack(DolocTown.Item item, bool sendByMail)
+    {
+        bool ok = TryPlaceInBackpack(item.name, item.count, sendByMail);
+        if (ok) Instances.Add(item);
+        return ok;
+    }
+
     public static void ResetInventory()
     {
+        Instances.Clear();
         Backpack.Clear();
         archiveHandle = new FixtureArchiveHandle();
         dataPersistenceManager = null;
@@ -165,6 +175,9 @@ public static class DolocAPI
                 "A fixture item identity is required.",
                 nameof(itemId));
         Backpack[itemId] = System.Math.Max(0, count);
+        Instances.RemoveAll(item => item.name == itemId);
+        for (int i = 0; i < count; i++)
+            if (DolocTown.ItemFactory.GenerateItem(itemId, 1, out var item)) Instances.Add(item!);
     }
 
     public static bool CostHealth(
@@ -263,6 +276,7 @@ public sealed class FixtureDroneController
 
 public sealed class FixtureArchiveHandle
 {
+    public FixtureInventorySystem InventorySystem { get; } = new FixtureInventorySystem();
     public FixtureFarmData farmData { get; set; } =
         new FixtureFarmData();
 }
@@ -446,6 +460,14 @@ namespace DolocTown
 
     public class Item
     {
+        public string name { get; set; } = string.Empty;
+        public int count { get; set; } = 1;
+        public Item? CostSelfFromInventory(FixtureInventory inventory, bool showFade)
+        {
+            if (!DolocAPI.CostItem(name, 1, false)) return null;
+            DolocAPI.Instances.Remove(this);
+            return this;
+        }
         public FixtureItemProto proto { get; set; } =
             new FixtureItemProto();
     }
@@ -458,27 +480,34 @@ namespace DolocTown
     {
     }
 
-    public sealed class FixtureItemHatOrdinary : ItemHat
+    public sealed class ItemHatShield : ItemHat
     {
-        public FixtureItemHatOrdinary()
-        {
-            proto.Title = "fixture ordinary hat";
-            proto.Function =
-                new DolocTown.Config.Item.ItemFunctionHat();
-        }
+        public int ShieldValue { get; private set; } = 10;
+        public void SetShieldValue(int value) => ShieldValue = System.Math.Max(0, System.Math.Min(value, ((FixtureItemFunctionHatShield)proto.Function).MaxShieldValue));
     }
 
-    public sealed class FixtureItemPassive : ItemPassive
+    public sealed class ItemHerbPackage : ItemPassive
     {
-        public FixtureItemPassive(object function)
-        {
-            proto.Title = "fixture passive equipment";
-            proto.Function = function;
-        }
+        public bool isFilled { get; private set; } = true;
+        public void SetFilled(bool value) => isFilled = value;
     }
 
-    public sealed class FixtureItemHatShield : ItemHat
+    public sealed class ItemCooldown : ItemPassive
     {
+        public int cdDuration { get; set; }
+    }
+
+    public sealed class AgentEquipmentFunction
+    {
+        public Item Item { get; }
+        public int Created { get; private set; }
+        public int Removed { get; private set; }
+        private AgentEquipmentFunction(Item item) => Item = item;
+        public void OnCreate() => Created++;
+        public void OnRemove() => Removed++;
+        public static bool CreateAgentEquipmentFunction(Item item, GameData.AgentEquipmentManager manager,
+            string skill, out AgentEquipmentFunction function)
+        { function = new AgentEquipmentFunction(item); return true; }
     }
 
     public sealed class FixtureItemProto
@@ -538,55 +567,18 @@ namespace DolocTown
                 throw new System.InvalidOperationException(
                     "fixture native item lookup failure");
             }
-            item = string.Equals(
-                    itemId,
-                    "fixture-shield",
-                    System.StringComparison.Ordinal)
-                ? new FixtureItemHatShield()
-                : string.Equals(
-                    itemId,
-                    "fixture-hat",
-                    System.StringComparison.Ordinal)
-                    ? new FixtureItemHatOrdinary()
-                    : string.Equals(
-                        itemId,
-                        "fixture-passive",
-                        System.StringComparison.Ordinal)
-                        ? new FixtureItemPassive(
-                            new Config.Item.ItemFunctionPassive())
-                        : string.Equals(
-                            itemId,
-                            "fixture-herb-package",
-                            System.StringComparison.Ordinal)
-                            ? new FixtureItemPassive(
-                                new Config.Item.ItemFunctionHerbPackage())
-                            : string.Equals(
-                                itemId,
-                                "fixture-skillless-passive",
-                                System.StringComparison.Ordinal)
-                                ? new FixtureItemPassive(
-                                    new Config.Item.ItemFunctionPassive
-                                    {
-                                        Skill = string.Empty
-                                    })
-                                : string.Equals(
-                                    itemId,
-                                    "fixture-active",
-                                    System.StringComparison.Ordinal)
-                                    ? new Item
-                                    {
-                                        proto =
-                                            new FixtureItemProto
-                                            {
-                                                Title =
-                                                    "fixture active",
-                                                Function =
-                                                    new Config
-                                                        .Item
-                                                        .ItemFunctionActive()
-                                            }
-                                    }
-                                    : null;
+            switch (itemId)
+            {
+                case "fixture-shield": item = new ItemHatShield(); break;
+                case "fixture-hat": item = new ItemHat { proto = new FixtureItemProto { Title = "fixture ordinary hat", Function = new Config.Item.ItemFunctionHat() } }; break;
+                case "fixture-passive": item = new ItemPassive { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionPassive() } }; break;
+                case "fixture-herb-package": item = new ItemHerbPackage { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionHerbPackage() } }; break;
+                case "fixture-cooldown": item = new ItemCooldown { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionCooldown() } }; break;
+                case "fixture-skillless-passive": item = new ItemPassive { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionPassive { Skill = string.Empty } } }; break;
+                case "fixture-active": item = new Item { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionActive() } }; break;
+                default: item = new ItemHat { proto = new FixtureItemProto { Function = new Config.Item.ItemFunctionHat() } }; break;
+            }
+            if (item != null) { item.name = itemId; item.count = count; }
             if (item?.proto.Function is
                 FixtureItemFunctionHatShield shield)
             {
@@ -623,6 +615,11 @@ namespace DolocTown
         {
             public string Skill { get; set; } =
                 "fixture-herb-skill";
+        }
+
+        public sealed class ItemFunctionCooldown
+        {
+            public string Skill { get; set; } = "fixture-cooldown-skill";
         }
 
         public sealed class ItemFunctionActive
@@ -889,4 +886,14 @@ namespace Cysharp.Threading.Tasks
         {
         }
     }
+}
+
+public sealed class FixtureInventorySystem
+{
+    public FixtureInventory inventory { get; } = new FixtureInventory();
+    public object? buffer => null;
+}
+public sealed class FixtureInventory
+{
+    public DolocTown.Item[] ReadAll() => DolocAPI.Instances.ToArray();
 }

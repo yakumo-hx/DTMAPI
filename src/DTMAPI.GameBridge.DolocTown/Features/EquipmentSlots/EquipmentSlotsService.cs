@@ -1,4 +1,3 @@
-#pragma warning disable CS0618 // Frozen IEquipmentSlotsApi proxy.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,10 +10,10 @@ using DTMAPI.Core.Runtime;
 namespace DTMAPI.GameBridge.DolocTown
 {
     /// <summary>
-    /// Mandatory thin proxy for the frozen IEquipmentSlotsApi ABI.
-    /// Product policy, native hooks, UI, and sidecar execution live in the dormant Compatibility Host.
+    /// Save-boundary bridge for MES cold-data recovery when the product is absent.
+    /// Gameplay, equipment hooks and UI belong to the current product.
     /// </summary>
-    internal sealed class EquipmentSlotsService : IEquipmentSlotsApi
+    internal sealed class EquipmentSlotsService
     {
         private readonly CompatibilityHostBroker broker;
         private readonly DtmApiRuntime runtime;
@@ -32,48 +31,6 @@ namespace DTMAPI.GameBridge.DolocTown
         }
 
         private object Backend => broker.GetService("EquipmentSlots", Array.Empty<object>());
-
-        public EquipmentSlotsRegisterResult RegisterSlots(IManifest owner, EquipmentSlotsOptions options) =>
-            CompatibilityHostBroker.Invoke<EquipmentSlotsRegisterResult>(
-                Backend,
-                "RegisterSlots",
-                owner,
-                NormalizeEquipmentSlotsOptions(options));
-
-        public System.Collections.Generic.IReadOnlyList<EquipmentSlotInfo> GetSlots(string uniqueId) =>
-            CompatibilityHostBroker.Invoke<System.Collections.Generic.IReadOnlyList<EquipmentSlotInfo>>(
-                Backend,
-                "GetSlots",
-                uniqueId);
-
-        public EquipmentSlotEquipResult EquipExtraSlot(IManifest owner, string slotId, string itemId) =>
-            CompatibilityHostBroker.Invoke<EquipmentSlotEquipResult>(
-                Backend,
-                "EquipExtraSlot",
-                owner,
-                slotId,
-                itemId);
-
-        public EquipmentSlotEquipResult UnequipExtraSlot(IManifest owner, string slotId, string reason) =>
-            CompatibilityHostBroker.Invoke<EquipmentSlotEquipResult>(
-                Backend,
-                "UnequipExtraSlot",
-                owner,
-                slotId,
-                reason);
-
-        public EquipmentSlotsState GetState(string uniqueId) =>
-            CompatibilityHostBroker.Invoke<EquipmentSlotsState>(Backend, "GetState", uniqueId);
-
-        public EquipmentSlotsRecoveryResult RecoverExtraSlotItems(IManifest owner, string reason) =>
-            CompatibilityHostBroker.Invoke<EquipmentSlotsRecoveryResult>(
-                Backend,
-                "RecoverExtraSlotItems",
-                owner,
-                reason);
-
-        public BridgeFeatureStatus GetStatus(string uniqueId) =>
-            CompatibilityHostBroker.Invoke<BridgeFeatureStatus>(Backend, "GetStatus", uniqueId);
 
         internal void SaveLoaded(bool isNewGame)
         {
@@ -106,12 +63,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void ReturnedToTitle() =>
             TryInvokeVoid("NotifyEquipmentSlotsReturnedToTitle");
 
-        internal void EnvironmentReset(string reason) =>
-            TryInvokeVoid("NotifyEquipmentSlotsEnvironmentReset", reason ?? string.Empty);
-
-        internal void UpdateCompatibilityUi() =>
-            TryInvokeVoid("UpdateDemandedEquipmentSlotsUi");
-
         internal bool UpdateColdRecovery() =>
             TryInvoke("RecoverOrphanEquipmentSlotsIfNeeded", false);
 
@@ -125,27 +76,6 @@ namespace DTMAPI.GameBridge.DolocTown
             TryInvoke(
                 "GetEquipmentSlotsLifecycleSummary",
                 "equipmentClones=0, equipmentBinders=0, equipmentRendered=false, equipmentStorageOwners=0, equipmentDirtyOwners=0, equipmentEntries=0");
-
-        internal string GetUiOwnerObjectGraphSummary() =>
-            TryInvoke(
-                "GetEquipmentSlotsUiOwnerObjectGraphSummary",
-                "DTMAPI.EquipmentSlots={Canvas=0; EventSystem=0; Button=0; InputField=0; ScrollRect=0; UnityEventListeners=0; DynamicBinders=0; rootAlive=0}");
-
-        internal static EquipmentSlotsOptions NormalizeEquipmentSlotsOptions(EquipmentSlotsOptions? options)
-        {
-            options ??= new EquipmentSlotsOptions();
-            return new EquipmentSlotsOptions
-            {
-                Enabled = options.Enabled,
-                ExtraAttributeSlots = Math.Max(0, Math.Min(24, options.ExtraAttributeSlots)),
-                SlotIdPrefix = string.IsNullOrWhiteSpace(options.SlotIdPrefix) ? "dtmapi.extra" : options.SlotIdPrefix,
-                PreserveVanillaVisualSlots = options.PreserveVanillaVisualSlots,
-                ExtraSlotsAffectVisuals = options.ExtraSlotsAffectVisuals,
-                SafeUnequipOnDisable = options.SafeUnequipOnDisable,
-                AutoRecoverOnMissingMod = options.AutoRecoverOnMissingMod,
-                VerboseLogging = options.VerboseLogging
-            };
-        }
 
         internal bool HasColdCompatibilityStorage()
         {

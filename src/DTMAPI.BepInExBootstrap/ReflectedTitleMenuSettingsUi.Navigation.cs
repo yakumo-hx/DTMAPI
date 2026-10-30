@@ -22,6 +22,11 @@ namespace DTMAPI.BepInExBootstrap
 
         private void TrackNavigation(string name, object go, object control, object image, object background, float x, float y, bool input, Action? action)
         {
+            if (buildingDialogUi)
+            {
+                dialogTargets.Add(new NavigationTarget(name, go, control, image, background, x, y, input, action));
+                return;
+            }
             if (!trackingRenderedObjects) return;
             navigationTargets.Add(new NavigationTarget(name, go, control, image, background, x, y, input, action));
         }
@@ -78,7 +83,7 @@ namespace DTMAPI.BepInExBootstrap
             }
             if (cancel)
             {
-                CloseMenu();
+                if (!TryCloseDetail()) CloseMenu();
                 nativeMenuInput.SetModal(IsOwnedRuntimeMenuOpen());
                 navigationCycle.Reset();
                 return;
@@ -120,6 +125,7 @@ namespace DTMAPI.BepInExBootstrap
         private NavigationTarget? FindFocused() => navigationTargets.Find(t => t.Name == focusedName);
         private void RestoreNavigationFocus()
         {
+            if (dialogView != null || nativeMenuInput?.DialogBlocking == true) return;
             if (!IsOwnedRuntimeMenuOpen() || navigationTargets.Count == 0) return;
             SetFocus(FindFocused() ?? navigationTargets[0]);
         }

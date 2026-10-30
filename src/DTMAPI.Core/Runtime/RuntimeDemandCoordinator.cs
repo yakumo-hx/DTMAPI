@@ -244,22 +244,7 @@ namespace DTMAPI.Core.Runtime
                 if (previousCount == count)
                     return false;
 
-                if (count == 0)
-                {
-                    state.Demands.Remove(key);
-                    if (previousCount > 0)
-                        demandEntryCount--;
-                }
-                else
-                {
-                    state.Demands[key] = count;
-                    if (previousCount == 0)
-                        demandEntryCount++;
-                }
-                state.TotalDemand += count - previousCount;
-                state.AdjustOwnerDemand(ownerId, count - previousCount);
-                if (state.TotalDemand < 0)
-                    throw new InvalidOperationException("Demand count underflow for capability '" + capabilityId + "'.");
+                demandEntryCount += state.SetCount(key, count);
 
                 changed = true;
                 long receiptSequence = ++sequence;
@@ -353,28 +338,7 @@ namespace DTMAPI.Core.Runtime
                         continue;
 
                     int previousCapabilityCount = state.TotalDemand;
-                    foreach (RuntimeDemandKey key in owned)
-                    {
-                        int count = state.Demands[key];
-                        state.Demands.Remove(key);
-                        state.AdjustOwnerDemand(key.OwnerId, -count);
-                        demandEntryCount--;
-                        state.TotalDemand -= count;
-                        removed += count;
-                        long receiptSequence = ++sequence;
-                        AddReceiptUnsafe(new RuntimeDemandReceipt(
-                            receiptSequence,
-                            DateTimeOffset.UtcNow,
-                            capability.Key,
-                            ownerId,
-                            key.SourceType,
-                            key.Lifetime,
-                            key.DemandKey,
-                            previousCapabilityCount,
-                            state.TotalDemand,
-                            "OwnerRemoved",
-                            reason));
-                    }
+                    removed += RemoveDemandsUnsafe(capability.Key, state, owned, "OwnerRemoved", reason);
 
                     NotifySynchronousStateObserversUnsafe(capability.Key);
 
@@ -414,28 +378,7 @@ namespace DTMAPI.Core.Runtime
                     return 0;
 
                 int previousCapabilityCount = state.TotalDemand;
-                int removedEntries = state.Demands.Count;
-                foreach (KeyValuePair<RuntimeDemandKey, int> demand in state.Demands)
-                {
-                    removed += demand.Value;
-                    AddReceiptUnsafe(new RuntimeDemandReceipt(
-                        ++sequence,
-                        DateTimeOffset.UtcNow,
-                        capabilityId,
-                        demand.Key.OwnerId,
-                        demand.Key.SourceType,
-                        demand.Key.Lifetime,
-                        demand.Key.DemandKey,
-                        previousCapabilityCount,
-                        previousCapabilityCount - removed,
-                        "CapabilityCleared",
-                        reason));
-                }
-
-                state.Demands.Clear();
-                state.OwnerDemandTotals.Clear();
-                state.TotalDemand = 0;
-                demandEntryCount -= removedEntries;
+                removed = RemoveDemandsUnsafe(capabilityId, state, state.Demands.Keys.ToArray(), "CapabilityCleared", reason);
                 NotifySynchronousStateObserversUnsafe(capabilityId);
                 transition = new RuntimeDemandTransition(
                     sequence,
@@ -452,6 +395,22 @@ namespace DTMAPI.Core.Runtime
 
             if (drainTransitions)
                 DrainTransitions();
+            return removed;
+        }
+
+        private int RemoveDemandsUnsafe(string capabilityId, CapabilityState state, RuntimeDemandKey[] keys, string operation, string reason)
+        {
+            int removed = 0;
+            foreach (RuntimeDemandKey key in keys)
+            {
+                int previousCapabilityCount = state.TotalDemand;
+                removed += state.Demands[key];
+                demandEntryCount += state.SetCount(key, 0);
+                AddReceiptUnsafe(new RuntimeDemandReceipt(
+                    ++sequence, DateTimeOffset.UtcNow, capabilityId, key.OwnerId,
+                    key.SourceType, key.Lifetime, key.DemandKey,
+                    previousCapabilityCount, state.TotalDemand, operation, reason));
+            }
             return removed;
         }
 
@@ -481,11 +440,8 @@ namespace DTMAPI.Core.Runtime
                 int total = 0;
                 foreach (CapabilityState state in capabilities.Values)
                 {
-                    foreach (KeyValuePair<RuntimeDemandKey, int> demand in state.Demands)
-                    {
-                        if (demand.Key.OwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
-                            total = checked(total + demand.Value);
-                    }
+                    if (state.OwnerDemandTotals.TryGetValue(ownerId, out int count))
+                        total = checked(total + count);
                 }
                 return total;
             }
@@ -733,7 +689,7 @@ namespace DTMAPI.Core.Runtime
 
             public Dictionary<string, int> OwnerDemandTotals { get; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-            public int TotalDemand { get; set; }
+            public int TotalDemand { get; private set; }
 
             public RuntimeCapabilityLifecycleState LifecycleState { get; set; } = RuntimeCapabilityLifecycleState.Cold;
 
@@ -781,16 +737,26 @@ namespace DTMAPI.Core.Runtime
                     trimmedOwnerDemand);
             }
 
-            public void AdjustOwnerDemand(string ownerId, int delta)
+            public int SetCount(RuntimeDemandKey key, int count)
             {
-                int previous = OwnerDemandTotals.TryGetValue(ownerId, out int count) ? count : 0;
-                int current = checked(previous + delta);
-                if (current < 0)
-                    throw new InvalidOperationException("Owner demand count underflow for '" + ownerId + "'.");
-                if (current == 0)
-                    OwnerDemandTotals.Remove(ownerId);
+                int previous = Demands.TryGetValue(key, out int existing) ? existing : 0;
+                int delta = checked(count - previous);
+                int total = checked(TotalDemand + delta);
+                int ownerTotal = checked((OwnerDemandTotals.TryGetValue(key.OwnerId, out int owned) ? owned : 0) + delta);
+                if (count < 0 || total < 0 || ownerTotal < 0)
+                    throw new InvalidOperationException("Demand count underflow for owner '" + key.OwnerId + "'.");
+
+                // Validate all aggregates before changing any authoritative root.
+                if (count == 0)
+                    Demands.Remove(key);
                 else
-                    OwnerDemandTotals[ownerId] = current;
+                    Demands[key] = count;
+                if (ownerTotal == 0)
+                    OwnerDemandTotals.Remove(key.OwnerId);
+                else
+                    OwnerDemandTotals[key.OwnerId] = ownerTotal;
+                TotalDemand = total;
+                return (count > 0 ? 1 : 0) - (previous > 0 ? 1 : 0);
             }
         }
     }

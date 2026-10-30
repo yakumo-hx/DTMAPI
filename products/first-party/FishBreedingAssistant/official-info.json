@@ -1,8 +1,8 @@
 {
   "name": "DTMAPI鱼卵信息显示",
   "author": "Yuuka",
-  "version": "1.0.0",
-  "description": "依赖 DTMAPI。\n在鱼卵标题中显示亲本鱼名称。",
+  "version": "1.1.0",
+  "description": "依赖 DTMAPI。\n在鱼卵标题中显示孵化鱼种的当前语言名称。启用后自动生效，无额外设置。",
   "tags": [
     "Mod",
     "Gameplay",
@@ -16,8 +16,8 @@
     "english": "DTMAPI Fish Roe Info Display"
   },
   "localized_description": {
-    "schinese": "依赖 DTMAPI。\n在鱼卵标题中显示亲本鱼名称。",
-    "tchinese": "依賴 DTMAPI。\n在魚卵標題中顯示親本魚名稱。",
-    "english": "Requires DTMAPI.\nShows the parent fish name in fish roe titles."
+    "schinese": "依赖 DTMAPI。\n在鱼卵标题中显示孵化鱼种的当前语言名称。启用后自动生效，无额外设置。",
+    "tchinese": "依賴 DTMAPI。\n在魚卵標題中顯示孵化魚種的目前語言名稱。啟用後自動生效，無額外設定。",
+    "english": "Requires DTMAPI.\nShows the current-language name of the fish that will hatch from each roe. Works automatically when enabled; no extra settings."
   }
 }

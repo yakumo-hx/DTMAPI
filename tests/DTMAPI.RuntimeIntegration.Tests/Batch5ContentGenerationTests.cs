@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Manifesting;
 using DTMAPI.Core.Runtime;
@@ -22,7 +23,14 @@ namespace DTMAPI.UnitTests
             MultiDomainDirtyInputStopsAfterCollapseThreshold();
             DuplicateOwnerPrefixCannotHideALateDistinctOwner();
             AuthoritativeOwnerSelectionDoesNotUseDisplayIdentity();
+            RunContentQuery();
+        }
+
+        internal static void RunContentQuery()
+        {
             ContentQuerySkipsInactiveOfficialSourcesAndIsolatesCompatibleInputs();
+            ContentQueryBuildsOnceOnConcurrentFirstDemand();
+            ContentQueryDeferredInputsCannotReviveClosedOwners();
             ContentQueryRejectRetainsAtomicLastGoodAndStableModSnapshots();
             ContentQueryRejectsAnUnavailableStillActiveOwnerRoot();
             ContentQueryAtomicBarrierPublishesReceiptWithVisibleSnapshot();
@@ -30,19 +38,6 @@ namespace DTMAPI.UnitTests
             ContentQueryStaleCompletionDoesNotPublishPreparedSnapshot();
             ContentQueryPostCommitFailureDoesNotRequeuePublishedGeneration();
             ContentQueryOwnerCleanupAndSuccessorGenerationStayConsistent();
-            CustomAnimalsRejectOnlyBadOwnerAndSteadyFramesDoNotBuildCandidates();
-            CustomAnimalsAtomicBarrierPublishesReceiptWithVisibleSnapshot();
-            CustomAnimalsPreCommitFailureRetainsLastGoodAndRequeues();
-            CustomAnimalsStaleCompletionDoesNotPublishPreparedSnapshot();
-            CustomAnimalsPostCommitFailureDoesNotRequeuePublishedGeneration();
-            OverlongOwnerDirtyRequestRebuildsAudioAndCustomAnimals();
-            AudioPreCommitFailureRetainsLastGoodAndRequeues();
-            AudioStaleCompletionDoesNotPublishPreparedSnapshot();
-            AudioPostCommitFailureDoesNotRequeuePublishedGeneration();
-            AudioPublicationFailureDoesNotSkipDemandReconciliation();
-            AudioReadOnlyHealthQueriesDoNotCreatePhantomOwnerResources();
-            AudioMultiOwnerBatchPublishesOnlyAfterAllOwnersReachATerminalCandidate();
-            AudioUpdaterDoesNotTraverseWhenNoEntryIsPending();
         }
 
         private static void ContentQuerySkipsInactiveOfficialSourcesAndIsolatesCompatibleInputs()
@@ -144,23 +139,23 @@ namespace DTMAPI.UnitTests
         private static void AbandonedGenerationClosesAndPublishesARecoverableSuccessor()
         {
             var generations = new ContentRefreshGenerationService();
-            generations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { "Owner.A" }, "startup");
-            Assert(generations.TryGetDirty(ContentRefreshDomains.AudioReplacement, out ContentRefreshDirtyBatch failed), "The failing consumer should acquire the original generation.");
-            generations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { "Owner.B" }, "change-during-consumer");
+            generations.MarkDirty("SecondContentDomain", new[] { "Owner.A" }, "startup");
+            Assert(generations.TryGetDirty("SecondContentDomain", out ContentRefreshDirtyBatch failed), "The failing consumer should acquire the original generation.");
+            generations.MarkDirty("SecondContentDomain", new[] { "Owner.B" }, "change-during-consumer");
 
             Assert(generations.AbandonAndRequeue(failed, "injected consumer failure"), "An unexpected consumer failure should close the in-flight generation and requeue its work.");
-            Assert(generations.TryGetDirty(ContentRefreshDomains.AudioReplacement, out ContentRefreshDirtyBatch retry), "The domain must remain consumable after an unexpected consumer failure.");
+            Assert(generations.TryGetDirty("SecondContentDomain", out ContentRefreshDirtyBatch retry), "The domain must remain consumable after an unexpected consumer failure.");
             Assert(retry.Generation > failed.Generation && retry.OwnerIds.SequenceEqual(new[] { "Owner.A", "Owner.B" }, StringComparer.OrdinalIgnoreCase), "The successor must have a new generation and preserve original plus in-flight owner dirtiness.");
             Assert(generations.GetReceipts().Last().Status == ContentRefreshCompletionStatus.Rejected, "The abandoned generation should leave a bounded rejection receipt.");
             Assert(generations.Complete(retry, new[] { new ContentRefreshCompletion("all", ContentRefreshCompletionStatus.Committed, 0, 1, 1, "retry committed") }), "The successor should complete normally.");
-            Assert(!generations.IsDirty(ContentRefreshDomains.AudioReplacement), "A successful successor must return the domain to clean state.");
+            Assert(!generations.IsDirty("SecondContentDomain"), "A successful successor must return the domain to clean state.");
         }
 
         private static void CompletionDiagnosticsRemainBoundedAcrossManyOwners()
         {
             var generations = new ContentRefreshGenerationService();
-            generations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { "all" }, "many-owner-refresh");
-            Assert(generations.TryGetDirty(ContentRefreshDomains.CustomAnimals, out ContentRefreshDirtyBatch batch), "The many-owner generation should become consumable.");
+            generations.MarkDirty("SecondContentDomain", new[] { "all" }, "many-owner-refresh");
+            Assert(generations.TryGetDirty("SecondContentDomain", out ContentRefreshDirtyBatch batch), "The many-owner generation should become consumable.");
             var completions = new ContentRefreshCompletionCollector();
             for (int index = 0; index < 1000; index++)
             {
@@ -236,16 +231,16 @@ namespace DTMAPI.UnitTests
             string overlongOwner = ordinaryOwner + "x";
             var generations = new ContentRefreshGenerationService();
 
-            generations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ordinaryOwner }, "ordinary-owner");
-            Assert(generations.TryGetDirty(ContentRefreshDomains.AudioReplacement, out ContentRefreshDirtyBatch ordinaryBatch), "An ordinary owner should produce a consumable generation.");
+            generations.MarkDirty("SecondContentDomain", new[] { ordinaryOwner }, "ordinary-owner");
+            Assert(generations.TryGetDirty("SecondContentDomain", out ContentRefreshDirtyBatch ordinaryBatch), "An ordinary owner should produce a consumable generation.");
             Assert(ordinaryBatch.OwnerIds.Count == 1 && ordinaryBatch.OwnerIds[0] == ordinaryOwner, "An owner that fits the authoritative bound must retain its exact identity in the dirty batch.");
             Assert(generations.Complete(
                 ordinaryBatch,
                 new[] { new ContentRefreshCompletion(ordinaryOwner, ContentRefreshCompletionStatus.Committed, 0, 1, 1, "ordinary-owner") }),
                 "The ordinary-owner generation should complete.");
 
-            generations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { overlongOwner }, "overlong-owner");
-            Assert(generations.TryGetDirty(ContentRefreshDomains.AudioReplacement, out ContentRefreshDirtyBatch overlongBatch), "An overlong owner should still produce a consumable generation.");
+            generations.MarkDirty("SecondContentDomain", new[] { overlongOwner }, "overlong-owner");
+            Assert(generations.TryGetDirty("SecondContentDomain", out ContentRefreshDirtyBatch overlongBatch), "An overlong owner should still produce a consumable generation.");
             Assert(overlongBatch.OwnerIds.Count == 1 && overlongBatch.OwnerIds[0] == "all", "An owner beyond the authoritative bound must conservatively select all owners instead of becoming a display hash.");
             Assert(generations.Complete(
                 overlongBatch,
@@ -253,6 +248,68 @@ namespace DTMAPI.UnitTests
                 "The conservative overlong-owner generation should complete.");
             ContentRefreshReceipt receipt = generations.GetReceipts().Last();
             Assert(receipt.OwnerId.Length <= 128 && receipt.OwnerId != overlongOwner, "Receipt/display owner identities must remain bounded independently of authoritative dirty selection.");
+        }
+
+        private static void ContentQueryBuildsOnceOnConcurrentFirstDemand()
+        {
+            WithIsolatedPersistentRoot(persistentRoot =>
+            {
+                string gameDir = NewTempGameDir();
+                string itemPath = WriteOfficialContentPack(persistentRoot, "Batch5ContentLazy", "DTMAPI.Tests.ContentLazy", "content_lazy", "Lazy Item");
+                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
+                using (var unreadableUntilQuery = new FileStream(itemPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    runtime.Start();
+                    runtime.NotifyWorkshopModListChanged();
+                    _ = runtime.CreateSnapshot();
+                    Assert(runtime.Content.CandidateBuildCountForTest == 0 && runtime.Content.IndexedItemCount == 0 && runtime.Content.IndexedItemSourceCount == 0,
+                        "Startup, source refresh, snapshots and diagnostic counts must not scan an unused query index.");
+                    Assert(runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.ContentQuery) &&
+                        !runtime.ContentRefreshGenerations.GetReceipts().Any(receipt => receipt.Domain == ContentRefreshDomains.ContentQuery),
+                        "Unused query inputs should retain pending dirtiness without inventing a terminal publication receipt.");
+                }
+
+                Task<IContentItemInfo?>[] readers = Enumerable.Range(0, 8)
+                    .Select(_ => Task.Run(() => runtime.GetIndexedContentItem("content_lazy"))).ToArray();
+                Task.WaitAll(readers);
+                Assert(readers.All(reader => reader.Result != null) && runtime.Content.CandidateBuildCountForTest == 1,
+                    "Concurrent first queries must synchronously see one complete publication without Runtime-thread callbacks or duplicate builds.");
+                _ = runtime.Content.FindAssets("json");
+                _ = runtime.Content.GetKnownContentTypes();
+                _ = runtime.Content.GetAllIndexedItems();
+                Assert(runtime.Content.CandidateBuildCountForTest == 1 && !runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.ContentQuery),
+                    "Steady queries must reuse the terminal publication.");
+                runtime.NotifyRuntimeShutdown("ContentQuery first demand test");
+            });
+        }
+
+        private static void ContentQueryDeferredInputsCannotReviveClosedOwners()
+        {
+            foreach (bool shutdown in new[] { false, true })
+            {
+                WithIsolatedPersistentRoot(persistentRoot =>
+                {
+                    const string folder = "Batch5ContentDeferredClose";
+                    const string ownerId = "DTMAPI.Tests.ContentDeferredClose";
+                    string gameDir = NewTempGameDir();
+                    WriteOfficialContentPack(persistentRoot, folder, ownerId, "content_deferred_close", "Deferred Close");
+                    var runtime = new DtmApiRuntime(new FakeHost(gameDir));
+                    runtime.Start();
+                    IContentQueryHelper retained = runtime.Content;
+                    Assert(runtime.Content.CandidateBuildCountForTest == 0, "Retaining a helper alone must not demand an index.");
+                    if (shutdown)
+                        runtime.NotifyRuntimeShutdown("deferred content owner close");
+                    else
+                    {
+                        WriteOfficialModInfos(persistentRoot, "Local." + folder, enabled: false);
+                        runtime.NotifyWorkshopModListChanged();
+                    }
+                    Assert(retained.GetIndexedItem("content_deferred_close") == null && !retained.FindAssets("json").Any(asset => asset.SourceModId == ownerId) && runtime.Content.CountOwnerResources(ownerId) == 0,
+                        "A stale helper's first query after disable or shutdown must not revive pending owner inputs.");
+                    if (!shutdown)
+                        runtime.NotifyRuntimeShutdown("deferred content owner disable test");
+                });
+            }
         }
 
         private static void ContentQueryRejectRetainsAtomicLastGoodAndStableModSnapshots()
@@ -362,6 +419,14 @@ namespace DTMAPI.UnitTests
                 Assert(service.LastGoodGeneration == prepared.CurrentGeneration && service.FindAssets("txt").Count == 1, "The rejected generation must preserve the complete last-good publication.");
                 ContentRefreshReceipt invalidReceipt = generations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.ContentQuery);
                 Assert(invalidReceipt.Status == ContentRefreshCompletionStatus.Rejected && invalidReceipt.LastGoodGeneration == service.LastGoodGeneration, "The invalid-root rejection receipt must name the retained visible ContentQuery generation.");
+                Directory.Move(ownerRoot + ".temporarily-unavailable", ownerRoot);
+                ContentQueryRebuildResult late = service.RebuildCandidate(new[] { activeOwner }, invalidBatch.Generation + 1, "prepared before owner close");
+                Assert(late.Success && service.RemoveOwner(manifest.UniqueID) > 0, "The published owner must remain removable while another candidate is prepared.");
+                bool staleRejected = false;
+                try { late.PublishPreparedSnapshot!(); }
+                catch (InvalidOperationException) { staleRejected = true; }
+                Assert(staleRejected && service.CountOwnerResources(manifest.UniqueID) == 0 && service.FindAssets("txt").Count == 0,
+                    "A late candidate must not republish resources belonging to the owner that was just closed.");
             });
         }
 
@@ -374,6 +439,7 @@ namespace DTMAPI.UnitTests
                 string itemPath = WriteOfficialContentPack(persistentRoot, "Batch5ContentBarrier", ownerId, "content_barrier_a", "Content Barrier A");
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir));
                 runtime.Start();
+                Assert(runtime.GetIndexedContentItem("content_barrier_a") != null, "Initial query must establish generation A before testing its successor.");
                 int receiptsBefore = runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.ContentQuery);
 
                 WriteItem(itemPath, "content_barrier_b", "Content Barrier B");
@@ -408,6 +474,7 @@ namespace DTMAPI.UnitTests
                 string itemPath = WriteOfficialContentPack(persistentRoot, "Batch5ContentPreCommit", ownerId, "content_precommit_a", "Content PreCommit A");
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir));
                 runtime.Start();
+                Assert(runtime.GetIndexedContentItem("content_precommit_a") != null, "Initial query must establish generation A before testing its successor.");
                 long generationA = runtime.Content.LastGoodGeneration;
 
                 WriteItem(itemPath, "content_precommit_b", "Content PreCommit B");
@@ -446,6 +513,7 @@ namespace DTMAPI.UnitTests
                 string itemPath = WriteOfficialContentPack(persistentRoot, "Batch5ContentStale", ownerId, "content_stale_a", "Content Stale A");
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir));
                 runtime.Start();
+                Assert(runtime.GetIndexedContentItem("content_stale_a") != null, "Initial query must establish generation A before testing its successor.");
                 long generationA = runtime.Content.LastGoodGeneration;
 
                 WriteItem(itemPath, "content_stale_b", "Content Stale B");
@@ -483,6 +551,7 @@ namespace DTMAPI.UnitTests
                 string itemPath = WriteOfficialContentPack(persistentRoot, "Batch5ContentPostCommit", ownerId, "content_postcommit_a", "Content PostCommit A");
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir));
                 runtime.Start();
+                Assert(runtime.GetIndexedContentItem("content_postcommit_a") != null, "Initial query must establish generation A before testing its successor.");
                 int receiptsBefore = runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.ContentQuery);
 
                 WriteItem(itemPath, "content_postcommit_b", "Content PostCommit B");
@@ -518,6 +587,7 @@ namespace DTMAPI.UnitTests
                 WriteOfficialContentPack(persistentRoot, folder, ownerId, "content_owner_cleanup", "Content Owner Cleanup");
                 var runtime = new DtmApiRuntime(new FakeHost(gameDir));
                 runtime.Start();
+                Assert(runtime.GetIndexedContentItem("content_owner_cleanup") != null, "Initial query must establish generation A before testing its successor.");
                 long generationA = runtime.Content.LastGoodGeneration;
                 Assert(runtime.Content.CountOwnerResources(ownerId) > 0, "The active ContentQuery owner should have roots before cleanup.");
 
@@ -528,556 +598,6 @@ namespace DTMAPI.UnitTests
                 Assert(runtime.Content.CountOwnerResources(ownerId) == 0 && runtime.GetIndexedContentItem("content_owner_cleanup") == null, "Owner cleanup and its source-driven successor must leave no visible ContentQuery owner roots.");
                 Assert(runtime.Content.LastGoodGeneration > generationA && receipt.Status == ContentRefreshCompletionStatus.Committed && receipt.CurrentGeneration == runtime.Content.LastGoodGeneration, "The owner-cleanup successor must advance one authoritative ContentQuery generation whose terminal receipt names the visible snapshot.");
             });
-        }
-
-        private static void CustomAnimalsRejectOnlyBadOwnerAndSteadyFramesDoNotBuildCandidates()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerA = "DTMAPI.Tests.Batch5Animals.A";
-                const string ownerB = "DTMAPI.Tests.Batch5Animals.B";
-                string schemaA = WriteCustomAnimalPack(gameDir, "Batch5AnimalsA", ownerA, "species_a", "anim_a");
-                string schemaB = WriteCustomAnimalPack(gameDir, "Batch5AnimalsB", ownerB, "species_b", "anim_b");
-
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new CustomAnimalAnimatorBridgeService(runtime);
-                Assert(service.RefreshDefinitions("unit-initial", force: false), "Startup dirty generation should build CustomAnimals candidates.");
-                Assert(service.RegisteredKeyCount == 2 && service.RegisteredKeySummary.Contains("anim_a", StringComparison.Ordinal) && service.RegisteredKeySummary.Contains("anim_b", StringComparison.Ordinal), "Both valid owners should publish their initial animator definitions.");
-                long ownerAGeneration = service.GetOwnerDefinitionGenerationForTest(ownerA);
-                long ownerBGeneration = service.GetOwnerDefinitionGenerationForTest(ownerB);
-                int buildsAfterInitial = service.DefinitionCandidateBuildCountForTest;
-
-                for (int index = 0; index < 10000; index++)
-                    Assert(!service.RefreshDefinitions("steady-frame", force: false), "A clean CustomAnimals frame should perform only the dirty-state check.");
-                Assert(service.DefinitionCandidateBuildCountForTest == buildsAfterInitial, "10,000 clean frames must not build a definition candidate or inspect schema files.");
-
-                File.WriteAllText(schemaA, "[{ invalid-json ]", new UTF8Encoding(false));
-                WriteCustomAnimalSchema(schemaB, "species_b", "anim_b_v2");
-                runtime.NotifyWorkshopModListChanged();
-                Assert(service.RefreshDefinitions("unit-owner-isolation", force: false), "Workshop source refresh should expose one dirty CustomAnimals generation.");
-                string summary = service.RegisteredKeySummary;
-                Assert(summary.Contains("anim_a", StringComparison.Ordinal) && summary.Contains("anim_b_v2", StringComparison.Ordinal) && !summary.Contains("anim_b,", StringComparison.Ordinal), "Bad owner A should retain its last-good key while valid owner B atomically advances to its new key.");
-                Assert(service.GetOwnerDefinitionGenerationForTest(ownerA) == ownerAGeneration, "Rejected owner A must retain its prior owner generation.");
-                Assert(service.GetOwnerDefinitionGenerationForTest(ownerB) > ownerBGeneration, "Valid owner B must advance independently of owner A rejection.");
-                ContentRefreshReceipt ownerAReceipt = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals && receipt.OwnerId == ownerA);
-                ContentRefreshReceipt ownerBReceipt = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals && receipt.OwnerId == ownerB);
-                Assert(ownerAReceipt.Status == ContentRefreshCompletionStatus.Rejected && ownerAReceipt.LastGoodGeneration == ownerAGeneration, "Bad owner receipt should preserve owner A last-good generation.");
-                Assert(ownerBReceipt.Status == ContentRefreshCompletionStatus.Committed && ownerBReceipt.CurrentGeneration > ownerBGeneration, "Good owner receipt should commit independently.");
-            });
-        }
-
-        private static void OverlongOwnerDirtyRequestRebuildsAudioAndCustomAnimals()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                string ownerId = "DTMAPI.Tests.Batch5.OverlongOwner." + new string('x', 128);
-                string root = Path.Combine(gameDir, "Mods", "Batch5OverlongOwner");
-                string dtmapiRoot = Path.Combine(root, "Content", "DTMAPI");
-                string audioRoot = Path.Combine(root, "Content", "Audio");
-                Directory.CreateDirectory(dtmapiRoot);
-                Directory.CreateDirectory(audioRoot);
-                WriteManifest(Path.Combine(root, "manifest.json"), ownerId);
-                string animalSchema = Path.Combine(dtmapiRoot, "custom-animals.json");
-                string audioSchema = Path.Combine(dtmapiRoot, "audio-replacements.json");
-                WriteCustomAnimalSchema(animalSchema, "species_long", "anim_long_a");
-                WriteAudioSchema(audioSchema, "audio_long_a");
-                WritePcm16MonoWav(Path.Combine(audioRoot, "test.wav"));
-
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var animals = new CustomAnimalAnimatorBridgeService(runtime);
-                var audio = new AudioReplacementService(runtime, (_, __) => new object());
-                Assert(animals.RefreshDefinitions("unit-long-owner-initial", force: false), "Startup dirtiness should build the long owner's CustomAnimals generation.");
-                audio.RefreshContentPackDefinitions("unit-long-owner-initial", force: false);
-                Assert(animals.RegisteredKeySummary.Contains("anim_long_a", StringComparison.Ordinal), "The initial CustomAnimals definition should be active.");
-                Assert(audio.GetState(ownerId).LastReplacementId == "audio_long_a", "The initial Audio definition should be active.");
-                int animalBuildsBefore = animals.DefinitionCandidateBuildCountForTest;
-
-                WriteCustomAnimalSchema(animalSchema, "species_long", "anim_long_b");
-                WriteAudioSchema(audioSchema, "audio_long_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { ownerId }, "unit-long-owner-change");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ownerId }, "unit-long-owner-change");
-
-                Assert(animals.RefreshDefinitions("unit-long-owner-change", force: false), "An overlong owner request must conservatively rebuild the actual CustomAnimals owner.");
-                audio.RefreshContentPackDefinitions("unit-long-owner-change", force: false);
-                Assert(animals.DefinitionCandidateBuildCountForTest == animalBuildsBefore + 1 && animals.RegisteredKeySummary.Contains("anim_long_b", StringComparison.Ordinal), "CustomAnimals must rebuild and publish the changed long-owner definition.");
-                AudioReplacementState audioState = audio.GetState(ownerId);
-                Assert(audioState.LastReplacementId == "audio_long_b" && audioState.Replacements.All(entry => entry.ReplacementId != "audio_long_a"), "Audio must rebuild and atomically replace the long owner's prior definition.");
-            });
-        }
-
-        private static void CustomAnimalsAtomicBarrierPublishesReceiptWithVisibleSnapshot()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Animals.Barrier";
-                string schema = WriteCustomAnimalPack(gameDir, "Batch5AnimalsBarrier", ownerId, "species_barrier", "anim_barrier_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new CustomAnimalAnimatorBridgeService(runtime);
-                Assert(service.RefreshDefinitions("unit-barrier-initial", force: false), "Initial CustomAnimals generation must commit before the barrier test.");
-                int receiptsBefore = runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals);
-
-                WriteCustomAnimalSchema(schema, "species_barrier", "anim_barrier_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { ownerId }, "unit-atomic-barrier");
-                bool barrierObserved = false;
-                service.PreCommitFaultForTest = _ =>
-                {
-                    barrierObserved = true;
-                    Assert(service.RegisteredKeySummary.Contains("anim_barrier_a", StringComparison.Ordinal) && !service.RegisteredKeySummary.Contains("anim_barrier_b", StringComparison.Ordinal), "Before the atomic publisher swaps the live snapshot, only the last-good CustomAnimals definition may be visible.");
-                    Assert(runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals) == receiptsBefore, "The terminal receipt must not publish before its matching live snapshot swap.");
-                };
-                try
-                {
-                    Assert(service.RefreshDefinitions("unit-atomic-barrier", force: false), "The matching CustomAnimals generation should cross the atomic commit barrier.");
-                }
-                finally
-                {
-                    service.PreCommitFaultForTest = null;
-                }
-
-                ContentRefreshReceipt receipt = runtime.ContentRefreshGenerations.GetReceipts().Last(item => item.Domain == ContentRefreshDomains.CustomAnimals && item.OwnerId == ownerId);
-                Assert(barrierObserved && service.RegisteredKeySummary.Contains("anim_barrier_b", StringComparison.Ordinal), "Returning from the atomic commit must expose the new CustomAnimals snapshot.");
-                Assert(receipt.Status == ContentRefreshCompletionStatus.Committed && receipt.CurrentGeneration == service.GetOwnerDefinitionGenerationForTest(ownerId) && runtime.ContentRefreshGenerations.GetReceipts().Count(item => item.Domain == ContentRefreshDomains.CustomAnimals) == receiptsBefore + 1, "The new live snapshot and exactly one matching terminal receipt must become authoritative at the same commit boundary.");
-            });
-        }
-
-        private static void CustomAnimalsPreCommitFailureRetainsLastGoodAndRequeues()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Animals.PreCommit";
-                string schema = WriteCustomAnimalPack(gameDir, "Batch5AnimalsPreCommit", ownerId, "species_precommit", "anim_precommit_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new CustomAnimalAnimatorBridgeService(runtime);
-                Assert(service.RefreshDefinitions("unit-precommit-initial", force: false), "Initial CustomAnimals generation must commit before fault injection.");
-                long lastGoodGeneration = service.GetOwnerDefinitionGenerationForTest(ownerId);
-
-                WriteCustomAnimalSchema(schema, "species_precommit", "anim_precommit_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { ownerId }, "unit-precommit-fault");
-                service.PreCommitFaultForTest = _ => throw new InvalidOperationException("injected CustomAnimals before visible swap");
-                bool threw = false;
-                try
-                {
-                    service.RefreshDefinitions("unit-precommit-fault", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("injected CustomAnimals", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.PreCommitFaultForTest = null;
-                }
-
-                Assert(threw, "The pre-commit fault must cross the real CustomAnimals generation publisher.");
-                Assert(service.RegisteredKeySummary.Contains("anim_precommit_a", StringComparison.Ordinal) && !service.RegisteredKeySummary.Contains("anim_precommit_b", StringComparison.Ordinal) && service.GetOwnerDefinitionGenerationForTest(ownerId) == lastGoodGeneration, "A pre-commit failure must preserve the complete last-good CustomAnimals snapshot and generation.");
-                Assert(runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.CustomAnimals), "A pre-commit failure must leave a recoverable successor dirty generation instead of committing the failed candidate.");
-                ContentRefreshReceipt abandoned = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals);
-                Assert(abandoned.Status == ContentRefreshCompletionStatus.Rejected && abandoned.Details.Contains("Unexpected consumer failure", StringComparison.Ordinal), "The failed pre-commit attempt must be explicitly abandoned without publishing an owner commit receipt.");
-
-                Assert(service.RefreshDefinitions("unit-precommit-retry", force: false), "The requeued CustomAnimals successor should remain consumable.");
-                Assert(service.RegisteredKeySummary.Contains("anim_precommit_b", StringComparison.Ordinal) && service.GetOwnerDefinitionGenerationForTest(ownerId) > lastGoodGeneration, "The successor should publish the prepared CustomAnimals definition normally.");
-            });
-        }
-
-        private static void CustomAnimalsStaleCompletionDoesNotPublishPreparedSnapshot()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Animals.Stale";
-                string schema = WriteCustomAnimalPack(gameDir, "Batch5AnimalsStale", ownerId, "species_stale", "anim_stale_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new CustomAnimalAnimatorBridgeService(runtime);
-                Assert(service.RefreshDefinitions("unit-stale-initial", force: false), "Initial CustomAnimals generation must commit before stale-completion injection.");
-                long lastGoodGeneration = service.GetOwnerDefinitionGenerationForTest(ownerId);
-
-                WriteCustomAnimalSchema(schema, "species_stale", "anim_stale_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { ownerId }, "unit-stale-completion");
-                service.BeforeGenerationCompleteForTest = batch =>
-                    runtime.ContentRefreshGenerations.AbandonAndRequeue(batch, "injected CustomAnimals stale completion before authority commit");
-                bool threw = false;
-                try
-                {
-                    service.RefreshDefinitions("unit-stale-completion", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("rejected as stale", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.BeforeGenerationCompleteForTest = null;
-                }
-
-                Assert(threw, "A stale CustomAnimals generation completion must be rejected by the authority edge.");
-                Assert(service.RegisteredKeySummary.Contains("anim_stale_a", StringComparison.Ordinal) && !service.RegisteredKeySummary.Contains("anim_stale_b", StringComparison.Ordinal) && service.GetOwnerDefinitionGenerationForTest(ownerId) == lastGoodGeneration, "A stale completion must never invoke the CustomAnimals visible-snapshot publisher.");
-                Assert(runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.CustomAnimals), "The injected stale completion must retain explicit successor work.");
-
-                Assert(service.RefreshDefinitions("unit-stale-retry", force: false), "The stale CustomAnimals generation's successor should remain consumable.");
-                Assert(service.RegisteredKeySummary.Contains("anim_stale_b", StringComparison.Ordinal) && service.GetOwnerDefinitionGenerationForTest(ownerId) > lastGoodGeneration, "Only a fresh matching completion may publish the stale generation's successor.");
-            });
-        }
-
-        private static void CustomAnimalsPostCommitFailureDoesNotRequeuePublishedGeneration()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Animals.Atomic";
-                string schema = WriteCustomAnimalPack(gameDir, "Batch5AnimalsAtomic", ownerId, "species_atomic", "anim_atomic_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new CustomAnimalAnimatorBridgeService(runtime);
-                Assert(service.RefreshDefinitions("unit-atomic-initial", force: false), "Initial CustomAnimals generation must commit.");
-                int receiptsBefore = runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.CustomAnimals);
-
-                WriteCustomAnimalSchema(schema, "species_atomic", "anim_atomic_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.CustomAnimals, new[] { ownerId }, "unit-post-commit-fault");
-                service.PostCommitFaultForTest = _ => throw new InvalidOperationException("injected post-commit sink failure");
-                bool threw = false;
-                try
-                {
-                    service.RefreshDefinitions("unit-post-commit-fault", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("injected post-commit", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.PostCommitFaultForTest = null;
-                }
-
-                ContentRefreshReceipt receipt = runtime.ContentRefreshGenerations.GetReceipts().Last(item => item.Domain == ContentRefreshDomains.CustomAnimals && item.OwnerId == ownerId);
-                Assert(threw && service.RegisteredKeySummary.Contains("anim_atomic_b", StringComparison.Ordinal), "An injected post-commit sink failure must leave the new CustomAnimals snapshot visible.");
-                Assert(!runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.CustomAnimals), "A terminal CustomAnimals generation must not be requeued after a post-commit sink failure.");
-                Assert(receipt.Status == ContentRefreshCompletionStatus.Committed && runtime.ContentRefreshGenerations.GetReceipts().Count(item => item.Domain == ContentRefreshDomains.CustomAnimals) == receiptsBefore + 1, "The generation must publish exactly one committed terminal receipt.");
-            });
-        }
-
-        private static void AudioPreCommitFailureRetainsLastGoodAndRequeues()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Audio.PreCommit";
-                string schema = WriteAudioPack(gameDir, "Batch5AudioPreCommit", ownerId, "audio_precommit_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime, (_, __) => new object());
-                service.RefreshContentPackDefinitions("unit-precommit-initial", force: false);
-                long lastGoodGeneration = service.GetOwnerContentPackGenerationForTest(ownerId);
-
-                WriteAudioSchema(schema, "audio_precommit_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ownerId }, "unit-precommit-fault");
-                service.PreCommitFaultForTest = _ => throw new InvalidOperationException("injected before visible swap");
-                bool threw = false;
-                try
-                {
-                    service.RefreshContentPackDefinitions("unit-precommit-fault", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("injected before visible swap", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.PreCommitFaultForTest = null;
-                }
-
-                Assert(threw, "The pre-commit fault injection must cross the real Audio generation boundary.");
-                Assert(service.GetState(ownerId).LastReplacementId == "audio_precommit_a" && service.GetOwnerContentPackGenerationForTest(ownerId) == lastGoodGeneration, "A failure before the visible swap must preserve the complete last-good Audio owner snapshot.");
-                Assert(runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement), "A pre-commit consumer failure must leave a recoverable successor dirty generation.");
-                ContentRefreshReceipt abandoned = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.AudioReplacement);
-                Assert(abandoned.Status == ContentRefreshCompletionStatus.Rejected && abandoned.Details.Contains("Unexpected consumer failure", StringComparison.Ordinal), "The abandoned pre-commit generation must have one explicit rejected/requeued terminal receipt.");
-
-                service.RefreshContentPackDefinitions("unit-precommit-retry", force: false);
-                Assert(service.GetState(ownerId).LastReplacementId == "audio_precommit_b" && service.GetOwnerContentPackGenerationForTest(ownerId) > lastGoodGeneration, "The requeued successor must be able to commit the prepared replacement normally.");
-            });
-        }
-
-        private static void AudioStaleCompletionDoesNotPublishPreparedSnapshot()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Audio.Stale";
-                string schema = WriteAudioPack(gameDir, "Batch5AudioStale", ownerId, "audio_stale_a");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime, (_, __) => new object());
-                service.RefreshContentPackDefinitions("unit-stale-initial", force: false);
-                long lastGoodGeneration = service.GetOwnerContentPackGenerationForTest(ownerId);
-
-                WriteAudioSchema(schema, "audio_stale_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ownerId }, "unit-stale-completion");
-                service.BeforeGenerationCompleteForTest = batch =>
-                    runtime.ContentRefreshGenerations.AbandonAndRequeue(batch, "injected stale completion before authority commit");
-                bool threw = false;
-                try
-                {
-                    service.RefreshContentPackDefinitions("unit-stale-completion", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("rejected as stale", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.BeforeGenerationCompleteForTest = null;
-                }
-
-                Assert(threw, "A stale generation completion must be rejected by the authority edge.");
-                Assert(service.GetState(ownerId).LastReplacementId == "audio_stale_a" && service.GetOwnerContentPackGenerationForTest(ownerId) == lastGoodGeneration, "A stale Complete result must never invoke the Audio visible-snapshot publisher.");
-                Assert(runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement), "The injected stale completion must retain its explicit successor work.");
-
-                service.RefreshContentPackDefinitions("unit-stale-retry", force: false);
-                Assert(service.GetState(ownerId).LastReplacementId == "audio_stale_b" && service.GetOwnerContentPackGenerationForTest(ownerId) > lastGoodGeneration, "The stale generation's successor should publish only through a fresh matching completion.");
-            });
-        }
-
-        private static void AudioPostCommitFailureDoesNotRequeuePublishedGeneration()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Audio.Atomic";
-                string root = Path.Combine(gameDir, "Mods", "Batch5AudioAtomic");
-                string dtmapiRoot = Path.Combine(root, "Content", "DTMAPI");
-                string audioRoot = Path.Combine(root, "Content", "Audio");
-                Directory.CreateDirectory(dtmapiRoot);
-                Directory.CreateDirectory(audioRoot);
-                WriteManifest(Path.Combine(root, "manifest.json"), ownerId);
-                string schema = Path.Combine(dtmapiRoot, "audio-replacements.json");
-                WriteAudioSchema(schema, "audio_atomic_a");
-                WritePcm16MonoWav(Path.Combine(audioRoot, "test.wav"));
-
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime, (_, __) => new object());
-                service.RefreshContentPackDefinitions("unit-atomic-initial", force: false);
-                int receiptsBefore = runtime.ContentRefreshGenerations.GetReceipts().Count(receipt => receipt.Domain == ContentRefreshDomains.AudioReplacement);
-
-                WriteAudioSchema(schema, "audio_atomic_b");
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ownerId }, "unit-post-commit-fault");
-                service.PostCommitFaultForTest = _ => throw new InvalidOperationException("injected post-commit sink failure");
-                bool threw = false;
-                try
-                {
-                    service.RefreshContentPackDefinitions("unit-post-commit-fault", force: false);
-                }
-                catch (InvalidOperationException ex) when (ex.Message.Contains("injected post-commit", StringComparison.Ordinal))
-                {
-                    threw = true;
-                }
-                finally
-                {
-                    service.PostCommitFaultForTest = null;
-                }
-
-                ContentRefreshReceipt receipt = runtime.ContentRefreshGenerations.GetReceipts().Last(item => item.Domain == ContentRefreshDomains.AudioReplacement && item.OwnerId == ownerId);
-                Assert(threw && service.GetState(ownerId).LastReplacementId == "audio_atomic_b", "An injected post-commit sink failure must leave the new Audio snapshot visible.");
-                Assert(!runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement), "A terminal Audio generation must not be requeued after a post-commit sink failure.");
-                Assert(receipt.Status == ContentRefreshCompletionStatus.Committed && runtime.ContentRefreshGenerations.GetReceipts().Count(item => item.Domain == ContentRefreshDomains.AudioReplacement) == receiptsBefore + 1, "The Audio generation must publish exactly one committed terminal receipt.");
-            });
-        }
-
-        private static void AudioMultiOwnerBatchPublishesOnlyAfterAllOwnersReachATerminalCandidate()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerA = "DTMAPI.Tests.Batch5Audio.Multi.A";
-                const string ownerB = "DTMAPI.Tests.Batch5Audio.Multi.B";
-                string schemaA = WriteAudioPack(gameDir, "Batch5AudioMultiA", ownerA, "audio_multi_a1", suppressNativeWhenReady: false);
-                string schemaB = WriteAudioPack(gameDir, "Batch5AudioMultiB", ownerB, "audio_multi_b1", suppressNativeWhenReady: false);
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime, (_, __) => new object());
-                service.RefreshContentPackDefinitions("unit-multi-initial", force: false);
-                long ownerAGeneration = service.GetOwnerContentPackGenerationForTest(ownerA);
-                long ownerBGeneration = service.GetOwnerContentPackGenerationForTest(ownerB);
-
-                WriteAudioSchema(schemaA, "audio_multi_a2", suppressNativeWhenReady: false);
-                File.WriteAllText(schemaB, "[{ invalid-json ]", new UTF8Encoding(false));
-                runtime.ContentRefreshGenerations.MarkDirty(ContentRefreshDomains.AudioReplacement, new[] { ownerA, ownerB }, "unit-multi-late-owner-reject");
-                service.RefreshContentPackDefinitions("unit-multi-late-owner-reject", force: false);
-
-                Assert(service.GetState(ownerA).LastReplacementId == "audio_multi_a2" && service.GetOwnerContentPackGenerationForTest(ownerA) > ownerAGeneration, "The valid first owner may advance, but only at the batch authority commit after every owner candidate is terminal.");
-                Assert(service.GetState(ownerB).LastReplacementId == "audio_multi_b1" && service.GetOwnerContentPackGenerationForTest(ownerB) == ownerBGeneration, "A later invalid owner must retain its entire last-good snapshot while the batch commits other terminal owner outcomes.");
-                ContentRefreshReceipt ownerAReceipt = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.AudioReplacement && receipt.OwnerId == ownerA);
-                ContentRefreshReceipt ownerBReceipt = runtime.ContentRefreshGenerations.GetReceipts().Last(receipt => receipt.Domain == ContentRefreshDomains.AudioReplacement && receipt.OwnerId == ownerB);
-                Assert(ownerAReceipt.Status == ContentRefreshCompletionStatus.Committed && ownerAReceipt.CurrentGeneration == service.GetOwnerContentPackGenerationForTest(ownerA), "The first owner's terminal receipt must name the generation that became visible at the atomic batch swap.");
-                Assert(ownerBReceipt.Status == ContentRefreshCompletionStatus.Rejected && ownerBReceipt.LastGoodGeneration == ownerBGeneration, "The later owner's terminal receipt must explicitly reject while preserving its authoritative last-good generation.");
-                Assert(!runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement), "A batch with per-owner committed/rejected terminal outcomes must close exactly once without requeueing published state.");
-            });
-        }
-
-        private static void AudioPublicationFailureDoesNotSkipDemandReconciliation()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Audio.DemandFault";
-                WriteAudioPack(gameDir, "Batch5AudioDemandFault", ownerId, "audio_demand_fault");
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime, (_, __) => new object());
-                service.PublicationSideEffectFaultForTest = _ => throw new InvalidOperationException("injected Audio log/lifecycle publication failure");
-                try
-                {
-                    service.RefreshContentPackDefinitions("unit-demand-side-effect-fault", force: false);
-                }
-                finally
-                {
-                    service.PublicationSideEffectFaultForTest = null;
-                }
-
-                ContentRefreshReceipt receipt = runtime.ContentRefreshGenerations.GetReceipts().Last(item => item.Domain == ContentRefreshDomains.AudioReplacement && item.OwnerId == ownerId);
-                Assert(service.GetState(ownerId).LastReplacementId == "audio_demand_fault" && receipt.Status == ContentRefreshCompletionStatus.Committed, "A throwable post-commit publication side effect must not undo the committed Audio snapshot or terminal receipt.");
-                Assert(runtime.DemandCoordinator.GetDemandCount(GameBridgeDemandRoutes.AudioReplacement) == 1 && runtime.DemandCoordinator.GetOwnerDemandCount(ownerId) == 1, "Audio demand reconciliation must run as a non-skippable best-effort step even when logging/lifecycle publication throws first.");
-                Assert(!runtime.ContentRefreshGenerations.IsDirty(ContentRefreshDomains.AudioReplacement), "A post-commit Audio publication fault must not requeue the already-published generation.");
-            });
-        }
-
-        private static void AudioReadOnlyHealthQueriesDoNotCreatePhantomOwnerResources()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                const string ownerId = "DTMAPI.Tests.Batch5Audio.NoSchema";
-                string ownerRoot = Path.Combine(gameDir, "Mods", "Batch5AudioNoSchema");
-                Directory.CreateDirectory(ownerRoot);
-                WriteManifest(Path.Combine(ownerRoot, "manifest.json"), ownerId);
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var feature = new AudioReplacementFeature(runtime);
-
-                AudioReplacementState initial = feature.Service.GetState(ownerId);
-                BridgeFeatureStatus initialStatus = feature.Service.GetStatus(ownerId);
-                Assert(initial.Status == "not-configured" && initialStatus.Status == "not-configured", "A pure Audio GetState/GetStatus query for an unconfigured owner must return a transient not-configured projection.");
-                Assert(feature.Service.CountOwnerResources(ownerId) == 0, "Pure Audio health queries must not persist a phantom owner state.");
-
-                feature.SaveLoaded(isNewGame: false);
-                feature.PublishHookStatuses();
-                AudioReplacementState afterSaveLoaded = feature.Service.GetState(ownerId);
-                BridgeFeatureStatus afterHealth = feature.Service.GetStatus(ownerId);
-                Assert(afterSaveLoaded.Status == "not-configured" && afterHealth.Status == "not-configured", "SaveLoaded and hook-health publication must preserve the no-schema owner's transient not-configured result.");
-                Assert(feature.Service.CountOwnerResources(ownerId) == 0 && feature.Service.GetAudioReplacementLifecycleSummary().Contains("states=0", StringComparison.Ordinal), "A no-schema owner must retain zero Audio owner resources after SaveLoaded and repeated health queries.");
-            });
-        }
-
-        private static void AudioUpdaterDoesNotTraverseWhenNoEntryIsPending()
-        {
-            WithIsolatedPersistentRoot(_ =>
-            {
-                string gameDir = NewTempGameDir();
-                var runtime = new DtmApiRuntime(new FakeHost(gameDir));
-                runtime.Start();
-                var service = new AudioReplacementService(runtime);
-                service.RefreshContentPackDefinitions("unit-startup", force: false);
-                var owner = new ManifestModel
-                {
-                    Name = "Batch 5 Audio",
-                    Author = "DTMAPI",
-                    Version = "1.0.0",
-                    UniqueID = "DTMAPI.Tests.Batch5Audio"
-                };
-                service.RegisterReplacement(owner, new AudioReplacementOptions
-                {
-                    ReplacementId = "missing-but-retained",
-                    NativeSoundEvent = "PLAY_RESOURCE_PAPER_BOX",
-                    AudioPath = Path.Combine(gameDir, "missing.wav"),
-                    Enabled = true,
-                    SuppressNativeWhenReady = true
-                });
-                Assert(service.HasEnabledDefinitions && service.PendingEntryCountForTest == 0, "A terminal failed entry may remain diagnosable but must not activate the pending updater.");
-                long visitsBefore = service.PendingEntryVisitCountForTest;
-                for (int index = 0; index < 10000; index++)
-                    service.Update();
-                Assert(service.PendingEntryVisitCountForTest == visitsBefore && service.PendingEntryCountForTest == 0, "10,000 frames with zero pending entries must traverse zero Audio entries.");
-            });
-        }
-
-        private static string WriteCustomAnimalPack(string gameDir, string folder, string ownerId, string speciesId, string animatorKey)
-        {
-            string root = Path.Combine(gameDir, "Mods", folder);
-            string dtmapiRoot = Path.Combine(root, "Content", "DTMAPI");
-            Directory.CreateDirectory(dtmapiRoot);
-            WriteManifest(Path.Combine(root, "manifest.json"), ownerId);
-            string schemaPath = Path.Combine(dtmapiRoot, "custom-animals.json");
-            WriteCustomAnimalSchema(schemaPath, speciesId, animatorKey);
-            return schemaPath;
-        }
-
-        private static void WriteCustomAnimalSchema(string schemaPath, string speciesId, string animatorKey)
-        {
-            File.WriteAllText(
-                schemaPath,
-                "[{ \"speciesId\": \"" + speciesId + "\", \"templateSpeciesId\": \"goat\", \"aiTemplate\": \"goat\", \"animatorMode\": \"assetBundle\", \"adultAnimatorKey\": \"" + animatorKey + "\", \"animatorBundle\": \"Content/Bundles/animals\", \"adultAnimatorAsset\": \"controller\" }]",
-                new UTF8Encoding(false));
-        }
-
-        private static string WriteAudioPack(
-            string gameDir,
-            string folder,
-            string ownerId,
-            string replacementId,
-            bool suppressNativeWhenReady = true)
-        {
-            string root = Path.Combine(gameDir, "Mods", folder);
-            string dtmapiRoot = Path.Combine(root, "Content", "DTMAPI");
-            string audioRoot = Path.Combine(root, "Content", "Audio");
-            Directory.CreateDirectory(dtmapiRoot);
-            Directory.CreateDirectory(audioRoot);
-            WriteManifest(Path.Combine(root, "manifest.json"), ownerId);
-            string schemaPath = Path.Combine(dtmapiRoot, "audio-replacements.json");
-            WriteAudioSchema(schemaPath, replacementId, suppressNativeWhenReady);
-            WritePcm16MonoWav(Path.Combine(audioRoot, "test.wav"));
-            return schemaPath;
-        }
-
-        private static void WriteAudioSchema(string schemaPath, string replacementId, bool suppressNativeWhenReady = true)
-        {
-            File.WriteAllText(
-                schemaPath,
-                "[{ \"id\": \"" + replacementId + "\", \"category\": \"SimpleSfx\", \"nativeSoundEvent\": \"PLAY_RESOURCE_PAPER_BOX\", \"file\": \"Content/Audio/test.wav\", \"suppressNativeWhenReady\": " + suppressNativeWhenReady.ToString().ToLowerInvariant() + " }]",
-                new UTF8Encoding(false));
-        }
-
-        private static void WritePcm16MonoWav(string path)
-        {
-            const int sampleRate = 8000;
-            const short channels = 1;
-            const short bitsPerSample = 16;
-            const int sampleCount = 80;
-            int dataLength = sampleCount * sizeof(short);
-            using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-            using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: false);
-            writer.Write(Encoding.ASCII.GetBytes("RIFF"));
-            writer.Write(36 + dataLength);
-            writer.Write(Encoding.ASCII.GetBytes("WAVE"));
-            writer.Write(Encoding.ASCII.GetBytes("fmt "));
-            writer.Write(16);
-            writer.Write((short)1);
-            writer.Write(channels);
-            writer.Write(sampleRate);
-            writer.Write(sampleRate * channels * bitsPerSample / 8);
-            writer.Write((short)(channels * bitsPerSample / 8));
-            writer.Write(bitsPerSample);
-            writer.Write(Encoding.ASCII.GetBytes("data"));
-            writer.Write(dataLength);
-            for (int index = 0; index < sampleCount; index++)
-                writer.Write((short)(index % 2 == 0 ? 1000 : -1000));
         }
 
         private static void WriteManifest(string path, string ownerId)

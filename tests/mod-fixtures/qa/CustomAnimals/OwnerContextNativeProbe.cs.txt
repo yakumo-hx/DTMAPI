@@ -1,0 +1,282 @@
+#nullable disable
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using DTMAPI.Abstractions;
+using DolocTown;
+using HarmonyLib;
+using UnityEngine;
+
+namespace AnimalOwnerContextNativeProbe
+{
+    public sealed class Settings { public string EvidenceDirectory { get; set; } = ""; public string ExpiresUtc { get; set; } = ""; }
+
+    // Explicit native QA: pure content owners, actual Core withdrawal, native
+    // animal/render/pool/title entries. Hooks below observe; they don't repair state.
+    public sealed class ModEntry : DtmMod, IDisposable
+    {
+        const string Owner = "Experiment.AnimalOwnerContextProbe", AOwner = "Experiment.AnimalOwnerA", BOwner = "Experiment.AnimalOwnerB";
+        const string ASpecies = "qa_owner_a", BSpecies = "qa_owner_b", APrefix = "anim_animal_qa_owner_a", BPrefix = "anim_animal_qa_owner_b";
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        internal static ModEntry Current;
+        Settings settings; Harmony harmony; GameObject driver; object runtime, service; Type callbacks;
+        IAnimalHost host; Room room; Animal a, b, native; AnimalRenderer ar, br, nr;
+        SpriteOverrideHandler ah, bh, nh; RuntimeAnimatorController nativeController;
+        int phase, row, bRender, bAdult, bBind, bRecycle, bRequests, aRequests, aRejects, bDisplay, aLoads, bLoads, nativeRequests;
+        int renderAtWithdraw, adultAtWithdraw, bindAtWithdraw, requestsAtWithdraw, aRequestsAtWithdraw, aLoadsAtWithdraw, bLoadsAtWithdraw, displayAtWithdraw;
+        float started, phaseAt; bool arrived, withdrawn, finished, continuityPassed, recycledPassed, titlePassed;
+        long bGeneration; string cleanup = ""; readonly List<string> loads = new List<string>();
+        readonly Dictionary<int, string> spriteSources = new Dictionary<int, string>();
+        [Serializable] sealed class Report { public string label, error; public string[] lines; public bool passed; public int slot, phase, frame; }
+        static void Need(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
+        static object Member(object value, string name) => value == null ? null : value.GetType().GetField(name, Flags)?.GetValue(value) ?? value.GetType().GetProperty(name, Flags)?.GetValue(value);
+        static object Call(object value, string name, params object[] args) => value.GetType().GetMethod(name, Flags).Invoke(value, args);
+        static string Id(UnityEngine.Object value) => value == null ? "null" : value.GetType().Name + "#" + value.GetInstanceID();
+        string SpriteKey(Sprite sprite) => sprite != null && spriteSources.TryGetValue(sprite.GetInstanceID(), out var key) ? key : "native/unobserved";
+        bool Is(Sprite sprite, string prefix) => sprite != null && SpriteKey(sprite).StartsWith(prefix, StringComparison.Ordinal);
+        string SpriteFact(Sprite sprite) => sprite == null ? "null" : Id(sprite) + ":name=" + sprite.name + ":nativeLookupKey=" + SpriteKey(sprite) + ":texture=" + Id(sprite.texture) + ":rect=" + sprite.rect + ":bodyPixel=" + (sprite.texture.isReadable ? sprite.texture.GetPixel(20, 12).ToString() : "unreadable");
+        bool Bound(SpriteOverrideHandler handler)
+        {
+            if (handler == null || service == null) return false;
+            object table = Member(service, "pngSpriteContexts");
+            return (bool)table.GetType().GetMethod("TryGetValue").Invoke(table, new object[] { handler, null });
+        }
+        long Generation(string owner) => (long)Call(service, "GetOwnerDefinitionGenerationForTest", owner);
+        string Summary() => (string)Call(service, "GetCustomAnimalAnimatorLifecycleSummary");
+        void Patch(Type type, string method, string observer, bool prefix = false)
+        {
+            var hook = new HarmonyMethod(typeof(ModEntry), observer) { priority = prefix ? Priority.First : Priority.Last };
+            MethodInfo target = AccessTools.Method(type, method); Need(target != null, "Native/production entry missing: " + type.FullName + "." + method);
+            if (prefix) harmony.Patch(target, prefix: hook); else harmony.Patch(target, postfix: hook);
+        }
+        public override void Entry(IDtmHelper helper)
+        {
+            settings = helper.ReadConfig<Settings>();
+            Need(Path.IsPathRooted(settings.EvidenceDirectory) && DateTime.TryParse(settings.ExpiresUtc, out var expiry) && expiry.ToUniversalTime() > DateTime.UtcNow && expiry.ToUniversalTime() < DateTime.UtcNow.AddMinutes(15), "Fresh bounded QA settings required.");
+            Directory.CreateDirectory(settings.EvidenceDirectory); Need(!File.Exists(Path.Combine(settings.EvidenceDirectory, "result.json")), "Fresh evidence directory required.");
+            Current = this; started = phaseAt = Time.realtimeSinceStartup; Application.runInBackground = true;
+            Assembly bridgeAssembly = AppDomain.CurrentDomain.GetAssemblies().Single(x => x.GetName().Name == "DTMAPI.GameBridge.DolocTown");
+            callbacks = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.DolocTownHookCallbacks", true);
+            // Advanced ownership freezes the patch set when Entry returns.
+            // Install observers now; only instance access waits for Bootstrap.
+            InstallObservers(bridgeAssembly);
+            driver = new GameObject("Animal original handler native acceptance"); UnityEngine.Object.DontDestroyOnLoad(driver); driver.AddComponent<Driver>();
+            Write("entry", new[] { "NoNativeSave UI2/native1", "programmatic native QA; no physical player input claim", "observer patches installed during Entry; production instances attach after Bootstrap initialization", "bridge=" + bridgeAssembly.Location });
+        }
+        void InstallObservers(Assembly bridgeAssembly)
+        {
+            harmony = new Harmony(Owner + ".Native");
+            Patch(typeof(Animal), "OnRender", nameof(Rendered)); Patch(typeof(Animal), "DEBUG_SetAdult", nameof(AdultChanged));
+            Patch(typeof(AnimalRenderer), "OnRecycle", nameof(Recycled));
+            Patch(typeof(SpriteOverrideHandler), "TryGetModOverrideSprite", nameof(OverrideReturned));
+            Patch(typeof(SpriteOverrideHandler), "LateUpdate", nameof(Displayed));
+            Patch(typeof(DolocTown.Config.ModManager), "LoadSpriteFromFile", nameof(Loading), true);
+            Patch(typeof(DolocTown.Config.ModManager), "LoadSpriteFromFile", nameof(Loaded));
+            Type serviceType = bridgeAssembly.GetType("DTMAPI.GameBridge.DolocTown.CustomAnimalAnimatorBridgeService", true);
+            Patch(serviceType, "ApplyPngSpriteOverrideContext", nameof(Binding));
+        }
+        bool AttachObservers()
+        {
+            runtime = callbacks.GetProperty("Runtime", Flags).GetValue(null);
+            object bridge = callbacks.GetProperty("Bridge", Flags).GetValue(null);
+            service = Member(bridge, "CustomAnimalAnimatorBridgeService");
+            if (runtime == null || service == null) return false;
+            Write("observers-attached", new[] { "runtime=" + runtime.GetType().Assembly.Location, "service=" + service.GetType().Assembly.Location }); return true;
+        }
+        static void Rendered(Animal __instance) { var p = Current; if (p != null && ReferenceEquals(__instance, p.b)) p.bRender++; }
+        static void AdultChanged(Animal __instance) { var p = Current; if (p != null && ReferenceEquals(__instance, p.b)) p.bAdult++; }
+        static void Binding(object __0) { var p = Current; if (p != null && ReferenceEquals(__0, p.b)) p.bBind++; }
+        static void Recycled(AnimalRenderer __instance) { var p = Current; if (p != null && ReferenceEquals(__instance, p.br)) p.bRecycle++; }
+        static void Loading(string __0)
+        {
+            var p = Current; if (p == null || p.finished) return;
+            if (__0.StartsWith(APrefix, StringComparison.Ordinal)) p.aLoads++;
+            else if (__0.StartsWith(BPrefix, StringComparison.Ordinal)) p.bLoads++;
+            else return;
+            if (p.loads.Count < 80) p.loads.Add("frame=" + Time.frameCount + ":phase=" + p.phase + ":" + __0);
+        }
+        static void Loaded(string __0, Sprite __1, bool __result)
+        {
+            var p = Current;
+            if (p != null && !p.finished && __result && __1 != null && (__0.StartsWith(APrefix, StringComparison.Ordinal) || __0.StartsWith(BPrefix, StringComparison.Ordinal)))
+                p.spriteSources[__1.GetInstanceID()] = __0;
+        }
+        static void OverrideReturned(SpriteOverrideHandler __instance, string __0, Sprite __1, bool __result)
+        {
+            var p = Current; if (p == null || p.finished) return;
+            try
+            {
+                if (ReferenceEquals(__instance, p.bh))
+                {
+                    p.bRequests++;
+                    Need(__result && p.Is(__1, BPrefix), "B actual native request failed: " + __0 + " => " + p.SpriteFact(__1));
+                    if (p.withdrawn && p.bRequests == p.requestsAtWithdraw + 1)
+                        p.Write("b-first-request-after-a-withdrawal", p.Inspect().Concat(new[] { "nativeRequested=" + __0, "actualReturned=" + p.SpriteFact(__1) }));
+                }
+                else if (ReferenceEquals(__instance, p.ah)) { p.aRequests++; if (p.withdrawn && !__result && __1 == null) p.aRejects++; }
+                else if (ReferenceEquals(__instance, p.nh))
+                {
+                    p.nativeRequests++; Need(!__result && __1 == null, "Unregistered native chicken unexpectedly overridden.");
+                }
+            }
+            catch (Exception e) { p.Fail(e); }
+        }
+        static void Displayed(SpriteOverrideHandler __instance)
+        {
+            var p = Current; if (p == null || p.finished || !ReferenceEquals(__instance, p.bh) || p.br == null) return;
+            Sprite sprite = p.br.Sprite;
+            if (p.Is(sprite, BPrefix)) p.bDisplay++;
+        }
+        string[] Inspect() => new[] {
+            "room=" + room?.RoomId, "a=" + Id(ar) + ":handler=" + Id(ah) + ":bound=" + Bound(ah) + ":sprite=" + SpriteFact(ar?.Sprite),
+            "b=" + Id(br) + ":handler=" + Id(bh) + ":bound=" + Bound(bh) + ":sprite=" + SpriteFact(br?.Sprite),
+            "native=" + Id(nr) + ":handler=" + Id(nh) + ":bound=" + Bound(nh) + ":sprite=" + SpriteFact(nr?.Sprite),
+            "bOnRender=" + bRender + ":adult=" + bAdult + ":bind=" + bBind + ":recycle=" + bRecycle,
+            "bRequests=" + bRequests + ":bLateUpdateDisplay=" + bDisplay + ":aRequests=" + aRequests + ":aRejects=" + aRejects + ":nativeRequests=" + nativeRequests,
+            "aPngLoads=" + aLoads + ":bPngLoads=" + bLoads, "generationA=" + Generation(AOwner) + ":generationB=" + Generation(BOwner),
+            "service=" + Summary(), "cleanup=" + cleanup
+        };
+        void Write(string label, IEnumerable<string> lines, bool passed = true, string error = "")
+        {
+            string name = label == "result" ? label : (++row).ToString("D3") + "-" + label;
+            File.WriteAllText(Path.Combine(settings.EvidenceDirectory, name + ".json"), JsonUtility.ToJson(new Report { label = label, lines = lines.ToArray(), passed = passed, error = error, slot = DolocAPI.archiveHandle?.archiveIndex ?? -1, phase = phase, frame = Time.frameCount }, true));
+        }
+        void Next(int next) { phase = next; phaseAt = Time.realtimeSinceStartup; }
+        Animal Spawn(string species, int offset)
+        {
+            var proto = DolocTown.Config.DolocConfig.Tables.TbAnimal.GetOrDefault(species);
+            Need(proto != null, "Official animal JSON not loaded: " + species);
+            var pos = AnimalUtils.GetNearestValidPosition(room, DolocAPI.AgentRoomCellPosition + new Vector2Int(offset, 0), proto.Size);
+            Animal value = host.CreateAnimal(proto, pos, true); Need(value != null && value.Renderer != null, "Native host refused animal: " + species + " at " + pos);
+            return value;
+        }
+        void Capture(string name) => driver.GetComponent<Driver>().StartCoroutine(CaptureAfterFrame(name));
+        IEnumerator CaptureAfterFrame(string name)
+        {
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(settings.EvidenceDirectory, name + ".png"));
+        }
+        internal void Tick()
+        {
+            if (finished) return;
+            try
+            {
+                Need(Time.realtimeSinceStartup - started < 150 && Time.realtimeSinceStartup - phaseAt < 40, "Native gate timeout at phase " + phase);
+                if (phase == 0)
+                {
+                    if (service == null && !AttachObservers()) return;
+                    if (!DolocAPI.IsDataLoaded || DolocAPI.archiveHandle?.archiveIndex != 1 || DolocAPI.CurrentRoom == null || DolocAPI.gameLoop.IsGlobalPaused || DolocAPI.gameLoop.IsPaused) return;
+                    Need(Generation(AOwner) > 0 && Generation(BOwner) > 0, "Both real content owners must be admitted before native fixture.");
+                    var buildings = ((IBuildingHost)DolocAPI.archiveHandle.MainFarm).DM_building.Buildings.ToArray();
+                    var barn = buildings.FirstOrDefault(x => x.proto.IsAnimalBuilding && ((IAnimalHost)x.room).MaxAnimalSpace - ((IAnimalHost)x.room).TotalAnimalSpace >= 3);
+                    Write("barn-preconditions", buildings.Select(x => x.BuildingName + ":animalBuilding=" + x.proto.IsAnimalBuilding + ":room=" + x.room.RoomId));
+                    Need(barn != null, "Target UI2 lacks an existing animal barn with room for three QA animals; stop without constructing facilities.");
+                    room = barn.room; host = (IAnimalHost)room;
+                    Need(DolocAPI.EnterRoom(room, room.Geometry.DefaultEntryPosition, () => arrived = true), "Native barn entry rejected."); Next(1); return;
+                }
+                if (phase == 1)
+                {
+                    if (!arrived || DolocAPI.CurrentRoom != room || DolocAPI.gameLoop.IsGlobalPaused || DolocAPI.gameLoop.IsPaused || Time.realtimeSinceStartup - phaseAt < 2) return;
+                    a = Spawn(ASpecies, -4); b = Spawn(BSpecies, 0); native = Spawn("chicken", 4);
+                    ar = a.Renderer; br = b.Renderer; nr = native.Renderer;
+                    ah = ar.GetComponent<SpriteOverrideHandler>(); bh = br.GetComponent<SpriteOverrideHandler>(); nh = nr.GetComponent<SpriteOverrideHandler>();
+                    nativeController = nr.animatorController; bGeneration = Generation(BOwner);
+                    Need(ah != null && bh != null && Bound(ah) && Bound(bh) && !Bound(nh), "Real initial handler contexts incorrect.");
+                    Write("created-native-animals", Inspect()); Next(2); return;
+                }
+                if (phase == 2)
+                {
+                    if (bRequests < 3 || bDisplay < 3 || aRequests < 3 || Time.realtimeSinceStartup - phaseAt < 2) return;
+                    Need(Is(ar.Sprite, APrefix) && Is(br.Sprite, BPrefix), "Initial actual Sprite ownership incorrect.");
+                    Need(nr.Sprite != null && nr.Sprite.name.StartsWith("anim_animal_chicken", StringComparison.Ordinal) && nr.animatorController == nativeController, "Native comparator display incorrect.");
+                    Write("before-withdrawal-display", Inspect()); Capture("before-withdrawal"); Next(3); return;
+                }
+                if (phase == 3)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < .5f) return;
+                    renderAtWithdraw = bRender; adultAtWithdraw = bAdult; bindAtWithdraw = bBind; requestsAtWithdraw = bRequests;
+                    aRequestsAtWithdraw = aRequests; aLoadsAtWithdraw = aLoads; bLoadsAtWithdraw = bLoads; displayAtWithdraw = bDisplay;
+                    var method = runtime.GetType().GetMethod("DeactivateOwner", Flags); Need(method != null, "Existing Core single-owner entry missing.");
+                    var reason = Enum.Parse(method.GetParameters()[1].ParameterType, "Unload");
+                    cleanup = (string)method.Invoke(runtime, new[] { (object)AOwner, reason, false, "" }); withdrawn = true; Next(4);
+                    Write("core-a-withdrawal", Inspect());
+                    Need(cleanup.Contains("remaining=0") && cleanup.Contains("restartRequired=False") && cleanup.Contains("participantCleanupFailures=0") && cleanup.Contains("loadedRemoved=1"), "Core withdrawal did not prove successful same-session pure content cleanup."); return;
+                }
+                if (phase == 4)
+                {
+                    Need(ReferenceEquals(b.Renderer, br) && ReferenceEquals(br.GetComponent<SpriteOverrideHandler>(), bh), "B original renderer/handler replaced.");
+                    Need(bRender == renderAtWithdraw && bAdult == adultAtWithdraw && bBind == bindAtWithdraw && bRecycle == 0, "B was re-rendered/rebound before continuity gate.");
+                    Need(Generation(AOwner) == 0 && Generation(BOwner) == bGeneration, "Owner generations changed outside A.");
+                    Need(aLoads == aLoadsAtWithdraw, "A withdrawn PNG path was consumed.");
+                    if (bRequests < requestsAtWithdraw + 3 || bDisplay < displayAtWithdraw + 3 || aRequests <= aRequestsAtWithdraw || aRejects < 1 || Time.realtimeSinceStartup - phaseAt < 2) return;
+                    Need(bLoads > bLoadsAtWithdraw && Bound(bh) && !Bound(ah), "B must load its next actual PNG; A stale binding must be removed.");
+                    Need(nr.Sprite != null && nr.Sprite.name.StartsWith("anim_animal_chicken", StringComparison.Ordinal) && nr.animatorController == nativeController && !Bound(nh), "Native comparator polluted after withdrawal.");
+                    continuityPassed = true; Write("original-handler-continuity-pass", Inspect().Concat(loads)); Capture("after-a-withdrawal"); Next(5); return;
+                }
+                if (phase == 5)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < .5f) return;
+                    b.Renderer = null;
+                    Need(bRecycle == 1 && !Bound(bh), "Native renderer pool did not remove B old context.");
+                    Write("b-native-recycle", Inspect());
+                    b.RefreshRenderer(); Need(b.Renderer != null, "Native B renderer regeneration failed.");
+                    br = b.Renderer; bh = br.GetComponent<SpriteOverrideHandler>();
+                    Need(Bound(bh) && bRender > renderAtWithdraw && bBind > bindAtWithdraw, "B actual OnRender did not establish fresh context.");
+                    displayAtWithdraw = bDisplay; requestsAtWithdraw = bRequests; Next(6); return;
+                }
+                if (phase == 6)
+                {
+                    if (bRequests < requestsAtWithdraw + 2 || bDisplay < displayAtWithdraw + 2 || Time.realtimeSinceStartup - phaseAt < 1) return;
+                    Need(Is(br.Sprite, BPrefix) && Generation(BOwner) == bGeneration, "B fresh renderer display incorrect.");
+                    recycledPassed = true; Write("b-native-rerender-pass", Inspect()); Capture("b-rerendered"); Next(7); return;
+                }
+                if (phase == 7)
+                {
+                    if (Time.realtimeSinceStartup - phaseAt < .5f) return;
+                    foreach (var value in new[] { a, b, native }) Need(host.RemoveAnimal(value), "Native QA animal removal failed.");
+                    DolocAPI.ReturnHome(false); Next(8); return;
+                }
+                if (phase == 8)
+                {
+                    if (DolocAPI.IsDataLoaded || Time.realtimeSinceStartup - phaseAt < 3) return;
+                    Need(!Bound(ah) && !Bound(bh) && !Bound(nh), "Title retained former native handler context.");
+                    Need(Summary().Contains("pngSpriteContextsObserved=0"), "Actual title boundary did not reset save-scoped observation.");
+                    // Native title cleanup has already recycled these renderers;
+                    // their SpriteRenderer members are no longer valid to read.
+                    titlePassed = true;
+                    Write("title-native-cleanup-pass", new[] { "formerAHandler=" + Id(ah) + ":bound=" + Bound(ah), "formerBHandler=" + Id(bh) + ":bound=" + Bound(bh), "formerNativeHandler=" + Id(nh) + ":bound=" + Bound(nh), "service=" + Summary(), "generationA=" + Generation(AOwner) + ":generationB=" + Generation(BOwner) });
+                    Capture("title"); Next(9); return;
+                }
+                if (phase == 9 && Time.realtimeSinceStartup - phaseAt > 1) Finish(true, "");
+            }
+            catch (Exception e) { Fail(e); }
+        }
+        void Fail(Exception error)
+        {
+            if (finished) return;
+            try { Write("failure", Inspect(), false, error.ToString()); } catch { }
+            Finish(false, error.ToString());
+        }
+        void Finish(bool passed, string error)
+        {
+            if (finished) return; finished = true;
+            try { harmony?.UnpatchSelf(); }
+            catch (Exception e) { passed = false; error += " Observer cleanup: " + e; }
+            Write("result", new[] { "continuityPassed=" + continuityPassed, "recycledPassed=" + recycledPassed, "titlePassed=" + titlePassed, "Core withdrawal=" + cleanup, "NoNativeSave; programmatic native fixture only" }, passed, error);
+            Application.Quit();
+        }
+        public void Dispose()
+        {
+            // Core may dispose a constructed instance before Entry/ReadConfig can
+            // run. There is then no authorized evidence directory or QA session.
+            if (settings == null) { finished = true; harmony?.UnpatchSelf(); }
+            else if (!finished) Finish(false, "QA owner stopped before native gates completed.");
+            if (ReferenceEquals(Current, this)) Current = null;
+            if (driver != null) UnityEngine.Object.Destroy(driver);
+        }
+    }
+    public sealed class Driver : MonoBehaviour { void Update() { ModEntry.Current?.Tick(); } }
+}

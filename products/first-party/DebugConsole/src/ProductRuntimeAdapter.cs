@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using DTMAPI.Abstractions;
@@ -13,30 +12,17 @@ namespace DTMAPI.DebugConsole
         IDebugConsoleRuntime,
         IDebugConsoleInputRuntime,
         IDebugConsoleModalRuntime,
-        IDebugConsoleNativeRuntime
+        IDebugConsoleNativeRuntime, IMonsterConsoleRuntime
     {
-        private const string MenuId = "DTMAPI.DebugConsole";
         private readonly IDtmHelper helper;
-        private readonly object modal;
-        private readonly MethodInfo tryOpenModal;
-        private readonly MethodInfo isModalOpen;
-        private readonly MethodInfo closeModal;
+        private readonly IUiModalSessions modal;
 
         internal ProductRuntimeAdapter(IDtmHelper helper)
         {
             this.helper = helper ??
                 throw new ArgumentNullException(nameof(helper));
-            modal = helper.UI;
-            Type modalType = modal.GetType();
-            tryOpenModal = ResolveModalMethod(
-                modalType,
-                "TryOpenModal");
-            isModalOpen = ResolveModalMethod(
-                modalType,
-                "IsModalOpen");
-            closeModal = ResolveModalMethod(
-                modalType,
-                "CloseModal");
+            modal = helper.UI as IUiModalSessions ??
+                throw new InvalidOperationException("DebugConsole requires the DTMAPI 0.7.5 Experimental modal-session capability.");
             string configPath =
                 helper.Config.GetConfigPath(helper.ModManifest);
             DtmApiPath =
@@ -70,14 +56,7 @@ namespace DTMAPI.DebugConsole
             set => DebugConsoleInputGate.NativeInputDrainActive = value;
         }
 
-        public bool IsOpen =>
-            isModalOpen.Invoke(
-                modal,
-                new object[] { MenuId }) is bool open &&
-            open;
-        public string ActiveMenuId => IsOpen ? MenuId : string.Empty;
-
-        public bool OpenOwnerBoundCustomMenu(
+        public DtmModalOpenResult OpenModal(
             string menuId,
             string ownerId)
         {
@@ -85,38 +64,15 @@ namespace DTMAPI.DebugConsole
                     helper.ModManifest.UniqueID,
                     StringComparison.OrdinalIgnoreCase))
             {
-                return false;
+                throw new InvalidOperationException("DebugConsole modal owner does not match its helper.");
             }
-            return tryOpenModal.Invoke(
-                modal,
-                new object[] { menuId }) is bool opened &&
-                opened;
-        }
-
-        public void Close()
-        {
-            closeModal.Invoke(
-                modal,
-                new object[] { MenuId });
+            return modal.OpenModal(menuId);
         }
 
         public void Suppress(string button)
         {
             helper.Input.Suppress(button);
         }
-
-        public bool HasOwnerLegacyButtonRegistration(
-            string ownerId,
-            string button) => false;
-
-        public bool HasOwnerTypedKeybindForButton(
-            string ownerId,
-            string button) => true;
-
-        public bool TryDispatchLegacyModalButtonPressed(
-            string menuId,
-            string ownerId,
-            string button) => false;
 
         public void SetHookStatus(
             string hookId,
@@ -149,6 +105,14 @@ namespace DTMAPI.DebugConsole
         public IContentItemInfo? GetIndexedItem(string itemId) =>
             helper.Content.GetAnyIndexedItem(itemId);
 
+        public object? GetMonsterContentApi()
+        {
+            // Resolve only an already-loaded optional contract. A plain Y installation
+            // does not create a Monster backend merely to display the catalog.
+            var contract = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("DTMAPI.MonsterContent.IMonsterContentApi", false)).FirstOrDefault(t => t != null);
+            if (contract == null) return null;
+            return typeof(IModRegistry).GetMethod("GetApi")!.MakeGenericMethod(contract).Invoke(helper.ModRegistry, new object[] { "DTMAPI.Monsters" });
+        }
         public IReadOnlyList<AnimalContentSource> GetAnimalContentSources()
         {
             IContentItemInfo[] indexedItems = helper.Content
@@ -157,7 +121,7 @@ namespace DTMAPI.DebugConsole
             var candidates = new List<AnimalContentSource>();
             foreach (IContentAssetInfo asset in helper.Content
                 .FindAssets("json")
-                .Where(IsCustomAnimalDefinitionAsset))
+                .Where(IsRuntimeContentAsset))
             {
                 try
                 {
@@ -178,12 +142,12 @@ namespace DTMAPI.DebugConsole
                         asset.SourceModId,
                         sourceId);
                     var serializer = new DataContractJsonSerializer(
-                        typeof(CustomAnimalSourceDefinition[]));
+                        typeof(RuntimeContentMetadata));
                     using (FileStream stream = File.OpenRead(asset.SourcePath))
                     {
-                        var definitions = serializer.ReadObject(stream) as
-                            CustomAnimalSourceDefinition[] ??
-                            Array.Empty<CustomAnimalSourceDefinition>();
+                        var content = serializer.ReadObject(stream) as RuntimeContentMetadata;
+                        if (content?.SchemaVersion != 1) continue;
+                        var definitions = content.Animals?.Definitions ?? Array.Empty<CustomAnimalSourceDefinition>();
                         foreach (CustomAnimalSourceDefinition definition in
                             definitions)
                         {
@@ -242,12 +206,6 @@ namespace DTMAPI.DebugConsole
             return result;
         }
 
-        public void SetCreativeHookDemand(bool enabled)
-        {
-            // ProductNative owns the complete hook set for its assembly lifetime.
-            // The callback gate itself is toggled by DebugConsoleNativeActions.
-        }
-
         public void SetMovementMultiplier(
             object? player,
             double multiplier) =>
@@ -268,14 +226,14 @@ namespace DTMAPI.DebugConsole
                 operation + " failed.",
                 error.ToString());
 
-        private static bool IsCustomAnimalDefinitionAsset(
+        private static bool IsRuntimeContentAsset(
             IContentAssetInfo asset)
         {
             string relative = (asset?.RelativePath ?? string.Empty)
                 .Replace('\\', '/')
                 .TrimStart('/');
             return relative.Equals(
-                "Content/DTMAPI/custom-animals.json",
+                "PackData/content.json",
                 StringComparison.OrdinalIgnoreCase);
         }
 
@@ -314,27 +272,27 @@ namespace DTMAPI.DebugConsole
             string.Empty;
 
         [DataContract]
+        private sealed class RuntimeContentMetadata
+        {
+            [DataMember(Name = "schemaVersion")]
+            public int SchemaVersion { get; set; }
+            [DataMember(Name = "animals")]
+            public AnimalContentMetadata? Animals { get; set; }
+        }
+
+        [DataContract]
+        private sealed class AnimalContentMetadata
+        {
+            [DataMember(Name = "definitions")]
+            public CustomAnimalSourceDefinition[]? Definitions { get; set; }
+        }
+
+        [DataContract]
         private sealed class CustomAnimalSourceDefinition
         {
             [DataMember(Name = "speciesId")]
             public string SpeciesId { get; set; } = string.Empty;
         }
 
-        private static MethodInfo ResolveModalMethod(
-            Type type,
-            string name)
-        {
-            return type.GetMethod(
-                       name,
-                       BindingFlags.Public |
-                       BindingFlags.Instance,
-                       null,
-                       new[] { typeof(string) },
-                       null) ??
-                throw new InvalidOperationException(
-                    "DTMAPI 0.5.5 owner-bound modal helper method '" +
-                    name +
-                    "' is unavailable.");
-        }
     }
 }

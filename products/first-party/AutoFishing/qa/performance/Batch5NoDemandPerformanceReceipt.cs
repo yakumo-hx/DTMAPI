@@ -24,12 +24,10 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         [DataMember] public Batch5CounterDelta OptionalNativeUpdaterInvocations { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta OptionalRetainedCallbackWork { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta CustomAnimalsRetainedCallbackWork { get; set; } = new Batch5CounterDelta();
-        [DataMember] public Batch5CounterDelta AudioRetainedCallbackWork { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta OptionalHookInstallRequests { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta CameraEnvironmentResets { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta CustomAnimalDefinitionCandidateBuilds { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta ContentQueryCandidateBuilds { get; set; } = new Batch5CounterDelta();
-        [DataMember] public Batch5CounterDelta AudioPendingEntryVisits { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta MandatoryBaseUpdaterInvocations { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta QaUpdaterInvocations { get; set; } = new Batch5CounterDelta();
         [DataMember] public Batch5CounterDelta EventQueueDiagnosticRevision { get; set; } = new Batch5CounterDelta();

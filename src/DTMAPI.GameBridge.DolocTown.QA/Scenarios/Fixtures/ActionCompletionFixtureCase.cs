@@ -16,9 +16,8 @@ namespace DTMAPI.GameBridge.DolocTown
             object? transientRoom = null;
             try
             {
-                ActionCompletionService? actionCompletion = ActionCompletionService;
                 OneActionProductFixtureState product = CaptureOneActionProductFixtureState();
-                EnsureOneActionFixtureOwnerReady(actionCompletion, product);
+                EnsureOneActionFixtureOwnerReady(product);
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -35,6 +34,14 @@ namespace DTMAPI.GameBridge.DolocTown
                 }
                 if (!oneActionContinuationEvidenceCompleted)
                 {
+                    if (!IsMainFarmRoomForFixture(dolocApi, transientRoom))
+                    {
+                        string transition = "Waiting for the requested native main farm transition.";
+                        if (!autoExerciseOneActionMainFarmRequested && !TryEnterMainFarmForOneActionSmoke(dolocApi, transientRoom, out transition))
+                            throw new InvalidOperationException("Resource fixtures require the native main farm. " + transition);
+                        runtime.SetHookStatus("Smoke.OneActionResourceHit", "pending", "Native EnterFarm before transient fixtures", transition);
+                        return FixtureAttemptResult.Pending;
+                    }
                     FixtureAttemptResult continuation = TryExerciseOneActionContinuationEvidenceForFixture(dolocApi, toolColliderType, resourceRendererType);
                     if (continuation != FixtureAttemptResult.Succeeded)
                         return continuation;
@@ -74,10 +81,9 @@ namespace DTMAPI.GameBridge.DolocTown
                     if (healthBefore <= 0)
                         continue;
                     string compatibilityOwnerId = string.Empty;
-                    bool policyMatch = product.Present
-                        ? product.MatchesResourceKind(GetOneActionResourceKind(resource))
-                        : actionCompletion!.TryFindOneActionPolicyForFixture(resource, out compatibilityOwnerId);
-                    string ownerId = product.Present ? product.OwnerId : compatibilityOwnerId;
+                    bool policyMatch = product.MatchesResourceKind(GetOneActionResourceKind(resource))
+;
+                    string ownerId = product.OwnerId ;
                     string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
                     string resourceClass = ReadResourceClass(resource);
                     if (samples.Count < 8)
@@ -105,7 +111,6 @@ namespace DTMAPI.GameBridge.DolocTown
                         WriteIntMember(resource, "currentHealth", seededHealth);
                     }
 
-                    int appliedBefore = actionCompletion?.OneActionApplicationCount ?? 0;
                     resetTool.Invoke(toolCollider, new object[] { tool });
                     resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                     handleTools.Invoke(toolCollider, new object[] { collider });
@@ -113,12 +118,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
                     int healthAfter = ReadIntMember(resource, "currentHealth", 0);
                     bool removedAfter = IsRemoved(resource);
-                    bool applied = product.Present
-                        ? removedAfter || healthAfter <= 0
-                        : actionCompletion!.OneActionApplicationCount > appliedBefore;
+                    bool applied = removedAfter || healthAfter <= 0
+;
                     if (applied)
                     {
-                        string summary = "owner=" + ownerId + ", product=" + product.Summary + ", resource=" + resourceName + ", tool=" + toolId + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", toolDamage=" + toolDamage + ", healthAfter=" + healthAfter + ", removed=" + removedAfter + ", bridge=" + (actionCompletion?.LastOneActionApplicationSummary ?? "none");
+                        string summary = "owner=" + ownerId + ", product=" + product.Summary + ", resource=" + resourceName + ", tool=" + toolId + ", healthBefore=" + healthBefore + ", seededHealth=" + seededHealth + ", toolDamage=" + toolDamage + ", healthAfter=" + healthAfter + ", removed=" + removedAfter;
                         runtime.RuntimeMonitor.Log("Smoke exercise OneActionResourceHit OK " + summary);
                         runtime.SetHookStatus("Smoke.OneActionResourceHit", "verified", "ToolCollider.HandleTools private path on transient DungeonResourceRenderer", summary + ", setup={" + transientSummary + "}");
                         return FixtureAttemptResult.Succeeded;
@@ -146,6 +150,7 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 ExerciseOneActionConfigSaveReloadForFixture();
                 ExerciseOneActionPartialEnergyForFixture(dolocApi, toolColliderType, resourceRendererType);
+                ExerciseOneActionAcceptedHitMatrixForFixture(dolocApi, toolColliderType, resourceRendererType);
                 return FixtureAttemptResult.Succeeded;
             }
             catch (Exception ex)
@@ -159,40 +164,53 @@ namespace DTMAPI.GameBridge.DolocTown
         private void ExerciseOneActionConfigSaveReloadForFixture()
         {
             const string ownerId = "Yuuka.DTMAPI.OneActionComplete";
-            FieldInfo? instancesField = runtime.GetType().GetField("modInstances", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (!(instancesField?.GetValue(runtime) is IDictionary instances) || !instances.Contains(ownerId) || instances[ownerId] == null)
-                throw new InvalidOperationException("OneActionComplete owner instance is unavailable for config persistence evidence.");
-            object entry = instances[ownerId]!;
+            object entry = runtime.GetOwnerInstance(ownerId)
+                ?? throw new InvalidOperationException("OneActionComplete owner instance is unavailable for config persistence evidence.");
             object helper = entry.GetType().GetField("helper", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(entry)
                 ?? throw new MissingFieldException(entry.GetType().FullName, "helper");
             object config = entry.GetType().GetField("config", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(entry)
                 ?? throw new MissingFieldException(entry.GetType().FullName, "config");
             Type configType = config.GetType();
-            bool original = Convert.ToBoolean(configType.GetProperty("VerboseLogging", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(config) ?? false);
+            bool original = Convert.ToBoolean(configType.GetProperty("CompleteTrees", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(config) ?? false);
+            var configPage = runtime.CreateSnapshot().ConfigPages.Single(page => page.Manifest.UniqueID == ownerId);
+            if (configPage.Items.Count != 6 || configPage.Items.Any(item => item.Kind != "Bool" || !string.IsNullOrEmpty(item.Tooltip)))
+                throw new InvalidOperationException("S02 requires exactly six boolean settings without status/tooltip text.");
+            try
+            {
+                EditAndSaveConfigPage(ownerId, page =>
+                {
+                    SetConfigPendingValue(page, "Bool", original ? "false" : "true", "树木", "Trees");
+                    throw new InvalidOperationException("S02 explicit config cancel");
+                });
+            }
+            catch (InvalidOperationException ex) when (ex.Message == "S02 explicit config cancel") { }
+            if (ReadRequiredBoolProperty(ReadOwnerConfigForFixture(helper, configType), "CompleteTrees") != original ||
+                ReadRequiredBoolProperty(config, "CompleteTrees") != original || configPage.IsEditing)
+                throw new InvalidOperationException("Cancelled configuration changed persisted/live settings.");
             bool toggled = !original;
             bool restored = false;
             try
             {
                 EditAndSaveConfigPage(ownerId, page =>
-                    SetConfigPendingValue(page, "Bool", toggled ? "true" : "false", "详细日志", "Verbose logs"));
+                    SetConfigPendingValue(page, "Bool", toggled ? "true" : "false", "树木", "Trees"));
                 object reloaded = ReadOwnerConfigForFixture(helper, configType);
-                bool reloadedValue = Convert.ToBoolean(configType.GetProperty("VerboseLogging", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(reloaded) ?? original);
+                bool reloadedValue = Convert.ToBoolean(configType.GetProperty("CompleteTrees", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(reloaded) ?? original);
                 object liveConfig = entry.GetType().GetField("config", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(entry)
                     ?? throw new MissingFieldException(entry.GetType().FullName, "config");
-                bool liveValue = Convert.ToBoolean(configType.GetProperty("VerboseLogging", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(liveConfig) ?? original);
+                bool liveValue = Convert.ToBoolean(configType.GetProperty("CompleteTrees", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(liveConfig) ?? original);
                 if (reloadedValue != toggled || liveValue != toggled)
                     throw new InvalidOperationException("OneActionComplete ConfigMenu save did not survive helper.ReadConfig reload. live=" + liveValue + "; reloaded=" + reloadedValue + "; expected=" + toggled + ".");
             }
             finally
             {
                 EditAndSaveConfigPage(ownerId, page =>
-                    SetConfigPendingValue(page, "Bool", original ? "true" : "false", "详细日志", "Verbose logs"));
+                    SetConfigPendingValue(page, "Bool", original ? "true" : "false", "树木", "Trees"));
                 object restoredConfig = ReadOwnerConfigForFixture(helper, configType);
-                restored = Convert.ToBoolean(configType.GetProperty("VerboseLogging", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(restoredConfig) ?? !original) == original;
+                restored = Convert.ToBoolean(configType.GetProperty("CompleteTrees", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(restoredConfig) ?? !original) == original;
             }
             if (!restored)
                 throw new InvalidOperationException("OneActionComplete ConfigMenu persistence fixture did not restore its original value.");
-            string details = "property=VerboseLogging; original=" + original + "; saved=" + toggled + "; helperReload=" + toggled + "; restored=" + original;
+            string details = "property=CompleteTrees; original=" + original + "; saved=" + toggled + "; helperReload=" + toggled + "; restored=" + original;
             runtime.SetHookStatus("Smoke.OneActionConfigReload", "verified", "DTMAPI ConfigMenu Save -> owner helper.ReadConfig<T> -> restore", details);
             runtime.RuntimeMonitor.Log("Smoke exercise OneActionConfigReload OK " + details + ".");
         }
@@ -268,7 +286,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 RefreshEnergyUiForFixture(dolocApi);
 
                 resetTool.Invoke(toolCollider, new[] { tool });
-                resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
+                resetChopCounter?.Invoke(toolCollider, new object[] { 1 });
+                FindMethod(toolColliderType, "ResetCostEnergyFlag", 0)?.Invoke(toolCollider, null);
                 handleTools.Invoke(toolCollider, new[] { collider });
 
                 int healthAfter = ReadIntMember(transientResource, "currentHealth", -1);
@@ -324,9 +343,8 @@ namespace DTMAPI.GameBridge.DolocTown
             object? transientRoom = null;
             try
             {
-                ActionCompletionService? actionCompletion = ActionCompletionService;
                 OneActionProductFixtureState product = CaptureOneActionProductFixtureState();
-                EnsureOneActionFixtureOwnerReady(actionCompletion, product);
+                EnsureOneActionFixtureOwnerReady(product);
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -380,10 +398,9 @@ namespace DTMAPI.GameBridge.DolocTown
                         continue;
 
                     string compatibilityOwnerId = string.Empty;
-                    bool policyMatch = product.Present
-                        ? product.MatchesResourceKind(GetOneActionResourceKind(resource))
-                        : actionCompletion!.TryFindOneActionPolicyForFixture(resource, out compatibilityOwnerId);
-                    string ownerId = product.Present ? product.OwnerId : compatibilityOwnerId;
+                    bool policyMatch = product.MatchesResourceKind(GetOneActionResourceKind(resource))
+;
+                    string ownerId = product.OwnerId ;
                     string resourceName = ReadStringMember(resource, "ResourceName", resource.GetType().Name);
                     string resourceClass = ReadResourceClass(resource);
                     if (samples.Count < 8)
@@ -410,16 +427,14 @@ namespace DTMAPI.GameBridge.DolocTown
                         continue;
                     toolCount++;
 
-                    int appliedBefore = actionCompletion?.OneActionApplicationCount ?? 0;
                     resetTool.Invoke(toolCollider, new object[] { wrongTool });
                     resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                     handleTools.Invoke(toolCollider, new object[] { collider });
                     invokedCount++;
 
-                    int appliedAfter = actionCompletion?.OneActionApplicationCount ?? 0;
                     int healthAfter = ReadIntMember(resource, "currentHealth", 0);
                     bool removedAfter = IsRemoved(resource);
-                    bool ownerStayedIdle = product.Present || appliedAfter == appliedBefore;
+                    bool ownerStayedIdle = product.Ready;
                     if (ownerStayedIdle && healthAfter == healthBefore && !removedAfter)
                     {
                         string wrongToolName = ReadStringMember(wrongTool, "name", wrongToolId);
@@ -430,7 +445,7 @@ namespace DTMAPI.GameBridge.DolocTown
                         continue;
                     }
 
-                    string failedResult = "resource=" + resourceName + "/kind=" + kind + "/wrongTool=" + wrongToolId + "/health=" + healthBefore + "->" + healthAfter + "/removed=" + removedAfter + "/oneActionDelta=" + (appliedAfter - appliedBefore);
+                    string failedResult = "resource=" + resourceName + "/kind=" + kind + "/wrongTool=" + wrongToolId + "/health=" + healthBefore + "->" + healthAfter + "/removed=" + removedAfter;
                     failed[kind] = failedResult;
                     if (samples.Count < 8)
                         samples.Add("failedNegative/" + failedResult);
@@ -467,9 +482,8 @@ namespace DTMAPI.GameBridge.DolocTown
         {
             try
             {
-                ActionCompletionService? actionCompletion = ActionCompletionService;
                 OneActionProductFixtureState product = CaptureOneActionProductFixtureState();
-                EnsureOneActionFixtureOwnerReady(actionCompletion, product);
+                EnsureOneActionFixtureOwnerReady(product);
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -482,11 +496,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     return FixtureAttemptResult.Pending;
                 }
 
-                if (!actionSpeedInteractExitPatched)
-                {
-                    LogOneActionFuelFeedPending("Waiting for AgentStateInteract.OnExit Postfix before one-action fuel/feed smoke.");
-                    return FixtureAttemptResult.Pending;
-                }
 
                 if (!TryExerciseOneActionEquipmentFillKindForFixture(
                     dolocApi,
@@ -514,7 +523,16 @@ namespace DTMAPI.GameBridge.DolocTown
                     throw new InvalidOperationException("Feeder native fill path did not produce verified extra consumption. " + feederSummary);
                 }
 
-                string summary = "owner=" + (product.Present ? product.OwnerId : "frozen-compatibility-demand") + ", product=" + product.Summary + ", fuel={" + fuelSummary + "}; feeder={" + feederSummary + "}";
+                string singleFuel = "compatibility-only; not requested";
+                string singleFeed = "compatibility-only; not requested";
+                if (product.Present &&
+                    (!TryExerciseOneActionEquipmentFillKindForFixture(dolocApi, "FuelMachine", "DolocTown.PowerGeneratorFuel",
+                        new[] { "wood_generator" }, new[] { "wood" }, "FuelPercent", 1, out singleFuel) ||
+                     !TryExerciseOneActionEquipmentFillKindForFixture(dolocApi, "Feeder", "DolocTown.Feeder",
+                        new[] { "feeder" }, new[] { "roughage_feed", "green_feed", "weeds" }, "progress", 1, out singleFeed)))
+                    throw new InvalidOperationException("Single-item native fill failed. fuel=" + singleFuel + "; feed=" + singleFeed);
+
+                string summary = "owner=" + (product.OwnerId ) + ", product=" + product.Summary + ", fuel={" + fuelSummary + "}; feeder={" + feederSummary + "}; singleFuel={" + singleFuel + "}; singleFeed={" + singleFeed + "}";
                 runtime.RuntimeMonitor.Log("Smoke exercise OneActionFuelFeed OK " + summary);
                 runtime.SetHookStatus("Smoke.OneActionFuelFeed", "verified", "Equipment.DecoratedInteract -> AgentStateInteract.OnExit Postfix -> native CostSelf/AddFuel/AddFeeds", summary);
                 runtime.SetHookStatus("Actions.OneActionFuelFeed", "verified", "Harmony Postfix: AgentStateInteract.OnExit", "Fuel-machine and animal-feeder native CostSelf/AddFuel/AddFeeds paths verified by smoke. " + summary);
@@ -533,9 +551,8 @@ namespace DTMAPI.GameBridge.DolocTown
             object? vegetation = null;
             try
             {
-                ActionCompletionService? actionCompletion = ActionCompletionService;
                 OneActionProductFixtureState product = CaptureOneActionProductFixtureState();
-                EnsureOneActionFixtureOwnerReady(actionCompletion, product);
+                EnsureOneActionFixtureOwnerReady(product);
 
                 patcher ??= new HarmonyReflectionPatcher(runtime);
                 Type? dolocApi = patcher.ResolveType("DolocAPI, Assembly-CSharp");
@@ -592,23 +609,19 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (wrongTool == null || expectedTool == null)
                     throw new InvalidOperationException("Could not generate vegetation smoke tools. expected=" + expectedToolId + ", wrong=" + wrongToolId);
 
-                int appBeforeWrong = actionCompletion?.OneActionApplicationCount ?? 0;
                 resetTool.Invoke(toolCollider, new object[] { wrongTool });
                 resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                 handleTools.Invoke(toolCollider, new object[] { collider });
-                int appAfterWrong = actionCompletion?.OneActionApplicationCount ?? 0;
                 bool removedAfterWrong = ReadMember(renderer, "Vegetation") == null;
-                if (removedAfterWrong || appAfterWrong != appBeforeWrong)
-                    throw new InvalidOperationException("Wrong-tool vegetation hit was not a clean negative. removed=" + removedAfterWrong + ", oneActionDelta=" + (appAfterWrong - appBeforeWrong));
+                if (removedAfterWrong)
+                    throw new InvalidOperationException("Wrong-tool vegetation hit was not a clean negative. removed=" + removedAfterWrong);
 
-                int appBeforeCorrect = actionCompletion?.OneActionApplicationCount ?? 0;
                 resetTool.Invoke(toolCollider, new object[] { expectedTool });
                 resetChopCounter?.Invoke(toolCollider, new object[] { 999 });
                 handleTools.Invoke(toolCollider, new object[] { collider });
-                int appAfterCorrect = actionCompletion?.OneActionApplicationCount ?? 0;
                 bool removedAfterCorrect = ReadMember(renderer, "Vegetation") == null;
-                if (!removedAfterCorrect || appAfterCorrect != appBeforeCorrect)
-                    throw new InvalidOperationException("Correct-tool vegetation hit did not stay on the native one-fell path. removed=" + removedAfterCorrect + ", oneActionDelta=" + (appAfterCorrect - appBeforeCorrect));
+                if (!removedAfterCorrect)
+                    throw new InvalidOperationException("Correct-tool vegetation hit did not stay on the native one-fell path. removed=" + removedAfterCorrect);
 
                 string wrongToolName = ReadStringMember(wrongTool, "name", wrongToolId);
                 string wrongToolType = ReadMember(wrongTool, "ToolType")?.ToString() ?? "unknown";
@@ -623,8 +636,6 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", wrongToolType=" + wrongToolType +
                     ", wrongRemoved=" + removedAfterWrong +
                     ", correctRemoved=" + removedAfterCorrect +
-                    ", oneActionDeltaWrong=" + (appAfterWrong - appBeforeWrong) +
-                    ", oneActionDeltaCorrect=" + (appAfterCorrect - appBeforeCorrect) +
                     ", resourcePath=DungeonResourceRenderer:none" +
                     ", product=" + product.Summary;
                 runtime.RuntimeMonitor.Log("Smoke exercise OneActionVegetation OK " + summary);
@@ -669,6 +680,10 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
                 transientEquipment = equipment;
+                object fillState = kind == "FuelMachine" ? ReadMember(equipment, "IElectronicComponent")! : equipment;
+                string progressMember = kind == "FuelMachine" ? "Fuel" : ratioMember;
+                bool Full() => ReadBoolMember(fillState, kind == "FuelMachine" ? "IsFull" : "IsFeederFull", false);
+                double Progress() => ReadDoubleMember(fillState, progressMember, -1);
 
                 string? itemId = SelectFillItemIdForFixture(dolocApi, equipment, kind, itemIds, out string itemSelectSummary);
                 if (string.IsNullOrWhiteSpace(itemId))
@@ -698,10 +713,8 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
-                ActionCompletionService? actionCompletion = ActionCompletionService;
-                int beforeApplications = actionCompletion?.OneActionApplicationCount ?? 0;
                 int beforeCount = ReadQuickSlotItemCount(inventory, quickSlot);
-                double beforeRatio = ReadDoubleMember(equipment, ratioMember, -1);
+                double beforeRatio = Progress();
                 MethodInfo? decoratedInteract = FindMethod(equipment.GetType(), "DecoratedInteract", 0);
                 if (decoratedInteract == null)
                 {
@@ -709,6 +722,21 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
+                // A direct native refusal must never initiate an extra fill.
+                object wrongItem = GenerateItemForFixture(dolocApi, "stone", 8)
+                    ?? throw new InvalidOperationException("Missing native stone negative fixture.");
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, wrongItem, quickSlot, out _, out _, out string wrongPlace))
+                    throw new InvalidOperationException(wrongPlace);
+                decoratedInteract.Invoke(equipment, null);
+                TryRunCurrentAgentInteractExitForFixture(dolocApi, out _);
+                if (ReadQuickSlotItemCount(inventory, quickSlot) != 8 || Progress() != beforeRatio)
+                    throw new InvalidOperationException("Wrong native material consumed or filled " + kind);
+                // Inventory placement may split or consume the generated stack.
+                // Always test the selected inventory instance, never the input object.
+                object positiveStack = GenerateItemForFixture(dolocApi, itemId!, stackCount)!;
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, positiveStack, quickSlot, out _, out _, out string positivePlace))
+                    throw new InvalidOperationException(positivePlace);
+                item = ReadStaticMember(dolocApi, "SelectedItem")!;
                 decoratedInteract.Invoke(equipment, null);
                 if (!TryRunCurrentAgentInteractExitForFixture(dolocApi, out string interactSummary))
                 {
@@ -716,24 +744,21 @@ namespace DTMAPI.GameBridge.DolocTown
                     return false;
                 }
 
-                int afterApplications = actionCompletion?.OneActionApplicationCount ?? 0;
                 int afterCount = ReadQuickSlotItemCount(inventory, quickSlot);
-                double afterRatio = ReadDoubleMember(equipment, ratioMember, -1);
+                double afterRatio = Progress();
                 int totalConsumed = beforeCount - afterCount;
                 OneActionProductFixtureState product = CaptureOneActionProductFixtureState();
-                bool applied = product.Present ? product.Ready && totalConsumed >= 2 : afterApplications > beforeApplications;
+                bool applied = product.Ready && totalConsumed >= Math.Min(2, stackCount) ;
                 bool changed = afterRatio > beforeRatio || (beforeRatio < 0 && totalConsumed > 0);
-                if (!applied || totalConsumed < 2 || !changed)
+                if (!applied || totalConsumed < Math.Min(2, stackCount) || totalConsumed > stackCount || !changed)
                 {
                     summary = "target=" + DescribeEquipmentForFixture(equipment) +
                         ", item=" + itemId +
                         ", source=" + targetSource +
                         ", count=" + beforeCount + "->" + afterCount +
                         ", ratio=" + FormatRatio(beforeRatio) + "->" + FormatRatio(afterRatio) +
-                        ", oneActionDelta=" + (afterApplications - beforeApplications) +
                         ", nativeInteract={" + interactSummary + "}" +
-                        ", product=" + product.Summary +
-                        ", bridge=" + (actionCompletion?.LastOneActionApplicationSummary ?? "none");
+                        ", product=" + product.Summary ;
                     return false;
                 }
 
@@ -744,10 +769,25 @@ namespace DTMAPI.GameBridge.DolocTown
                     ", count=" + beforeCount + "->" + afterCount +
                     ", totalConsumed=" + totalConsumed +
                     ", ratio=" + FormatRatio(beforeRatio) + "->" + FormatRatio(afterRatio) +
-                    ", oneActionDelta=" + (afterApplications - beforeApplications) +
                     ", nativeInteract={" + interactSummary + "}" +
-                    ", product=" + product.Summary +
-                    ", bridge=" + (actionCompletion?.LastOneActionApplicationSummary ?? "none");
+                    ", product=" + product.Summary ;
+                // Seed only the disposable machine through its native fill method,
+                // then prove a full machine refuses the next real interaction.
+                object proto = ReadMember(item, "proto")!;
+                MethodInfo add = FindMethod(equipment.GetType(), kind == "FuelMachine" ? "AddFuel" : "AddFeeds", kind == "FuelMachine" ? 2 : 1)!;
+                runtime.RuntimeMonitor.Log("Smoke OneAction native positive fill " + summary);
+                for (int setup = 0; setup < 500 && !Full(); setup++)
+                    add.Invoke(equipment, kind == "FuelMachine" ? new[] { proto, (object)false } : new[] { proto });
+                double fullRatio = Progress();
+                if (!Full()) throw new InvalidOperationException("Could not seed native full " + kind);
+                object spare = GenerateItemForFixture(dolocApi, itemId!, 8)!;
+                if (!TryPlaceSmokeItemInQuickSlot(dolocApi, spare, quickSlot, out _, out _, out string sparePlace))
+                    throw new InvalidOperationException(sparePlace);
+                decoratedInteract.Invoke(equipment, null);
+                TryRunCurrentAgentInteractExitForFixture(dolocApi, out _);
+                if (ReadQuickSlotItemCount(inventory, quickSlot) != 8 || Progress() != fullRatio)
+                    throw new InvalidOperationException("Full native container changed: " + kind + "; count=8->" + ReadQuickSlotItemCount(inventory, quickSlot) + "; progress=" + fullRatio + "->" + Progress());
+                summary += ", wrongMaterial=unchanged, fullContainer=unchanged, inputStack=" + stackCount;
                 runtime.RuntimeMonitor.Log("Smoke exercise OneActionFuelFeed sample OK " + summary);
                 return true;
             }
@@ -771,27 +811,18 @@ namespace DTMAPI.GameBridge.DolocTown
             }
         }
 
-        private void EnsureOneActionFixtureOwnerReady(ActionCompletionService? compatibilityOwner, OneActionProductFixtureState product)
+        private void EnsureOneActionFixtureOwnerReady(OneActionProductFixtureState product)
         {
-            if (product.Present)
-            {
-                if (!product.Ready)
-                    throw new InvalidOperationException("OneActionComplete managed product was present but its two-hook atomic owner was not ready. " + product.Summary);
-                return;
-            }
-
-            if (compatibilityOwner == null)
-                throw new InvalidOperationException("Neither the OneActionComplete managed product nor the frozen ActionCompletion compatibility service was available.");
+            if (!product.Present || !product.Ready) throw new InvalidOperationException("OneActionComplete product owner is unavailable or incomplete. " + product.Summary);
         }
 
         private OneActionProductFixtureState CaptureOneActionProductFixtureState()
         {
             const string ownerId = "Yuuka.DTMAPI.OneActionComplete";
-            FieldInfo? instancesField = runtime.GetType().GetField("modInstances", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (!(instancesField?.GetValue(runtime) is IDictionary instances) || !instances.Contains(ownerId))
+            if (!runtime.HasOwnerInstance(ownerId))
                 return OneActionProductFixtureState.Absent(ownerId);
 
-            object? entry = instances[ownerId];
+            object? entry = runtime.GetOwnerInstance(ownerId);
             if (entry == null)
                 return OneActionProductFixtureState.Failed(ownerId, "published owner instance was null");
 
@@ -812,7 +843,7 @@ namespace DTMAPI.GameBridge.DolocTown
                     present: true,
                     patchCount,
                     callbackAttached,
-                    ReadRequiredBoolProperty(config, "Enabled"),
+                    true,
                     ReadRequiredBoolProperty(config, "CompleteTrees"),
                     ReadRequiredBoolProperty(config, "CompleteOres"),
                     ReadRequiredBoolProperty(config, "CompleteGarbage"),
@@ -864,7 +895,7 @@ namespace DTMAPI.GameBridge.DolocTown
             internal bool Fuel { get; }
             internal bool Feeder { get; }
             internal string Error { get; }
-            internal bool Ready => Present && PatchCount == 2 && CallbackAttached && Enabled && string.IsNullOrEmpty(Error);
+            internal bool Ready => Present && PatchCount == 4 && CallbackAttached && Enabled && string.IsNullOrEmpty(Error);
             internal string Summary => "present=" + Present + ", ready=" + Ready + ", patches=" + PatchCount + ", callbackAttached=" + CallbackAttached + ", enabled=" + Enabled + (string.IsNullOrEmpty(Error) ? string.Empty : ", error=" + Error);
 
             internal bool MatchesResourceKind(string kind)

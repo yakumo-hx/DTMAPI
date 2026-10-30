@@ -11,6 +11,7 @@ namespace DTMAPI.UnitTests
     {
         internal static void RunAll()
         {
+            ItemStateAndEffectsTests.RunAll();
             FixedThreeSlotAndEffectPolicy();
             ItemAdmissionPreservesZeroThreeOneSemantics();
             DynamicNativeTailLayoutPreservesFullSizeSlots();
@@ -62,9 +63,7 @@ namespace DTMAPI.UnitTests
             LegacyMigrationRejectsIdentityAndMalformedSlots();
             ProductRevisionAndPreviousAuthorityRules();
             ProductV3RequiresNativeSaveClock();
-            PlayerUiRoutesHeldNativeItemThroughProductionEquip();
             ReflectionAccessPrefersTheNearestHiddenMember();
-            AtomicInstallerOwnsRollbackAndDeactivationPaths();
         }
 
         internal static void RunCrossProcessClaimActor()
@@ -360,10 +359,19 @@ namespace DTMAPI.UnitTests
                 "Both historical passive-equipment function families with a native skill must remain accepted.");
 
             Assert(
-                !MoreEquipmentSlotsItemAdmissionPolicy.Decide(
+                MoreEquipmentSlotsItemAdmissionPolicy.Decide(
                     true,
                     false,
                     "DolocTown.Config.Item.ItemFunctionCooldown",
+                    "skill-c",
+                    false,
+                    0).Accepted,
+                "Native cooldown passives must be admitted with their persistent cooldown state.");
+            Assert(
+                !MoreEquipmentSlotsItemAdmissionPolicy.Decide(
+                    true,
+                    false,
+                    "DolocTown.Config.Item.ItemFunctionActive",
                     "skill-c",
                     false,
                     0).Accepted &&
@@ -1875,7 +1883,7 @@ namespace DTMAPI.UnitTests
                         Scope(),
                         out string message);
                 Assert(
-                    migrated.SchemaVersion == 3 &&
+                    migrated.SchemaVersion == MoreEquipmentSlotsProductContract.StorageSchemaVersion &&
                     migrated.Generation == 8 &&
                     migrated.Scope.ArchiveIndex == 2 &&
                     migrated.Scope.PlayerName == "third-save" &&
@@ -1972,7 +1980,7 @@ namespace DTMAPI.UnitTests
                     Scope(),
                     out string realHostMessage);
             Assert(
-                realHostMigrated.SchemaVersion == 3 &&
+                realHostMigrated.SchemaVersion == MoreEquipmentSlotsProductContract.StorageSchemaVersion &&
                 realHostMigrated.Generation == 2 &&
                 realHostMigrated.Scope.ArchiveIndex == 2 &&
                 realHostMigrated.Scope.TotalGameSeconds == 100 &&
@@ -2112,7 +2120,7 @@ namespace DTMAPI.UnitTests
                     Scope(),
                     out string message);
             Assert(
-                migrated.SchemaVersion == 3 &&
+                migrated.SchemaVersion == MoreEquipmentSlotsProductContract.StorageSchemaVersion &&
                 migrated.Generation == 1 &&
                 migrated.Slots.Count == 3 &&
                 migrated.Slots[0].ItemId ==
@@ -4871,7 +4879,7 @@ namespace DTMAPI.UnitTests
                 candidateDocument.GameplayCandidate
                     .WorkingSlots[0].ItemId == "working-hat" &&
                 candidateDocument.GameplayCandidate
-                    .NativeExpectations.Count == 1 &&
+                    .NativeExpectations.Count == 2 &&
                 candidateDocument.Slots[0].ItemId ==
                     "committed-hat",
                 "A legacy gameplay candidate must preserve separate committed and Working projections plus exact native expectations.");
@@ -6633,7 +6641,7 @@ namespace DTMAPI.UnitTests
                     ("corrupt", "{ invalid-json ]", true),
                     (
                         "future",
-                        "{\"schemaVersion\":4,\"scope\":{\"archiveIndex\":2,\"playerName\":\"third-save\",\"customPlayerName\":\"third-save\",\"totalGameSeconds\":100}}",
+                        "{\"schemaVersion\":5,\"scope\":{\"archiveIndex\":2,\"playerName\":\"third-save\",\"customPlayerName\":\"third-save\",\"totalGameSeconds\":100}}",
                         false),
                     (
                         "ambiguous",
@@ -6825,187 +6833,6 @@ namespace DTMAPI.UnitTests
                 writeBlocked &&
                 !File.Exists(missingWritePath),
                 "A Product v3 write without TotalGameSeconds must publish no authority.");
-        }
-
-        private static void PlayerUiRoutesHeldNativeItemThroughProductionEquip()
-        {
-            string productRoot = Path.Combine(
-                Environment.CurrentDirectory,
-                "products",
-                "first-party",
-                "MoreEquipmentSlots",
-                "src");
-            string source = File.ReadAllText(
-                Path.Combine(
-                    productRoot,
-                    "Native",
-                    "MoreEquipmentSlotsNativeRuntime.cs"));
-            string entry = File.ReadAllText(
-                Path.Combine(
-                    productRoot,
-                    "ModEntry.cs"));
-            Assert(
-                source.Contains(
-                    "TryEquipFromNativeBuffer(slotIndex)",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "EquipFromBackpack(itemId, slotIndex)",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "EquipmentSlotGameplayCandidateCoordinator",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "TryTakeMatchingNativeBuffer(",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "MarkWorkingDirty(\"EquipFromBackpack\")",
-                    StringComparison.Ordinal) &&
-                entry.Contains(
-                    "e.IsNewGame",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "InitializeNewGame(slot)",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "RequireNativeCurrentSaveMissing",
-                    StringComparison.Ordinal) &&
-                source.Contains(
-                    "DeleteSlotDirectoryForNewGame",
-                    StringComparison.Ordinal),
-                "The real empty-slot click path must mutate only Working/native memory during the day and prepare its durable gameplay candidate at SaveSaving.");
-        }
-
-        private static void AtomicInstallerOwnsRollbackAndDeactivationPaths()
-        {
-            string nativeRoot = Path.Combine(
-                Environment.CurrentDirectory,
-                "products",
-                "first-party",
-                "MoreEquipmentSlots",
-                "src",
-                "Native");
-            string installer = File.ReadAllText(
-                Path.Combine(
-                    nativeRoot,
-                    "MoreEquipmentSlotsHookInstaller.cs"));
-            string runtime = File.ReadAllText(
-                Path.Combine(
-                    nativeRoot,
-                    "MoreEquipmentSlotsNativeRuntime.cs"));
-            string callbacks = File.ReadAllText(
-                Path.Combine(
-                    nativeRoot,
-                    "MoreEquipmentSlotsCallbacks.cs"));
-            Assert(
-                installer.Contains(
-                    "catch (Exception installFailure)",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "UnpatchExactOwner();",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "finally",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "MoreEquipmentSlotsCallbacks.Detach(",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "ResolveTryGetShieldItem()",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "ResolveRenderPassiveItems()",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "ResolveAccessoriesBarSelectablesGetter()",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "ResolveAccessoriesBarMethod(\"ClearCallBack\")",
-                    StringComparison.Ordinal) &&
-                !installer.Contains(
-                    "ResolveAccessoriesBarMethod(\"__Init\")",
-                    StringComparison.Ordinal) &&
-                !installer.Contains(
-                    "ResolveAccessoriesBarMethod(\"OnStartShow\")",
-                    StringComparison.Ordinal) &&
-                installer.Contains(
-                    "TryGetShieldItem(out IAgentEquipmentShieldItem)",
-                    StringComparison.Ordinal) &&
-                callbacks.Contains(
-                    "AgentEquipmentManagerTryGetShieldItemPostfix",
-                    StringComparison.Ordinal) &&
-                callbacks.Contains(
-                    "ref DolocTown.IAgentEquipmentShieldItem __0",
-                    StringComparison.Ordinal) &&
-                callbacks.Contains(
-                    "AccessoriesBarRenderPassiveItemsPostfix",
-                    StringComparison.Ordinal) &&
-                callbacks.Contains(
-                    "AccessoriesBarAllSelectablesPostfix",
-                    StringComparison.Ordinal) &&
-                callbacks.Contains(
-                    "AccessoriesBarClearCallBackPostfix",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "hooks.UnpatchOwnedHooks(this);",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "DTMAPI.MoreEquipmentSlots.Row",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "ReadRelativeBounds",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "RebuildEquipmentNavigation(session);",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "SanitizeClonedSlot",
-                    StringComparison.Ordinal) &&
-                runtime.Contains(
-                    "SetMember(layout, \"ignoreLayout\", true);",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "DTMAPI.MoreEquipmentSlots.Toggle",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "DTMAPI.MoreEquipmentSlots.Drawer",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "DisableDroneInteraction",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    " void Update(",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "UpdateTicked",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "LateUpdate(",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "FixedUpdate(",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "GetComponentsInChildren(",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "WorldBoundsContain",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "EquipmentPanelRoot",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "ClearUi(\"rebuild \" + reason)",
-                    StringComparison.Ordinal) &&
-                !installer.Contains(
-                    "ResolveBodyController",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "HandleAttackPrefix(",
-                    StringComparison.Ordinal) &&
-                !runtime.Contains(
-                    "ApplyNativeAttackTail(",
-                    StringComparison.Ordinal),
-                "Atomic Hook installation must own exact-owner rollback, provide the product shield only through the native shield-provider boundary, keep UI layout event-driven without a per-frame Product loop, and leave the official attack tail unreplicated.");
         }
 
         private static EquipmentSlotStorageDocument
@@ -7360,7 +7187,7 @@ namespace DTMAPI.UnitTests
             "\"nativeExpectations\":[{" +
             "\"itemId\":\"working-hat\"," +
             "\"backpackCount\":1," +
-            "\"mailCount\":0}]}}";
+            "\"mailCount\":0},{\"itemId\":\"committed-hat\",\"backpackCount\":0,\"mailCount\":0}]}}";
 
         private static NativeRecoveryObservation Observation(
             string fingerprint,

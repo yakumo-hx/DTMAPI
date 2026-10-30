@@ -1,0 +1,796 @@
+#nullable disable
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using DTMAPI.Abstractions;
+using DolocTown.GameData;
+using HarmonyLib;
+using UnityEngine;
+
+namespace AudioR1
+{
+    // Internal, file-driven Advanced QA. It exposes no product audio API.
+    [Serializable] public sealed class Settings
+    {
+        public string EvidenceDirectory = "", InputDirectory = "", ExpiresUtc = "";
+        public int MaxSeconds = 1200;
+        public bool DeferMetadata;
+        public bool MeasureM1;
+    }
+    [Serializable, DataContract] public sealed class Ids { [DataMember] public uint bank, sound, action, @event, media; }
+    [Serializable, DataContract] public sealed class Media
+    {
+        [DataMember] public string key, route, bank, bankSha256, media, mediaSha256;
+        [DataMember] public bool missingMedia;
+        [DataMember] public long bankBytes, pcmBytes;
+        [DataMember] public double seconds;
+        [DataMember] public uint actorBus;
+        [DataMember] public Ids ids;
+    }
+    [Serializable, DataContract] public sealed class Inputs { [DataMember] public bool parsePassed; [DataMember] public Media[] entries; }
+    [Serializable] public sealed class Command
+    {
+        public int sequence;
+        public string operation, key, route, ticket;
+        public uint playingId;
+        public bool expectNoVoice;
+        public bool revokeOnSubmit;
+        public string request, holdNotice;
+        public bool deferPlay;
+    }
+    [Serializable] public sealed class Row
+    {
+        public string utc, phase, ticket, key, route, detail;
+        public long qpc, frequency;
+        public int processId, thread, sequence, generation, workers, pins, banks, voices;
+        public uint bankId, nativeBankId, playingId;
+        public double elapsedMs;
+        public long managedBytes;
+        public bool nativeIdentityConfirmed;
+        public int metadataEntries, emitters, gc0, gc1, gc2;
+        public long controlTicks, audioTicks, payloadOpens, nativeGuardOpens;
+        public string request, currentRequest;
+        public uint currentPlayingId;
+        public int loading, heldNotices, pendingRequests;
+        public long activePcmBytes, loadedPcmBytes;
+    }
+    public sealed class ModEntry : DtmMod, IDisposable
+    {
+        sealed class Ticket
+        {
+            internal string Id;
+            internal Media Media;
+            internal int Generation;
+            internal bool Worker, Loading, Loaded, Retiring, Registered, Pin = true;
+            internal uint NativeBankId;
+            internal bool NativeIdentityConfirmed;
+            internal bool RevokeOnSubmit;
+            internal long Since;
+            internal GameObject Emitter;
+            internal HashSet<uint> Voices = new HashSet<uint>();
+            internal HashSet<uint> Stopping = new HashSet<uint>();
+            internal bool TimeoutReported;
+            internal CancellationTokenSource Cancellation;
+            internal Request PendingRequest;
+            internal string HoldNotice;
+            internal uint HoldEnd;
+            internal readonly Dictionary<uint, string> VoiceRequests = new Dictionary<uint, string>();
+        }
+        sealed class Request
+        {
+            internal string Id;
+            internal Ticket Ticket;
+            internal bool Cancelled, Ready, DeferPlay, Ended;
+            internal uint Playing;
+        }
+        sealed class Notice
+        {
+            internal Ticket Ticket;
+            internal string Kind, Error;
+            internal uint Bank, Playing;
+            internal AKRESULT Result;
+            internal double Milliseconds;
+            internal long HeldSince;
+            internal bool Cancelled;
+        }
+        static ModEntry current;
+        static readonly AkCallbackManager.BankCallback BankCallback = OnBank;
+        static readonly AkCallbackManager.EventCallback EventCallback = OnEnd;
+        static readonly ConcurrentQueue<Notice> notices = new ConcurrentQueue<Notice>();
+        readonly Dictionary<string, Ticket> tickets = new Dictionary<string, Ticket>(StringComparer.Ordinal);
+        readonly HashSet<string> ticketNames = new HashSet<string>(StringComparer.Ordinal);
+        readonly Dictionary<string, Request> requests = new Dictionary<string, Request>(StringComparer.Ordinal);
+        readonly List<Notice> held = new List<Notice>();
+        Request selectedRequest;
+        readonly Dictionary<string, float> measurementMix = new Dictionary<string, float>(StringComparer.Ordinal);
+        float? measurementTimeScale;
+        readonly float[] frames = new float[4096];
+        struct Measure { internal long At, Ticks; internal int Kind, Sequence; }
+        Measure[] measurements;
+        int measurementCount;
+        bool measurementOverflow;
+        void MeasureSpan(int kind, long start)
+        {
+            if (measurements == null) return;
+            if (measurementCount == measurements.Length) { measurementOverflow = true; return; }
+            measurements[measurementCount++] = new Measure { At = start, Ticks = Stopwatch.GetTimestamp()-start, Kind = kind, Sequence = lastSequence };
+        }
+        void DumpMeasurements()
+        {
+            Need(measurements != null && !measurementOverflow, "M1 measurement capacity exceeded or disabled");
+            string path = Path.Combine(settings.EvidenceDirectory, "m1-main-thread.csv");
+            using (var writer = new StreamWriter(new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read)))
+            {
+                writer.WriteLine("qpc,ticks,frequency,kind,sequence");
+                for (int i = 0; i < measurementCount; i++)
+                {
+                    Measure m = measurements[i];
+                    writer.WriteLine(m.At + "," + m.Ticks + "," + Stopwatch.Frequency + "," + m.Kind + "," + m.Sequence);
+                }
+            }
+            Record("m1-measurements-written", detail: "rows=" + measurementCount + "; kinds: 0 frame interval, 1 complete Pump incl logging, 2 complete Execute incl logging, 3 complete polled Tick incl control IO; dump excluded; nested spans must not be summed");
+            measurements = null;
+        }
+        Settings settings;
+        Inputs inputs;
+        Harmony harmony;
+        GameObject driver;
+        StreamWriter journal;
+        int generation = 1, lastSequence, frameAt, frameCount;
+        float nextPoll, deadline;
+        bool closed, frozen, baseAdded, disposed, wasInitialized, engineTerminated, ownerClosing, engineReadyReported;
+        CancellationTokenSource cancellation = new CancellationTokenSource();
+        string inputRoot;
+        long controlTicks, audioTicks, payloadOpens;
+        static void Need(bool ok, string text) { if (!ok) throw new InvalidOperationException(text); }
+        static void Check(AKRESULT result, string operation) { Need(result == AKRESULT.AK_Success, operation + "=" + result); }
+        static bool SaveGuard() { throw new InvalidOperationException("Experiment.AudioR1 is NoNativeSave"); }
+        static string NoReparse(string path)
+        {
+            string full = Path.GetFullPath(path);
+            for (var at = new DirectoryInfo(full); at != null; at = at.Parent)
+                if (at.Exists) Need((at.Attributes & FileAttributes.ReparsePoint) == 0, "Reparse input ancestor");
+            return full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        string InputPath(string name)
+        {
+            Need(!string.IsNullOrEmpty(name) && Path.GetFileName(name) == name && name.IndexOf(':') < 0, "Simple input filename required");
+            string path = Path.Combine(inputRoot, name);
+            Need((File.GetAttributes(path) & FileAttributes.ReparsePoint) == 0, "Reparse input file");
+            return path;
+        }
+        void QuietMeasurementMix()
+        {
+            Need(!closed && tickets.Count == 0 && measurementMix.Count == 0 && !measurementTimeScale.HasValue && AkSoundEngine.IsInitialized(), "Quiet measurement requires an idle live engine");
+            foreach (var parameter in new[] { DolocTown.SoundParameters.VOLUME_MUSIC,
+                DolocTown.SoundParameters.VOLUME_SFX_AMBIENCE, DolocTown.SoundParameters.VOLUME_SFX_UI })
+            {
+                string name = parameter.ToString();
+                int kind = (int)AkQueryRTPCValue.RTPCValue_Global;
+                Check(AkSoundEngine.GetRTPCValue(name, ulong.MaxValue, 0, out float value, ref kind), "Snapshot measurement mix " + name);
+                Need(kind == (int)AkQueryRTPCValue.RTPCValue_Global && !float.IsNaN(value) && !float.IsInfinity(value), "Global measurement mix value required");
+                measurementMix.Add(name, value);
+            }
+            foreach (string name in measurementMix.Keys)
+                Check(AkSoundEngine.SetRTPCValue(name, 0), "Quiet measurement mix " + name);
+            measurementTimeScale = Time.timeScale;
+            Time.timeScale = 0;
+            Record("measurement-quiet-ready", detail: "Temporarily muted MUSIC/AMBIENCE/UI; ACTOR unchanged; no user setting/file write. Original global values: " +
+                string.Join("; ", measurementMix.Select(pair => pair.Key + "=" + pair.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) +
+                "; world simulation paused for stable capture; original timeScale=" + measurementTimeScale.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+        }
+        void RestoreMeasurementMix()
+        {
+            if (measurementTimeScale.HasValue)
+            {
+                Time.timeScale = measurementTimeScale.Value;
+                Record("measurement-time-scale-restored", detail: measurementTimeScale.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                measurementTimeScale = null;
+            }
+            if (measurementMix.Count == 0) return;
+            if (!AkSoundEngine.IsInitialized())
+            { Record("measurement-mix-ended-with-engine", detail: "Engine no longer exists; no native reset or settings write."); measurementMix.Clear(); return; }
+            foreach (var pair in measurementMix.ToArray())
+            {
+                Check(AkSoundEngine.SetRTPCValue(pair.Key, pair.Value), "Restore measurement mix " + pair.Key);
+                Record("measurement-rtpc-restored", detail: pair.Key + "=" + pair.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                measurementMix.Remove(pair.Key);
+            }
+            Record("measurement-mix-restored", detail: "Exact captured global RTPC values restored; user settings were never changed.");
+        }
+        public override void Entry(IDtmHelper helper)
+        {
+            settings = helper.ReadConfig<Settings>();
+            if (settings.MeasureM1) measurements = new Measure[131072];
+            Need(Path.IsPathRooted(settings.EvidenceDirectory) && Path.IsPathRooted(settings.InputDirectory), "Absolute controlled directories required");
+            DateTime expires = DateTime.Parse(settings.ExpiresUtc).ToUniversalTime();
+            Need(expires > DateTime.UtcNow && expires <= DateTime.UtcNow.AddMinutes(25), "Fresh <=25 minute expiry required");
+            Need(settings.MaxSeconds > 0 && settings.MaxSeconds <= 1200, "P0 deadline must be <=20 minutes");
+            inputRoot = NoReparse(settings.InputDirectory);
+            string evidence = NoReparse(settings.EvidenceDirectory);
+            Need(!string.Equals(inputRoot, evidence, StringComparison.OrdinalIgnoreCase) &&
+                 !evidence.StartsWith(inputRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Evidence separate from resolver root");
+            Directory.CreateDirectory(evidence);
+            inputs = settings.DeferMetadata
+                ? new Inputs { parsePassed = true, entries = new Media[0] }
+                : ReadInputs(InputPath("inputs.json"), text => helper.Monitor.Log("AudioR1 " + text, LogLevel.Info));
+            if (settings.DeferMetadata) Need(Directory.GetFileSystemEntries(inputRoot).Length == 0, "M0 requires an actually empty resolver");
+            Need(inputs.entries.All(m => m.actorBus == 2211457092u), "This probe accepts only the verified ACTOR control route");
+            journal = new StreamWriter(new FileStream(Path.Combine(evidence, "phases.jsonl"), FileMode.CreateNew, FileAccess.Write, FileShare.Read));
+            journal.AutoFlush = true;
+            current = this;
+            // All Harmony hooks are installed during authorized Entry, not first demand.
+            harmony = new Harmony("Experiment.AudioR1.Native");
+            foreach (Type type in new[] { typeof(DataPersistenceManager), typeof(LocalSave) })
+                foreach (var method in AccessTools.GetDeclaredMethods(type).Where(m => m.Name == "SaveGame"))
+                    harmony.Patch(method, prefix: new HarmonyMethod(typeof(ModEntry), nameof(SaveGuard)));
+            deadline = Time.realtimeSinceStartup + settings.MaxSeconds;
+            driver = new GameObject("Experiment.AudioR1 bounded QA driver");
+            UnityEngine.Object.DontDestroyOnLoad(driver);
+            driver.AddComponent<Driver>();
+            Record(settings.DeferMetadata ? "empty-directory-ready" : "registered-metadata-only", null,
+                "No native guard/media read, Bank, voice or emitter requested. Fixed QA command driver is measurement infrastructure.");
+            helper.Events.Save.SaveLoaded += (sender, args) => Record("world-ready", detail: "SaveLoaded native slot=" + args.SaveSlot);
+        }
+        static Inputs ReadInputs(string manifest, Action<string> diagnostic)
+        {
+            diagnostic("manifest-open path=" + manifest);
+            string json, sha256;
+            long bytes;
+            using (var stream = new FileStream(manifest, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan))
+            {
+                bytes = stream.Length;
+                Need(bytes < 262144, "Bounded manifest required");
+                using (var hash = SHA256.Create())
+                    sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                stream.Position = 0;
+                using (var reader = new StreamReader(stream)) json = reader.ReadToEnd();
+            }
+            diagnostic("manifest-read path=" + manifest + " bytes=" + bytes + " sha256=" + sha256);
+            Inputs parsed;
+            try
+            {
+                // External QA metadata uses Core's managed JSON contract, not Unity script serialization.
+                using (var data = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                    parsed = (Inputs)new DataContractJsonSerializer(typeof(Inputs)).ReadObject(data);
+            }
+            catch (Exception error)
+            { diagnostic("manifest-deserialize threw=" + error.GetType().FullName); throw; }
+            diagnostic("manifest-deserialize object=" + (parsed != null) +
+                " parsePassed=" + (parsed == null ? "unavailable" : parsed.parsePassed.ToString()) +
+                " entries=" + (parsed?.entries == null ? "null" : parsed.entries.Length.ToString()));
+            Need(parsed != null, "Independent parse publication marker required: object-null");
+            Need(parsed.parsePassed, "Independent parse publication marker required: parsePassed-false");
+            Need(parsed.entries != null, "Independent parse publication marker required: entries-null");
+            Need(parsed.entries.Length <= 64, "Independent parse publication marker required: entries-over-limit");
+            return parsed;
+        }
+        static void OnBank(uint bank, IntPtr pointer, AKRESULT result, object cookie)
+        {
+            notices.Enqueue(new Notice { Kind = "load-callback", Ticket = (Ticket)cookie, Bank = bank, Result = result });
+        }
+        static void OnEnd(object cookie, AkCallbackType kind, AkCallbackInfo info)
+        {
+            if (kind == AkCallbackType.AK_EndOfEvent && info is AkEventCallbackInfo ended)
+                notices.Enqueue(new Notice { Kind = "end", Ticket = (Ticket)cookie, Playing = ended.playingID });
+        }
+        void Record(string phase, Ticket ticket = null, string detail = "", uint playing = 0, double elapsed = 0, string request = null)
+        {
+            var row = new Row { utc = DateTime.UtcNow.ToString("o"), qpc = Stopwatch.GetTimestamp(), frequency = Stopwatch.Frequency,
+                processId = Process.GetCurrentProcess().Id, thread = Thread.CurrentThread.ManagedThreadId,
+                sequence = lastSequence, generation = generation, phase = phase, detail = detail,
+                ticket = ticket?.Id, key = ticket?.Media.key, route = ticket?.Media.route,
+                bankId = ticket?.Media.ids.bank ?? 0, nativeBankId = ticket?.NativeBankId ?? 0,
+                nativeIdentityConfirmed = ticket?.NativeIdentityConfirmed ?? false, playingId = playing, elapsedMs = elapsed,
+                workers = tickets.Values.Count(t => t.Worker), pins = tickets.Values.Count(t => t.Pin),
+                banks = tickets.Values.Count(t => t.Loaded), voices = tickets.Values.Sum(t => t.Voices.Count),
+                managedBytes = GC.GetTotalMemory(false), metadataEntries = inputs.entries.Length,
+                emitters = tickets.Values.Count(t => t.Emitter != null), controlTicks = controlTicks, audioTicks = audioTicks,
+                payloadOpens = Interlocked.Read(ref payloadOpens), nativeGuardOpens = 0,
+                gc0 = GC.CollectionCount(0), gc1 = GC.CollectionCount(1), gc2 = GC.CollectionCount(2),
+                request = request ?? (ticket != null && ticket.VoiceRequests.TryGetValue(playing, out string voiceRequest)
+                    ? voiceRequest : ticket?.PendingRequest?.Id),
+                currentRequest = selectedRequest?.Id, currentPlayingId = selectedRequest?.Playing ?? 0,
+                loading = tickets.Values.Count(t => t.Loading), heldNotices = held.Count,
+                pendingRequests = requests.Values.Count(r => !r.Cancelled && !r.Ended && r.Playing == 0),
+                activePcmBytes = tickets.Values.Where(t => t.Pin).Sum(t => t.Media.pcmBytes),
+                loadedPcmBytes = tickets.Values.Where(t => t.Loaded).Sum(t => t.Media.pcmBytes) };
+            journal.WriteLine(JsonUtility.ToJson(row));
+        }
+        string HashFile(string path, CancellationToken token)
+        {
+            Interlocked.Increment(ref payloadOpens);
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, FileOptions.SequentialScan))
+            using (var hash = SHA256.Create())
+            {
+                byte[] block = new byte[65536];
+                int count;
+                while ((count = stream.Read(block, 0, block.Length)) != 0)
+                { token.ThrowIfCancellationRequested(); hash.TransformBlock(block, 0, count, block, 0); }
+                token.ThrowIfCancellationRequested();
+                hash.TransformFinalBlock(block, 0, 0);
+                return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+        void Load(Command command)
+        {
+            Need(!closed && !frozen && !tickets.Values.Any(t => t.Worker), "Closed/frozen/worker-busy");
+            Need(AkSoundEngine.IsInitialized() && AkSoundEngine.GetMajorMinorVersion() == ((2023u << 16) | 1u) &&
+                 AkSoundEngine.GetSubminorBuildVersion() == 8367, "Unsupported/uninitialized Wwise engine");
+            wasInitialized = true;
+            Media media = inputs.entries.Single(m => m.key == command.key && m.route == command.route);
+            Need(!string.IsNullOrEmpty(command.ticket) && !ticketNames.Contains(command.ticket) && ticketNames.Count < 256,
+                 "Unique non-reused ticket required for this bounded probe lifetime");
+            Need(!tickets.Values.Any(t => t.Media.ids.bank == media.ids.bank), "Bank already has a loading/loaded ticket");
+            Need(string.IsNullOrEmpty(command.holdNotice) || command.holdNotice == "prepared" || command.holdNotice == "load-callback", "Unknown observation barrier");
+            Need(media.route != "L" || tickets.Values.Where(t => t.Pin && t.Media.route == "L").Sum(t => t.Media.pcmBytes) + media.pcmBytes <= 256L*1024*1024,
+                "L active media reservation exceeds unchanged 256 MiB experiment limit");
+            string bank = InputPath(media.bank);
+            string wem = media.route == "L" || media.missingMedia ? null : InputPath(media.media);
+            if (media.missingMedia) Need(!File.Exists(Path.Combine(inputRoot, media.media)), "Negative media must remain absent");
+            var ticket = new Ticket { Id = command.ticket, Media = media, Generation = generation, Worker = true, Since = Stopwatch.GetTimestamp(), RevokeOnSubmit = command.revokeOnSubmit };
+            ticket.Cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+            ticket.HoldNotice = command.holdNotice;
+            if (!string.IsNullOrEmpty(command.request))
+            { ticket.PendingRequest = requests[command.request]; ticket.PendingRequest.Ticket = ticket; }
+            tickets.Add(ticket.Id, ticket);
+            ticketNames.Add(ticket.Id);
+            Record("requested", ticket, "File lease acquired before worker; only the requested owned payload is verified.");
+            CancellationToken token = ticket.Cancellation.Token;
+            Task.Run(() =>
+            {
+                var timer = Stopwatch.StartNew();
+                try
+                {
+                    Need(new FileInfo(bank).Length == media.bankBytes && HashFile(bank, token) == media.bankSha256, "Bank payload identity changed");
+                    if (wem != null) Need(HashFile(wem, token) == media.mediaSha256, "External media identity changed");
+                    token.ThrowIfCancellationRequested();
+                    notices.Enqueue(new Notice { Kind = "prepared", Ticket = ticket, Milliseconds = timer.Elapsed.TotalMilliseconds });
+                }
+                catch (OperationCanceledException error)
+                { notices.Enqueue(new Notice { Kind = "prepare-error", Ticket = ticket, Cancelled = true, Error = error.ToString(), Milliseconds = timer.Elapsed.TotalMilliseconds }); }
+                catch (Exception error)
+                { notices.Enqueue(new Notice { Kind = "prepare-error", Ticket = ticket, Error = error.ToString(), Milliseconds = timer.Elapsed.TotalMilliseconds }); }
+            });
+        }
+        void Submit(Ticket ticket)
+        {
+            if (closed || ticket.Retiring || ticket.Generation != generation) { ticket.Retiring = true; Retire(ticket); return; }
+            Need(AkSoundEngine.IsInitialized(), "Engine terminated before load submit");
+            using (var config = new AkChannelConfig(2, 3)) Need(config.Serialize() == 0x3102, "Native stereo channel config mismatch");
+            if (ticket.Media.route != "L" && !baseAdded)
+            {
+                // This engine queries <base>/Media/<id>.wem (observed by ETW).
+                // The runner keeps its one indexed file set inside that Media
+                // directory; absolute Bank loads use the same verified files.
+                Need(Path.GetFileName(inputRoot) == "Media", "Observed native Media layout required");
+                string resolverBase = Directory.GetParent(inputRoot).FullName;
+                Check(AkSoundEngine.AddBasePath(resolverBase + Path.DirectorySeparatorChar), "Add single QA resolver root");
+                baseAdded = true;
+                Record("base-path-added", ticket, resolverBase + "; native media directory=" + inputRoot + "; engine-lifetime root cannot be removed by this wrapper");
+            }
+            ticket.Loading = true;
+            ticket.Since = Stopwatch.GetTimestamp();
+            Record("load-submit", ticket);
+            var timer = Stopwatch.StartNew();
+            uint returned;
+            AKRESULT result = AkSoundEngine.LoadBank(InputPath(ticket.Media.bank), BankCallback, ticket, out returned);
+            if (result == AKRESULT.AK_Success) ticket.NativeBankId = returned;
+            Record("load-return", ticket, result + "; returnedBank=" + returned + "; completion still required", elapsed: timer.Elapsed.TotalMilliseconds);
+            if (result == AKRESULT.AK_Success) Need(returned != 0, "Invalid returned native Bank identity; preserve responsibility");
+            if (result == AKRESULT.AK_Success && ticket.RevokeOnSubmit)
+            {
+                Record("revoke-on-submit", ticket, "Close the controlled generation before consuming asynchronous Bank completion");
+                Revoke();
+            }
+            if (result != AKRESULT.AK_Success)
+            {
+                ticket.Loading = false;
+                ticket.Retiring = true;
+                frozen = true;
+                Record("native-load-rejected-stop", ticket, result.ToString());
+                Retire(ticket);
+            }
+        }
+        void Play(Command command)
+        {
+            Need(!closed && !frozen && AkSoundEngine.IsInitialized(), "Owner closed/probe frozen/engine terminated");
+            Ticket ticket = tickets[command.ticket];
+            Request request = string.IsNullOrEmpty(command.request) ? null : requests[command.request];
+            if (request != null) Need(ReferenceEquals(request, selectedRequest) && ReferenceEquals(request.Ticket, ticket) &&
+                !request.Cancelled && !request.Ended && request.Ready && request.Playing == 0, "Stale/non-ready request cannot post");
+            Need(ticket.Loaded && ticket.NativeIdentityConfirmed && !ticket.Retiring && ticket.Generation == generation, "Only ready current ticket can play");
+            Need(tickets.Values.Sum(t => t.Voices.Count) < 2, "At most two QA voices");
+            if (ticket.Emitter == null) ticket.Emitter = new GameObject("Experiment.AudioR1 voice " + ticket.Id);
+            if (!ticket.Registered) { Check(AkSoundEngine.RegisterGameObj(ticket.Emitter), "Register QA emitter"); ticket.Registered = true; }
+            // Keep short original markers above incidental ACTOR sounds, while
+            // giving full-scale long PCM headroom on the same native bus. Only
+            // this owned emitter changes; both routes use the same source gain.
+            float measurementGain = ticket.Media.seconds <= 10 ? 2f : .2f;
+            Check(AkSoundEngine.SetGameObjectOutputBusVolume(AkSoundEngine.GetAkGameObjectID(ticket.Emitter), ulong.MaxValue, measurementGain), "Set QA emitter measurement gain");
+            Record("emitter-gain", ticket, measurementGain.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            var timer = Stopwatch.StartNew();
+            uint id = AkSoundEngine.PostEvent(ticket.Media.ids.@event, ticket.Emitter,
+                (uint)(AkCallbackType.AK_EndOfEvent | AkCallbackType.AK_EnableGetSourcePlayPosition), EventCallback, ticket);
+            if (id != 0) ticket.Voices.Add(id);
+            if (id != 0 && request != null) { request.Playing = id; ticket.VoiceRequests.Add(id, request.Id); }
+            Record("post-return", ticket, "Playing ID is not output proof", id, timer.Elapsed.TotalMilliseconds, request?.Id);
+            Need(id != 0 || command.expectNoVoice, "PostEvent rejected; stop guessing native structure");
+        }
+        void Stop(Ticket ticket, uint id)
+        {
+            Need(ticket.Voices.Contains(id), "Playing ID belongs to this exact ticket");
+            Need(AkSoundEngine.IsInitialized(), "Engine terminated; do not submit Stop");
+            if (ticket.Stopping.Contains(id)) return;
+            AkSoundEngine.StopPlayingID(id);
+            ticket.Since = Stopwatch.GetTimestamp();
+            ticket.Stopping.Add(id);
+            Record("stop-request", ticket, "End callback still owns voice release", id);
+        }
+        void Retire(Ticket ticket)
+        {
+            ticket.Retiring = true;
+            if (ticket.Worker || ticket.Loading || ticket.Voices.Count != 0) return;
+            if (ticket.Loaded)
+            {
+                Need(ticket.NativeIdentityConfirmed && ticket.NativeBankId != 0, "Unconfirmed native Bank identity; preserve responsibility");
+                Need(AkSoundEngine.IsInitialized(), "Engine terminated; do not submit Unload");
+                var timer = Stopwatch.StartNew();
+                Record("unload-submit", ticket);
+                Check(AkSoundEngine.UnloadBank(ticket.NativeBankId, IntPtr.Zero), "Unload own file Bank");
+                ticket.Loaded = false;
+                Record("unload-complete", ticket, elapsed: timer.Elapsed.TotalMilliseconds);
+            }
+            if (ticket.Registered) { Need(AkSoundEngine.IsInitialized(), "Engine terminated; do not submit Unregister"); Check(AkSoundEngine.UnregisterGameObj(ticket.Emitter), "Unregister QA emitter"); ticket.Registered = false; }
+            if (ticket.Emitter != null) UnityEngine.Object.Destroy(ticket.Emitter);
+            ticket.Emitter = null;
+            ticket.Pin = false;
+            ticket.Cancellation?.Dispose();
+            if (tickets.TryGetValue(ticket.Id, out Ticket currentTicket) && ReferenceEquals(currentTicket, ticket)) tickets.Remove(ticket.Id);
+            Record("released", ticket, "Own worker/Bank/voice/emitter/file pin released; base path remains until engine exit.");
+        }
+        void Revoke()
+        {
+            foreach (var request in requests.Values.Where(r => r.Playing == 0 && !r.Ended)) request.Cancelled = true;
+            if (!closed) { closed = true; generation++; cancellation.Cancel(); Record("generation-revoked", detail: "QA lease revoke; real Runtime Owner withdrawal is separately observed by Dispose."); }
+            foreach (var ticket in tickets.Values.ToArray())
+            {
+                ticket.Retiring = true;
+                foreach (uint id in ticket.Voices.ToArray()) Stop(ticket, id);
+                Retire(ticket);
+            }
+        }
+        void Pump()
+        {
+            ObserveEngineTermination();
+            while (notices.TryDequeue(out Notice notice))
+            {
+                Ticket ticket = notice.Ticket;
+                if (!ownerClosing && notice.HeldSince == 0 &&
+                    (notice.Kind == ticket.HoldNotice || (notice.Kind == "end" && notice.Playing == ticket.HoldEnd && ticket.HoldEnd != 0)))
+                {
+                    Need(held.Count < 4, "Bounded real-notice mailbox full");
+                    notice.HeldSince = Stopwatch.GetTimestamp();
+                    held.Add(notice);
+                    Record("notice-held", ticket, notice.Kind + "; actualResult=" + notice.Result + "; callbackBank=" + notice.Bank + "; maxHoldMs=12000", notice.Playing);
+                    continue;
+                }
+                if (!ticket.Pin)
+                {
+                    Record("late-notice-after-release", ticket, notice.Kind + "; no new ticket or voice is modified");
+                    if (notice.Kind == "load-callback" && notice.Result == AKRESULT.AK_Success && !engineTerminated)
+                    { frozen = true; Record("unexpected-native-completion-stop", ticket, "Do not guess an unload against a potentially reused native ID; preserve this counterexample."); }
+                    continue;
+                }
+                if (notice.Kind == "prepared" || notice.Kind == "prepare-error")
+                {
+                    ticket.Worker = false;
+                    Record(notice.Kind, ticket, notice.Error, elapsed: notice.Milliseconds);
+                    if (notice.Kind == "prepare-error")
+                    {
+                        ticket.Retiring = true;
+                        if (!closed && !(notice.Cancelled && ticket.Retiring)) frozen = true;
+                        Retire(ticket);
+                    }
+                    else if (closed || ticket.Retiring || ticket.Generation != generation) Retire(ticket);
+                    else Submit(ticket);
+                }
+                else if (notice.Kind == "load-callback")
+                {
+                    ticket.Loading = false;
+                    if (engineTerminated)
+                    { Record("late-load-after-observed-engine-termination", ticket, notice.Result.ToString()); Retire(ticket); continue; }
+                    ticket.Loaded = notice.Result == AKRESULT.AK_Success;
+                    ticket.NativeIdentityConfirmed = ticket.Loaded && ticket.NativeBankId != 0 && notice.Bank == ticket.NativeBankId;
+                    Record(notice.Kind, ticket, notice.Result + "; callbackBank=" + notice.Bank,
+                           elapsed: (Stopwatch.GetTimestamp() - ticket.Since) * 1000.0 / Stopwatch.Frequency);
+                    if (ticket.Loaded) Need(ticket.NativeIdentityConfirmed, "Unexpected native Bank identity; preserve responsibility");
+                    if (!ticket.Loaded) { frozen = true; ticket.Retiring = true; }
+                    if (closed || ticket.Retiring || ticket.Generation != generation) Retire(ticket);
+                    else ReadyRequest(ticket.PendingRequest);
+                }
+                else if (notice.Kind == "end")
+                {
+                    bool owned = ticket.Voices.Remove(notice.Playing);
+                    ticket.Stopping.Remove(notice.Playing);
+                    if (owned && ticket.VoiceRequests.TryGetValue(notice.Playing, out string requestId))
+                    {
+                        Request ended = requests[requestId];
+                        Need(ended.Playing == notice.Playing, "End must match its request's actual Playing ID");
+                        ended.Playing = 0; ended.Ended = true;
+                    }
+                    Record(owned ? "end" : "late-unowned-end", ticket, "No inference of physical output", notice.Playing);
+                    ticket.VoiceRequests.Remove(notice.Playing);
+                    if (ticket.Retiring) Retire(ticket);
+                }
+            }
+        }
+        // This is explicit QA intent, not a playlist, crossfade or product scheduler.
+        // Resource tickets own Banks/pins; requests and voices retain separate identity.
+        void BeginRequest(Command command)
+        {
+            Need(!closed && !frozen && !string.IsNullOrEmpty(command.request) && !requests.ContainsKey(command.request) && requests.Count < 64,
+                "Fresh bounded request identity required");
+            if (selectedRequest != null && !selectedRequest.Cancelled && !selectedRequest.Ended && selectedRequest.Playing == 0)
+                CancelRequest(selectedRequest, "replaced-by=" + command.request);
+            bool reuse = tickets.TryGetValue(command.ticket, out Ticket ticket);
+            if (reuse) Need(ticket.Loaded && !ticket.Retiring && ticket.Media.key == command.key && ticket.Media.route == command.route,
+                "Reuse only exact ready resource; no pending duplicate load");
+            var request = new Request { Id = command.request, DeferPlay = command.deferPlay };
+            requests.Add(request.Id, request); selectedRequest = request;
+            Record("request-selected", ticket, reuse ? "reuse-ready-resource" : "new-resource", request: request.Id);
+            if (!reuse) { Load(command); ticket = tickets[command.ticket]; }
+            request.Ticket = ticket;
+            ticket.PendingRequest = request;
+            if (ticket.Loaded) ReadyRequest(request);
+        }
+        void ReadyRequest(Request request)
+        {
+            if (request == null) return;
+            if (request.Cancelled || !ReferenceEquals(request, selectedRequest))
+            { Record("stale-request-result", request.Ticket, "No Post for invalidated request", request: request.Id); return; }
+            request.Ready = true;
+            Record("request-ready", request.Ticket, request.DeferPlay ? "explicit start required" : "explicit request may start", request: request.Id);
+            if (!request.DeferPlay) StartRequest(request);
+        }
+        void StartRequest(Request request)
+        {
+            Play(new Command { ticket = request.Ticket.Id, request = request.Id });
+        }
+        void CancelRequest(Request request, string reason)
+        {
+            Need(request.Playing == 0 && !request.Ended, "Cancel only pending intent; stop a playing voice by its exact ID");
+            if (request.Cancelled) return;
+            request.Cancelled = true;
+            Record("request-cancelled", request.Ticket, reason, request: request.Id);
+            // A prepared replay can share a still-playing Bank; cancel only its
+            // intent. A new in-flight ticket keeps its pin through compensation.
+            Ticket ticket = request.Ticket;
+            if (ticket != null && !ticket.Loaded)
+            { ticket.Retiring = true; ticket.Cancellation.Cancel(); Retire(ticket); }
+        }
+        void ReleaseNotices(Ticket ticket)
+        {
+            foreach (var notice in held.Where(n => ticket == null || ReferenceEquals(n.Ticket, ticket)).ToArray())
+            {
+                held.Remove(notice);
+                Record("notice-released", notice.Ticket, notice.Kind + "; same real notice; no fabricated result", notice.Playing,
+                    (Stopwatch.GetTimestamp() - notice.HeldSince)*1000.0/Stopwatch.Frequency);
+                notices.Enqueue(notice);
+            }
+            if (ticket != null) { ticket.HoldNotice = null; ticket.HoldEnd = 0; }
+        }
+        void ObserveEngineTermination()
+        {
+            if (!wasInitialized || engineTerminated || AkSoundEngine.IsInitialized()) return;
+            Record("engine-termination-observed", detail: "Wwise IsInitialized=false; outstanding ledger is preserved in this row. No Stop/Unload/Unregister is submitted after this point.");
+            engineTerminated = true;
+            closed = frozen = true;
+            generation++;
+            cancellation.Cancel();
+            foreach (var ticket in tickets.Values.ToArray())
+            {
+                ticket.Loading = ticket.Loaded = ticket.Registered = false;
+                ticket.Voices.Clear(); ticket.Stopping.Clear(); ticket.Retiring = true;
+                if (ticket.Emitter != null) UnityEngine.Object.Destroy(ticket.Emitter);
+                ticket.Emitter = null;
+                Record("native-responsibility-ended-with-observed-engine-lifetime", ticket,
+                    "This is not a successful pre-termination unload or End callback.");
+                Retire(ticket);
+            }
+        }
+        void Execute(Command command)
+        {
+            Need(command.sequence > lastSequence, "Monotonic command sequence required");
+            lastSequence = command.sequence;
+            Record("command", detail: command.operation);
+            switch (command.operation)
+            {
+                case "register-metadata":
+                    Need(settings.DeferMetadata && inputs.entries.Length == 0 && tickets.Count == 0 &&
+                        !closed && payloadOpens == 0,
+                        "L25 registration requires the unchanged empty demand-free session");
+                    Inputs registered = ReadInputs(InputPath("inputs.json"), text => Record("metadata-read", detail: text));
+                    Need(registered.entries.Length == 25 &&
+                        registered.entries.All(m => m.actorBus == 2211457092u && m.key.StartsWith("L25-", StringComparison.Ordinal)) &&
+                        registered.entries.Select(m => m.key).Distinct().Count() == 25 &&
+                        registered.entries.Select(m => m.route).Distinct().Count() == 1,
+                        "Exactly 25 distinct L25 entries on one ACTOR route required");
+                    inputs = registered;
+                    Record("registered-metadata-only", detail: "25 metadata entries; no payload or native fingerprint opened");
+                    break;
+                case "measurement-quiet": QuietMeasurementMix(); break;
+                case "measurement-dump": DumpMeasurements(); break;
+                case "request": BeginRequest(command); break;
+                case "start-request": StartRequest(requests[command.request]); break;
+                case "cancel-request": CancelRequest(requests[command.request], "explicit cancellation"); break;
+                case "hold-end":
+                    Need(tickets[command.ticket].Voices.Contains(command.playingId), "Hold only an owned real End");
+                    tickets[command.ticket].HoldEnd = command.playingId;
+                    Record("end-barrier-armed", tickets[command.ticket], "Only actual callback delivery may be delayed", command.playingId); break;
+                case "release-notices": ReleaseNotices(tickets[command.ticket]); break;
+                case "load": Load(command); break;
+                case "play": Play(command); break;
+                case "stop": Stop(tickets[command.ticket], command.playingId); break;
+                case "retire":
+                    Ticket ticket = tickets[command.ticket];
+                    foreach (uint id in ticket.Voices.ToArray()) Stop(ticket, id);
+                    Retire(ticket); break;
+                case "revoke": Revoke(); break;
+                case "new-generation":
+                    Need(closed && !frozen && !ownerClosing && !engineTerminated && tickets.Count == 0,
+                         "Only a voluntarily closed, fully drained QA generation can reopen; not a withdrawn Runtime Owner or native failure");
+                    cancellation.Dispose(); cancellation = new CancellationTokenSource(); generation++; closed = false;
+                    Record("controlled-generation-reopened", detail: "Same active QA CodeMod Owner; distinct request generation, not a Runtime Owner reactivation claim.");
+                    break;
+                case "sample":
+                    foreach (var item in tickets.Values)
+                        foreach (uint id in item.Voices)
+                        {
+                            AKRESULT positionResult = AkSoundEngine.GetSourcePlayPosition(id, out int position);
+                            AKRESULT bufferResult = AkSoundEngine.GetSourceStreamBuffering(id, out int buffering, out int isBuffering);
+                            Record("source-observation", item, "positionResult=" + positionResult + "; ms=" + position +
+                                "; bufferResult=" + bufferResult + "; buffering=" + buffering + "; isBuffering=" + isBuffering, id);
+                        }
+                    break;
+                case "status": Record("status", detail: "private/native allocation statistics unavailable; use external process samples"); break;
+                case "quit":
+                    // Caller can deliberately test active-voice normal shutdown.
+                    Record("normal-quit-request", detail: "Outstanding responsibilities remain visible; process exit must be observed externally.");
+                    Application.Quit(); break;
+                default: throw new InvalidOperationException("Unknown bounded QA command");
+            }
+        }
+        static string ReadCommandText(string path)
+        {
+            // Commands are immutable snapshots published by atomic replacement.
+            // Share deletion in both directions, including a publisher already
+            // holding DELETE access when this reader opens the current snapshot.
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            {
+                if (stream.Length > 4096) throw new InvalidOperationException("Bounded command required");
+                using (var reader = new StreamReader(stream)) return reader.ReadToEnd();
+            }
+        }
+        void Tick()
+        {
+            if (disposed) return;
+            controlTicks++;
+            frames[frameAt++ % frames.Length] = Time.unscaledDeltaTime;
+            frameCount++;
+            if (measurements != null)
+            {
+                long now = Stopwatch.GetTimestamp();
+                MeasureSpan(0, now - (long)(Time.unscaledDeltaTime * Stopwatch.Frequency));
+            }
+            if (Time.realtimeSinceStartup < nextPoll) return;
+            nextPoll = Time.realtimeSinceStartup + .05f;
+            long pollStarted = Stopwatch.GetTimestamp();
+            try
+            {
+                if (!engineReadyReported && AkSoundEngine.IsInitialized())
+                {
+                    engineReadyReported = wasInitialized = true;
+                    Record("engine-ready", detail: "Initialized native engine; metadata-only, no Bank guard or audio demand. version=" +
+                        AkSoundEngine.GetMajorMinorVersion() + "/" + AkSoundEngine.GetSubminorBuildVersion());
+                }
+                if (tickets.Count != 0 || !notices.IsEmpty)
+                {
+                    audioTicks++;
+                    long pumpStarted = Stopwatch.GetTimestamp();
+                    try { Pump(); } finally { MeasureSpan(1, pumpStarted); }
+                }
+                if (held.Any(n => Stopwatch.GetTimestamp() - n.HeldSince > 12*Stopwatch.Frequency))
+                {
+                    frozen = true;
+                    Record("failed-stop-new-requests", detail: "Real-notice observation barrier exceeded 12 s; release and preserve failure");
+                    ReleaseNotices(null); Pump();
+                }
+                foreach (var ticket in tickets.Values)
+                    if (!ticket.TimeoutReported && ((ticket.Loading && (Stopwatch.GetTimestamp() - ticket.Since) > Stopwatch.Frequency * 20) ||
+                        (ticket.Stopping.Count != 0 && (Stopwatch.GetTimestamp() - ticket.Since) > Stopwatch.Frequency * 5)))
+                    { frozen = true; ticket.TimeoutReported = true; Record("cleanup-pending-timeout", ticket, "No new requests; callback retained; do not delete pinned files."); }
+                if (Time.realtimeSinceStartup > deadline || DateTime.UtcNow > DateTime.Parse(settings.ExpiresUtc).ToUniversalTime())
+                { Record("expired"); Revoke(); Application.Quit(); return; }
+                string path = Path.Combine(settings.EvidenceDirectory, "command.json");
+                if (File.Exists(path))
+                {
+                    Command command = JsonUtility.FromJson<Command>(ReadCommandText(path));
+                    if (command.sequence > lastSequence)
+                    {
+                        long commandStarted = Stopwatch.GetTimestamp();
+                        try { Execute(command); } finally { MeasureSpan(2, commandStarted); }
+                    }
+                }
+            }
+            catch (Exception error) { frozen = true; Record("failed-stop-new-requests", detail: error.ToString()); }
+            finally { MeasureSpan(3, pollStarted); }
+        }
+        public void Dispose()
+        {
+            if (disposed) return;
+            ownerClosing = true;
+            if (journal == null)
+            {
+                // Entry creates no driver, Harmony hook or native work before
+                // opening its journal. Failed metadata/config setup owns only
+                // managed construction state and must not observe the engine.
+                Need(tickets.Count == 0 && harmony == null && ReferenceEquals(driver, null) && !baseAdded && measurementMix.Count == 0 && !measurementTimeScale.HasValue,
+                    "cleanup-pending: incomplete Entry unexpectedly owns resources");
+                cancellation.Dispose();
+                disposed = true;
+                if (ReferenceEquals(current, this)) current = null;
+                return;
+            }
+            Record("runtime-owner-dispose", detail: "Actual Owner lifecycle cleanup requested");
+            ReleaseNotices(null);
+            ObserveEngineTermination();
+            Revoke();
+            Pump();
+            // Unity has stopped advancing frames during Application.quitting.
+            // Flush the queued Stop commands and deliver their acknowledgements
+            // while Unity frames are stopped; never call after engine exit.
+            var drain = Stopwatch.StartNew();
+            int renderFlushes = 0;
+            while (tickets.Count != 0 && !engineTerminated && drain.ElapsedMilliseconds < 1500)
+            {
+                ObserveEngineTermination();
+                if (engineTerminated) break;
+                if (AkSoundEngine.IsInitialized())
+                {
+                    Check(AkSoundEngine.RenderAudio(), "Flush shutdown audio commands");
+                    renderFlushes++;
+                    AkCallbackManager.PostCallbacks();
+                }
+                Pump();
+                if (tickets.Count != 0) Thread.Sleep(1);
+            }
+            Record("shutdown-drain", detail: "renderFlushes=" + renderFlushes + "; callback dispatcher pumped while engine live", elapsed: drain.Elapsed.TotalMilliseconds);
+            Need(tickets.Count == 0, "cleanup-pending: retain callback/worker/native/file responsibility; retry Dispose before engine termination");
+            RestoreMeasurementMix();
+            harmony?.UnpatchSelf();
+            if (driver != null) UnityEngine.Object.Destroy(driver);
+            Record("disposed", detail: "No native/worker/file responsibility; fixed resolver search root may remain for engine lifetime.");
+            using (var output = new StreamWriter(Path.Combine(settings.EvidenceDirectory, "frame-ring.csv")))
+            {
+                output.WriteLine("relativeFrame,deltaSeconds");
+                int count = Math.Min(frameCount, frames.Length), start = frameCount < frames.Length ? 0 : frameAt % frames.Length;
+                for (int i = 0; i < count; i++) output.WriteLine(i + "," + frames[(start + i) % frames.Length].ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            disposed = true;
+            journal.Dispose();
+            cancellation.Dispose();
+            if (ReferenceEquals(current, this)) current = null;
+        }
+        public sealed class Driver : MonoBehaviour { void Update() { current?.Tick(); } }
+    }
+}

@@ -8,6 +8,7 @@ internal static class InstallAction
 {
     public static InstallerResult Run(PackageLayout package, string gameDir, PlatformEnvironment platform)
     {
+        package.ValidateInstallPayload();
         if (platform.IsGameRunning(gameDir, out string processDetail))
             throw new InstallerException(InstallerCodes.GameRunning, 3,
                 "检测到《多洛可小镇》仍在运行。请完全退出游戏后重试。",

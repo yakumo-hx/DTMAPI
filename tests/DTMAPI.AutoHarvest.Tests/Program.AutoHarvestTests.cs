@@ -37,7 +37,7 @@ namespace DTMAPI.UnitTests
                 !source.Contains("InstantSaveDebugState", StringComparison.Ordinal),
                 "The ordinary AutoHarvest sample must not use Diagnostic save state as gameplay lifecycle authority.");
             RunAutoHarvestColdLoadLifetime();
-            RunAutoHarvestHotEnableRequiresColdStart();
+            RunAutoHarvestHotEnableWaitsForSaveLifecycle();
         }
 
         private static void RunAutoHarvestColdLoadLifetime()
@@ -112,7 +112,7 @@ namespace DTMAPI.UnitTests
             }
         }
 
-        private static void RunAutoHarvestHotEnableRequiresColdStart()
+        private static void RunAutoHarvestHotEnableWaitsForSaveLifecycle()
         {
             const string ownerId = "Yuuka.DTMAPI.AutoHarvest";
             const string officialId = "Local.DTMAPI_AutoHarvest";
@@ -137,23 +137,34 @@ namespace DTMAPI.UnitTests
 
                 WriteOfficialModInfos(persistentRoot, officialId, enabled: true);
                 runtime.NotifyWorkshopModListChanged();
-                Assert(!runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == ownerId) &&
-                    runtime.OwnerRequiresRestart(ownerId) &&
-                    CountEventOwnerHandlers(runtime, ownerId) == 0 &&
-                    runtime.Input.CountOwnerResources(ownerId) == 0,
-                    "A newly enabled omitted-kind AutoHarvest must remain cold-start-only and expose restart-required without loading its assembly or owner roots.");
+                Assert(runtime.LoadedMods.Count(mod => mod.Manifest.UniqueID == ownerId) == 1 &&
+                    !runtime.OwnerRequiresRestart(ownerId) &&
+                    CountEventOwnerHandlers(runtime, ownerId, "GameLoop.OneSecondUpdateTicked") == 0,
+                    "A newly enabled ordinary AutoHarvest loads once but must wait for its own SaveLoaded notification before starting its updater.");
+                int entryHandlerCount = CountEventOwnerHandlers(runtime, ownerId);
                 runtime.NotifyWorkshopModListChanged();
-                Assert(!runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == ownerId) &&
-                    runtime.OwnerRequiresRestart(ownerId) &&
-                    CountEventOwnerHandlers(runtime, ownerId) == 0,
-                    "Repeated Workshop refresh must not bypass the legacy cold-start boundary or invent a SaveLoaded lifecycle.");
+                Assert(runtime.LoadedMods.Count(mod => mod.Manifest.UniqueID == ownerId) == 1 &&
+                    CountEventOwnerHandlers(runtime, ownerId) == entryHandlerCount &&
+                    CountEventOwnerHandlers(runtime, ownerId, "GameLoop.OneSecondUpdateTicked") == 0,
+                    "Repeated Workshop refresh must neither repeat Entry subscriptions nor invent a SaveLoaded lifecycle.");
+
+                runtime.NotifyReturnedToTitle();
+                runtime.NotifyLoadGameRequested(2);
+                runtime.NotifySaveLoaded(isNewGame: false);
+                Assert(CountEventOwnerHandlers(runtime, ownerId, "GameLoop.OneSecondUpdateTicked") == 1,
+                    "An ordinary SaveLoaded notification must start the newly enabled AutoHarvest updater exactly once.");
 
                 WriteOfficialModInfos(persistentRoot, officialId, enabled: false);
                 runtime.NotifyWorkshopModListChanged();
                 Assert(CountEventOwnerHandlers(runtime, ownerId) == 0 &&
                     runtime.Input.CountOwnerResources(ownerId) == 0 &&
                     CountCoreOwnerRootsForTest(runtime, ownerId) == 0,
-                    "A never-loaded legacy owner must leave zero platform roots when disabled again.");
+                    "Disabling the loaded AutoHarvest owner must leave zero platform roots.");
+                WriteOfficialModInfos(persistentRoot, officialId, enabled: true);
+                runtime.NotifyWorkshopModListChanged();
+                Assert(!runtime.LoadedMods.Any(mod => mod.Manifest.UniqueID == ownerId) && runtime.OwnerRequiresRestart(ownerId) &&
+                    CountEventOwnerHandlers(runtime, ownerId) == 0 && runtime.Input.CountOwnerResources(ownerId) == 0,
+                    "An already loaded and then disabled CodeMod requires restart and cannot reacquire owner roots in the same process.");
             }
             finally
             {

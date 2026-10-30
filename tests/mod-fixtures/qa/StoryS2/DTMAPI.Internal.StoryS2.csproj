@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DtmApiReferences Condition="'$(DtmApiReferences)' == ''">$(MSBuildThisFileDirectory)../../../../.tools/api-references</DtmApiReferences>
+    <DtmApiNativeReferencePaths>DolocTown_Data/Managed/Assembly-CSharp.dll;DolocTown_Data/Managed/Assembly-CSharp-firstpass.dll;DolocTown_Data/Managed/YarnSpinner.dll;DolocTown_Data/Managed/YarnSpinner.Unity.dll;DolocTown_Data/Managed/Yarn.Google.Protobuf.dll;DolocTown_Data/Managed/Yarn.System.Memory.dll;DolocTown_Data/Managed/Newtonsoft.Json.dll;DolocTown_Data/Managed/UnityEngine.CoreModule.dll;BepInEx/core/0Harmony.dll</DtmApiNativeReferencePaths>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyName>DTMAPI.Internal.StoryS2</AssemblyName>
+    <RootNamespace>DTMAPI.Internal.StoryS2</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="obj/story-input/candidate.zip" LogicalName="StoryS2.candidate.zip" />
+    <Compile Include="obj/story-input/CandidateIdentity.g.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="DTMAPI.Abstractions" HintPath="$(DtmApiReferences)/DTMAPI.Abstractions.dll" Private="false" />
+    <Reference Include="DTMAPI.ModConfigMenu" HintPath="$(DtmApiReferences)/DTMAPI.ModConfigMenu.dll" Private="false" />
+    <Reference Include="DTMAPI.MonsterContent" HintPath="$(DtmApiReferences)/DTMAPI.MonsterContent.dll" Private="false" />
+    <Reference Include="DTMAPI.AudioContent" HintPath="$(DtmApiReferences)/DTMAPI.AudioContent.dll" Private="false" />
+    <Reference Include="$(DtmApiNativeReferences)/*.dll" Condition="'$(DtmApiNativeReferences)' != ''" Private="false" />
+  </ItemGroup>
+</Project>

@@ -8,8 +8,6 @@ namespace DTMAPI.ChestLocatorEnhancer
     public sealed class ModEntry : DtmMod, IDisposable
     {
         private IDtmHelper helper = null!;
-        private ChestLocatorEnhancerConfig config =
-            new ChestLocatorEnhancerConfig();
         private ChestLocatorEnhancerNativeRuntime nativeRuntime = null!;
         private bool entryStarted;
         private bool runtimeCreated;
@@ -29,11 +27,7 @@ namespace DTMAPI.ChestLocatorEnhancer
             runtimeCreated = true;
             try
             {
-                config =
-                    helper.ReadConfig<ChestLocatorEnhancerConfig>() ??
-                    new ChestLocatorEnhancerConfig();
-                nativeRuntime.Configure(config, "Entry");
-                RegisterConfigMenu();
+                nativeRuntime.Activate();
                 helper.Events.Save.SaveLoaded += OnSaveLoaded;
                 saveEventSubscribed = true;
                 helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
@@ -96,97 +90,6 @@ namespace DTMAPI.ChestLocatorEnhancer
             disposed = true;
         }
 
-        private void RegisterConfigMenu()
-        {
-            IDtmConfigMenuApi? menu =
-                helper.ModRegistry.GetApi<IDtmConfigMenuApi>(
-                    "DTMAPI.ModConfigMenu");
-            if (menu == null)
-            {
-                helper.Monitor.Log(
-                    "DTMAPI config menu API is not available.",
-                    LogLevel.Warn);
-                return;
-            }
-
-            menu.Register(
-                helper.ModManifest,
-                ResetConfig,
-                () =>
-                {
-                    helper.WriteConfig(config);
-                    nativeRuntime.Configure(config, "config saved");
-                    helper.Monitor.Log(
-                        "ChestLocatorEnhancer config saved through DTMAPI menu.");
-                });
-            menu.SetDisplayName(
-                helper.ModManifest,
-                () => T(
-                    "mod.name",
-                    "DTMAPI Chest Locator Enhancer"));
-            menu.AddSectionTitle(
-                helper.ModManifest,
-                () => T(
-                    "config.section.main",
-                    "Chest locator"));
-            menu.AddParagraph(
-                helper.ModManifest,
-                BuildStatusText);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T("config.enabled.name", "Enabled"),
-                () => T(
-                    "config.enabled.tooltip",
-                    "Extends official shared-container material lookup across farm building rooms."),
-                () => config.Enabled,
-                value => config.Enabled = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.cases.name",
-                    "Shared chests"),
-                () => T(
-                    "config.cases.tooltip",
-                    "Includes Case inventories marked shared by the official locator."),
-                () => config.IncludeSharedCases,
-                value => config.IncludeSharedCases = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.shelves.name",
-                    "Storage shelves"),
-                () => T(
-                    "config.shelves.tooltip",
-                    "Includes ItemBox inventories inside shared storage shelves."),
-                () => config.IncludeSharedStorageShelfBoxes,
-                value => config.IncludeSharedStorageShelfBoxes = value);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.autoUseBox.name",
-                    "Respect auto-use boxes"),
-                () => T(
-                    "config.autoUseBox.tooltip",
-                    "Keeps the game's auto-use box setting for shared storage shelves."),
-                () => config.RespectNativeAutoUseBoxSetting,
-                value => config.RespectNativeAutoUseBoxSetting = value);
-        }
-
-        private string BuildStatusText()
-        {
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                T(
-                    "config.status",
-                    "Status={0}, hook={1}, appended={2}, cases={3}, shelfBoxes={4}. {5}"),
-                nativeRuntime.Status,
-                nativeRuntime.IsHookInstalled,
-                nativeRuntime.LastAppendedInventoryCount,
-                nativeRuntime.LastSharedCaseCount,
-                nativeRuntime.LastSharedStorageBoxCount,
-                nativeRuntime.LastMessage);
-        }
-
         private void OnSaveLoaded(
             object sender,
             SaveLoadedEventArgs e)
@@ -221,11 +124,6 @@ namespace DTMAPI.ChestLocatorEnhancer
                 helper.Events.GameLoop.ReturnedToTitle -= OnReturnedToTitle;
                 titleEventSubscribed = false;
             }
-        }
-
-        private void ResetConfig()
-        {
-            config = new ChestLocatorEnhancerConfig();
         }
 
         private string T(

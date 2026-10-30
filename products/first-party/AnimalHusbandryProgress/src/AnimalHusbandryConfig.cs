@@ -6,19 +6,13 @@ namespace Yuuka.DTMAPI.AnimalHusbandryProgress
     [DataContract]
     public sealed class AnimalHusbandryConfig
     {
-        [DataMember] public bool Enabled { get; set; } = true;
         [DataMember] public string ColorPreset { get; set; } = "Orange";
         [DataMember] public string ProgressColorHex { get; set; } = "FF942E";
-        [DataMember] public int CacheSeconds { get; set; } = 0;
-        [DataMember] public bool VerboseLogging { get; set; }
 
         internal AnimalHusbandryConfig Copy() => new AnimalHusbandryConfig
         {
-            Enabled = Enabled,
             ColorPreset = ColorPreset,
-            ProgressColorHex = ProgressColorHex,
-            CacheSeconds = 0,
-            VerboseLogging = VerboseLogging
+            ProgressColorHex = ProgressColorHex
         };
 
         internal void Normalize()
@@ -27,7 +21,6 @@ namespace Yuuka.DTMAPI.AnimalHusbandryProgress
             if (!ColorPreset.Equals("Custom", StringComparison.OrdinalIgnoreCase))
                 ProgressColorHex = ColorPresetToHex(ColorPreset);
             ProgressColorHex = NormalizeHex(ProgressColorHex);
-            CacheSeconds = 0;
         }
 
         private static string NormalizeChoice(string value, string fallback, params string[] allowed)

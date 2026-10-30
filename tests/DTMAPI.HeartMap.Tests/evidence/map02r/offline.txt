@@ -1,0 +1,2 @@
+Heart layout checks passed. Actual jumping and collision require native gameplay.
+Map transitions/data/registration: 56 focused checks PASS. Native recovery remains a separate game gate.

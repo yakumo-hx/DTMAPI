@@ -8,7 +8,7 @@ using global::DTMAPI.Abstractions;
 
 namespace DTMAPI.StrongPlantingGun
 {
-    internal sealed class StrongPlantingGunNativeRuntime
+    internal sealed partial class StrongPlantingGunNativeRuntime
     {
         private readonly IMonitor monitor;
         private readonly StrongPlantingGunHookInstaller hooks;
@@ -19,8 +19,6 @@ namespace DTMAPI.StrongPlantingGun
         private readonly Dictionary<object, int> capacitySnapshots =
             new Dictionary<object, int>(
                 ReferenceIdentityComparer.Instance);
-        private StrongPlantingGunConfig config =
-            new StrongPlantingGunConfig();
         private bool callbackAttached;
 
         internal StrongPlantingGunNativeRuntime(
@@ -36,10 +34,10 @@ namespace DTMAPI.StrongPlantingGun
                 unpatchOverride);
             Status = "created";
             LastMessage =
-                "ProductNative fixed-three policy has not been configured.";
+                "ProductNative fixed-four policy has not been configured.";
         }
 
-        internal bool Enabled => config.Enabled;
+        internal bool Enabled => callbackAttached;
 
         internal int InstalledPatchCount =>
             hooks.InstalledPatchCount;
@@ -61,19 +59,9 @@ namespace DTMAPI.StrongPlantingGun
             callbackAttached = value;
 
         internal void Configure(
-            StrongPlantingGunConfig value,
             string reason)
         {
-            config = (value ??
-                new StrongPlantingGunConfig()).Copy();
-            if (!config.Enabled)
-            {
-                CleanupProductNative(
-                    "disabled",
-                    reason,
-                    clearObservations: true);
-                return;
-            }
+            CancelToolBatch("activation boundary", refreshTip: true);
 
             try
             {
@@ -85,17 +73,9 @@ namespace DTMAPI.StrongPlantingGun
                         "StrongPlantingGun retained a failed prior owner root and requires restart before re-enable.");
                 }
                 hooks.InstallAtomically(this);
+                SubscribeBatchContext();
                 Status = "configured-product-native";
-                LastMessage =
-                    "Fixed slots=3 seed=" +
-                    config.IncludeSeeds +
-                    " film=" +
-                    config.IncludeFilms +
-                    " fertilizer=" +
-                    config.IncludeFertilizers +
-                    " water=False reason=" +
-                    (reason ?? string.Empty) +
-                    ".";
+                LastMessage = "Four native material slots; reason=" + reason + ".";
                 StrongPlantingGunCallbacks
                     .PublishLifecycleSummary(
                         BuildLifecycleSummary());
@@ -115,12 +95,9 @@ namespace DTMAPI.StrongPlantingGun
         }
 
         internal int ConfigureLoadedSaveBoundary(
-            StrongPlantingGunConfig value,
             string reason)
         {
-            Configure(value, reason);
-            if (!config.Enabled)
-                return 0;
+            Configure(reason);
 
             try
             {
@@ -181,7 +158,7 @@ namespace DTMAPI.StrongPlantingGun
             object inventory,
             string reason)
         {
-            if (!config.Enabled || inventory == null)
+            if (!callbackAttached || inventory == null)
                 return 0;
 
             int capacity = Math.Max(
@@ -235,7 +212,7 @@ namespace DTMAPI.StrongPlantingGun
             object gun,
             string reason)
         {
-            if (!config.Enabled ||
+            if (!callbackAttached ||
                 gun == null ||
                 !IsTypeOrBase(
                     gun.GetType(),
@@ -312,13 +289,13 @@ namespace DTMAPI.StrongPlantingGun
                 functionTarget +
                 " previous=" +
                 previous +
-                " fixedSlots=3 reason=" +
+                " fixedSlots=4 reason=" +
                 (reason ?? string.Empty) +
                 ".";
             StrongPlantingGunCallbacks.PublishLifecycleSummary(
                 BuildLifecycleSummary());
             if (logGate.ShouldLog(
-                config.VerboseLogging,
+                false,
                 "prepare",
                 expanded))
             {
@@ -328,295 +305,7 @@ namespace DTMAPI.StrongPlantingGun
             }
         }
 
-        internal bool HandleToolUse(object gun)
-        {
-            if (!config.Enabled)
-                return true;
-            bool ownsMutation = false;
-            try
-            {
-                PrepareGun(
-                    gun,
-                    "ItemFarmingGun.OnUseAsTool");
-                object? inventory =
-                    reflection.ReadMember(gun, "inventory");
-                if (inventory == null ||
-                    reflection.ReadBool(
-                        inventory,
-                        "isEmpty",
-                        false))
-                {
-                    return true;
-                }
-
-                List<SlotItem> slots =
-                    ReadSupportedSlots(inventory);
-                if (slots.Count == 0)
-                    return true;
-                List<object> equipments =
-                    ReadUniqueEquipments(gun);
-                if (equipments.Count == 0)
-                    return true;
-
-                int seedActions = 0;
-                int filmActions = 0;
-                int fertilizerActions = 0;
-                int consumed = 0;
-                for (int equipmentIndex = 0;
-                     equipmentIndex < equipments.Count;
-                     equipmentIndex++)
-                {
-                    object equipment =
-                        equipments[equipmentIndex];
-                    for (int slotIndex = 0;
-                         slotIndex < slots.Count;
-                         slotIndex++)
-                    {
-                        int index = slots[slotIndex].Index;
-                        object? current =
-                            ReadInventoryItemAt(
-                                inventory,
-                                index);
-                        ItemKind kind =
-                            GetAllowedItemKind(current);
-                        if (kind == ItemKind.None)
-                            continue;
-                        object checkItem =
-                            CloneItem(current!, 1) ??
-                            current!;
-                        if (!InvokeInteraction(
-                            gun,
-                            "CheckCanInteract",
-                            equipment,
-                            checkItem))
-                        {
-                            continue;
-                        }
-                        InventorySnapshot attempt =
-                            InventorySnapshot.Capture(
-                                reflection,
-                                inventory);
-                        ownsMutation = true;
-                        try
-                        {
-                            if (!TryCostAtIndex(
-                                inventory,
-                                index,
-                                1))
-                            {
-                                attempt.Restore(reflection);
-                                return false;
-                            }
-
-                            object interactItem =
-                                CloneItem(current!, 1) ??
-                                checkItem;
-                            if (!InvokeInteraction(
-                                gun,
-                                "DoInteract",
-                                equipment,
-                                interactItem))
-                            {
-                                attempt.Restore(reflection);
-                                return false;
-                            }
-                        }
-                        catch
-                        {
-                            attempt.Restore(reflection);
-                            throw;
-                        }
-
-                        consumed++;
-                        if (kind == ItemKind.Seed)
-                            seedActions++;
-                        else if (kind == ItemKind.Film)
-                            filmActions++;
-                        else if (kind == ItemKind.Fertilizer)
-                            fertilizerActions++;
-                    }
-                }
-
-                if (consumed == 0)
-                    return true;
-
-                InvokeNoArg(gun, "HideCellTip");
-                InvokeNoArg(gun, "ShineArea");
-                InvokeNoArg(gun, "InitCellTip");
-                LastConsumedItemCount = consumed;
-                Status = "verified-product-native";
-                LastMessage =
-                    "slots=" +
-                    slots.Count +
-                    ", equipments=" +
-                    equipments.Count +
-                    ", seedActions=" +
-                    seedActions +
-                    ", filmActions=" +
-                    filmActions +
-                    ", fertilizerActions=" +
-                    fertilizerActions +
-                    ", consumed=" +
-                    consumed +
-                    ".";
-                if (logGate.ShouldLog(
-                    config.VerboseLogging,
-                    "tool",
-                    materialChange: true))
-                {
-                    monitor.Log(
-                        "StrongPlantingGun use " +
-                        LastMessage);
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Status = "failed-closed";
-                LastMessage =
-                    "Tool use failed closed: " +
-                    ex.GetType().Name +
-                    ": " +
-                    ex.Message;
-                monitor.Log(
-                    "StrongPlantingGun " +
-                    LastMessage,
-                    LogLevel.Error);
-                return !ownsMutation;
-            }
-        }
-
-        internal bool HandleUiPlaceToOtherSide(
-            object uiState,
-            int index)
-        {
-            InventoryTransferSnapshot? transaction = null;
-            bool ownsMutation = false;
-            try
-            {
-                if (!TryPrepareUiTransfer(
-                    uiState,
-                    out object container,
-                    out object containerInventory,
-                    out object backpackInventory,
-                    out object selected))
-                {
-                    return true;
-                }
-
-                PrepareGun(
-                    container,
-                    "FarmingGunUiState.HandlePlaceToOtherSide");
-                transaction =
-                    InventoryTransferSnapshot.Capture(
-                        reflection,
-                        backpackInventory,
-                        containerInventory);
-                ownsMutation = true;
-                object? taken = InvokeInventoryIndex(
-                    backpackInventory,
-                    "Take",
-                    index);
-                if (taken == null)
-                    return false;
-                object? leftover =
-                    PlaceItem(containerInventory, taken);
-                if (leftover != null)
-                {
-                    RestoreUiLeftover(
-                        backpackInventory,
-                        index,
-                        leftover);
-                }
-                transaction.AssertConserved(reflection);
-                ObserveUi(
-                    "put-stack",
-                    selected,
-                    index,
-                    leftover);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                return RollBackUiMutation(
-                    "put-stack",
-                    ex,
-                    transaction,
-                    ownsMutation);
-            }
-        }
-
-        internal bool HandleUiSwapOneItem(
-            object uiState,
-            int index)
-        {
-            InventoryTransferSnapshot? transaction = null;
-            bool ownsMutation = false;
-            try
-            {
-                if (!TryPrepareUiTransfer(
-                    uiState,
-                    out object container,
-                    out object containerInventory,
-                    out object backpackInventory,
-                    out object selected))
-                {
-                    return true;
-                }
-
-                PrepareGun(
-                    container,
-                    "FarmingGunUiState.HandleSwapOneItem");
-                object? one = CloneItem(selected, 1);
-                if (one == null ||
-                    !CanPlace(containerInventory, one))
-                {
-                    return true;
-                }
-                int currentIndex = reflection.ReadInt(
-                    uiState,
-                    "currentIndex",
-                    index);
-                transaction =
-                    InventoryTransferSnapshot.Capture(
-                        reflection,
-                        backpackInventory,
-                        containerInventory);
-                ownsMutation = true;
-                if (!TryCostAtIndex(
-                    backpackInventory,
-                    currentIndex,
-                    1))
-                {
-                    transaction.Restore(reflection);
-                    return false;
-                }
-                object? leftover =
-                    PlaceItem(containerInventory, one);
-                if (leftover != null)
-                {
-                    RestoreUiLeftover(
-                        backpackInventory,
-                        currentIndex,
-                        leftover);
-                }
-                transaction.AssertConserved(reflection);
-                ObserveUi(
-                    "put-one",
-                    selected,
-                    currentIndex,
-                    leftover);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                return RollBackUiMutation(
-                    "put-one",
-                    ex,
-                    transaction,
-                    ownsMutation);
-            }
-        }
+        internal bool HandleToolUse(object gun) => StartToolBatch(gun);
 
         internal string BuildLifecycleSummary(
             int? callbacksOverride = null,
@@ -626,17 +315,21 @@ namespace DTMAPI.StrongPlantingGun
                     (callbackAttached ? 1 : 0),
                 hooksOverride ?? hooks.InstalledPatchCount,
                 reflection.Count,
-                capacitySnapshots.Count);
+                capacitySnapshots.Count,
+                batchContextSubscription == null ? 0 : 1) + ";pendingBatches=" + PendingBatchCount + ";pendingCallbacks=" + PendingCallbackCount;
 
         private void CleanupProductNative(
             string finalStatus,
             string reason,
             bool clearObservations)
         {
+            CancelToolBatch(reason, refreshTip: false);
+            batchContextSubscription?.Dispose();
+            batchContextSubscription = null;
             List<Exception> failures =
                 StrongPlantingGunCleanupTransaction.Run(
                     RestoreFunctionCapacities,
-                    () => hooks.UnpatchOwnedHooks(this));
+                    () => { hooks.UnpatchOwnedHooks(this); RestoreRangePreview(); });
             reflection.Clear();
             logGate.Reset();
             if (clearObservations)
@@ -738,27 +431,6 @@ namespace DTMAPI.StrongPlantingGun
             }
         }
 
-        private List<SlotItem> ReadSupportedSlots(object inventory)
-        {
-            int capacity = Math.Min(
-                StrongPlantingGunProductContract.FixedSlotCount,
-                Math.Max(
-                    0,
-                    reflection.ReadInt(
-                        inventory,
-                        "capacity",
-                        0)));
-            var result = new List<SlotItem>(capacity);
-            for (int index = 0; index < capacity; index++)
-            {
-                object? item =
-                    ReadInventoryItemAt(inventory, index);
-                if (GetAllowedItemKind(item) != ItemKind.None)
-                    result.Add(new SlotItem(index));
-            }
-            return result;
-        }
-
         private List<object> ReadUniqueEquipments(object gun)
         {
             MethodInfo? method = reflection.GetMethod(
@@ -791,25 +463,24 @@ namespace DTMAPI.StrongPlantingGun
             if (item == null)
                 return ItemKind.None;
             Type type = item.GetType();
-            if (config.IncludeSeeds &&
-                IsTypeOrBase(type, "DolocTown.ItemSeed"))
+            if (IsTypeOrBase(type, "DolocTown.ItemSeed"))
             {
                 return ItemKind.Seed;
             }
-            if (config.IncludeFilms &&
-                IsTypeOrBase(type, "DolocTown.ItemFilm"))
+            if (IsTypeOrBase(type, "DolocTown.ItemFilm"))
             {
                 return ItemKind.Film;
             }
-            if (config.IncludeFertilizers &&
-                IsTypeOrBase(
+            if (IsTypeOrBase(
                     type,
                     "DolocTown.ItemFertilizer"))
             {
                 return ItemKind.Fertilizer;
             }
-            // Water is intentionally absent from ProductNative even if the
-            // frozen compatibility DTO still exposes IncludeWater.
+            object? globals = reflection.ReadStaticMember(typeof(DolocAPI), "GlobalParameter");
+            if (globals != null &&
+                reflection.ReadString(item, "name") == reflection.ReadString(globals, "ItemRefBottleOfWater"))
+                return ItemKind.Water;
             return ItemKind.None;
         }
 
@@ -880,176 +551,24 @@ namespace DTMAPI.StrongPlantingGun
         private bool TryCostAtIndex(
             object inventory,
             int index,
-            int count)
+            int count,
+            bool exactItem = false)
         {
-            MethodInfo? method = reflection.GetMethod(
+            MethodInfo method = reflection.GetMethod(
                 inventory.GetType(),
                 "TryCostAtIndex",
-                3);
-            if (method != null)
-            {
-                return method.Invoke(
-                    inventory,
-                    new object[]
-                    {
-                        index,
-                        count,
-                        false
-                    }) is bool result &&
-                    result;
-            }
-            method = reflection.GetMethod(
-                inventory.GetType(),
-                "TryCostAtIndex",
-                2);
-            return method?.Invoke(
+                3) ?? throw new MissingMethodException(
+                    inventory.GetType().FullName,
+                    "TryCostAtIndex(int,int,bool)");
+            return method.Invoke(
                 inventory,
                 new object[]
                 {
                     index,
-                    count
-                }) is bool fallback &&
-                fallback;
-        }
-
-        private bool TryPrepareUiTransfer(
-            object uiState,
-            out object container,
-            out object containerInventory,
-            out object backpackInventory,
-            out object selected)
-        {
-            container = null!;
-            containerInventory = null!;
-            backpackInventory = null!;
-            selected = null!;
-            if (!config.Enabled ||
-                uiState == null ||
-                !reflection.ReadBool(
-                    uiState,
-                    "inBackpack",
-                    false))
-            {
-                return false;
-            }
-            object? buffer =
-                reflection.ReadMember(uiState, "buffer");
-            if (buffer != null &&
-                !reflection.ReadBool(
-                    buffer,
-                    "IsEmpty",
-                    reflection.ReadBool(
-                        buffer,
-                        "isEmpty",
-                        false)))
-            {
-                return false;
-            }
-
-            object? possibleContainer =
-                reflection.ReadMember(uiState, "container");
-            object? possibleSelected =
-                reflection.ReadMember(uiState, "selectedItem");
-            if (possibleContainer == null ||
-                possibleSelected == null ||
-                !IsTypeOrBase(
-                    possibleContainer.GetType(),
-                    "DolocTown.ItemFarmingGun") ||
-                GetAllowedItemKind(possibleSelected) ==
-                    ItemKind.None)
-            {
-                return false;
-            }
-
-            object? possibleContainerInventory =
-                reflection.ReadMember(
-                    uiState,
-                    "containerInventory");
-            object? possibleBackpackInventory =
-                reflection.ReadMember(
-                    uiState,
-                    "backpackInventory");
-            if (possibleContainerInventory == null ||
-                possibleBackpackInventory == null)
-            {
-                return false;
-            }
-
-            container = possibleContainer;
-            selected = possibleSelected;
-            containerInventory = possibleContainerInventory;
-            backpackInventory = possibleBackpackInventory;
-            return true;
-        }
-
-        private bool CanPlace(object inventory, object item) =>
-            reflection.GetMethod(
-                inventory.GetType(),
-                "CanPlaceIn",
-                1)?.Invoke(
-                inventory,
-                new[]
-                {
-                    item
+                    count,
+                    exactItem
                 }) is bool result &&
-            result;
-
-        private object? PlaceItem(
-            object inventory,
-            object item)
-        {
-            MethodInfo? method = reflection.GetMethod(
-                inventory.GetType(),
-                "PlaceItem",
-                1);
-            return method == null
-                ? item
-                : method.Invoke(
-                    inventory,
-                    new[]
-                    {
-                        item
-                    });
-        }
-
-        private object? PlaceItemAt(
-            object inventory,
-            int index,
-            object item)
-        {
-            MethodInfo? method = reflection.GetMethod(
-                inventory.GetType(),
-                "PlaceItemAt",
-                2);
-            return method == null
-                ? item
-                : method.Invoke(
-                    inventory,
-                    new object[]
-                    {
-                        index,
-                        item
-                    });
-        }
-
-        private void RestoreUiLeftover(
-            object backpackInventory,
-            int originalIndex,
-            object leftover)
-        {
-            object? remaining = PlaceItemAt(
-                backpackInventory,
-                originalIndex,
-                leftover);
-            if (remaining != null)
-                remaining = PlaceItem(
-                    backpackInventory,
-                    remaining);
-            if (remaining != null)
-            {
-                throw new InvalidOperationException(
-                    "StrongPlantingGun could not return a UI transfer leftover to the native backpack.");
-            }
+                result;
         }
 
         private void InvokeNoArg(
@@ -1059,76 +578,6 @@ namespace DTMAPI.StrongPlantingGun
                 instance.GetType(),
                 methodName,
                 0)?.Invoke(instance, null);
-
-        private void ObserveUi(
-            string action,
-            object selected,
-            int index,
-            object? leftover)
-        {
-            Status = "verified-product-native";
-            LastMessage =
-                "action=" +
-                action +
-                ", index=" +
-                index +
-                ", item=" +
-                reflection.ReadString(selected, "name") +
-                ", leftover=" +
-                (leftover == null
-                    ? "none"
-                    : reflection.ReadInt(
-                        leftover,
-                        "count",
-                        0).ToString(
-                            CultureInfo.InvariantCulture)) +
-                ".";
-            if (logGate.ShouldLog(
-                config.VerboseLogging,
-                action,
-                materialChange: false))
-            {
-                monitor.Log(
-                    "StrongPlantingGun UI transfer " +
-                    LastMessage);
-            }
-        }
-
-        private bool RollBackUiMutation(
-            string action,
-            Exception ex,
-            InventoryTransferSnapshot? transaction,
-            bool ownsMutation)
-        {
-            Exception failure = ex;
-            if (ownsMutation && transaction != null)
-            {
-                try
-                {
-                    transaction.Restore(reflection);
-                }
-                catch (Exception restoreError)
-                {
-                    failure = new AggregateException(
-                        "StrongPlantingGun UI mutation and exact inventory rollback both failed.",
-                        ex,
-                        restoreError);
-                }
-            }
-            Status = "failed-closed";
-            LastMessage =
-                "UI " +
-                action +
-                " failed closed: " +
-                failure.GetType().Name +
-                ": " +
-                failure.Message;
-            monitor.Log(
-                "StrongPlantingGun " +
-                LastMessage,
-                LogLevel.Error);
-            return !ownsMutation;
-        }
 
         private static bool IsTypeOrBase(
             Type type,
@@ -1144,358 +593,13 @@ namespace DTMAPI.StrongPlantingGun
             return false;
         }
 
-        private readonly struct SlotItem
-        {
-            internal SlotItem(int index) => Index = index;
-
-            internal int Index { get; }
-        }
-
-        private sealed class InventoryTransferSnapshot
-        {
-            private readonly InventorySnapshot source;
-            private readonly InventorySnapshot destination;
-            private readonly int totalCount;
-
-            private InventoryTransferSnapshot(
-                InventorySnapshot source,
-                InventorySnapshot destination)
-            {
-                this.source = source;
-                this.destination = destination;
-                totalCount =
-                    source.TotalCount +
-                    destination.TotalCount;
-            }
-
-            internal static InventoryTransferSnapshot Capture(
-                StrongPlantingGunReflectionCache reflection,
-                object source,
-                object destination) =>
-                new InventoryTransferSnapshot(
-                    InventorySnapshot.Capture(
-                        reflection,
-                        source),
-                    InventorySnapshot.Capture(
-                        reflection,
-                        destination));
-
-            internal void AssertConserved(
-                StrongPlantingGunReflectionCache reflection)
-            {
-                int current =
-                    InventorySnapshot.ReadTotalCount(
-                        reflection,
-                        source.Inventory) +
-                    InventorySnapshot.ReadTotalCount(
-                        reflection,
-                        destination.Inventory);
-                if (current != totalCount)
-                {
-                    throw new InvalidOperationException(
-                        "StrongPlantingGun UI transfer did not conserve the combined native inventory count.");
-                }
-            }
-
-            internal void Restore(
-                StrongPlantingGunReflectionCache reflection)
-            {
-                var failures = new List<Exception>();
-                CaptureFailure(
-                    failures,
-                    () => source.RestoreData(
-                        reflection));
-                CaptureFailure(
-                    failures,
-                    () => destination.RestoreData(
-                        reflection));
-                CaptureFailure(
-                    failures,
-                    () => source.SynchronizeReceivers(
-                        reflection));
-                CaptureFailure(
-                    failures,
-                    () => destination.SynchronizeReceivers(
-                        reflection));
-                ThrowFailures(
-                    "StrongPlantingGun failed to restore both native UI inventories and synchronize their receivers.",
-                    failures);
-            }
-
-            private static void CaptureFailure(
-                List<Exception> failures,
-                Action action)
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    failures.Add(ex);
-                }
-            }
-
-            private static void ThrowFailures(
-                string message,
-                List<Exception> failures)
-            {
-                if (failures.Count == 1)
-                    throw failures[0];
-                if (failures.Count > 1)
-                {
-                    throw new AggregateException(
-                        message,
-                        failures);
-                }
-            }
-        }
-
-        private sealed class InventorySnapshot
-        {
-            private readonly object?[] items;
-            private readonly int[] counts;
-            private readonly bool[] slotLockStates;
-
-            private InventorySnapshot(
-                object inventory,
-                object?[] items,
-                int[] counts,
-                bool[] slotLockStates)
-            {
-                Inventory = inventory;
-                this.items = items;
-                this.counts = counts;
-                this.slotLockStates = slotLockStates;
-                TotalCount = SumCounts(counts);
-            }
-
-            internal object Inventory { get; }
-
-            internal int TotalCount { get; }
-
-            internal static InventorySnapshot Capture(
-                StrongPlantingGunReflectionCache reflection,
-                object inventory)
-            {
-                Array nativeItems =
-                    reflection.ReadMember(
-                        inventory,
-                        "inventory") as Array ??
-                    throw new MissingMemberException(
-                        inventory.GetType().FullName,
-                        "inventory");
-                var items =
-                    new object?[nativeItems.Length];
-                var counts =
-                    new int[nativeItems.Length];
-                Array nativeSlotLocks =
-                    reflection.ReadMember(
-                        inventory,
-                        "slotLockStates") as Array ??
-                    throw new MissingMemberException(
-                        inventory.GetType().FullName,
-                        "slotLockStates");
-                if (nativeSlotLocks.Length !=
-                    nativeItems.Length)
-                {
-                    throw new InvalidOperationException(
-                        "StrongPlantingGun found mismatched native inventory and slot-lock capacities.");
-                }
-                var slotLocks =
-                    new bool[nativeSlotLocks.Length];
-                for (int index = 0;
-                     index < nativeItems.Length;
-                     index++)
-                {
-                    object? item =
-                        nativeItems.GetValue(index);
-                    items[index] = item;
-                    counts[index] = item == null
-                        ? 0
-                        : reflection.ReadInt(
-                            item,
-                            "count",
-                            0);
-                    slotLocks[index] =
-                        nativeSlotLocks.GetValue(index) is bool
-                            locked &&
-                        locked;
-                }
-                return new InventorySnapshot(
-                    inventory,
-                    items,
-                    counts,
-                    slotLocks);
-            }
-
-            internal static int ReadTotalCount(
-                StrongPlantingGunReflectionCache reflection,
-                object inventory)
-            {
-                Array nativeItems =
-                    reflection.ReadMember(
-                        inventory,
-                        "inventory") as Array ??
-                    throw new MissingMemberException(
-                        inventory.GetType().FullName,
-                        "inventory");
-                int total = 0;
-                for (int index = 0;
-                     index < nativeItems.Length;
-                     index++)
-                {
-                    object? item =
-                        nativeItems.GetValue(index);
-                    if (item != null)
-                    {
-                        total += reflection.ReadInt(
-                            item,
-                            "count",
-                            0);
-                    }
-                }
-                return total;
-            }
-
-            internal void Restore(
-                StrongPlantingGunReflectionCache reflection)
-            {
-                RestoreData(reflection);
-                SynchronizeReceivers(reflection);
-            }
-
-            internal void RestoreData(
-                StrongPlantingGunReflectionCache reflection)
-            {
-                Array nativeItems =
-                    reflection.ReadMember(
-                        Inventory,
-                        "inventory") as Array ??
-                    throw new MissingMemberException(
-                        Inventory.GetType().FullName,
-                        "inventory");
-                if (nativeItems.Length != items.Length)
-                {
-                    throw new InvalidOperationException(
-                        "StrongPlantingGun cannot restore an inventory whose capacity changed during a transaction.");
-                }
-                Array nativeSlotLocks =
-                    reflection.ReadMember(
-                        Inventory,
-                        "slotLockStates") as Array ??
-                    throw new MissingMemberException(
-                        Inventory.GetType().FullName,
-                        "slotLockStates");
-                if (nativeSlotLocks.Length !=
-                    slotLockStates.Length)
-                {
-                    throw new InvalidOperationException(
-                        "StrongPlantingGun cannot restore slot locks whose capacity changed during a transaction.");
-                }
-                for (int index = 0;
-                     index < items.Length;
-                     index++)
-                {
-                    object? item = items[index];
-                    nativeItems.SetValue(item, index);
-                    if (item != null &&
-                        !reflection.TryWriteInt(
-                            item,
-                            "count",
-                            counts[index]))
-                    {
-                        throw new MissingMemberException(
-                            item.GetType().FullName,
-                            "count");
-                    }
-                    nativeSlotLocks.SetValue(
-                        slotLockStates[index],
-                        index);
-                }
-            }
-
-            internal void SynchronizeReceivers(
-                StrongPlantingGunReflectionCache reflection)
-            {
-                object? value = reflection.ReadMember(
-                    Inventory,
-                    "receivers");
-                if (value == null)
-                    return;
-                if (!(value is IEnumerable enumerable))
-                {
-                    throw new InvalidOperationException(
-                        "StrongPlantingGun could not enumerate native inventory receivers after rollback.");
-                }
-
-                var receivers = new List<Delegate>();
-                foreach (object? candidate in enumerable)
-                {
-                    if (candidate is Delegate receiver)
-                    {
-                        receivers.Add(receiver);
-                    }
-                    else if (candidate != null)
-                    {
-                        throw new InvalidOperationException(
-                            "StrongPlantingGun found a native inventory receiver that was not a delegate.");
-                    }
-                }
-
-                var failures = new List<Exception>();
-                for (int receiverIndex = 0;
-                     receiverIndex < receivers.Count;
-                     receiverIndex++)
-                {
-                    Delegate receiver =
-                        receivers[receiverIndex];
-                    for (int itemIndex = 0;
-                         itemIndex < items.Length;
-                         itemIndex++)
-                    {
-                        try
-                        {
-                            receiver.DynamicInvoke(
-                                itemIndex,
-                                items[itemIndex],
-                                slotLockStates[itemIndex]);
-                        }
-                        catch (Exception ex)
-                        {
-                            failures.Add(ex);
-                        }
-                    }
-                }
-                if (failures.Count == 1)
-                    throw failures[0];
-                if (failures.Count > 1)
-                {
-                    throw new AggregateException(
-                        "StrongPlantingGun restored native inventory data but one or more receivers rejected rollback synchronization.",
-                        failures);
-                }
-            }
-
-            private static int SumCounts(int[] values)
-            {
-                int total = 0;
-                for (int index = 0;
-                     index < values.Length;
-                     index++)
-                {
-                    total += values[index];
-                }
-                return total;
-            }
-        }
-
         private enum ItemKind : byte
         {
             None,
             Seed,
+            Fertilizer,
             Film,
-            Fertilizer
+            Water
         }
 
         private sealed class ReferenceIdentityComparer :

@@ -134,6 +134,17 @@ namespace DTMAPI.StrongPlantingGun
         internal int ReadCapacity(object function) =>
             ReadInt(function, "Capacity", 0);
 
+        internal bool TryWriteBool(object instance, string name, bool value)
+        {
+            MemberInfo? member = GetMember(instance.GetType(), name, MemberKind.InstanceValue, 0);
+            if (member is FieldInfo field && field.FieldType == typeof(bool))
+                field.SetValue(instance, value);
+            else if (member is PropertyInfo property && property.CanWrite && property.PropertyType == typeof(bool))
+                property.SetValue(instance, value);
+            else return false;
+            return true;
+        }
+
         internal bool TryWriteInt(
             object instance,
             string name,

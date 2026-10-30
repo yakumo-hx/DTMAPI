@@ -34,6 +34,9 @@ namespace DTMAPI.MoreEquipmentSlots
             runtimeCreated = true;
             try
             {
+                var archiveContext = helper.GetRequiredService<IDtmRuntimeContext>("0.7.0", "0.7.0");
+                runtime.SetArchiveContext(() => archiveContext.Snapshot.SaveSessionEpoch);
+                runtime.SetProtectedSources(helper.GetRequiredService<IProtectedSourceFiles>("0.7.5", "0.7.5"));
                 runtime.ConfigureUiText(
                     T(
                         "ui.slot.hint",
@@ -151,6 +154,8 @@ namespace DTMAPI.MoreEquipmentSlots
                 helper.ModManifest,
                 ResetConfig,
                 SaveConfig);
+            runtime.ConfigureDialogs(menu as IDtmConfigMenuDialogsApi ??
+                throw new InvalidOperationException("DTMAPI 0.7.5 config dialog capability is required; update the local Runtime."), helper.ModManifest);
             menu.SetDisplayName(
                 helper.ModManifest,
                 () => T(
@@ -161,19 +166,9 @@ namespace DTMAPI.MoreEquipmentSlots
                 () => T(
                     "config.section.main",
                     "Extra equipment slots"));
-            menu.AddParagraph(
-                helper.ModManifest,
-                () => runtime.StatusSummary);
-            menu.AddBoolOption(
-                helper.ModManifest,
-                () => T(
-                    "config.enabled.name",
-                    "Enabled"),
-                () => T(
-                    "config.enabled.tooltip",
-                    "Adds exactly three product-owned attribute equipment slots."),
-                () => config.Enabled,
-                value => config.Enabled = value);
+            menu.AddSectionTitle(helper.ModManifest, () => "旧装备选择");
+            menu.AddParagraph(helper.ModManifest, () => "载入存档后，打开背包装备栏处理旧装备。取消后可在装备栏重新打开选择。");
+            menu.AddParagraph(helper.ModManifest, () => EquipmentSlotEmbeddedSession.AdoptionWarning);
             menu.AddBoolOption(
                 helper.ModManifest,
                 () => T(
@@ -244,7 +239,6 @@ namespace DTMAPI.MoreEquipmentSlots
             MoreEquipmentSlotsConfig source) =>
             new MoreEquipmentSlotsConfig
             {
-                Enabled = source?.Enabled ?? true,
                 VerboseLogging =
                     source?.VerboseLogging ?? false
             };

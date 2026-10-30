@@ -16,4 +16,5 @@
   </ItemGroup>
   <ItemGroup><Compile Include="../Shared/NativeGenericSignature.cs" Link="Authoring/NativeGenericSignature.cs" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="../../author-sdk/bcl-reference-identities.json" LogicalName="DTMAPI.Authoring.bcl-reference-identities.json" /></ItemGroup>
+  <ItemGroup><Content Include="../../author-sdk/licenses/Mono.Cecil-0.11.6-LICENSE.txt" Link="licenses/Mono.Cecil-0.11.6-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
 </Project>

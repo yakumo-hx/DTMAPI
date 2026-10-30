@@ -5,12 +5,36 @@ using DTMAPI.Abstractions;
 
 namespace DTMAPI.ModConfigMenu
 {
-    public sealed class ConfigMenuRegistry : IDtmConfigMenuApi, IDtmConfigMenuKeybindDefaultsApi, IConfigMenuRuntime, IOwnerBoundApiFactory
+    public sealed class ConfigMenuRegistry : IDtmConfigMenuApi, IDtmConfigMenuKeybindDefaultsApi, IDtmConfigMenuDialogsApi, IDtmConfigMenuRestartApi, IConfigMenuRuntime, IOwnerBoundApiFactory
     {
         private readonly Dictionary<string, ConfigMenuPage> pages = new Dictionary<string, ConfigMenuPage>(StringComparer.OrdinalIgnoreCase);
         private Action<string, string, string, string>? recordOwnerRegistration;
         private Action<string, string, int, string>? recordOwnerCleanup;
         private Action<string, string, string, string, bool, string>? recordPreviewAudit;
+        private IConfigMenuDialogHost? dialogs;
+
+        void IConfigMenuRuntime.ConfigureDialogs(IConfigMenuDialogHost host) => dialogs = host;
+        public void RequireRestartForLastOption(IManifest mod)
+        {
+            ConfigMenuItemBase? item = GetRequiredPage(mod).ItemsInternal.LastOrDefault();
+            if (item == null || item is TextConfigItem || item is ButtonConfigItem)
+                throw new InvalidOperationException("Add a value option before declaring restart requirements.");
+            item.RequireRestart();
+        }
+        IReadOnlyList<string> IConfigMenuRuntime.GetPendingRestartChanges() => GetPagesCore()
+            .Cast<ConfigMenuPage>().Where(p => p.ItemsInternal.Any(i => i.PendingRestart))
+            .Select(p => p.DisplayName + "\n" + string.Join("\n", p.ItemsInternal.Where(i => i.PendingRestart).Select(i => "  " + i.Name))).ToArray();
+        bool IConfigMenuRuntime.HasUnnotifiedRestartChanges() => pages.Values.Any(p => p.ItemsInternal.Any(i => i.RestartNoticePending));
+        void IConfigMenuRuntime.AcknowledgeRestartChanges()
+        {
+            foreach (ConfigMenuPage page in pages.Values)
+                foreach (ConfigMenuItemBase item in page.ItemsInternal) item.AcknowledgeRestart();
+        }
+        public bool TryShowDialog(IManifest mod, DtmConfigDialog dialog, Action<string> onSelected, out IConfigMenuDialogSession? session)
+        {
+            session = null;
+            return dialogs?.TryShow(mod.UniqueID, dialog, onSelected, out session) == true;
+        }
 
         public void Register(IManifest mod, Action reset, Action save, bool titleScreenOnly = false)
         {
@@ -85,8 +109,9 @@ namespace DTMAPI.ModConfigMenu
         IDisposable? IConfigMenuRuntime.PreviewPendingValues(IConfigMenuPage page) => page is IConfigMenuPendingPreview preview ? preview.PreviewPendingValues() : null;
         int IConfigMenuRuntime.RemoveOwner(string uniqueId)
         {
+            int dialogCount = dialogs?.RemoveOwner(uniqueId) ?? 0;
             if (!pages.TryGetValue(uniqueId, out ConfigMenuPage page))
-                return 0;
+                return dialogCount;
 
             // Detach the authoritative root before deactivation. Re-entrant UI
             // lookups can no longer discover the page, while stale references are
@@ -103,7 +128,7 @@ namespace DTMAPI.ModConfigMenu
                 // Diagnostics are best-effort and must never resurrect or fail an
                 // otherwise complete owner cleanup.
             }
-            return 1;
+            return 1 + dialogCount;
         }
 
         void IConfigMenuRuntime.ConfigureDiagnostics(
@@ -186,7 +211,7 @@ namespace DTMAPI.ModConfigMenu
                 .ToArray();
         }
 
-        private sealed class OwnerBoundConfigMenuApi : IDtmConfigMenuApi, IDtmConfigMenuKeybindDefaultsApi, IOwnerBoundApiFacade
+        private sealed class OwnerBoundConfigMenuApi : IDtmConfigMenuApi, IDtmConfigMenuKeybindDefaultsApi, IDtmConfigMenuDialogsApi, IDtmConfigMenuRestartApi, IOwnerBoundApiFacade
         {
             private ConfigMenuRegistry? inner;
             private IManifest? owner;
@@ -215,7 +240,14 @@ namespace DTMAPI.ModConfigMenu
             public void AddKeybindOption(IManifest mod, Func<string> name, Func<string> tooltip, Func<string> getValue, Action<string> setValue, Func<string> getDefaultValue) { Ensure(mod); inner!.AddKeybindOption(owner!, name, tooltip, getValue, setValue, getDefaultValue); }
             public void AddButton(IManifest mod, Func<string> name, Func<string> tooltip, Action onPressed) { Ensure(mod); inner!.AddButton(owner!, name, tooltip, onPressed); }
             public void SetDisplayName(IManifest mod, Func<string> name) { Ensure(mod); inner!.SetDisplayName(owner!, name); }
+            public void RequireRestartForLastOption(IManifest mod) { Ensure(mod); inner!.RequireRestartForLastOption(owner!); }
             public IReadOnlyList<string> GetKeybindConflicts(string? uniqueId = null) { EnsureActive(); return inner!.GetKeybindConflicts(uniqueId); }
+            public bool TryShowDialog(IManifest mod, DtmConfigDialog dialog, Action<string> onSelected, out IConfigMenuDialogSession? session)
+            {
+                Ensure(mod);
+                if (onSelected == null) throw new ArgumentNullException(nameof(onSelected));
+                return inner!.TryShowDialog(owner!, dialog, id => { EnsureActive(); onSelected(id); }, out session);
+            }
 
             void IOwnerBoundApiFacade.Deactivate()
             {

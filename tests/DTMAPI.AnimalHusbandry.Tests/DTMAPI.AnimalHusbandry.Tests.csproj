@@ -5,5 +5,6 @@
   <Import Project="../DTMAPI.UnitTests/Suite.props" />
   <ItemGroup>
     <Compile Include="../../products/first-party/AnimalHusbandryProgress/src/Native/AnimalOverlaySessionState.cs" Link="AnimalHusbandryProgress/AnimalOverlaySessionState.cs" />
+    <Compile Include="../../products/first-party/AnimalHusbandryProgress/src/AnimalHusbandryConfig.cs" Link="AnimalHusbandryProgress/AnimalHusbandryConfig.cs" />
   </ItemGroup>
 </Project>

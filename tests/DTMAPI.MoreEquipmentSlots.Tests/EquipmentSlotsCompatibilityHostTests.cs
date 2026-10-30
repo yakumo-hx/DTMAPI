@@ -1071,7 +1071,7 @@ namespace DTMAPI.UnitTests
                     "bin",
                     "Release",
                     "net48",
-                    fixtureName + ".exe");
+                    "DTMAPI.UnitTests.exe");
             if (!File.Exists(executable))
             {
                 throw new FileNotFoundException(
@@ -1407,30 +1407,7 @@ namespace DTMAPI.UnitTests
 
         private static string FindRepositoryRoot()
         {
-            foreach (string start in new[]
-            {
-                Directory.GetCurrentDirectory(),
-                AppContext.BaseDirectory
-            })
-            {
-                DirectoryInfo? current =
-                    new DirectoryInfo(
-                        Path.GetFullPath(start));
-                while (current != null)
-                {
-                    if (File.Exists(
-                        Path.Combine(
-                            current.FullName,
-                            "PROJECT.md")))
-                    {
-                        return current.FullName;
-                    }
-                    current = current.Parent;
-                }
-            }
-
-            throw new DirectoryNotFoundException(
-                "Could not locate the DTMAPI repository root.");
+            return global::DTMAPI.Testing.DtmApiTestSession.FindRepositoryRoot();
         }
 
         private static void Assert(

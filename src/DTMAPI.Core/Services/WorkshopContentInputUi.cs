@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
 using DTMAPI.Abstractions;
+using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Json;
 using DTMAPI.Core.Manager;
 using DTMAPI.Core.Manifesting;
@@ -41,14 +42,22 @@ namespace DTMAPI.Core.Services
         private const int MaxOfficialInputDiagnosticSamples = 8;
         private const int MaxOfficialInputDiagnosticChars = 512;
         private readonly RuntimePaths paths;
+        private readonly ContentRefreshGenerationService? generations;
+        private readonly DiagnosticsService? diagnostics;
+        private readonly object queryGate = new object();
+        private DiscoveredMod[] activeOwners = Array.Empty<DiscoveredMod>();
+        private bool sourceInputsReady;
+        private bool queryRequested;
         private ContentQueryPublication publication = ContentQueryPublication.Empty;
         private int candidateBuildCount;
 
         private ContentQueryPublication CurrentPublication => Volatile.Read(ref publication);
 
-        public ContentQueryService(RuntimePaths paths)
+        public ContentQueryService(RuntimePaths paths, ContentRefreshGenerationService? generations = null, DiagnosticsService? diagnostics = null)
         {
             this.paths = paths;
+            this.generations = generations;
+            this.diagnostics = diagnostics;
         }
 
         public int IndexedItemCount => CurrentPublication.IndexedItems.Length;
@@ -58,6 +67,91 @@ namespace DTMAPI.Core.Services
         internal Action<ContentRefreshDirtyBatch>? BeforeGenerationCompleteForTest { get; set; }
         internal Action<string>? PreCommitFaultForTest { get; set; }
         internal Action<string>? PostCommitFaultForTest { get; set; }
+
+        internal ContentQueryRebuildResult? UpdateSources(
+            DiscoveredMod[] owners,
+            IEnumerable<string> dirtyOwnerIds,
+            string reason,
+            out ContentRefreshDirtyBatch batch)
+        {
+            lock (queryGate)
+            {
+                // LoadMods supplies its complete, immutable active-owner snapshot only
+                // after every Entry has finished. Never expose an in-progress load here.
+                activeOwners = owners;
+                sourceInputsReady = true;
+                generations?.MarkDirty(ContentRefreshDomains.ContentQuery, dirtyOwnerIds, reason);
+                batch = default;
+                return queryRequested ? RefreshIfDirty(reason, out batch) : null;
+            }
+        }
+
+        private ContentQueryPublication GetQueryPublication()
+        {
+            lock (queryGate)
+            {
+                if (!queryRequested)
+                {
+                    queryRequested = true;
+                    if (sourceInputsReady)
+                        RefreshIfDirty("first content query", out _);
+                }
+                return CurrentPublication;
+            }
+        }
+
+        private ContentQueryRebuildResult? RefreshIfDirty(string reason, out ContentRefreshDirtyBatch batch)
+        {
+            batch = default;
+            if (generations == null || !generations.TryGetDirty(ContentRefreshDomains.ContentQuery, out batch))
+                return null;
+
+            bool generationCompleted = false;
+            try
+            {
+                ContentQueryRebuildResult result = RebuildCandidate(activeOwners, batch.Generation, reason);
+                BeforeGenerationCompleteForTest?.Invoke(batch);
+                generationCompleted = generations.CompleteWithAtomicCommit(
+                    batch,
+                    new[]
+                    {
+                        new ContentRefreshCompletion(
+                            "all",
+                            result.Success ? ContentRefreshCompletionStatus.Committed : ContentRefreshCompletionStatus.Rejected,
+                            result.PreviousGeneration,
+                            result.CurrentGeneration,
+                            result.CurrentGeneration,
+                            result.Success
+                                ? "assets=" + result.AssetCount + "; indexedItems=" + result.IndexedItemCount + "; skippedOfficialInputs=" + result.SkippedOfficialInputCount
+                                : "retained=" + result.RetainedPreviousGeneration + "; failure=" + result.Failure)
+                    },
+                    result.Success
+                        ? () =>
+                        {
+                            PreCommitFaultForTest?.Invoke("before-visible-snapshot-swap");
+                            result.PublishPreparedSnapshot?.Invoke();
+                        }
+                        : null);
+                if (!generationCompleted)
+                    throw new InvalidOperationException("ContentQuery generation completion was rejected as stale.");
+
+                PostCommitFaultForTest?.Invoke("terminal-receipt-and-visible-snapshot-committed");
+                // First demand can arrive on a reader thread. Only the thread-safe
+                // diagnostic store is used here; Runtime lifecycle/log sinks stay in Runtime.
+                if (!result.Success)
+                    diagnostics?.RecordWarning("DTMAPI.ContentQuery", "Content query generation was rejected; last-good publication retained.", result.Failure);
+                else if (result.SkippedOfficialInputCount > 0)
+                    diagnostics?.RecordWarning("DTMAPI.ContentQuery", "Enabled official content contained unreadable files; other valid content remains available.",
+                        "skippedOfficialInputs=" + result.SkippedOfficialInputCount + "; samples=" + string.Join(" | ", result.OfficialInputDiagnostics));
+                return result;
+            }
+            catch (Exception ex)
+            {
+                if (!generationCompleted)
+                    generations.AbandonAndRequeue(batch, "ContentQuery consumer failed: " + ex.GetType().Name + ": " + ex.Message);
+                throw;
+            }
+        }
 
         public ContentQueryRebuildResult RebuildCandidate(IEnumerable<DiscoveredMod> activeOwners, long dirtyGeneration, string reason)
         {
@@ -104,7 +198,12 @@ namespace DTMAPI.Core.Services
                     skippedOfficialInputCount,
                     officialInputDiagnostics,
                     reason,
-                    () => Volatile.Write(ref publication, candidate));
+                    () =>
+                    {
+                        ContentQueryPublication observed = Interlocked.CompareExchange(ref publication, candidate, previous);
+                        if (!ReferenceEquals(observed, previous) && !ReferenceEquals(observed, candidate))
+                            throw new InvalidOperationException("Content publication changed while this candidate was being prepared.");
+                    });
             }
             catch (Exception ex)
             {
@@ -122,6 +221,17 @@ namespace DTMAPI.Core.Services
             if (string.IsNullOrWhiteSpace(ownerId))
                 return 0;
 
+            lock (queryGate)
+            {
+                // An unused query service may still hold deferred source inputs. Closing
+                // an owner must remove those inputs before a retained helper can query.
+                activeOwners = activeOwners.Where(mod => !mod.Manifest.UniqueID.Equals(ownerId, StringComparison.OrdinalIgnoreCase)).ToArray();
+                return RemovePublishedOwner(ownerId);
+            }
+        }
+
+        private int RemovePublishedOwner(string ownerId)
+        {
             ContentQueryPublication previous = CurrentPublication;
             var nextAssets = new List<ContentAssetInfo>(previous.Assets.Length);
             int removed = 0;
@@ -136,9 +246,10 @@ namespace DTMAPI.Core.Services
             var nextItems = new List<ContentItemInfo>(previous.IndexedItems.Length);
             foreach (ContentItemInfo current in previous.IndexedItems)
             {
-                ContentItemInfo item = CloneItem(current);
+                ContentItemInfo item = current;
                 if (item.Enabled && item.OwnerId.Equals(ownerId, StringComparison.OrdinalIgnoreCase))
                 {
+                    item = CloneItem(current);
                     item.Enabled = false;
                     removed++;
                 }
@@ -161,19 +272,19 @@ namespace DTMAPI.Core.Services
 
         public IReadOnlyList<IContentAssetInfo> FindAssets(string contentType)
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             return current.Assets.Where(a => a.ContentType.Equals(contentType, StringComparison.OrdinalIgnoreCase)).Cast<IContentAssetInfo>().ToArray();
         }
 
         public IReadOnlyList<string> GetKnownContentTypes()
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             return current.Assets.Select(a => a.ContentType).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(v => v, StringComparer.OrdinalIgnoreCase).ToArray();
         }
 
         public bool TryReadTextAsset(string relativePath, out string text)
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             ContentAssetInfo? asset = current.Assets.FirstOrDefault(a => a.RelativePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase));
             if (asset != null && File.Exists(asset.SourcePath))
             {
@@ -186,27 +297,27 @@ namespace DTMAPI.Core.Services
 
         public IReadOnlyList<IContentItemInfo> GetIndexedItems()
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             return current.IndexedItems.Where(i => i.Enabled).Cast<IContentItemInfo>().ToArray();
         }
 
         public IReadOnlyList<IContentItemInfo> GetAllIndexedItems()
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             return current.IndexedItems.Cast<IContentItemInfo>().ToArray();
         }
 
         public IContentItemInfo? GetIndexedItem(string itemId)
         {
-            ContentQueryPublication current = CurrentPublication;
-            return !string.IsNullOrWhiteSpace(itemId) && current.IndexedByItemId.TryGetValue(itemId, out ContentItemInfo item)
+            ContentQueryPublication current = GetQueryPublication();
+            return !string.IsNullOrWhiteSpace(itemId) && current.AllIndexedByItemId.TryGetValue(itemId, out ContentItemInfo item) && item.Enabled
                 ? item
                 : null;
         }
 
         public IContentItemInfo? GetAnyIndexedItem(string itemId)
         {
-            ContentQueryPublication current = CurrentPublication;
+            ContentQueryPublication current = GetQueryPublication();
             return !string.IsNullOrWhiteSpace(itemId) && current.AllIndexedByItemId.TryGetValue(itemId, out ContentItemInfo item)
                 ? item
                 : null;
@@ -416,8 +527,7 @@ namespace DTMAPI.Core.Services
         private static bool HasDtmApiMarker(string root)
         {
             return File.Exists(Path.Combine(root, "dtmapi.manifest.json")) ||
-                File.Exists(Path.Combine(root, "Content", "DTMAPI", "manifest.json")) ||
-                File.Exists(Path.Combine(root, "Content", "DTMAPI", "dtmapi-package.json"));
+                File.Exists(Path.Combine(root, "Content", "DTMAPI", "manifest.json"));
         }
 
         private static void AddOfficialInputDiagnostic(List<string> diagnostics, string value)
@@ -503,13 +613,11 @@ namespace DTMAPI.Core.Services
                 long generation,
                 ContentAssetInfo[] assets,
                 ContentItemInfo[] indexedItems,
-                Dictionary<string, ContentItemInfo> indexedByItemId,
                 Dictionary<string, ContentItemInfo> allIndexedByItemId)
             {
                 Generation = generation;
                 Assets = assets;
                 IndexedItems = indexedItems;
-                IndexedByItemId = indexedByItemId;
                 AllIndexedByItemId = allIndexedByItemId;
                 IndexedItemSourceCount = indexedItems.Select(item => item.SourceId).Distinct(StringComparer.OrdinalIgnoreCase).Count();
             }
@@ -519,7 +627,6 @@ namespace DTMAPI.Core.Services
             public long Generation { get; }
             public ContentAssetInfo[] Assets { get; }
             public ContentItemInfo[] IndexedItems { get; }
-            public Dictionary<string, ContentItemInfo> IndexedByItemId { get; }
             public Dictionary<string, ContentItemInfo> AllIndexedByItemId { get; }
             public int IndexedItemSourceCount { get; }
 
@@ -528,29 +635,23 @@ namespace DTMAPI.Core.Services
                 ContentAssetInfo[] assetSnapshot = (assets ?? Array.Empty<ContentAssetInfo>()).ToArray();
                 ContentItemInfo[] itemSnapshot = (indexedItems ?? Array.Empty<ContentItemInfo>()).ToArray();
                 var all = new Dictionary<string, ContentItemInfo>(StringComparer.OrdinalIgnoreCase);
-                var enabled = new Dictionary<string, ContentItemInfo>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (ContentItemInfo item in itemSnapshot
-                    .GroupBy(i => i.ItemId, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.OrderByDescending(i => i.Enabled)
-                        .ThenBy(i => i.LoadOrder < 0 ? int.MaxValue : i.LoadOrder)
-                        .ThenBy(i => i.SourceKind, StringComparer.OrdinalIgnoreCase)
-                        .First()))
+                foreach (ContentItemInfo item in itemSnapshot)
                 {
-                    all[item.ItemId] = item;
+                    if (!all.TryGetValue(item.ItemId, out ContentItemInfo winner) || ComparePriority(item, winner) < 0)
+                        all[item.ItemId] = item;
                 }
 
-                foreach (ContentItemInfo item in itemSnapshot
-                    .Where(i => i.Enabled)
-                    .GroupBy(i => i.ItemId, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.OrderBy(i => i.LoadOrder < 0 ? int.MaxValue : i.LoadOrder)
-                        .ThenBy(i => i.SourceKind, StringComparer.OrdinalIgnoreCase)
-                        .First()))
-                {
-                    enabled[item.ItemId] = item;
-                }
+                return new ContentQueryPublication(generation, assetSnapshot, itemSnapshot, all);
+            }
 
-                return new ContentQueryPublication(generation, assetSnapshot, itemSnapshot, enabled, all);
+            private static int ComparePriority(ContentItemInfo candidate, ContentItemInfo current)
+            {
+                int enabled = current.Enabled.CompareTo(candidate.Enabled);
+                if (enabled != 0) return enabled;
+                int candidateOrder = candidate.LoadOrder < 0 ? int.MaxValue : candidate.LoadOrder;
+                int currentOrder = current.LoadOrder < 0 ? int.MaxValue : current.LoadOrder;
+                int order = candidateOrder.CompareTo(currentOrder);
+                return order != 0 ? order : StringComparer.OrdinalIgnoreCase.Compare(candidate.SourceKind, current.SourceKind);
             }
         }
     }
@@ -1097,6 +1198,7 @@ namespace DTMAPI.Core.Services
         {
             buttonSamples ??= Array.Empty<InputButtonSample>();
             InputAudienceSnapshot audience = FreezeAudience(requestedAudience);
+            RearmRestoredRegistrations(audience, buttonSamples);
             int sampled = 0;
             int pressedCount = 0;
             int releasedCount = 0;
@@ -1949,6 +2051,30 @@ namespace DTMAPI.Core.Services
             }
         }
 
+        private void RearmRestoredRegistrations(InputAudienceSnapshot audience, IReadOnlyList<InputButtonSample> samples)
+        {
+            if (!lastCompletedAudience.HasValue || lastCompletedAudience.Value.Equals(audience))
+                return;
+
+            foreach (InputRegistrationState registration in registrationsByKey.Values)
+            {
+                if (IsRegistrationEligible(registration, lastCompletedAudience.Value, legacyDispatchAllowed: null) ||
+                    !IsRegistrationEligible(registration, audience, legacyDispatchAllowed: null))
+                    continue;
+
+                // A blocked registration may have stopped sampling after a release. A held
+                // sample must become neutral; an actual new edge keeps normal press semantics.
+                for (int index = 0; index < samples.Count; index++)
+                {
+                    InputButtonSample sample = samples[index];
+                    if (!sample.IsDownNow || sample.PressedEdge || !RegistrationContainsPhysicalButton(registration, sample.Button))
+                        continue;
+                    MarkRegistrationRequiresNeutral(registration);
+                    break;
+                }
+            }
+        }
+
         private bool IsRegistrationEligible(
             InputRegistrationState registration,
             InputAudienceSnapshot audience,
@@ -2417,7 +2543,7 @@ namespace DTMAPI.Core.Services
             }
 
             public void RegisterButton(string button) { ensureOwnerActive(); input.RegisterButtonForOwner(ownerId, button); }
-            public void UnregisterButton(string button) { ensureOwnerActive(); input.UnregisterButtonForOwner(ownerId, button); }
+            public void UnregisterButton(string button) { input.UnregisterButtonForOwner(ownerId, button); }
             public IInputRegistration RegisterKeybind(string id, string keybindText, DtmInputScope scope = DtmInputScope.Gameplay) { ensureOwnerActive(); return input.RegisterKeybindForOwner(ownerId, id, DtmKeybindList.Parse(keybindText), scope, ensureOwnerActive: ensureOwnerActive); }
             public IInputRegistration RegisterKeybind(string id, DtmKeybindList keybinds, DtmInputScope scope = DtmInputScope.Gameplay) { ensureOwnerActive(); return input.RegisterKeybindForOwner(ownerId, id, keybinds, scope, ensureOwnerActive: ensureOwnerActive); }
             public IReadOnlyList<string> GetRegisteredButtons() { ensureOwnerActive(); return input.GetRegisteredButtons(); }
@@ -2579,7 +2705,7 @@ namespace DTMAPI.Core.Services
         Logs
     }
 
-    public sealed class UiRuntimeService : IUiHelper
+    public sealed partial class UiRuntimeService : IUiHelper
     {
         private readonly Func<string> exportLogs;
         private readonly Action<string> opened;
@@ -2675,33 +2801,9 @@ namespace DTMAPI.Core.Services
 
         internal bool TryOpenOwnerBoundCustomMenu(string menuId, string ownerId)
         {
-            string normalizedMenuId =
-                string.IsNullOrWhiteSpace(menuId)
-                    ? "DTMAPI.Custom"
-                    : menuId.Trim();
-            string normalizedOwnerId =
-                string.IsNullOrWhiteSpace(ownerId)
-                    ? string.Empty
-                    : ownerId.Trim();
-            if (normalizedOwnerId.Length == 0)
+            if (string.IsNullOrWhiteSpace(ownerId))
                 return false;
-            if (IsOpen)
-            {
-                return ActiveMenuId.Equals(
-                           normalizedMenuId,
-                           StringComparison.OrdinalIgnoreCase) &&
-                    ActiveMenuOwnerId.Equals(
-                        normalizedOwnerId,
-                        StringComparison.OrdinalIgnoreCase);
-            }
-            bool wasOpen = IsOpen;
-            OverlaySessionSequence++;
-            ActiveMenuId = normalizedMenuId;
-            ActiveMenuOwnerId = normalizedOwnerId;
-            IsOpen = true;
-            if (!wasOpen)
-                opened(ActiveMenuId);
-            return true;
+            return OpenOwnerBoundModal(menuId, ownerId, () => { }).Session != null;
         }
 
         internal void OpenOwnerBoundCustomMenu(
@@ -2834,7 +2936,7 @@ namespace DTMAPI.Core.Services
         }
 
         private sealed class OwnerBoundUiHelper :
-            IUiHelper
+            IUiHelper, IUiModalSessions
         {
             private readonly UiRuntimeService inner;
             private readonly string ownerId;
@@ -2862,6 +2964,13 @@ namespace DTMAPI.Core.Services
                     ownerId);
             }
 
+            public DtmModalOpenResult OpenModal(string menuId)
+            {
+                ensureRuntimeThread();
+                ensureOwnerActive();
+                return inner.OpenOwnerBoundModal(menuId, ownerId, ensureRuntimeThread);
+            }
+
             public bool IsModalOpen(string menuId)
             {
                 ensureRuntimeThread();
@@ -2874,7 +2983,6 @@ namespace DTMAPI.Core.Services
             public bool CloseModal(string menuId)
             {
                 ensureRuntimeThread();
-                ensureOwnerActive();
                 return inner.CloseOwnerBoundCustomMenu(
                     menuId,
                     ownerId);

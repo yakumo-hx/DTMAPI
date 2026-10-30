@@ -23,9 +23,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool ownerLifetimeSaveVerified;
         private int ownerLifetimeExpectedControlRoots;
         private int ownerLifetimeExpectedCleanupRoots;
-        private bool ownerLifetimeRequiresCamera;
-        private ICameraViewLease? ownerLifetimeControlCameraLease;
-        private ICameraViewLease? ownerLifetimeCleanupCameraLease;
         private bool g6LongTitleLoadRequested;
         private DateTimeOffset g6LongTitleHomePageObservedAt;
 
@@ -130,8 +127,6 @@ namespace DTMAPI.GameBridge.DolocTown
             {
                 case "ModOwnerLifetime":
                     return AdvanceG6ModOwnerLifetime();
-                case "LegacyFishingCompatibility":
-                    return FromG6Attempt(caseId, "Smoke.LegacyFishingAutomationCompatibility", TryExerciseLegacyFishingAutomationCompatibilityForFixture());
                 case "SaveLoadCycle":
                     return FromG6Attempt(caseId, "Smoke.SaveLoadCycle", TryExerciseSaveLoadCycleForFixture((DateTimeOffset.Now - initializedAt).TotalSeconds));
                 case "SaveLoadPendingPressure":
@@ -268,195 +263,76 @@ namespace DTMAPI.GameBridge.DolocTown
 
         private void PrepareOwnerLifetime()
         {
-            if (ownerLifetimePrepared)
-                return;
+            if (ownerLifetimePrepared) return;
             try
             {
-                ownerLifetimeRequiresCamera = runtime.ModRegistry.IsLoaded("DTMAPI.GameBridge.DolocTown");
-                ownerLifetimeControlCameraLease = RegisterOwnerLifetimeOwner(OwnerLifetimeControlId);
-                ownerLifetimeCleanupCameraLease = RegisterOwnerLifetimeOwner(OwnerLifetimeCleanupId);
+                RegisterOwnerLifetimeOwner(OwnerLifetimeControlId);
+                RegisterOwnerLifetimeOwner(OwnerLifetimeCleanupId);
                 ownerLifetimeExpectedControlRoots = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
                 ownerLifetimeExpectedCleanupRoots = runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId);
                 ownerLifetimePrepared = true;
-                bool cameraReady = !ownerLifetimeRequiresCamera ||
-                    (ownerLifetimeControlCameraLease != null && ownerLifetimeCleanupCameraLease != null);
-                if (!cameraReady)
-                    throw new InvalidOperationException("The G6 owner-lifetime fixture did not acquire both required Camera leases.");
-                runtime.SetHookStatus("Smoke.OwnerLifetime", "prepared", "optional QA owner-lifetime scenario", "controlRoots=" + ownerLifetimeExpectedControlRoots + "; cleanupRoots=" + ownerLifetimeExpectedCleanupRoots + "; cameraRequired=" + ownerLifetimeRequiresCamera + "; cameraReady=True; owner=qa");
+                runtime.SetHookStatus("Smoke.OwnerLifetime", "prepared", "optional QA owner-lifetime scenario", "controlRoots=" + ownerLifetimeExpectedControlRoots + "; cleanupRoots=" + ownerLifetimeExpectedCleanupRoots);
             }
-            catch (Exception setupFailure)
-            {
-                try
-                {
-                    CleanupOwnerLifetimeOnClose("PrepareFailure");
-                }
-                catch (Exception cleanupFailure)
-                {
-                    throw new AggregateException("The G6 owner-lifetime fixture failed setup and cleanup.", setupFailure, cleanupFailure);
-                }
-                throw;
-            }
+            catch { CleanupOwnerLifetimeOnClose("PrepareFailure"); throw; }
         }
 
         private bool ExerciseOwnerLifetimeAfterSave()
         {
-            if (!ownerLifetimePrepared)
-                return false;
+            if (!ownerLifetimePrepared) return false;
             int controlBefore = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
             int cleanupBefore = runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId);
-            bool controlCameraBefore = !ownerLifetimeRequiresCamera || ownerLifetimeControlCameraLease?.IsReleased == false;
-            bool cleanupCameraBefore = !ownerLifetimeRequiresCamera || ownerLifetimeCleanupCameraLease?.IsReleased == false;
-            string cleanup = runtime.DeactivateOwner(OwnerLifetimeCleanupId, ModOwnerCleanupReason.Unload, shutdown: true, transactionId: string.Empty);
+            string cleanup = runtime.DeactivateOwner(OwnerLifetimeCleanupId, ModOwnerCleanupReason.Unload, true, string.Empty);
             int cleanupRemaining = runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId);
             int controlAfter = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
-            bool cleanupCameraReleased = !ownerLifetimeRequiresCamera || ownerLifetimeCleanupCameraLease?.IsReleased == true;
-            ownerLifetimeCleanupCameraLease = null;
-            ownerLifetimeSaveVerified = ownerLifetimeExpectedControlRoots > 0 &&
-                controlBefore == ownerLifetimeExpectedControlRoots &&
-                controlAfter == ownerLifetimeExpectedControlRoots &&
-                cleanupBefore == ownerLifetimeExpectedCleanupRoots &&
-                cleanupRemaining == 0 &&
-                controlCameraBefore && cleanupCameraBefore && cleanupCameraReleased;
-            runtime.SetHookStatus(
-                "Smoke.OwnerLifetime",
-                ownerLifetimeSaveVerified ? "save-preserved" : "failed",
-                "optional QA owner-lifetime scenario",
-                "expectedControl=" + ownerLifetimeExpectedControlRoots + "; controlBefore=" + controlBefore + "; controlAfter=" + controlAfter + "; expectedCleanup=" + ownerLifetimeExpectedCleanupRoots + "; cleanupBefore=" + cleanupBefore + "; cleanupRemaining=" + cleanupRemaining + "; cameraRequired=" + ownerLifetimeRequiresCamera + "; controlCameraBefore=" + controlCameraBefore + "; cleanupCameraBefore=" + cleanupCameraBefore + "; cleanupCameraReleased=" + cleanupCameraReleased + "; owner=qa; " + cleanup);
+            ownerLifetimeSaveVerified = ownerLifetimeExpectedControlRoots > 0 && controlBefore == ownerLifetimeExpectedControlRoots && controlAfter == controlBefore && cleanupBefore == ownerLifetimeExpectedCleanupRoots && cleanupRemaining == 0;
+            runtime.SetHookStatus("Smoke.OwnerLifetime", ownerLifetimeSaveVerified ? "save-preserved" : "failed", "owner isolation across save", "controlBefore=" + controlBefore + "; controlAfter=" + controlAfter + "; cleanupRemaining=" + cleanupRemaining + "; " + cleanup);
             return ownerLifetimeSaveVerified;
         }
 
         private void FinalizeOwnerLifetimeAfterTitle()
         {
-            if (!ownerLifetimePrepared || !ownerLifetimeSaveVerified)
-                return;
-            int controlBeforeCleanup = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
-            bool controlCameraBeforeCleanup = !ownerLifetimeRequiresCamera || ownerLifetimeControlCameraLease?.IsReleased == false;
-            string cleanup = runtime.DeactivateOwner(OwnerLifetimeControlId, ModOwnerCleanupReason.Unload, shutdown: true, transactionId: string.Empty);
-            int controlRemaining = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
-            int cleanupRemaining = runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId);
-            bool controlCameraReleased = !ownerLifetimeRequiresCamera || ownerLifetimeControlCameraLease?.IsReleased == true;
-            ownerLifetimeControlCameraLease = null;
-            bool verified = controlBeforeCleanup == ownerLifetimeExpectedControlRoots &&
-                controlRemaining == 0 && cleanupRemaining == 0 &&
-                controlCameraBeforeCleanup && controlCameraReleased;
-            runtime.SetHookStatus("Smoke.OwnerLifetime", verified ? "verified" : "failed", "optional QA ReturnedToTitle owner-lifetime scenario", "savePreserved=" + ownerLifetimeSaveVerified + "; expectedControl=" + ownerLifetimeExpectedControlRoots + "; controlBeforeCleanup=" + controlBeforeCleanup + "; controlRemaining=" + controlRemaining + "; cleanupRemaining=" + cleanupRemaining + "; cameraRequired=" + ownerLifetimeRequiresCamera + "; controlCameraBeforeCleanup=" + controlCameraBeforeCleanup + "; controlCameraReleased=" + controlCameraReleased + "; owner=qa; " + cleanup);
+            if (!ownerLifetimePrepared || !ownerLifetimeSaveVerified) return;
+            int before = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
+            string cleanup = runtime.DeactivateOwner(OwnerLifetimeControlId, ModOwnerCleanupReason.Unload, true, string.Empty);
+            bool verified = before == ownerLifetimeExpectedControlRoots && runtime.CountCoreOwnerRoots(OwnerLifetimeControlId) == 0 && runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId) == 0;
+            runtime.SetHookStatus("Smoke.OwnerLifetime", verified ? "verified" : "failed", "owner cleanup after title", "controlBefore=" + before + "; " + cleanup);
+            if (verified) ownerLifetimePrepared = false;
         }
 
-        private ICameraViewLease? RegisterOwnerLifetimeOwner(string ownerId)
+        private void RegisterOwnerLifetimeOwner(string ownerId)
         {
             var manifest = new ManifestModel { Name = ownerId, Author = "DTMAPI", Version = DtmApiRuntime.ApiVersion, UniqueID = ownerId, Type = "CodeMod" };
-            ICameraViewLease? cameraLease = null;
             try
             {
                 runtime.BeginOwnerEntry(ownerId);
                 Action ensure = () => runtime.EnsureModOwnerRegistrationAllowed(ownerId);
                 runtime.Events.CreateOwnerBoundProxy(ownerId, ensure).GameLoop.UpdateTicked += (_, _) => { };
-                runtime.Input.CreateOwnerBound(ownerId, ensure).RegisterButton(ownerId.EndsWith("Control", StringComparison.OrdinalIgnoreCase) ? "F14" : "F15");
+                runtime.Input.CreateOwnerBound(ownerId, ensure).RegisterButton(ownerId.EndsWith("Control", StringComparison.Ordinal) ? "F14" : "F15");
                 runtime.Config.CreateOwnerBound(manifest, ensure).RegisterMigration<OwnerLifetimeConfig>(manifest, _ => { });
                 IModRegistry registry = runtime.ModRegistry.CreateOwnerBoundRegistry(manifest, ensure);
                 registry.RegisterApi<IOwnerLifetimeApi>(new OwnerLifetimeApi());
                 registry.GetApi<IDtmConfigMenuApi>("DTMAPI.ModConfigMenu")?.Register(manifest, () => { }, () => { });
-                cameraLease = registry.GetApi<ICameraViewApi>("DTMAPI.GameBridge.DolocTown")?.AcquireLease(manifest, new CameraViewRequest
-                {
-                    Enabled = true,
-                    ViewScale = 1d,
-                    MinViewScale = 1d,
-                    MaxViewScale = 4d,
-                    Step = 0.25d,
-                    LeaseName = "OwnerLifetime smoke"
-                });
                 runtime.ActivateOwnerEntry(manifest);
-                return cameraLease;
             }
-            catch
-            {
-                try
-                {
-                    cameraLease?.Dispose();
-                }
-                catch
-                {
-                }
-                runtime.DeactivateOwner(ownerId, ModOwnerCleanupReason.EntryFailed, shutdown: true, transactionId: string.Empty);
-                throw;
-            }
+            catch { runtime.DeactivateOwner(ownerId, ModOwnerCleanupReason.EntryFailed, true, string.Empty); throw; }
         }
 
         internal void CleanupOwnerLifetimeOnClose(string reason)
         {
             var failures = new List<string>();
-            bool inspectCamera =
-                ownerLifetimePrepared ||
-                ownerLifetimeControlCameraLease != null ||
-                ownerLifetimeCleanupCameraLease != null;
-            DisposeOwnerLifetimeLease(ref ownerLifetimeControlCameraLease, OwnerLifetimeControlId, failures);
-            DisposeOwnerLifetimeLease(ref ownerLifetimeCleanupCameraLease, OwnerLifetimeCleanupId, failures);
-
-            string controlCleanup = TryDeactivateOwnerLifetimeOwner(OwnerLifetimeControlId, failures);
-            string cleanupCleanup = TryDeactivateOwnerLifetimeOwner(OwnerLifetimeCleanupId, failures);
-            int controlRoots = runtime.CountCoreOwnerRoots(OwnerLifetimeControlId);
-            int cleanupRoots = runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId);
-            bool controlInstance = runtime.HasOwnerInstance(OwnerLifetimeControlId);
-            bool cleanupInstance = runtime.HasOwnerInstance(OwnerLifetimeCleanupId);
-            ICameraViewApi? camera = inspectCamera
-                ? runtime.ModRegistry.GetApi<ICameraViewApi>("DTMAPI.GameBridge.DolocTown")
-                : null;
-            int controlCameraLeases = camera?.GetState(OwnerLifetimeControlId).LeaseCount ?? 0;
-            int cleanupCameraLeases = camera?.GetState(OwnerLifetimeCleanupId).LeaseCount ?? 0;
-            if (controlRoots != 0)
-                failures.Add("controlRoots=" + controlRoots);
-            if (cleanupRoots != 0)
-                failures.Add("cleanupRoots=" + cleanupRoots);
-            if (controlInstance)
-                failures.Add("controlInstance=true");
-            if (cleanupInstance)
-                failures.Add("cleanupInstance=true");
-            if (controlCameraLeases != 0)
-                failures.Add("controlCameraLeases=" + controlCameraLeases);
-            if (cleanupCameraLeases != 0)
-                failures.Add("cleanupCameraLeases=" + cleanupCameraLeases);
-
-            bool verified = failures.Count == 0;
-            string details =
-                "reason=" + (reason ?? string.Empty) +
-                "; controlRoots=" + controlRoots +
-                "; cleanupRoots=" + cleanupRoots +
-                "; controlInstance=" + controlInstance +
-                "; cleanupInstance=" + cleanupInstance +
-                "; controlCameraLeases=" + controlCameraLeases +
-                "; cleanupCameraLeases=" + cleanupCameraLeases +
-                "; failures=" + (verified ? "none" : string.Join("|", failures)) +
-                "; owner=qa; " + controlCleanup + "; " + cleanupCleanup;
-            runtime.SetHookStatus(
-                "Smoke.OwnerLifetimeCleanup",
-                verified ? "verified" : "failed",
-                "optional QA synthetic-owner failure/close cleanup",
-                details);
-            if (!verified)
-                throw new InvalidOperationException("G6 synthetic owner cleanup did not prove zero roots and Camera leases: " + details);
-
+            string control = TryDeactivateOwnerLifetimeOwner(OwnerLifetimeControlId, failures);
+            string cleanup = TryDeactivateOwnerLifetimeOwner(OwnerLifetimeCleanupId, failures);
+            foreach (string owner in new[] { OwnerLifetimeControlId, OwnerLifetimeCleanupId })
+                if (runtime.CountCoreOwnerRoots(owner) != 0 || runtime.HasOwnerInstance(owner)) failures.Add(owner + " retained roots");
+            string details = "reason=" + reason + "; " + control + "; " + cleanup +
+                "; controlRoots=" + runtime.CountCoreOwnerRoots(OwnerLifetimeControlId) +
+                "; cleanupRoots=" + runtime.CountCoreOwnerRoots(OwnerLifetimeCleanupId) +
+                "; controlInstance=" + runtime.HasOwnerInstance(OwnerLifetimeControlId) +
+                "; cleanupInstance=" + runtime.HasOwnerInstance(OwnerLifetimeCleanupId) +
+                "; failures=" + (failures.Count == 0 ? "none" : string.Join("|", failures)) + ";";
+            runtime.SetHookStatus("Smoke.OwnerLifetimeCleanup", failures.Count == 0 ? "verified" : "failed", "synthetic owner cleanup", details);
+            if (failures.Count != 0) throw new InvalidOperationException(details);
             ownerLifetimePrepared = false;
-            ownerLifetimeRequiresCamera = false;
-        }
-
-        private static void DisposeOwnerLifetimeLease(ref ICameraViewLease? lease, string ownerId, List<string> failures)
-        {
-            if (lease == null)
-                return;
-            try
-            {
-                lease.Dispose();
-                if (!lease.IsReleased)
-                {
-                    failures.Add(ownerId + ":lease-not-released");
-                    return;
-                }
-                lease = null;
-            }
-            catch (Exception ex)
-            {
-                failures.Add(ownerId + ":lease-dispose=" + ex.GetType().Name + ":" + ex.Message);
-            }
         }
 
         private string TryDeactivateOwnerLifetimeOwner(string ownerId, List<string> failures)

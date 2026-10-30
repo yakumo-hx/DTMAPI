@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "audio": {
+    "resources": [
+      {
+        "key": "manbo",
+        "path": "PackData/assets/manbo.wav"
+      },
+      {
+        "key": "waibi-babu",
+        "path": "PackData/assets/waibi_babu_grass.wav"
+      },
+      {
+        "key": "what-the-dog-doin",
+        "path": "PackData/assets/what_the_dog_doin_mining.wav"
+      },
+      {
+        "key": "hachimi",
+        "path": "PackData/assets/hachimi_tree.wav"
+      },
+      {
+        "key": "gugu-gaga",
+        "path": "PackData/assets/gugu_gaga_fishing.wav"
+      }
+    ],
+    "events": [
+      {
+        "key": "paper-box",
+        "resource": "manbo",
+        "use": "effect",
+        "replaceNativeEvent": "PLAY_RESOURCE_PAPER_BOX",
+        "minimumIntervalMs": 50,
+        "volumeDb": -18.9,
+        "route": "Actor"
+      },
+      {
+        "key": "harvest",
+        "resource": "waibi-babu",
+        "use": "effect",
+        "replaceNativeEvent": "PLAY_RESOURCE_HARVEST",
+        "volumeDb": -18.0,
+        "route": "Actor"
+      },
+      {
+        "key": "gather",
+        "resource": "what-the-dog-doin",
+        "use": "effect",
+        "replaceNativeEvent": "PLAY_RESOURCE_GATHER",
+        "volumeDb": -18.9,
+        "route": "Actor"
+      },
+      {
+        "key": "fell",
+        "resource": "hachimi",
+        "use": "effect",
+        "replaceNativeEvent": "PLAY_RESOURCE_FELL",
+        "volumeDb": -16.7,
+        "route": "Actor"
+      },
+      {
+        "key": "fishing-hook-splash",
+        "resource": "gugu-gaga",
+        "use": "effect",
+        "replaceNativeEvent": "PLAY_FISHING_HOOK_SPLASH",
+        "volumeDb": -16.9,
+        "route": "Actor"
+      }
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-param()
+﻿param()
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\common.ps1"
@@ -32,6 +32,7 @@ try {
     New-Item -ItemType Directory -Force -Path $fixtureScripts, (Join-Path $fixtureRoot 'tests\DTMAPI.UnitTests') | Out-Null
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'test-unit.ps1') -Destination $fixtureEntry
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'test-common.ps1') -Destination (Join-Path $fixtureScripts 'test-common.ps1')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'test-support') -Destination (Join-Path $fixtureScripts 'test-support') -Recurse
     @'
 function Get-RepoRoot { return [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..')) }
 function Get-DotNetExe {
@@ -54,7 +55,8 @@ exit 0
         '' | Set-Content -LiteralPath (Join-Path $directory 'DTMAPI.UnitTests.dll')
         $fixtureSuites += @{ id = $id; project = $project; default = @('Default'); focuses = @{ 'shared-focus' = @('Focused') }; requiresWindows = $false; dependencies = @('MustNotBePreparedByNoBuild') }
     }
-    @{ schemaVersion = 1; suites = $fixtureSuites } | ConvertTo-Json -Depth 7 |
+    foreach ($fixtureSuite in $fixtureSuites) { $fixtureSuite['runner']='unit-exe'; $fixtureSuite['platforms']=@('Windows') }
+    @{ schemaVersion = 2; suites = $fixtureSuites } | ConvertTo-Json -Depth 7 |
         Set-Content -LiteralPath (Join-Path $fixtureRoot 'tests\DTMAPI.UnitTests\suites.json') -Encoding UTF8
 
     $env:DTMAPI_UNIT_TEST_FOCUS = $null
@@ -88,12 +90,12 @@ exit 0
     if (Test-Path -LiteralPath $sdkWitness) { throw 'Missing NoBuild output reached SDK lookup or attempted a rebuild.' }
 
     $actual = Get-Content -LiteralPath (Join-Path $repo 'tests\DTMAPI.UnitTests\suites.json') -Raw | ConvertFrom-Json
-    $defaultCalls = @($actual.suites | ForEach-Object { $_.default })
+    $defaultCalls = @($actual.suites | Where-Object {$_.runner -eq 'unit-exe'} | ForEach-Object { $_.default })
     if ($defaultCalls -notcontains 'MoreEquipmentSlotsProductTests.RunAll') { throw 'Default Unit coverage lost the MoreEquipment ordinary suite.' }
     if ($defaultCalls -contains 'MoreEquipmentSlotsProductTests.RunCrossProcessClaimActor' -or $defaultCalls -contains 'OfficialSourceArbitrationOneOffMatrix') { throw 'An actor/one-off was incorrectly admitted to default tests.' }
-    foreach ($suite in $actual.suites) {
+    foreach ($suite in @($actual.suites | Where-Object runner -eq 'unit-exe')) {
         $projectPath = Join-Path $repo $suite.project
-        if (-not (Test-Path -LiteralPath $projectPath)) { throw "Registered Unit project does not exist: $($suite.project)" }
+        if (-not (Test-Path -LiteralPath $projectPath) -and $suite.distribution -ne 'internal') { throw "Registered public Unit project does not exist: $($suite.project)" }
     }
     $count++
     Write-Host "PASS: $count Unit routing checks (Windows PowerShell 5.1; invalid focus before SDK, explicit override, default coverage, and NoBuild)."

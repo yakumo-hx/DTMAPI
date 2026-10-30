@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.MonsterContent.Authoring/DTMAPI.MonsterContent.Authoring.csproj" /></ItemGroup>
+</Project>

@@ -30,15 +30,15 @@ namespace DTMAPI.GameBridge.DolocTown
             "DolocTown.SystemMenuUiState, Assembly-CSharp",
             "DolocTown.SmallTextMenuUiState, Assembly-CSharp",
             "DolocTown.ConfirmUiState, Assembly-CSharp",
+            "DolocTown.InputNameUiState, Assembly-CSharp",
             "DolocTown.HomePageUiState, Assembly-CSharp"
         };
         private const int FeatureFailureShortLogLimit = 3;
         private const int FeatureFailureRecoverySuccessThreshold = 3;
         private readonly DtmApiRuntime runtime;
-        private readonly IDebugConsoleApi? debugConsoleApi;
-        private readonly DebugActionCompatibilityProxy debugActionApi;
         private DateTimeOffset initializedAt;
         private HarmonyReflectionPatcher? patcher;
+        private AudioStartupPolicies? audioStartupPolicies;
         private Type? uiContextDolocApiType;
         private bool uiContextDolocApiResolutionAttempted;
         private Func<bool>? uiContextIsNormalStateGetter;
@@ -48,13 +48,12 @@ namespace DTMAPI.GameBridge.DolocTown
         private Type[] uiContextBlockingStateTypes = Array.Empty<Type>();
         private int environmentResetCount;
         private DateTimeOffset lastLifecycleCounterPublishedAtUtc = DateTimeOffset.MinValue;
-        private Timer? hookRetryTimer;
         private readonly object hookGate = new object();
         private readonly HookInstallScheduler hookInstallScheduler = new HookInstallScheduler();
         private int runtimeAutomationUpdateInProgress;
         private long runtimeAutomationReentryBypassCount;
         private bool assemblyLoadSubscribed;
-        private bool shutdownCleanupRan;
+        private volatile bool shutdownCleanupRan;
         private bool saveLoadedPatched;
         private bool saveLoadedEventSubscribed;
         private bool loadRequestedPatched;
@@ -74,35 +73,6 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool workshopUploadPlanKnownIdFallbackPatched;
         private long optionalWorkshopFileStatusCallCount;
         private readonly List<PendingWorkshopUploadPlanResolution> pendingWorkshopUploadPlanResolutions = new List<PendingWorkshopUploadPlanResolution>();
-        private bool actionSpeedToolEnterPatched => actionSpeedFeature?.HookBridge.ToolEnterPatched == true;
-        private bool actionSpeedToolExitPatched => agentStateLifecycleHooks?.ToolExitPatched == true;
-        private bool actionSpeedInteractEnterPatched => actionSpeedFeature?.HookBridge.InteractEnterPatched == true;
-        private bool actionSpeedInteractExitPatched => agentStateLifecycleHooks?.InteractExitPatched == true;
-        private bool actionSpeedEatEnterPatched => actionSpeedFeature?.HookBridge.EatEnterPatched == true;
-        private bool actionSpeedUseItemContinuesPatched => actionSpeedFeature?.HookBridge.UseItemContinuesPatched == true;
-        private bool actionSpeedInteractContinuesPatched => actionSpeedFeature?.HookBridge.InteractContinuesPatched == true;
-        private bool actionSpeedAnimalRendererInteractPatched => actionSpeedFeature?.HookBridge.AnimalRendererInteractPatched == true;
-        private bool actionSpeedBaseExitPatched => agentStateLifecycleHooks?.BaseExitPatched == true;
-        private bool toolColliderHitPostfixPatched => toolColliderHitHooks?.PostfixPatched == true;
-        private bool fishingCompatibilityHooksRequired => fishingCompatibilityFeature?.HooksRequired == true;
-        private bool fishingCompatibilityHooksReady => fishingCompatibilityFeature?.HooksReady == true;
-        private bool fishingCompatibilityReadyEnterPatched => fishingCompatibilityFeature?.ReadyEnterPatched == true;
-        private bool fishingCompatibilityCastEnterPatched => fishingCompatibilityFeature?.CastEnterPatched == true;
-        private bool fishingCompatibilityWaitEnterPatched => fishingCompatibilityFeature?.WaitEnterPatched == true;
-        private bool fishingCompatibilityWaitPlayPatched => fishingCompatibilityFeature?.WaitPlayPatched == true;
-        private bool fishingCompatibilityMiniGameStartPatched => fishingCompatibilityFeature?.MiniGameStartPatched == true;
-        private bool fishingCompatibilityMiniGameUpdatePatched => fishingCompatibilityFeature?.MiniGameUpdatePatched == true;
-        private bool fishingCompatibilityMiniGameStopPatched => fishingCompatibilityFeature?.MiniGameStopPatched == true;
-        private bool fishingCompatibilityPullEnterPatched => fishingCompatibilityFeature?.PullEnterPatched == true;
-        private bool fishingCompatibilityPullExitPatched => fishingCompatibilityFeature?.PullExitPatched == true;
-        private bool fishingCompatibilityBaseExitPatched => fishingCompatibilityFeature?.BaseExitPatched == true;
-        private bool fishRoeTitlePatched => fishRoeTooltipFeature?.HookBridge.TitlePatched == true;
-        private bool fishRoeDescriptionPatched => fishRoeTooltipFeature?.HookBridge.DescriptionPatched == true;
-        private bool fishRoeDetailPatched => fishRoeTooltipFeature?.HookBridge.DetailPatched == true;
-        private bool animalFullInfoDataPatched => animalViewerFeature?.HookBridge.FullInfoDataPatched == true;
-        private bool animalViewerShowPrefixPatched => animalViewerFeature?.HookBridge.ViewerShowPrefixPatched == true;
-        private bool animalViewerShowPatched => animalViewerFeature?.HookBridge.ViewerShowPatched == true;
-        private bool animalPanelUnregisterPatched => animalViewerFeature?.HookBridge.PanelUnregisterPatched == true;
         private bool hookResolutionDiagnosticLogged;
         private bool uiContextDiagnosticLogged;
         private Delegate? saveLoadedUnityEventDelegate;
@@ -115,37 +85,22 @@ namespace DTMAPI.GameBridge.DolocTown
         private bool experimentalApisRegistered;
         private DolocTownExperimentalBridgeApi? experimentalApi;
         private EnvironmentResetHookBridge? environmentResetHookBridge;
-        private CameraFeature? cameraFeature;
-        private FishingAutomationCompatibilityFeature? fishingCompatibilityFeature;
-        private FishRoeTooltipFeature? fishRoeTooltipFeature;
         private ItemDisplayNameFeature? itemDisplayNameFeature;
-        private ChestLocatorEnhancerFeature? chestLocatorEnhancerFeature;
         private EquipmentSlotsFeature? equipmentSlotsFeature;
-        private SaveSlotsFeature? saveSlotsFeature;
         private NativeUiLayoutDiagnosticsFeature? nativeUiLayoutDiagnosticsFeature;
         private CropHarvestingFeature? cropHarvestingFeature;
-        private AnimalViewerFeature? animalViewerFeature;
-        private CustomAnimalAnimatorBridgeFeature? customAnimalAnimatorBridgeFeature;
-        private AudioReplacementFeature? audioReplacementFeature;
-        private AgentStateLifecycleHookBridge? agentStateLifecycleHooks;
-        private ToolColliderHitHookBridge? toolColliderHitHooks;
-        private ActionSpeedFeature? actionSpeedFeature;
-        private ActionCompletionFeature? actionCompletionFeature;
 
-        public DolocTownGameBridge(DtmApiRuntime runtime, IDebugConsoleApi? debugConsoleApi = null)
-            : this(runtime, debugConsoleApi, null)
+        public DolocTownGameBridge(DtmApiRuntime runtime)
+            : this(runtime, null)
         {
         }
 
         internal DolocTownGameBridge(
             DtmApiRuntime runtime,
-            IDebugConsoleApi? debugConsoleApi,
             PreparedQaHost? preparedQaHost)
         {
             this.runtime = runtime;
             this.runtime.ConfigureLanguageProvider(DolocTownLanguageProvider.GetCurrentLanguage);
-            this.debugConsoleApi = debugConsoleApi;
-            debugActionApi = new DebugActionCompatibilityProxy(runtime);
             this.preparedQaHost = preparedQaHost;
             InitializeGameBridgeDemandRouting();
             RegisterExperimentalApis();
@@ -154,22 +109,11 @@ namespace DTMAPI.GameBridge.DolocTown
             runtime.RegisterModOwnerCleanupParticipant(new GameBridgeModOwnerCleanupParticipant(this));
             runtime.AddRuntimeReportContextProvider(BuildGameBridgeRuntimeReportContext);
             runtime.AddTitleReturnObjectGraphProvider(BuildGameBridgeTitleReturnObjectGraphSection);
-            runtime.AddTitleReturnObjectGraphProvider(BuildGameBridgeUiOwnerObjectGraphSection);
             runtime.LogExportBoundary += () => PublishGameBridgeFinalHealthSnapshot("LogExport");
             runtime.RuntimeShutdownBoundary += reason => PublishGameBridgeFinalHealthSnapshot("Shutdown " + (reason ?? string.Empty));
         }
 
         internal DolocTownExperimentalBridgeApi? ExperimentalApi => experimentalApi;
-
-        internal CameraFeature? CameraFeature => cameraFeature;
-
-        internal LegacyFishingAutomationService? LegacyFishingAutomationService => fishingCompatibilityFeature?.Service;
-
-        internal IFishingCompatibilityHookRuntime? FishingCompatibilityCallbackService => fishingCompatibilityFeature?.CallbackRuntime;
-
-        internal FishRoeTooltipService? FishRoeTooltipService => fishRoeTooltipFeature?.Service;
-
-        internal ChestLocatorEnhancerService? ChestLocatorEnhancerService => chestLocatorEnhancerFeature?.Service;
 
         internal EquipmentSlotsService? EquipmentSlotsService => equipmentSlotsFeature?.Service;
 
@@ -177,52 +121,27 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal CropHarvestingService? CropHarvestingService => cropHarvestingFeature?.Service;
 
-        internal AnimalViewerService? AnimalViewerService => animalViewerFeature?.Service;
 
-        internal CustomAnimalAnimatorBridgeService? CustomAnimalAnimatorBridgeService => customAnimalAnimatorBridgeFeature?.Service;
-
-        internal ActionSpeedService? ActionSpeedService => actionSpeedFeature?.Service;
-
-        internal ActionCompletionService? ActionCompletionService => actionCompletionFeature?.Service;
-
-        internal AudioReplacementService? AudioReplacementService => audioReplacementFeature?.Service;
 
         internal DolocTownExperimentalBridgeApi? ExperimentalApiForQa => experimentalApi;
         internal DtmApiRuntime RuntimeForQa => runtime;
-        internal IInventoryDebugApi InventoryDebugApiForQa => debugActionApi;
-        internal IWeatherDebugApi WeatherDebugApiForQa => debugActionApi;
-        internal ITeleportDebugApi TeleportDebugApiForQa => debugActionApi;
-        internal IInstantSaveDebugApi InstantSaveDebugApiForQa => debugActionApi;
-        internal ITimeDebugApi TimeDebugApiForQa => debugActionApi;
-        internal IMovementDebugApi MovementDebugApiForQa => debugActionApi;
-        internal IAdvancedDebugApi AdvancedDebugApiForQa => debugActionApi;
-        internal bool DebugActionCompatibilityLoadedForQa =>
-            debugActionApi.IsLoaded;
-        internal CameraFeature? CameraFeatureForQa => cameraFeature;
-        internal FishingAutomationCompatibilityFeature? FishingAutomationCompatibilityFeatureForQa => fishingCompatibilityFeature;
-        internal AudioReplacementFeature? AudioReplacementFeatureForQa => audioReplacementFeature;
         internal NativeUiLayoutDiagnosticsFeature? NativeUiLayoutDiagnosticsFeatureForQa => nativeUiLayoutDiagnosticsFeature;
-        internal IDebugConsoleApi? DebugConsoleApiForQa => debugConsoleApi;
-        internal bool ActionSpeedInteractEnterPatchedForQa => actionSpeedInteractEnterPatched;
-        internal bool ActionSpeedInteractExitPatchedForQa => actionSpeedInteractExitPatched;
-        internal bool ActionSpeedEatEnterPatchedForQa => actionSpeedEatEnterPatched;
-        internal bool ActionSpeedUseItemContinuesPatchedForQa => actionSpeedUseItemContinuesPatched;
-        internal bool ActionSpeedInteractContinuesPatchedForQa => actionSpeedInteractContinuesPatched;
 
         public void Initialize()
         {
             initializedAt = DateTimeOffset.Now;
+            try { audioStartupPolicies = new AudioStartupPolicies(runtime, runtime.AppendBgmGroups); }
+            catch (Exception ex) { runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Audio startup policy unavailable.", ex.ToString()); }
             ReconcileWorkshopAuthoringDemand(runtime.IsAuthorSessionActive, "GameBridge Initialize after Runtime start");
             PublishQaHostPreparedLifecycle();
             DolocTownHookCallbacks.Runtime = runtime;
             DolocTownHookCallbacks.Bridge = this;
             PublishGameBridgeFeatureHookStatuses();
             PublishGameBridgeFeatureContractDiagnostics("Initialize");
-            PublishCustomEntityRegistryContractHookStatuses();
             runtime.SetHookStatus("GameLoop.UpdateTicked", "verified", "BepInEx MonoBehaviour.Update", "DTMAPI dispatches UpdateTicked from the bootstrap Update callback.");
             runtime.SetHookStatus("GameLoop.OneSecondUpdateTicked", "verified", "DTMAPI.Core timer", "DTMAPI dispatches a throttled one-second event from Update.");
-            RequestHookInstall("Initialize");
             EnsureHookRetrySources("Initialize");
+            RequestHookInstall("Initialize");
             PublishHookSchedulerStatus("Initialize");
             StartQaHostParticipant();
         }
@@ -233,7 +152,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 return;
             experimentalApi ??= new DolocTownExperimentalBridgeApi(runtime);
             EnsureGameBridgeFeatures();
-            experimentalApi.AttachActionSpeedService(actionSpeedFeature!.Service);
             var manifest = new ManifestModel
             {
                 Name = "DTMAPI Doloc Town GameBridge",
@@ -242,21 +160,15 @@ namespace DTMAPI.GameBridge.DolocTown
                 UniqueID = "DTMAPI.GameBridge.DolocTown",
                 Type = "RuntimeApi"
             };
-            runtime.RegisterRuntimeApi<IInventoryDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForInventoryDebug(debugActionApi));
             runtime.RegisterRuntimeApi<IMailDeliveryApi>(manifest, experimentalApi, OwnerBoundGameBridgeApis.ForMailDelivery(experimentalApi));
-            runtime.RegisterRuntimeApi<IWeatherDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForWeatherDebug(debugActionApi));
-            runtime.RegisterRuntimeApi<ITeleportDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForTeleportDebug(debugActionApi));
-            runtime.RegisterRuntimeApi<IInstantSaveDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForInstantSaveDebug(debugActionApi));
-            runtime.RegisterRuntimeApi<ITimeDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForTimeDebug(debugActionApi));
-            runtime.RegisterRuntimeApi<IMovementDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForMovementDebug(debugActionApi));
-            runtime.RegisterRuntimeApi<ILampControlApi>(manifest, RetiredLampControlApi.Instance, OwnerBoundGameBridgeApis.ForLampControl(RetiredLampControlApi.Instance));
             RegisterGameBridgeFeatureApis(manifest);
-            runtime.RegisterRuntimeApi<IAdvancedDebugApi>(manifest, debugActionApi, OwnerBoundGameBridgeApis.ForAdvancedDebug(debugActionApi));
             experimentalApisRegistered = true;
         }
 
         internal void UpdateRuntimeAutomation()
         {
+            if (shutdownCleanupRan)
+                return;
             if (Interlocked.CompareExchange(ref runtimeAutomationUpdateInProgress, 1, 0) != 0)
             {
                 Interlocked.Increment(ref runtimeAutomationReentryBypassCount);
@@ -269,7 +181,6 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (ProcessPendingHookInstallRequests("DemandFrame"))
                     RefreshDemandRoutePatchStates("HookInstallProcessed");
                 DispatchActiveDemandUpdaters();
-                debugActionApi.UpdateIfLoaded();
             }
             finally
             {
@@ -279,7 +190,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal void NotifyGameBridgeFeaturesSaveLoaded(bool isNewGame)
         {
-            debugActionApi.ResetForSaveBoundaryIfLoaded();
             DispatchGameBridgeFeatures("SaveLoaded", feature => feature.SaveLoaded(isNewGame));
             PublishGameBridgeFinalHealthSnapshot("SaveLoaded");
         }
@@ -301,7 +211,6 @@ namespace DTMAPI.GameBridge.DolocTown
         internal void NotifyGameBridgeFeaturesReturnedToTitle()
         {
             ReconcileWorkshopAuthoringDemand(false, "ReturnedToTitle");
-            debugActionApi.ResetForTitleBoundaryIfLoaded();
             DispatchGameBridgeFeatures("ReturnedToTitle", feature => feature.ReturnedToTitle());
             PublishGameBridgeFinalHealthSnapshot("ReturnedToTitle");
         }
@@ -315,16 +224,6 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal bool HasEnvironmentResetDemand =>
             HasRetainedCallbackDemand(GameBridgeRetainedCallbackDemand.ItemDisplayNameEnvironmentReset);
-
-        internal void NotifyCameraCompatibilityEnvironmentReset(
-            string reason)
-        {
-            if (cameraFeature?.HasEnvironmentResetDemand != true)
-                return;
-            RunEnvironmentResetStep(
-                "Camera.CompatibilityEnvironmentReset",
-                () => cameraFeature.EnvironmentReset(reason));
-        }
 
         internal int EnvironmentResetCountForTests => environmentResetCount;
 
@@ -356,98 +255,28 @@ namespace DTMAPI.GameBridge.DolocTown
         private void PublishLifecycleCountersIfNeeded(string reason)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
-            if (environmentResetCount > 3 &&
-                now - lastLifecycleCounterPublishedAtUtc < LifecycleCounterPublishInterval)
-                return;
-
+            if (environmentResetCount > 3 && now - lastLifecycleCounterPublishedAtUtc < LifecycleCounterPublishInterval) return;
             lastLifecycleCounterPublishedAtUtc = now;
-            string summary = "environmentResetCount=" + environmentResetCount.ToString(CultureInfo.InvariantCulture) +
-                ", reason=" + (reason ?? string.Empty) +
-                ", featureFanout=" + features.Count.ToString(CultureInfo.InvariantCulture) +
-                ", " + (saveSlotsFeature?.Service.GetOfficialSaveUiLifecycleSummary() ?? "saveUiStates=0, saveUiPagers=0, saveUiBinders=0") +
-                ", " + (experimentalApi?.GetRuntimeAutomationLifecycleSummary() ?? "actionAnimators=0, actionAutoFillApplications=0, actionPendingAnimalInteract=false") +
-                ", " + debugActionApi.GetLifecycleSummary() +
-                ", " + (fishingCompatibilityFeature?.GetCompatibilityLifecycleSummary() ?? "compatibilityStatus=inactive/no-consumer, fishingStates=0, fishingOptions=0");
-            runtime.SetHookStatus("Runtime.LifecycleRetentionCounters", "observed", "DTMAPI.GameBridge.DolocTown EnvironmentReset", summary);
+            runtime.SetHookStatus("Runtime.LifecycleRetentionCounters", "observed", "DTMAPI.GameBridge.DolocTown EnvironmentReset", "environmentResetCount=" + environmentResetCount + ", reason=" + reason + ", featureFanout=" + features.Count);
         }
 
         private bool OptionalHostDisablesEquipmentSlotsRuntime =>
             preparedQaHost?.StartupOptions.DisableEquipmentSlotsRuntime == true;
 
-        private bool IsFeatureDisabledByOptionalHost(string featureId) =>
-            preparedQaHost?.StartupOptions.DisabledFeatureIds.Contains(featureId, StringComparer.OrdinalIgnoreCase) == true;
-
         private void EnsureGameBridgeFeatures()
         {
             environmentResetHookBridge ??= new EnvironmentResetHookBridge(runtime);
-
-            if (!IsFeatureDisabledByOptionalHost("Camera"))
-            {
-                cameraFeature ??= new CameraFeature(runtime);
-                if (!features.Contains(cameraFeature))
-                    features.Add(cameraFeature);
-            }
-
-            fishingCompatibilityFeature ??= new FishingAutomationCompatibilityFeature(runtime);
-            if (!features.Contains(fishingCompatibilityFeature))
-                features.Add(fishingCompatibilityFeature);
-
-            fishRoeTooltipFeature ??= new FishRoeTooltipFeature(runtime);
-            if (!features.Contains(fishRoeTooltipFeature))
-                features.Add(fishRoeTooltipFeature);
-
-            itemDisplayNameFeature ??= new ItemDisplayNameFeature(runtime, () => environmentResetHookBridge?.SetEnvCameraPatched == true);
-            if (!features.Contains(itemDisplayNameFeature))
-                features.Add(itemDisplayNameFeature);
-
-            chestLocatorEnhancerFeature ??= new ChestLocatorEnhancerFeature(runtime);
-            if (!features.Contains(chestLocatorEnhancerFeature))
-                features.Add(chestLocatorEnhancerFeature);
-
+            itemDisplayNameFeature ??= new ItemDisplayNameFeature(runtime, () => environmentResetHookBridge.SetEnvCameraPatched);
+            if (!features.Contains(itemDisplayNameFeature)) features.Add(itemDisplayNameFeature);
             if (!OptionalHostDisablesEquipmentSlotsRuntime)
             {
                 equipmentSlotsFeature ??= new EquipmentSlotsFeature(runtime);
-                if (!features.Contains(equipmentSlotsFeature))
-                    features.Add(equipmentSlotsFeature);
+                if (!features.Contains(equipmentSlotsFeature)) features.Add(equipmentSlotsFeature);
             }
-
-            if (!IsFeatureDisabledByOptionalHost("SaveSlots"))
-            {
-                saveSlotsFeature ??= new SaveSlotsFeature(runtime);
-                if (!features.Contains(saveSlotsFeature))
-                    features.Add(saveSlotsFeature);
-            }
-
             nativeUiLayoutDiagnosticsFeature ??= new NativeUiLayoutDiagnosticsFeature(runtime);
-            if (!features.Contains(nativeUiLayoutDiagnosticsFeature))
-                features.Add(nativeUiLayoutDiagnosticsFeature);
-
+            if (!features.Contains(nativeUiLayoutDiagnosticsFeature)) features.Add(nativeUiLayoutDiagnosticsFeature);
             cropHarvestingFeature ??= new CropHarvestingFeature(runtime);
-            if (!features.Contains(cropHarvestingFeature))
-                features.Add(cropHarvestingFeature);
-
-            animalViewerFeature ??= new AnimalViewerFeature(runtime);
-            if (!features.Contains(animalViewerFeature))
-                features.Add(animalViewerFeature);
-
-            customAnimalAnimatorBridgeFeature ??= new CustomAnimalAnimatorBridgeFeature(runtime);
-            if (!features.Contains(customAnimalAnimatorBridgeFeature))
-                features.Add(customAnimalAnimatorBridgeFeature);
-
-            audioReplacementFeature ??= new AudioReplacementFeature(runtime);
-            if (!features.Contains(audioReplacementFeature))
-                features.Add(audioReplacementFeature);
-
-            agentStateLifecycleHooks ??= new AgentStateLifecycleHookBridge();
-            toolColliderHitHooks ??= new ToolColliderHitHookBridge();
-
-            actionSpeedFeature ??= new ActionSpeedFeature(runtime, agentStateLifecycleHooks);
-            if (!features.Contains(actionSpeedFeature))
-                features.Add(actionSpeedFeature);
-
-            actionCompletionFeature ??= new ActionCompletionFeature(runtime, () => toolColliderHitPostfixPatched, () => agentStateLifecycleHooks?.InteractExitPatched == true);
-            if (!features.Contains(actionCompletionFeature))
-                features.Add(actionCompletionFeature);
+            if (!features.Contains(cropHarvestingFeature)) features.Add(cropHarvestingFeature);
         }
 
         private sealed class PendingWorkshopUploadPlanResolution
@@ -470,35 +299,6 @@ namespace DTMAPI.GameBridge.DolocTown
             public string ModId { get; }
 
             public DateTimeOffset StartedAtUtc { get; }
-        }
-
-        private void PublishCustomEntityRegistryContractHookStatuses()
-        {
-            runtime.SetHookStatus(
-                "CustomEntities.CoreRegistry",
-                "verified",
-                "DTMAPI.Core.CustomEntityRegistryService",
-                "Experimental/Frozen 0.4.0 custom entity registry compatibility contracts remain registered through the DTMAPI Core provider with owner-aware validation, duplicate-ID detection, snapshots, save-boundary cleanup, and provider error isolation.");
-            runtime.SetHookStatus(
-                "CustomAnimals.RegistryContract",
-                "configured-blocked",
-                "AnimalManager.CreateAnimal + Animal lifecycle research",
-                "Experimental/Frozen registry compatibility contract; runtime creation remains blocked");
-            runtime.SetHookStatus(
-                "CustomMonsters.RegistryContract",
-                "configured-blocked",
-                "MonsterController + MonsterGroupManager + MonsterAttackBehaviour research",
-                "Experimental/Frozen registry compatibility contract; runtime creation remains blocked");
-            runtime.SetHookStatus(
-                "CustomAttacks.RegistryContract",
-                "configured-blocked",
-                "BulletFactory + BulletManager + PhysicalDamageBox research",
-                "Experimental/Frozen registry compatibility contract; runtime creation remains blocked");
-            runtime.SetHookStatus(
-                "CustomDrones.RegistryContract",
-                "configured-blocked",
-                "DroneController + DroneWeapon + DolocAPI.EquipDrone research",
-                "Experimental/Frozen registry compatibility contract; runtime creation remains blocked");
         }
 
         private void RefreshUiContext()
@@ -805,14 +605,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 if (File.Exists(runtimeMarkerPath))
                     return true;
 
-                string markerPath = Path.Combine(rootPath, "Content", "DTMAPI", "dtmapi-package.json");
+                string manifestPath = Path.Combine(rootPath, "Content", "DTMAPI", "manifest.json");
                 optionalWorkshopFileStatusCallCount++;
-                if (!File.Exists(markerPath))
-                    return false;
-                string markerJson = File.ReadAllText(markerPath);
-                return markerJson.IndexOf("\"owner\"", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    markerJson.IndexOf("DTMAPI", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    markerJson.IndexOf("\"uniqueId\"", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (File.Exists(manifestPath)) return true;
+                optionalWorkshopFileStatusCallCount++;
+                return File.Exists(Path.Combine(rootPath, "dtmapi.manifest.json"));
             }
             catch
             {

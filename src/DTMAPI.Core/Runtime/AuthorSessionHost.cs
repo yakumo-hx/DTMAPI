@@ -615,8 +615,6 @@ namespace DTMAPI.Core.Runtime
             {
                 return AuthorSessionValidationResult.Reject("selected-root-invalid", "The selectedRoot path is invalid.");
             }
-            if (!AuthorSessionProtocol.IsSha256(request.ExpectedTreeSha256))
-                return AuthorSessionValidationResult.Reject("tree-hash-invalid", "The expectedTreeSha256 must be a SHA-256 hex digest.");
 
             return AuthorSessionValidationResult.Accept("request-authenticated", "The request passed transport authentication.");
         }

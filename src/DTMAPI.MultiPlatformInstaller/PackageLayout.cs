@@ -21,6 +21,11 @@ internal sealed class InstallFile
 
 internal sealed class PackageLayout
 {
+    private static readonly string CurrentRuntimeVersion = typeof(PackageLayout).Assembly
+        .GetCustomAttributes<AssemblyMetadataAttribute>().Single(attribute => attribute.Key == "DtmApiRuntimeReleaseVersion").Value!;
+    private static readonly string CurrentRuntimeBinaryVersion = typeof(PackageLayout).Assembly
+        .GetCustomAttributes<AssemblyMetadataAttribute>().Single(attribute => attribute.Key == "DtmApiRuntimeBinaryFileVersion").Value!;
+
     private static readonly string[] ExpectedRuntimeFiles =
     {
         "DTMAPI.Abstractions.dll",
@@ -28,6 +33,23 @@ internal sealed class PackageLayout
         "DTMAPI.Core.dll",
         "DTMAPI.GameBridge.DolocTown.dll",
         "DTMAPI.ModConfigMenu.dll"
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> RuntimeModuleFiles = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["DTMAPI/components/modules/DTMAPI.RuntimeModules.dll"] = "runtime-modules",
+        ["DTMAPI/components/animals/DTMAPI.AnimalContent.dll"] = "animal-contract",
+        ["DTMAPI/components/animals/DTMAPI.Modules.Animals.dll"] = "animal-backend",
+        ["DTMAPI/components/monsters/DTMAPI.MonsterContent.dll"] = "monster-contract",
+        ["DTMAPI/components/monsters/DTMAPI.MonsterContent.Authoring.dll"] = "monster-authoring",
+        ["DTMAPI/components/monsters/DTMAPI.Modules.Monsters.dll"] = "monster-backend",
+        ["DTMAPI/components/audio/DTMAPI.AudioContent.dll"] = "audio-contract",
+        ["DTMAPI/components/audio/DTMAPI.AudioContent.Authoring.dll"] = "audio-authoring",
+        ["DTMAPI/components/audio/DTMAPI.AudioPreparation.dll"] = "audio-preparation",
+        ["DTMAPI/components/audio/DTMAPI.Modules.Audio.dll"] = "audio-backend",
+        ["DTMAPI/components/audio/audio-decoder/ffmpeg.exe"] = "audio-decoder-ffmpeg.exe",
+        ["DTMAPI/components/audio/audio-decoder/LICENSE.txt"] = "audio-decoder-LICENSE.txt",
+        ["DTMAPI/components/audio/audio-decoder/distribution.json"] = "audio-decoder-distribution.json"
     };
 
     private static readonly string[] InstalledToolFiles =
@@ -39,6 +61,12 @@ internal sealed class PackageLayout
         "collect-logs.ps1",
         "analyze-startup-evidence.ps1",
         "dtmapi-runtime-version.props"
+    };
+
+    private static readonly string[] ModularCommonFiles =
+    {
+        "common/repository.ps1", "common/files.ps1", "common/toolchain.ps1",
+        "common/runtime-lock.ps1", "common/game-session.ps1", "common/installer.ps1"
     };
 
     public string Root { get; }
@@ -70,7 +98,7 @@ internal sealed class PackageLayout
     public static string FindPackageRoot(string? explicitRoot)
     {
         if (!string.IsNullOrWhiteSpace(explicitRoot))
-            return ValidateRootShape(explicitRoot);
+            return Path.GetFullPath(explicitRoot);
 
         DirectoryInfo? current = new(AppContext.BaseDirectory);
         for (int depth = 0; current is not null && depth < 8; depth++, current = current.Parent)
@@ -79,29 +107,17 @@ internal sealed class PackageLayout
                 return Path.GetFullPath(current.FullName);
         }
 
-        throw new InstallerException(InstallerCodes.PackageInvalid, 3,
-            "找不到完整的 DTMAPI-多平台 Workshop 包。请不要单独移动安装器文件。",
-            "The complete DTMAPI multi-platform Workshop package could not be found. Do not move the host tool by itself.",
-            AppContext.BaseDirectory);
-    }
-
-    private static string ValidateRootShape(string path)
-    {
-        string root = Path.GetFullPath(path);
-        if (!HasRootShape(root))
-            throw new InstallerException(InstallerCodes.PackageInvalid, 3,
-                "指定目录不是完整的 DTMAPI-多平台包。",
-                "The selected directory is not a complete DTMAPI multi-platform package.", root);
-        return root;
+        // Diagnostic actions remain usable when the package itself is incomplete.
+        return Path.GetFullPath(AppContext.BaseDirectory);
     }
 
     private static bool HasRootShape(string root)
     {
-        return File.Exists(Path.Combine(root, "Content", "DTMAPI", "release-manifest.json")) &&
+        return File.Exists(Path.Combine(root, "Content", "DTMAPI", "release-manifest.json")) ||
                File.Exists(Path.Combine(root, "Content", "DTMAPIInstaller", "multiplatform-package.json"));
     }
 
-    public static PackageLayout LoadAndValidate(string root)
+    public static PackageLayout Load(string root)
     {
         try
         {
@@ -115,14 +131,13 @@ internal sealed class PackageLayout
 
             ValidateManifestIdentity(release, host);
             if (host.SchemaVersion == 2)
-                ValidateCandidateSource(root, releasePath, host);
-            List<InstallFile> installFiles = ValidateRuntimePayload(root, release);
-            ValidateHostArtifacts(root, host);
+                ValidateCandidateSource(releasePath, host);
+            List<InstallFile> installFiles = ReadRuntimePayload(root, release, host.RuntimeSource);
 
             string archiveRelative = FileSystemSafety.NormalizeRelativePath(host.BepInExArchive.RelativePath);
             string archivePath = FileSystemSafety.CombineUnder(root, archiveRelative);
 
-            AddInstalledTools(root, installFiles, host.SchemaVersion == 2);
+            AddInstalledTools(root, installFiles, host.SchemaVersion == 2, host.RuntimeVersion, host.RuntimeSource);
             FileInfo releaseInfo = new(releasePath);
             installFiles.Add(new InstallFile
             {
@@ -133,6 +148,16 @@ internal sealed class PackageLayout
                 Sha256 = FileSystemSafety.Sha256(releasePath)
             });
 
+            if (host.RuntimeSource is { } source)
+            {
+                foreach (InstallFile file in installFiles)
+                {
+                    string relative = Path.GetRelativePath(root, file.SourcePath).Replace('\\', '/');
+                    PackageFileReceipt receipt = source.SharedFiles.Single(item => item.RelativePath == relative);
+                    if (receipt.Length != file.Length || !string.Equals(receipt.Sha256, file.Sha256, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException("Installed input disagrees with the imported source declaration: " + relative);
+                }
+            }
             return new PackageLayout(root, release, host, releasePath, hostPath, archivePath, installFiles);
         }
         catch (InstallerException)
@@ -151,9 +176,8 @@ internal sealed class PackageLayout
     {
         if (release.SchemaVersion != 1 || host.SchemaVersion is not (1 or 2))
             throw new InvalidDataException("Unsupported Runtime/package schema version.");
-        string version = host.SchemaVersion == 1 ? "0.6.1" : "0.7.0";
-        if (release.DTMAPIVersion != version || release.BinaryVersion != version + ".0" ||
-            release.PackageKind != "workshop-runtime" || host.WorkshopId != "3792681186")
+        ValidateRuntimeVersion(host.SchemaVersion, release.DTMAPIVersion, release.BinaryVersion);
+        if (release.PackageKind != "workshop-runtime" || host.WorkshopId != "3792681186")
             throw new InvalidDataException("The Runtime version or package identity is not supported by this schema.");
         if (host.SchemaVersion == 1)
         {
@@ -186,13 +210,35 @@ internal sealed class PackageLayout
             throw new InvalidDataException("The package does not carry the exact required Linux launch option.");
     }
 
-    private static void ValidateCandidateSource(string root, string releasePath, MultiPlatformPackageManifest host)
+    private static void ValidateRuntimeVersion(int schema, string version, string binaryVersion)
+    {
+        bool supported = schema == 1
+            ? version == "0.6.1" && binaryVersion == "0.6.1.0"
+            : schema == 2 && ((version == "0.7.0" && binaryVersion == "0.7.0.0") ||
+                              (version == CurrentRuntimeVersion && binaryVersion == CurrentRuntimeBinaryVersion));
+        if (!supported)
+            throw new InvalidDataException("The Runtime version or binary version is not supported by this schema.");
+    }
+
+    private static IEnumerable<string> GetInstalledToolFiles(bool candidate, string runtimeVersion)
+    {
+        IEnumerable<string> files = InstalledToolFiles;
+        if (candidate)
+        {
+            files = files.Append("dtmapi-product-definitions.json");
+            if (runtimeVersion != "0.7.0")
+                files = files.Concat(ModularCommonFiles).Concat(new[] { "uninstall-common.ps1", "uninstall-targets.json" });
+        }
+        return files;
+    }
+
+    private static void ValidateCandidateSource(string releasePath, MultiPlatformPackageManifest host)
     {
         CandidateRuntimeSource source = host.RuntimeSource!;
         if (FileSystemSafety.Sha256(releasePath) != source.ReleaseManifestSha256)
             throw new InvalidDataException("Candidate release manifest differs from its imported source.");
         IEnumerable<string> expected = ExpectedRuntimeFiles.Select(name => "Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/" + name)
-            .Concat(InstalledToolFiles.Concat(new[] { "install-bepinex.ps1", "install-to-game.ps1", "invoke-dtmapi-action.cmd", "probe-powershell-host.ps1", "dtmapi-product-definitions.json" })
+            .Concat(GetInstalledToolFiles(true, host.RuntimeVersion).Concat(new[] { "install-bepinex.ps1", "install-to-game.ps1", "invoke-dtmapi-action.cmd", "probe-powershell-host.ps1" })
                 .Select(name => "Content/DTMAPIInstaller/tools/" + name))
             .Concat(new[] {
                 "Content/DTMAPI/release-manifest.json",
@@ -200,14 +246,13 @@ internal sealed class PackageLayout
                 "Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/assets/branding/dtmapi-icon.png",
                 "Content/DTMAPIInstaller/Payload/DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll"
             });
+        if (host.RuntimeVersion == CurrentRuntimeVersion) expected = expected.Concat(RuntimeModuleFiles.Keys.Select(path => "Content/DTMAPIInstaller/Payload/" + path));
         if (!source.SharedFiles.Select(file => file.RelativePath).OrderBy(path => path, StringComparer.Ordinal)
             .SequenceEqual(expected.OrderBy(path => path, StringComparer.Ordinal), StringComparer.Ordinal))
             throw new InvalidDataException("Candidate shared file set is not exact.");
-        foreach (PackageFileReceipt file in source.SharedFiles)
-            AssertReceipt(FileSystemSafety.CombineUnder(root, file.RelativePath), file.Length, file.Sha256, file.RelativePath);
     }
 
-    private static List<InstallFile> ValidateRuntimePayload(string root, ReleaseManifestV1 release)
+    private static List<InstallFile> ReadRuntimePayload(string root, ReleaseManifestV1 release, CandidateRuntimeSource? sourceReceipt)
     {
         if (release.IncludedAssemblies.Count != ExpectedRuntimeFiles.Length)
             throw new InvalidDataException("The Runtime manifest must contain exactly five assemblies.");
@@ -222,8 +267,7 @@ internal sealed class PackageLayout
         {
             string source = FileSystemSafety.CombineUnder(root,
                 "Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/" + entry.FileName);
-            AssertReceipt(source, entry.Length, entry.Sha256, entry.FileName);
-            if (entry.FileVersion != release.BinaryVersion || FileVersionInfo.GetVersionInfo(source).FileVersion != release.BinaryVersion)
+            if (entry.FileVersion != release.BinaryVersion)
                 throw new InvalidDataException("Runtime file version disagrees with the release: " + entry.FileName);
             result.Add(new InstallFile
             {
@@ -238,52 +282,48 @@ internal sealed class PackageLayout
 
         string branding = FileSystemSafety.CombineUnder(root,
             "Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/assets/branding/dtmapi-icon.png");
-        FileInfo brandingInfo = new(branding);
-        if (!brandingInfo.Exists || brandingInfo.Length == 0)
-            throw new InvalidDataException("The Runtime branding asset is missing.");
+        PackageFileReceipt brandingInfo = ReadSupplementalReceipt(root, branding, sourceReceipt);
         result.Add(new InstallFile
         {
             Kind = "runtime-asset",
             SourcePath = branding,
             TargetRelativePath = "BepInEx/plugins/DTMAPI/assets/branding/dtmapi-icon.png",
             Length = brandingInfo.Length,
-            Sha256 = FileSystemSafety.Sha256(branding)
+            Sha256 = brandingInfo.Sha256
         });
 
-        if (release.OptionalComponents.Count != 1)
-            throw new InvalidDataException("The Runtime package must carry exactly one dormant compatibility component.");
-        OptionalComponentReceipt component = release.OptionalComponents[0];
-        if (!string.Equals(component.ComponentId, "gamebridge-compatibility-host", StringComparison.Ordinal) ||
-            !string.Equals(component.RelativePath.Replace('\\', '/'),
-                "DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll", StringComparison.Ordinal))
-            throw new InvalidDataException("The compatibility component identity is invalid.");
-        string componentSource = FileSystemSafety.CombineUnder(root,
-            "Content/DTMAPIInstaller/Payload/" + component.RelativePath.Replace('\\', '/'));
-        AssertReceipt(componentSource, component.Length, component.Sha256, component.ComponentId);
-        if (component.FileVersion != release.BinaryVersion || FileVersionInfo.GetVersionInfo(componentSource).FileVersion != release.BinaryVersion)
-            throw new InvalidDataException("Compatibility file version disagrees with the release.");
-        result.Add(new InstallFile
+        bool currentModules = release.DTMAPIVersion == CurrentRuntimeVersion;
+        var expectedComponents = new Dictionary<string, string>(StringComparer.Ordinal)
+        { ["DTMAPI/components/compatibility/DTMAPI.GameBridge.DolocTown.Compatibility.dll"] = "gamebridge-compatibility-host" };
+        if (currentModules) foreach (var file in RuntimeModuleFiles) expectedComponents.Add(file.Key, file.Value);
+        if (release.OptionalComponents.Count != expectedComponents.Count)
+            throw new InvalidDataException("The Runtime component file set is incomplete.");
+        foreach (OptionalComponentReceipt component in release.OptionalComponents)
         {
-            Kind = "optional-framework-component",
-            ComponentId = component.ComponentId,
-            SourcePath = componentSource,
-            TargetRelativePath = component.RelativePath.Replace('\\', '/'),
-            Length = component.Length,
-            Sha256 = component.Sha256.ToLowerInvariant(),
-            FileVersion = component.FileVersion
-        });
+            string path = component.RelativePath.Replace('\\', '/');
+            if (!expectedComponents.TryGetValue(path, out string? id) || component.ComponentId != id)
+                throw new InvalidDataException("Unexpected or duplicate Runtime component: " + path);
+            expectedComponents.Remove(path);
+            bool auxiliary = path.StartsWith("DTMAPI/components/audio/audio-decoder/", StringComparison.Ordinal);
+            if (component.FileVersion != (auxiliary ? "" : release.BinaryVersion))
+                throw new InvalidDataException("Runtime component file version disagrees with the release: " + path);
+            result.Add(new InstallFile
+            {
+                Kind = "optional-framework-component", ComponentId = component.ComponentId,
+                SourcePath = FileSystemSafety.CombineUnder(root, "Content/DTMAPIInstaller/Payload/" + path),
+                TargetRelativePath = path, Length = component.Length, Sha256 = component.Sha256.ToLowerInvariant(), FileVersion = component.FileVersion
+            });
+        }
 
         return result;
     }
 
-    private static void AddInstalledTools(string root, ICollection<InstallFile> result, bool candidate)
+    private static void AddInstalledTools(string root, ICollection<InstallFile> result, bool candidate, string runtimeVersion, CandidateRuntimeSource? sourceReceipt)
     {
-        foreach (string fileName in candidate ? InstalledToolFiles.Append("dtmapi-product-definitions.json") : InstalledToolFiles)
+        foreach (string fileName in GetInstalledToolFiles(candidate, runtimeVersion))
         {
             string source = FileSystemSafety.CombineUnder(root, "Content/DTMAPIInstaller/tools/" + fileName);
-            FileInfo info = new(source);
-            if (!info.Exists || info.Length == 0)
-                throw new InvalidDataException("Accepted Windows support tool is missing: " + fileName);
+            PackageFileReceipt info = ReadSupplementalReceipt(root, source, sourceReceipt);
             result.Add(new InstallFile
             {
                 Kind = fileName.EndsWith(".props", StringComparison.OrdinalIgnoreCase) ? "version-authority" :
@@ -292,22 +332,40 @@ internal sealed class PackageLayout
                 SourcePath = source,
                 TargetRelativePath = "DTMAPI/tools/" + fileName,
                 Length = info.Length,
-                Sha256 = FileSystemSafety.Sha256(source)
+                Sha256 = info.Sha256
             });
         }
     }
 
-    private static void ValidateHostArtifacts(string root, MultiPlatformPackageManifest host)
+    private static PackageFileReceipt ReadSupplementalReceipt(string root, string path, CandidateRuntimeSource? source)
     {
-        if (host.HostArtifacts.Count != 2 ||
-            host.HostArtifacts.Count(item => string.Equals(item.Rid, "win-x64", StringComparison.Ordinal)) != 1 ||
-            host.HostArtifacts.Count(item => string.Equals(item.Rid, "linux-x64", StringComparison.Ordinal)) != 1)
-            throw new InvalidDataException("The package must contain exactly one win-x64 host and one linux-x64 host.");
+        string relative = Path.GetRelativePath(root, path).Replace('\\', '/');
+        if (source is not null)
+            return source.SharedFiles.Single(item => item.RelativePath == relative);
 
-        foreach (PackageFileReceipt artifact in host.HostArtifacts)
+        // Published schema 1 did not include tool/branding receipts. Read only those inputs.
+        FileInfo info = new(path);
+        if (!info.Exists || info.Length == 0)
+            throw new InvalidDataException("Package input is missing: " + relative);
+        return new PackageFileReceipt { RelativePath = relative, Length = info.Length, Sha256 = FileSystemSafety.Sha256(path) };
+    }
+
+    public void ValidateInstallPayload()
+    {
+        try
         {
-            string path = FileSystemSafety.CombineUnder(root, FileSystemSafety.NormalizeRelativePath(artifact.RelativePath));
-            AssertReceipt(path, artifact.Length, artifact.Sha256, artifact.Rid + " host");
+            foreach (InstallFile file in InstallFiles)
+            {
+                AssertReceipt(file.SourcePath, file.Length, file.Sha256, file.TargetRelativePath);
+                if (file.FileVersion.Length > 0 && FileVersionInfo.GetVersionInfo(file.SourcePath).FileVersion != file.FileVersion)
+                    throw new InvalidDataException("Runtime file version disagrees with the release: " + file.TargetRelativePath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            throw new InstallerException(InstallerCodes.PackageInvalid, 3,
+                "待安装文件校验失败，未修改游戏文件。",
+                "Install payload validation failed; no game files were changed.", ex.Message, ex);
         }
     }
 

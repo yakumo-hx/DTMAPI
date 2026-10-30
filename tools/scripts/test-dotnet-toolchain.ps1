@@ -6,12 +6,14 @@ $ErrorActionPreference = 'Stop'
 $repo = Get-RepoRoot
 $root = Join-Path $repo ('tmp/test-runs/dotnet-toolchain-' + [guid]::NewGuid().ToString('N'))
 $checks = 0
+$previousSelectedDotnet = $env:DTMAPI_DOTNET_EXE
 function Assert-Toolchain([bool] $Condition, [string] $Message) {
     if (-not $Condition) { throw $Message }
     $script:checks++
 }
 
 try {
+    Remove-Item Env:DTMAPI_DOTNET_EXE -ErrorAction SilentlyContinue
     $hostPath = Get-DotNetExe -RepoRoot $repo -NoProvision
     Push-Location -LiteralPath $repo
     try {
@@ -78,12 +80,19 @@ switch ($Argument) {
     @{ repo = $root; selected = '8.0.421'; failVersion = $false; runtimes = @('Microsoft.NETCore.App 8.0.27 [runtime]') } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'host.json') -Encoding UTF8
     Assert-Toolchain ((Get-DotNetExe -RepoRoot $root -NoProvision) -ceq $script:fakeDotnet) 'A PATH host executing the required SDK was not selected.'
+    $env:DTMAPI_DOTNET_EXE = $script:fakeDotnet
+    Assert-Toolchain ((Get-DotNetExe -RepoRoot $root -NoProvision) -ceq $script:fakeDotnet) 'An explicitly selected valid host was not reused.'
+    $env:DTMAPI_DOTNET_EXE = Join-Path $root 'missing-dotnet.exe'
+    $rejected = $false
+    try { Get-DotNetExe -RepoRoot $root -NoProvision | Out-Null } catch { $rejected = $_.Exception.Message -match 'DTMAPI_DOTNET_EXE' }
+    Assert-Toolchain $rejected 'An invalid explicit host silently fell back to PATH.'
     $policy.sdk.rollForward = 'latestMajor'
     $policy | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $root 'global.json') -Encoding UTF8
     Assert-Toolchain (-not (Test-DtmApiDotNet8Toolchain -Path $script:fakeDotnet -RepoRoot $root)) 'A policy allowing major roll-forward was accepted.'
     Write-Host "Dotnet toolchain: PASS ($checks checks; real SDK $actualSdk; host $hostPath; no build or provisioning)."
 }
 finally {
+    $env:DTMAPI_DOTNET_EXE = $previousSelectedDotnet
     $resolved = [IO.Path]::GetFullPath($root)
     $boundary = [IO.Path]::GetFullPath((Join-Path $repo 'tmp/test-runs')) + [IO.Path]::DirectorySeparatorChar
     if (-not $resolved.StartsWith($boundary, [StringComparison]::OrdinalIgnoreCase)) { throw 'Refusing toolchain fixture cleanup outside tmp/test-runs.' }

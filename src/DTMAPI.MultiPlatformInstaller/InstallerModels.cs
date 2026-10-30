@@ -45,6 +45,7 @@ internal sealed class InstallerOptions
     public string? PackageRoot { get; set; }
     public string? OutputPath { get; set; }
     public bool NonInteractive { get; set; }
+    public bool ConfirmLegacyEquipmentRemoval { get; set; }
     public bool Pause { get; set; }
 }
 

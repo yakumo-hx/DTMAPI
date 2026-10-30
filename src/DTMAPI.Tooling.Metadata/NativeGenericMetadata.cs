@@ -48,13 +48,17 @@ public static class NativeGenericMetadata
                 if (reference is GenericInstanceMethod spec)
                     foreach (var argument in spec.GenericArguments) TypeUse(argument, ct, cm);
                 var method = reference is GenericInstanceMethod generic ? generic.ElementMethod : reference as MethodReference;
+                // A MemberRef signature uses its declaration's !n / !!n, even when
+                // the declaring TypeSpec is closed (and has no GenericParameters).
+                // Only the type/method arguments above and below belong to the caller.
+                int declaringArity = Arity(reference.DeclaringType.GetElementType());
                 if (method != null)
                 {
                     if (method.CallingConvention == MethodCallingConvention.VarArg || method.ExplicitThis) throw NativeSignature.Unsupported(method.FullName);
-                    TypeUse(method.ReturnType, Math.Max(ct, method.DeclaringType.GenericParameters.Count), Math.Max(cm, method.GenericParameters.Count));
-                    foreach (var parameter in method.Parameters) TypeUse(parameter.ParameterType, Math.Max(ct, method.DeclaringType.GenericParameters.Count), Math.Max(cm, method.GenericParameters.Count));
+                    TypeUse(method.ReturnType, declaringArity, method.GenericParameters.Count);
+                    foreach (var parameter in method.Parameters) TypeUse(parameter.ParameterType, declaringArity, method.GenericParameters.Count);
                 }
-                else if (reference is FieldReference fieldRef) TypeUse(fieldRef.FieldType, ct, cm);
+                else if (reference is FieldReference fieldRef) TypeUse(fieldRef.FieldType, declaringArity, 0);
                 if (!hosts.TryGetValue(Scope(reference.DeclaringType), out var host)) return;
                 var type = FindType(host, reference.DeclaringType.GetElementType().FullName);
                 XElement definition;

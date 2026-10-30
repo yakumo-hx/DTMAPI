@@ -33,19 +33,35 @@ namespace DTMAPI.BepInExBootstrap
                 runtime.Config.WriteConfig(inputManifest, inputSettings);
                 entryRegistration?.Update(DtmKeybindList.Parse(inputSettings.OpenConfig), DtmInputScope.Title);
             }, titleScreenOnly: true);
-            api.SetDisplayName(inputManifest, () => T("controller.title", "Input settings"));
+            api.SetDisplayName(inputManifest, () => T("controller.title", "DTMAPI Settings"));
             defaults.AddKeybindOption(inputManifest, () => T("controller.entry", "Open Mod config"),
                 () => T("controller.help", "Title only"), () => inputSettings.OpenConfig, v => inputSettings.OpenConfig = v, () => "F8");
             api.AddBoolOption(inputManifest, () => T("controller.nativeEntry", "Show Mod config in the main menu"),
-                () => T("controller.nativeEntryHelp", "Off by default. Save and restart the game to apply."),
+                () => T("controller.nativeEntryHelp", "On by default. Save and restart the game to apply."),
                 () => inputSettings.ShowNativeTitleEntry, value => inputSettings.ShowNativeTitleEntry = value);
-            api.AddParagraph(inputManifest, () => T("controller.nativeEntryHelp", "Off by default. Save and restart the game to apply."));
-            api.AddParagraph(inputManifest, () => {
-                ControllerButtonAdapter.Refresh(ReflectedUnityInput.GetUnityFrameCount());
-                return ControllerButtonAdapter.Available ? T("controller.connected", "Gamepad detected") : T("controller.absent", "No Gamepad detected");
-            });
-            api.AddParagraph(inputManifest, () => T("controller.help", "Title only"));
-            api.AddParagraph(inputManifest, () => T("controller.limits", "Axis and trigger bindings unsupported."));
+            ((IDtmConfigMenuRestartApi)api).RequireRestartForLastOption(inputManifest);
+            api.AddBoolOption(inputManifest, () => T("controller.bgmAppend", "Append BGM tracks"),
+                () => T("controller.bgmAppendHelp", "Append and deduplicate tracks in official order. When off, replace each group. Restart to apply."),
+                () => inputSettings.AppendBgmGroups, value => inputSettings.AppendBgmGroups = value);
+            ((IDtmConfigMenuRestartApi)api).RequireRestartForLastOption(inputManifest);
+        }
+        internal bool ReadStartupBgmAppend() => runtime.Config.ReadConfig<InputSettings>(inputManifest).AppendBgmGroups;
+
+        private void SaveConfigPage(IConfigMenuPage page)
+        {
+            TryPageAction(page, T("config.saved", "Saved"), () => configMenu.Save(page.Manifest.UniqueID));
+        }
+
+        private bool TryShowRestartNoticeOnClose()
+        {
+            if (!configMenu.HasUnnotifiedRestartChanges()) return false;
+            var dialog = new DtmConfigDialog(T("config.restartTitle", "Restart required"),
+                T("config.restartBody", "Restart the game to apply:") + "\n\n" + string.Join("\n\n", configMenu.GetPendingRestartChanges()),
+                new[] { new DtmConfigDialogButton("ok", T("dialog.ok", "Got it")) }, "ok", size: new DtmConfigDialogSize(480, 300));
+            return ((IDtmConfigMenuDialogsApi)configMenu).TryShowDialog(inputManifest, dialog, _ => {
+                configMenu.AcknowledgeRestartChanges();
+                CloseOwnedRuntimeMenu();
+            }, out _);
         }
 
         // RecordInputFrame has settled the snapshot; consume it before Update clears frame edges.
@@ -74,7 +90,18 @@ namespace DTMAPI.BepInExBootstrap
             public string OpenConfig { get; set; } = "F8";
 
             [DataMember]
-            public bool ShowNativeTitleEntry { get; set; }
+            public bool ShowNativeTitleEntry { get; set; } = true;
+            [DataMember]
+            public bool AppendBgmGroups { get; set; } = true;
+
+            // DataContractJsonSerializer skips initializers; present members override these defaults.
+            [OnDeserializing]
+            private void OnDeserializing(StreamingContext context)
+            {
+                OpenConfig = "F8";
+                ShowNativeTitleEntry = true;
+                AppendBgmGroups = true;
+            }
         }
     }
 }

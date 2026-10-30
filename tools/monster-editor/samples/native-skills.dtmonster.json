@@ -1,0 +1,56 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterNativeSkillsPack",
+    "name": "原生投放参数示例",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "bomber",
+      "templateId": "bomber",
+      "overrides": {},
+      "behavior": {
+        "mode": "inherit-native"
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      },
+      "nativeAttacks": [
+        {
+          "attackId": "AtkNormal",
+          "damage": 31,
+          "criticalRate": 0,
+          "landmine": {
+            "range": 7,
+            "recoilGameSeconds": 0.6,
+            "throwImpulse": 4,
+            "liveGameSeconds": 0.6,
+            "reactionGameSeconds": 1.2
+          }
+        },
+        {
+          "attackId": "AtkSkill01",
+          "damage": 37,
+          "criticalRate": 1,
+          "timeBomb": {
+            "range": 9,
+            "recoilGameSeconds": 1.1,
+            "throwImpulse": 3,
+            "maxThrowImpulse": 9,
+            "count": 2
+          }
+        }
+      ]
+    }
+  ],
+  "nativeOverrides": [],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": []
+}

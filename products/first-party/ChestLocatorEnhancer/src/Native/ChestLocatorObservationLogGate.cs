@@ -8,7 +8,6 @@ namespace DTMAPI.ChestLocatorEnhancer
         private bool lastWidened;
 
         internal bool ShouldLog(
-            bool verbose,
             bool useBox,
             bool nativeAutoUseBox,
             bool widened)
@@ -24,7 +23,7 @@ namespace DTMAPI.ChestLocatorEnhancer
             lastNativeAutoUseBox =
                 nativeAutoUseBox;
             lastWidened = widened;
-            return verbose || changed;
+            return changed;
         }
 
         internal void Reset()

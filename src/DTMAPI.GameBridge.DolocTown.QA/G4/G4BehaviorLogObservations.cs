@@ -55,24 +55,4 @@ namespace DTMAPI.GameBridge.DolocTown.QA
         }
     }
 
-    internal static class AudioReplacementBehaviorObservation
-    {
-        private const string PaperBox = "AudioReplacement paper-box OnInteract owner=DungeonResourceModelPaperBox event=PLAY_RESOURCE_PAPER_BOX";
-        private const string Replacement = "AudioReplacement event owner=Yuuka.DTMAPI.ManboCardboardAudio replacement=manbo-paper-box event=PLAY_RESOURCE_PAPER_BOX played=True suppressed=True";
-
-        internal static G4FixtureStepResult Observe(string logText, string readinessDetails)
-        {
-            string text = logText ?? string.Empty;
-            bool paperBox = text.IndexOf(PaperBox, StringComparison.Ordinal) >= 0;
-            bool replacement = text.IndexOf(Replacement, StringComparison.Ordinal) >= 0;
-            if (!paperBox || !replacement)
-            {
-                return G4FixtureStepResult.Pending(
-                    readinessDetails + "; waiting for runner real E input; paperBoxOnInteract=" + paperBox.ToString().ToLowerInvariant() +
-                    "; replacementPlayedSuppressed=" + replacement.ToString().ToLowerInvariant());
-            }
-            return G4FixtureStepResult.Verified(
-                readinessDetails + "; realInput=E; paperBoxOnInteract=true; replacementPlayed=true; nativeSuppressed=true; refresh=false");
-        }
-    }
 }

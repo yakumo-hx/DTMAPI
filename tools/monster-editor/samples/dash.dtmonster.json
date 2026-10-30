@@ -1,0 +1,115 @@
+{
+  "format": "dtmapi.monster-project",
+  "version": 4,
+  "pack": {
+    "id": "Samples.MonsterDash",
+    "name": "冲刺怪物",
+    "author": "DTMAPI",
+    "version": "0.1.0"
+  },
+  "monsters": [
+    {
+      "id": "fast",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "tint": "#F3BC65",
+        "display": {
+          "name": "冲刺配置 · fast",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "charge",
+            "kind": "dash",
+            "dash": {
+              "distance": 6,
+              "speed": 6,
+              "hitStartFraction": 0,
+              "hitEndFraction": 1,
+              "damage": 13,
+              "range": 16,
+              "windupGameSeconds": 0.8,
+              "recoveryGameSeconds": 0.4,
+              "cooldownGameSeconds": 2
+            }
+          }
+        ],
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "charge_step",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "charge"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    },
+    {
+      "id": "long",
+      "templateId": "ball_drone",
+      "overrides": {
+        "health": 300,
+        "tint": "#F3BC65",
+        "display": {
+          "name": "冲刺配置 · long",
+          "nameplate": true,
+          "healthBar": "Always"
+        }
+      },
+      "behavior": {
+        "mode": "configured-sequence",
+        "skills": [
+          {
+            "id": "charge",
+            "kind": "dash",
+            "dash": {
+              "distance": 8,
+              "speed": 2,
+              "hitStartFraction": 0,
+              "hitEndFraction": 1,
+              "damage": 13,
+              "range": 16,
+              "windupGameSeconds": 0.5,
+              "recoveryGameSeconds": 0.4,
+              "cooldownGameSeconds": 2
+            }
+          }
+        ],
+        "sequence": {
+          "repeatCount": 1,
+          "steps": [
+            {
+              "id": "charge_step",
+              "action": "skill",
+              "maxGameSeconds": 10,
+              "skillId": "charge"
+            }
+          ]
+        }
+      },
+      "drops": {
+        "mode": "inherit",
+        "minCount": null,
+        "maxCount": null
+      }
+    }
+  ],
+  "dropPools": [],
+  "spawnRules": [],
+  "assets": [],
+  "dependencies": [],
+  "catalog": null
+}

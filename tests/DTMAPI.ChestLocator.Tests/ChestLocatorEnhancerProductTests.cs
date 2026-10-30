@@ -1,7 +1,14 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using DTMAPI.ChestLocatorEnhancer;
+using DTMAPI.Testing;
+using DolocTown;
+using DolocTown.GameData;
 
 namespace DTMAPI.UnitTests
 {
@@ -9,447 +16,204 @@ namespace DTMAPI.UnitTests
     {
         internal static void RunAll()
         {
-            EnabledAndDisabledStatesChooseOneOwnershipAction();
-            CompatibilityFirstActivationIsRejected();
-            FailedUnpatchObservationCannotPublishZero();
-            AdvancedIdentityAndExactHookOwnerStayFrozen();
-            NativeGraphTraversalExecutesCaseShelfAutoUseBoxAndDedup();
-            RepeatedTraversalCachesMetadataAndLimitsLogs();
+            OwnershipAndResidualState();
+            IndexedGraphIncludesDerivedDeepRoomsAndPreservesNativeOrder();
+            QueryReadsCurrentMembershipAndNativeSettings();
+            ReentryFailureAndNextArchiveReleaseAllReferences();
+            RepeatedObservationsOnlyLogChanges();
+            PhysicalHarmonyFixtureExecutesOwnershipAndLifecycle();
         }
 
-        private static void EnabledAndDisabledStatesChooseOneOwnershipAction()
+        private static void PhysicalHarmonyFixtureExecutesOwnershipAndLifecycle()
         {
-            int installs = 0;
-            int unpatches = 0;
-            ChestLocatorHookOwnership.ApplyEnabledState(
-                enabled: true,
-                () => installs++,
-                () => unpatches++);
-            ChestLocatorHookOwnership.ApplyEnabledState(
-                enabled: false,
-                () => installs++,
-                () => unpatches++);
-
-            Assert(installs == 1 && unpatches == 1,
-                "Enabled must choose one install; disabled must choose one exact-owner unpatch.");
+            string configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+            string executable = Path.Combine(DtmApiTestSession.FindRepositoryRoot(), "tests", "DTMAPI.UnitTests",
+                "Fixtures", "ChestLocatorHarmonyOwnerFixture", "bin", configuration, "net48", "ChestLocatorHarmonyOwnerFixture.exe");
+            if (!File.Exists(executable))
+                throw new FileNotFoundException("The product build did not produce the physical Harmony owner fixture.", executable);
+            var result = BoundedTestProcess.Run(new ProcessStartInfo(executable));
+            Assert(result.ExitCode == 0 && result.Output.Contains("ChestLocatorHarmonyOwnerFixture: OK", StringComparison.Ordinal),
+                "Physical Harmony owner fixture failed. exit=" + result.ExitCode + ", output=" + result.Output + ", error=" + result.Error);
         }
 
-        private static void CompatibilityFirstActivationIsRejected()
+        private static void OwnershipAndResidualState()
         {
-            Assert(ChestLocatorHookOwnership.DecideInstall(
-                       compatibilityOwnerPresent: true,
-                       productOwnerPresent: false) ==
-                   ChestLocatorInstallDecision.RejectCompatibilityOwner,
-                "Compatibility-first startup must reject before ProductNative installation.");
-            Assert(ChestLocatorHookOwnership.DecideInstall(
-                       compatibilityOwnerPresent: false,
-                       productOwnerPresent: true) ==
-                   ChestLocatorInstallDecision.RejectDuplicateProductOwner,
-                "A duplicate ProductNative owner must reject instead of stacking another Postfix.");
-            Assert(ChestLocatorHookOwnership.DecideInstall(
-                       compatibilityOwnerPresent: false,
-                       productOwnerPresent: false) ==
-                   ChestLocatorInstallDecision.Install,
-                "An unowned target must admit exactly one ProductNative install.");
+            int installs = 0, unpatches = 0;
+            ChestLocatorHookOwnership.ApplyEnabledState(true, () => installs++, () => unpatches++);
+            ChestLocatorHookOwnership.ApplyEnabledState(false, () => installs++, () => unpatches++);
+            Assert(installs == 1 && unpatches == 1, "Enable and disable each select exactly one ownership action.");
+            Assert(ChestLocatorHookOwnership.DecideInstall(false, true) == ChestLocatorInstallDecision.RejectDuplicateProductOwner, "A duplicate product owner must fail closed.");
+            Assert(ChestLocatorHookOwnership.DecideInstall(false, false) == ChestLocatorInstallDecision.Install, "An unowned target can install.");
+            var residual = ChestLocatorHookOwnership.FromExactOwnerObservation(true);
+            var clean = ChestLocatorHookOwnership.FromExactOwnerObservation(false);
+            Assert(residual.IsInstalled && residual.InstalledPatchCount == 1 && !clean.IsInstalled && clean.InstalledPatchCount == 0, "Residual physical ownership cannot be reported as clean.");
         }
 
-        private static void FailedUnpatchObservationCannotPublishZero()
+        private static void IndexedGraphIncludesDerivedDeepRoomsAndPreservesNativeOrder()
         {
-            ChestLocatorObservedHookState retained =
-                ChestLocatorHookOwnership.FromExactOwnerObservation(
-                    productOwnerPresent: true);
-            ChestLocatorObservedHookState cleared =
-                ChestLocatorHookOwnership.FromExactOwnerObservation(
-                    productOwnerPresent: false);
-
-            Assert(retained.IsInstalled &&
-                   retained.InstalledPatchCount == 1,
-                "A failed unpatch with the exact owner still observed must retain installed/count=1.");
-            Assert(!cleared.IsInstalled &&
-                   cleared.InstalledPatchCount == 0,
-                "Zero may be published only after the exact owner is observed absent.");
+            var f = new Fixture();
+            var child = new Room();
+            var deep = new Room();
+            f.Room.DM_building.Buildings.Add(new Building { room = child });
+            child.DM_building.Buildings.Add(new Building { room = deep });
+            deep.DM_building.Buildings.Add(new Building { room = f.Room });
+            var derived = new DerivedCase { IsShared = true };
+            var derivedShelf = new DerivedShelf { IsShared = true };
+            var box = new DerivedBox();
+            derivedShelf.inventory.Items.Add(box);
+            deep.DM_equipment.Entries.AddRange(new Equipment[] { derived, derivedShelf, new Equipment() });
+            f.Room.DM_equipment.Entries.Add(new Case { IsShared = true, inventory = derived.inventory });
+            // Preserve the native result verbatim, including native duplicates/null.
+            var native = new[] { f.Native[0], f.Native[0], null! };
+            var result = Query(f, native: native);
+            EqualReferences(result.Inventories, native.Concat(new[] { f.Case.inventory, derived.inventory, f.Box.inventory, box.inventory }).ToArray());
+            Assert(result.Counts.ScannedRootCount == 3, "Deep graph cycle and overlapping seeds must visit each room once.");
+            Assert(result.Counts.AppendedInventoryCount == 4, "Every additional inventory appears once by reference.");
+            Assert(f.Room.DM_equipment.IndexQueries == 2 && child.DM_equipment.IndexQueries == 2 && deep.DM_equipment.IndexQueries == 2, "One query per relevant native type, no AllEquipments enumeration.");
+            EqualReferences(Query(f, native: native).Inventories, result.Inventories);
+            ScratchIsEmpty();
         }
 
-        private static void AdvancedIdentityAndExactHookOwnerStayFrozen()
+        private static void QueryReadsCurrentMembershipAndNativeSettings()
         {
-            string root = ProductRoot();
-            string manifest = File.ReadAllText(Path.Combine(root, "manifest.json"));
-            string author = File.ReadAllText(Path.Combine(root, "dtmapi.author.json"));
-            string hook = File.ReadAllText(Path.Combine(root, "src", "Native", "ChestLocatorEnhancerHookInstaller.cs"));
-            string callback = File.ReadAllText(Path.Combine(root, "src", "Native", "ChestLocatorEnhancerCallbacks.cs"));
-            string entry = File.ReadAllText(Path.Combine(root, "src", "ModEntry.cs"));
-
-            Assert(manifest.Contains("\"UniqueID\": \"DTMAPI.ChestLocatorEnhancerMod\"", StringComparison.Ordinal) &&
-                   manifest.Contains("\"EntryDll\": \"DTMAPI.ChestLocatorEnhancer.dll\"", StringComparison.Ordinal) &&
-                   manifest.Contains("\"CodeModKind\": \"Advanced\"", StringComparison.Ordinal),
-                "ChestLocatorEnhancer must retain the admitted Workshop identity and Advanced package DLL.");
-            Assert(author.Contains("\"referencePolicyId\": \"doloctown-23762374-chestlocator-v1\"", StringComparison.Ordinal) &&
-                   author.Contains("\"0Harmony\"", StringComparison.Ordinal) &&
-                   author.Contains("\"Assembly-CSharp\"", StringComparison.Ordinal),
-                "ChestLocatorEnhancer must use the one tracked 0.5.5 native reference policy.");
-            Assert(hook.Contains("\"dtmapi.mod.dtmapi.chestlocatorenhancermod\"", StringComparison.Ordinal) &&
-                   hook.Contains("\"DolocTown.GameData.ArchiveDataHandle\"", StringComparison.Ordinal) &&
-                   hook.Contains("\"UnityEngine.Vector2Int\"", StringComparison.Ordinal) &&
-                   Count(hook, "harmony.Patch(") == 1,
-                "ChestLocatorEnhancer must own one Postfix on the exact three-argument inventory target.");
-            Assert(!callback.Contains("TAnchor", StringComparison.Ordinal) &&
-                   !callback.Contains("TArea", StringComparison.Ordinal) &&
-                   !callback.Contains("__0", StringComparison.Ordinal) &&
-                   !callback.Contains("__1", StringComparison.Ordinal),
-                "The ProductNative Postfix must not bind and box unused Vector2Int arguments.");
-            Assert(entry.IndexOf("ReadConfig<ChestLocatorEnhancerConfig>", StringComparison.Ordinal) <
-                   entry.IndexOf("nativeRuntime.Configure(config, \"Entry\")", StringComparison.Ordinal),
-                "Entry must read configuration before deciding whether native ownership is needed.");
-        }
-
-        private static void NativeGraphTraversalExecutesCaseShelfAutoUseBoxAndDedup()
-        {
-            TraversalFixture fixture = CreateTraversalFixture();
-            ChestLocatorTraversalResult enabled =
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: true,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: true,
-                    nativeAutoUseBox: true,
-                    fixture.Native);
-
-            Assert(enabled.AppendedInventoryCount == 2 &&
-                   enabled.SharedCaseCount == 1 &&
-                   enabled.SharedStorageBoxCount == 1,
-                "The executable graph must append one shared Case and one unique StorageShelf ItemBox inventory.");
-            Assert(enabled.ScannedRootCount == 1 &&
-                   enabled.ScannedEquipmentCount == 4,
-                "Overlapping archive/root/farm seeds must scan one room graph once, while non-locator containers remain observed but excluded.");
-            Assert(enabled.Inventories.Length == 3 &&
-                   ReferenceEquals(enabled.Inventories.GetValue(0), fixture.Native[0]) &&
-                   ReferenceEquals(enabled.Inventories.GetValue(1), fixture.CaseInventory) &&
-                   ReferenceEquals(enabled.Inventories.GetValue(2), fixture.BoxInventory),
-                "Widening must preserve native order and append inventories once by reference identity.");
-
-            ChestLocatorTraversalResult nativeAutoUseBoxOff =
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: true,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: true,
-                    nativeAutoUseBox: false,
-                    fixture.Native);
-            Assert(nativeAutoUseBoxOff.AppendedInventoryCount == 1 &&
-                   nativeAutoUseBoxOff.SharedCaseCount == 1 &&
-                   nativeAutoUseBoxOff.SharedStorageBoxCount == 0,
-                "Native autoUseBox=false must suppress StorageShelf ItemBox widening without suppressing shared Cases.");
-
-            ChestLocatorTraversalResult shelfOptionOff =
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: true,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: false,
-                    nativeAutoUseBox: true,
-                    fixture.Native);
-            Assert(shelfOptionOff.AppendedInventoryCount == 1 &&
-                   shelfOptionOff.SharedStorageBoxCount == 0,
-                "The StorageShelf option must fail closed independently.");
-
-            ChestLocatorTraversalResult callUseBoxOff =
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: false,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: true,
-                    nativeAutoUseBox: true,
-                    fixture.Native);
-            Assert(callUseBoxOff.AppendedInventoryCount == 1 &&
-                   callUseBoxOff.SharedStorageBoxCount == 0,
-                "The native call's useBox=false argument must suppress StorageShelf ItemBox widening.");
-
-            string readme = File.ReadAllText(Path.Combine(ProductRoot(), "README.md"));
-            Assert(readme.Contains("sole owner of inventory contents", StringComparison.Ordinal) &&
-                   readme.Contains("CountItem/CostItem", StringComparison.Ordinal),
-                "The product contract must leave contents and transactions with the game.");
-        }
-
-        private static void RepeatedTraversalCachesMetadataAndLimitsLogs()
-        {
-            TraversalFixture fixture = CreateTraversalFixture();
-            for (int i = 0; i < 8; i++)
+            var f = new Fixture();
+            foreach (bool useBox in new[] { false, true })
+            foreach (bool auto in new[] { false, true })
             {
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: true,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: true,
-                    nativeAutoUseBox: true,
-                    fixture.Native);
+                var result = Query(f, useBox, auto);
+                Assert(result.Inventories.Cast<LinearInventory>().Contains(f.Case.inventory), "Shared Case is independent of both box settings.");
+                Assert(result.Inventories.Cast<LinearInventory>().Contains(f.Box.inventory) == (useBox && auto), "Shelf expansion needs both settings.");
+                Assert(!result.Inventories.Cast<LinearInventory>().Contains(f.Hidden.inventory), "Remote non-shared Case must not enter.");
             }
+            var replacement = new ItemBox();
+            f.Shelf.inventory.Items.Clear();
+            f.Shelf.inventory.Items.Add(replacement);
+            var current = Query(f);
+            Assert(!current.Inventories.Cast<LinearInventory>().Contains(f.Box.inventory) && current.Inventories.Cast<LinearInventory>().Contains(replacement.inventory), "Next query must use the shelf's current box.");
+            f.Shelf.IsShared = false; f.Case.IsShared = false;
+            Assert(ReferenceEquals(Query(f).Inventories, f.Native), "No additions returns the original native array.");
+            f.Hidden.IsShared = true;
+            Assert(Query(f).Inventories.Cast<LinearInventory>().Contains(f.Hidden.inventory), "Changing sharing is visible on the next query.");
+            var added = new Case { IsShared = true };
+            f.Room.DM_equipment.Entries.Add(added);
+            Assert(Query(f).Inventories.Cast<LinearInventory>().Contains(added.inventory), "New indexed container is immediately visible.");
+            var child = new Room(); f.Room.DM_building.Buildings.Add(new Building { room = child });
+            f.Room.DM_equipment.Entries.Remove(added); child.DM_equipment.Entries.Add(added);
+            Assert(Query(f).Inventories.Cast<LinearInventory>().Count(i => ReferenceEquals(i, added.inventory)) == 1, "Moving between reachable rooms preserves one inventory.");
+            child.DM_equipment.Entries.Remove(added);
+            Assert(!Query(f).Inventories.Cast<LinearInventory>().Contains(added.inventory), "Removed container disappears on next query.");
+            ScratchIsEmpty();
+        }
 
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 32; i++)
-            {
-                ChestLocatorInventoryTraversal.AppendSharedInventories(
-                    fixture.Archive,
-                    fixture.Root,
-                    useBox: true,
-                    includeSharedCases: true,
-                    includeSharedStorageShelfBoxes: true,
-                    nativeAutoUseBox: true,
-                    fixture.Native);
-            }
-            long allocated =
-                GC.GetAllocatedBytesForCurrentThread() -
-                before;
-            Assert(allocated <= 262144,
-                "Thirty-two warmed repeated traversals allocated " +
-                allocated +
-                " bytes; reflection metadata or graph scratch reuse regressed.");
+        private static void ReentryFailureAndNextArchiveReleaseAllReferences()
+        {
+            var outer = new Fixture(); var nested = new Fixture();
+            outer.Room.DM_equipment.OnQuery = () => {
+                outer.Room.DM_equipment.OnQuery = null;
+                var inside = Query(nested);
+                Assert(inside.Inventories.Cast<LinearInventory>().Contains(nested.Case.inventory) && !inside.Inventories.Cast<LinearInventory>().Contains(outer.Case.inventory), "Nested query must use separate scratch.");
+            };
+            var result = Query(outer);
+            Assert(result.Inventories.Cast<LinearInventory>().Contains(outer.Case.inventory) && !result.Inventories.Cast<LinearInventory>().Contains(nested.Case.inventory), "Nested query must not alter its caller's result.");
+            ScratchIsEmpty();
+            outer.Room.DM_equipment.OnQuery = () => throw new InvalidOperationException("index failure");
+            bool failed = false;
+            try { Query(outer); } catch (TargetInvocationException e) { failed = e.InnerException?.Message == "index failure"; }
+            Assert(failed, "Failure fixture must reach its intended boundary.");
+            ScratchIsEmpty();
+            var next = Query(nested);
+            Assert(!next.Inventories.Cast<LinearInventory>().Contains(outer.Case.inventory), "Next archive cannot see a failed query's inventories.");
+            Assert(typeof(ChestLocatorTraversalCounts).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).All(f => f.FieldType == typeof(int)), "Retained diagnostics contain only counts.");
+        }
 
+        private static void RepeatedObservationsOnlyLogChanges()
+        {
             var gate = new ChestLocatorObservationLogGate();
-            int logs = 0;
-            if (gate.ShouldLog(false, true, true, true))
-                logs++;
-            for (int i = 0; i < 32; i++)
-                if (gate.ShouldLog(false, true, true, true))
-                    logs++;
-            if (gate.ShouldLog(false, true, false, false))
-                logs++;
-            if (gate.ShouldLog(true, true, false, false))
-                logs++;
-            Assert(logs == 3,
-                "Repeated stable observations must log only once; state transitions and explicit verbose mode may log again.");
+            Assert(gate.ShouldLog(true, true, true), "First observation logs.");
+            for (int i = 0; i < 32; i++) Assert(!gate.ShouldLog(true, true, true), "Stable queries do not amplify logs.");
+            Assert(gate.ShouldLog(true, false, false), "Changed settings or widening logs.");
+            gate.Reset();
+            Assert(gate.ShouldLog(true, false, false), "A lifecycle reset permits its first observation.");
         }
 
-        private static TraversalFixture CreateTraversalFixture()
+        private static ChestLocatorTraversalResult Query(Fixture f, bool useBox = true, bool auto = true, LinearInventory[]? native = null) =>
+            ChestLocatorInventoryTraversal.AppendSharedInventories(f.Archive, f.Room, useBox, auto, native ?? f.Native);
+
+        private static void EqualReferences(Array actual, Array expected)
         {
-            var nativeInventory =
-                new TraversalInventory("native");
-            var caseInventory =
-                new TraversalInventory("case");
-            var boxInventory =
-                new TraversalInventory("box");
-            var sharedCase =
-                new DolocTown.Case
-                {
-                    IsShared = true,
-                    inventory = caseInventory
-                };
-            var shelfInventory =
-                new TraversalShelfInventory(
-                    new object[]
-                    {
-                        new DolocTown.ItemBox
-                        {
-                            inventory = boxInventory
-                        },
-                        new DolocTown.ItemBox
-                        {
-                            inventory = boxInventory
-                        },
-                        new DolocTown.ItemBox
-                        {
-                            inventory = caseInventory
-                        }
-                    });
-            var shelf =
-                new DolocTown.StorageShelf
-                {
-                    IsShared = true,
-                    inventory = shelfInventory
-                };
-            var unsharedCase =
-                new DolocTown.Case
-                {
-                    IsShared = false,
-                    inventory =
-                        new TraversalInventory(
-                            "unshared-case")
-                };
-            var unsharedShelf =
-                new DolocTown.StorageShelf
-                {
-                    IsShared = false,
-                    inventory =
-                        new TraversalShelfInventory(
-                            new object[]
-                            {
-                                new DolocTown.ItemBox
-                                {
-                                    inventory =
-                                        new TraversalInventory(
-                                            "unshared-shelf-box")
-                                }
-                            })
-                };
-            var root =
-                new TraversalRoom
-                {
-                    DM_equipment =
-                        new TraversalEquipmentManager(
-                            sharedCase,
-                            shelf,
-                            unsharedCase,
-                            unsharedShelf),
-                    DM_building =
-                        new TraversalBuildingManager(),
-                };
-            root.RootRoom = root;
-            var archive =
-                new TraversalArchive
-                {
-                    currentRoom = root,
-                    MainFarm = root,
-                    farmData =
-                        new TraversalFarmData
-                        {
-                            currentRoom = root,
-                            MainFarm = root
-                        }
-                };
-            return new TraversalFixture(
-                archive,
-                root,
-                new[] { nativeInventory },
-                caseInventory,
-                boxInventory);
+            Assert(actual.Length == expected.Length, "Inventory sequence length differs.");
+            for (int i = 0; i < actual.Length; i++) Assert(ReferenceEquals(actual.GetValue(i), expected.GetValue(i)), "Inventory order/reference differs at " + i);
         }
 
-        private static string ProductRoot() =>
-            Path.Combine(FindRepositoryRoot(), "products", "first-party", "ChestLocatorEnhancer");
-
-        private static string FindRepositoryRoot()
+        private static void ScratchIsEmpty()
         {
-            foreach (string start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
-            {
-                DirectoryInfo? current = new DirectoryInfo(Path.GetFullPath(start));
-                while (current != null)
-                {
-                    if (File.Exists(Path.Combine(current.FullName, "PROJECT.md")) &&
-                        Directory.Exists(Path.Combine(current.FullName, "products", "first-party")))
-                        return current.FullName;
-                    current = current.Parent;
-                }
-            }
-            throw new DirectoryNotFoundException("Could not locate the DTMAPI repository root.");
-        }
-
-        private static int Count(string source, string value)
-        {
-            int count = 0;
-            int index = 0;
-            while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
-            {
-                count++;
-                index += value.Length;
-            }
-            return count;
+            object scratch = typeof(ChestLocatorInventoryTraversal).GetField("cachedScratch", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+            foreach (var field in scratch.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+                if (field.GetValue(scratch) is IEnumerable entries)
+                    Assert(!entries.Cast<object>().Any(), "Scratch retains references after query: " + field.Name);
         }
 
         private static void Assert(bool condition, string message)
         {
-            if (!condition)
-                throw new InvalidOperationException(message);
+            if (!condition) throw new InvalidOperationException(message);
         }
 
-        private sealed class TraversalFixture
+        private sealed class Fixture
         {
-            internal TraversalFixture(
-                TraversalArchive archive,
-                TraversalRoom root,
-                TraversalInventory[] native,
-                TraversalInventory caseInventory,
-                TraversalInventory boxInventory)
+            internal readonly Room Room = new Room();
+            internal readonly Case Case = new Case { IsShared = true };
+            internal readonly Case Hidden = new Case();
+            internal readonly StorageShelf Shelf = new StorageShelf { IsShared = true };
+            internal readonly ItemBox Box = new ItemBox();
+            internal readonly LinearInventory[] Native = { new LinearInventory() };
+            internal readonly ArchiveDataHandle Archive;
+            internal Fixture()
             {
-                Archive = archive;
-                Root = root;
-                Native = native;
-                CaseInventory = caseInventory;
-                BoxInventory = boxInventory;
+                Room.RootRoom = Room;
+                Shelf.inventory.Items.Add(Box);
+                Shelf.inventory.Items.Add(new ItemBox { inventory = Case.inventory });
+                Room.DM_equipment.Entries.AddRange(new Equipment[] { Case, Shelf, Hidden, new Equipment() });
+                Archive = new ArchiveDataHandle { currentRoom = Room, MainFarm = Room, farmData = new FarmArchiveData { currentRoom = Room, MainFarm = Room } };
             }
-
-            internal TraversalArchive Archive { get; }
-            internal TraversalRoom Root { get; }
-            internal TraversalInventory[] Native { get; }
-            internal TraversalInventory CaseInventory { get; }
-            internal TraversalInventory BoxInventory { get; }
         }
-
-        private sealed class TraversalInventory
-        {
-            internal TraversalInventory(string id) =>
-                Id = id;
-
-            internal string Id { get; }
-        }
-
-        private sealed class TraversalArchive
-        {
-            public TraversalRoom? currentRoom;
-            public TraversalRoom? MainFarm;
-            public TraversalFarmData? farmData;
-        }
-
-        private sealed class TraversalFarmData
-        {
-            public TraversalRoom? currentRoom;
-            public TraversalRoom? MainFarm;
-        }
-
-        private sealed class TraversalRoom
-        {
-            public TraversalRoom? RootRoom;
-            public TraversalEquipmentManager? DM_equipment;
-            public TraversalBuildingManager? DM_building;
-        }
-
-        private sealed class TraversalEquipmentManager
-        {
-            internal TraversalEquipmentManager(
-                params object[] equipment) =>
-                AllEquipments = equipment;
-
-            public object[] AllEquipments { get; }
-        }
-
-        private sealed class TraversalBuildingManager
-        {
-            public object[] Buildings { get; } =
-                Array.Empty<object>();
-        }
-
-        private sealed class TraversalShelfInventory
-        {
-            private readonly object[] items;
-
-            internal TraversalShelfInventory(object[] items) =>
-                this.items = items;
-
-            public IEnumerable<object> ReadAll() =>
-                items;
-        }
+        private sealed class DerivedCase : Case { }
+        private sealed class DerivedShelf : StorageShelf { }
+        private sealed class DerivedBox : ItemBox { }
     }
 }
 
+// Contract doubles exercise traversal logic; native index maintenance and real
+// count/max/cost are independently exercised by NativeProbe in the game.
 namespace DolocTown
 {
-    internal sealed class Case
+    internal class LinearInventory
     {
-        public bool IsShared;
-        public object? inventory;
+        internal readonly List<Item> Items = new List<Item>();
+        // The host has both overloads; open generic reflection must never win.
+        public IEnumerable<T> ReadAll<T>() where T : Item => throw new Exception("Open generic ReadAll must not be invoked.");
+        public Item[] ReadAll() => Items.ToArray();
     }
-
-    internal sealed class StorageShelf
+    internal class Item { }
+    internal class ItemBox : Item { public LinearInventory inventory = new LinearInventory(); }
+    internal class Equipment { }
+    internal class Case : Equipment { public bool IsShared; public LinearInventory inventory = new LinearInventory(); }
+    internal class StorageShelf : Equipment { public bool IsShared; public LinearInventory inventory = new LinearInventory(); }
+    internal class Room { public Room? RootRoom; public EquipmentManager DM_equipment = new EquipmentManager(); public BuildingManager DM_building = new BuildingManager(); }
+    internal class Building { public Room? room; }
+    internal class BuildingManager { public List<Building> Buildings = new List<Building>(); }
+    internal class EquipmentManager
     {
-        public bool IsShared;
-        public object? inventory;
-    }
-
-    internal sealed class ItemBox
-    {
-        public object? inventory;
+        internal readonly List<Equipment> Entries = new List<Equipment>();
+        internal int IndexQueries;
+        internal Action? OnQuery;
+        public IEnumerable<Equipment> AllEquipments => throw new Exception("AllEquipments must not be read by this product.");
+        public T[] GetEquipments<T>() where T : Equipment { IndexQueries++; OnQuery?.Invoke(); return Entries.OfType<T>().ToArray(); }
     }
 }
+namespace DolocTown.GameData
+{
+    internal class ArchiveDataHandle { public DolocTown.Room? currentRoom; public DolocTown.Room? MainFarm; public FarmArchiveData? farmData; }
+    internal class FarmArchiveData { public DolocTown.Room? currentRoom; public DolocTown.Room? MainFarm; }
+}
+
+internal static class DolocAPI { }

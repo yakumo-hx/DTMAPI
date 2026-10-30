@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <MonsterSampleSource Condition="'$(MonsterSampleSource)' == ''">../../author-sdk/examples/monster-inheritance/ModEntry.cs</MonsterSampleSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.MonsterContent/DTMAPI.MonsterContent.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.AudioContent/DTMAPI.AudioContent.csproj" />
+    <Compile Include="$(MonsterSampleSource)" />
+  </ItemGroup>
+</Project>

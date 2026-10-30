@@ -21,25 +21,8 @@ namespace DTMAPI.GameBridge.DolocTown
                 ownerId,
                 GameBridgeOwnerDemandCapabilityIds,
                 "GameBridge owner cleanup " + reasonText);
-            removed += TryRemoveGameBridgeOwnerStep("ActionSpeed", ownerId, () => actionSpeedFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("ActionCompletion", ownerId, () => actionCompletionFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("AnimalViewer", ownerId, () => animalViewerFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("AudioReplacement", ownerId, () => audioReplacementFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep(
-                "Camera",
-                ownerId,
-                () => cameraFeature?.RemoveOwner(ownerId, reasonText) ?? 0,
-                failures,
-                () => cameraFeature?.CountOwnerResources(ownerId) ?? 0);
-            removed += TryRemoveGameBridgeOwnerStep("ChestLocatorEnhancer", ownerId, () => chestLocatorEnhancerFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
             removed += TryRemoveGameBridgeOwnerStep("CropHarvesting", ownerId, () => cropHarvestingFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("CustomAnimalAnimator", ownerId, () => customAnimalAnimatorBridgeFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("FishRoeTooltip", ownerId, () => fishRoeTooltipFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
             removed += TryRemoveGameBridgeOwnerStep("EquipmentSlots", ownerId, () => equipmentSlotsFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("SaveSlots", ownerId, () => saveSlotsFeature?.Service.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("FishingAutomationCompatibility", ownerId, () => fishingCompatibilityFeature?.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("DebugConsole", ownerId, () => (debugConsoleApi as IOwnerBoundApiHost)?.RemoveOwner(ownerId, reasonText) ?? 0, failures);
-            removed += TryRemoveGameBridgeOwnerStep("DebugActions", ownerId, () => debugActionApi.RemoveOwner(ownerId, reasonText), failures);
             int remaining = CountGameBridgeOwnerResources(ownerId);
             string details = "Removed GameBridge owner policies, states, leases, callbacks, and native overlays; failedSteps=" +
                 (failures.Count == 0 ? "none" : string.Join("|", failures)) +
@@ -52,20 +35,7 @@ namespace DTMAPI.GameBridge.DolocTown
         internal int CountGameBridgeOwnerResources(string ownerId)
         {
             ownerId ??= string.Empty;
-            int featureRoots = (actionSpeedFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (actionCompletionFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (animalViewerFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (audioReplacementFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (cameraFeature?.CountOwnerResources(ownerId) ?? 0) +
-                (chestLocatorEnhancerFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (cropHarvestingFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (customAnimalAnimatorBridgeFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (fishRoeTooltipFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (equipmentSlotsFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (saveSlotsFeature?.Service.CountOwnerResources(ownerId) ?? 0) +
-                (fishingCompatibilityFeature?.CountOwnerResources(ownerId) ?? 0) +
-                ((debugConsoleApi as IOwnerBoundApiHost)?.CountOwnerResources(ownerId) ?? 0) +
-                debugActionApi.CountOwnerResources(ownerId);
+            int featureRoots = (cropHarvestingFeature?.Service.CountOwnerResources(ownerId) ?? 0) + (equipmentSlotsFeature?.Service.CountOwnerResources(ownerId) ?? 0);
             int demandRoots = runtime.DemandCoordinator.GetOwnerDemandCountForCapabilities(
                 ownerId,
                 GameBridgeOwnerDemandCapabilityIds);

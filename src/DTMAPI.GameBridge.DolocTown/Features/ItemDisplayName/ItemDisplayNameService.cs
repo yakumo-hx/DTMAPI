@@ -12,7 +12,9 @@ namespace DTMAPI.GameBridge.DolocTown
         private readonly DtmApiRuntime runtime;
         private readonly Func<string, string?> resolveDisplayName;
         private readonly Func<bool> isEnvironmentResetHookReady;
+        private readonly Func<string?> resolveLanguage;
         private readonly Dictionary<string, string> cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private string? cachedLanguage;
         private bool cacheLifecycleDemanded;
         private bool cacheReadyPublished;
 
@@ -24,11 +26,13 @@ namespace DTMAPI.GameBridge.DolocTown
         internal ItemDisplayNameService(
             DtmApiRuntime runtime,
             Func<string, string?> resolveDisplayName,
-            Func<bool> isEnvironmentResetHookReady)
+            Func<bool> isEnvironmentResetHookReady,
+            Func<string?>? resolveLanguage = null)
         {
             this.runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             this.resolveDisplayName = resolveDisplayName ?? throw new ArgumentNullException(nameof(resolveDisplayName));
             this.isEnvironmentResetHookReady = isEnvironmentResetHookReady ?? throw new ArgumentNullException(nameof(isEnvironmentResetHookReady));
+            this.resolveLanguage = resolveLanguage ?? ResolveNativeLanguage;
         }
 
         public bool TryGetDisplayName(string itemId, out string displayName)
@@ -40,7 +44,20 @@ namespace DTMAPI.GameBridge.DolocTown
             itemId = (itemId ?? string.Empty).Trim();
             if (itemId.Length == 0)
                 return false;
-            if (cache.TryGetValue(itemId, out displayName))
+
+            string? language = null;
+            try { language = resolveLanguage(); }
+            catch (Exception ex)
+            {
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge", "Shared item display-name language lookup failed.", ex.ToString());
+            }
+            bool languageKnown = !string.IsNullOrWhiteSpace(language);
+            if (!languageKnown || !string.Equals(cachedLanguage, language, StringComparison.Ordinal))
+            {
+                Clear(languageKnown ? "LanguageChanged" : "LanguageUnavailable");
+                cachedLanguage = languageKnown ? language : null;
+            }
+            if (languageKnown && cache.TryGetValue(itemId, out displayName))
                 return true;
             try
             {
@@ -55,6 +72,11 @@ namespace DTMAPI.GameBridge.DolocTown
                 displayName = string.Empty;
                 return false;
             }
+
+            // Returning a fresh native title is safe even if this build no longer
+            // exposes its language identity; retaining that title would not be.
+            if (!languageKnown)
+                return true;
 
             if (!cacheLifecycleDemanded)
             {
@@ -106,6 +128,7 @@ namespace DTMAPI.GameBridge.DolocTown
             int count = cache.Count;
             bool lifecycleDemanded = cacheLifecycleDemanded;
             cache.Clear();
+            cachedLanguage = null;
             if (cacheLifecycleDemanded)
             {
                 GameBridgeDemandRoutes.SetOwnerDemand(
@@ -137,6 +160,13 @@ namespace DTMAPI.GameBridge.DolocTown
                     actualReason,
                     "cacheBefore=" + count + "; cacheAfter=0; demandReleased=true; causalBoundary=DolocAPI.SetEnvCamera");
             }
+        }
+
+        private static string? ResolveNativeLanguage()
+        {
+            Type? config = GameBridgeNativeHelpers.ResolveType("DolocTown.Config.DolocConfig, Assembly-CSharp");
+            object? tables = config?.GetProperty("Tables", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            return tables?.GetType().GetField("_currentL10nId", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(tables) as string;
         }
 
         private static string? ResolveNativeDisplayName(string itemId)

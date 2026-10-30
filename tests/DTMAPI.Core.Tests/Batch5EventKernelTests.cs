@@ -35,6 +35,33 @@ namespace DTMAPI.UnitTests
             TransitionCallbackReentryIsRejectedWithoutStrandingLaterTickets();
             QueuePoliciesAreBoundedCoalescedAndFailureIsolated();
             QueuedRecipientsExcludeRemovedOwnersAndLateSubscribers();
+            ReleaseSettlementFreezesAllRecipientsOnce();
+        }
+
+        private static void ReleaseSettlementFreezesAllRecipientsOnce()
+        {
+            EventManager manager = CreateManager(mainThreadBoundaryEnabled: false);
+            IEventsHelper first = manager.CreateProxy("Owner.A");
+            IEventsHelper second = manager.CreateProxy("Owner.B");
+            var trace = new List<string>();
+            bool addLate = true;
+            first.Input.ButtonReleased += (_, _) =>
+            {
+                trace.Add("A");
+                if (addLate)
+                {
+                    addLate = false;
+                    second.Input.ButtonReleased += (_, _) => trace.Add("late");
+                }
+            };
+            second.Input.ButtonReleased += (_, _) => trace.Add("B");
+            manager.DispatchButtonReleasedToOwners(new[] { "Owner.A", "Owner.B", "owner.a" }, "F10");
+            Assert(string.Join(",", trace) == "A,B", "One release freezes every recipient once, excluding listeners added by an earlier owner and duplicate owners.");
+            EventSlotSnapshot snapshot = FindSlot(manager, "Input.ButtonReleased");
+            Assert(snapshot.EventArgsCreated == 1 && snapshot.PublicationCalls == 1, "A release receipt must produce one event and one membership publication.");
+            trace.Clear();
+            manager.DispatchButtonReleasedToOwners(new[] { "Owner.B", "Owner.A" }, "F10");
+            Assert(string.Join(",", trace) == "B,late,A", "The next release sees the new membership while retaining recipient and registration order.");
         }
 
         private static void ZeroListenerFastPathDoesNotAllocateEventArgsOrSnapshots()
@@ -278,26 +305,24 @@ namespace DTMAPI.UnitTests
             });
             worker.Start();
             worker.Join();
-            Assert(offThreadFailure is InvalidOperationException, "Owner-bound -= must reject the same off-runtime-thread mutation rejected by +=.");
-            Assert(FindSlot(manager, "GameLoop.UpdateTicked").ActiveHandlers == 1, "A rejected off-thread unsubscribe must not mutate membership.");
+            Assert(offThreadFailure == null && FindSlot(manager, "GameLoop.UpdateTicked").ActiveHandlers == 0,
+                "The locked event membership permits release from a worker without requiring a new registration lease.");
+            events.GameLoop.UpdateTicked += handler;
 
             ownerActive = false;
-            bool inactiveRejected = false;
-            try
-            {
-                events.GameLoop.UpdateTicked -= handler;
-            }
-            catch (InvalidOperationException)
-            {
-                inactiveRejected = true;
-            }
-            Assert(inactiveRejected && FindSlot(manager, "GameLoop.UpdateTicked").ActiveHandlers == 1, "Owner-bound -= must also preserve the active-owner lifecycle guard.");
+            events.GameLoop.UpdateTicked -= handler;
+            Assert(FindSlot(manager, "GameLoop.UpdateTicked").ActiveHandlers == 0, "An inactive owner can still unsubscribe.");
+            bool inactiveAddRejected = false;
+            try { events.GameLoop.UpdateTicked += handler; }
+            catch (InvalidOperationException) { inactiveAddRejected = true; }
+            Assert(inactiveAddRejected, "Stopping new registrations still prevents a closed owner from creating work.");
 
             ownerActive = true;
+            events.GameLoop.UpdateTicked += handler;
             manager.DispatchUpdateTicked(1);
             events.GameLoop.UpdateTicked -= handler;
             Assert(calls == 1 && FindSlot(manager, "GameLoop.UpdateTicked").ActiveHandlers == 0, "A valid runtime-thread unsubscribe should remove exactly one registration.");
-            Assert(guardCalls == 4, "The shared owner mutation guard should run for add and every non-null remove attempt.");
+            Assert(guardCalls == 4, "The registration guard runs only for attempts to add new work.");
         }
 
         private static void HandlerFailuresAreIsolatedAndQuarantineAllowsExplicitResubscription()

@@ -17,6 +17,11 @@
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.AudioContent' Or '$(MSBuildProjectName)' == 'DTMAPI.AudioContent.Authoring' Or '$(MSBuildProjectName)' == 'DTMAPI.AudioPreparation' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Audio' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.RuntimeModules' Or '$(MSBuildProjectName)' == 'DTMAPI.AnimalContent' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Animals' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.MonsterContent' Or '$(MSBuildProjectName)' == 'DTMAPI.MonsterContent.Authoring' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Monsters'">
+    <FileVersion>$(DtmApiBinaryFileVersion)</FileVersion>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.Abstractions' Or
                             '$(MSBuildProjectName)' == 'DTMAPI.BepInExBootstrap' Or
                             '$(MSBuildProjectName)' == 'DTMAPI.Core' Or

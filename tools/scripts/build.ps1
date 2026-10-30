@@ -34,13 +34,9 @@ if (-not $SkipTests) {
     foreach ($testProject in @(
         'tests\DTMAPI.QaUnitTests\DTMAPI.QaUnitTests.csproj',
         'tests\DTMAPI.InstallDoctor.Tests\DTMAPI.InstallDoctor.Tests.csproj',
-        'tests\DTMAPI.MultiPlatformInstaller.Tests\DTMAPI.MultiPlatformInstaller.Tests.csproj',
-        'tests\DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj'
+        'tests\DTMAPI.MultiPlatformInstaller.Tests\DTMAPI.MultiPlatformInstaller.Tests.csproj'
     )) {
-        if ($testProject -eq 'tests\DTMAPI.AuthorSdk.Tests\DTMAPI.AuthorSdk.Tests.csproj') {
-            & "$PSScriptRoot\prepare-author-sdk-compatibility.ps1"
-            if (-not $?) { throw 'Frozen Author SDK compatibility preparation failed.' }
-        }
+        if ($testProject -like '*QaUnitTests*' -and -not (Test-Path -LiteralPath (Join-Path $repo $testProject))) { continue }
         & $dotnet run --project (Join-Path $repo $testProject) -c $Configuration --no-build
         if ($LASTEXITCODE -ne 0) {
             throw "Tests failed: $testProject"

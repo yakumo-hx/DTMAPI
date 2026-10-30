@@ -35,6 +35,9 @@ namespace DTMAPI.DebugConsole
 
     internal sealed class SpawnCatalogOption
     {
+        internal string SourceId { get; set; } = "__base";
+        internal string SourceDisplayName { get; set; } = "Base";
+        internal bool IsModSource { get; set; }
         internal string Id { get; set; } = string.Empty;
         internal string DisplayName { get; set; } = string.Empty;
         internal string Category { get; set; } = string.Empty;

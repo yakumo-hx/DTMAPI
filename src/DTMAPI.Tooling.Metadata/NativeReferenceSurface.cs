@@ -15,11 +15,11 @@ public static class NativeReferenceSurface
 {
     public const string Generation = "metadata-surface-v1/cecil-0.11.6";
 
-    public static byte[] Create(byte[] original, IEnumerable<string> resolverDirectories) => CreateDetailed(original, resolverDirectories).Bytes;
+    public static byte[] Create(byte[] original, IEnumerable<string> resolverDirectories) => CreateDetailed(original, resolverDirectories, captureProvenance: false).Bytes;
 
-    public static NativeSurfaceResult CreateDetailed(byte[] original, IEnumerable<string> resolverDirectories)
+    public static NativeSurfaceResult CreateDetailed(byte[] original, IEnumerable<string> resolverDirectories, bool captureProvenance = true)
     {
-        using var resolver = new RecordingResolver();
+        using var resolver = new RecordingResolver(captureProvenance);
         foreach (string directory in resolverDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
             resolver.AddSearchDirectory(directory);
         using var input = new MemoryStream(original, writable: false);
@@ -64,11 +64,14 @@ public static class NativeReferenceSurface
 
     private sealed class RecordingResolver : DefaultAssemblyResolver
     {
+        private readonly bool capture;
+        internal RecordingResolver(bool capture) => this.capture = capture;
         internal readonly Dictionary<string, NativeSurfaceDependency> Inputs = new(StringComparer.OrdinalIgnoreCase);
         public override AssemblyDefinition Resolve(AssemblyNameReference name) => Record(base.Resolve(name));
         public override AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters) => Record(base.Resolve(name, parameters));
         private AssemblyDefinition Record(AssemblyDefinition assembly)
         {
+            if (!capture) return assembly;
             string path = Path.GetFullPath(assembly.MainModule.FileName);
             byte[] bytes = File.ReadAllBytes(path);
             string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();

@@ -12,12 +12,42 @@ namespace DTMAPI.Core.Runtime
         private readonly Dictionary<string, LifecycleBoundaryPolicy> policies = LifecycleBoundaryPolicy.CreateDefaultPolicies();
         private readonly Dictionary<string, int> phaseCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> registryRefreshCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, int> registryCycleCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private int registryCycleDepth;
+        private long registryCycle;
         private readonly Dictionary<string, int> hookStatusCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> hookInstallSignalCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> resourceEventCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private readonly Queue<LifecycleBoundaryTimelineEntry> timeline = new Queue<LifecycleBoundaryTimelineEntry>();
         private readonly Queue<LifecycleBoundaryDiagnostic> diagnostics = new Queue<LifecycleBoundaryDiagnostic>();
         private string currentPhase = RuntimeLifecyclePhase.Unknown;
+
+        internal IDisposable BeginRegistryRefreshCycle(string reason)
+        {
+            lock (gate)
+            {
+                if (registryCycleDepth++ == 0)
+                {
+                    registryCycle++;
+                    registryCycleCounts.Clear();
+                    AddTimelineNoLock(new LifecycleBoundaryTimelineEntry("registry-cycle", currentPhase,
+                        "cycle=" + registryCycle + "; reason=" + reason));
+                }
+                return new RegistryCycle(this);
+            }
+        }
+
+        private sealed class RegistryCycle : IDisposable
+        {
+            private LifecycleBoundaryContractService? owner;
+            internal RegistryCycle(LifecycleBoundaryContractService owner) { this.owner = owner; }
+            public void Dispose()
+            {
+                var value = owner;
+                if (value == null) return;
+                lock (value.gate) { if (owner == null) return; owner = null; value.registryCycleDepth--; }
+            }
+        }
 
         public LifecycleBoundaryContractUpdate RecordPhase(
             string phase,
@@ -35,6 +65,7 @@ namespace DTMAPI.Core.Runtime
                 currentCount++;
                 phaseCounts[normalizedPhase] = currentCount;
                 currentPhase = normalizedPhase;
+                if (registryCycleDepth == 0) registryCycleCounts.Clear();
 
                 if (!policies.ContainsKey(normalizedPhase))
                     AddDiagnosticNoLock(newDiagnostics, "error", normalizedPhase, "Unknown lifecycle phase.", "phase=" + normalizedPhase);
@@ -56,9 +87,7 @@ namespace DTMAPI.Core.Runtime
         public LifecycleBoundaryContractUpdate RecordRegistryRefresh(
             string reason,
             int rowCount,
-            int loadedRowCount,
-            int customAnimalDefinitionCount,
-            int audioReplacementCount)
+            int loadedRowCount)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "unknown" : reason.Trim();
             var newDiagnostics = new List<LifecycleBoundaryDiagnostic>();
@@ -69,15 +98,17 @@ namespace DTMAPI.Core.Runtime
                 registryRefreshCounts.TryGetValue(key, out int count);
                 count++;
                 registryRefreshCounts[key] = count;
+                registryCycleCounts.TryGetValue(key, out int cycleCount);
+                registryCycleCounts[key] = ++cycleCount;
 
-                if (count > 1)
+                if (cycleCount > 1)
                 {
                     AddDiagnosticNoLock(
                         newDiagnostics,
                         "warning",
                         phase,
-                        "Shadow registry refresh repeated for the same lifecycle phase and reason.",
-                        "reason=" + normalizedReason + "; count=" + count);
+                        "Registry refresh repeated within the same refresh cycle, lifecycle phase and reason.",
+                        "reason=" + normalizedReason + "; count=" + count + "; cycle=" + registryCycle + "; cycleCount=" + cycleCount);
                 }
 
                 AddTimelineNoLock(new LifecycleBoundaryTimelineEntry(
@@ -85,10 +116,9 @@ namespace DTMAPI.Core.Runtime
                     phase,
                     "reason=" + normalizedReason +
                     "; count=" + count +
+                    "; cycle=" + registryCycle + "; cycleCount=" + cycleCount +
                     "; rows=" + rowCount +
-                    "; loadedRows=" + loadedRowCount +
-                    "; customAnimals=" + customAnimalDefinitionCount +
-                    "; audioReplacements=" + audioReplacementCount));
+                    "; loadedRows=" + loadedRowCount));
 
                 return BuildUpdateNoLock(newDiagnostics);
             }
@@ -180,21 +210,10 @@ namespace DTMAPI.Core.Runtime
                         "slot=" + state.CurrentLoadingSlot.Value);
                 }
 
-                if (state.ActiveCustomEntityRuntimeInstanceCount > 0)
-                {
-                    AddDiagnosticNoLock(
-                        newDiagnostics,
-                        "warning",
-                        phase,
-                        "ReturnedToTitle cleanup left custom entity runtime instances.",
-                        "activeCustomEntityRuntimeInstances=" + state.ActiveCustomEntityRuntimeInstanceCount);
-                }
-
                 AddTimelineNoLock(new LifecycleBoundaryTimelineEntry(
                     "retention",
                     phase,
                     "currentLoadingSlot=" + FormatNullable(state.CurrentLoadingSlot) +
-                    "; activeCustomEntityRuntimeInstances=" + state.ActiveCustomEntityRuntimeInstanceCount +
                     "; discovered=" + state.DiscoveredModCount +
                     "; loaded=" + state.LoadedModCount +
                     "; hooks=" + state.HookStatusCount));
@@ -377,17 +396,15 @@ namespace DTMAPI.Core.Runtime
 
     internal sealed class LifecycleBoundaryRuntimeState
     {
-        public LifecycleBoundaryRuntimeState(int? currentLoadingSlot, int activeCustomEntityRuntimeInstanceCount, int discoveredModCount, int loadedModCount, int hookStatusCount)
+        public LifecycleBoundaryRuntimeState(int? currentLoadingSlot, int discoveredModCount, int loadedModCount, int hookStatusCount)
         {
             CurrentLoadingSlot = currentLoadingSlot;
-            ActiveCustomEntityRuntimeInstanceCount = activeCustomEntityRuntimeInstanceCount;
             DiscoveredModCount = discoveredModCount;
             LoadedModCount = loadedModCount;
             HookStatusCount = hookStatusCount;
         }
 
         public int? CurrentLoadingSlot { get; }
-        public int ActiveCustomEntityRuntimeInstanceCount { get; }
         public int DiscoveredModCount { get; }
         public int LoadedModCount { get; }
         public int HookStatusCount { get; }
@@ -484,7 +501,7 @@ namespace DTMAPI.Core.Runtime
                     RuntimeLifecyclePhase.Startup,
                     "runtime services, manifest/content indexes after load, hook install flags",
                     "no save-scoped runtime instances",
-                    "DiscoverMods and LoadMods initial are shadow-only and should not repeat for the same reason",
+                    "DiscoverMods and LoadMods observations should not repeat within the same refresh cycle and reason",
                     "hook ids may retry while targets are missing; installed hook ids should not install twice",
                     "none"),
                 new LifecycleBoundaryPolicy(

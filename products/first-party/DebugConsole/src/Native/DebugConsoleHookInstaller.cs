@@ -9,13 +9,11 @@ namespace DTMAPI.DebugConsole
     internal sealed class DebugConsoleHookInstaller
     {
         internal const string HarmonyOwner =
-            "dtmapi.mod.dtmapi.debugconsolemod";
-        internal const string CompatibilityHarmonyOwner =
-            "dtmapi.compatibility.debugconsole.legacy";
-        private const int RecipeTargetIndex = 17;
-        private const int MovementTargetIndex = 18;
+            "DTMAPI.DebugConsoleMod.Native";
         private readonly List<MethodBase> targets =
-            new List<MethodBase>(19);
+            new List<MethodBase>(12);
+        private readonly List<(MethodBase Target, MethodInfo Callback)> contributions =
+            new List<(MethodBase, MethodInfo)>(12);
         private int expectedPatchCount;
 
         internal int InstalledPatchCount { get; private set; }
@@ -26,49 +24,32 @@ namespace DTMAPI.DebugConsole
                 InstalledPatchCount == expectedPatchCount)
                 return;
             ResolveTargets();
-            ThrowIfOwnerPresent();
             var harmony = new Harmony(HarmonyOwner);
+            void Patch(int index, HarmonyMethod callback, bool postfix = false)
+            {
+                contributions.Add((targets[index], callback.method));
+                if (postfix) harmony.Patch(targets[index], postfix: callback);
+                else harmony.Patch(targets[index], prefix: callback);
+            }
             try
             {
-                harmony.Patch(
-                    targets[0],
-                    prefix: Callback(nameof(
-                        DebugConsoleInputHooks.UseToolPrefix)));
-                harmony.Patch(
-                    targets[1],
-                    prefix: Callback(nameof(
-                        DebugConsoleInputHooks.UseItemPrefix)));
-                harmony.Patch(
-                    targets[2],
-                    prefix: Callback(nameof(
-                        DebugConsoleInputHooks.EnterUiCheckPrefix)));
-                for (int index = 3; index < RecipeTargetIndex; index++)
-                {
-                    bool voidTarget =
-                        targets[index].Name.Equals(
-                            "CostItemNoCheck",
-                            StringComparison.Ordinal);
-                    harmony.Patch(
-                        targets[index],
-                        prefix: CreativeCallback(
-                            voidTarget
-                                ? nameof(DebugConsoleCreativeHooks.VoidSkipPrefix)
-                                : nameof(DebugConsoleCreativeHooks.BoolTruePrefix)));
-                }
-                harmony.Patch(
-                    targets[RecipeTargetIndex],
-                    postfix: CreativeCallback(nameof(
-                        DebugConsoleCreativeHooks.RecipeTimePostfix)));
-                harmony.Patch(
-                    targets[MovementTargetIndex],
-                    postfix: MovementCallback(nameof(
-                        DebugConsoleMovementHooks.MoveSpeedPostfix)));
+                Patch(0, Callback(nameof(DebugConsoleInputHooks.UseToolPrefix)));
+                Patch(1, Callback(nameof(DebugConsoleInputHooks.UseItemPrefix)));
+                Patch(2, Callback(nameof(DebugConsoleInputHooks.EnterUiCheckPrefix)));
+                Patch(3, MovementCallback(nameof(DebugConsoleMovementHooks.MoveSpeedPostfix)), postfix: true);
+                Patch(4, ModeCallback(nameof(DebugConsoleModeHooks.HealthCostPrefix)));
+                Patch(5, ModeCallback(nameof(DebugConsoleModeHooks.EnergyCostPrefix)));
+                Patch(6, ModeCallback(nameof(DebugConsoleModeHooks.EnergyCostNoProtectPrefix)));
+                Patch(7, ModeCallback(nameof(DebugConsoleModeHooks.SpiritTickPrefix)));
+                Patch(8, ModeCallback(nameof(DebugConsoleModeHooks.SpiritChangedPostfix)), postfix: true);
+                Patch(9, ModeCallback(nameof(DebugConsoleModeHooks.TimeScaleWritePrefix)));
+                Patch(10, ModeCallback(nameof(DebugConsoleModeHooks.LoadGamePrefix)));
+                Patch(11, ModeCallback(nameof(DebugConsoleModeHooks.NewGamePrefix)));
                 expectedPatchCount = targets.Count;
                 RefreshCount();
                 if (InstalledPatchCount != expectedPatchCount)
                     throw new InvalidOperationException(
-                        "DebugConsole could not prove its three input, bounded creative and final player-speed ProductNative patches.");
-                DebugConsoleCreativeHooks.Installed = true;
+                        "DebugConsole could not prove its input, god mode, time control, session entry and player-speed patches.");
             }
             catch
             {
@@ -80,22 +61,24 @@ namespace DTMAPI.DebugConsole
         internal void Unpatch()
         {
             var harmony = new Harmony(HarmonyOwner);
-            foreach (MethodBase target in targets)
+            var failures = new List<Exception>();
+            DebugConsoleInputGate.Reset();
+            DebugConsoleModeHooks.Reset();
+            DebugConsoleMovementHooks.Reset();
+            DebugConsoleMovementHooks.SessionIsCurrent = null;
+            foreach (var contribution in contributions)
             {
-                harmony.Unpatch(
-                    target,
-                    HarmonyPatchType.All,
-                    HarmonyOwner);
+                try { harmony.Unpatch(contribution.Target, contribution.Callback); }
+                catch (Exception error) { failures.Add(error); }
             }
             RefreshCount();
+            if (failures.Count > 0) throw new AggregateException("DebugConsole patch cleanup needs retry.", failures);
             if (InstalledPatchCount != 0)
             {
                 throw new InvalidOperationException(
                     "DebugConsole exact-owner unpatch left native input-isolation residue.");
             }
-            DebugConsoleInputGate.Reset();
-            DebugConsoleCreativeHooks.Reset();
-            DebugConsoleMovementHooks.Reset();
+            contributions.Clear();
         }
 
         private void ResolveTargets()
@@ -111,28 +94,20 @@ namespace DTMAPI.DebugConsole
             Type api = Type.GetType(
                 "DolocAPI, Assembly-CSharp",
                 throwOnError: true)!;
-            Add(api, "CostEnergy", 1);
-            Add(api, "CostToolEnergy", 0);
-            Add(api, "HasEnoughEnergy", 1);
-            Add(api, "HasEnoughEnergyForUsingTool", 0);
-            Add(api, "CostItem", 3);
-            Add(api, "CostItem", 4);
-            Add(api, "CostItemNoCheck", 2);
-            Add(api, "CostItemNoCheck", 3);
-            Add(api, "CostSelectedItem", 2);
-            Add(api, "CostSelectedItem", 3);
-            Add(api, "CostItemAt", 4);
-            Add(api, "CanAfford", 2);
-            Add(api, "CanAfford", 3);
-            Add(api, "CanAffordMoney", 1);
-            Type synthesizer = Type.GetType(
-                "DolocTown.Synthesizer, Assembly-CSharp",
-                throwOnError: true)!;
-            Add(synthesizer, "GetRecipeTime", 2);
             Type bodyController = Type.GetType(
                 "DolocTown.BodyController, Assembly-CSharp",
                 throwOnError: true)!;
             Add(bodyController, "get_MoveSpeed", 0);
+            Type archive = Type.GetType("DolocTown.GameData.ArchiveOperationGlobal, Assembly-CSharp", true)!;
+            Add(archive, "_CostHealth", 2);
+            Add(archive, "_CostEnergy", 2);
+            Add(archive, "_CostEnergyNoProtect", 2);
+            Type data = Type.GetType("DolocTown.GameData.AgentArchiveData, Assembly-CSharp", true)!;
+            Add(data, "_UpdateSpirit", 0);
+            Add(data, "AddSpirit", 1);
+            Add(Type.GetType("DolocTown.TimeScaleManager, Assembly-CSharp", true)!, "SetTimeScale", 2);
+            Add(api, "LoadGame", 1);
+            Add(api, "NewGame", 1);
         }
 
         private void Add(
@@ -169,15 +144,15 @@ namespace DTMAPI.DebugConsole
                     name));
         }
 
-        private static HarmonyMethod CreativeCallback(string name)
+        private static HarmonyMethod ModeCallback(string name)
         {
             return new HarmonyMethod(
-                typeof(DebugConsoleCreativeHooks).GetMethod(
+                typeof(DebugConsoleModeHooks).GetMethod(
                     name,
                     BindingFlags.Public |
                     BindingFlags.Static) ??
                 throw new MissingMethodException(
-                    typeof(DebugConsoleCreativeHooks).FullName,
+                    typeof(DebugConsoleModeHooks).FullName,
                     name));
         }
 
@@ -193,55 +168,16 @@ namespace DTMAPI.DebugConsole
                     name));
         }
 
-        private void ThrowIfOwnerPresent()
-        {
-            foreach (MethodBase target in targets)
-            {
-                Patches? patches = Harmony.GetPatchInfo(target);
-                if (patches == null)
-                    continue;
-                if (CountOwner(
-                        patches,
-                        CompatibilityHarmonyOwner) > 0)
-                {
-                    throw new InvalidOperationException(
-                        "DebugConsole ProductNative owner refused installation because Compatibility owner " +
-                        CompatibilityHarmonyOwner +
-                        " is already present on " +
-                        target.Name + ".");
-                }
-                if (CountOwner(patches, HarmonyOwner) > 0)
-                {
-                    throw new InvalidOperationException(
-                        "DebugConsole Harmony owner is already present on " +
-                        target.Name + ".");
-                }
-            }
-        }
-
         private void RefreshCount()
         {
-            InstalledPatchCount = targets.Sum(target =>
+            InstalledPatchCount = contributions.Sum(contribution =>
             {
-                Patches? patches = Harmony.GetPatchInfo(target);
+                Patches? patches = Harmony.GetPatchInfo(contribution.Target);
                 return patches == null
                     ? 0
-                    : CountOwner(patches, HarmonyOwner);
+                    : patches.Prefixes.Concat(patches.Postfixes).Concat(patches.Transpilers).Concat(patches.Finalizers)
+                        .Count(patch => patch.PatchMethod == contribution.Callback);
             });
-        }
-
-        private static int CountOwner(
-            Patches patches,
-            string owner)
-        {
-            return patches.Prefixes.Count(p =>
-                    p.owner == owner) +
-                patches.Postfixes.Count(p =>
-                    p.owner == owner) +
-                patches.Transpilers.Count(p =>
-                    p.owner == owner) +
-                patches.Finalizers.Count(p =>
-                    p.owner == owner);
         }
     }
 }

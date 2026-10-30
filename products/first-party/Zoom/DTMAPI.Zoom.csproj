@@ -1,10 +1,15 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.props" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <DtmApiReferences Condition="'$(DtmApiReferences)' == ''">$(MSBuildThisFileDirectory)../../../.tools/api-references</DtmApiReferences>
+    <DtmApiNativeReferencePaths>DolocTown_Data/Managed/Assembly-CSharp.dll;DolocTown_Data/Managed/Assembly-CSharp-firstpass.dll;DolocTown_Data/Managed/UnityEngine.CoreModule.dll;BepInEx/core/0Harmony.dll</DtmApiNativeReferencePaths>
+  </PropertyGroup>
   <PropertyGroup>
     <AssemblyName>DTMAPI.Zoom</AssemblyName>
     <RootNamespace>DTMAPI.Zoom</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
@@ -13,6 +18,11 @@
     <None Remove="content/**/*" />
     <Content Include="content/**/*" DtmApiPackagePath="Content/DTMAPI/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="$(DTMAPI_AUTHOR_SDK_ROOT)/build/DTMAPI.Author.targets" />
+  <ItemGroup>
+    <Reference Include="DTMAPI.Abstractions" HintPath="$(DtmApiReferences)/DTMAPI.Abstractions.dll" Private="false" />
+    <Reference Include="DTMAPI.ModConfigMenu" HintPath="$(DtmApiReferences)/DTMAPI.ModConfigMenu.dll" Private="false" />
+    <Reference Include="DTMAPI.MonsterContent" HintPath="$(DtmApiReferences)/DTMAPI.MonsterContent.dll" Private="false" />
+    <Reference Include="DTMAPI.AudioContent" HintPath="$(DtmApiReferences)/DTMAPI.AudioContent.dll" Private="false" />
+    <Reference Include="$(DtmApiNativeReferences)/*.dll" Condition="'$(DtmApiNativeReferences)' != ''" Private="false" />
+  </ItemGroup>
 </Project>

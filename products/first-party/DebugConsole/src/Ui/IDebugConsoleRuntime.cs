@@ -22,10 +22,6 @@ namespace DTMAPI.DebugConsole
             string owner,
             string message,
             string details);
-        bool TryDispatchLegacyModalButtonPressed(
-            string menuId,
-            string ownerId,
-            string button);
     }
 
     internal interface IDebugConsoleNativeRuntime
@@ -35,7 +31,6 @@ namespace DTMAPI.DebugConsole
         IReadOnlyList<IContentItemInfo> GetIndexedItems();
         IContentItemInfo? GetIndexedItem(string itemId);
         IReadOnlyList<AnimalContentSource> GetAnimalContentSources();
-        void SetCreativeHookDemand(bool enabled);
         void SetMovementMultiplier(object? player, double multiplier);
         void Status(string id, string status, string source, string details);
         void Error(string operation, System.Exception error);
@@ -44,21 +39,12 @@ namespace DTMAPI.DebugConsole
     internal interface IDebugConsoleInputRuntime
     {
         void Suppress(string button);
-        bool HasOwnerLegacyButtonRegistration(
-            string ownerId,
-            string button);
-        bool HasOwnerTypedKeybindForButton(
-            string ownerId,
-            string button);
     }
 
     internal interface IDebugConsoleModalRuntime
     {
-        bool IsOpen { get; }
-        string ActiveMenuId { get; }
-        bool OpenOwnerBoundCustomMenu(
+        DtmModalOpenResult OpenModal(
             string menuId,
             string ownerId);
-        void Close();
     }
 }

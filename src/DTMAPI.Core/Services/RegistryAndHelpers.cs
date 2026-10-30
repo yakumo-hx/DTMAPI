@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Manifesting;
 
@@ -8,23 +9,18 @@ namespace DTMAPI.Core.Services
 {
     internal sealed class ModRegistryService : IModRegistry
     {
-        private readonly Dictionary<string, IManifest> loaded = new Dictionary<string, IManifest>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<ApiRegistrationKey, object> apis = new Dictionary<ApiRegistrationKey, object>(ApiRegistrationKeyComparer.Instance);
-        private readonly Dictionary<ApiRegistrationKey, IOwnerBoundApiFactory> apiFactories = new Dictionary<ApiRegistrationKey, IOwnerBoundApiFactory>(ApiRegistrationKeyComparer.Instance);
+        private readonly Dictionary<string, ProviderRegistration> providers = new Dictionary<string, ProviderRegistration>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<ApiRegistrationKey, ApiRegistration> apis = new Dictionary<ApiRegistrationKey, ApiRegistration>(ApiRegistrationKeyComparer.Instance);
         private readonly Dictionary<OwnerBoundFacadeKey, object> ownerBoundFacades = new Dictionary<OwnerBoundFacadeKey, object>(OwnerBoundFacadeKeyComparer.Instance);
         private readonly Action<string, string, string, string>? recordOwnerRegistration;
         private readonly Action<string, string, int, string>? recordOwnerCleanup;
-        private readonly Action<string, string, string>? reportDeprecatedApi;
-        private readonly Dictionary<string, HashSet<Type>> deprecatedApiWarnings = new Dictionary<string, HashSet<Type>>(StringComparer.OrdinalIgnoreCase);
 
         public ModRegistryService(
             Action<string, string, string, string>? recordOwnerRegistration = null,
-            Action<string, string, int, string>? recordOwnerCleanup = null,
-            Action<string, string, string>? reportDeprecatedApi = null)
+            Action<string, string, int, string>? recordOwnerCleanup = null)
         {
             this.recordOwnerRegistration = recordOwnerRegistration;
             this.recordOwnerCleanup = recordOwnerCleanup;
-            this.reportDeprecatedApi = reportDeprecatedApi;
         }
 
         public void AddLoaded(IManifest manifest)
@@ -33,21 +29,36 @@ namespace DTMAPI.Core.Services
                 throw new ArgumentNullException(nameof(manifest));
             if (string.IsNullOrWhiteSpace(manifest.UniqueID))
                 throw new ArgumentException("Manifest UniqueID is required.", nameof(manifest));
-            if (loaded.TryGetValue(manifest.UniqueID, out IManifest existing))
+            if (providers.TryGetValue(manifest.UniqueID, out var existing))
             {
-                if (!HasSameCanonicalManifest(existing, manifest))
+                if (existing.Origin != ProviderOrigin.Package || existing.Metadata == null || !HasSameCanonicalManifest(existing.Metadata, manifest))
                     throw new InvalidOperationException("Owner '" + manifest.UniqueID + "' already has a different canonical loaded manifest.");
                 return;
             }
-            loaded.Add(manifest.UniqueID, manifest);
+            providers.Add(manifest.UniqueID, new ProviderRegistration(manifest.UniqueID, ProviderOrigin.Package, manifest));
         }
-        public bool IsLoaded(string uniqueId) => loaded.ContainsKey(uniqueId);
-        public IManifest? Get(string uniqueId) => loaded.TryGetValue(uniqueId, out IManifest manifest) ? manifest : null;
-        public IReadOnlyList<IManifest> GetAll() => loaded.Values.OrderBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
+        internal bool IsRuntimeProvider(string id) => providers.TryGetValue(id, out var provider) && provider.Origin == ProviderOrigin.Runtime;
+        internal IEnumerable<KeyValuePair<string, string>> RuntimeProviders => providers.Values.Where(p => p.Origin == ProviderOrigin.Runtime && p.Available).Select(p => new KeyValuePair<string, string>(p.Id, p.Version));
+        internal bool TryGetVersion(string id, out string version)
+        {
+            if (providers.TryGetValue(id, out var provider) && provider.Available) { version = provider.Version; return true; }
+            version = ""; return false;
+        }
+        internal void ReserveRuntimeProvider(string id)
+        {
+            if (providers.TryGetValue(id, out var existing))
+            {
+                if (existing.Origin != ProviderOrigin.Runtime) throw new InvalidOperationException("Runtime provider conflicts with package: " + id);
+            }
+            else providers.Add(id, new ProviderRegistration(id, ProviderOrigin.Runtime));
+        }
+        public bool IsLoaded(string uniqueId) => providers.TryGetValue(uniqueId, out var provider) && provider.Available;
+        public IManifest? Get(string uniqueId) => providers.TryGetValue(uniqueId, out var provider) && provider.Available ? provider.Metadata : null;
+        public IReadOnlyList<IManifest> GetAll() => providers.Values.Where(p => p.Available && p.Metadata != null).Select(p => p.Metadata!).OrderBy(m => m.UniqueID, StringComparer.OrdinalIgnoreCase).ToArray();
 
         public TApi? GetApi<TApi>(string uniqueId) where TApi : class
         {
-            return apis.TryGetValue(new ApiRegistrationKey(uniqueId, typeof(TApi)), out object api) ? api as TApi : null;
+            return apis.TryGetValue(new ApiRegistrationKey(uniqueId, typeof(TApi)), out ApiRegistration api) ? api.Value as TApi : null;
         }
 
         public void RegisterApi<TApi>(TApi api) where TApi : class
@@ -64,6 +75,11 @@ namespace DTMAPI.Core.Services
             return new OwnerBoundModRegistry(this, owner, ensureOwnerActive);
         }
 
+        // A content activation has a narrower lifetime than its package. Do not
+        // reuse a facade captured under a sibling unit or retired Host guard.
+        internal IModRegistry CreateContentBoundRegistry(IManifest owner, Action guard)
+            => new OwnerBoundModRegistry(this, owner, guard, new object());
+
         internal void RegisterApiForOwner<TApi>(IManifest owner, TApi api, IOwnerBoundApiFactory? ownerBoundFactory = null) where TApi : class
         {
             if (owner == null)
@@ -73,21 +89,7 @@ namespace DTMAPI.Core.Services
             var key = new ApiRegistrationKey(owner.UniqueID, typeof(TApi));
             if (apis.ContainsKey(key))
                 throw new InvalidOperationException("Owner '" + owner.UniqueID + "' already registered API contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
-            IOwnerBoundApiFactory? factory = ownerBoundFactory ?? api as IOwnerBoundApiFactory;
-            if (apiFactories.ContainsKey(key))
-                throw new InvalidOperationException("Owner '" + owner.UniqueID + "' already has an API factory for contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
-            try
-            {
-                apis.Add(key, api);
-                if (factory != null)
-                    apiFactories.Add(key, factory);
-            }
-            catch
-            {
-                apis.Remove(key);
-                apiFactories.Remove(key);
-                throw;
-            }
+            apis.Add(key, new ApiRegistration(api, ownerBoundFactory ?? api as IOwnerBoundApiFactory));
             try
             {
                 recordOwnerRegistration?.Invoke(owner.UniqueID, "Api", typeof(TApi).FullName ?? typeof(TApi).Name, "Owner-bound API registration.");
@@ -106,28 +108,43 @@ namespace DTMAPI.Core.Services
             if (api == null)
                 throw new ArgumentNullException(nameof(api));
 
-            bool addedLoadedManifest = false;
-            if (loaded.TryGetValue(owner.UniqueID, out IManifest canonical))
-            {
-                if (!HasSameCanonicalManifest(canonical, owner))
-                    throw new InvalidOperationException("Process-lifetime owner '" + owner.UniqueID + "' already has a different canonical loaded manifest.");
-            }
-            else
-            {
-                AddLoaded(owner);
-                addedLoadedManifest = true;
-            }
-
+            ReserveRuntimeProvider(owner.UniqueID);
+            var provider = providers[owner.UniqueID];
+            if (provider.Metadata != null && !HasSameCanonicalManifest(provider.Metadata, owner))
+                throw new InvalidOperationException("Runtime provider metadata conflicts: " + owner.UniqueID);
+            bool wasAvailable = provider.Available;
             try
             {
                 RegisterApiForOwner(owner, api, ownerBoundFactory);
+                provider.Metadata = owner;
+                provider.Version = owner.Version;
+                provider.Available = true;
             }
             catch
             {
-                if (addedLoadedManifest)
-                    loaded.Remove(owner.UniqueID);
+                provider.Available = wasAvailable;
                 throw;
             }
+        }
+
+        internal void RegisterRuntimeApiFactory<T>(string id, string version, Func<IManifest, Action, T> create) where T : class
+        {
+            ReserveRuntimeProvider(id);
+            var key = new ApiRegistrationKey(id, typeof(T));
+            var factory = new RuntimeApiFactory<T>(create);
+            apis.Add(key, new ApiRegistration(factory, factory));
+            var provider = providers[id];
+            provider.Version = version; provider.Available = true;
+        }
+        // Internal domain composition needs a guarded façade, not another cached
+        // registry root. The accepted contribution owns its resources and uses.
+        internal T? GetContributionApi<T>(IManifest owner, string provider, Action guard) where T : class
+            => GetApiForOwner<T>(owner, provider, guard, cache: false);
+        private sealed class RuntimeApiFactory<T> : IOwnerBoundApiFactory where T : class
+        {
+            private readonly Func<IManifest, Action, T> create;
+            internal RuntimeApiFactory(Func<IManifest, Action, T> create) { this.create = create; }
+            public object CreateOwnerBoundApi(Type contract, IManifest owner, Action guard) => create(owner, guard);
         }
 
         internal int RemoveOwner(string uniqueId)
@@ -135,13 +152,17 @@ namespace DTMAPI.Core.Services
             if (string.IsNullOrWhiteSpace(uniqueId))
                 return 0;
 
-            int removed = loaded.Remove(uniqueId) ? 1 : 0;
-            deprecatedApiWarnings.Remove(uniqueId);
+            int removed = 0;
+            if (providers.TryGetValue(uniqueId, out var provider))
+            {
+                removed = provider.Available ? 1 : 0;
+                if (provider.Origin == ProviderOrigin.Runtime) provider.Available = false;
+                else providers.Remove(uniqueId);
+            }
             foreach (ApiRegistrationKey key in apis.Keys.Where(k => OwnerEquals(k.OwnerId, uniqueId)).ToArray())
             {
                 if (apis.Remove(key))
                     removed++;
-                apiFactories.Remove(key);
             }
 
             foreach (OwnerBoundFacadeKey key in ownerBoundFacades.Keys.Where(k =>
@@ -159,23 +180,33 @@ namespace DTMAPI.Core.Services
             return removed;
         }
 
-        private sealed class OwnerBoundModRegistry : IModRegistry
+        private sealed class OwnerBoundModRegistry : IModRegistry, IDisposable
         {
             private readonly ModRegistryService inner;
             private readonly IManifest owner;
             private readonly Action ensureOwnerActive;
+            private readonly object? scope;
 
-            public OwnerBoundModRegistry(ModRegistryService inner, IManifest owner, Action ensureOwnerActive)
+            public OwnerBoundModRegistry(ModRegistryService inner, IManifest owner, Action ensureOwnerActive, object? scope = null)
             {
                 this.inner = inner;
                 this.owner = owner;
                 this.ensureOwnerActive = ensureOwnerActive;
+                this.scope = scope;
             }
 
             public bool IsLoaded(string uniqueId) { ensureOwnerActive(); return inner.IsLoaded(uniqueId); }
             public IManifest? Get(string uniqueId) { ensureOwnerActive(); return inner.Get(uniqueId); }
             public IReadOnlyList<IManifest> GetAll() { ensureOwnerActive(); return inner.GetAll(); }
-            public TApi? GetApi<TApi>(string uniqueId) where TApi : class => inner.GetApiForOwner<TApi>(owner, uniqueId, ensureOwnerActive);
+            public TApi? GetApi<TApi>(string uniqueId) where TApi : class => inner.GetApiForOwner<TApi>(owner, uniqueId, ensureOwnerActive, scope);
+            public void Dispose()
+            {
+                if (scope == null) return;
+                foreach (var key in inner.ownerBoundFacades.Keys.Where(k => ReferenceEquals(k.Scope, scope)).ToArray())
+                {
+                    var facade = inner.ownerBoundFacades[key]; inner.ownerBoundFacades.Remove(key); TryDeactivateFacade(facade);
+                }
+            }
             public void RegisterApi<TApi>(TApi api) where TApi : class
             {
                 ensureOwnerActive();
@@ -184,66 +215,52 @@ namespace DTMAPI.Core.Services
         }
 
 
-        private TApi? GetApiForOwner<TApi>(IManifest consumer, string providerId, Action ensureOwnerActive) where TApi : class
+        private TApi? GetApiForOwner<TApi>(IManifest consumer, string providerId, Action ensureOwnerActive, object? scope = null, bool cache = true) where TApi : class
         {
             ensureOwnerActive();
-            ReportDeprecatedApi<TApi>(consumer.UniqueID);
             var providerKey = new ApiRegistrationKey(providerId, typeof(TApi));
-            if (!apis.TryGetValue(providerKey, out object api))
+            if (!apis.TryGetValue(providerKey, out ApiRegistration api))
                 return null;
-            if (!apiFactories.TryGetValue(providerKey, out IOwnerBoundApiFactory factory))
-                return api as TApi;
+            IOwnerBoundApiFactory? factory = api.Factory;
+            if (factory == null)
+                return api.Value as TApi;
 
-            var facadeKey = new OwnerBoundFacadeKey(consumer.UniqueID, providerId, typeof(TApi));
-            if (!ownerBoundFacades.TryGetValue(facadeKey, out object facade))
+            var facadeKey = new OwnerBoundFacadeKey(consumer.UniqueID, providerId, typeof(TApi), scope);
+            object? facade = null;
+            if (!cache || !ownerBoundFacades.TryGetValue(facadeKey, out facade))
             {
                 Action ensureFacadeActive = () =>
                 {
                     ensureOwnerActive();
-                    if (!apis.ContainsKey(providerKey))
+                    if (!apis.TryGetValue(providerKey, out ApiRegistration current) || !ReferenceEquals(current, api))
                         throw new InvalidOperationException("API provider '" + providerId + "' is inactive.");
                 };
                 facade = factory.CreateOwnerBoundApi(typeof(TApi), consumer, ensureFacadeActive);
-                if (!(facade is TApi))
-                    throw new InvalidOperationException("Owner-bound API factory for provider '" + providerId + "' returned an incompatible facade for contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
-                ownerBoundFacades.Add(facadeKey, facade);
+                try
+                {
+                    // A factory can reenter owner removal. Never publish its late result into the cache.
+                    ensureFacadeActive();
+                    if (!(facade is TApi))
+                        throw new InvalidOperationException("Owner-bound API factory for provider '" + providerId + "' returned an incompatible facade for contract '" + (typeof(TApi).FullName ?? typeof(TApi).Name) + "'.");
+                    if (cache) ownerBoundFacades.Add(facadeKey, facade);
+                }
+                catch
+                {
+                    TryDeactivateFacade(facade);
+                    throw;
+                }
             }
             return facade as TApi;
         }
 
-        private void ReportDeprecatedApi<TApi>(string owner)
-        {
-            string message = DeprecatedContract<TApi>.Message;
-            if (message.Length == 0 || reportDeprecatedApi == null)
-                return;
-            if (!deprecatedApiWarnings.TryGetValue(owner, out HashSet<Type> warned))
-                deprecatedApiWarnings.Add(owner, warned = new HashSet<Type>());
-            if (!warned.Add(typeof(TApi)))
-                return;
-            try { reportDeprecatedApi(owner, typeof(TApi).FullName ?? typeof(TApi).Name, message); }
-            catch { /* A diagnostic sink cannot change the existing API result. */ }
-        }
-
-        private static class DeprecatedContract<TApi>
-        {
-            internal static readonly string Message = ReadMessage();
-            private static string ReadMessage()
-            {
-                Type type = typeof(TApi);
-                if (!ReferenceEquals(type.Assembly, typeof(IDtmHelper).Assembly)) return string.Empty;
-                var obsolete = (ObsoleteAttribute?)Attribute.GetCustomAttribute(type, typeof(ObsoleteAttribute), false);
-                return obsolete?.Message ?? string.Empty;
-            }
-        }
-
         internal int CountOwner(string uniqueId)
         {
-            return (loaded.ContainsKey(uniqueId) ? 1 : 0) +
+            return (IsLoaded(uniqueId) ? 1 : 0) +
                 apis.Keys.Count(k => OwnerEquals(k.OwnerId, uniqueId)) +
                 ownerBoundFacades.Keys.Count(k => OwnerEquals(k.ConsumerId, uniqueId) || OwnerEquals(k.ProviderId, uniqueId));
         }
 
-        internal int TotalRootCount => loaded.Count + apis.Count + ownerBoundFacades.Count;
+        internal int TotalRootCount => providers.Values.Count(p => p.Available) + apis.Count + ownerBoundFacades.Count;
 
         private static bool OwnerEquals(string left, string right) => StringComparer.OrdinalIgnoreCase.Equals(left, right);
 
@@ -267,6 +284,13 @@ namespace DTMAPI.Core.Services
                 // Registry cleanup must still sever the cache root. Provider-specific owner cleanup
                 // remains authoritative for native/platform resources.
             }
+        }
+
+        private sealed class ApiRegistration
+        {
+            internal ApiRegistration(object value, IOwnerBoundApiFactory? factory) { Value = value; Factory = factory; }
+            internal object Value { get; }
+            internal IOwnerBoundApiFactory? Factory { get; }
         }
 
         private readonly struct ApiRegistrationKey
@@ -299,16 +323,18 @@ namespace DTMAPI.Core.Services
 
         private readonly struct OwnerBoundFacadeKey
         {
-            public OwnerBoundFacadeKey(string consumerId, string providerId, Type contract)
+            public OwnerBoundFacadeKey(string consumerId, string providerId, Type contract, object? scope)
             {
                 ConsumerId = consumerId ?? string.Empty;
                 ProviderId = providerId ?? string.Empty;
                 Contract = contract ?? throw new ArgumentNullException(nameof(contract));
+                Scope = scope;
             }
 
             public string ConsumerId { get; }
             public string ProviderId { get; }
             public Type Contract { get; }
+            public object? Scope { get; }
         }
 
         private sealed class OwnerBoundFacadeKeyComparer : IEqualityComparer<OwnerBoundFacadeKey>
@@ -318,7 +344,7 @@ namespace DTMAPI.Core.Services
             public bool Equals(OwnerBoundFacadeKey x, OwnerBoundFacadeKey y) =>
                 OwnerEquals(x.ConsumerId, y.ConsumerId) &&
                 OwnerEquals(x.ProviderId, y.ProviderId) &&
-                x.Contract == y.Contract;
+                x.Contract == y.Contract && ReferenceEquals(x.Scope, y.Scope);
 
             public int GetHashCode(OwnerBoundFacadeKey obj)
             {
@@ -326,7 +352,8 @@ namespace DTMAPI.Core.Services
                 {
                     int hash = StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ConsumerId);
                     hash = (hash * 397) ^ StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ProviderId);
-                    return (hash * 397) ^ obj.Contract.GetHashCode();
+                    hash = (hash * 397) ^ obj.Contract.GetHashCode();
+                    return (hash * 397) ^ (obj.Scope == null ? 0 : RuntimeHelpers.GetHashCode(obj.Scope));
                 }
             }
         }

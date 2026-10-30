@@ -29,21 +29,11 @@ namespace DTMAPI.GameBridge.DolocTown
 
         internal EquipmentSlotsService Service { get; }
 
-        public void RegisterApis(IManifest manifest)
-        {
-            runtime.RegisterRuntimeApi<IEquipmentSlotsApi>(
-                manifest,
-                Service,
-                OwnerBoundGameBridgeApis.ForEquipmentSlots(Service));
-        }
+        public void RegisterApis(IManifest manifest) { }
 
         public void PublishHookStatuses()
         {
-            runtime.SetHookStatus(
-                "Player.EquipmentSlotsApi",
-                "contract",
-                "DTMAPI.GameBridge.DolocTown frozen IEquipmentSlotsApi proxy",
-                "Deprecated/Frozen compatibility activates the dormant Host only for an old ABI consumer or a protected legacy sidecar.");
+            runtime.SetHookStatus("Player.EquipmentSlotsRecovery", "available", "Equipment cold storage reader", "Recovery retains supported storage and commits only after native save succeeds.");
         }
 
         public void InstallHooks(HarmonyReflectionPatcher patcher)
@@ -66,9 +56,6 @@ namespace DTMAPI.GameBridge.DolocTown
             Service.ReturnedToTitle();
         }
 
-        public void EnvironmentReset(string reason)
-        {
-            Service.EnvironmentReset(reason);
-        }
+        public void EnvironmentReset(string reason) { }
     }
 }

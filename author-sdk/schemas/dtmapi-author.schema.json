@@ -102,6 +102,16 @@
           "type": "string",
           "minLength": 1
         },
+        "nativeContentDirectory": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Optional native Content input for an unbound ContentPack. Requires packDataDirectory; manifest binding, Runtime floor, dependency contracts and path safety are checked by the CLI."
+        },
+        "packDataDirectory": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Optional PackData input for an unbound ContentPack. Manifest binding, Runtime floor, dependency contracts and path safety are checked by the CLI."
+        },
         "publish": {
           "$ref": "#/$defs/publish"
         },
@@ -197,6 +207,25 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              { "required": ["nativeContentDirectory"], "properties": { "nativeContentDirectory": { "type": "string" } } },
+              { "required": ["packDataDirectory"], "properties": { "packDataDirectory": { "type": "string" } } }
+            ]
+          },
+          "then": { "properties": { "projectKind": { "const": "ContentPack" } } }
+        },
+        {
+          "if": {
+            "required": ["nativeContentDirectory"],
+            "properties": { "nativeContentDirectory": { "type": "string" } }
+          },
+          "then": {
+            "required": ["packDataDirectory"],
+            "properties": { "packDataDirectory": { "type": "string" } }
           }
         }
       ]

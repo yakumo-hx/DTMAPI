@@ -23,6 +23,9 @@ namespace DTMAPI.DebugConsole
         private bool titleSubscribed;
         private bool inputSubscribed;
         private bool disposed;
+        private DebugConsoleConfig config = new DebugConsoleConfig();
+        private int savedRightClickCount = 10;
+        private int savedCropMaturityRadius = 25;
 
         public override void Entry(IDtmHelper helper)
         {
@@ -34,8 +37,19 @@ namespace DTMAPI.DebugConsole
             try
             {
                 runtime = new ProductRuntimeAdapter(helper);
+                config = helper.ReadConfig<DebugConsoleConfig>();
+                config.CustomTimeMultiplier = DebugConsoleConfig.Normalize(config.CustomTimeMultiplier);
+                config.RightClickCount = DebugConsoleConfig.NormalizeDispatchCount(config.RightClickCount);
+                savedRightClickCount = config.RightClickCount;
+                config.CropMaturityRadius = DebugConsoleConfig.NormalizeCropRadius(config.CropMaturityRadius);
+                savedCropMaturityRadius = config.CropMaturityRadius;
+                RegisterConfigMenu();
                 actions = new DebugConsoleNativeActions(runtime);
-                ui = new DebugConsoleUi(runtime);
+                actions.SetCropMaturityContext(helper.GetRequiredService<IDtmRuntimeContext>("0.7.5", "0.7.5"));
+                actions.SetDeletionContext(helper.GetRequiredService<IDtmRuntimeContext>("0.7.5", "0.7.5"));
+                ui = new DebugConsoleUi(runtime, () => config.CustomTimeMultiplier, () => savedRightClickCount, () => savedCropMaturityRadius);
+                DebugConsoleModeHooks.Actions = actions;
+                DebugConsoleModeHooks.EndSessionBeforeLoad = EndSessionBeforeNativeLoad;
                 hooks = new DebugConsoleHookInstaller();
                 hooks.InstallAtomically();
                 ui.Bind(
@@ -83,6 +97,22 @@ namespace DTMAPI.DebugConsole
             }
         }
 
+        // The existing Core preparation boundary keeps native observers and the
+        // owner instance alive if releasing a mode still needs a retry.
+        public void DtmApiPrepareOwnerDeactivation(string reason)
+        {
+            saveSession.Leave();
+            // Core has already entered Deactivating: owner-bound helper event
+            // access is closed. Core removes subscriptions after preparation;
+            // on a failed preparation the inactive save gate lets Update retire
+            // its subscription after Core restores the Active owner state.
+            var failures = new List<Exception>();
+            Try(() => actions?.EndSaveSession(reason), failures);
+            Try(() => ui?.Shutdown(reason), failures);
+            if (failures.Count > 0)
+                throw new AggregateException("DebugConsole session preparation remains pending.", failures);
+        }
+
         public void Dispose()
         {
             if (disposed)
@@ -107,12 +137,14 @@ namespace DTMAPI.DebugConsole
         {
             saveSession.Enter(
                 () =>
-                    actions.RestoreTransientState(
+                    actions.EndSaveSession(
                         "SaveLoaded"),
-                () =>
+                () => {
                     ui.ResetForSaveBoundary(
                         e.SaveSlot,
-                        e.IsNewGame));
+                        e.IsNewGame);
+                    actions.BeginSaveSession();
+                });
             actions.InvalidateCatalogs();
             RefreshUpdateSubscription();
             helper.Monitor.Log(
@@ -128,7 +160,7 @@ namespace DTMAPI.DebugConsole
         {
             saveSession.Leave();
             ui.ResetForTitleBoundary();
-            actions.RestoreTransientState("ReturnedToTitle");
+            actions.EndSaveSession("ReturnedToTitle");
             actions.InvalidateCatalogs();
             RefreshUpdateSubscription();
             helper.Monitor.Log(
@@ -148,13 +180,11 @@ namespace DTMAPI.DebugConsole
                 return;
             if (e.KeybindId.Equals(ToggleId, StringComparison.OrdinalIgnoreCase))
             {
-                if (saveSession.IsActive)
+                if (saveSession.IsActive && actions.IsCurrentSaveSession)
                 {
                     if (ui.TryConsumeFocusedTextInputY())
                         return;
-                    bool wasOpen = ui.IsOpen;
                     ui.Toggle(helper.ModManifest, "hotkey Y");
-                    RestoreAfterConsoleClose(wasOpen, "hotkey Y");
                     RefreshUpdateSubscription();
                 }
                 return;
@@ -163,7 +193,6 @@ namespace DTMAPI.DebugConsole
                 ui.IsOpen)
             {
                 ui.Close(helper.ModManifest, "Escape");
-                RestoreAfterConsoleClose(true, "Escape");
                 RefreshUpdateSubscription();
             }
         }
@@ -172,31 +201,21 @@ namespace DTMAPI.DebugConsole
             object sender,
             UpdateTickedEventArgs e)
         {
-            if (!saveSession.IsActive)
+            if (!saveSession.IsActive || !actions.IsCurrentSaveSession)
             {
                 RefreshUpdateSubscription();
                 return;
             }
             if (actions.NeedsUpdate)
                 actions.Update();
-            bool wasOpen = ui.IsOpen;
             if (ui.NeedsUpdate)
                 ui.Update();
-            RestoreAfterConsoleClose(wasOpen, "console UI close");
             RefreshUpdateSubscription();
-        }
-
-        private void RestoreAfterConsoleClose(
-            bool wasOpen,
-            string reason)
-        {
-            if (wasOpen && !ui.IsOpen)
-                actions.RestoreModalScopedState(reason);
         }
 
         private void RefreshUpdateSubscription()
         {
-            bool needed = saveSession.IsActive &&
+            bool needed = saveSession.IsActive && actions.IsCurrentSaveSession &&
                 ((ui != null && ui.NeedsUpdate) ||
                  (actions != null && actions.NeedsUpdate));
             SetUpdateSubscription(needed);
@@ -249,11 +268,69 @@ namespace DTMAPI.DebugConsole
             saveSubscribed = false;
             titleSubscribed = false;
             Try(() => ui?.Shutdown(reason), failures);
-            Try(() => actions?.RestoreTransientState(reason), failures);
-            Try(() => hooks?.Unpatch(), failures);
+            bool modesReleased = false;
+            Try(() => { actions?.EndSaveSession(reason); modesReleased = true; }, failures);
+            // Keep the native-write observer and load boundary until the retained
+            // restoration responsibility is resolved. Effects are already inactive.
+            if (modesReleased)
+                Try(() => hooks?.Unpatch(), failures);
             toggle = null;
             close = null;
             saveSession.Leave();
+        }
+
+        private bool EndSessionBeforeNativeLoad()
+        {
+            saveSession.Leave();
+            SetUpdateSubscription(false);
+            try
+            {
+                ui.ResetForTitleBoundary();
+                actions.EndSaveSession("native load entry");
+                return true;
+            }
+            catch (Exception error)
+            {
+                helper.Monitor.Log("DebugConsole session restoration is pending; native load was not started. Retry loading after restoration succeeds. " + error, LogLevel.Error);
+                return false;
+            }
+        }
+
+        private void RegisterConfigMenu()
+        {
+            IDtmConfigMenuApi? menu = helper.ModRegistry.GetApi<IDtmConfigMenuApi>("DTMAPI.ModConfigMenu");
+            if (menu == null)
+                throw new InvalidOperationException("DTMAPI.ModConfigMenu is required for DebugConsole settings.");
+            menu.Register(helper.ModManifest, () => config = new DebugConsoleConfig(), () =>
+            {
+                config.CustomTimeMultiplier = DebugConsoleConfig.Normalize(config.CustomTimeMultiplier);
+                config.RightClickCount = DebugConsoleConfig.NormalizeDispatchCount(config.RightClickCount);
+                config.CropMaturityRadius = DebugConsoleConfig.NormalizeCropRadius(config.CropMaturityRadius);
+                helper.WriteConfig(config);
+                // Pending previews, Reset and a failed save cannot change dispatch.
+                savedRightClickCount = config.RightClickCount;
+                savedCropMaturityRadius = config.CropMaturityRadius;
+                ui?.RefreshDispatchCount();
+            });
+            menu.SetDisplayName(helper.ModManifest, () => T("mod.name", "Y Key Console"));
+            menu.AddNumberOption(helper.ModManifest,
+                () => T("config.customTime.name", "Custom time multiplier"),
+                () => T("config.customTime.description", "Integer 1–20. Saving does not change current speed; click Custom time in Y to apply."),
+                () => config.CustomTimeMultiplier,
+                value => config.CustomTimeMultiplier = DebugConsoleConfig.Normalize(value),
+                1, 20, 1);
+            menu.AddNumberOption(helper.ModManifest,
+                () => T("config.rightClickCount.name", "Right-click quantity"),
+                () => T("config.rightClickCount.description", "Integer 1–100 for items, monsters and animals. Left-click gives 1. Saving does not give or spawn anything."),
+                () => config.RightClickCount,
+                value => config.RightClickCount = DebugConsoleConfig.NormalizeDispatchCount(value),
+                1, 100, 1);
+            menu.AddNumberOption(helper.ModManifest,
+                () => T("config.cropRadius.name", "Crop maturity radius"),
+                () => T("config.cropRadius.description", "Integer 5–100 cells; default 25. Next click affects only this room. A basin is included if any covered cell touches the circle; anchor is used only when coverage is absent."),
+                () => config.CropMaturityRadius,
+                value => config.CropMaturityRadius = DebugConsoleConfig.NormalizeCropRadius(value),
+                5, 100, 1);
         }
 
         private static void Try(

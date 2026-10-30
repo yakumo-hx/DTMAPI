@@ -11,7 +11,9 @@ namespace DTMAPI.UnitTests
     {
         internal static void RunAll()
         {
-            EnabledProductOwnsOneWriterAndInstallsZeroHooks();
+            MoreSavesRenameTests.RunAll();
+            MoreSavesPagingTests.RunAll();
+            OfficialEnablementOwnsOneCapacityWriter();
             MissingManagerRetriesAtBoundedCadence();
             DisableRestoresSixBeforeReleasingOwner();
             FailedFinalRestoreRetainsExactOwnerUntilLaterCleanup();
@@ -33,7 +35,7 @@ namespace DTMAPI.UnitTests
             NativeReflectionMigrationUsesCurrentLocalSaveOwner();
         }
 
-        private static void EnabledProductOwnsOneWriterAndInstallsZeroHooks()
+        private static void OfficialEnablementOwnsOneCapacityWriter()
         {
             MoreSavesNativeOwnerCoordinator.ResetForTests();
             try
@@ -51,15 +53,14 @@ namespace DTMAPI.UnitTests
                     {
                         migrationCalls++;
                         Assert(((ManagerFixture)value).archiveFileCount == 6,
-                            "Legacy migration must finish before twelve is published to the native UI owner.");
+                            "Legacy migration must finish before sixty is published to the native UI owner.");
                         return MoreSavesArchiveMigrationResult.NoLegacyFiles();
                     });
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit enabled");
+                runtime.Configure(new MoreSavesConfig(), "unit enabled");
 
-                Assert(manager.archiveFileCount == 12, "Enabled MoreSaves must write the fixed twelve-slot contract.");
+                Assert(manager.archiveFileCount == 60, "Enabled MoreSaves must write the fixed sixty-slot contract.");
                 Assert(runtime.LeaseHeld && MoreSavesNativeOwnerCoordinator.IsOwnedBy(MoreSavesNativeOwnerCoordinator.ProductOwner),
                     "Enabled MoreSaves must hold the one ProductNative archive-count lease.");
-                Assert(runtime.InstalledPatchCount == 0, "MoreSaves must install zero Harmony patches.");
                 Assert(migrationCalls == 1, "Healthy activation must run the one startup migration exactly once.");
                 Assert(!runtime.RetrySchedulingRequested && retryDemand.Count == 0,
                     "Healthy MoreSaves must publish no frame-retry subscription demand.");
@@ -68,9 +69,9 @@ namespace DTMAPI.UnitTests
                     "Healthy status must distinguish absent pending work from absent retry scheduling.");
 
                 runtime.ResetBoundary("unit title");
-                Assert(manager.archiveFileCount == 12 && !runtime.RetryPending &&
+                Assert(manager.archiveFileCount == 60 && !runtime.RetryPending &&
                        !runtime.RetrySchedulingRequested && retryDemand.Count == 0 && migrationCalls == 1,
-                    "Title/save lifecycle reconciliation must preserve twelve without repeating startup migration or creating frame-retry demand.");
+                    "Title/save lifecycle reconciliation must preserve sixty without repeating startup migration or creating frame-retry demand.");
                 runtime.DeactivateOwner("unit cleanup");
             }
             finally
@@ -96,7 +97,7 @@ namespace DTMAPI.UnitTests
                     retryDemand.Add,
                     NoMigration);
 
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit missing");
+                runtime.Configure(new MoreSavesConfig(), "unit missing");
                 Assert(runtime.RetryPending && runtime.LeaseHeld && runtime.RetrySchedulingRequested &&
                        retryDemand.Count == 1 && retryDemand[0],
                     "Missing manager must retain one lease and demand-activate one bounded retry subscription.");
@@ -111,9 +112,9 @@ namespace DTMAPI.UnitTests
                 Assert(manager.archiveFileCount == 6, "Retry must remain dormant before 750ms.");
                 now = now.AddMilliseconds(1);
                 runtime.Update();
-                Assert(manager.archiveFileCount == 12 && !runtime.RetryPending && !runtime.RetrySchedulingRequested &&
+                Assert(manager.archiveFileCount == 60 && !runtime.RetryPending && !runtime.RetrySchedulingRequested &&
                        retryDemand.Count == 2 && !retryDemand[1],
-                    "The first due retry must apply twelve, clear pending work and remove the frame subscription.");
+                    "The first due retry must apply sixty, clear pending work and remove the frame subscription.");
                 runtime.DeactivateOwner("unit cleanup");
             }
             finally
@@ -129,8 +130,8 @@ namespace DTMAPI.UnitTests
             {
                 var manager = new ManagerFixture();
                 var runtime = Runtime(manager);
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit enabled");
-                runtime.Configure(new MoreSavesConfig { Enabled = false }, "unit disabled");
+                runtime.Configure(new MoreSavesConfig(), "unit enabled");
+                runtime.DeactivateOwner("unit disabled");
 
                 Assert(manager.archiveFileCount == 6, "Disabling MoreSaves must restore the native six-slot count.");
                 Assert(!runtime.LeaseHeld && MoreSavesNativeOwnerCoordinator.ActiveOwner.Length == 0,
@@ -165,12 +166,12 @@ namespace DTMAPI.UnitTests
                     () => now,
                     retryDemand.Add,
                     NoMigration);
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit enabled");
+                runtime.Configure(new MoreSavesConfig(), "unit enabled");
 
                 bool failed = false;
                 try { runtime.DeactivateOwner("unit failing restore"); }
                 catch (InvalidOperationException) { failed = true; }
-                Assert(failed && manager.archiveFileCount == 12 && runtime.LeaseHeld && runtime.RetryPending,
+                Assert(failed && manager.archiveFileCount == 60 && runtime.LeaseHeld && runtime.RetryPending,
                     "A failed final restore must fail closed while retaining the exact product lease.");
                 Assert(MoreSavesNativeOwnerCoordinator.IsOwnedBy(MoreSavesNativeOwnerCoordinator.ProductOwner),
                     "A failed restore must not expose the native writer to a second owner.");
@@ -203,7 +204,7 @@ namespace DTMAPI.UnitTests
                 var manager = new ManagerFixture();
                 var runtime = Runtime(manager);
                 bool rejected = false;
-                try { runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit compatibility-first"); }
+                try { runtime.Configure(new MoreSavesConfig(), "unit compatibility-first"); }
                 catch (InvalidOperationException) { rejected = true; }
 
                 Assert(rejected && manager.archiveFileCount == 6 && !runtime.LeaseHeld,
@@ -446,7 +447,7 @@ namespace DTMAPI.UnitTests
                 bool rejected = false;
                 try
                 {
-                    runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit migration failure");
+                    runtime.Configure(new MoreSavesConfig(), "unit migration failure");
                 }
                 catch (InvalidOperationException)
                 {
@@ -476,7 +477,7 @@ namespace DTMAPI.UnitTests
                     (value, count) => { ((ManagerFixture)value).archiveFileCount = count; return true; },
                     () => now,
                     archiveMigration: value => throw new MoreSavesArchiveMigrationException("deferred update rejection"));
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit deferred missing");
+                runtime.Configure(new MoreSavesConfig(), "unit deferred missing");
                 manager = new ManagerFixture();
                 now = now.AddMilliseconds(750);
                 bool rejected = false;
@@ -505,7 +506,7 @@ namespace DTMAPI.UnitTests
                     value => ((ManagerFixture)value).archiveFileCount,
                     (value, count) => { ((ManagerFixture)value).archiveFileCount = count; return true; },
                     archiveMigration: value => throw new MoreSavesArchiveMigrationException("deferred boundary rejection"));
-                runtime.Configure(new MoreSavesConfig { Enabled = true }, "unit boundary missing");
+                runtime.Configure(new MoreSavesConfig(), "unit boundary missing");
                 manager = new ManagerFixture();
                 bool rejected = false;
                 try { runtime.ResetBoundary("unit deferred boundary"); }
