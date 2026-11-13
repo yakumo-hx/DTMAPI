@@ -1,0 +1,8 @@
+{
+  "UniqueID": "DTMAPI.HelloDtmMod",
+  "EntryDll": "Content/DTMAPI/HelloDtmMod.dll",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "RequiresRestart": false,
+  "ManifestVersion": 2
+}

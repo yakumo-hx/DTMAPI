@@ -1,0 +1,9 @@
+{
+  "UniqueID": "DTMAPI.DebugConsoleMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.DebugConsole.dll",
+  "EntryType": "DTMAPI.DebugConsole.ModEntry",
+  "Type": "CodeMod",
+  "Dependencies": [],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.DebugConsoleMod.Native"
+}

@@ -1,0 +1,18 @@
+{
+  "UniqueID": "Yuuka.DTMAPI.ActionSpeed",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.ActionSpeed.dll",
+  "EntryType": "Yuuka.DTMAPI.ActionSpeed.ModEntry",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "Required": true,
+      "VersionRange": {
+        "minimumInclusive": "0.7.0",
+        "includePrerelease": false
+      }
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "Yuuka.DTMAPI.ActionSpeed.Native"
+}

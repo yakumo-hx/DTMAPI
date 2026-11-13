@@ -1,0 +1,40 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)build\dtmapi-runtime-version.props" />
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <!-- Fixtures outside the solution inherit the selected configuration instead
+         of silently falling back to Debug during a Release solution build. -->
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+    <DtmApiRepositoryRoot>$([System.IO.Path]::GetDirectoryName('$(MSBuildThisFileDirectory)pathmap-root'))</DtmApiRepositoryRoot>
+    <PathMap>$(DtmApiRepositoryRoot)=/_/DTMAPI</PathMap>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.Abstractions' And '$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.AudioContent' Or '$(MSBuildProjectName)' == 'DTMAPI.AudioPreparation' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Audio' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.RuntimeModules' Or '$(MSBuildProjectName)' == 'DTMAPI.AnimalContent' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Animals' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.MonsterContent' Or '$(MSBuildProjectName)' == 'DTMAPI.MonsterContent.Authoring' Or '$(MSBuildProjectName)' == 'DTMAPI.Modules.Monsters'">
+    <FileVersion>$(DtmApiBinaryFileVersion)</FileVersion>
+    <Version>$(DtmApiReleaseVersion)</Version>
+    <InformationalVersion>$(DtmApiReleaseVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DTMAPI.Abstractions' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.BepInExBootstrap' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.Core' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.GameBridge.DolocTown' Or
+                            '$(MSBuildProjectName)' == 'DTMAPI.ModConfigMenu'">
+    <AssemblyVersion>$(DtmApiAssemblyCompatibilityVersion)</AssemblyVersion>
+    <FileVersion>$(DtmApiBinaryFileVersion)</FileVersion>
+    <Version>$(DtmApiReleaseVersion)</Version>
+    <InformationalVersion>$(DtmApiReleaseVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>
+

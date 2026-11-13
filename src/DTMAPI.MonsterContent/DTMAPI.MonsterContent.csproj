@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>DTMAPI.MonsterContent</AssemblyName>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" Private="false" /><ProjectReference Include="../DTMAPI.AudioContent/DTMAPI.AudioContent.csproj" Private="false" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/StrictJson.cs" Link="Content/StrictJson.cs" /></ItemGroup>
+  <Target Name="GenerateMonsterModuleVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <MonsterModuleVersionFile>$(IntermediateOutputPath)MonsterModuleVersion.g.cs</MonsterModuleVersionFile>
+      <MonsterModuleVersionSource>namespace DTMAPI.MonsterContent { public static partial class MonsterModule { public const string ContractVersion = "$(DtmApiReleaseVersion)"%3B } }</MonsterModuleVersionSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(MonsterModuleVersionFile)" Lines="$(MonsterModuleVersionSource)" Overwrite="true" Encoding="UTF-8" />
+    <ItemGroup><Compile Include="$(MonsterModuleVersionFile)" /></ItemGroup>
+  </Target>
+</Project>

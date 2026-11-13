@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "audio": {
+    "resources": [
+      {
+        "key": "hatch-pet-child",
+        "path": "PackData/audio/hatch_pet_young.wav"
+      },
+      {
+        "key": "hatch-pet-adult",
+        "path": "PackData/audio/hatch_pet_adult.wav"
+      },
+      {
+        "key": "drecko-pet-child",
+        "path": "PackData/audio/drecko_pet_young.wav"
+      },
+      {
+        "key": "drecko-pet-adult",
+        "path": "PackData/audio/drecko_pet_adult.wav"
+      },
+      {
+        "key": "mole-pet-child",
+        "path": "PackData/audio/mole_pet_young.wav"
+      },
+      {
+        "key": "mole-pet-adult",
+        "path": "PackData/audio/mole_pet_adult.wav"
+      },
+      {
+        "key": "oilfloater-pet-child",
+        "path": "PackData/audio/oilfloater_pet_young.wav"
+      },
+      {
+        "key": "oilfloater-pet-adult",
+        "path": "PackData/audio/oilfloater_pet_adult.wav"
+      }
+    ],
+    "events": [
+      {
+        "key": "hatch-pet-child",
+        "resource": "hatch-pet-child",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "hatch-pet-adult",
+        "resource": "hatch-pet-adult",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "drecko-pet-child",
+        "resource": "drecko-pet-child",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "drecko-pet-adult",
+        "resource": "drecko-pet-adult",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "mole-pet-child",
+        "resource": "mole-pet-child",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "mole-pet-adult",
+        "resource": "mole-pet-adult",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "oilfloater-pet-child",
+        "resource": "oilfloater-pet-child",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      },
+      {
+        "key": "oilfloater-pet-adult",
+        "resource": "oilfloater-pet-adult",
+        "use": "effect",
+        "minimumIntervalMs": 80,
+        "volumeDb": 0.0,
+        "route": "NativeAnimal"
+      }
+    ]
+  },
+  "animals": {
+    "voices": [
+      {
+        "speciesId": "hatch",
+        "stage": "child",
+        "nativeEvent": "PLAY_ANIMAL_PET_CHICKEN_CHILD",
+        "sound": "hatch-pet-child"
+      },
+      {
+        "speciesId": "hatch",
+        "stage": "adult",
+        "nativeEvent": "PLAY_ANIMAL_PET_CHICKEN",
+        "sound": "hatch-pet-adult"
+      },
+      {
+        "speciesId": "drecko",
+        "stage": "child",
+        "nativeEvent": "PLAY_ANIMAL_PET_SHEEP_CHILD",
+        "sound": "drecko-pet-child"
+      },
+      {
+        "speciesId": "drecko",
+        "stage": "adult",
+        "nativeEvent": "PLAY_ANIMAL_PET_SHEEP",
+        "sound": "drecko-pet-adult"
+      },
+      {
+        "speciesId": "mole",
+        "stage": "child",
+        "nativeEvent": "PLAY_ANIMAL_PET_PANGOLIN",
+        "sound": "mole-pet-child"
+      },
+      {
+        "speciesId": "mole",
+        "stage": "adult",
+        "nativeEvent": "PLAY_ANIMAL_PET_PANGOLIN",
+        "sound": "mole-pet-adult"
+      },
+      {
+        "speciesId": "oilfloater",
+        "stage": "child",
+        "nativeEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD",
+        "sound": "oilfloater-pet-child"
+      },
+      {
+        "speciesId": "oilfloater",
+        "stage": "adult",
+        "nativeEvent": "PLAY_ANIMAL_PET_HONEY_AMOEBA",
+        "sound": "oilfloater-pet-adult"
+      }
+    ],
+    "definitions": [
+      {
+        "speciesId": "hatch",
+        "animatorMode": "pngSpriteOverride",
+        "frameManifest": "Content/Sprites/hatch_frame_manifest.json",
+        "templateSpritePrefix": "anim_animal_chicken",
+        "customSpritePrefix": "anim_animal_hatch"
+      },
+      {
+        "speciesId": "drecko",
+        "animatorMode": "pngSpriteOverride",
+        "frameManifest": "Content/Sprites/drecko_frame_manifest.json",
+        "templateSpritePrefix": "anim_animal_goat",
+        "customSpritePrefix": "anim_animal_drecko"
+      },
+      {
+        "speciesId": "mole",
+        "animatorMode": "pngSpriteOverride",
+        "frameManifest": "Content/Sprites/mole_frame_manifest.json",
+        "templateSpritePrefix": "anim_animal_marsh_pangolin",
+        "customSpritePrefix": "anim_animal_mole"
+      },
+      {
+        "speciesId": "oilfloater",
+        "animatorMode": "pngSpriteOverride",
+        "frameManifest": "Content/Sprites/oilfloater_frame_manifest.json",
+        "templateSpritePrefix": "anim_animal_slime",
+        "customSpritePrefix": "anim_animal_oilfloater"
+      }
+    ]
+  }
+}

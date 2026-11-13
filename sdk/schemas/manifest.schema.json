@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/manifest-v2.schema.json",
+  "title": "DTMAPI runtime manifest v2",
+  "type": "object",
+  "required": [
+    "ManifestVersion",
+    "UniqueID",
+    "Type"
+  ],
+  "properties": {
+    "ManifestVersion": {
+      "const": 2
+    },
+    "UniqueID": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Type": {
+      "enum": [
+        "CodeMod",
+        "ContentPack"
+      ]
+    },
+    "EntryDll": {
+      "type": "string"
+    },
+    "EntryType": {
+      "type": "string"
+    },
+    "MinimumDTMApiVersion": {
+      "type": "string"
+    },
+    "RequiresRestart": {
+      "type": "boolean",
+      "default": false
+    },
+    "HarmonyOwner": {
+      "type": "string"
+    },
+    "Dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "UniqueID"
+        ],
+        "properties": {
+          "UniqueID": {
+            "type": "string"
+          },
+          "Required": {
+            "type": "boolean",
+            "default": true
+          },
+          "VersionRange": {
+            "$ref": "#/$defs/range"
+          }
+        }
+      }
+    },
+    "Assemblies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "Path",
+          "Role"
+        ],
+        "properties": {
+          "Path": {
+            "type": "string"
+          },
+          "Role": {
+            "enum": [
+              "private-managed",
+              "shared-contract"
+            ]
+          }
+        }
+      }
+    },
+    "ContentPackFor": {
+      "type": "object",
+      "required": [
+        "HostId",
+        "Schema",
+        "ContractVersionRange"
+      ],
+      "properties": {
+        "HostId": {
+          "type": "string"
+        },
+        "Schema": {
+          "type": "string"
+        },
+        "ContractVersionRange": {
+          "$ref": "#/$defs/range"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "range": {
+      "type": "object",
+      "properties": {
+        "minimumInclusive": {
+          "type": "string"
+        },
+        "maximumExclusive": {
+          "type": "string"
+        },
+        "includePrerelease": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

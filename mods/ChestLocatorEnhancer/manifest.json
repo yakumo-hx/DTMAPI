@@ -1,0 +1,9 @@
+{
+  "UniqueID": "DTMAPI.ChestLocatorEnhancerMod",
+  "EntryDll": "Content/DTMAPI/DTMAPI.ChestLocatorEnhancer.dll",
+  "EntryType": "DTMAPI.ChestLocatorEnhancer.ModEntry",
+  "Type": "CodeMod",
+  "Dependencies": [],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "DTMAPI.ChestLocatorEnhancerMod.Native"
+}

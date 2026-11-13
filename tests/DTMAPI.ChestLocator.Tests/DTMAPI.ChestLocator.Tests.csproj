@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>chestlocator</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+
+    <Compile Include="../../mods/ChestLocatorEnhancer/src/Native/ChestLocatorHookOwnership.cs" Link="ChestLocatorEnhancer/ChestLocatorHookOwnership.cs" />
+    <Compile Include="../../mods/ChestLocatorEnhancer/src/Native/ChestLocatorInventoryTraversal.cs" Link="ChestLocatorEnhancer/ChestLocatorInventoryTraversal.cs" />
+    <Compile Include="../../mods/ChestLocatorEnhancer/src/Native/ChestLocatorObservationLogGate.cs" Link="ChestLocatorEnhancer/ChestLocatorObservationLogGate.cs" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/ChestLocatorHarmonyOwnerFixture/ChestLocatorHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

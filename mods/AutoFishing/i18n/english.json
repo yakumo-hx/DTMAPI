@@ -1,0 +1,23 @@
+{
+  "mod.name": "DTMAPI Auto Fishing",
+  "config.section.main": "DTMAPI Auto Fishing",
+  "config.status.experimental": "{0} toggles the native auto-fishing loop. Current state: {1}.",
+  "config.boundary.current": "Default loop: cast at the configured charge, wait for a native bite, reel, play the real minigame through native green/red/yellow bar input, collect the result, then recast. Instant bite, cast charge, minigame skipping, and animation speed are independent.",
+  "state.enabled": "enabled",
+  "state.disabled": "disabled",
+  "state.notEnabled": "not enabled",
+  "state.waitingFishing": "waiting for fishing",
+  "state.experimental": "experimental phase",
+  "state.conflict": "key conflict",
+  "state.hotkeyDisabled": "hotkey disabled",
+  "config.toggleKey.name": "Toggle key",
+  "config.toggleKey.tooltip": "Click Capture, then press the next key. Reset restores F6; Escape, Backspace, or Delete clears the binding.",
+  "config.castChargeRatio.name": "Cast charge",
+  "config.castChargeRatio.tooltip": "Set native cast charge from 0 (minimum distance) to 1 (full charge). This does not change animation speed.",
+  "config.skipMinigame.name": "Skip minigame",
+  "config.skipMinigame.tooltip": "Route bite-ready results through the native no-minigame result path. Native failure/success is preserved.",
+  "config.instantBite.name": "Instant bite",
+  "config.instantBite.tooltip": "Skip the native waiting period after the hook reaches water, then reel into the normal minigame/result path.",
+  "config.fastAnimations.name": "Fast fishing animations",
+  "config.fastAnimations.tooltip": "Speed up the native backswing/charge animation, charge timing, cast hook flight, and pull phases without changing the charge target. Supports 1-4x."
+}

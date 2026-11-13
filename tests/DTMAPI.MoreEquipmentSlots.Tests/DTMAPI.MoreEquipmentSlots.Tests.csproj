@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>moreequipment</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <None Update="Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../../mods/MoreEquipmentSlots/src/Storage/*.cs" Link="MoreEquipmentSlots/%(Filename)%(Extension)" />
+    <Compile Include="../../mods/MoreEquipmentSlots/src/Legacy/*.cs" Link="MoreEquipmentSlots/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

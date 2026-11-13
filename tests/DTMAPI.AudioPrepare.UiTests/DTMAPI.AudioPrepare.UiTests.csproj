@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><StartupObject>ToolUiChecks</StartupObject></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/AudioPrepare/Program.cs" Link="PrepareForm.cs" />
+    <ProjectReference Include="../../src/DTMAPI.AudioPreparation/DTMAPI.AudioPreparation.csproj" />
+  </ItemGroup>
+</Project>

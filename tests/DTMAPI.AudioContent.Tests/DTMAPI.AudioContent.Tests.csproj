@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/DTMAPI.AudioContent/DTMAPI.AudioContent.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.AudioPreparation/DTMAPI.AudioPreparation.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.MonsterContent/DTMAPI.MonsterContent.csproj" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/AudioEngine.cs" Link="AudioEngine.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/AudioEngine.Streaming.cs" Link="AudioEngine.Streaming.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/AudioEngine.MusicEvents.cs" Link="AudioEngine.MusicEvents.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/WaitingMusic.cs" Link="WaitingMusic.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/StreamingCache.cs" Link="StreamingCache.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/OwnedSoundBank.cs" Link="OwnedSoundBank.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/MusicRequests.cs" Link="MusicRequests.cs" />
+    <Compile Include="../../src/DTMAPI.Modules.Audio/NativeMusicCancellation.cs" Link="NativeMusicCancellation.cs" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DTMAPI.RuntimeModules/DTMAPI.RuntimeModules.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../Shared/AudioModuleFixture.cs" Link="AudioModuleFixture.cs" /><ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" /></ItemGroup>
+</Project>

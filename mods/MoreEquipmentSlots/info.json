@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 更多装备槽",
+  "author": "Yuuka",
+  "version": "2.0.6",
+  "description": "需要 DTMAPI 0.7.5。\n\n多出三个属性装备槽，可以放帽子或特殊饰品，拥有这些装备的效果。人物外观仍然显示游戏自带帽子栏里的那一顶。\n停用这个 Mod 后，装备数据仍留在存档里，重新启用就能读回来。\n\n【从 1.0.1 升级】\n1.0 版本采用额外文件存储装备信息，但是由于云存档和其他问题导致频繁报错，现在改为存档内数据。进入存档时，如果有 1.0.1 的旧装备，会弹窗显示角色名和装备数量，点“确认”就放回三个额外槽，然后正常保存一次。",
+  "tags": [
+    "Mod",
+    "Functional",
+    "DTMAPI",
+    "Equipment",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 更多装备槽",
+    "tchinese": "DTMAPI 更多裝備槽",
+    "english": "DTMAPI More Equipment Slots"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n多出三个属性装备槽，可以放帽子或特殊饰品，拥有这些装备的效果。人物外观仍然显示游戏自带帽子栏里的那一顶。\n停用这个 Mod 后，装备数据仍留在存档里，重新启用就能读回来。\n\n【从 1.0.1 升级】\n1.0 版本采用额外文件存储装备信息，但是由于云存档和其他问题导致频繁报错，现在改为存档内数据。进入存档时，如果有 1.0.1 的旧装备，会弹窗显示角色名和装备数量，点“确认”就放回三个额外槽，然后正常保存一次。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n多出三個屬性裝備欄，可以放帽子或特殊飾品，擁有這些裝備的效果。人物外觀仍然顯示遊戲內建帽子欄中的那一頂。\n停用這個 Mod 後，裝備資料仍留在存檔中，重新啟用就能讀回來。\n\n【從 1.0.1 升級】\n1.0 版本使用額外檔案儲存裝備資訊，但因為雲端存檔和其他問題經常報錯，現在改為存在存檔內。進入存檔時，如果有 1.0.1 的舊裝備，會跳出視窗顯示角色名稱和裝備數量，點「確認」就放回三個額外欄位，然後正常儲存一次。",
+    "english": "Requires DTMAPI 0.7.5.\n\nAdds three extra stat equipment slots for hats or special accessories, giving you the effects of that gear. Your character's appearance still shows the hat in the game's own hat slot.\nIf you turn the mod off, the equipment data stays in your save and is read back when you turn it on again.\n\n[Upgrading from 1.0.1]\nVersion 1.0 stored equipment in a separate file, which caused frequent errors with cloud saves and other issues. Equipment is now stored inside the save. When you enter a save that has old 1.0.1 equipment, a pop-up shows the character name and how many items there are. Click \"Confirm\" to put them back in the three extra slots, then save normally."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

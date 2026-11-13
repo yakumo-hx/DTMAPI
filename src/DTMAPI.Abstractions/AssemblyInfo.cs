@@ -1,0 +1,14 @@
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("DTMAPI.BepInExBootstrap")]
+[assembly: InternalsVisibleTo("DTMAPI.Core")]
+[assembly: InternalsVisibleTo("DTMAPI.RuntimeModules")]
+[assembly: InternalsVisibleTo("DTMAPI.Modules.Animals")]
+[assembly: InternalsVisibleTo("DTMAPI.Modules.Audio")]
+[assembly: InternalsVisibleTo("DTMAPI.Modules.Monsters")]
+[assembly: InternalsVisibleTo("DTMAPI.GameBridge.DolocTown")]
+[assembly: InternalsVisibleTo("DTMAPI.ModConfigMenu")]
+[assembly: InternalsVisibleTo("DTMAPI.UnitTests")]
+[assembly: InternalsVisibleTo("DTMAPI.AudioContent.Tests")]
+[assembly: InternalsVisibleTo("DTMAPI.MonsterContent.Tests")]
+

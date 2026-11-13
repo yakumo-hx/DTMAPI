@@ -1,0 +1,11 @@
+# Preserve redistributed notices and LGPL corresponding-source archives.
+/licenses/** -text
+
+src/Shared/StrictJson.cs text eol=lf
+
+# Decoder build inputs are used from WSL.
+build/audio-decoder/*.sh text eol=lf
+build/audio-decoder/*.sha256 text eol=lf
+
+# Multi-platform launchers run directly in Bash.
+build/dtmapi-multiplatform/*.sh text eol=lf

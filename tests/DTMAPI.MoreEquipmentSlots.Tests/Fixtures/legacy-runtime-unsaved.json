@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 3,
+  "scope": {
+    "archiveIndex": 11,
+    "playerName": "fixture",
+    "customPlayerName": "",
+    "totalGameSeconds": 229419
+  },
+  "generation": 5,
+  "slots": [
+    {
+      "index": 0,
+      "itemId": "",
+      "displayName": "",
+      "skillId": "",
+      "defenseBonus": 0,
+      "isShield": false,
+      "shieldValue": 0,
+      "shieldMaxValue": 0,
+      "shieldDefend": 0
+    },
+    {
+      "index": 1,
+      "itemId": "",
+      "displayName": "",
+      "skillId": "",
+      "defenseBonus": 0,
+      "isShield": false,
+      "shieldValue": 0,
+      "shieldMaxValue": 0,
+      "shieldDefend": 0
+    },
+    {
+      "index": 2,
+      "itemId": "",
+      "displayName": "",
+      "skillId": "",
+      "defenseBonus": 0,
+      "isShield": false,
+      "shieldValue": 0,
+      "shieldMaxValue": 0,
+      "shieldDefend": 0
+    }
+  ],
+  "journal": {
+    "transactionId": "a55e47342de04c5483fa0dc7171b9c58",
+    "phase": 0,
+    "scope": {
+      "archiveIndex": 11,
+      "playerName": "fixture",
+      "customPlayerName": "",
+      "totalGameSeconds": 229419
+    },
+    "baseGeneration": 1,
+    "escrow": [
+      {
+        "slotIndex": 1,
+        "itemId": "straw_hat",
+        "displayName": "草帽",
+        "beforeBackpackCount": 0,
+        "beforeMailCount": 0,
+        "expectedBackpackCount": 1,
+        "expectedMailCount": 0,
+        "placement": 1,
+        "attemptCompleted": true,
+        "skillId": "weeds_plus",
+        "defenseBonus": 0,
+        "isShield": false,
+        "shieldValue": 0,
+        "shieldMaxValue": 0,
+        "shieldDefend": 0
+      },
+      {
+        "slotIndex": 2,
+        "itemId": "grandmas_button",
+        "displayName": "奶奶的纽扣",
+        "beforeBackpackCount": 0,
+        "beforeMailCount": 0,
+        "expectedBackpackCount": 1,
+        "expectedMailCount": 0,
+        "placement": 1,
+        "attemptCompleted": true,
+        "skillId": "grandmas_button",
+        "defenseBonus": 0,
+        "isShield": false,
+        "shieldValue": 0,
+        "shieldMaxValue": 0,
+        "shieldDefend": 0
+      }
+    ],
+    "replacements": [],
+    "attemptStarted": true,
+    "preSaveFingerprint": "native-v3|backupCount=5|current=exists:1930743:639300500219095399:4c0079a7bee87e065ed965f76dadc5a9ca7c8e019a7017c827480f584c1a2080|prev0=missing|prev1=missing|prev2=missing|prev3=missing|prev4=missing|bak=missing|legacyV2=b194848c11ed85f04f50109eb3946cf0e18b9474ff7c38b81ab30779cf84a41b",
+    "postSaveFingerprint": "",
+    "incomingAttemptCompleted": false,
+    "incomingSucceeded": false,
+    "incomingBeforeBackpackCount": 0,
+    "incomingExpectedBackpackCount": 0,
+    "incomingFromNativeBuffer": false,
+    "origin": 3
+  }
+}

@@ -1,0 +1,33 @@
+[
+  {
+    "id": "dtmapi_creative_generator",
+    "sub_type": "material_ore",
+    "salable": false,
+    "disposable": true,
+    "consumable": false,
+    "cookable": false,
+    "electric_energy": 1000000000,
+    "viewable": true,
+    "source": [
+      "debug",
+      "dtmapi"
+    ],
+    "selling_price": 0,
+    "buying_price": 0,
+    "overlay": 999,
+    "ui_sprite_asset": {
+      "url": "icon_item_coal"
+    },
+    "title": {
+      "key": "item_dtmapi_creative_generator",
+      "text": "无限燃料"
+    },
+    "description_basic": {
+      "key": "item_dtmapi_creative_generator_desc",
+      "text": "一块热值极高的煤炭，只具备普通燃料属性。兼容机器最多补充到自身燃料容量上限，不会突破设备容量。"
+    },
+    "function": {
+      "$type": "ItemFunction"
+    }
+  }
+]

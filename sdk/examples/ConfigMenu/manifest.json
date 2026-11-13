@@ -1,0 +1,7 @@
+{
+  "UniqueID": "DTMAPI.ConfigMenuExample",
+  "EntryDll": "Content/DTMAPI/ConfigMenuExample.dll",
+  "MinimumDTMApiVersion": "0.7.5",
+  "Type": "CodeMod",
+  "ManifestVersion": 2
+}

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>animalhusbandry</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../../mods/AnimalHusbandryProgress/src/Native/AnimalOverlaySessionState.cs" Link="AnimalHusbandryProgress/AnimalOverlaySessionState.cs" />
+    <Compile Include="../../mods/AnimalHusbandryProgress/src/AnimalHusbandryConfig.cs" Link="AnimalHusbandryProgress/AnimalHusbandryConfig.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dtmapi.invalid/schemas/author-sdk/0.1/dtmapi-author.schema.json",
+  "title": "DTMAPI Author SDK project metadata",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/schema4"
+    }
+  ],
+  "$defs": {
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tags",
+        "localizedName",
+        "localizedDescription"
+      ],
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "localizedName": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "localizedDescription": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "schema4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "projectKind",
+        "targetDtmApiVersion"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 4
+        },
+        "projectKind": {
+          "enum": [
+            "CodeMod",
+            "ContentPack"
+          ]
+        },
+        "targetDtmApiVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "projectFile": {
+          "type": "string",
+          "pattern": "\\.csproj$",
+          "description": "Relative path to the standard Mod project. Compile inputs and compiler properties belong in MSBuild."
+        },
+        "codeModKind": {
+          "enum": [
+            "Strict",
+            "Advanced"
+          ]
+        },
+        "contentDirectory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nativeContentDirectory": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Optional native Content input for an unbound ContentPack. Requires packDataDirectory; manifest binding, Runtime floor, dependency contracts and path safety are checked by the CLI."
+        },
+        "packDataDirectory": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Optional PackData input for an unbound ContentPack. Manifest binding, Runtime floor, dependency contracts and path safety are checked by the CLI."
+        },
+        "publish": {
+          "$ref": "#/$defs/publish"
+        },
+        "nativeReferences": {
+          "additionalProperties": false,
+          "properties": {
+            "gameRoot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "references": {
+              "uniqueItems": true,
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "requiredMembers": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "dtmapi-native-build.schema.json#/$defs/member"
+                  },
+                  {
+                    "$ref": "dtmapi-native-build.schema.json#/$defs/genericUse"
+                  }
+                ]
+              }
+            },
+            "harmonyOwner": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "gameRoot",
+            "references",
+            "harmonyOwner",
+            "requiredMembers"
+          ],
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "projectKind": {
+                "const": "CodeMod"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "projectFile"
+            ],
+            "not": {
+              "required": [
+                "contentDirectory"
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "contentDirectory"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "projectFile"
+                  ]
+                },
+                {
+                  "required": [
+                    "codeModKind"
+                  ]
+                },
+                {
+                  "required": [
+                    "nativeReferences"
+                  ]
+                },
+                {
+                  "required": [
+                    "advanced"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              { "required": ["nativeContentDirectory"], "properties": { "nativeContentDirectory": { "type": "string" } } },
+              { "required": ["packDataDirectory"], "properties": { "packDataDirectory": { "type": "string" } } }
+            ]
+          },
+          "then": { "properties": { "projectKind": { "const": "ContentPack" } } }
+        },
+        {
+          "if": {
+            "required": ["nativeContentDirectory"],
+            "properties": { "nativeContentDirectory": { "type": "string" } }
+          },
+          "then": {
+            "required": ["packDataDirectory"],
+            "properties": { "packDataDirectory": { "type": "string" } }
+          }
+        }
+      ]
+    }
+  }
+}

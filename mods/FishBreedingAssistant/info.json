@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI鱼卵信息显示",
+  "author": "Yuuka",
+  "version": "1.1.1",
+  "description": "需要 DTMAPI 0.7.5。\n\n在鱼卵的名称后面加上它会孵出哪种鱼，显示成“鱼卵名称（鱼名）”，鱼名跟随游戏语言。\n\n不用设置，启用就生效；停用后恢复原来的名称。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI鱼卵信息显示",
+    "tchinese": "DTMAPI魚卵資訊顯示",
+    "english": "DTMAPI Fish Roe Info Display"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n在鱼卵的名称后面加上它会孵出哪种鱼，显示成“鱼卵名称（鱼名）”，鱼名跟随游戏语言。\n\n不用设置，启用就生效；停用后恢复原来的名称。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n在魚卵的名稱後面加上它會孵出哪種魚，顯示成「魚卵名稱（魚名）」，魚名會跟隨遊戲語言。\n\n不需要設定，啟用就生效；停用後恢復原本的名稱。",
+    "english": "Requires DTMAPI 0.7.5.\n\nAdds the fish that will hatch to each roe's name, shown as \"Roe name (fish name)\". The fish name follows the game language.\n\nNo settings: it works as soon as it is enabled, and the original names return when you turn it off."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

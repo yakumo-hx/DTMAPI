@@ -1,0 +1,11 @@
+{
+  "mod.name": "DTMAPI Animal Produce Progress",
+  "config.colorPreset.name": "Color preset",
+  "config.fillColor.name": "Fill color",
+  "config.color.orange": "Orange",
+  "config.color.green": "Green",
+  "config.color.blue": "Blue",
+  "config.color.pink": "Pink",
+  "config.color.white": "White",
+  "config.color.custom": "Custom"
+}

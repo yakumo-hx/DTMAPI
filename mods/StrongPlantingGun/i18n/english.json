@@ -1,0 +1,6 @@
+{
+  "mod.name": "DTMAPI Strong Farming Gun",
+  "mod.loaded": "DTMAPI Strong Farming Gun loaded.",
+  "config.range.name": "Range",
+  "config.range.tooltip": "Square side length, 7–15 tiles (default 7). Uses the native offset and facing. Saving a changed range cancels the current batch."
+}

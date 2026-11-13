@@ -1,0 +1,25 @@
+{
+  "name": "DTMAPI 强力农用喷枪",
+  "author": "Yuuka",
+  "version": "1.0.2",
+  "description": "需要 DTMAPI 0.7.5。\n\n让农用喷枪一次带上种子、肥料、塑料膜和瓶装水，一大片地一趟处理完。\n\n- 农用喷枪多出四个通用槽，放入、取出的操作跟箱子一样。\n- 喷洒范围是正方形，边长可以在 Mod 配置里设为 7～15 格，默认 7 格。地上的预览框会跟着变化。\n- 每一格依次播种、施肥、铺膜、浇水，能做的才做。动画和效果都跟原版一样。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "Functional",
+    "DTMAPI",
+    "Farming",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 强力农用喷枪",
+    "tchinese": "DTMAPI 強力農用噴槍",
+    "english": "DTMAPI Strong Farming Gun"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n让农用喷枪一次带上种子、肥料、塑料膜和瓶装水，一大片地一趟处理完。\n\n- 农用喷枪多出四个通用槽，放入、取出的操作跟箱子一样。\n- 喷洒范围是正方形，边长可以在 Mod 配置里设为 7～15 格，默认 7 格。地上的预览框会跟着变化。\n- 每一格依次播种、施肥、铺膜、浇水，能做的才做。动画和效果都跟原版一样。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n讓農用噴槍一次帶上種子、肥料、塑膠膜和瓶裝水，一大片地一趟處理完。\n\n- 農用噴槍多出四個通用欄位，放入、取出的操作跟箱子一樣。\n- 噴灑範圍是正方形，邊長可以在 Mod 設定中設為 7～15 格，預設 7 格。地上的預覽框會跟著變化。\n- 每一格依序播種、施肥、鋪膜、澆水，能做的才做。動畫和效果都與原版相同。",
+    "english": "Requires DTMAPI 0.7.5.\n\nLets the farming gun carry seeds, fertilizer, plastic film and bottled water at once, so you can work a large field in one pass.\n\n- The farming gun gets four general slots. Putting items in and taking them out works the same as a chest.\n- The spray area is a square whose side can be set from 7 to 15 tiles in Mod config (7 by default). The preview on the ground follows the setting.\n- Each tile is sown, fertilized, covered with film and watered in that order, doing only what that tile allows. Animations and effects are the same as the base game."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "key": "item_dtmapi_creative_generator",
+    "text": "無限燃料"
+  },
+  {
+    "key": "item_dtmapi_creative_generator_desc",
+    "text": "一塊熱值極高的煤炭，只具備普通燃料屬性。相容機器最多補充到自身燃料容量上限，不會突破設備容量。"
+  }
+]

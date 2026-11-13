@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI 大视野",
+  "author": "Yuuka",
+  "version": "1.1.1",
+  "description": "需要 DTMAPI 0.7.5。\n\n把游戏画面拉远，一屏看到更大范围的农场和地图。\n\n- 按 + 拉远视野，按 - 拉近，最近就是原版大小。主键盘的 = 键和小键盘的 + 键都可以用。\n- Shift + = 直接拉到最远，Shift + - 直接回到原版。\n- 最远默认是原版的 4 倍，可以在 Mod 配置里设为 1～10 倍；每按一次调整多少也可以改。四个按键都能重新绑定。\n\n只改变画面能看到的范围，界面大小和游戏里的交互范围不变。读档或回到标题页时，视野恢复原版大小。",
+  "tags": [
+    "Mod",
+    "Utility",
+    "DTMAPI",
+    "Camera",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI 大视野",
+    "tchinese": "DTMAPI 大視野",
+    "english": "DTMAPI Zoom"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n把游戏画面拉远，一屏看到更大范围的农场和地图。\n\n- 按 + 拉远视野，按 - 拉近，最近就是原版大小。主键盘的 = 键和小键盘的 + 键都可以用。\n- Shift + = 直接拉到最远，Shift + - 直接回到原版。\n- 最远默认是原版的 4 倍，可以在 Mod 配置里设为 1～10 倍；每按一次调整多少也可以改。四个按键都能重新绑定。\n\n只改变画面能看到的范围，界面大小和游戏里的交互范围不变。读档或回到标题页时，视野恢复原版大小。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n把遊戲畫面拉遠，一個畫面看到更大範圍的農場和地圖。\n\n- 按 + 拉遠視野，按 - 拉近，最近就是原版大小。主鍵盤的 = 鍵和數字鍵盤的 + 鍵都可以使用。\n- Shift + = 直接拉到最遠，Shift + - 直接回到原版。\n- 最遠預設是原版的 4 倍，可以在 Mod 設定中設為 1～10 倍；每按一次調整多少也可以修改。四個按鍵都能重新綁定。\n\n只改變畫面能看到的範圍，介面大小和遊戲中的互動範圍不變。讀取存檔或回到標題畫面時，視野會恢復原版大小。",
+    "english": "Requires DTMAPI 0.7.5.\n\nZooms the camera out so you can see more of your farm and the map at once.\n\n- Press + to zoom out and - to zoom back in; the closest view is the original size. Both the = key on the main keyboard and + on the numpad work.\n- Shift + = jumps straight to the farthest view; Shift + - returns to the original view.\n- The farthest view is 4x the original by default and can be set from 1x to 10x in Mod config, along with how much each key press changes it. All four keys can be rebound.\n\nOnly what you can see changes; the UI size and your in-game reach stay the same. The view returns to the original size when you load a save or go back to the title screen."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

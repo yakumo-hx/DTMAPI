@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI自动钓鱼",
+  "author": "Yuuka",
+  "version": "1.1.1",
+  "description": "需要 DTMAPI 0.7.5。\n\n进入存档，拿着钓竿面向水面，按 F6 开始自动钓鱼，再按 F6 停止。\n\n自动抛竿、等鱼上钩、完成钓鱼小游戏、收鱼，然后接着抛竿，一直钓下去。\n走动、跳跃或者钓鱼被打断时会自动停下。\n\n在 Mod 配置里还可以：\n- 换开关按键。\n- 立即咬钩：鱼钩一入水就上钩。\n- 跳过小游戏：直接出结果，成功还是失败照原版判定。\n- 钓鱼动画加速：抛竿、收竿等动作变快，倍率 1～5 倍，默认 3 倍。\n- 抛竿蓄力：0（最近）到 1（蓄满），默认 0。\n\n立即咬钩、跳过小游戏、动画加速默认都关闭，可以各自单独开启。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI自动钓鱼",
+    "tchinese": "DTMAPI自動釣魚",
+    "english": "DTMAPI Auto Fishing"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n进入存档，拿着钓竿面向水面，按 F6 开始自动钓鱼，再按 F6 停止。\n\n自动抛竿、等鱼上钩、完成钓鱼小游戏、收鱼，然后接着抛竿，一直钓下去。\n走动、跳跃或者钓鱼被打断时会自动停下。\n\n在 Mod 配置里还可以：\n- 换开关按键。\n- 立即咬钩：鱼钩一入水就上钩。\n- 跳过小游戏：直接出结果，成功还是失败照原版判定。\n- 钓鱼动画加速：抛竿、收竿等动作变快，倍率 1～5 倍，默认 3 倍。\n- 抛竿蓄力：0（最近）到 1（蓄满），默认 0。\n\n立即咬钩、跳过小游戏、动画加速默认都关闭，可以各自单独开启。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n進入存檔，拿著釣竿面向水面，按 F6 開始自動釣魚，再按 F6 停止。\n\n自動拋竿、等魚上鉤、完成釣魚小遊戲、收魚，然後接著拋竿，一直釣下去。\n走動、跳躍或者釣魚被打斷時會自動停止。\n\n在 Mod 設定中還可以：\n- 更換開關按鍵。\n- 立即咬鉤：魚鉤一入水就上鉤。\n- 跳過小遊戲：直接出結果，成功或失敗依原版判定。\n- 釣魚動畫加速：拋竿、收竿等動作變快，倍率 1～5 倍，預設 3 倍。\n- 拋竿蓄力：0（最近）到 1（蓄滿），預設 0。\n\n立即咬鉤、跳過小遊戲、動畫加速預設都關閉，可以各自單獨開啟。",
+    "english": "Requires DTMAPI 0.7.5.\n\nIn a loaded save, hold a fishing rod, face the water and press F6 to start fishing automatically. Press F6 again to stop.\n\nIt casts, waits for a bite, plays the fishing minigame, reels in and casts again, over and over.\nMoving, jumping or anything that interrupts fishing stops it.\n\nIn Mod config you can also:\n- Change the toggle key.\n- Instant bite: fish bite as soon as the hook hits the water.\n- Skip minigame: go straight to the result; success or failure is decided as in the base game.\n- Faster animations: casting, reeling and other motions speed up, 1x-5x (3x by default).\n- Cast charge: from 0 (shortest) to 1 (full), 0 by default.\n\nInstant bite, skip minigame and faster animations are off by default and can each be turned on separately."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

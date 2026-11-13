@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="照着 DTMAPI 当前音频示例，用完整可复制 JSON 替换操作音效、添加环境音乐与磁带，了解曲目池和音频预制工具。">
+<title>综合案例：音效、音乐与磁带 · DTMAPI</title><style>
+:root{--blue:#245bdb;--text:#20242b;--muted:#737985;--line:#e2e5ea;--paper:#f6f7f9;--yellow:#fff1b8}
+*{box-sizing:border-box}html{scroll-padding-top:84px;scroll-behavior:smooth}body{margin:0;color:var(--text);background:#fff;font:15px/1.85 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,pre:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px}.topbar{height:59px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 28px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97);position:sticky;top:0;z-index:10;font-size:13px}.brand{color:#49505d}.brand strong{color:#222a37;margin-right:12px}.topbar .version{color:var(--muted);font-size:12px}.layout{max-width:1340px;margin:0 auto;display:grid;grid-template-columns:245px minmax(0,1fr);gap:50px;padding:45px 35px 70px}aside{position:sticky;top:89px;align-self:start;max-height:calc(100vh - 115px);overflow:auto;font-size:13px}aside details>summary{cursor:pointer;list-style:none;font-size:12px;letter-spacing:.12em;color:#858b95;margin-bottom:14px}aside a{display:block;color:#626975;padding:5px 10px;border-left:2px solid transparent;line-height:1.6}aside a:hover{color:var(--blue);background:#f5f8ff;text-decoration:none}aside a.active{border-color:var(--blue);color:var(--blue);background:#f5f8ff}aside .sub{font-size:12px;padding-left:22px}main{min-width:0;max-width:900px;padding:0 12px 0 0}h1{font-size:34px;line-height:1.4;letter-spacing:-.03em;margin:0 0 10px;font-weight:750}h2{font-size:25px;line-height:1.55;margin:50px 0 20px;letter-spacing:-.02em}h3{font-size:19px;line-height:1.6;margin:35px 0 12px;overflow-wrap:anywhere}h3 .n{color:var(--blue);margin-right:6px}.meta{font-size:12px;color:var(--muted);margin-bottom:24px}.intro{font-size:16px;line-height:1.95;max-width:750px}p{margin:12px 0}ul,ol{padding-left:24px;margin:12px 0}li{padding-left:2px;margin:5px 0}li::marker{color:var(--blue)}strong{font-weight:650}code,kbd{font: .89em/1.7 Consolas,"Cascadia Code",monospace;background:#f1f3f5;padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}.callout{border-left:3px solid #aac3ff;background:#f5f8ff;padding:13px 17px;margin:22px 0;font-size:14px}.callout p{margin:0}.table-wrap{overflow:auto;margin:18px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}th,td{border:1px solid var(--line);padding:10px 13px;text-align:left;vertical-align:top}th{background:var(--paper);font-weight:600}td code{white-space:nowrap}.hint{font-size:13px;color:#6e7581}.tree{padding:20px 24px;background:var(--paper);border:1px solid var(--line);border-radius:7px;overflow:auto;font:13px/1.9 Consolas,monospace;white-space:pre}.tree code{font:inherit;background:none;padding:0;white-space:pre}.codebox{border:1px solid #dfe3e9;border-radius:7px;overflow:hidden;margin:16px 0 18px;background:var(--paper)}.codebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;background:#f1f3f6}.file-label{font-family:Consolas,monospace;min-width:0;overflow-wrap:anywhere;color:#555e6c}.code-actions{display:flex;gap:7px;flex-shrink:0}.code-actions button{border:1px solid #d7dce5;border-radius:4px;padding:3px 9px;background:#fff;color:#5c6470;font-size:12px;white-space:nowrap}.code-actions .copy{color:var(--blue);border-color:#c9d6f5}.code-actions button:hover{background:#eaf0fe}.codebox pre{margin:0;max-height:400px;overflow:auto;padding:17px 22px 20px 51px;counter-reset:line;font:12.5px/1.95 Consolas,"Cascadia Code","Microsoft YaHei",monospace;tab-size:2}.codebox.expanded pre{max-height:none}.codebox code{font:inherit;line-height:inherit;background:none;padding:0;white-space:pre;overflow-wrap:normal}.code-line{position:relative;counter-increment:line}.code-line::before{content:counter(line);position:absolute;left:-37px;width:25px;text-align:right;color:#a4abb5;font-size:11px;user-select:none}.code-line[data-note]::after{content:"  // " attr(data-note);color:#849080;font-size:11.5px;white-space:pre;user-select:none}mark{background:var(--yellow);color:inherit;border-radius:2px;padding:0 1px}.caption{font-size:13px;color:#747d88;margin:8px 0}.steps li{margin:10px 0}.source-list{padding-left:21px}.source-list li{margin:9px 0}.footer{border-top:1px solid var(--line);margin-top:42px;padding-top:20px;color:#808793;font-size:12px}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#263446;color:white;box-shadow:0 4px 20px #182e4520;border-radius:6px;padding:8px 18px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .15s}.toast.visible{opacity:1}dialog{border:1px solid var(--line);border-radius:8px;padding:22px;max-width:760px;width:90vw}dialog::backdrop{background:#17233466}dialog textarea{display:block;width:100%;height:45vh;margin:15px 0;font:13px/1.6 Consolas,monospace}dialog button{padding:5px 14px;background:#f2f5fa;border:1px solid #d4dbe7;border-radius:4px}
+.module-label{display:inline-block;margin-right:8px;padding:1px 6px;border-radius:3px;background:#e5edff;color:#245bdb;font:10px/1.8 "Microsoft YaHei",sans-serif;vertical-align:middle}.dtmapi-note{color:#245bdb}.codebox[data-kind="info"] code{white-space:pre-wrap;overflow-wrap:anywhere}
+.sprite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:20px 0}.sprite-example{margin:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0}.pixel-stage{height:152px;display:flex;align-items:center;justify-content:center;background-color:#fafbfc;background-image:linear-gradient(45deg,#edf0f3 25%,transparent 25%),linear-gradient(-45deg,#edf0f3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf0f3 75%),linear-gradient(-45deg,transparent 75%,#edf0f3 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}.pixel-stage img{display:block;object-fit:contain;image-rendering:pixelated;max-width:100%;max-height:144px}.sprite-example figcaption{padding:9px 11px;font-size:12px;line-height:1.7}.sprite-example figcaption strong,.sprite-example figcaption code,.sprite-example figcaption span{display:block}.sprite-example figcaption code{background:none;padding:0;font-size:10px;overflow-wrap:anywhere;margin-top:5px}.sprite-example figcaption span{font-size:10px;color:var(--muted);margin-top:5px}h4{font-size:15px;margin:22px 0 8px}.special-image{max-width:260px;margin:16px 0}
+@media(min-width:1500px){.layout{gap:65px;padding-top:55px}}
+@media(max-width:1000px){.layout{gap:25px;padding:32px 20px;grid-template-columns:195px minmax(0,1fr)}h1{font-size:29px}main{padding-right:0}.topbar{padding:0 20px}}
+@media(max-width:720px){html{scroll-padding-top:70px}.topbar{height:55px;padding:0 17px}.brand{font-size:12px}.topbar .version{font-size:10px}.layout{display:block;padding:21px 18px 50px}aside{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:25px}aside details>summary{margin:0}aside a{padding-top:4px;padding-bottom:4px}aside details[open]>summary{margin-bottom:9px}h1{font-size:27px}h2{font-size:23px;margin-top:38px}h3{font-size:17px}.intro{font-size:15px}.codebar{padding:9px 10px;gap:8px}.file-label{font-size:11px}.code-actions{gap:5px}.code-actions button{padding:3px 6px;font-size:11px}.codebox pre{font-size:12px;padding-left:44px}.code-line::before{left:-31px;width:22px}th,td{padding:8px 10px}table{font-size:13px}.tree{font-size:11px;padding:15px}.callout{padding:11px 13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.toast{transition:none}}
+@media print{.topbar,aside,.code-actions,.toast,dialog{display:none}.layout{display:block;padding:0}main{max-width:none}h2,h3{break-after:avoid}.codebox pre{max-height:none;overflow:visible;white-space:pre-wrap}.codebox code{white-space:pre-wrap}.code-line[data-note]::after{white-space:normal}.codebox{break-inside:auto}a{color:inherit}}
+</style></head><body>
+<header class="topbar"><a href="#top" class="brand"><strong>DTMAPI</strong>内容包教程</a><span class="version">版本：0.7.5以上</span></header>
+<div class="layout"><aside><details id="contents" open><summary>本页目录</summary><nav aria-label="教程目录">
+<a href="#overview">一、整体说明</a><a href="#forms" class="sub">曲目形式与音频文件</a><a href="#structure">二、文件结构与加载规则</a><a href="#loading" class="sub">加载、追加与冲突</a>
+<a href="#effects">三、操作音效：抽象音效包</a><a href="#sfx-info" class="sub">1. 模组信息</a><a href="#sfx-manifest" class="sub">2. DTMAPI 清单</a><a href="#sfx-content" class="sub">3. 五种音效</a>
+<a href="#music">四、音乐与磁带：东方同人曲包</a><a href="#music-meta" class="sub">1. 模组信息与清单</a><a href="#music-content" class="sub">2. 音频资源</a><a href="#music-group" class="sub">3. 环境曲池</a><a href="#music-cd" class="sub">4. 播放器曲目</a><a href="#music-item" class="sub">5. 磁带物品</a><a href="#music-shop" class="sub">6. 电话亭商店</a>
+<a href="#pools">五、曲目池范围与对照</a><a href="#prepare">六、音频预制工具</a><a href="#volume" class="sub">音量与试听</a><a href="#play">七、游戏内验证</a><a href="#sources">八、参考示例</a>
+</nav></details></aside><main id="top">
+<h1>综合案例：音效、音乐与磁带</h1><div class="meta">2026年10月28日 Yuuka</div>
+<p class="intro">给小镇换一副耳机。开纸箱来句曼波，种田时听首新歌，再把喜欢的曲子装进磁带。音频负责唱，JSON 负责安排出场。</p>
+<section id="overview"><h2>一、整体说明</h2>
+<p>本页面向熟悉官方内容 Mod 的作者，使用当前“抽象音效包”和“东方同人曲包”的实际配置。两个示例各自成包，可任选一条路线，也可把音效与音乐放进同一个包。</p>
+<div class="table-wrap"><table><thead><tr><th>准备</th><th>用途</th></tr></thead><tbody><tr><td>DTMAPI 0.7.5 及以上</td><td>提供内置音频模块，内容包启用后按需加载</td></tr><tr><td>音频文件</td><td>WAV、MP3、FLAC、AAC（.aac / .m4a）均可</td></tr><tr><td>根目录 info.json、manifest.json</td><td>登记模组信息和包身份</td></tr><tr><td>PackData/content.json</td><td>登记音频资源与事件，DTMAPI 专属</td></tr><tr><td>Content 下的官方 JSON</td><td>添加环境曲池、播放器曲目、磁带和商品，按用途选用</td></tr><tr><td>icon.png、preview.png</td><td>模组图标与预览图</td></tr></tbody></table></div>
+<p>每块 JSON 都是一个完整文件，按代码框上方路径保存。旁注只解释字段和值；点击“复制 JSON”会取得完整纯 JSON。标黄处是音频路径、事件名和身份引用等常改位置，改名时把相互引用的地方一起改好。</p>
+<h3 id="forms">曲目形式与音频文件</h3>
+<div class="table-wrap"><table><thead><tr><th>想做什么</th><th>配置方式</th><th>示例</th></tr></thead><tbody><tr><td>替换操作音效</td><td>effect + replaceNativeEvent + 对应音量分类</td><td>纸箱、采收、挖矿、砍树、鱼钩入水</td></tr><tr><td>替换已有音乐</td><td>music + route: Music + replaceNativeEvent</td><td>目标填已有的 PLAY_BGM_* 事件，沿用原来的播放场合</td></tr><tr><td>加入环境曲池</td><td>music + nativeEvent；在 sound_tbbgmgroup.json 引用</td><td>东方三曲加入 farm_1</td></tr><tr><td>加入播放器与磁带</td><td>music + nativeEvent；配置 CD 表、磁带物品与获取方式</td><td>默认解锁或使用自己的磁带解锁</td></tr></tbody></table></div>
+<p>同一首歌可以同时加入环境曲池和播放器。只供播放器时，保留曲目与磁带配置，省略环境曲池文件即可；“八云紫主题曲”采用这条路线。</p>
+<p>文件形式有两种：直接放源音频，或提前生成 <code>.bnk</code> Bank 与配套媒体。源文件由 Runtime 准备，预制文件由工具提前准备；两条路线使用同一套播放声明。长曲目推荐 <code>stream: true</code>，短音效按普通资源加载。</p>
+</section>
+<section id="structure"><h2>二、文件结构与加载规则</h2>
+<p>两个示例采用相同的包根布局，目录名可自定。<code>Content/</code> 放官方数据，<code>PackData/</code> 放 DTMAPI 声明与音频。</p>
+<pre class="tree"><code>抽象音效包/
+├─ info.json
+├─ manifest.json
+├─ icon.png、preview.png
+└─ PackData/
+   ├─ content.json
+   └─ assets/
+      ├─ manbo.wav
+      ├─ waibi_babu_grass.wav
+      ├─ what_the_dog_doin_mining.wav
+      ├─ hachimi_tree.wav
+      └─ gugu_gaga_fishing.wav
+
+东方同人曲包/
+├─ info.json
+├─ manifest.json
+├─ icon.png、preview.png
+├─ Content/
+│  ├─ sound_tbbgmgroup.json
+│  ├─ sound_tbcd.json
+│  ├─ item_tbitem.json
+│  └─ mod_tbmodstoreextension.json
+└─ PackData/
+   ├─ content.json
+   └─ audio/
+      ├─ candidate-badapple.wav
+      ├─ pool-iroha.wav
+      └─ pool-tsuki.wav</code></pre>
+<p>放入官方本地 MODS 或通过工坊订阅，在游戏的 Mod 列表启用。内置音频模块由内容自动启用，清单按下文填写。所有 <code>path</code> 都相对整个包根，例如 <code>PackData/audio/pool-iroha.wav</code>。文件名可以自定，声明与实际文件保持一致。</p>
+<h3 id="loading">加载、追加与冲突</h3>
+<ul><li><code>resources[].key</code> 为资源名，<code>events[].key</code> 为声音事件名，各自在本包对应列表内保持唯一。<code>resource</code> 引用资源名；<code>nativeEvent</code> 与官方表中的事件名逐字对应。资源和事件 key 建议用小写，新增音乐事件使用独特的作者前缀；所有引用保持大小写一致。</li>
+<li>本页用 <code>replaceNativeEvent</code> 替换现有事件，用 <code>nativeEvent</code> 接入新音乐，两项互斥。多个包替换同一目标时，按官方加载顺序由后者生效；同包重复目标取后声明。</li>
+<li>音效替换按原生事件覆盖所有调用位置。原生准入通过且替换资源就绪后播放新声音；音效尚未就绪或播放失败时使用原声。</li>
+<li>流式音乐在原生选中这首歌时准备，当前播放请求等待资源就绪；曲目结束和下一首选择由游戏处理。音乐声明使用 <code>use: "music"</code>、<code>route: "Music"</code>，省略 <code>loop</code> 与 <code>minimumIntervalMs</code>。</li>
+<li>DTMAPI 默认开启 BGM 追加：相同曲池 ID 的 <code>event_list</code> 按加载顺序合并并去重；曲间间隔、切入与切出延迟使用后加载的那一行。关闭追加后，相同 ID 按官方规则整行覆盖。</li>
+<li>改动官方 <code>Content</code>、模组启停或 BGM 追加设置后，重启游戏查看结果。只调整音量时修改 <code>volumeDb</code>，保留原音频文件即可。</li></ul>
+<div class="callout"><p>环境曲池按场景、月份、天气和时段选歌。播放器按曲目解锁记录选歌。加入曲池后，尚未解锁磁带的歌也能在对应环境中响起。</p></div>
+</section>
+<section id="effects"><h2>三、操作音效：抽象音效包</h2>
+<p>这个示例使用 5 段 WAV 和 3 份 JSON，直接替换常见操作音效。素材照着示例放好，纸箱就会自己报幕。</p>
+<div class="table-wrap"><table><thead><tr><th>声音事件</th><th>主要触发</th><th>同事件覆盖范围</th></tr></thead><tbody><tr><td>PLAY_RESOURCE_PAPER_BOX</td><td>开启野外纸箱</td><td>开启声；纸箱破坏使用独立事件</td></tr><tr><td>PLAY_RESOURCE_HARVEST</td><td>割草、采收</td><td>部分植被、挤奶和取毛设备、厕所等</td></tr><tr><td>PLAY_RESOURCE_GATHER</td><td>有效挖矿命中</td><td>其他使用同事件的石质可破坏物</td></tr><tr><td>PLAY_RESOURCE_FELL</td><td>有效砍击</td><td>树桩、果树等共用用途</td></tr><tr><td>PLAY_FISHING_HOOK_SPLASH</td><td>鱼钩首次入水</td><td>沿用原生水花与垂钓流程</td></tr></tbody></table></div>
+<p class="hint">挖矿与砍树包含最终破坏一击。等级不足等情形由游戏选择各自的错误提示事件。</p>
+<h3 id="sfx-info"><span class="n">1.</span>info.json</h3><p>保留当前示例的名称、作者和说明。制作自己的包时，再换成自己的信息。</p>
+<div class="codebox" data-codebox data-kind="info">
+<div class="codebar"><span class="file-label">info.json</span><div class="code-actions"><button type="button" data-expand="sfx-info" aria-controls="panel-sfx-info" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="sfx-info" aria-label="复制 info.json">复制 JSON</button></div></div>
+<pre id="panel-sfx-info" tabindex="0" aria-label="info.json 配置"><code id="json-sfx-info" data-file="info.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组名称：游戏与工坊显示名">  &quot;name&quot;: &quot;抽象音效包&quot;,</span>
+<span class="code-line" data-note="作者署名">  &quot;author&quot;: &quot;Yuuka&quot;,</span>
+<span class="code-line" data-note="模组版本：由你随更新维护">  &quot;version&quot;: &quot;1.0.1&quot;,</span>
+<span class="code-line" data-note="模组说明：\n 表示换行">  &quot;description&quot;: &quot;需要 DTMAPI 0.7.5。\n改变部分操作的音效：\n开纸箱-曼波\n割草和采收--歪比巴卜\n挖矿-我的刀盾\n砍树-哈基米\n鱼钩入水-咕咕嘎嘎\n部分用相同音源的位置如作物、植被、挤奶和取毛设备、厕所、其他石头和树桩也会一起换声。&quot;,</span>
+<span class="code-line" data-note="工坊说明：支持独立填写">  &quot;steamDescription&quot;: &quot;需要 DTMAPI 0.7.5。\n改变部分操作的音效：\n开纸箱-曼波\n割草和采收--歪比巴卜\n挖矿-我的刀盾\n砍树-哈基米\n鱼钩入水-咕咕嘎嘎\n部分用相同音源的位置如作物、植被、挤奶和取毛设备、厕所、其他石头和树桩也会一起换声。&quot;,</span>
+<span class="code-line" data-note="模组标签：用于分类">  &quot;tags&quot;: [</span>
+<span class="code-line" data-note="模组标签：用于分类">    &quot;Mod&quot;,</span>
+<span class="code-line" data-note="模组标签：用于分类">    &quot;Audio&quot;,</span>
+<span class="code-line" data-note="模组标签：用于分类">    &quot;DTMAPI&quot;</span>
+<span class="code-line">  ],</span>
+<span class="code-line" data-note="多语言名称：按 Steam 语言代码填写">  &quot;localized_name&quot;: {</span>
+<span class="code-line" data-note="简体中文">    &quot;schinese&quot;: &quot;抽象音效包&quot;,</span>
+<span class="code-line" data-note="繁体中文">    &quot;tchinese&quot;: &quot;抽象音效包&quot;,</span>
+<span class="code-line" data-note="英文">    &quot;english&quot;: &quot;Meme Sound Pack&quot;</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="多语言说明：按 Steam 语言代码填写">  &quot;localized_description&quot;: {</span>
+<span class="code-line" data-note="简体中文">    &quot;schinese&quot;: &quot;需要 DTMAPI 0.7.5。\n改变部分操作的音效：\n开纸箱-曼波\n割草和采收--歪比巴卜\n挖矿-我的刀盾\n砍树-哈基米\n鱼钩入水-咕咕嘎嘎\n部分用相同音源的位置如作物、植被、挤奶和取毛设备、厕所、其他石头和树桩也会一起换声。&quot;,</span>
+<span class="code-line" data-note="繁体中文">    &quot;tchinese&quot;: &quot;需要 DTMAPI 0.7.5。\n改變部分操作的音效：\n開紙箱-曼波\n割草和採收--歪比巴卜\n挖礦-我的刀盾\n砍樹-哈基米\n魚鉤入水-咕咕嘎嘎\n部分用相同音源的位置如作物、植被、擠奶和取毛設備、廁所、其他石頭和樹樁也會一起換聲。&quot;,</span>
+<span class="code-line" data-note="英文">    &quot;english&quot;: &quot;Requires DTMAPI 0.7.5.\nChanges the sounds for these actions:\nOpening cardboard boxes - Manbo\nCutting grass and harvesting - Waibi Babu\nMining - What the Dog Doin&#x27;\nChopping trees - Hachimi\nFishing hooks hitting the water - Gugu Gaga\nObjects that use the same sounds, such as crops, plants, milking and shearing machines, toilets, other rocks and tree stumps, will change too.&quot;</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<h3 id="sfx-manifest"><span class="n">2.</span>manifest.json</h3>
+<div class="codebox" data-codebox data-kind="manifest">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>manifest.json</span><div class="code-actions"><button type="button" data-expand="sfx-manifest" aria-controls="panel-sfx-manifest" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="sfx-manifest" aria-label="复制 manifest.json">复制 JSON</button></div></div>
+<pre id="panel-sfx-manifest" tabindex="0" aria-label="manifest.json 配置"><code id="json-sfx-manifest" data-file="manifest.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组ID：请尽量确保独一无二，图中只是一种示例方式">  &quot;UniqueID&quot;: <mark>&quot;Yuuka.DTMAPI.ManboCardboardAudio&quot;</mark>,</span>
+<span class="code-line" data-note="包类型：ContentPack 为纯内容包">  &quot;Type&quot;: &quot;ContentPack&quot;,</span>
+<span class="code-line" data-note="最低DTMAPI版本：当前均为0.7.5，DTMAPI按照这个识别">  &quot;MinimumDTMApiVersion&quot;: &quot;0.7.5&quot;,</span>
+<span class="code-line" data-note="其他包依赖：本例为空，音频模块由内容自动启用">  &quot;Dependencies&quot;: [],</span>
+<span class="code-line" data-note="清单格式：2 从 info.json 读取展示信息与模组版本">  &quot;ManifestVersion&quot;: 2</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<p class="hint"><code>ManifestVersion: 2</code> 选择当前清单格式，名称、作者、说明与模组版本由 <code>info.json</code> 提供。<code>schemaVersion: 1</code> 则是下方内容文件的格式号，两者各管各的文件。</p>
+<h3 id="sfx-content"><span class="n">3.</span>PackData/content.json</h3>
+<div class="codebox" data-codebox data-kind="audio">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>PackData/content.json</span><div class="code-actions"><button type="button" data-expand="sfx-content" aria-controls="panel-sfx-content" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="sfx-content" aria-label="复制 PackData/content.json">复制 JSON</button></div></div>
+<pre id="panel-sfx-content" tabindex="0" aria-label="PackData/content.json 配置"><code id="json-sfx-content" data-file="PackData/content.json"><span class="code-line">{</span>
+<span class="code-line" data-note="内容格式：当前统一入口填写 1">  &quot;schemaVersion&quot;: 1,</span>
+<span class="code-line" data-note="音频分区：填写资源与播放事件">  &quot;audio&quot;: {</span>
+<span class="code-line" data-note="资源列表：音频文件登记在这里">    &quot;resources&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;manbo&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/assets/manbo.wav&quot;</mark></span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;waibi-babu&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/assets/waibi_babu_grass.wav&quot;</mark></span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;what-the-dog-doin&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/assets/what_the_dog_doin_mining.wav&quot;</mark></span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;hachimi&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/assets/hachimi_tree.wav&quot;</mark></span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;gugu-gaga&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/assets/gugu_gaga_fishing.wav&quot;</mark></span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="事件列表：定义声音用途与触发关系">    &quot;events&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;paper-box&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;manbo&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="替换目标：填写要换声的原生事件名">        &quot;replaceNativeEvent&quot;: <mark>&quot;PLAY_RESOURCE_PAPER_BOX&quot;</mark>,</span>
+<span class="code-line" data-note="最短间隔：毫秒，本例纸箱为 50">        &quot;minimumIntervalMs&quot;: 50,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -18.9,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Actor&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;harvest&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;waibi-babu&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="替换目标：填写要换声的原生事件名">        &quot;replaceNativeEvent&quot;: <mark>&quot;PLAY_RESOURCE_HARVEST&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -18.0,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Actor&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;gather&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;what-the-dog-doin&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="替换目标：填写要换声的原生事件名">        &quot;replaceNativeEvent&quot;: <mark>&quot;PLAY_RESOURCE_GATHER&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -18.9,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Actor&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;fell&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;hachimi&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="替换目标：填写要换声的原生事件名">        &quot;replaceNativeEvent&quot;: <mark>&quot;PLAY_RESOURCE_FELL&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -16.7,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Actor&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;fishing-hook-splash&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;gugu-gaga&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="替换目标：填写要换声的原生事件名">        &quot;replaceNativeEvent&quot;: <mark>&quot;PLAY_FISHING_HOOK_SPLASH&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -16.9,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Actor&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<p>纸箱保留 <code>50 ms</code> 最短间隔，其余四项省略该字段。想把另一段声音接到跳跃等普通音效上，可使用对应的原生事件名，并按声音用途选择 <code>Actor</code>、<code>Ui</code> 或 <code>Ambience</code>。</p>
+<p class="hint">动物叫声由畜牧分区按物种和阶段绑定，怪物声音由怪物分区按行为绑定。这些内容可与 <code>audio</code> 共用同一份 <code>content.json</code>。</p>
+</section>
+<section id="music"><h2>四、音乐与磁带：东方同人曲包</h2>
+<p>本例有三首曲子：Bad Apple 默认进入播放器，其余两首通过各自磁带解锁。三首同时加入 <code>farm_1</code>，即第 1 月农场白天常规天气的曲池。</p>
+<p>照本节创建一个独立目录，放入上文列出的 3 段音频与以下 7 份 JSON。一个包可以容纳多首歌，资源、事件、曲目和物品各有自己的名字。</p>
+<h3 id="music-meta"><span class="n">1.</span>模组信息与清单</h3>
+<div class="codebox" data-codebox data-kind="info">
+<div class="codebar"><span class="file-label">info.json</span><div class="code-actions"><button type="button" data-expand="music-info" aria-controls="panel-music-info" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-info" aria-label="复制 info.json">复制 JSON</button></div></div>
+<pre id="panel-music-info" tabindex="0" aria-label="info.json 配置"><code id="json-music-info" data-file="info.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组名称：游戏与工坊显示名">  &quot;name&quot;: &quot;东方同人曲包&quot;,</span>
+<span class="code-line" data-note="作者署名">  &quot;author&quot;: &quot;Yuuka&quot;,</span>
+<span class="code-line" data-note="模组版本：由你随更新维护">  &quot;version&quot;: &quot;0.1.0&quot;,</span>
+<span class="code-line" data-note="模组说明：\n 表示换行">  &quot;description&quot;: &quot;需要 DTMAPI 0.7.5。\n在农场的背景音乐池中加入：\n《Bad Apple》\n《色は匂へど散りぬるを》\n《月に叢雲華に風》\n《Bad Apple》默认在随身听解锁；其余磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。&quot;,</span>
+<span class="code-line" data-note="工坊说明：支持独立填写">  &quot;steamDescription&quot;: &quot;需要 DTMAPI 0.7.5。\n在农场的背景音乐池中加入：\n《Bad Apple》\n《色は匂へど散りぬるを》\n《月に叢雲華に風》\n《Bad Apple》默认在随身听解锁；其余磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。&quot;,</span>
+<span class="code-line" data-note="多语言名称：按 Steam 语言代码填写">  &quot;localized_name&quot;: {</span>
+<span class="code-line" data-note="简体中文">    &quot;schinese&quot;: &quot;东方同人曲包&quot;,</span>
+<span class="code-line" data-note="繁体中文">    &quot;tchinese&quot;: &quot;東方同人曲包&quot;,</span>
+<span class="code-line" data-note="英文">    &quot;english&quot;: &quot;Touhou Fan Music Pack&quot;</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="多语言说明：按 Steam 语言代码填写">  &quot;localized_description&quot;: {</span>
+<span class="code-line" data-note="简体中文">    &quot;schinese&quot;: &quot;需要 DTMAPI 0.7.5。\n在农场的背景音乐池中加入：\n《Bad Apple》\n《色は匂へど散りぬるを》\n《月に叢雲華に風》\n《Bad Apple》默认在随身听解锁；其余磁带在工坊贸易部（电话亭）出售，每盒 100 螺母。&quot;,</span>
+<span class="code-line" data-note="繁体中文">    &quot;tchinese&quot;: &quot;需要 DTMAPI 0.7.5。\n在農場的背景音樂池中加入：\n《Bad Apple》\n《色は匂へど散りぬるを》\n《月に叢雲華に風》\n《Bad Apple》預設在隨身聽解鎖；其餘磁帶在工坊貿易部（電話亭）出售，每盒 100 螺母。&quot;,</span>
+<span class="code-line" data-note="英文">    &quot;english&quot;: &quot;Requires DTMAPI 0.7.5.\nAdds these tracks to the farm&#x27;s background music rotation:\nBad Apple\n色は匂へど散りぬるを\n月に叢雲華に風\nBad Apple is unlocked on the portable music player by default. The other cassettes are sold at the Workshop Trade Department (phone booth) for 100 Nuts each.&quot;</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<div class="codebox" data-codebox data-kind="manifest">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>manifest.json</span><div class="code-actions"><button type="button" data-expand="music-manifest" aria-controls="panel-music-manifest" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-manifest" aria-label="复制 manifest.json">复制 JSON</button></div></div>
+<pre id="panel-music-manifest" tabindex="0" aria-label="manifest.json 配置"><code id="json-music-manifest" data-file="manifest.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组ID：请尽量确保独一无二，图中只是一种示例方式">  &quot;UniqueID&quot;: <mark>&quot;DTMAPI.TouhouMusicPoolPack&quot;</mark>,</span>
+<span class="code-line" data-note="包类型：ContentPack 为纯内容包">  &quot;Type&quot;: &quot;ContentPack&quot;,</span>
+<span class="code-line" data-note="最低DTMAPI版本：当前均为0.7.5，DTMAPI按照这个识别">  &quot;MinimumDTMApiVersion&quot;: &quot;0.7.5&quot;,</span>
+<span class="code-line" data-note="其他包依赖：本例为空，音频模块由内容自动启用">  &quot;Dependencies&quot;: [],</span>
+<span class="code-line" data-note="清单格式：2 从 info.json 读取展示信息与模组版本">  &quot;ManifestVersion&quot;: 2</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<h3 id="music-content"><span class="n">2.</span>PackData/content.json</h3>
+<p>三首歌各有一个资源和事件。<code>nativeEvent</code> 负责连接下方曲池与 CD 表；给新曲起一个带作者前缀的事件名，再把引用同步好。</p>
+<div class="codebox" data-codebox data-kind="audio">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>PackData/content.json</span><div class="code-actions"><button type="button" data-expand="music-content" aria-controls="panel-music-content" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-content" aria-label="复制 PackData/content.json">复制 JSON</button></div></div>
+<pre id="panel-music-content" tabindex="0" aria-label="PackData/content.json 配置"><code id="json-music-content" data-file="PackData/content.json"><span class="code-line">{</span>
+<span class="code-line" data-note="内容格式：当前统一入口填写 1">  &quot;schemaVersion&quot;: 1,</span>
+<span class="code-line" data-note="音频分区：填写资源与播放事件">  &quot;audio&quot;: {</span>
+<span class="code-line" data-note="资源列表：音频文件登记在这里">    &quot;resources&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;bad_apple&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/audio/candidate-badapple.wav&quot;</mark>,</span>
+<span class="code-line" data-note="流式音乐：选中曲目时准备并分段读取">        &quot;stream&quot;: true</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;iroha&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/audio/pool-iroha.wav&quot;</mark>,</span>
+<span class="code-line" data-note="流式音乐：选中曲目时准备并分段读取">        &quot;stream&quot;: true</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源名：在本包资源列表中保持唯一">        &quot;key&quot;: &quot;tsuki&quot;,</span>
+<span class="code-line" data-note="资源路径：相对整个模组根目录">        &quot;path&quot;: <mark>&quot;PackData/audio/pool-tsuki.wav&quot;</mark>,</span>
+<span class="code-line" data-note="流式音乐：选中曲目时准备并分段读取">        &quot;stream&quot;: true</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="事件列表：定义声音用途与触发关系">    &quot;events&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;bad_apple&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;bad_apple&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;music&quot;,</span>
+<span class="code-line" data-note="新增事件名：与官方 CD 或曲池中的名称一致">        &quot;nativeEvent&quot;: <mark>&quot;DTMAPI_MUSIC_BAD_APPLE&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -31.6,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Music&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;iroha&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;iroha&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;music&quot;,</span>
+<span class="code-line" data-note="新增事件名：与官方 CD 或曲池中的名称一致">        &quot;nativeEvent&quot;: <mark>&quot;DTMAPI_MUSIC_IROHA&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -27.9,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Music&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="事件名：在本包事件列表中保持唯一">        &quot;key&quot;: &quot;tsuki&quot;,</span>
+<span class="code-line" data-note="使用资源：填写 resources 中的 key">        &quot;resource&quot;: &quot;tsuki&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 为音效，music 为音乐">        &quot;use&quot;: &quot;music&quot;,</span>
+<span class="code-line" data-note="新增事件名：与官方 CD 或曲池中的名称一致">        &quot;nativeEvent&quot;: <mark>&quot;DTMAPI_MUSIC_TSUKI&quot;</mark>,</span>
+<span class="code-line" data-note="播放音量：dB，按这份素材的实际听感调整">        &quot;volumeDb&quot;: -31.1,</span>
+<span class="code-line" data-note="音量分类：Actor 为角色音效，Music 为音乐">        &quot;route&quot;: &quot;Music&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<h3 id="music-group"><span class="n">3.</span>Content/sound_tbbgmgroup.json</h3>
+<p>本例保留 <code>farm_1</code> 的两首原曲，加入三首新曲。原生播放列表随机选择池中曲目，曲间休息 48 秒。农场也要喘口气。</p>
+<div class="codebox" data-codebox data-kind="group">
+<div class="codebar"><span class="file-label">Content/sound_tbbgmgroup.json</span><div class="code-actions"><button type="button" data-expand="music-group" aria-controls="panel-music-group" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-group" aria-label="复制 Content/sound_tbbgmgroup.json">复制 JSON</button></div></div>
+<pre id="panel-music-group" tabindex="0" aria-label="Content/sound_tbbgmgroup.json 配置"><code id="json-music-group" data-file="Content/sound_tbbgmgroup.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="曲池ID：farm_1 对应第1月农场白天常规天气">    &quot;id&quot;: <mark>&quot;farm_1&quot;</mark>,</span>
+<span class="code-line" data-note="曲目列表：每项填写一个音乐事件名">    &quot;event_list&quot;: [</span>
+<span class="code-line" data-note="曲目事件：与音频声明的 nativeEvent 对应">      &quot;PLAY_BGM_23&quot;,</span>
+<span class="code-line" data-note="曲目事件：与音频声明的 nativeEvent 对应">      &quot;PLAY_BGM_15&quot;,</span>
+<span class="code-line" data-note="曲目事件：与音频声明的 nativeEvent 对应">      &quot;DTMAPI_MUSIC_BAD_APPLE&quot;,</span>
+<span class="code-line" data-note="曲目事件：与音频声明的 nativeEvent 对应">      &quot;DTMAPI_MUSIC_IROHA&quot;,</span>
+<span class="code-line" data-note="曲目事件：与音频声明的 nativeEvent 对应">      &quot;DTMAPI_MUSIC_TSUKI&quot;</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="曲间间隔：x 至 y 秒">    &quot;idle_time&quot;: {</span>
+<span class="code-line" data-note="最短间隔：秒">      &quot;x&quot;: 48,</span>
+<span class="code-line" data-note="最长间隔：秒">      &quot;y&quot;: 48</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="切入延迟：秒，-1 不额外计时">    &quot;fade_in_delay&quot;: -1,</span>
+<span class="code-line" data-note="切出延迟：秒，-1 不额外计时">    &quot;fade_out_delay&quot;: -1</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p>默认追加模式会保留该池已经加载的歌曲。想让新增曲目在别的月份或场景播放，就按<a href="#pools">下表</a>增加对应 ID 的完整配置行。只做播放器曲目时，省略本文件。</p>
+<h3 id="music-cd"><span class="n">4.</span>Content/sound_tbcd.json</h3>
+<p>CD 表登记播放器曲目。<code>default_unlock: true</code> 直接解锁；<code>false</code> 由磁带解锁。<code>bgm_event</code> 与音频声明的 <code>nativeEvent</code> 保持一致。</p>
+<div class="codebox" data-codebox data-kind="cd">
+<div class="codebar"><span class="file-label">Content/sound_tbcd.json</span><div class="code-actions"><button type="button" data-expand="music-cd" aria-controls="panel-music-cd" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-cd" aria-label="复制 Content/sound_tbcd.json">复制 JSON</button></div></div>
+<pre id="panel-music-cd" tabindex="0" aria-label="Content/sound_tbcd.json 配置"><code id="json-music-cd" data-file="Content/sound_tbcd.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="曲目ID：解锁记录按这个名字保存">    &quot;id&quot;: <mark>&quot;dtmapi_bad_apple&quot;</mark>,</span>
+<span class="code-line" data-note="对应磁带：填写磁带物品ID">    &quot;item&quot;: &quot;dtmapi_cassette_bad_apple&quot;,</span>
+<span class="code-line" data-note="曲目排序：播放器中的排列顺序">    &quot;order&quot;: 73,</span>
+<span class="code-line" data-note="初始解锁：true 直接进入播放器，false 通过磁带解锁">    &quot;default_unlock&quot;: true,</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: &quot;Bad Apple&quot;,</span>
+<span class="code-line" data-note="播放事件：与音频声明的 nativeEvent 一致">    &quot;bgm_event&quot;: <mark>&quot;DTMAPI_MUSIC_BAD_APPLE&quot;</mark></span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="曲目ID：解锁记录按这个名字保存">    &quot;id&quot;: <mark>&quot;dtmapi_iroha&quot;</mark>,</span>
+<span class="code-line" data-note="对应磁带：填写磁带物品ID">    &quot;item&quot;: &quot;dtmapi_cassette_iroha&quot;,</span>
+<span class="code-line" data-note="曲目排序：播放器中的排列顺序">    &quot;order&quot;: 74,</span>
+<span class="code-line" data-note="初始解锁：true 直接进入播放器，false 通过磁带解锁">    &quot;default_unlock&quot;: false,</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: &quot;色は匂へど散りぬるを&quot;,</span>
+<span class="code-line" data-note="播放事件：与音频声明的 nativeEvent 一致">    &quot;bgm_event&quot;: <mark>&quot;DTMAPI_MUSIC_IROHA&quot;</mark></span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="曲目ID：解锁记录按这个名字保存">    &quot;id&quot;: <mark>&quot;dtmapi_tsuki&quot;</mark>,</span>
+<span class="code-line" data-note="对应磁带：填写磁带物品ID">    &quot;item&quot;: &quot;dtmapi_cassette_tsuki&quot;,</span>
+<span class="code-line" data-note="曲目排序：播放器中的排列顺序">    &quot;order&quot;: 75,</span>
+<span class="code-line" data-note="初始解锁：true 直接进入播放器，false 通过磁带解锁">    &quot;default_unlock&quot;: false,</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: &quot;月に叢雲華に風&quot;,</span>
+<span class="code-line" data-note="播放事件：与音频声明的 nativeEvent 一致">    &quot;bgm_event&quot;: <mark>&quot;DTMAPI_MUSIC_TSUKI&quot;</mark></span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<h3 id="music-item"><span class="n">5.</span>Content/item_tbitem.json</h3>
+<p>磁带是一件官方物品，功能填写 <code>ItemFunctionCD</code>，<code>cd_id</code> 指向上方曲目 ID。这里复用现有磁带图标；自绘图标可放在 <code>Content/Sprites/</code>，再修改 <code>ui_sprite_asset.url</code>。</p>
+<div class="codebox" data-codebox data-kind="item">
+<div class="codebar"><span class="file-label">Content/item_tbitem.json</span><div class="code-actions"><button type="button" data-expand="music-item" aria-controls="panel-music-item" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-item" aria-label="复制 Content/item_tbitem.json">复制 JSON</button></div></div>
+<pre id="panel-music-item" tabindex="0" aria-label="Content/item_tbitem.json 配置"><code id="json-music-item" data-file="Content/item_tbitem.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="磁带物品ID：商店与 CD 表引用这个名字">    &quot;id&quot;: <mark>&quot;dtmapi_cassette_bad_apple&quot;</mark>,</span>
+<span class="code-line" data-note="物品分类：special_cd 为磁带">    &quot;sub_type&quot;: &quot;special_cd&quot;,</span>
+<span class="code-line" data-note="允许出售：false 关闭出售">    &quot;salable&quot;: false,</span>
+<span class="code-line" data-note="允许丢失：控制原生物品丢失规则">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="允许消耗：使用磁带时消耗物品">    &quot;consumable&quot;: true,</span>
+<span class="code-line" data-note="允许烹饪：磁带填 false">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：本例为 0">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴显示：true 为显示">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="图鉴来源：本例留空">    &quot;source&quot;: [],</span>
+<span class="code-line" data-note="售价基值：本例电话亭商品每盘 100">    &quot;selling_price&quot;: 100,</span>
+<span class="code-line" data-note="买价字段：本例与 selling_price 均为 100">    &quot;buying_price&quot;: 100,</span>
+<span class="code-line" data-note="堆叠上限：本例 99">    &quot;overlay&quot;: 99,</span>
+<span class="code-line" data-note="物品图标：本例复用游戏现有图片">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图标资源名：本例使用原版磁带图标">      &quot;url&quot;: &quot;icon_item_cd_23&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;磁带：Bad Apple&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;收藏磁带；本曲默认在播放器中解锁。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：ItemFunctionCD 为解锁曲目">      &quot;$type&quot;: &quot;ItemFunctionCD&quot;,</span>
+<span class="code-line" data-note="解锁曲目：对应 sound_tbcd.json 的 id">      &quot;cd_id&quot;: <mark>&quot;dtmapi_bad_apple&quot;</mark></span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="磁带物品ID：商店与 CD 表引用这个名字">    &quot;id&quot;: <mark>&quot;dtmapi_cassette_iroha&quot;</mark>,</span>
+<span class="code-line" data-note="物品分类：special_cd 为磁带">    &quot;sub_type&quot;: &quot;special_cd&quot;,</span>
+<span class="code-line" data-note="允许出售：false 关闭出售">    &quot;salable&quot;: false,</span>
+<span class="code-line" data-note="允许丢失：控制原生物品丢失规则">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="允许消耗：使用磁带时消耗物品">    &quot;consumable&quot;: true,</span>
+<span class="code-line" data-note="允许烹饪：磁带填 false">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：本例为 0">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴显示：true 为显示">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="图鉴来源：本例留空">    &quot;source&quot;: [],</span>
+<span class="code-line" data-note="售价基值：本例电话亭商品每盘 100">    &quot;selling_price&quot;: 100,</span>
+<span class="code-line" data-note="买价字段：本例与 selling_price 均为 100">    &quot;buying_price&quot;: 100,</span>
+<span class="code-line" data-note="堆叠上限：本例 99">    &quot;overlay&quot;: 99,</span>
+<span class="code-line" data-note="物品图标：本例复用游戏现有图片">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图标资源名：本例使用原版磁带图标">      &quot;url&quot;: &quot;icon_item_cd_23&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;磁带：色は匂へど散りぬるを&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;使用后可在播放器中选择《色は匂へど散りぬるを》。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：ItemFunctionCD 为解锁曲目">      &quot;$type&quot;: &quot;ItemFunctionCD&quot;,</span>
+<span class="code-line" data-note="解锁曲目：对应 sound_tbcd.json 的 id">      &quot;cd_id&quot;: <mark>&quot;dtmapi_iroha&quot;</mark></span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="磁带物品ID：商店与 CD 表引用这个名字">    &quot;id&quot;: <mark>&quot;dtmapi_cassette_tsuki&quot;</mark>,</span>
+<span class="code-line" data-note="物品分类：special_cd 为磁带">    &quot;sub_type&quot;: &quot;special_cd&quot;,</span>
+<span class="code-line" data-note="允许出售：false 关闭出售">    &quot;salable&quot;: false,</span>
+<span class="code-line" data-note="允许丢失：控制原生物品丢失规则">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="允许消耗：使用磁带时消耗物品">    &quot;consumable&quot;: true,</span>
+<span class="code-line" data-note="允许烹饪：磁带填 false">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：本例为 0">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴显示：true 为显示">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="图鉴来源：本例留空">    &quot;source&quot;: [],</span>
+<span class="code-line" data-note="售价基值：本例电话亭商品每盘 100">    &quot;selling_price&quot;: 100,</span>
+<span class="code-line" data-note="买价字段：本例与 selling_price 均为 100">    &quot;buying_price&quot;: 100,</span>
+<span class="code-line" data-note="堆叠上限：本例 99">    &quot;overlay&quot;: 99,</span>
+<span class="code-line" data-note="物品图标：本例复用游戏现有图片">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图标资源名：本例使用原版磁带图标">      &quot;url&quot;: &quot;icon_item_cd_23&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="显示标题">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;磁带：月に叢雲華に風&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="翻译键：本例留空，直接使用 text">      &quot;key&quot;: &quot;&quot;,</span>
+<span class="code-line" data-note="显示文字">      &quot;text&quot;: &quot;使用后可在播放器中选择《月に叢雲華に風》。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：ItemFunctionCD 为解锁曲目">      &quot;$type&quot;: &quot;ItemFunctionCD&quot;,</span>
+<span class="code-line" data-note="解锁曲目：对应 sound_tbcd.json 的 id">      &quot;cd_id&quot;: <mark>&quot;dtmapi_tsuki&quot;</mark></span>
+<span class="code-line">    }</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p class="hint">Bad Apple 默认解锁，磁带可留作收藏。使用任一磁带都会消耗 1 盘，包括已经解锁的曲目。曲目身份按 CD 的 <code>id</code> 保存，后续更新继续沿用同一个 ID。</p>
+<h3 id="music-shop"><span class="n">6.</span>Content/mod_tbmodstoreextension.json</h3>
+<p>把三盘磁带加入电话亭的工坊贸易部，该商店售价读取物品表中的 <code>selling_price: 100</code>。四份月份设置让它们整年都能出售，每次刷新各有 1 盘，总销量不限。新增商品随商店刷新出现。</p>
+<div class="codebox" data-codebox data-kind="shop">
+<div class="codebar"><span class="file-label">Content/mod_tbmodstoreextension.json</span><div class="code-actions"><button type="button" data-expand="music-shop" aria-controls="panel-music-shop" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="music-shop" aria-label="复制 Content/mod_tbmodstoreextension.json">复制 JSON</button></div></div>
+<pre id="panel-music-shop" tabindex="0" aria-label="Content/mod_tbmodstoreextension.json 配置"><code id="json-music-shop" data-file="Content/mod_tbmodstoreextension.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="商店ID：phone_booth_shop 为工坊贸易部（电话亭）">    &quot;id&quot;: <mark>&quot;phone_booth_shop&quot;</mark>,</span>
+<span class="code-line" data-note="追加商品：在这家商店加入磁带">    &quot;extra_items&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="出售物品：填写磁带物品ID">        &quot;item_name&quot;: <mark>&quot;dtmapi_cassette_bad_apple&quot;</mark>,</span>
+<span class="code-line" data-note="总销量上限：0 为无上限">        &quot;storage&quot;: 0,</span>
+<span class="code-line" data-note="商品解锁：true 为默认可购买">        &quot;default_unlock&quot;: true,</span>
+<span class="code-line" data-note="四个月份：依次填写各月的生成设置">        &quot;season_spawn_data&quot;: [</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          }</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="出售物品：填写磁带物品ID">        &quot;item_name&quot;: <mark>&quot;dtmapi_cassette_iroha&quot;</mark>,</span>
+<span class="code-line" data-note="总销量上限：0 为无上限">        &quot;storage&quot;: 0,</span>
+<span class="code-line" data-note="商品解锁：true 为默认可购买">        &quot;default_unlock&quot;: true,</span>
+<span class="code-line" data-note="四个月份：依次填写各月的生成设置">        &quot;season_spawn_data&quot;: [</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          }</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="出售物品：填写磁带物品ID">        &quot;item_name&quot;: <mark>&quot;dtmapi_cassette_tsuki&quot;</mark>,</span>
+<span class="code-line" data-note="总销量上限：0 为无上限">        &quot;storage&quot;: 0,</span>
+<span class="code-line" data-note="商品解锁：true 为默认可购买">        &quot;default_unlock&quot;: true,</span>
+<span class="code-line" data-note="四个月份：依次填写各月的生成设置">        &quot;season_spawn_data&quot;: [</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="生成权重：0 为固定刷新">            &quot;spawn_weight&quot;: 0,</span>
+<span class="code-line" data-note="刷新数量：本例每次固定生成 1 份">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="最少数量：本例为 1">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="最多数量：本例为 1">              &quot;max_count&quot;: 1</span>
+<span class="code-line">            }</span>
+<span class="code-line">          }</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<h3>把磁带与曲目对上</h3>
+<div class="table-wrap"><table><thead><tr><th>这条引用</th><th>指向哪里</th></tr></thead><tbody><tr><td>CD 的 item</td><td>磁带物品的 id</td></tr><tr><td>磁带 function.cd_id</td><td>CD 的 id</td></tr><tr><td>商店 extra_items[].item_name</td><td>磁带物品的 id</td></tr><tr><td>CD 的 bgm_event、曲池的 event_list</td><td>音频事件的 nativeEvent</td></tr><tr><td>音频事件的 resource</td><td>音频资源的 key</td></tr></tbody></table></div>
+<p>使用磁带后，播放器按原生流程解锁。已解锁曲目随原生成功保存写入存档；停用或暂缺音乐包时，DTMAPI 保留已保存的曲目 ID，恢复同 ID 后继续识别。改成新 ID 的曲目会作为新曲处理。</p>
+</section>
+<section id="pools"><h2>五、曲目池范围与对照</h2>
+<p>游戏会按当前环境挑选一个曲池。先选对池，再把事件名放进 <code>event_list</code>，新歌才有合适的出场机会。下表覆盖当前原生 31 个曲池 ID；第 1～4 月对应游戏日历的月份。</p>
+<div class="table-wrap"><table><thead><tr><th>曲池ID</th><th>场景与条件</th></tr></thead><tbody><tr><td><code>farm_1</code> / <code>farm_2</code> / <code>farm_3</code> / <code>farm_4</code></td><td>农场；依次对应第 1 / 2 / 3 / 4 月；06:00–17:59；晴天、阴天</td></tr><tr><td><code>farm_windy</code></td><td>农场；所有月份；06:00–17:59；大风</td></tr><tr><td><code>doloc_town</code></td><td>多洛可小镇；所有月份；06:00–17:59；晴天、阴天、大风</td></tr><tr><td><code>river_valley</code></td><td>河谷；所有月份；06:00–17:59；晴天、阴天、大风</td></tr><tr><td><code>wetland</code></td><td>湿地；所有月份；06:00–17:59；晴天、阴天、大风</td></tr><tr><td><code>ruined_city</code></td><td>废城；所有月份；06:00–17:59；晴天、阴天、大风</td></tr><tr><td><code>rain_1</code> / <code>rain_2</code> / <code>rain_3</code> / <code>rain_4</code></td><td>上述五类环境；依次对应第 1 / 2 / 3 / 4 月；06:00–17:59；雨、雷雨</td></tr><tr><td><code>acid_rain</code></td><td>上述五类环境；所有月份；06:00–17:59；酸雨</td></tr><tr><td><code>scorch_sun</code></td><td>上述五类环境；所有月份；06:00–17:59；烈日</td></tr><tr><td><code>night_1</code> / <code>night_2</code> / <code>night_3</code> / <code>night_4</code></td><td>上述五类环境；依次对应第 1 / 2 / 3 / 4 月；19:00–次日01:59；所有天气</td></tr><tr><td><code>bar_1</code></td><td>酒馆；所有月份和天气；06:00–17:59</td></tr><tr><td><code>bar_2</code></td><td>酒馆；所有月份和天气；18:00–次日01:59</td></tr><tr><td><code>broadcasting_station</code></td><td>广播站；所有月份和天气；06:00–次日01:59</td></tr><tr><td><code>empty</code></td><td>上述五类环境的 18:00–18:59、02:00–05:59，以及酒馆/广播站的 02:00–05:59；原版留空的时段共用此池</td></tr><tr><td><code>homepage</code></td><td>标题界面</td></tr><tr><td><code>festival_salmon</code></td><td>鲑鱼节；日历覆盖小镇环境的白天音乐；所有天气</td></tr><tr><td><code>festival_mushroom</code></td><td>蘑菇节；日历覆盖农场环境的白天音乐；所有天气</td></tr><tr><td><code>festival_evernigh_city</code></td><td>长夜节；日历覆盖小镇环境的白天音乐；所有天气；ID 按原拼写保留</td></tr><tr><td><code>dialogue_first_anim</code></td><td>开场剧情指定</td></tr><tr><td><code>dialogue_evernight_worship</code></td><td>长夜节传薪剧情指定</td></tr><tr><td><code>dialogue_evernight_newyear</code></td><td>长夜节守岁剧情指定</td></tr><tr><td><code>dialogue_terraforming_terraruinedcity</code></td><td>废城改造剧情指定</td></tr></tbody></table></div>
+<p class="hint">节庆与剧情可临时指定曲池。向 <code>empty</code> 添加音乐，会让共用这个池的原版安静时段一起播放。当前房间所属的音乐环境分类决定所用曲池，同类环境共用相应规则。</p>
+<p>例如：全年农场常规天气的白天配乐要填写 <code>farm_1</code>～<code>farm_4</code>；大风再加 <code>farm_windy</code>，雨天按月份加入 <code>rain_1</code>～<code>rain_4</code>。雨池与夜池覆盖多个环境，一次加入会影响这些环境的对应时段。新建的曲池 ID 需要配置选曲条件或由剧情引用，沿用现有曲池可直接接入现有场景。</p>
+</section>
+<section id="prepare"><h2>六、音频预制工具</h2>
+<p><strong>DTMAPI 音频准备工具</strong>把源音频提前制成游戏可播放的 Bank。直接使用源文件的包也能加载；想提前完成媒体准备时，使用配套的 <code>DTMAPI.AudioPrepare.exe</code>。工具可离线运行，输入格式与前文一致。</p>
+<ol class="steps"><li>打开工具，选音频文件。</li><li>选用途：操作音效选“操作音效（Actor）”，界面音效选“界面音效（UI）”，环境音选“环境音（Ambience）”，歌曲选“音乐（Music）”。</li><li>“输出到”选一个空文件夹。</li><li>音量先用“日常”，也可以直接填 dB 数值，然后点“生成”。</li><li>把输出的 <code>PackData</code> 里的声音文件复制进你的包，路径保持不变；<code>content.json</code> 里的 <code>resources</code>、<code>events</code> 合进包里的 <code>PackData/content.json</code>。<code>key</code>、<code>bankEvent</code> 和文件名照工具生成的写。</li><li>给事件加上 <code>replaceNativeEvent</code>（替换原版音效）或 <code>nativeEvent</code>（接入新音乐）。音乐还要按前文配好曲池或 CD、磁带。</li></ol>
+<pre class="tree"><code>工具输出目录/
+└─ PackData/
+   ├─ content.json          资源与事件声明
+   └─ audio/
+      ├─ audio_随机ID.bnk   预制 Bank
+      └─ 数字ID.wem         流式音乐的配套媒体</code></pre>
+<p>预制资源的 <code>kind</code> 为 <code>bank</code>，<code>path</code> 指向 Bank，<code>media</code> 列出配套媒体，事件通过 <code>bankEvent</code> 播放。发布包携带 Bank 和必要媒体即可；原始音频留在自己的素材目录。</p>
+<p class="hint">每次生成到一个新目录，再把条目合入自己的内容文件。多个声音合用一份 <code>content.json</code>，各自的资源名和事件名保持唯一。</p>
+<h3 id="volume">音量与试听</h3>
+<p><code>volumeDb</code> 使用分贝：<code>0</code> 保持素材电平，负数降低，正数提高，<code>"-inf"</code> 静音。工具保留整段素材，音量写入声明；后续调音量直接改 JSON。</p>
+<div class="table-wrap"><table><thead><tr><th>工具用途</th><th>安静</th><th>日常</th><th>热闹</th></tr></thead><tbody><tr><td>Music</td><td>−32 dB</td><td>−29 dB</td><td>−26 dB</td></tr><tr><td>Actor / Ambience</td><td>−26 dB</td><td>−23 dB</td><td>−20 dB</td></tr><tr><td>UI</td><td>−11 dB</td><td>−8 dB</td><td>−5 dB</td></tr></tbody></table></div>
+<p>这三个档位用于开始试听。素材本身的响度各有不同，先固定游戏的主音量与分类音量，再和原版声音交替听，逐步调整。示例中的负数配合的是示例素材；换歌后按自己的耳朵重新定值。</p>
+</section>
+<section id="play"><h2>七、游戏内验证</h2>
+<ol class="steps"><li>启用自己的包与 DTMAPI，重启游戏；查看模组加载与资源准备状态。</li><li>音效包依次测试开纸箱、割草/采收、挖矿、砍树和抛竿入水，确认触发范围与音量。</li><li>曲池包在第 1 月、农场、白天晴/阴天气试听 <code>farm_1</code>。播放列表会随机选曲，并保留本例 48 秒曲间间隔。</li><li>打开电话亭工坊贸易部，确认三盘磁带各售 100。Bad Apple 默认可在播放器选择；使用另外两盘后，检查对应曲目解锁。</li><li>需要验证持久解锁时，完成一次原生保存再重新读档；临时试听可直接退出。</li></ol>
+<div class="table-wrap"><table><thead><tr><th>遇到的情况</th><th>检查位置</th></tr></thead><tbody><tr><td>音效继续播放原声</td><td>替换事件名、资源路径与准备状态；确认实际动作使用这个原生事件</td></tr><tr><td>歌加入了池却暂时没响</td><td>当前月份/环境/天气/时段，以及随机选曲与曲间间隔</td></tr><tr><td>播放器看不到曲目</td><td>CD 表、default_unlock、磁带 function.cd_id</td></tr><tr><td>商店没有磁带</td><td>商店ID、item_name、四个月份的生成设置</td></tr><tr><td>能看到曲名，播放时无声</td><td>bgm_event 与 nativeEvent、音频路径、volumeDb 和游戏音乐音量</td></tr><tr><td>多个音乐包同时启用后范围变化</td><td>官方加载顺序、BGM 追加设置和同 ID 曲池的后加载字段</td></tr></tbody></table></div>
+</section>
+<section id="sources"><h2>八、参考示例</h2>
+<p>本页沿用官方综合案例的“整体说明 → 配置与字段说明 → 资源 → 参考示例”形式。</p>
+<p><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3746319981" target="_blank" rel="noopener noreferrer"><strong>抽象音效包 · Yuuka · Steam 创意工坊</strong></a>：本文的操作音效示例。音乐部分采用“东方同人曲包”的三曲配置；“八云紫主题曲”展示仅播放器曲目的组合。</p>
+<ul class="source-list"><li><a href="https://ka7deoo0opr.feishu.cn/wiki/ElmCwXsRCi7OPvkOh8JcvXK9nfc" target="_blank" rel="noopener noreferrer">《多洛可小镇》创意工坊模组制作说明</a>：官方教程首页。</li><li><a href="https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg" target="_blank" rel="noopener noreferrer">综合案例一（新增道具）</a>：本文参考的分步结构、标黄与字段旁注形式。</li><li><a href="https://ka7deoo0opr.feishu.cn/wiki/CKj3wewhLiTuCkk2GrqceORunUg" target="_blank" rel="noopener noreferrer">新增商店道具</a>：官方物品获取与商店配置。</li><li><a href="https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d" target="_blank" rel="noopener noreferrer">查看示例模组</a>与<a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3705665433" target="_blank" rel="noopener noreferrer">官方示例模组 · Steam 创意工坊</a>：官方完整示例获取入口。</li></ul>
+<p>官方示例下载后的参考位置：</p><pre class="tree"><code>steamapps/workshop/content/2285550/3705665433/
+└─ Content/
+   └─ 02 基础内容模组示例/
+      ├─ 05 新增商店道具/
+      └─ 06 综合案例一（新增物品）/</code></pre>
+</section><footer class="footer">路径放对，事件对上，小镇就有了你的歌单。至于纸箱开口唱什么，由你安排。</footer>
+</main></div><div class="toast" id="copy-status" role="status" aria-live="polite"></div>
+<dialog id="manual-copy" aria-labelledby="manual-title"><h3 id="manual-title">复制 JSON</h3><p>内容已选中，按 Ctrl+C 即可复制。</p><textarea readonly aria-label="待复制的纯 JSON"></textarea><form method="dialog"><button>完成</button></form></dialog>
+<script>
+(() => {
+  const status = document.getElementById('copy-status');
+  let statusTimer;
+  function notify(message) {
+    status.textContent = message;
+    status.classList.add('visible');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => status.classList.remove('visible'), 2200);
+  }
+  async function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (_) { /* 使用本地复制方式。 */ }
+    }
+    const active = document.activeElement;
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.style.cssText = 'position:fixed;top:0;left:-9999px;';
+    field.setAttribute('readonly', '');
+    document.body.appendChild(field);
+    field.select();
+    let copied = false;
+    try { copied = document.execCommand('copy'); } catch (_) { /* 显示可选中的完整 JSON。 */ }
+    field.remove();
+    if (active && active.focus) active.focus({ preventScroll: true });
+    return copied;
+  }
+  document.querySelectorAll('[data-copy]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const code = document.getElementById('json-' + button.dataset.copy);
+      const text = JSON.stringify(JSON.parse(code.textContent), null, 2) + '\n';
+      if (await copyText(text)) {
+        notify('已复制 ' + code.dataset.file);
+        button.textContent = '已复制';
+        setTimeout(() => { button.textContent = '复制 JSON'; }, 1800);
+      } else {
+        const dialog = document.getElementById('manual-copy');
+        const field = dialog.querySelector('textarea');
+        field.value = text;
+        dialog.showModal();
+        field.focus();
+        field.select();
+      }
+    });
+  });
+  document.querySelectorAll('[data-expand]').forEach(button => {
+    button.addEventListener('click', () => {
+      const expanded = button.closest('[data-codebox]').classList.toggle('expanded');
+      button.setAttribute('aria-expanded', String(expanded));
+      button.textContent = expanded ? '收起' : '展开';
+    });
+  });
+  const menu = document.getElementById('contents');
+  const compact = matchMedia('(max-width: 720px)');
+  function fitMenu() { menu.open = !compact.matches; }
+  fitMenu();
+  if (compact.addEventListener) compact.addEventListener('change', fitMenu);
+  const navLinks = [...document.querySelectorAll('nav a')];
+  const sections = [...document.querySelectorAll('main section[id], main h3[id]')];
+  function currentSection() {
+    let current = 'overview';
+    for (const section of sections) {
+      if (section.getBoundingClientRect().top <= 130) current = section.id;
+    }
+    navLinks.forEach(link => {
+      const selected = link.getAttribute('href') === '#' + current;
+      link.classList.toggle('active', selected);
+      if (selected) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  let queued = false;
+  addEventListener('scroll', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { currentSection(); queued = false; });
+  }, { passive: true });
+  currentSection();
+})();
+</script></body></html>

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "hatch",
+    "husbandry_datas": [
+      {
+        "output": "petrified_hatch_egg",
+        "output_range": { "x": 1, "y": 1 },
+        "threshold": 60,
+        "limited_contributions": []
+      }
+    ]
+  },
+  {
+    "id": "drecko",
+    "husbandry_datas": [
+      {
+        "output": "wool_grease",
+        "output_range": { "x": 3, "y": 3 },
+        "threshold": 60,
+        "limited_contributions": []
+      }
+    ]
+  },
+  {
+    "id": "mole",
+    "husbandry_datas": [
+      {
+        "output": "fertile_mole_egg",
+        "output_range": { "x": 1, "y": 1 },
+        "threshold": 40,
+        "limited_contributions": []
+      }
+    ]
+  },
+  {
+    "id": "oilfloater",
+    "husbandry_datas": [
+      {
+        "output": "polymer_oilfloater_egg",
+        "output_range": { "x": 1, "y": 1 },
+        "threshold": 120,
+        "limited_contributions": []
+      }
+    ]
+  }
+]

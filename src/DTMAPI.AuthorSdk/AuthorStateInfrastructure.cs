@@ -1,0 +1,102 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+
+namespace DTMAPI.AuthorSdk;
+
+internal static class AuthorStatePaths
+{
+    public const int SchemaVersion = 1;
+
+    public static string CanonicalGameRoot(string gameRoot) => Path.GetFullPath(gameRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    public static string GameRootKey(string gameRoot)
+    {
+        string canonical = CanonicalGameRoot(gameRoot).ToUpperInvariant();
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
+        return Convert.ToHexString(hash.AsSpan(0, 16)).ToLowerInvariant();
+    }
+
+    public static string InstallationStateRoot(string gameRoot)
+    {
+        string configured = Environment.GetEnvironmentVariable("DTMAPI_AUTHOR_STATE_ROOT") ?? string.Empty;
+        string baseRoot = configured.Length > 0
+            ? Path.GetFullPath(configured)
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DTMAPI", "AuthorSdk", "state");
+        return Path.Combine(baseRoot, "installations", GameRootKey(gameRoot));
+    }
+
+    public static string SourceStatePath(string gameRoot) => Path.Combine(InstallationStateRoot(gameRoot), "source-state.json");
+    public static string WorkshopSnapshotPath(string gameRoot) => Path.Combine(InstallationStateRoot(gameRoot), "workshop-subscriptions.json");
+    public static string DeploymentJournalPath(string gameRoot, string uniqueId) => Path.Combine(InstallationStateRoot(gameRoot), "deployments", uniqueId + ".journal.json");
+    public static string SourceSnapshotPath(string gameRoot, string snapshotId) => Path.Combine(InstallationStateRoot(gameRoot), "source-snapshots", snapshotId + ".json");
+    public static string LockPath(string gameRoot) => Path.Combine(InstallationStateRoot(gameRoot), "operation.lock");
+}
+
+internal sealed class GameOperationLock : IDisposable
+{
+    private readonly FileStream stream;
+
+    private GameOperationLock(FileStream stream) => this.stream = stream;
+
+    public static GameOperationLock Acquire(string gameRoot)
+    {
+        string path = AuthorStatePaths.LockPath(gameRoot);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            return new GameOperationLock(new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None));
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidDataException("Another Author SDK operation owns the exclusive lock for this game root: " + AuthorStatePaths.CanonicalGameRoot(gameRoot), ex);
+        }
+    }
+
+    public void Dispose() => stream.Dispose();
+}
+
+internal static class AtomicStateFile
+{
+    public static T ReadStrict<T>(string path)
+    {
+        string text = File.ReadAllText(path, Encoding.UTF8);
+        return JsonSerializer.Deserialize<T>(text, JsonSupport.Tool)
+            ?? throw new InvalidDataException(Path.GetFileName(path) + " must contain one JSON object.");
+    }
+
+    public static void Write<T>(string path, T value)
+    {
+        WriteBytes(path, new UTF8Encoding(false).GetBytes(JsonSupport.SerializeTool(value)));
+    }
+
+    public static void WriteBytes(string path, byte[] bytes)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        string temporary = path + ".tmp-" + Guid.NewGuid().ToString("N");
+        string backup = path + ".replace-backup";
+        try
+        {
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                stream.Write(bytes, 0, bytes.Length);
+                stream.Flush(true);
+            }
+            if (File.Exists(path))
+            {
+                File.Replace(temporary, path, backup, true);
+                if (File.Exists(backup))
+                    File.Delete(backup);
+            }
+            else
+            {
+                File.Move(temporary, path);
+            }
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
+        }
+    }
+}

@@ -1,0 +1,55 @@
+# Local toolchains and editor state
+.tools/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Build and test output
+**/bin/
+**/obj/
+**/__pycache__/
+**/node_modules/
+**/.runtime/
+TestResults/
+dist/
+tmp/
+temp/
+/output/
+/outputs/
+/artifacts/
+/.artifacts/
+/.playwright-cli/
+/Microsoft/Windows/PowerShell/ModuleAnalysisCache
+mods/AnimalPack/.local-build/
+sdk/examples/HelloDtm/package/
+sdk/examples/ConfigMenu/package/
+*.pyc
+reports/
+crash-reports/
+logs/
+*.log
+*.tmp
+*.cache
+*.bak
+
+# Generated packages and local reference binaries
+*.dll
+*.exe
+*.pdb
+*.zip
+*.7z
+*.rar
+*.nupkg
+!build/bootstrap/
+!build/bootstrap/BepInEx_win_x64_5.4.23.5.zip
+
+# Local settings and game installation output
+local.settings.json
+*.local.json
+.env
+BepInEx/
+winhttp.dll
+doorstop_config.ini
+DolocTown.exe

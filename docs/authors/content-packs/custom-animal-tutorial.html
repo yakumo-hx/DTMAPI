@@ -1,0 +1,1171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="照着 DTMAPI AnimalPack 的哈奇示例，用 JSON、PNG、WAV 添加一只可养殖的小动物。完整配置按文件复制。">
+<title>综合案例：新增养殖动物 · DTMAPI</title>
+<style>
+:root{--blue:#245bdb;--text:#20242b;--muted:#737985;--line:#e2e5ea;--paper:#f6f7f9;--yellow:#fff1b8}
+*{box-sizing:border-box}html{scroll-padding-top:84px;scroll-behavior:smooth}body{margin:0;color:var(--text);background:#fff;font:15px/1.85 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible,pre:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:4px}.topbar{height:59px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 28px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.97);position:sticky;top:0;z-index:10;font-size:13px}.brand{color:#49505d}.brand strong{color:#222a37;margin-right:12px}.topbar .version{color:var(--muted);font-size:12px}.layout{max-width:1340px;margin:0 auto;display:grid;grid-template-columns:245px minmax(0,1fr);gap:50px;padding:45px 35px 70px}aside{position:sticky;top:89px;align-self:start;max-height:calc(100vh - 115px);overflow:auto;font-size:13px}aside details>summary{cursor:pointer;list-style:none;font-size:12px;letter-spacing:.12em;color:#858b95;margin-bottom:14px}aside a{display:block;color:#626975;padding:5px 10px;border-left:2px solid transparent;line-height:1.6}aside a:hover{color:var(--blue);background:#f5f8ff;text-decoration:none}aside a.active{border-color:var(--blue);color:var(--blue);background:#f5f8ff}aside .sub{font-size:12px;padding-left:22px}main{min-width:0;max-width:900px;padding:0 12px 0 0}h1{font-size:34px;line-height:1.4;letter-spacing:-.03em;margin:0 0 10px;font-weight:750}h2{font-size:25px;line-height:1.55;margin:50px 0 20px;letter-spacing:-.02em}h3{font-size:19px;line-height:1.6;margin:35px 0 12px;overflow-wrap:anywhere}h3 .n{color:var(--blue);margin-right:6px}.meta{font-size:12px;color:var(--muted);margin-bottom:24px}.intro{font-size:16px;line-height:1.95;max-width:750px}p{margin:12px 0}ul,ol{padding-left:24px;margin:12px 0}li{padding-left:2px;margin:5px 0}li::marker{color:var(--blue)}strong{font-weight:650}code,kbd{font: .89em/1.7 Consolas,"Cascadia Code",monospace;background:#f1f3f5;padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}.callout{border-left:3px solid #aac3ff;background:#f5f8ff;padding:13px 17px;margin:22px 0;font-size:14px}.callout p{margin:0}.table-wrap{overflow:auto;margin:18px 0}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}th,td{border:1px solid var(--line);padding:10px 13px;text-align:left;vertical-align:top}th{background:var(--paper);font-weight:600}td code{white-space:nowrap}.hint{font-size:13px;color:#6e7581}.tree{padding:20px 24px;background:var(--paper);border:1px solid var(--line);border-radius:7px;overflow:auto;font:13px/1.9 Consolas,monospace;white-space:pre}.tree code{font:inherit;background:none;padding:0;white-space:pre}.codebox{border:1px solid #dfe3e9;border-radius:7px;overflow:hidden;margin:16px 0 18px;background:var(--paper)}.codebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;background:#f1f3f6}.file-label{font-family:Consolas,monospace;min-width:0;overflow-wrap:anywhere;color:#555e6c}.code-actions{display:flex;gap:7px;flex-shrink:0}.code-actions button{border:1px solid #d7dce5;border-radius:4px;padding:3px 9px;background:#fff;color:#5c6470;font-size:12px;white-space:nowrap}.code-actions .copy{color:var(--blue);border-color:#c9d6f5}.code-actions button:hover{background:#eaf0fe}.codebox pre{margin:0;max-height:400px;overflow:auto;padding:17px 22px 20px 51px;counter-reset:line;font:12.5px/1.95 Consolas,"Cascadia Code","Microsoft YaHei",monospace;tab-size:2}.codebox.expanded pre{max-height:none}.codebox code{font:inherit;line-height:inherit;background:none;padding:0;white-space:pre;overflow-wrap:normal}.code-line{position:relative;counter-increment:line}.code-line::before{content:counter(line);position:absolute;left:-37px;width:25px;text-align:right;color:#a4abb5;font-size:11px;user-select:none}.code-line[data-note]::after{content:"  // " attr(data-note);color:#849080;font-size:11.5px;white-space:pre;user-select:none}mark{background:var(--yellow);color:inherit;border-radius:2px;padding:0 1px}.caption{font-size:13px;color:#747d88;margin:8px 0}.steps li{margin:10px 0}.source-list{padding-left:21px}.source-list li{margin:9px 0}.footer{border-top:1px solid var(--line);margin-top:42px;padding-top:20px;color:#808793;font-size:12px}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#263446;color:white;box-shadow:0 4px 20px #182e4520;border-radius:6px;padding:8px 18px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .15s}.toast.visible{opacity:1}dialog{border:1px solid var(--line);border-radius:8px;padding:22px;max-width:760px;width:90vw}dialog::backdrop{background:#17233466}dialog textarea{display:block;width:100%;height:45vh;margin:15px 0;font:13px/1.6 Consolas,monospace}dialog button{padding:5px 14px;background:#f2f5fa;border:1px solid #d4dbe7;border-radius:4px}
+.module-label{display:inline-block;margin-right:8px;padding:1px 6px;border-radius:3px;background:#e5edff;color:#245bdb;font:10px/1.8 "Microsoft YaHei",sans-serif;vertical-align:middle}.dtmapi-note{color:#245bdb}.codebox[data-kind="info"] code{white-space:pre-wrap;overflow-wrap:anywhere}
+.sprite-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:20px 0}.sprite-example{margin:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0}.pixel-stage{height:152px;display:flex;align-items:center;justify-content:center;background-color:#fafbfc;background-image:linear-gradient(45deg,#edf0f3 25%,transparent 25%),linear-gradient(-45deg,#edf0f3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf0f3 75%),linear-gradient(-45deg,transparent 75%,#edf0f3 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}.pixel-stage img{display:block;object-fit:contain;image-rendering:pixelated;max-width:100%;max-height:144px}.sprite-example figcaption{padding:9px 11px;font-size:12px;line-height:1.7}.sprite-example figcaption strong,.sprite-example figcaption code,.sprite-example figcaption span{display:block}.sprite-example figcaption code{background:none;padding:0;font-size:10px;overflow-wrap:anywhere;margin-top:5px}.sprite-example figcaption span{font-size:10px;color:var(--muted);margin-top:5px}h4{font-size:15px;margin:22px 0 8px}.special-image{max-width:260px;margin:16px 0}
+@media(min-width:1500px){.layout{gap:65px;padding-top:55px}}
+@media(max-width:1000px){.layout{gap:25px;padding:32px 20px;grid-template-columns:195px minmax(0,1fr)}h1{font-size:29px}main{padding-right:0}.topbar{padding:0 20px}}
+@media(max-width:720px){html{scroll-padding-top:70px}.topbar{height:55px;padding:0 17px}.brand{font-size:12px}.topbar .version{font-size:10px}.layout{display:block;padding:21px 18px 50px}aside{position:static;max-height:none;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:25px}aside details>summary{margin:0}aside a{padding-top:4px;padding-bottom:4px}aside details[open]>summary{margin-bottom:9px}h1{font-size:27px}h2{font-size:23px;margin-top:38px}h3{font-size:17px}.intro{font-size:15px}.codebar{padding:9px 10px;gap:8px}.file-label{font-size:11px}.code-actions{gap:5px}.code-actions button{padding:3px 6px;font-size:11px}.codebox pre{font-size:12px;padding-left:44px}.code-line::before{left:-31px;width:22px}th,td{padding:8px 10px}table{font-size:13px}.tree{font-size:11px;padding:15px}.callout{padding:11px 13px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.toast{transition:none}}
+@media print{.topbar,aside,.code-actions,.toast,dialog{display:none}.layout{display:block;padding:0}main{max-width:none}h2,h3{break-after:avoid}.codebox pre{max-height:none;overflow:visible;white-space:pre-wrap}.codebox code{white-space:pre-wrap}.code-line[data-note]::after{white-space:normal}.codebox{break-inside:auto}a{color:inherit}}
+</style>
+</head>
+<body>
+<header class="topbar"><a href="#top" class="brand"><strong>DTMAPI</strong>内容包教程</a><span class="version">版本：0.7.5以上</span></header>
+<div class="layout">
+<aside><details id="contents" open><summary>本页目录</summary><nav aria-label="教程目录">
+<a href="#overview">一、整体说明</a><a href="#structure">二、文件结构</a><a href="#config">三、配置示例及数据结构说明</a>
+<a href="#file-info" class="sub">1. 模组信息</a><a href="#file-manifest" class="sub">2. DTMAPI 清单</a><a href="#file-animal" class="sub">3. 动物数据</a><a href="#file-items" class="sub">4. 动物袋与产物</a><a href="#file-spawn" class="sub">5. 产物掉落库</a><a href="#file-document" class="sub">6. 动物图鉴</a><a href="#file-store" class="sub">7. 商店获取</a><a href="#file-content" class="sub">8. 动画、行为与叫声</a><a href="#file-frames" class="sub">9. PNG 帧清单</a>
+<a href="#assets">四、图片与声音</a><a href="#template-frames" class="sub">四种模板的帧数</a><a href="#play">五、游戏内验证</a><a href="#more">六、继续扩展</a><a href="#multi-pack" class="sub">一个包放多种动物</a><a href="#sources">七、参考示例</a>
+</nav></details></aside>
+<main id="top">
+<h1>综合案例：新增养殖动物</h1>
+<div class="meta">2026年10月27日 Yuuka</div>
+<p class="intro">给牧场添一位新住户。用JSON定义灵魂、PNG定义形体、WAV定义声音。是的，并不限制是动物：你可以大胆发挥想象力。</p>
+<div class="sprite-grid preview-grid"><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAADF0lEQVR4nO1WXUiTURh+Pr8d+4IFCzbZ/EGnLqykmOZML9JWkUreKF1kddVVEFJdGN54uVJQCIzIiwpDKmMLL5SK1OhnTF3rInNg4U8aE3+aROEhN0+cb5s5nVPXTUTPxXf+3+d9n/e8hw/4j78ILJZDcbGSWRvsvB3eKrGwhb1dAEqtTXbAtwAotsttZc2RLdkTNkHEmttHoJucWrMwOOxA9q6DOF1jnqU+qtmM1xtJypptI+h61BhxkZNxtDX0qAtyjm9KWiEqWfsICBHlgXJmDtJ3GtVY5eXCjWyuG2EuJ5uc4HciAMeoC5TnLgraWlyyo7EQOvknWb9reSLbdAzdHjfsQ68iHvAqJSyodeApiAZFhLlMjS4NMzPjSNGlwr9iIf9QOUTmh4cPfIHTEgAuNBFEKL1eUJUUilI4e76e3bt5xQDgU8jGar2vW5vs1WtcCBrnObr1eFyeUnrmIFEKb7IWVPF7DxFELDI/LlSkC6biCtb/whbGEyappJCqI+YpqAOvwd7Ou+HaBEkIiZejDaG5fYQtUgpJkuTErpfD0pYHDQFvV6DvfTfO1ZWFzS+oVfCmaeEXArcY8K/oA9bbNSDCLCiluevmkPpoNSEE3a5O9Dps8M5TtLRehDFBRK2yHm3PWpCQWyhLhqBxnlOew9bmS+jv6YBKKcFcXoGdmnj0PulfFU+Emqk+VceKjCWyKzyyhjuNOFFcgv2GA+hwPoRKkwLnyy7sMxXh83AfMrOK4HQ8RdnJijA701+m8brn+Rr76xUpL0B+u2Rk7dkLTZIW2sRE+Jf88ExMQpeSDDFOxOBbJ3YbjYgTRCwxP0bdbvwE8MH5Lux2RpR0BUIFyNIyDVDr1GC+RQy8sSMnLx8gCvz4Ng+IBJ4pD7Rf9ejt7ApY80UNZFOP91hSSlIqXaQg23ZAn56O+RkP3INuFBw2yxtGPw7Bdt8GIhHkFeSNwQc9YoU+Tc+qzlTxQq4NFjQj8YS5BlzMcs0ij/ljYblqYfYBO+/fwB+CmY+aQ+/jsMlk4n1zhiEjRLa8D4rY/gL+LfwCAGocnx5UBX4AAAAASUVORK5CYII=" data-file="anim_animal_hatch_young_idle_0.png" alt="哈奇幼体" width="112" height="96" loading="lazy"></div><figcaption><strong>哈奇幼体</strong><code>anim_animal_hatch_young_idle_0.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEc0lEQVR4nO1WbUxbVRh+SgteQklaih0iAk2A5C5swHVj0mQs66aOOjIHYSYsLjrGsjCGUfAjG/GHmZpOfji84ccETMDMhYbuh7GQgcVkya0JE4b+kFBNN8RlaWAFhNHYlmPO6UcKA9qqP3mS5pzzvqfvec5z3vfNBbaxjW1sI37oAZCI3xH8B8ji2Ps5AKNYL+bTBQeOGSWHhO4fuuONFTcB0nltDOZrragSjq31+AHvqhfWGQnWoesVAAb/TwJ5ABxih4RERSK8Pi9a3jHi6inTExvlhbsg/WxDd2drXEooongdYscYE9sD4EZXK5unF+5FdZPAtqiUKnRd7Ieb4yCUGikBmhcxk5CtN4hvioTSaultQVu7hESqMb2hxwv/xC9MbuqjqlBScPwKLK2gf9SCvD0HsE94EWfOCg4ABf+KAGhWKzBAk4zP4nHg1TrwO/dBDjme8QHVTXqUFupxssHEbB9frMal45fgX/XDm+BFy1eUuA2NDbRYoish28Bm7fvmk4oblmFYbtqoInDnZEKtzcWs6z7StTnsGfxBZbyQg/N5kOzjwCkANzzws3yRo7FBGKCVsxWBhPWGmmpDUVaWFv19bVhxS2j8shHq+w/YU6Sn7cDYncHw4RTU7lFwWEryY1bhZ4dTt22oC3ueP1wRTOTYCbxWY8hs/qD9Fo3y3eDtgNEH9PRcBhQchOIjTPpIUEXkCRE2OWCsqMMbdR/h9VMf0nyYivkJ3H9JRJ2qlxEySmSyvWG7WC/i0XMZ2JGRw2QPJSfF9J9OZD+rWxOH7gmRp09z5qwAlSpjcn7+YQeALzaV5OWXSmkZYcUr0fFqqOWK9SLJyMylFRJuwyXFBsIpuYAtwl514j3S3NJJzp0zBX1cyBddgQ3A/nj60GnYH9rBPcVBlxO4rXPaCV22jnUTy00LqiqrYP3WCmOlES6XCxzHYfj7Ybr1LQDtURsRIWNEJhPCpGpqDhOzmQVgWF5aBr+Th+uBC3MLc+DzecgVAalzc3LZ3AMP9Pv1MOw3wC/zY/XdVdhGbBseTrEmCc3mITpYQ+u+vithn5AtQJOmYQmozdSC53mcv3AeRbuKAn5BwOLiIjQqzZoDTFeebNubEjhR+/7A19cv09IJwOdB22dNbNo10oXHnseY+WOGyWwxW6BOVcNQYWC26elpLC4sQqPWYOLuBGy3bYEYAT3zYitDH4yvVBrCy/G7Tqi8WtaM1ClqJMmTmL2kuISNthEbOAUH9yM3ZudmYf/RjinHlNjb0wtCCOQkWAkKuGMjAECdqg8l3qi+rA4epwrzS/OY+XsGSqUSzt+dsN+xR5LG5NQk7v12L3TfCzThxn8aZ+7lhWW6Zw5xgJTklpDag7VsDH/5BMssJTmFaJ/WEi6ZI81vNxPTp6YNv4p2F+8m0qhEVErVhuUXM5kCviAU4GSaJo0ggRE5BKD26LGjm9Y3tZeXl5NorTga1h8QuSaGg4atbrcVudhRkF9A3zSMshfKQjeiwdf4IqDbwrcNROIfY++nQt0s4jAAAAAASUVORK5CYII=" data-file="anim_animal_hatch_adult_idle_0.png" alt="成年哈奇" width="128" height="128" loading="lazy"></div><figcaption><strong>成年哈奇</strong><code>anim_animal_hatch_adult_idle_0.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAXgSURBVEhL7ZZbUJTnHYf/GKAYxUgtqVJ1RFKMWRXl0AhyDISTipxE5HyQg8oueATkEIFwqALLcXfZXXaBwC4kOk5M2k5rNHGcJDWJKMaGdOKkTW/a6V1uepM0T+ejO+30a5PY9rJ9Zv537/t73uP3vSL/5+9sEpGzj3s+/gs/H79f+a32e+Dl4fVzEdGJiI+68X/L+U1Pbvq8OK6YC4UXMFWYMFYY6cnvIW9PHt7LvX8jIvvVnf4Tlru5uf3kUMQhrNVWpnXT2I7asFRZlsp+zM5s7SyDpYOE+YcgIo3qgH+HZSJyVZuq5dLpS4xXjzNWObZUZqWqzEvCmZppBor6SQlNY+3azYq0Xh30qHRve2Y3xfGldOW2YywbYbzSwni1dUloKBmmNaOJ9NB0QnZEU3akk5Hht/HzC1CkyeqwbyMycEsoQ4M3KS1rJyb8ANG7EknZnUVaVC7J4elEBScSH5dLSXknHV1X6R24icP5KQ31dkX4mYisVId+Hcs8Pb3mm5qnMZpuo9ffwDS+wJDhl7R2XqW17RJtL75Kj/4GBuN72CcXmXzpYyYnF9EP3mJ8cpGQkHhF2qIO/joyI6OzmHF+wozjIe3tlykobKJGO4zF9gD75ANstvuYLPeoO2MmISGfxPg8Ko5ewDJ+F4t1nlOnzSxb9tjvRWSFOvyfcHf3uNHywhxzL3/GmXNTJD2bTkPKafLDD5GTcwrb1EfYJz6kte0VIrZG07jvNO0ZLaQEJbFv7xFM5jsMjb7LD5/apcwyQ52vJsDfX/PlmG2BXv0NwrfFMlw0iEPnYKzcwJ7gJIYM7zA19TGp8UV0ZLYxo512XQ8n2WEHOFzUyuyVP7I3rVoRGtUCNVXpmTVcvvIH0jK11CUcZ1o7jbXaQl/hReL2ZGM0zzM0fIu44GSslWbMlealq2KptmAsGyViRzwG233KK3+sCN9RC9RMnzhlxvnK70iJK2C0YICpminmap2UxJRQWNDCtOMhHd1Xid2ZgG3pivxVqJRDO0NWSAZVukEamh2K8NdqgZo7Lc2zzM39lvzceg6GZfFCVjO54YeIikjnYu8bWMY+oG/gTSKDEjBXmP5BqAzuWFwlObln6O75qSJ8qBao+VRXZ8A2scio8V0O59aTmlhM9sGTtHW9jn7gJvq+67w0uUhwUCxN6Q3Yj9v/Jpw4NsGJxFr276+ireOKIryrFqj55GDOSczWe9jtC0xMfoRx/D4G03tYrHex2e8xMHyLvv63yC1oJmxTMLNa59J3VhE6dU7KI4tJz66l8rheETrVAjXXQsNSOXPSjNH8AWPWefr0b9HXex2D8f2lO2a2ztPe9Tovdr6GRhNBsiYBQ/kIzloH5nITgeu2oNUNEhObpQhr1QI1Z/3WBaCtGaShcZJh0/uMjN1hcPQ2/fqbDI+8jdX+IbaJB9jsC1zsvUZkdCaazTuJ3hrFD55YR2hYInXaIZ70Xa8Ig9QCNX4i8nlSQiEndCNotcM0tTrp6r1Gv/5Nenp+xvmu12g9f5mm5jnONTtR9jwnr4GUfeVkZddwtOoCyYnFiLgp++emFvwrji33WkFycjn5efXk5Z6ltLSdGm0/VZXdlBR3UFHVy5HKbsoqutFphzjbOEXDuQkKChrJzNDh67tRmV2ROvibcHh4eKLZtpvnny9ib2oVBzPriH/uMLExOexLO7o0o/j4PGKis/jR7mS2b48gKCiKDRsDFdkb6sBvQ/n5Trl7eLJhfSCbN+/AP2AX23fEsHNnDBrNs2wJDGX7tiiefjqMjf5beSowiA3rtyiyBRH5njrwm1DW3UtE1oiIXUS+EhEliOVeK/68atWaL9Z8d+1XPj7f/8J7xWo83D3x9V3PypVPKG3uiMguV39l0I+EMro0EckWkSQROSUi15XDpEjd3T3xXrmaVd4+X3p4fEeR/ElEbotIp+shdUBEslyvvEdCGdlqVweNq5TjneJ6El4UEYOI9IvICZckRESecbUNcK3OY+rg/w3+AmM9OBoJa+xeAAAAAElFTkSuQmCC" data-file="icon_item_hatch_egg.png" alt="普通产物：哈奇蛋" width="112" height="112" loading="lazy"></div><figcaption><strong>普通产物：哈奇蛋</strong><code>icon_item_hatch_egg.png</code><span>原图 28 × 28 像素 · 放大展示</span></figcaption></figure></div>
+<section id="overview">
+<h2>一、整体说明</h2>
+<p>基于DTMAPI 0.7.5的畜牧内容包面向更熟悉官方mod内容的作者。目前的动物行为主要使用游戏内的四种动物，所以飞的、游的，暂时还不行。但官方的json系统已经支持较为全面的自定义能力。</p>
+<div class="table-wrap"><table><thead><tr><th>准备</th><th>用途</th></tr></thead><tbody>
+<tr><td>安装DTMAPI 0.7.5 及以上版本</td><td>提供畜牧与音频模块，必选</td></tr>
+<tr><td>本文提到的 9 份 JSON</td><td>配置动物、物品、商店和资源关系，部分非必选</td></tr>
+<tr><td>45 张动画 PNG + 1 张蛋图标</td><td>沿用当前哈奇示例的帧清单，其他模板数量不同</td></tr>
+<tr><td>2 段 WAV</td><td>幼体、成年各一段叫声，没有的话会回退动物原声</td></tr>
+<tr><td><code>icon.png</code>、<code>preview.png</code></td><td>模组图标与预览图，给steam和游戏内mod界面显示</td></tr>
+</tbody></table></div>
+<p><mark>黄色内容</mark>只是标出了一些必改的内容。注释说明字段和值的含义、你可以做哪些修改，除了部分严格的规范，其他一切由你发挥。</p>
+<div class="callout"><p>每块 JSON 都是一个<strong>完整文件</strong>。点击“复制 JSON”后，按上方的路径保存为.json文件即可。复制按钮取得纯 JSON，标点也一起打包带走，注释不会，因为json不太支持注释。</p></div>
+</section>
+<section id="structure">
+<h2>二、文件结构</h2>
+<p>示例包的文件夹名为 <code>DTMAPI_AnimalPack</code>。你可以自定文件夹名，并将整个包放入官方本地模组目录。Windows 可将下面的路径粘贴到资源管理器地址栏：</p>
+<pre class="tree"><code>%USERPROFILE%\AppData\LocalLow\RedSawGames\DolocTown\MODS</code></pre>
+<pre class="tree"><code>DTMAPI_AnimalPack/
+├─ info.json
+├─ manifest.json
+├─ icon.png
+├─ preview.png
+├─ Content/
+│  ├─ animal_tbanimal.json
+│  ├─ animal_tbanimaldocument.json
+│  ├─ item_tbitem.json
+│  ├─ item_tbitemspawn.json
+│  ├─ mod_tbmodstoreextension.json
+│  └─ Sprites/
+│     ├─ hatch_frame_manifest.json
+│     ├─ icon_item_hatch_egg.png
+│     └─ anim_animal_hatch_*.png   ← 45 张独立帧
+└─ PackData/
+   ├─ content.json
+   └─ audio/
+      ├─ hatch_pet_young.wav
+      └─ hatch_pet_adult.wav</code></pre>
+<p><code>Content/</code> 放游戏原生数据和图片；<code>PackData/content.json</code> 集中写 DTMAPI 的动物定义与声音。资源路径从 <code>DTMAPI_AnimalPack/</code> 这一层开始计算。</p>
+<p class="hint dtmapi-note">标有“DTMAPI 专属”的文件由 DTMAPI 读取；动物表中的 DTMAPI 动画键也已单独注明。帧清单标为“DTMAPI 配套清单”，供作者整理与核对资源。</p>
+</section>
+<section id="config">
+<h2>三、配置示例及数据结构说明</h2>
+<h3 id="file-info"><span class="n">1.</span>info.json</h3>
+<p>游戏用它识别模组。下面直接沿用当前缺氧动物包的名称、作者、版本和完整介绍；后面的动物配置节选其中的哈奇。</p>
+<div class="codebox" data-codebox data-kind="info">
+<div class="codebar"><span class="file-label">info.json</span><div class="code-actions"><button type="button" data-expand="info" aria-controls="panel-info" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="info" aria-label="复制 info.json">复制 JSON</button></div></div>
+<pre id="panel-info" tabindex="0" aria-label="info.json 配置"><code id="json-info" data-file="info.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组名称：游戏与工坊中显示的默认名字，可修改">  &quot;name&quot;: &quot;<mark>缺氧动物包</mark>&quot;,</span>
+<span class="code-line" data-note="作者：这里沿用 Yuuka，制作自己的模组时填写你的名字">  &quot;author&quot;: &quot;<mark>Yuuka</mark>&quot;,</span>
+<span class="code-line" data-note="模组版本：这是内容包自己的版本号，更新时自行递增">  &quot;version&quot;: &quot;1.0.0&quot;,</span>
+<span class="code-line" data-note="模组介绍：这里保留完整 AnimalPack 的说明，可按作品修改">  &quot;description&quot;: &quot;<mark>缺氧动物包</mark>（示例）\n需要 DTMAPI 0.7.5 或更高版本。虽然是纯粹内容包，但是加载能力需要DTMAPI实现。\n新增四种可养殖动物：<mark>哈奇</mark>、壁虎、田鼠和浮游生物。\n\n<mark>哈奇</mark>每天产出1枚<mark>哈奇</mark>蛋，可加工为铁矿石×5、铜矿石×5；产出设备为鸡窝；\n壁虎每3天产出1枚壁虎蛋，可加工为羊毛×3；产出设备为粘毛滚；\n田鼠每天产出1枚田鼠蛋，可加工为生肉×10；产出设备为挤奶器；\n浮游生物每天产出1枚浮游生物蛋，可加工为煤×20、树脂×5；产出设备为蜂箱。\n\n隐藏产出：\n<mark>哈奇</mark>阈值60，产出石化<mark>哈奇</mark>蛋，可加工为金矿石×10、钛矿石×5；\n壁虎阈值60，产出羊毛脂×3；\n田鼠阈值40，产出肥沃田鼠蛋，可加工为生肉×5、有机肥×30；\n浮游生物阈值120，产出聚合浮游生物蛋，可加工为橡胶×30、塑料×30。\n购买与设备：前往凯涅尼木的动物商店购买四种幼体袋，价格分别为<mark>哈奇</mark>800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年动物售价为对应幼体购买价的3倍。\n同一商店固定出售小动物照料站图纸，价格1000G。使用图纸解锁配方后，在设备工作台使用铜锭×5、木头×100制作小动物照料站，将普通蛋和三种稀有蛋投入设备即可加工，加工时间为1h，耗电为1。\n\n本mod为示例mod，基于DTMAPI的动物拓展能力，将在日后更新教程文档。作者只需要配置PNG、WAV、JSON即可实现添加养殖动物。欢迎大家体验。有bug请反馈，喜欢请点好评♥️&quot;,</span>
+<span class="code-line" data-note="模组标签：按作品内容填写，下面沿用示例">  &quot;tags&quot;: [</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;Mod&quot;,</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;Gameplay&quot;,</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;Functional&quot;,</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;DTMAPI&quot;,</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;Animal&quot;,</span>
+<span class="code-line" data-note="模组标签：沿用示例标签，可按作品内容调整">    &quot;Developer&quot;</span>
+<span class="code-line">  ],</span>
+<span class="code-line" data-note="多语言名称：按语言填写显示名字，可选">  &quot;localized_name&quot;: {</span>
+<span class="code-line" data-note="简体中文：填写该语言的模组名字">    &quot;schinese&quot;: &quot;<mark>缺氧动物包</mark>&quot;,</span>
+<span class="code-line" data-note="繁体中文：填写该语言的模组名字">    &quot;tchinese&quot;: &quot;缺氧動物包&quot;,</span>
+<span class="code-line" data-note="英文：填写该语言的模组名字">    &quot;english&quot;: &quot;Oxygen Not Included Animal Pack&quot;</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="多语言介绍：按语言填写介绍文字，可选">  &quot;localized_description&quot;: {</span>
+<span class="code-line" data-note="简体中文：填写该语言的模组介绍">    &quot;schinese&quot;: &quot;<mark>缺氧动物包</mark>（示例）\n需要 DTMAPI 0.7.5 或更高版本。虽然是纯粹内容包，但是加载能力需要DTMAPI实现。\n新增四种可养殖动物：<mark>哈奇</mark>、壁虎、田鼠和浮游生物。\n\n<mark>哈奇</mark>每天产出1枚<mark>哈奇</mark>蛋，可加工为铁矿石×5、铜矿石×5；产出设备为鸡窝；\n壁虎每3天产出1枚壁虎蛋，可加工为羊毛×3；产出设备为粘毛滚；\n田鼠每天产出1枚田鼠蛋，可加工为生肉×10；产出设备为挤奶器；\n浮游生物每天产出1枚浮游生物蛋，可加工为煤×20、树脂×5；产出设备为蜂箱。\n\n隐藏产出：\n<mark>哈奇</mark>阈值60，产出石化<mark>哈奇</mark>蛋，可加工为金矿石×10、钛矿石×5；\n壁虎阈值60，产出羊毛脂×3；\n田鼠阈值40，产出肥沃田鼠蛋，可加工为生肉×5、有机肥×30；\n浮游生物阈值120，产出聚合浮游生物蛋，可加工为橡胶×30、塑料×30。\n购买与设备：前往凯涅尼木的动物商店购买四种幼体袋，价格分别为<mark>哈奇</mark>800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年动物售价为对应幼体购买价的3倍。\n同一商店固定出售小动物照料站图纸，价格1000G。使用图纸解锁配方后，在设备工作台使用铜锭×5、木头×100制作小动物照料站，将普通蛋和三种稀有蛋投入设备即可加工，加工时间为1h，耗电为1。\n\n本mod为示例mod，基于DTMAPI的动物拓展能力，将在日后更新教程文档。作者只需要配置PNG、WAV、JSON即可实现添加养殖动物。欢迎大家体验。有bug请反馈，喜欢请点好评♥️&quot;,</span>
+<span class="code-line" data-note="繁体中文：填写该语言的模组介绍">    &quot;tchinese&quot;: &quot;缺氧動物包（示例）\n需要 DTMAPI 0.7.5 或更高版本。雖然是純內容包，但是載入能力需要DTMAPI實現。\n新增四種可養殖動物：<mark>哈奇</mark>、壁虎、田鼠和浮游生物。\n\n<mark>哈奇</mark>每天產出1枚<mark>哈奇</mark>蛋，可加工為鐵礦石×5、銅礦石×5；產出設備為雞窩；\n壁虎每3天產出1枚壁虎蛋，可加工為羊毛×3；產出設備為粘毛滾；\n田鼠每天產出1枚田鼠蛋，可加工為生肉×10；產出設備為擠奶器；\n浮游生物每天產出1枚浮游生物蛋，可加工為煤×20、樹脂×5；產出設備為蜂箱。\n\n隱藏產出：\n<mark>哈奇</mark>閾值60，產出石化<mark>哈奇</mark>蛋，可加工為金礦石×10、鈦礦石×5；\n壁虎閾值60，產出羊毛脂×3；\n田鼠閾值40，產出肥沃田鼠蛋，可加工為生肉×5、有機肥×30；\n浮游生物閾值120，產出聚合浮游生物蛋，可加工為橡膠×30、塑膠×30。\n購買與設備：前往凱涅尼木的動物商店購買四種幼體袋，價格分別為<mark>哈奇</mark>800G、壁虎3000G、田鼠5000G、浮游生物1200G；\n成年動物售價為對應幼體購買價的3倍。\n同一商店固定出售小動物照料站圖紙，價格1000G。使用圖紙解鎖配方後，在設備工作台使用銅錠×5、木頭×100製作小動物照料站，將普通蛋和三種稀有蛋投入設備即可加工，加工時間為1h，耗電為1。\n\n本mod為示例mod，基於DTMAPI的動物擴充能力，將在日後更新教學文件。作者只需要配置PNG、WAV、JSON即可實現新增養殖動物。歡迎大家體驗。有bug請回報，喜歡請點好評♥️&quot;,</span>
+<span class="code-line" data-note="英文：填写该语言的模组介绍">    &quot;english&quot;: &quot;Oxygen Not Included Animal Pack (Example)\nRequires DTMAPI 0.7.5 or later. Although this is a content-only pack, its loading capability is provided by DTMAPI.\nAdds four ranchable animals: Hatch, Drecko, Mole, and Oilfloater.\n\nHatch produces 1 Hatch Egg per day. It can be processed into Iron Ore ×5 and Copper Ore ×5; production equipment: Chicken Coop;\nDrecko produces 1 Drecko Egg every 3 days. It can be processed into Wool ×3; production equipment: Lint Roller;\nMole produces 1 Mole Egg per day. It can be processed into Raw Meat ×10; production equipment: Milking Machine;\nOilfloater produces 1 Oilfloater Egg per day. It can be processed into Coal ×20 and Resin ×5; production equipment: Hive Box.\n\nHidden products:\nHatch threshold 60: produces a Petrified Hatch Egg, which can be processed into Gold Ore ×10 and Titanium Ore ×5;\nDrecko threshold 60: produces Lanolin ×3;\nMole threshold 40: produces a Fertile Mole Egg, which can be processed into Raw Meat ×5 and Organic Fertilizer ×30;\nOilfloater threshold 120: produces a Polymer Oilfloater Egg, which can be processed into Rubber ×30 and Plastic ×30.\nPurchasing and equipment: Visit Kenenimuu&#x27;s Animal Shop to buy the four juvenile animal bags: Hatch 800G, Drecko 3000G, Mole 5000G, and Oilfloater 1200G.\nEach adult animal sells for three times the corresponding juvenile purchase price.\nThe same shop always sells the Small Animal Care Station Blueprint for 1000G. Use the blueprint to unlock its recipe, then craft the Small Animal Care Station at the Equipment Workbench with Copper Ingots ×5 and Wood ×100. Insert ordinary eggs or any of the three rare eggs to process them. Processing takes 1h and power consumption is 1.\n\nThis is an example mod built on DTMAPI&#x27;s animal-extension capability. The tutorial documentation will be updated later. Authors only need to configure PNG, WAV, and JSON files to add ranchable animals. We hope you enjoy it. If you find a bug, please report it; if you like the mod, please leave a positive rating ♥️&quot;</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<h3 id="file-manifest"><span class="n">2.</span>manifest.json</h3>
+<p class="dtmapi-note"><strong>DTMAPI 专属。</strong>放在包根目录，与 <code>info.json</code> 并排。本例保留真实的 <code>DTMAPI.AnimalPack</code>，制作自己的模组时按注释修改。</p>
+<div class="codebox" data-codebox data-kind="manifest">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>manifest.json</span><div class="code-actions"><button type="button" data-expand="manifest" aria-controls="panel-manifest" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="manifest" aria-label="复制 manifest.json">复制 JSON</button></div></div>
+<pre id="panel-manifest" tabindex="0" aria-label="manifest.json 配置"><code id="json-manifest" data-file="manifest.json"><span class="code-line">{</span>
+<span class="code-line" data-note="模组ID：请尽量确保独一无二，图中只是一种示例方式">  &quot;UniqueID&quot;: &quot;<mark>DTMAPI.AnimalPack</mark>&quot;,</span>
+<span class="code-line" data-note="最低DTMAPI版本：当前均为0.7.5，DTMAPI按照这个识别">  &quot;MinimumDTMApiVersion&quot;: &quot;0.7.5&quot;,</span>
+<span class="code-line" data-note="内容类型：ContentPack 表示不执行 DLL 的内容包">  &quot;Type&quot;: &quot;ContentPack&quot;,</span>
+<span class="code-line" data-note="模组依赖：按需声明其他真实模组，本例为空">  &quot;Dependencies&quot;: [],</span>
+<span class="code-line" data-note="清单格式：填 2，名称、作者和模组版本从 info.json 读取">  &quot;ManifestVersion&quot;: 2</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<p><code>ManifestVersion</code> 选择 DTMAPI 清单格式。本例填写 <code>2</code>，名称、作者、说明和模组版本由根目录 <code>info.json</code> 提供；<code>MinimumDTMApiVersion</code> 则填写加载这个模组所需的最低 DTMAPI 版本。</p>
+<p class="hint">畜牧、音频模块随 Runtime 提供，内容文件会自动建立模块使用关系。照着本例填写即可。</p>
+<h3 id="file-animal"><span class="n">3.</span>Content/animal_tbanimal.json</h3>
+<p>官方动物表，定义名字、体型、成长和普通产物。下面直接使用当前哈奇条目；其中 <code>animator.url</code> 的 DTMAPI 动画键与第 8 步对应。</p>
+<div class="codebox" data-codebox data-kind="animal">
+<div class="codebar"><span class="file-label">Content/animal_tbanimal.json</span><div class="code-actions"><button type="button" data-expand="animal" aria-controls="panel-animal" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="animal" aria-label="复制 Content/animal_tbanimal.json">复制 JSON</button></div></div>
+<pre id="panel-animal" tabindex="0" aria-label="Content/animal_tbanimal.json 配置"><code id="json-animal" data-file="Content/animal_tbanimal.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物种ID：为动物设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="动物名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;animal_title_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;<mark>哈奇</mark>&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="默认名字：输入名字时的默认文字，字段名沿用官方拼写">    &quot;defaul_input_name&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;animal_default_input_name_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;<mark>哈奇</mark>&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="日程模板：chicken 对应立尾雉，可参考文末其他模板">    &quot;schedule_id&quot;: &quot;chicken&quot;,</span>
+<span class="code-line" data-note="动物阶段：依次填写幼体和成年">    &quot;levels&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="原生声音：与 DTMAPI 叫声绑定中的 nativeEvent 对应">        &quot;sound_event&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN_CHILD&quot;,</span>
+<span class="code-line" data-note="原生动画机：直接使用所选模板对应阶段的地址">        &quot;animator&quot;: {</span>
+<span class="code-line" data-note="原生动画机地址：本例直接使用立尾雉的动画机">          &quot;url&quot;: &quot;game_anim_animal_chicken_child&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="交互尺寸：影响交互框和表情偏移，可按体型调整">        &quot;sprite_size&quot;: {</span>
+<span class="code-line" data-note="交互宽度：像素数，按动物体型调整">          &quot;x&quot;: 32,</span>
+<span class="code-line" data-note="交互高度：像素数，按动物体型调整">          &quot;y&quot;: 26</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="阶段图标：本例复用该阶段的待机首帧">        &quot;icon&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">          &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_young_idle_0&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="装袋说明：动物处在袋中时显示的文字">        &quot;description_in_sack&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">          &quot;key&quot;: &quot;animal_child_desc_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">          &quot;text&quot;: &quot;一只幼年<mark>哈奇</mark>正在动物袋里等待。&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="阶段售价：装有本阶段动物的袋子出售时采用的价格">        &quot;price&quot;: 640</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="原生声音：与 DTMAPI 叫声绑定中的 nativeEvent 对应">        &quot;sound_event&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN&quot;,</span>
+<span class="code-line" data-note="原生动画机：直接使用所选模板对应阶段的地址">        &quot;animator&quot;: {</span>
+<span class="code-line" data-note="原生动画机地址：本例直接使用立尾雉的动画机">          &quot;url&quot;: &quot;game_anim_animal_chicken&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="交互尺寸：影响交互框和表情偏移，可按体型调整">        &quot;sprite_size&quot;: {</span>
+<span class="code-line" data-note="交互宽度：像素数，按动物体型调整">          &quot;x&quot;: 36,</span>
+<span class="code-line" data-note="交互高度：像素数，按动物体型调整">          &quot;y&quot;: 34</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="阶段图标：本例复用该阶段的待机首帧">        &quot;icon&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">          &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_adult_idle_0&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="装袋说明：动物处在袋中时显示的文字">        &quot;description_in_sack&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">          &quot;key&quot;: &quot;animal_adult_desc_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">          &quot;text&quot;: &quot;一只成年<mark>哈奇</mark>正在动物袋里等待。&quot;</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="阶段售价：装有本阶段动物的袋子出售时采用的价格">        &quot;price&quot;: 2400</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="地面宽度：影响横向体型与寻路">    &quot;size&quot;: 1,</span>
+<span class="code-line" data-note="畜棚容量：每只动物占用的空间">    &quot;space&quot;: 2,</span>
+<span class="code-line" data-note="移动速度：普通行走时的速度">    &quot;move_speed&quot;: 1.8,</span>
+<span class="code-line" data-note="奔跑速度：跑动时的速度">    &quot;run_speed&quot;: 5.4,</span>
+<span class="code-line" data-note="奔跑距离：目标横向距离达到此格数时改用奔跑速度">    &quot;run_threshold&quot;: 5,</span>
+<span class="code-line" data-note="初始能量：动物创建时的能量值">    &quot;default_energy&quot;: 50,</span>
+<span class="code-line" data-note="觅食间隔：饥饿时每隔多少 TU 寻找食物">    &quot;eat_interval&quot;: 12,</span>
+<span class="code-line" data-note="进食能量：每次从普通饲料槽取用多少能量">    &quot;eat_count&quot;: 20,</span>
+<span class="code-line" data-note="成长间隔：每隔多少 TU 推进成长">    &quot;grow_interval&quot;: 6,</span>
+<span class="code-line" data-note="成长耗能：每次成长消耗的能量">    &quot;grow_cost&quot;: 1.5,</span>
+<span class="code-line" data-note="成长进度：每次增加多少，累计到 100 进入预成年">    &quot;grow_increase&quot;: 1.04167,</span>
+<span class="code-line" data-note="繁殖间隔：每隔多少 TU 推进繁殖进度">    &quot;fertility_interval&quot;: 24,</span>
+<span class="code-line" data-note="繁殖进度耗能：每次推进消耗的能量">    &quot;fertility_cost&quot;: 0,</span>
+<span class="code-line" data-note="繁殖进度：每次增加多少，达到 100 后可尝试繁殖">    &quot;fertility_increase&quot;: 1.04167,</span>
+<span class="code-line" data-note="育婴时间：原生育婴设备占用的时长，单位 TU">    &quot;breed_duration&quot;: 864,</span>
+<span class="code-line" data-note="繁殖耗能：开始繁殖时从亲代扣除的能量">    &quot;breed_energy_cost&quot;: 50,</span>
+<span class="code-line" data-note="产物间隔：每隔多少 TU 推进产物进度">    &quot;metabolism_interval&quot;: 3,</span>
+<span class="code-line" data-note="产物耗能：每次推进消耗的能量">    &quot;metabolism_cost&quot;: 0.75,</span>
+<span class="code-line" data-note="产物进度：每次增加多少，达到 100 后可尝试生产">    &quot;metabolism_increase&quot;: 1.04167,</span>
+<span class="code-line" data-note="产物入口：指定掉落库和每次数量">    &quot;produce_spawn_entry&quot;: {</span>
+<span class="code-line" data-note="掉落库ID：与 item_tbitemspawn.json 的 id 一致">      &quot;spawn_lut&quot;: &quot;<mark>hatch</mark>_produce&quot;,</span>
+<span class="code-line" data-note="抽取次数：每次生产从掉落库抽取多少次">      &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="数量下限：本次数量范围的最小值，可调整">        &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="数量上限：本次数量范围的最大值，可调整">        &quot;max_count&quot;: 1</span>
+<span class="code-line">      }</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="产物心情：心情至少达到此值才生产">    &quot;produce_require_mood&quot;: 40,</span>
+<span class="code-line" data-note="排泄间隔：每隔多少 TU 检查排泄需求">    &quot;excrete_interval&quot;: 288,</span>
+<span class="code-line" data-note="排泄耗能：每次排泄消耗的能量">    &quot;excrete_cost&quot;: 10,</span>
+<span class="code-line" data-note="饥饿阈值：能量低于此值时寻找食物">    &quot;hungry_threshold&quot;: 80,</span>
+<span class="code-line" data-note="心情阈值：能量低于此值时受饥饿影响">    &quot;mood_decrease_threshold&quot;: 50,</span>
+<span class="code-line" data-note="自然心情：饱食带来的自然恢复上限">    &quot;max_nature_mood&quot;: 80,</span>
+<span class="code-line" data-note="抚摸心情：每天首次抚摸增加的心情">    &quot;mood_increase_fondle&quot;: 10,</span>
+<span class="code-line" data-note="雷声参数：保留示例值，当前雷声效果使用游戏全局值">    &quot;mood_decrease_thunder&quot;: 10,</span>
+<span class="code-line" data-note="逃跑概率：逃跑判定的基础概率">    &quot;escape_probability_base&quot;: 0.05,</span>
+<span class="code-line" data-note="概率增量：每次逃跑判定失败后追加的概率">    &quot;escape_probability_increase&quot;: 0.05,</span>
+<span class="code-line" data-note="距离参数：保留示例值，当前环境范围由下方三项决定">    &quot;mood_affected_distance&quot;: 5,</span>
+<span class="code-line" data-note="横向范围：周围环境影响心情的检测格数">    &quot;mood_range_horizontal&quot;: 3,</span>
+<span class="code-line" data-note="向下范围：环境心情检测向下延伸的格数">    &quot;mood_range_vertical_bottom&quot;: 2,</span>
+<span class="code-line" data-note="向上范围：环境心情检测向上延伸的格数">    &quot;mood_range_vertical_top&quot;: 2,</span>
+<span class="code-line" data-note="产物经验：完成生产增加的畜牧科技经验">    &quot;produce_tech_point&quot;: 5,</span>
+<span class="code-line" data-note="繁殖经验：完成繁殖增加的畜牧科技经验">    &quot;breed_tech_point&quot;: 20,</span>
+<span class="code-line" data-note="产后进度：true 清零，false 扣除 100 并保留余量">    &quot;manual_metabolism&quot;: false,</span>
+<span class="code-line" data-note="跳跃高度：动物跳起的高度">    &quot;jump_height&quot;: 2</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p><code>levels[0]</code> 是幼体，<code>levels[1]</code> 是成年。它们的动画机键和声音事件会在第 8 步对接。</p>
+<p class="hint"><code>sprite_size</code> 影响交互框与表情偏移；PNG 画布决定图片范围。调整体型后，进游戏摸一摸、走一走，手感最诚实。时间字段的 <code>1 TU</code> 对应游戏内 <code>5 分钟</code>；生长、代谢数值先沿用示例，待整条流程跑通后再逐项调整。</p>
+<h4>ID 怎么命名？</h4>
+<p>建议使用小写英文字母、数字和下划线。这里的 <code>hatch</code> 是物种 ID，你可以按自己的作品命名：</p>
+<div class="table-wrap"><table><thead><tr><th>物种 ID 示例</th><th>说明</th></tr></thead><tbody>
+<tr><td><code>hatch1</code></td><td>可以，字母加数字。</td></tr>
+<tr><td><code>hatch_hatch</code></td><td>可以，用下划线分隔单词。</td></tr>
+<tr><td><code>Hatch</code></td><td>建议统一写成小写 <code>hatch</code>，所有引用保持相同拼写。</td></tr>
+</tbody></table></div>
+<p class="hint">DTMAPI 的物种和动画机键冲突检查忽略大小写，部分原生表查询又区分大小写。整套配置统一小写最省事。改物种 ID 时，同步修改动物表、图鉴、动物袋的 <code>preset_animal</code>、DTMAPI 的 <code>speciesId</code> 和特殊照料表中的引用。</p>
+<h3 id="file-items"><span class="n">4.</span>Content/item_tbitem.json</h3>
+<p>这里直接使用“麻袋（哈奇）”与“哈奇蛋”两个条目。袋子使用原版图标，蛋使用 <code>icon_item_hatch_egg.png</code>，画布为 <code>28 × 28</code> 像素。</p>
+<div class="codebox" data-codebox data-kind="items">
+<div class="codebar"><span class="file-label">Content/item_tbitem.json</span><div class="code-actions"><button type="button" data-expand="items" aria-controls="panel-items" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="items" aria-label="复制 Content/item_tbitem.json">复制 JSON</button></div></div>
+<pre id="panel-items" tabindex="0" aria-label="Content/item_tbitem.json 配置"><code id="json-items" data-file="Content/item_tbitem.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物品ID：为这个物品设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;sack_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="物品分类：动物袋与畜牧产物使用各自的分类">    &quot;sub_type&quot;: &quot;husbandry_animal&quot;,</span>
+<span class="code-line" data-note="出售开关：true 允许出售，false 关闭出售">    &quot;salable&quot;: true,</span>
+<span class="code-line" data-note="处置开关：是否允许丢弃、处置此物品">    &quot;disposable&quot;: false,</span>
+<span class="code-line" data-note="消耗品：是否按消耗品处理">    &quot;consumable&quot;: true,</span>
+<span class="code-line" data-note="烹饪开关：是否可用于烹饪">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：作为发电燃料提供的能量，0 表示不提供">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴开关：是否显示在物品图鉴">    &quot;viewable&quot;: false,</span>
+<span class="code-line" data-note="获取来源：在图鉴中显示哪些获取途径">    &quot;source&quot;: [],</span>
+<span class="code-line" data-note="基础售价：普通物品的卖出价格，满动物袋取动物阶段价格">    &quot;selling_price&quot;: 400,</span>
+<span class="code-line" data-note="基础买价：商店购买时采用的价格">    &quot;buying_price&quot;: 800,</span>
+<span class="code-line" data-note="堆叠上限：同一格最多放多少个">    &quot;overlay&quot;: 1,</span>
+<span class="code-line" data-note="物品图标：填写 PNG 资源名或原版图标键">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;icon_item_sack_full&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_sack_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;麻袋（<mark>哈奇</mark>）&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明：本地化键与描述文字">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_sack_<mark>hatch</mark>_desc&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;装着一只幼年<mark>哈奇</mark>的麻袋，可以在畜棚中放出。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能：决定动物袋或普通物品的行为">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：动物袋用 ItemFunctionAnimalPackage，普通物品用 ItemFunction">      &quot;$type&quot;: &quot;ItemFunctionAnimalPackage&quot;,</span>
+<span class="code-line" data-note="装袋图标：动物袋中已有动物时显示的图标">      &quot;ui_sprite_catch&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">        &quot;url&quot;: &quot;icon_item_sack_full&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line" data-note="预装动物：与动物表的 id 一致">      &quot;preset_animal&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="重复使用：放出动物后是否保留可复用的袋子">      &quot;reusable&quot;: false,</span>
+<span class="code-line" data-note="满袋分类：装有动物时使用的物品分类">      &quot;type_when_full&quot;: &quot;husbandry_animal&quot;</span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物品ID：为这个物品设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="物品分类：动物袋与畜牧产物使用各自的分类">    &quot;sub_type&quot;: &quot;husbandry_animal_product&quot;,</span>
+<span class="code-line" data-note="出售开关：true 允许出售，false 关闭出售">    &quot;salable&quot;: true,</span>
+<span class="code-line" data-note="处置开关：是否允许丢弃、处置此物品">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="消耗品：是否按消耗品处理">    &quot;consumable&quot;: false,</span>
+<span class="code-line" data-note="烹饪开关：是否可用于烹饪">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：作为发电燃料提供的能量，0 表示不提供">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴开关：是否显示在物品图鉴">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="获取来源：在图鉴中显示哪些获取途径">    &quot;source&quot;: [</span>
+<span class="code-line" data-note="获取来源：图鉴显示畜牧产出">      &quot;animal&quot;,</span>
+<span class="code-line" data-note="获取来源：图鉴显示加工途径">      &quot;processing&quot;</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="基础售价：普通物品的卖出价格，满动物袋取动物阶段价格">    &quot;selling_price&quot;: 175,</span>
+<span class="code-line" data-note="基础买价：商店购买时采用的价格">    &quot;buying_price&quot;: 350,</span>
+<span class="code-line" data-note="堆叠上限：同一格最多放多少个">    &quot;overlay&quot;: 999,</span>
+<span class="code-line" data-note="物品图标：填写 PNG 资源名或原版图标键">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;icon_item_<mark>hatch</mark>_egg&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;<mark>哈奇</mark>蛋&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明：本地化键与描述文字">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_<mark>hatch</mark>_egg_desc&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;沉甸甸的<mark>哈奇</mark>蛋，可以在小动物照料站中分解出常见矿石。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能：决定动物袋或普通物品的行为">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：动物袋用 ItemFunctionAnimalPackage，普通物品用 ItemFunction">      &quot;$type&quot;: &quot;ItemFunction&quot;</span>
+<span class="code-line">    }</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p class="hint"><code>preset_animal</code> 对应物种 ID；本例的动物袋基础买价为 <code>800G</code>，蛋的基础售价为 <code>175G</code>。</p>
+<h3 id="file-spawn"><span class="n">5.</span>Content/item_tbitemspawn.json</h3>
+<p>让 <code>hatch_produce</code> 掉落库产出哈奇蛋。这里只有一种候选，每次产出 1 枚。</p>
+<div class="codebox" data-codebox data-kind="spawn">
+<div class="codebar"><span class="file-label">Content/item_tbitemspawn.json</span><div class="code-actions"><button type="button" data-expand="spawn" aria-controls="panel-spawn" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="spawn" aria-label="复制 Content/item_tbitemspawn.json">复制 JSON</button></div></div>
+<pre id="panel-spawn" tabindex="0" aria-label="Content/item_tbitemspawn.json 配置"><code id="json-spawn" data-file="Content/item_tbitemspawn.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="掉落库ID：与动物的 produce_spawn_entry.spawn_lut 一致">    &quot;id&quot;: &quot;<mark>hatch</mark>_produce&quot;,</span>
+<span class="code-line" data-note="掉落候选：每项指定一个物品与权重">    &quot;spawn_datas&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="掉落权重：相对其他候选计算，本例只有一种候选">        &quot;spawn_weight&quot;: 1000,</span>
+<span class="code-line" data-note="掉落下限：该候选最少产出数量">        &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="掉落上限：该候选最多产出数量">        &quot;max_count&quot;: 1,</span>
+<span class="code-line" data-note="产物ID：与物品表的 id 一致">        &quot;item_name&quot;: &quot;<mark>hatch</mark>_egg&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<h3 id="file-document"><span class="n">6.</span>Content/animal_tbanimaldocument.json</h3>
+<p>添加动物图鉴。先复用幼体和成年的待机首帧，后续可换成专门绘制的图鉴图片。</p>
+<div class="codebox" data-codebox data-kind="document">
+<div class="codebar"><span class="file-label">Content/animal_tbanimaldocument.json</span><div class="code-actions"><button type="button" data-expand="document" aria-controls="panel-document" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="document" aria-label="复制 Content/animal_tbanimaldocument.json">复制 JSON</button></div></div>
+<pre id="panel-document" tabindex="0" aria-label="Content/animal_tbanimaldocument.json 配置"><code id="json-document" data-file="Content/animal_tbanimaldocument.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物种ID：与动物表的 id 一致">    &quot;id&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="幼体缩略图：本例复用幼体待机首帧">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_young_idle_0&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="成年缩略图：本例复用成年待机首帧">    &quot;ui_adult_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_adult_idle_0&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="幼体详情图：可换成专门绘制的图片资源">    &quot;infancy_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_young_idle_0&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="成年详情图：可换成专门绘制的图片资源">    &quot;adult_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;anim_animal_<mark>hatch</mark>_adult_idle_0&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="图鉴条目：分别设置解锁条件和说明">    &quot;document_infos&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="条目ID：为这条图鉴说明设置独立名称">        &quot;id&quot;: &quot;<mark>hatch</mark>_0&quot;,</span>
+<span class="code-line" data-note="解锁类型：1 为默认条目">        &quot;document_type&quot;: 1,</span>
+<span class="code-line" data-note="解锁参数：默认条目沿用 0">        &quot;value&quot;: 0,</span>
+<span class="code-line" data-note="条目说明：解锁后显示的本地化文字">        &quot;description_append&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">          &quot;key&quot;: &quot;document_animal_<mark>hatch</mark>_0&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">          &quot;text&quot;: &quot;<mark>哈奇</mark>是一种会产下矿物蛋的小动物。&quot;</span>
+<span class="code-line">        }</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="条目ID：为这条图鉴说明设置独立名称">        &quot;id&quot;: &quot;<mark>hatch</mark>_1&quot;,</span>
+<span class="code-line" data-note="解锁类型：4 为养大该物种后解锁">        &quot;document_type&quot;: 4,</span>
+<span class="code-line" data-note="解锁次数：累计养大该物种 1 次">        &quot;value&quot;: 1,</span>
+<span class="code-line" data-note="条目说明：解锁后显示的本地化文字">        &quot;description_append&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">          &quot;key&quot;: &quot;document_animal_<mark>hatch</mark>_1&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">          &quot;text&quot;: &quot;它沿用立尾雉的行为，<mark>哈奇</mark>蛋可在小动物照料站分解为矿石。&quot;</span>
+<span class="code-line">        }</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="图鉴开关：true 显示这个动物的图鉴">    &quot;display&quot;: true</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<h3 id="file-store"><span class="n">7.</span>Content/mod_tbmodstoreextension.json</h3>
+<p>在凯涅尼木的 <code>animal_shop</code> 上架动物袋。四组数据依次对应四个月份，库存沿用哈奇示例。</p>
+<div class="codebox" data-codebox data-kind="store">
+<div class="codebar"><span class="file-label">Content/mod_tbmodstoreextension.json</span><div class="code-actions"><button type="button" data-expand="store" aria-controls="panel-store" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="store" aria-label="复制 Content/mod_tbmodstoreextension.json">复制 JSON</button></div></div>
+<pre id="panel-store" tabindex="0" aria-label="Content/mod_tbmodstoreextension.json 配置"><code id="json-store" data-file="Content/mod_tbmodstoreextension.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="商店ID：animal_shop 对应凯涅尼木的小动物商店">    &quot;id&quot;: &quot;animal_shop&quot;,</span>
+<span class="code-line" data-note="新增商品：向这个商店追加物品">    &quot;extra_items&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="商品ID：与动物袋的物品 id 一致">        &quot;item_name&quot;: &quot;sack_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="总存量：整局最多出售数量，0 表示不限">        &quot;storage&quot;: 0,</span>
+<span class="code-line" data-note="默认解锁：true 表示商品默认开放">        &quot;default_unlock&quot;: true,</span>
+<span class="code-line" data-note="月份配置：按顺序填写四个月份的库存">        &quot;season_spawn_data&quot;: [</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="刷新数量：本月每次刷新商品的数量范围">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="库存下限：该月份单次刷新最少数量">              &quot;min_count&quot;: 20,</span>
+<span class="code-line" data-note="库存上限：该月份单次刷新最多数量">              &quot;max_count&quot;: 20</span>
+<span class="code-line">            },</span>
+<span class="code-line" data-note="刷新权重：0 为固定商品，正数参与随机货架抽取">            &quot;spawn_weight&quot;: 0</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="刷新数量：本月每次刷新商品的数量范围">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="库存下限：该月份单次刷新最少数量">              &quot;min_count&quot;: 20,</span>
+<span class="code-line" data-note="库存上限：该月份单次刷新最多数量">              &quot;max_count&quot;: 20</span>
+<span class="code-line">            },</span>
+<span class="code-line" data-note="刷新权重：0 为固定商品，正数参与随机货架抽取">            &quot;spawn_weight&quot;: 0</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="刷新数量：本月每次刷新商品的数量范围">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="库存下限：该月份单次刷新最少数量">              &quot;min_count&quot;: 20,</span>
+<span class="code-line" data-note="库存上限：该月份单次刷新最多数量">              &quot;max_count&quot;: 20</span>
+<span class="code-line">            },</span>
+<span class="code-line" data-note="刷新权重：0 为固定商品，正数参与随机货架抽取">            &quot;spawn_weight&quot;: 0</span>
+<span class="code-line">          },</span>
+<span class="code-line">          {</span>
+<span class="code-line" data-note="刷新数量：本月每次刷新商品的数量范围">            &quot;count_range&quot;: {</span>
+<span class="code-line" data-note="库存下限：该月份单次刷新最少数量">              &quot;min_count&quot;: 1,</span>
+<span class="code-line" data-note="库存上限：该月份单次刷新最多数量">              &quot;max_count&quot;: 3</span>
+<span class="code-line">            },</span>
+<span class="code-line" data-note="刷新权重：0 为固定商品，正数参与随机货架抽取">            &quot;spawn_weight&quot;: 0</span>
+<span class="code-line">          }</span>
+<span class="code-line">        ]</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<h3 id="file-content"><span class="n">8.</span>PackData/content.json</h3>
+<p class="dtmapi-note"><strong>DTMAPI 专属。</strong>把行为、动画和声音接起来。<code>animals.definitions</code> 定义物种与 PNG 帧映射；<code>audio</code> 登记 WAV；<code>animals.voices</code> 将声音绑定给哈奇。</p>
+<div class="codebox" data-codebox data-kind="content">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>PackData/content.json</span><div class="code-actions"><button type="button" data-expand="content" aria-controls="panel-content" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="content" aria-label="复制 PackData/content.json">复制 JSON</button></div></div>
+<pre id="panel-content" tabindex="0" aria-label="PackData/content.json 配置"><code id="json-content" data-file="PackData/content.json"><span class="code-line">{</span>
+<span class="code-line" data-note="格式版本：DTMAPI 统一内容文件当前使用 1">  &quot;schemaVersion&quot;: 1,</span>
+<span class="code-line" data-note="畜牧分区：登记动物定义和叫声绑定">  &quot;animals&quot;: {</span>
+<span class="code-line" data-note="动物定义：每个对象登记一个物种">    &quot;definitions&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="绘制方式：pngSpriteOverride 使用 PNG 帧替换">        &quot;animatorMode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="帧清单：包根相对路径，供资源检查与核对">        &quot;frameManifest&quot;: &quot;Content/Sprites/<mark>hatch</mark>_frame_manifest.json&quot;,</span>
+<span class="code-line" data-note="模板前缀：填写原版模板实际使用的 PNG 资源前缀">        &quot;templateSpritePrefix&quot;: &quot;anim_animal_chicken&quot;,</span>
+<span class="code-line" data-note="自定义前缀：可自行命名，与你的 PNG 前缀一致">        &quot;customSpritePrefix&quot;: &quot;anim_animal_<mark>hatch</mark>&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="叫声绑定：按物种、阶段和原生事件选择声音">    &quot;voices&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;child&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN_CHILD&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;<mark>hatch</mark>-pet-child&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="音频分区：登记资源文件和可播放声音">  &quot;audio&quot;: {</span>
+<span class="code-line" data-note="资源列表：为每个音频文件设置资源键">    &quot;resources&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/<mark>hatch</mark>_pet_young.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/<mark>hatch</mark>_pet_adult.wav&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="声音列表：把资源转换成可绑定的声音">    &quot;events&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<div class="table-wrap"><table><thead><tr><th>对照位置</th><th>保持一致</th></tr></thead><tbody>
+<tr><td>动物表 <code>id</code> ↔ <code>speciesId</code> ↔ 动物袋 <code>preset_animal</code></td><td><code>hatch</code></td></tr>
+<tr><td>动物表幼体/成年 <code>animator.url</code></td><td>直接使用原生模板地址；立尾雉是 <code>game_anim_animal_chicken_child</code> / <code>game_anim_animal_chicken</code></td></tr>
+<tr><td>动物表 <code>sound_event</code> ↔ 叫声绑定 <code>nativeEvent</code></td><td>对应阶段的完整事件名</td></tr>
+<tr><td><code>voices.sound</code> ↔ <code>audio.events.key</code></td><td>对应的声音键</td></tr>
+<tr><td><code>events.resource</code> ↔ <code>resources.key</code></td><td>对应的资源键</td></tr>
+</tbody></table></div>
+<p class="hint">PNG 文件里的幼体叫 <code>young</code>，叫声绑定里的幼体叫 <code>child</code>。两个名字都指幼体，照着各自字段填写即可。</p>
+<h3 id="file-frames"><span class="n">9.</span>Content/Sprites/hatch_frame_manifest.json</h3>
+<p class="dtmapi-note"><strong>DTMAPI 配套清单。</strong>这里保留当前哈奇清单，方便逐张核对资源。<code>jump_ready</code> 借用 <code>jump_0</code>，实际图片共 45 张。当前 PNG 路线按资源前缀映射读取图片。</p>
+<div class="codebox" data-codebox data-kind="frames">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 配套清单</span>Content/Sprites/hatch_frame_manifest.json</span><div class="code-actions"><button type="button" data-expand="frames" aria-controls="panel-frames" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="frames" aria-label="复制 Content/Sprites/hatch_frame_manifest.json">复制 JSON</button></div></div>
+<pre id="panel-frames" tabindex="0" aria-label="Content/Sprites/hatch_frame_manifest.json 配置"><code id="json-frames" data-file="Content/Sprites/hatch_frame_manifest.json"><span class="code-line">{</span>
+<span class="code-line" data-note="物种ID：本清单整理哪个动物的图片">  &quot;animal_id&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="清单名称：供作者阅读，可修改">  &quot;display_name&quot;: &quot;Hatch&quot;,</span>
+<span class="code-line" data-note="绘制方式：记录本例采用 PNG 帧替换">  &quot;animator_mode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="模板前缀：与定义中的 templateSpritePrefix 对应">  &quot;template_sprite_prefix&quot;: &quot;anim_animal_chicken&quot;,</span>
+<span class="code-line" data-note="自定义前缀：与定义中的 customSpritePrefix 对应">  &quot;custom_sprite_prefix&quot;: &quot;anim_animal_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="参考画布：本例各阶段的 PNG 画布尺寸，可按美术调整">  &quot;canvas_by_stage&quot;: {</span>
+<span class="code-line" data-note="成年画布：记录成年图片的宽度和高度">    &quot;adult&quot;: {</span>
+<span class="code-line" data-note="画布宽度：像素数，同阶段对齐图片">      &quot;width&quot;: 32,</span>
+<span class="code-line" data-note="画布高度：像素数，同阶段对齐脚底">      &quot;height&quot;: 32</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="幼体画布：记录幼体图片的宽度和高度">    &quot;young&quot;: {</span>
+<span class="code-line" data-note="画布宽度：像素数，同阶段对齐图片">      &quot;width&quot;: 28,</span>
+<span class="code-line" data-note="画布高度：像素数，同阶段对齐脚底">      &quot;height&quot;: 24</span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="动作清单：按阶段和动作整理文件">  &quot;states&quot;: [</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;idle&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 4,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_idle_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_idle_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_idle_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_idle_3.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;move&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 8,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_3.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_4.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_5.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_6.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_move_7.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;eat&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 7,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_3.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_4.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_5.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_eat_6.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;sleep&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 1,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_sleep_0.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;jump&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 3,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_jump_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_jump_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_jump_2.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;jump_ready&quot;,</span>
+<span class="code-line" data-note="动作别名：本清单借用 jump 的第 0 帧">      &quot;alias_of&quot;: &quot;jump&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 1,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_adult_jump_0.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;idle&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 4,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_idle_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_idle_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_idle_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_idle_3.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;move&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 8,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_3.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_4.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_5.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_6.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_move_7.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;eat&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 7,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_1.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_2.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_3.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_4.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_5.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_eat_6.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;sleep&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 1,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_sleep_0.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;jump&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 2,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_jump_0.png&quot;,</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_jump_1.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    },</span>
+<span class="code-line">    {</span>
+<span class="code-line" data-note="图片阶段：young 为幼体，adult 为成年">      &quot;stage&quot;: &quot;young&quot;,</span>
+<span class="code-line" data-note="动作名称：对应模板实际请求的动作">      &quot;state&quot;: &quot;jump_ready&quot;,</span>
+<span class="code-line" data-note="动作别名：本清单借用 jump 的第 0 帧">      &quot;alias_of&quot;: &quot;jump&quot;,</span>
+<span class="code-line" data-note="清单帧数：与本条 files 列表数量一致">      &quot;frame_count&quot;: 1,</span>
+<span class="code-line" data-note="图片列表：记录实际 PNG 文件名">      &quot;files&quot;: [</span>
+<span class="code-line" data-note="图片文件：按模板后缀命名，前缀与 customSpritePrefix 一致">        &quot;anim_animal_<mark>hatch</mark>_young_jump_0.png&quot;</span>
+<span class="code-line">      ]</span>
+<span class="code-line">    }</span>
+<span class="code-line">  ],</span>
+<span class="code-line" data-note="制作记录：说明本例的帧映射和补帧方式">  &quot;notes&quot;: [</span>
+<span class="code-line" data-note="制作备注：原示例的映射或补帧说明">    &quot;The runtime maps chicken jump_ready frames to Hatch jump_0 because Hatch has no dedicated jump_ready PNG.&quot;,</span>
+<span class="code-line" data-note="制作备注：原示例的映射或补帧说明">    &quot;Eat uses 7 frames to cover the chicken template eat_0..6 sequence.&quot;,</span>
+<span class="code-line" data-note="制作备注：原示例的映射或补帧说明">    &quot;Adult jump_2 reuses adult jump_0 as a return pose during local product assembly; prototype inputs remain read-only.&quot;</span>
+<span class="code-line">  ]</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<p class="hint">帧清单用于整理和核对图片。动画播放沿用模板，实际 PNG 通过 <code>templateSpritePrefix</code> 与 <code>customSpritePrefix</code> 的帧名映射读取。</p>
+</section>
+<section id="assets">
+<h2>四、图片与声音</h2>
+<h3>1. PNG：一张图就是一帧</h3>
+<p>下面是哈奇示例使用的命名方式。资源前缀可以自定，并与 JSON 中的 <code>customSpritePrefix</code> 保持一致；本例的 PNG 替换方式按模板对应阶段、动作和编号。</p>
+<p><code>anim_animal_chicken_…</code> 这样的长前缀来自原版动物资源的命名。自定义前缀可以缩短：例如将 <code>customSpritePrefix</code> 设为 <code>hatch</code>，对应图片写成 <code>hatch_young_idle_0.png</code>。阶段、动作和编号继续与模板请求对应。</p>
+<pre class="tree"><code>anim_animal_hatch_young_idle_0.png
+anim_animal_hatch_adult_move_0.png
+anim_animal_hatch_adult_jump_2.png</code></pre>
+<div class="table-wrap"><table><thead><tr><th>阶段</th><th>idle 待机</th><th>move 移动</th><th>eat 吃饭</th><th>sleep 睡觉</th><th>jump 跳跃</th><th>本例画布（像素）</th></tr></thead><tbody>
+<tr><td>young 幼体</td><td>4</td><td>8</td><td>7</td><td>1</td><td>2</td><td>28 × 24</td></tr>
+<tr><td>adult 成年</td><td>4</td><td>8</td><td>7</td><td>1</td><td>3</td><td>32 × 32</td></tr>
+</tbody></table></div>
+<p class="hint">上表列的是当前哈奇示例的文件数和画布。使用其他模板时，按对应模板实际请求的帧准备图片。</p>
+<p>下面每个动作展示一张代表帧，方便对照姿势与文件名。图片已嵌入本页，离线打开也能查看。</p>
+<h4>幼体动作参考</h4><div class="sprite-grid action-grid"><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAADF0lEQVR4nO1WXUiTURh+Pr8d+4IFCzbZ/EGnLqykmOZML9JWkUreKF1kddVVEFJdGN54uVJQCIzIiwpDKmMLL5SK1OhnTF3rInNg4U8aE3+aROEhN0+cb5s5nVPXTUTPxXf+3+d9n/e8hw/4j78ILJZDcbGSWRvsvB3eKrGwhb1dAEqtTXbAtwAotsttZc2RLdkTNkHEmttHoJucWrMwOOxA9q6DOF1jnqU+qtmM1xtJypptI+h61BhxkZNxtDX0qAtyjm9KWiEqWfsICBHlgXJmDtJ3GtVY5eXCjWyuG2EuJ5uc4HciAMeoC5TnLgraWlyyo7EQOvknWb9reSLbdAzdHjfsQ68iHvAqJSyodeApiAZFhLlMjS4NMzPjSNGlwr9iIf9QOUTmh4cPfIHTEgAuNBFEKL1eUJUUilI4e76e3bt5xQDgU8jGar2vW5vs1WtcCBrnObr1eFyeUnrmIFEKb7IWVPF7DxFELDI/LlSkC6biCtb/whbGEyappJCqI+YpqAOvwd7Ou+HaBEkIiZejDaG5fYQtUgpJkuTErpfD0pYHDQFvV6DvfTfO1ZWFzS+oVfCmaeEXArcY8K/oA9bbNSDCLCiluevmkPpoNSEE3a5O9Dps8M5TtLRehDFBRK2yHm3PWpCQWyhLhqBxnlOew9bmS+jv6YBKKcFcXoGdmnj0PulfFU+Emqk+VceKjCWyKzyyhjuNOFFcgv2GA+hwPoRKkwLnyy7sMxXh83AfMrOK4HQ8RdnJijA701+m8brn+Rr76xUpL0B+u2Rk7dkLTZIW2sRE+Jf88ExMQpeSDDFOxOBbJ3YbjYgTRCwxP0bdbvwE8MH5Lux2RpR0BUIFyNIyDVDr1GC+RQy8sSMnLx8gCvz4Ng+IBJ4pD7Rf9ejt7ApY80UNZFOP91hSSlIqXaQg23ZAn56O+RkP3INuFBw2yxtGPw7Bdt8GIhHkFeSNwQc9YoU+Tc+qzlTxQq4NFjQj8YS5BlzMcs0ij/ljYblqYfYBO+/fwB+CmY+aQ+/jsMlk4n1zhiEjRLa8D4rY/gL+LfwCAGocnx5UBX4AAAAASUVORK5CYII=" data-file="anim_animal_hatch_young_idle_0.png" alt="幼体 · 待机" width="112" height="96" loading="lazy"></div><figcaption><strong>幼体 · 待机</strong><code>anim_animal_hatch_young_idle_0.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAAC80lEQVR4nO2VXUhTYRjH/2dnswPNmC21qVlUUyZD3PpSwT5OQeHHjd0EgVhdBSIUUl2EXRQGMoNyBl1oEAWlrRDBglJTYrUmE2Y43EQp50eutVFbHtT5xjnpdDl1rm6i/nDgOc/7vs/v+b/nPecA//Uvi0SzSBQtzFBtjAosWiuIETPEUN0GiIFLpVfnYTcjBVORQPSNg1A4x0OSNocFKqVWiE9eYKe4GW5dJMDVHBL9k0G0NtUsGZiH8ao8eysGYua3HRLemURCCzdSlxuMj1uxmNHSjpr7l6loHI7yzpzD9mDi7ZAF3MzkisC6xzposvNXdBq2m9Pn9ESbly/EEuqnQ16mrhbEffMjNyNvyRqPlAE2KcBhEmXF28sB1EYKFDqsqutAgmIrAouAvGgSgLCxMxBOKgMI93xjUo8fHhkDi7EVDboyaq6WA0BaWGBOFkuK9p9A+jZ1aAtzxY+fz8Wdpx+ElHTMDYbj4EnZDE68MEdC0ZgmAd4lD4LunkVZUaKlwgIPaI+SzPTdOLinAMupqe8FDhWU4uKpfeB8Xugb++Z2gQZNpoSYBwoNAKgoyQDHcVTYQ2OydsLa3x2cHMz3tuFMZX5IXtdgXATjFQjZ/mvlWrxqvsLDBKdhHQI4ZrhhfObxeTDk7EN9422MeQx4+OA5PprkMNneIGFXLnao92KDNE5Y8K6rBfW1FWAYQJ3JYsDaDraoWNheY0cnxp0j1KqHRld+F5++jiArTYN+rwl+VwwYMYPm7kdwDjvA+TjksIWY/j4tLJCnJICm/MECE6NjAKHxuv0ltaYXPzEpGfL4OMg2ykGJREhMUgQHaRGNwGwAtp4eqDQaDPY74LDboNFo8b7XCu9nrxLAwFqAvOzJW5KVqTtT4Xa5IVekBJ+j94sbQ3YHmPUxfHGYzWZMuCZQUFgAzEb0jV7eKX/JpDKiyc4hKrVKuCxmCzGajSQ2NpZUXa8S4mj/kUvEHmEJxIhnD7MLRcX4NW79I7C/Xj8AuYomxQ0V5Z4AAAAASUVORK5CYII=" data-file="anim_animal_hatch_young_move_0.png" alt="幼体 · 移动" width="112" height="96" loading="lazy"></div><figcaption><strong>幼体 · 移动</strong><code>anim_animal_hatch_young_move_0.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAADkklEQVR4nO2VfWhbZRTGf10SuGmrJvaDhNZt0a7iNhQzpDT41RQp7K+1sfNjS5mKroWptJbQ6cA5w8DQUTbqENkUxTrITFFk9WOwLWVUS0YiUltxY9lqYvoljdXZq0125b5pQ9ulH8H9I/jA5T3n3MPzvOe8594X/sfKUMgCa5aI9wA/LSbW6aTD6ipppd8lraT4PH3qk40eOZmCJ7wHlW21j6LX2dT3Smf3ZRHvcjfRuvP1VFJiGrR6sfq/93PkowP7gTeyFnzt+XbFusGGx9fIJtsLWCu3otNpxLvCcDQjiZyYZoeres69EwivtqWPd5/9kLc+2IvL0cHZE4fSYio6vO6MJIMXQ0haaa6A8HIVLhY8WXSXmeHfhkW72lu6eLn+PnbXruPbcz4uDPQRjt3IZ73HRpfnDGglJduWKnXOp4XRffJjfAdTAyGVBzh+/DPsTx3DPBEHWc7MlgCHy1YETKy2wiuxyIgw6p9w4g99DdIknv2f4vO2i/ZOmgx0fNWZkUw2iLaOL1fhYsHH5ozk9SS+3vdANvJSi4McnTUVz9Hw5G43sVITp34J4nDZRXyHy850oZlnmzNvZinBSxq1L4BmjYbo1WEcLTaaXjnEm0f96aTPj+7DHBmh55ibTu8gE5YS9ra9j/+Tw1gf2rqsoHZxYGjgR4pLS9P+g9X1OPe0L8hp2N4Kf8hUPFIn/IFQH3dbKzBtsTGjJOenGoD4ih9+ZZVdMZeahB25GmF8eJy2ji+FrxKKk5ptbwoaNMrfwo9GLnHgxeolNTIKqtNaWWVHFVVbqyIWu8a2XW687zTzXPO7KRklOU80hRm1wgQEv+lh4/02WhusqxKkfNNmpdhUQF7+LdxqMIohUtHfe57kX1PsOxKktWGjOJTN99rZtccNkoHBwGmGQqeJx/9k6LszQVmWt6xKUEXJHSXK2rK1xH4ew/pABZNTcYy3G0TVcxtYgERqKmRZpv/ceX4dH7uBf1lBFYZ8g2Iqt2C8zSj8giIDM4kk/b1+Kh+2k5efx/V5gzIWHSN8eYjolWhG7hUFgWtlG8pyR0dHMa9fx9ToBGaLBUmvT8/42552HLUOcgsN/HAhdFE9Ef4NJCn1j3TudKprLBgIKnq9XikwFau+Yq+yK4FAQGl7tS2ry3hJWNZb0kR1tXXCrqmpUdfc+ZtqbGoUG7gporP3nIoywDFrf7EgQ8sIWp65WYL/TfwD5FU9M0lwuCoAAAAASUVORK5CYII=" data-file="anim_animal_hatch_young_eat_0.png" alt="幼体 · 吃饭" width="112" height="96" loading="lazy"></div><figcaption><strong>幼体 · 吃饭</strong><code>anim_animal_hatch_young_eat_0.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAADEklEQVR4nO2VaUhUURTHf+lYtzKaKYpsRi2MFhMrc5w2W0Yo23PCTMtssdBMqT4YmUiFZLR8KCySIKKwaKE+RBlGUilTkjho6JAhRkRmC9aAzqCOL94zhzGtpvqYf7iccw/n3t85717ug371q19/LRWSMv5RXh7mSXRAhCECoRKSKcakwCPmz5MLkNyKkf4YmLn5iLRi/nr3hXXa8QGYEhMInDAJ81MzhggDOl0gusAAYpMSMcUnoB2txRRjkvOzfwUc0BfQELqQvPOZVFjLWLxmJXRKVFVWMXdRJN5e3q5cZ6dTsd2x8JAQmpubOXrk6FkgzaMOj13Myii1FLNnyyFyUk4RPzONVVPj+frpIx+bmnrkusNltdvbWRuzlpTUlJ2o2OJRh7IC/IIkv1E6MjfnYWuxcbhgD7kZ+ew/n0L4LH0PUG21leDQKT26vnX5yk/37vPSvGmsp7z6Meoxdi49yKMwK41tOcvx99f1ym21t/SKxSYlymby92n674DR3U5UQhRRwUH4ePngcEBdTS2eSusfYJXtiUuVp4GknwGnAxnugexzFxg60BtjWCjDR2h+CbG32l2+YeE82UhCqGV7sU9gY+NdC7DUFVB1meCtybQ5B+KnHUv5ozKcbU7lrO4U3mCGfobiy6PeWqPky375kzLS9xdAh0MOvfphyy7lZ1lZvSiBhjd1VNdXILVXcuPmI9bF7iU17hDPWl8StyPateptgw3jylzuXc1G+ILtawslRffIPWvGGCP48r6BO9flL8rEbob7TZJ2bzrI0EG+yK+KXJel7gHbdxmxFLeD5MXEZetdMKVuWXIHHSCEUKYvX5Qzffw0moXAainhTF5yEbCszw71IZEI1WBKnt/FqF/OGM1IKoo/M3rESPadTOaAj0ATGc2nihL048J6nN/z2lJqXlcRNGcJZqtZiZ05now77McOydiYIxlCF7AhM0qZFx57qBRQWJTP7YfXGDRkGGqhQeOrxtF1NggVqH39cHTYEWIwXxx2Ptsa+fDuda/9PZJQifvhU2b/81+C/0bfABeiD4hiFOrxAAAAAElFTkSuQmCC" data-file="anim_animal_hatch_young_sleep_0.png" alt="幼体 · 睡觉" width="112" height="96" loading="lazy"></div><figcaption><strong>幼体 · 睡觉</strong><code>anim_animal_hatch_young_sleep_0.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAYCAYAAADpnJ2CAAADF0lEQVR4nO1WXUiTURh+Pr8d+4IFCzbZ/EGnLqykmOZML9JWkUreKF1kddVVEFJdGN54uVJQCIzIiwpDKmMLL5SK1OhnTF3rInNg4U8aE3+aROEhN0+cb5s5nVPXTUTPxXf+3+d9n/e8hw/4j78ILJZDcbGSWRvsvB3eKrGwhb1dAEqtTXbAtwAotsttZc2RLdkTNkHEmttHoJucWrMwOOxA9q6DOF1jnqU+qtmM1xtJypptI+h61BhxkZNxtDX0qAtyjm9KWiEqWfsICBHlgXJmDtJ3GtVY5eXCjWyuG2EuJ5uc4HciAMeoC5TnLgraWlyyo7EQOvknWb9reSLbdAzdHjfsQ68iHvAqJSyodeApiAZFhLlMjS4NMzPjSNGlwr9iIf9QOUTmh4cPfIHTEgAuNBFEKL1eUJUUilI4e76e3bt5xQDgU8jGar2vW5vs1WtcCBrnObr1eFyeUnrmIFEKb7IWVPF7DxFELDI/LlSkC6biCtb/whbGEyappJCqI+YpqAOvwd7Ou+HaBEkIiZejDaG5fYQtUgpJkuTErpfD0pYHDQFvV6DvfTfO1ZWFzS+oVfCmaeEXArcY8K/oA9bbNSDCLCiluevmkPpoNSEE3a5O9Dps8M5TtLRehDFBRK2yHm3PWpCQWyhLhqBxnlOew9bmS+jv6YBKKcFcXoGdmnj0PulfFU+Emqk+VceKjCWyKzyyhjuNOFFcgv2GA+hwPoRKkwLnyy7sMxXh83AfMrOK4HQ8RdnJijA701+m8brn+Rr76xUpL0B+u2Rk7dkLTZIW2sRE+Jf88ExMQpeSDDFOxOBbJ3YbjYgTRCwxP0bdbvwE8MH5Lux2RpR0BUIFyNIyDVDr1GC+RQy8sSMnLx8gCvz4Ng+IBJ4pD7Rf9ejt7ApY80UNZFOP91hSSlIqXaQg23ZAn56O+RkP3INuFBw2yxtGPw7Bdt8GIhHkFeSNwQc9YoU+Tc+qzlTxQq4NFjQj8YS5BlzMcs0ij/ljYblqYfYBO+/fwB+CmY+aQ+/jsMlk4n1zhiEjRLa8D4rY/gL+LfwCAGocnx5UBX4AAAAASUVORK5CYII=" data-file="anim_animal_hatch_young_jump_1.png" alt="幼体 · 跳跃" width="112" height="96" loading="lazy"></div><figcaption><strong>幼体 · 跳跃</strong><code>anim_animal_hatch_young_jump_1.png</code><span>原图 28 × 24 像素 · 放大展示</span></figcaption></figure></div><h4>成年动作参考</h4><div class="sprite-grid action-grid"><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEc0lEQVR4nO1WbUxbVRh+SgteQklaih0iAk2A5C5swHVj0mQs66aOOjIHYSYsLjrGsjCGUfAjG/GHmZpOfji84ccETMDMhYbuh7GQgcVkya0JE4b+kFBNN8RlaWAFhNHYlmPO6UcKA9qqP3mS5pzzvqfvec5z3vfNBbaxjW1sI37oAZCI3xH8B8ji2Ps5AKNYL+bTBQeOGSWHhO4fuuONFTcB0nltDOZrragSjq31+AHvqhfWGQnWoesVAAb/TwJ5ABxih4RERSK8Pi9a3jHi6inTExvlhbsg/WxDd2drXEooongdYscYE9sD4EZXK5unF+5FdZPAtqiUKnRd7Ieb4yCUGikBmhcxk5CtN4hvioTSaultQVu7hESqMb2hxwv/xC9MbuqjqlBScPwKLK2gf9SCvD0HsE94EWfOCg4ABf+KAGhWKzBAk4zP4nHg1TrwO/dBDjme8QHVTXqUFupxssHEbB9frMal45fgX/XDm+BFy1eUuA2NDbRYoish28Bm7fvmk4oblmFYbtqoInDnZEKtzcWs6z7StTnsGfxBZbyQg/N5kOzjwCkANzzws3yRo7FBGKCVsxWBhPWGmmpDUVaWFv19bVhxS2j8shHq+w/YU6Sn7cDYncHw4RTU7lFwWEryY1bhZ4dTt22oC3ueP1wRTOTYCbxWY8hs/qD9Fo3y3eDtgNEH9PRcBhQchOIjTPpIUEXkCRE2OWCsqMMbdR/h9VMf0nyYivkJ3H9JRJ2qlxEySmSyvWG7WC/i0XMZ2JGRw2QPJSfF9J9OZD+rWxOH7gmRp09z5qwAlSpjcn7+YQeALzaV5OWXSmkZYcUr0fFqqOWK9SLJyMylFRJuwyXFBsIpuYAtwl514j3S3NJJzp0zBX1cyBddgQ3A/nj60GnYH9rBPcVBlxO4rXPaCV22jnUTy00LqiqrYP3WCmOlES6XCxzHYfj7Ybr1LQDtURsRIWNEJhPCpGpqDhOzmQVgWF5aBr+Th+uBC3MLc+DzecgVAalzc3LZ3AMP9Pv1MOw3wC/zY/XdVdhGbBseTrEmCc3mITpYQ+u+vithn5AtQJOmYQmozdSC53mcv3AeRbuKAn5BwOLiIjQqzZoDTFeebNubEjhR+/7A19cv09IJwOdB22dNbNo10oXHnseY+WOGyWwxW6BOVcNQYWC26elpLC4sQqPWYOLuBGy3bYEYAT3zYitDH4yvVBrCy/G7Tqi8WtaM1ClqJMmTmL2kuISNthEbOAUH9yM3ZudmYf/RjinHlNjb0wtCCOQkWAkKuGMjAECdqg8l3qi+rA4epwrzS/OY+XsGSqUSzt+dsN+xR5LG5NQk7v12L3TfCzThxn8aZ+7lhWW6Zw5xgJTklpDag7VsDH/5BMssJTmFaJ/WEi6ZI81vNxPTp6YNv4p2F+8m0qhEVErVhuUXM5kCviAU4GSaJo0ggRE5BKD26LGjm9Y3tZeXl5NorTga1h8QuSaGg4atbrcVudhRkF9A3zSMshfKQjeiwdf4IqDbwrcNROIfY++nQt0s4jAAAAAASUVORK5CYII=" data-file="anim_animal_hatch_adult_idle_0.png" alt="成年 · 待机" width="128" height="128" loading="lazy"></div><figcaption><strong>成年 · 待机</strong><code>anim_animal_hatch_adult_idle_0.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEZ0lEQVR4nO1WfUxbVRT/Pd57y5OvdZgYcDqZK0WUdLRpAzQbUwaOxaEZTWoGITFupduCM4TqXCTxi7HAOmOwjNFB2GIYGBOMWVw2ZZgF07HQtOpwS4CpI5giToviYqUtz9z7aHldCB/jLyO/5Obee8659/zeOefe+4BVrGIVq/gP4gMAQwIn/AxABHBhJZsxS7QjTnaaK+qQrSvC6EAv1jMJVMGKLO33nd63nP0WJSAShwBGwGHYftINYVYRQghdZ47BmJ4PnufnVoQAS5uFjP4GELtiAnazHQIE+PVa8GR38rX+AM6cfQeD31+j84o9R7CJV0QtfOuzoxj/ZTSNkl8CYuYTvvF6OX5MuIbK9kq01e2FzzchKQQB5VklqN1TC3/QD1VuISwOC01DQAzgNwRQ+2YXsRxeagRi5hMeO3oA0/9MwzfVC8+YB9zgTSr3Awhk62H9yAoh6KfpaHW4UfNJDdr6OjAyegPum/2wO9w0iveVAoHDjY5ztoymli5c7nGAYbQRXYtjAIFgAOBIcqR6IJjo/xopbAJCMyG4bruQbToAl+tLnHIcZpYdAa/PmWE0WZnLPc1RclITAbC4/ZOU2rBzgnU52wDNkzh89lU88oQWlQcNyMzaiqUc0Zh7BesSDIfCY/nXIwjc8Y5AqcyA52r0vqRIr/R/gXp7H5LVOtgbe8FzPF421+9cDoEjnZ3vkbx9KDnXk/DNhZAD3n7XBMtBPYT46MpnwWLblufBxkh3Qojj6bE06AsXrYUY2XhvQ/25yES9WXULwCW5cZoyDamPpeLz8zY0NVlhqdAjEGTR1FJFUyJPCyQuyM0pIZ1ycQIchpRp6yPTb7/pelyhEJ6VGyclJUGr1mJychKJ8ZKzEw1GYOZPGhmJUIDWCmnk1BTuKMP+/bbhxQkE0fjC7qfnNEE/0lUScfN2M7r7uqFIVNBUlJWXYWpqCoIgQKfXQamU7Ep2l8B6KB+VFVqpToJ+PPRgCnTafFRX2UkqzgPYISfAyCeaTWrRc+s7KnMPdIg1NY24cEm69dJV6WjvaAfP8PTiMWw1oLi4mOpo6IMAy7Hw/e7D9cHrWJu4FhO/TmANv4b2syCRUMl9clHxCLFoNbeKrh9ccJ70wTs0DYETEJsQi86PO6kT4uxiz0VseHQDxrxjVOYZ9ECTqYGxxIj8Z/IRYkK09PS5eqpf6JFi5pH9kaxIThyfHI9Y1NfVo7CgEL1f9cJ51YnuT7uxMXUjkh9OBmYA7x0vUhQpMJYaKeFsQ3ZkM30OJbHsVzKCgu0FYvOpZtHWYCM5jDRNlob2cQ/EyeVX1JvV4vETx0X3gDvSVvLPIJa/VC7uem4XdZC7JTeKBGmmF03hsRxFpaWlos1mE50DTlERr1jSu3AvlHHxcWLmU5lkcVWYjCpDFdms+rVq0fY+jUwR5gMHGrm8vLz7IkAQ9XWEkEz2Ck2BJFsI80Vo4edYhqjr+O5fd8NzRpVGTxMzK1sIRN+4iA3+v/gX9fWeDVSruYIAAAAASUVORK5CYII=" data-file="anim_animal_hatch_adult_move_0.png" alt="成年 · 移动" width="128" height="128" loading="lazy"></div><figcaption><strong>成年 · 移动</strong><code>anim_animal_hatch_adult_move_0.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFKklEQVR4nO1Wb0xbVRw9j76yx4AFHExKSwEHXdDuTxvcKG4h6UZkiLpswUSTTiW6xGVkDsmIijFhi4yFaDCEuLGxxWXxg2FqzLoZA9tkadGasmmDiHXF0Fno1vncCH3Za/fMvaWl1IIDPswPO8ntu/f3u/ee88790wc8xP8cnz1I8lq/aJEAFDwQds/oWYnjuO+jQhUAiCAzx3J/1lbWkjopw4vhYeIFOY4z++/0bmXkpSQ//HRFTaE673Gs1RtDHWwWyBk5REmkzdMXTsPqtP6+ELeYODHyVuBYQAgANbtaUFpcThMCADmCeL+uHI0vHqQiwiBi9nTuOQegcj4C2OiGMkcpbSjeAOEPAbcnb0NTWknJgwjSfO+3J1GQthK8IKD+VD3adrZFxnLgyGPrlAvO+xWQEFX3qpVqWGwWcCs5aLI16Op6h5IPDdmw63UZ0lNc0HDL0FbTBlOpCSna1bizREZLkAmi/dV21Lx28Lf5OJAQ5UWm75YPpYZS2nRMOuiEH7W+gQ9a1gEBAcdPmaEo0mNv114ka3WY4ORIXb0Wl+zn4bjlAnR66NdXRpZxfgICQOrSVHjHvbSuylHh4uhFjFxz4OxXFqgf24kjHTZ4WKCtow9F2ifpMFlAho2aEqxKV6GxzkgX4q197QtwAEAilwiXywX/XT9kkAHpofh3fYlofC90J1n6z0MkuSkE2SCWG4xwup1oebkN9i+PIb9QT1L35i3AM+YB2Qe8j6drLwZECBCgVmqChJQUfUkFLJe6QwLDIhBEwbMv4NDZQ7h+bxKDP1tQvL4y7hGPBRPdyMvLkxRZCshkMvj+9qGoqAiDVwYhCAJGRkdon5dM78K4aUfkSIbhcv2K/PxVtE7EkSO8Zzd1Yk4hTExbMpQYqACCFdkrYP/RjqQlSXRZRq6NIC0tDTzP0/yRozb6JM6QtQ8f17AIyw9mdB1rnJ8ATaEGyzOW0wyZUKVU0clIPfwkm9R7wwtBkMPhuIDWDy0Ay81whODkp82wXj4zpwtMnJikVCuhzlZHAgqlAm6PG7nKXCpgwDoAnUE3Y9CZLygR2jvsVAhxZaCvGwnJy9D5ScOsNyQTLyiXyyVRFJGrzkV2dnboviTXPgMochS0j6XPgrGxMVRXV09bHwDM58x0zxw7aocQEOB2DcLL8+jqrI/Lx8YTIIoi6SiN3xjHxMQEMjMykf5I6EzaB+xQPaqCVquF+Wszmg83z5iNkLc0t6D2zafgn/RDt86IgSu9EXdjXzwBs6CpqWlS8At0wqHhoUhckaGg165xs5E+TTUmOB1OeN1eeEY9aD3cCmO5ET3f9ND+U+TnpkjDBf8poL+/f6ndZkeOOgdp6Wmw9ltpue6+Dutla6RfRkYG7op3EZSCNE9ckEkyyJPksNnoKWHm+odMmC1RtqkMN3036ZHj/+KZ/fX7adwz7qFHMVGWSIk4lsOQcyhEDoySH8cvjhijZ0fCbImGtxvg8/noRiPYtmMbtVcUxW6e55mrP12lAsnGi7JWXV9XD7J3iDgK9v7/mGIhGTYawp9dWKNfI1U9U0XqZeF8+8ftkt1mjyWo0K3VSd2fd9NccXHxwgWYXjFNE7KQqp6fKYAI3LJ5y78JWEjbq7dLPb09kRdYGFg6eB+pJqckS9ontNOTsRGB8Qh2nzh1QjrQdGDRH61SDEH0Z7qUX5BP2g1xxmVWPVclZWVlLeLtQ6iNI6Aiqj4XwSLtn4KhxEBERGAoMVAHNIWaGfE4mP5ifQjMjn8AFNER+WwYQsQAAAAASUVORK5CYII=" data-file="anim_animal_hatch_adult_eat_0.png" alt="成年 · 吃饭" width="128" height="128" loading="lazy"></div><figcaption><strong>成年 · 吃饭</strong><code>anim_animal_hatch_adult_eat_0.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAD8klEQVR4nO2WbUxbVRjHf+W2cKW8tBZLGDOEt8YXVl5SEBonTp1B9IOQTJ1RDJgZBfygI35aNDN8MhCzBWMy3WL0w6LRIWEBHZFITArECoshYpopw6HgDWADNFxs72rOmSAOEJCv/SXNSc9z7nme83+e89wLMWLEiBEjxs6pUs3qn9lp2VFg/a+OPWDawZoAkNVxZiSeb31YTJY1gxJV0NFpfq95p3ttIG4be7SsrDpfOLdg0Hr+BOFoeM1omAwZUEd9Bw31rUKNnN0GYNrKUFTkmj94b5O90H0QHeg+c5KBy1+CGV58+nX2W51ynQqMhTQKPPej68u0vPrgu0DjXhWYysndby9wezEwpJPhK8OcajhF29E2AtM/kXygkIwDJbzT2c4HH77JJ2dPYkuyc/yVjpdEdvakwHLYF607+jEPPfzM2pyCQkujl6b6ViaW/qDy0OMoEYXxH3w4QzoOsw09oqMmqeh33kVzo9f0vxSIj4//Wpx4vXPB88eg6FAN2aUPSOcCw2zgct/D5+P9tJxvoWfSR3t3O6pZpfZIk6iJvF0rEG9JiMZFV2g77aPv0kdUVzfwwjGF7q5+prVKhof6KCmvQhTlesIRBYv5nzm/fwDjus6590+YdqNAINeZQ9uzHZx9q4lB30Uc9gFpuHqtVI7CuW/gM5mS9ajmf2/k8VTiSMukzPvYar/YVoHDtTW1ly50XqD2SC39vf3yjhfkuFCTs6NPPfeGXCvSIxA3Y1WF8N/BbFAFhbGRPmZnJvn04rkIEd3yXwFoFeUVt2XcnsHUr1NkZWYRJcr1BZ3ega9ItaUyMzNDYmIiiqKwuLiI644Cfrl6BXehlyeePE7La4/SUNdKSXn1DVVEoBEdIjAxMUL727Jh3Qd8szEAM1H33W5SUlNwOpzyvhsRg67OLpJTkrGn2llYWsCZ5iQzK5PBoUE8RR78Q36qa244lESgp7eHAncBs7OzBOeDqKoqg9+s5szrH7TeYmV8bBzDZTAxNYG31CvTIRA5Fz1hdcywZRBaCuEp96zNjX0/Jh0L/CN+eZBgMCj+PgJ8sV0RmsZ/HMflckmJ87Ly0DSN6WvTTE5MSjVuDj0vP0+maxXpXBwkxUpFeQXa75qYzt/K+WaSyGoVD4vQFJOCYRhocxqhYIjgYpDiomLpXLyIxKlHvxuluLBYVCChuRDWVCuBQIC5+blNJd8uAEHUcatDdrQ5bY709HT2ZeyTBrGxUGgVfUln2VhmZXlFnjxBTWBmdkbI/jOQyw4wbTH/MnDaZrPJHIrRbrPLYhKBab9phMNhrFYrtiSbVGT08uh2e+6ZqtWPkLi4uJs/SnbUdmOwCX8BW8Zwc22RsvwAAAAASUVORK5CYII=" data-file="anim_animal_hatch_adult_sleep_0.png" alt="成年 · 睡觉" width="128" height="128" loading="lazy"></div><figcaption><strong>成年 · 睡觉</strong><code>anim_animal_hatch_adult_sleep_0.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEhklEQVR4nO1WYUxbVRT+St8zbw6IREVYpraOdZotQOtIaMeYq5DAEmKA+cMRlsyCI4xt2cD1z9RAyCYMiOILqMC2gDMLRBZcwpyMQoK+6opl0SXIbMZMEyUYRn8s2Yvt2zX3ljYFgUHL9ke/5Oa+e+6573z3nHPPvcD/eDhqAeSEjK8BICHto7k+CWFAtQKdb8VSMVuAgJK2kitii5QLTgB8AM8piL7nxey4E51Dnbjuur7SfwYRtQKdy5MxP6LiXAX0Gn0uFfBQIHCA1+fFbLQAXsXDYragvbQdc95YOwL3vVKzzTaKPfkmjN0Zg2yX/BOyDNeoBNybhVqtZiJFpUAsFVdFIuphCgKAuKfX40JnLcABgkAlgCwI2KZ+ChgfR0VbRVCfeqMyr5J+pkdMQOBwt8raisFrrX7DPjBjR4/sBI+/UdVVxfTEehsOnj0aXKdN0FKy9ogIGNONSX/OSnGNTV0sqVQqQ3Cu4a0G9F1qRl3zAC7+1A8lmsdnLSPocfTBS7zMC/oX9YiIgP0H+29xMSZmvHCvlXEITnLAq8a9LAmLy6qD4pu/SLjpvoVxtQxLZQcSnkn4PlwCpLunLjjo/cpGjZ8NVZiZ+QM8x89bVPT2SWxL1EEaukizBDl7LKZwCaCne4DulGUzIU7aHwidj1n3JLzwZ38A2lQTeJ5HiimP5UtGRiHCI8DhyBv5r6HycOWiR6rX3otz599jJ2QhrJ1WpKhjUXXczMaCIJDVE/DhE6h4FO0rYkPXhIsVHgrxgIiZqBnAp6Ck3J+YAU8InIDapn5MQsb7+/0hlH1hhqDx5AWWbBT5hTWQAWx6bhOriBte2IBpzxSyzFk4WJ7GdNRQMx2aF7q0XZiOfQLKAwX65IxlCaiWmtBr9ORQ9iG477pxO+Y2XC4XTGkmTP81ja4vurDl5S3Y+spWpjv5uwfjP0toaJFYmQ7iATB6w4a2T61L2lEtQ+5K6C2Y9XoW6j+sZ9+yLGP4u2HUVNcgLy8PChTYBiR4PFNo/9zJxsHQ0OJVblCFUwlzAwS1Gi0mbk3AkGZgYeHX8cjOzoY0MncvADDtNECj1aDkHQMLBwVLUh8NTGS3oWryziTcbjetjrCUWnDi3RO42n8VO3bt8O9+yMZKtWG7PykpiQAuf92KBe+JeeBWQICRoMeREvF4PIiNiYV8X0ZqciqcDifMu82Y+HUCifGJwQUdHdXYnpaD9XHxAW9+gzVAv1ajDX0NEZ1OR2jBkkYk4hh1MJk+Vc/63eZ9RGyRwqgDS0AQBOXY8WPzZBuf3wiH3cHyQk38sR+7MQbNSxoM2b7spkkI4GOsAYjT4WTt1OlT/l1xYLumTWwWSUNTQ+huP6BrBI5VwsORGu+jhqmRgvyCgBFmmMqp4eL9xYs+TLVJLByReaDudB0pKy8LxJ1heHCYGT/TeIYkpyQvF+dVvREXAzFmGIlusy70R2TQNkgK3iwIuPiRwcqu5LlrOZRAZmbmYvI1B4l/Nn6hERrneeF4pATw7wzOeVzGYUw3LnZ8qAemHgsB/BfwD80Dr+PXUlpYAAAAAElFTkSuQmCC" data-file="anim_animal_hatch_adult_jump_1.png" alt="成年 · 跳跃" width="128" height="128" loading="lazy"></div><figcaption><strong>成年 · 跳跃</strong><code>anim_animal_hatch_adult_jump_1.png</code><span>原图 32 × 32 像素 · 放大展示</span></figcaption></figure></div>
+<ul><li>使用透明背景，同阶段对齐脚底和身体中心。</li><li>本例编号从 <code>0</code> 开始；自定前缀时，同步修改 <code>customSpritePrefix</code>、PNG 文件名和清单里的文件名。</li><li>成年跳跃保留 <code>jump_0</code>、<code>jump_1</code>、<code>jump_2</code> 三张；沿用哈奇做法时，将 <code>jump_0</code> 复制为 <code>jump_2</code>。</li><li>左右转向交给原版渲染器水平翻转，准备清单中的这一套帧即可。</li><li>蛋图标保存为 <code>icon_item_hatch_egg.png</code>，画布 <code>28 × 28</code>，主体居中；自定名字时同步修改物品的 <code>ui_sprite_asset.url</code>。</li></ul>
+<h3 id="template-frames">2. 其他动物模板要准备多少帧？</h3>
+<p>选择模板后，按下表准备幼体与成年动作。数量来自官方<a href="https://ka7deoo0opr.feishu.cn/wiki/UdOwwqfOLiFcFMkW5rrchKVUnpd" target="_blank" rel="noopener noreferrer">小动物 ID 对照表</a>，编号从 <code>0</code> 开始；例如 <code>8</code> 张就是 <code>0–7</code>。</p>
+<div class="table-wrap"><table id="template-frame-counts"><thead><tr><th>原版模板</th><th>阶段</th><th>idle</th><th>move</th><th>eat</th><th>sleep</th><th>jump</th><th>小计</th></tr></thead><tbody><tr data-template="chicken" data-stage="young"><td>立尾雉<br><code>chicken</code></td><td>幼体</td><td>4</td><td>4</td><td>7</td><td>1</td><td>2</td><td>18</td></tr><tr data-template="chicken" data-stage="adult"><td>立尾雉<br><code>chicken</code></td><td>成年</td><td>4</td><td>8</td><td>7</td><td>1</td><td>3</td><td>23</td></tr><tr data-template="goat" data-stage="young"><td>角羊驼<br><code>goat</code></td><td>幼体</td><td>4</td><td>8</td><td>3</td><td>1</td><td>1</td><td>17</td></tr><tr data-template="goat" data-stage="adult"><td>角羊驼<br><code>goat</code></td><td>成年</td><td>4</td><td>8</td><td>4</td><td>1</td><td>2</td><td>19</td></tr><tr data-template="marsh_pangolin" data-stage="young"><td>沼泽兽<br><code>marsh_pangolin</code></td><td>幼体</td><td>4</td><td>8</td><td>7</td><td>1</td><td>2</td><td>22</td></tr><tr data-template="marsh_pangolin" data-stage="adult"><td>沼泽兽<br><code>marsh_pangolin</code></td><td>成年</td><td>4</td><td>8</td><td>8</td><td>1</td><td>2</td><td>23</td></tr><tr data-template="slime" data-stage="young"><td>变形蜜虫<br><code>slime</code></td><td>幼体</td><td>4</td><td>4</td><td>4</td><td>4</td><td>8</td><td>24</td></tr><tr data-template="slime" data-stage="adult"><td>变形蜜虫<br><code>slime</code></td><td>成年</td><td>4</td><td>4</td><td>4</td><td>4</td><td>8</td><td>24</td></tr></tbody></table></div><div class="table-wrap"><table id="template-frame-totals"><thead><tr><th>模板</th><th>原版两阶段合计</th><th>当前动物包的帧清单</th></tr></thead><tbody><tr data-example="hatch"><td>立尾雉</td><td>41</td><td>哈奇：45 张</td></tr><tr data-example="drecko"><td>角羊驼</td><td>36</td><td>壁虎：36 张</td></tr><tr data-example="mole"><td>沼泽兽</td><td>45</td><td>田鼠：45 张</td></tr><tr data-example="oilfloater"><td>变形蜜虫</td><td>48</td><td>浮游生物：48 张</td></tr></tbody></table></div>
+<p>哈奇当前清单的幼体 <code>move</code> 保留了 <code>8</code> 张，官方立尾雉模板列出 <code>4</code> 张，因此原版模板合计 <code>41</code> 张，本教程沿用的哈奇清单是 <code>45</code> 张。为新动物作图时，按所选模板实际请求的帧名准备。</p>
+<p class="hint">上表统计五种动作的 PNG 文件。<code>jump_ready</code> 借用 <code>jump_0</code>，图鉴图片和物品图标另算。官方变形蜜虫幼体与成年使用相同美术，表中仍按两个阶段分别列出。</p>
+<h3>3. WAV：给它一个自己的声音</h3>
+<p>准备两段简短叫声，保存为 PCM WAV，并按文件树放入 <code>PackData/audio/</code>。推荐先剪掉首尾长静音，抚摸时就能听到干脆的回应。</p>
+<p><code>volumeDb</code> 控制音量；<code>0</code> 保持素材原音量，<code>-6</code> 可降低音量。先让它正常叫，再决定它有多爱聊天。</p>
+<p class="hint">想先完成无自定义叫声的版本时，从第 8 步完整删除 <code>audio</code> 分区和 <code>animals.voices</code> 数组，保留 <code>schemaVersion</code> 与 <code>animals.definitions</code>。</p>
+</section>
+<section id="play">
+<h2>五、游戏内验证</h2>
+<ol class="steps"><li>保存所用的 JSON，按帧清单放好 PNG；使用自定义声音时放好两段 WAV。</li><li>从 Steam 启动游戏，在“模组”界面启用“缺氧动物包”，按界面提示完成重启。</li><li>进入用于测试的存档，打开凯涅尼木的小动物商店，购买“麻袋（哈奇）”。</li><li>在有空余容量的畜棚放出幼体，观察待机、移动、吃饭和转向，抚摸时听叫声。</li><li>成长后检查成年外观、成年叫声和跳跃，夜间检查睡眠与醒来。</li><li>准备鸡窝和饲料，照料到满足产物条件后，检查是否获得哈奇蛋；在图鉴中查看动物与产物。</li></ol>
+<p>第一次先看“能加载、能放出、能走动”。再逐项确认成长、睡眠、声音和产物，定位问题会轻松很多。</p>
+<div class="table-wrap"><table><thead><tr><th>遇到的现象</th><th>先检查这里</th></tr></thead><tbody>
+<tr><td>模组列表里没出现</td><td><code>DTMAPI_AnimalPack/info.json</code> 是否位于这一层，文件后缀是否为 <code>.json</code></td></tr>
+<tr><td>动画空白或闪一下</td><td>PNG 前缀、阶段、动作、编号；尤其是成年 <code>jump_2</code></td></tr>
+<tr><td>声音仍为原版</td><td>WAV 路径、<code>sound_event</code> 与 <code>nativeEvent</code>、声音键和阶段是否对应</td></tr>
+<tr><td>商店里找不到动物袋</td><td><code>animal_shop</code>、<code>sack_hatch</code> 和当前月份库存</td></tr>
+<tr><td>产物没出现</td><td>成年状态、饲料、心情、产物设备，以及掉落库与蛋物品的 ID</td></tr>
+<tr><td>日志提示 ID 冲突</td><td>给第二份模组分配新物种 ID 和动画机键，并同步改名</td></tr>
+</tbody></table></div>
+<p class="hint">进一步定位时，查看 DTMAPI 日志中的模组 ID <code>DTMAPI.AnimalPack</code> 及 <code>animals.definitions</code>、<code>animals.voices</code>、<code>audio</code> 相关信息。</p>
+</section>
+<section id="more">
+<h2>六、继续扩展</h2>
+<h3>1. 增加特殊照料产物（选做）</h3>
+<p>当前哈奇示例的特殊照料阈值是 <code>60</code>，奖励为 <code>1</code> 枚石化哈奇蛋。下面直接使用原条目，保存为 <code>Content/animal_tbhusbandry.json</code>。</p>
+<div class="special-image"><figure class="sprite-example"><div class="pixel-stage"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAXfSURBVEhL7ZZpUFXnGccfbi6b7EF2kFw22WS9XOASgcvlsl5k3xUS0bAIEggGsTaQYCQXXCCg2ErMRClWK27RCEY6mkzTD026zbRm1KQzGZt8Tz/0S2d+nQN0Oj0zJrb92P5mnjlnzrzv//c+Z87MeUT+zz/Ricignb3rspN7yH1Ht6A/isZhSUR6RMRTvfi/wU5E3nD3i/42u2qE7teXGTr2MX2Hb7N94DLJ+X04bPD6UkTK1Bv/E5xE7G4m5e5h/9RvmL/1Ddfvfs2Ne4+5+dGfuX73G05efEx93zX8dWmIyJA64N/BTuy014zWYaYXvuLGzx9zfeULrt35E1eWP+dnN/7AxQ8ecWnpEQemf0/DwD2CIrIU6avqoKdlLNbYxrFzD3h/5SGLHz7k0vIDTv70txyY/JhdB2/TPLBEXf8t6npv0jR4j8ZXbuOxMVSRFqnDvo+tzwYk0G/7hMU7j7h8+wFT731K+8FblL10iaKdF7G+dJFt7Zeo6LhMVddVqnqu0jz4ETl1E4rwKxFxVYc+CY1otL+2NJ/g3PUvVrt61bZC0YvzWFrmKWn7CaW7FihtW8C6+zxl7Rco71ikomuRqq4rNAysEBRuVKQH1MFPotIvIpf+iV9yZek+nT/8gJzGdyloPUth61kKWt6joOUsRS+cpajlDAXNP8JUN0l+0+yqvKb3Jua6Y4id5uun6lKjsV/Rl4xg+/En7LctsbX+NObt72Bueoe8pjnymk6vXs2Nc5jqZ8itn8LccIKCHe9SvHMe667zlHdexdMvSumyUp2vJtzbP+ZvpW0XaNt/GUvLHKaGU5gaTqyGm+qmMdXMYKqdIbduBlP9SfIaT63KzdvnsOw4Q2HrOSq63icqtVYRzqoFatqjUhspartAdu0sObUzZNe8TVbNJFnVxzFWHsNYeXStqo5irJ4kq2aKnJppTA2zmJvW3oZ19yIp5j5F+Au1QM18kullzM1nyK2dxlh1HGP5UTLKj2AoG8dgtZFWtlaGMhvp28bJrDhCZsUEhvK3yCgfJ6/hFIUvLpBWfFARfq4WqPlMbxmktX+BrEobGduOYCi1oS8ZI6X4EMlFo/9SKcVvoi99i7SSMdJK3kBfdpj0sjGyKyZIXuvwoVqg5sutpX0MT95BXzpGavEYyYWHSCh4nS2WEeLzh4k3v0a8eXj1XnmWWDRKYuEIiflDpBQOY7COkls/S3L+oCL8VC1Q8zA5q5nRqeXVjhIta6Gxph8QkzNETPbgWuUotZ+Y3APE5b1GQsEIycWHSLPayCifILvpNBGGHYpwQS1Q86FHYBqdQ3Pk1oyxOWsvkcZeYrbuIzrrFaKMLxOZsZfI9B4iM7qJytxLlLGXONMgW/KHSSocRW+1YayZxmdTqiLsVQvUDGqdvUkydaC39BP1/D5inh8gKrOPMEMPurRuQlM62JS0m9DU3YTqO1cPEL11HzF5QyQWvElK6TixOf04OHkowkS1QE2giHzrHWwgJL6awJgqwlLa0Om70aX2sCm5k5Ck9tUKTe5Cp99DWFo34YYOItM7iUzvYnPmHgKizIrsd+v/0u+lU2vvTEBkMf6RVnw25bAxrAzfyFp8NzfgF92Ef2wr/nE7CdjyAoFxDQTEVBMSW0tITAW6hDocXXwUYYs6+Ls4r3XyxFdnYWNoAe7BeXgE5eAelMsG/0xcfdNw88/ANcCIV3A2PjoL/pvLCIyuwM0rTJHdfdru/oFGRM7ZabQ4e0Xg4pOA87OxOHpEoHULx8EtHCfPaJy84nHxScLdPxWPgGTsnb0V2X0R8VUHfhfKyZxExHv1s7bToHX0wH6DH1qXYJ5xDkbr8hz2rjoc3HQ4eUWzwTMcrYO7IvtMRDJFxHH90E+Fj4hsE5EaESlYHxnuichf7DQOaLQua/WME8obELH7q4j8SkQOr++rEJFqEXlOHfwklJMpY58yFsaLSNz6562MDd0iMi4ip0TkuIj0rU9rqSISu742XEQ2iohWHfy/wd8B/5rYXi89F+0AAAAASUVORK5CYII=" data-file="icon_item_petrified_hatch_egg.png" alt="特殊产物：石化哈奇蛋" width="112" height="112" loading="lazy"></div><figcaption><strong>特殊产物：石化哈奇蛋</strong><code>icon_item_petrified_hatch_egg.png</code><span>原图 28 × 28 像素 · 放大展示</span></figcaption></figure></div>
+<div class="codebox" data-codebox data-kind="husbandry">
+<div class="codebar"><span class="file-label">Content/animal_tbhusbandry.json</span><div class="code-actions"><button type="button" data-expand="husbandry" aria-controls="panel-husbandry" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="husbandry" aria-label="复制 Content/animal_tbhusbandry.json">复制 JSON</button></div></div>
+<pre id="panel-husbandry" tabindex="0" aria-label="Content/animal_tbhusbandry.json 配置"><code id="json-husbandry" data-file="Content/animal_tbhusbandry.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物种ID：与动物表的 id 一致">    &quot;id&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="特殊产物：登记特殊照料的奖励">    &quot;husbandry_datas&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="奖励物品：与石化哈奇蛋的物品 id 一致">        &quot;output&quot;: &quot;petrified_<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="奖励数量：x 为下限，y 为上限">        &quot;output_range&quot;: {</span>
+<span class="code-line" data-note="数量下限：本例最少奖励 1 枚">          &quot;x&quot;: 1,</span>
+<span class="code-line" data-note="数量上限：本例最多奖励 1 枚">          &quot;y&quot;: 1</span>
+<span class="code-line">        },</span>
+<span class="code-line" data-note="贡献阈值：累计贡献达到 60 后产出">        &quot;threshold&quot;: 60,</span>
+<span class="code-line" data-note="贡献来源：空列表接受原生特殊作物贡献表中的全部来源">        &quot;limited_contributions&quot;: []</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p>同时补上石化哈奇蛋的物品条目。下面是<strong>包含动物袋、普通蛋、石化蛋的完整物品文件</strong>，复制后替换第 4 步的 <code>Content/item_tbitem.json</code>。再准备 <code>Content/Sprites/icon_item_petrified_hatch_egg.png</code>，画布 <code>28 × 28</code>，主体居中。</p>
+<div class="codebox" data-codebox data-kind="special-items">
+<div class="codebar"><span class="file-label">Content/item_tbitem.json</span><div class="code-actions"><button type="button" data-expand="special-items" aria-controls="panel-special-items" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="special-items" aria-label="复制 Content/item_tbitem.json">复制 JSON</button></div></div>
+<pre id="panel-special-items" tabindex="0" aria-label="Content/item_tbitem.json 配置"><code id="json-special-items" data-file="Content/item_tbitem.json"><span class="code-line">[</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物品ID：为这个物品设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;sack_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="物品分类：动物袋与畜牧产物使用各自的分类">    &quot;sub_type&quot;: &quot;husbandry_animal&quot;,</span>
+<span class="code-line" data-note="出售开关：true 允许出售，false 关闭出售">    &quot;salable&quot;: true,</span>
+<span class="code-line" data-note="处置开关：是否允许丢弃、处置此物品">    &quot;disposable&quot;: false,</span>
+<span class="code-line" data-note="消耗品：是否按消耗品处理">    &quot;consumable&quot;: true,</span>
+<span class="code-line" data-note="烹饪开关：是否可用于烹饪">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：作为发电燃料提供的能量，0 表示不提供">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴开关：是否显示在物品图鉴">    &quot;viewable&quot;: false,</span>
+<span class="code-line" data-note="获取来源：在图鉴中显示哪些获取途径">    &quot;source&quot;: [],</span>
+<span class="code-line" data-note="基础售价：普通物品的卖出价格，满动物袋取动物阶段价格">    &quot;selling_price&quot;: 400,</span>
+<span class="code-line" data-note="基础买价：商店购买时采用的价格">    &quot;buying_price&quot;: 800,</span>
+<span class="code-line" data-note="堆叠上限：同一格最多放多少个">    &quot;overlay&quot;: 1,</span>
+<span class="code-line" data-note="物品图标：填写 PNG 资源名或原版图标键">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;icon_item_sack_full&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_sack_<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;麻袋（<mark>哈奇</mark>）&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明：本地化键与描述文字">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_sack_<mark>hatch</mark>_desc&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;装着一只幼年<mark>哈奇</mark>的麻袋，可以在畜棚中放出。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能：决定动物袋或普通物品的行为">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：动物袋用 ItemFunctionAnimalPackage，普通物品用 ItemFunction">      &quot;$type&quot;: &quot;ItemFunctionAnimalPackage&quot;,</span>
+<span class="code-line" data-note="装袋图标：动物袋中已有动物时显示的图标">      &quot;ui_sprite_catch&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">        &quot;url&quot;: &quot;icon_item_sack_full&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line" data-note="预装动物：与动物表的 id 一致">      &quot;preset_animal&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="重复使用：放出动物后是否保留可复用的袋子">      &quot;reusable&quot;: false,</span>
+<span class="code-line" data-note="满袋分类：装有动物时使用的物品分类">      &quot;type_when_full&quot;: &quot;husbandry_animal&quot;</span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物品ID：为这个物品设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="物品分类：动物袋与畜牧产物使用各自的分类">    &quot;sub_type&quot;: &quot;husbandry_animal_product&quot;,</span>
+<span class="code-line" data-note="出售开关：true 允许出售，false 关闭出售">    &quot;salable&quot;: true,</span>
+<span class="code-line" data-note="处置开关：是否允许丢弃、处置此物品">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="消耗品：是否按消耗品处理">    &quot;consumable&quot;: false,</span>
+<span class="code-line" data-note="烹饪开关：是否可用于烹饪">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：作为发电燃料提供的能量，0 表示不提供">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴开关：是否显示在物品图鉴">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="获取来源：在图鉴中显示哪些获取途径">    &quot;source&quot;: [</span>
+<span class="code-line" data-note="获取来源：图鉴显示畜牧产出">      &quot;animal&quot;,</span>
+<span class="code-line" data-note="获取来源：图鉴显示加工途径">      &quot;processing&quot;</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="基础售价：普通物品的卖出价格，满动物袋取动物阶段价格">    &quot;selling_price&quot;: 175,</span>
+<span class="code-line" data-note="基础买价：商店购买时采用的价格">    &quot;buying_price&quot;: 350,</span>
+<span class="code-line" data-note="堆叠上限：同一格最多放多少个">    &quot;overlay&quot;: 999,</span>
+<span class="code-line" data-note="物品图标：填写 PNG 资源名或原版图标键">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;icon_item_<mark>hatch</mark>_egg&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;<mark>哈奇</mark>蛋&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明：本地化键与描述文字">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_<mark>hatch</mark>_egg_desc&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;沉甸甸的<mark>哈奇</mark>蛋，可以在小动物照料站中分解出常见矿石。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能：决定动物袋或普通物品的行为">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：动物袋用 ItemFunctionAnimalPackage，普通物品用 ItemFunction">      &quot;$type&quot;: &quot;ItemFunction&quot;</span>
+<span class="code-line">    }</span>
+<span class="code-line">  },</span>
+<span class="code-line">  {</span>
+<span class="code-line" data-note="物品ID：为这个物品设置独立名称，相关引用一起修改">    &quot;id&quot;: &quot;petrified_<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="物品分类：动物袋与畜牧产物使用各自的分类">    &quot;sub_type&quot;: &quot;husbandry_animal_product&quot;,</span>
+<span class="code-line" data-note="出售开关：true 允许出售，false 关闭出售">    &quot;salable&quot;: true,</span>
+<span class="code-line" data-note="处置开关：是否允许丢弃、处置此物品">    &quot;disposable&quot;: true,</span>
+<span class="code-line" data-note="消耗品：是否按消耗品处理">    &quot;consumable&quot;: false,</span>
+<span class="code-line" data-note="烹饪开关：是否可用于烹饪">    &quot;cookable&quot;: false,</span>
+<span class="code-line" data-note="燃料能量：作为发电燃料提供的能量，0 表示不提供">    &quot;electric_energy&quot;: 0,</span>
+<span class="code-line" data-note="图鉴开关：是否显示在物品图鉴">    &quot;viewable&quot;: true,</span>
+<span class="code-line" data-note="获取来源：在图鉴中显示哪些获取途径">    &quot;source&quot;: [</span>
+<span class="code-line" data-note="获取来源：图鉴显示畜牧产出">      &quot;animal&quot;,</span>
+<span class="code-line" data-note="获取来源：图鉴显示加工途径">      &quot;processing&quot;</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="基础售价：普通物品的卖出价格，满动物袋取动物阶段价格">    &quot;selling_price&quot;: 2300,</span>
+<span class="code-line" data-note="基础买价：商店购买时采用的价格">    &quot;buying_price&quot;: 4600,</span>
+<span class="code-line" data-note="堆叠上限：同一格最多放多少个">    &quot;overlay&quot;: 999,</span>
+<span class="code-line" data-note="物品图标：填写 PNG 资源名或原版图标键">    &quot;ui_sprite_asset&quot;: {</span>
+<span class="code-line" data-note="图片资源：填写 PNG 文件名并省略 .png，或使用原版资源键">      &quot;url&quot;: &quot;icon_item_petrified_<mark>hatch</mark>_egg&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品名称：本地化键与显示文字">    &quot;title&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_petrified_<mark>hatch</mark>_egg&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;石化<mark>哈奇</mark>蛋&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品说明：本地化键与描述文字">    &quot;description_basic&quot;: {</span>
+<span class="code-line" data-note="本地化键：为这条文字设置独立键，相关翻译使用同一键">      &quot;key&quot;: &quot;item_petrified_<mark>hatch</mark>_egg_desc&quot;,</span>
+<span class="code-line" data-note="显示文字：填写游戏中展示的名称或说明">      &quot;text&quot;: &quot;几乎完全矿化的稀有<mark>哈奇</mark>蛋，内含金矿石和钛矿石。&quot;</span>
+<span class="code-line">    },</span>
+<span class="code-line" data-note="物品功能：决定动物袋或普通物品的行为">    &quot;function&quot;: {</span>
+<span class="code-line" data-note="功能类型：动物袋用 ItemFunctionAnimalPackage，普通物品用 ItemFunction">      &quot;$type&quot;: &quot;ItemFunction&quot;</span>
+<span class="code-line">    }</span>
+<span class="code-line">  }</span>
+<span class="code-line">]</span></code></pre>
+</div>
+<p>使用游戏的放牧与特殊作物贡献机制积累贡献值，达到阈值后检查奖励。</p>
+<h3>2. 换一种动物模板</h3>
+<div class="table-wrap"><table><thead><tr><th>AnimalPack 示例</th><th>模板</th><th>参考用途</th></tr></thead><tbody>
+<tr><td>哈奇 <code>hatch</code></td><td><code>chicken</code></td><td>本页的哈奇示例</td></tr><tr><td>壁虎 <code>drecko</code></td><td><code>goat</code></td><td>参考另一套四足动作</td></tr><tr><td>田鼠 <code>mole</code></td><td><code>marsh_pangolin</code></td><td>参考较大体型与移动节奏</td></tr><tr><td>浮游生物 <code>oilfloater</code></td><td><code>slime</code></td><td>参考软体动物动作</td></tr>
+</tbody></table></div>
+<p>选定模板后，一起对照官方 <code>schedule_id</code>、两个阶段的原生动画机地址、<code>templateSpritePrefix</code>、阶段声音事件和 PNG 帧清单。AI 读取实际动物实例的日程，不在 DTMAPI 定义里重复声明。
+</p><div class="table-wrap"><table><thead><tr><th>模板</th><th>成年动画机</th><th>幼体动画机</th></tr></thead><tbody>
+<tr><td>立尾雉</td><td><code>game_anim_animal_chicken</code></td><td><code>game_anim_animal_chicken_child</code></td></tr>
+<tr><td>角羊驼</td><td><code>game_anim_animal_goat</code></td><td><code>game_anim_animal_goat_child</code></td></tr>
+<tr><td>沼泽兽</td><td><code>game_anim_animal_marsh_pangolin</code></td><td><code>game_anim_animal_marsh_pangolin_child</code></td></tr>
+<tr><td>变形蜜虫</td><td><code>game_anim_animal_slime</code></td><td><code>game_anim_animal_slime_child</code></td></tr>
+</tbody></table></div><p>内容只在启动时读取。修改配置或 PNG 后，重启游戏再检查。</p>
+<h3>3. 给蛋安排加工配方</h3>
+<p>AnimalPack 的完整示例还包含小动物照料站、图纸和加工配方。继续参考其中的 <code>equipment_tbequipment.json</code>、<code>recipe_tbrecipe.json</code>、<code>recipe_tbdismantlerecipe.json</code> 与 <code>mod_tbmodrecipegroupextension.json</code>，把自己的产物接入设备。</p>
+<h3 id="multi-pack">4. 一个包放多种动物</h3>
+<p>一个包共用一份 <code>info.json</code>、一份 DTMAPI <code>manifest.json</code> 和一个 <code>UniqueID</code>。把每只动物的条目加入对应数组，游戏里启用一次，就能一起加载。缺氧动物包的四种动物采用下面的组织方式：</p>
+<pre class="tree"><code>DTMAPI_AnimalPack/
+├─ info.json
+├─ manifest.json
+├─ icon.png
+├─ preview.png
+├─ Content/
+│  ├─ animal_tbanimal.json           ← 四个物种条目
+│  ├─ animal_tbanimaldocument.json   ← 四个动物图鉴条目
+│  ├─ animal_tbhusbandry.json        ← 各物种特殊产物，选做
+│  ├─ item_tbitem.json              ← 各种动物袋和产物
+│  ├─ item_tbitemspawn.json         ← 各动物的产物掉落库
+│  ├─ mod_tbmodstoreextension.json  ← 同一商店追加多个动物袋
+│  └─ Sprites/
+│     ├─ hatch_frame_manifest.json
+│     ├─ drecko_frame_manifest.json
+│     ├─ mole_frame_manifest.json
+│     ├─ oilfloater_frame_manifest.json
+│     ├─ anim_animal_hatch_*.png
+│     ├─ anim_animal_drecko_*.png
+│     ├─ anim_animal_mole_*.png
+│     ├─ anim_animal_oilfloater_*.png
+│     ├─ icon_item_hatch_egg.png
+│     ├─ icon_item_drecko_egg.png
+│     ├─ icon_item_mole_egg.png
+│     └─ icon_item_oilfloater_egg.png
+└─ PackData/
+   ├─ content.json                 ← 集中登记四种动物
+   └─ audio/
+      ├─ hatch_pet_young.wav
+      ├─ hatch_pet_adult.wav
+      ├─ drecko_pet_young.wav
+      ├─ drecko_pet_adult.wav
+      ├─ mole_pet_young.wav
+      ├─ mole_pet_adult.wav
+      ├─ oilfloater_pet_young.wav
+      └─ oilfloater_pet_adult.wav</code></pre>
+<p class="hint">这张目录图集中列出动物、普通产物和叫声；选做的稀有蛋、照料站与配方，按前文继续补入同一个包。</p>
+<div class="table-wrap"><table><thead><tr><th>放到哪里</th><th>多只动物怎么组织</th></tr></thead><tbody>
+<tr><td><code>animal_tbanimal.json</code>、图鉴、特殊照料表</td><td>在顶层数组里逐个追加动物条目，各自使用对应物种 ID。</td></tr>
+<tr><td><code>item_tbitem.json</code>、<code>item_tbitemspawn.json</code></td><td>追加各自的动物袋、产物和掉落库，物品与掉落库使用独立 ID。</td></tr>
+<tr><td><code>mod_tbmodstoreextension.json</code></td><td>同一商店保留一个 <code>animal_shop</code> 对象，把多个动物袋加入它的 <code>extra_items</code>。</td></tr>
+<tr><td><code>animals.definitions</code></td><td>每只动物追加一个定义，分别填写物种 ID、动画机键、PNG 前缀和帧清单。</td></tr>
+<tr><td><code>animals.voices</code></td><td>按物种与阶段绑定声音；本例四种动物共八条绑定。</td></tr>
+<tr><td><code>audio.resources</code>、<code>audio.events</code></td><td>集中登记包内声音资源与声音键；本例各八条。</td></tr>
+</tbody></table></div>
+<p>下面是当前缺氧动物包完整的 <strong>DTMAPI 多动物配置</strong>。使用时替换第 8 步的 <code>PackData/content.json</code>，同时在官方原生表中补齐对应动物条目，并放好目录图中的资源。</p>
+<div class="codebox" data-codebox data-kind="multi-content">
+<div class="codebar"><span class="file-label"><span class="module-label">DTMAPI 专属</span>PackData/content.json</span><div class="code-actions"><button type="button" data-expand="multi-content" aria-controls="panel-multi-content" aria-expanded="false">展开</button><button type="button" class="copy" data-copy="multi-content" aria-label="复制 PackData/content.json">复制 JSON</button></div></div>
+<pre id="panel-multi-content" tabindex="0" aria-label="PackData/content.json 配置"><code id="json-multi-content" data-file="PackData/content.json"><span class="code-line">{</span>
+<span class="code-line" data-note="格式版本：DTMAPI 统一内容文件当前使用 1">  &quot;schemaVersion&quot;: 1,</span>
+<span class="code-line" data-note="音频分区：登记资源文件和可播放声音">  &quot;audio&quot;: {</span>
+<span class="code-line" data-note="资源列表：为每个音频文件设置资源键">    &quot;resources&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/<mark>hatch</mark>_pet_young.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/<mark>hatch</mark>_pet_adult.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;drecko-pet-child&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/drecko_pet_young.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;drecko-pet-adult&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/drecko_pet_adult.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;mole-pet-child&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/mole_pet_young.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;mole-pet-adult&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/mole_pet_adult.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;oilfloater-pet-child&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/oilfloater_pet_young.wav&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="资源键：供 events.resource 引用，可自定名称">        &quot;key&quot;: &quot;oilfloater-pet-adult&quot;,</span>
+<span class="code-line" data-note="文件路径：从包根开始填写，名称可自定">        &quot;path&quot;: &quot;PackData/audio/oilfloater_pet_adult.wav&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="声音列表：把资源转换成可绑定的声音">    &quot;events&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;<mark>hatch</mark>-pet-child&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;drecko-pet-child&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;drecko-pet-child&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;drecko-pet-adult&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;drecko-pet-adult&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;mole-pet-child&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;mole-pet-child&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;mole-pet-adult&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;mole-pet-adult&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;oilfloater-pet-child&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;oilfloater-pet-child&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="声音键：供 voices.sound 引用，可自定名称">        &quot;key&quot;: &quot;oilfloater-pet-adult&quot;,</span>
+<span class="code-line" data-note="资源引用：与 resources 中的 key 一致">        &quot;resource&quot;: &quot;oilfloater-pet-adult&quot;,</span>
+<span class="code-line" data-note="声音用途：effect 表示短音效">        &quot;use&quot;: &quot;effect&quot;,</span>
+<span class="code-line" data-note="最短间隔：两次播放至少间隔的毫秒数，可调整">        &quot;minimumIntervalMs&quot;: 80,</span>
+<span class="code-line" data-note="音量：单位 dB，0 保持素材音量，负数降低音量">        &quot;volumeDb&quot;: 0.0,</span>
+<span class="code-line" data-note="播放路由：NativeAnimal 使用原生动物音效路线">        &quot;route&quot;: &quot;NativeAnimal&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  },</span>
+<span class="code-line" data-note="畜牧分区：登记动物定义和叫声绑定">  &quot;animals&quot;: {</span>
+<span class="code-line" data-note="叫声绑定：按物种、阶段和原生事件选择声音">    &quot;voices&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;child&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN_CHILD&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;<mark>hatch</mark>-pet-child&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_CHICKEN&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;<mark>hatch</mark>-pet-adult&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;drecko&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;child&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_SHEEP_CHILD&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;drecko-pet-child&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;drecko&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_SHEEP&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;drecko-pet-adult&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;mole&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;child&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_PANGOLIN&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;mole-pet-child&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;mole&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_PANGOLIN&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;mole-pet-adult&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;oilfloater&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;child&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_HONEY_AMOEBA_CHILD&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;oilfloater-pet-child&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;oilfloater&quot;,</span>
+<span class="code-line" data-note="声音阶段：child 为幼体，adult 为成年">        &quot;stage&quot;: &quot;adult&quot;,</span>
+<span class="code-line" data-note="原生事件：与动物表该阶段的 sound_event 完全一致">        &quot;nativeEvent&quot;: &quot;PLAY_ANIMAL_PET_HONEY_AMOEBA&quot;,</span>
+<span class="code-line" data-note="声音键：与 audio.events 中的 key 一致">        &quot;sound&quot;: &quot;oilfloater-pet-adult&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ],</span>
+<span class="code-line" data-note="动物定义：每个对象登记一个物种">    &quot;definitions&quot;: [</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;<mark>hatch</mark>&quot;,</span>
+<span class="code-line" data-note="绘制方式：pngSpriteOverride 使用 PNG 帧替换">        &quot;animatorMode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="帧清单：包根相对路径，供资源检查与核对">        &quot;frameManifest&quot;: &quot;Content/Sprites/<mark>hatch</mark>_frame_manifest.json&quot;,</span>
+<span class="code-line" data-note="模板前缀：填写原版模板实际使用的 PNG 资源前缀">        &quot;templateSpritePrefix&quot;: &quot;anim_animal_chicken&quot;,</span>
+<span class="code-line" data-note="自定义前缀：可自行命名，与你的 PNG 前缀一致">        &quot;customSpritePrefix&quot;: &quot;anim_animal_<mark>hatch</mark>&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;drecko&quot;,</span>
+<span class="code-line" data-note="绘制方式：pngSpriteOverride 使用 PNG 帧替换">        &quot;animatorMode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="帧清单：包根相对路径，供资源检查与核对">        &quot;frameManifest&quot;: &quot;Content/Sprites/drecko_frame_manifest.json&quot;,</span>
+<span class="code-line" data-note="模板前缀：填写原版模板实际使用的 PNG 资源前缀">        &quot;templateSpritePrefix&quot;: &quot;anim_animal_goat&quot;,</span>
+<span class="code-line" data-note="自定义前缀：可自行命名，与你的 PNG 前缀一致">        &quot;customSpritePrefix&quot;: &quot;anim_animal_drecko&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;mole&quot;,</span>
+<span class="code-line" data-note="绘制方式：pngSpriteOverride 使用 PNG 帧替换">        &quot;animatorMode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="帧清单：包根相对路径，供资源检查与核对">        &quot;frameManifest&quot;: &quot;Content/Sprites/mole_frame_manifest.json&quot;,</span>
+<span class="code-line" data-note="模板前缀：填写原版模板实际使用的 PNG 资源前缀">        &quot;templateSpritePrefix&quot;: &quot;anim_animal_marsh_pangolin&quot;,</span>
+<span class="code-line" data-note="自定义前缀：可自行命名，与你的 PNG 前缀一致">        &quot;customSpritePrefix&quot;: &quot;anim_animal_mole&quot;</span>
+<span class="code-line">      },</span>
+<span class="code-line">      {</span>
+<span class="code-line" data-note="物种ID：与官方动物表的 id 一致">        &quot;speciesId&quot;: &quot;oilfloater&quot;,</span>
+<span class="code-line" data-note="绘制方式：pngSpriteOverride 使用 PNG 帧替换">        &quot;animatorMode&quot;: &quot;pngSpriteOverride&quot;,</span>
+<span class="code-line" data-note="帧清单：包根相对路径，供资源检查与核对">        &quot;frameManifest&quot;: &quot;Content/Sprites/oilfloater_frame_manifest.json&quot;,</span>
+<span class="code-line" data-note="模板前缀：填写原版模板实际使用的 PNG 资源前缀">        &quot;templateSpritePrefix&quot;: &quot;anim_animal_slime&quot;,</span>
+<span class="code-line" data-note="自定义前缀：可自行命名，与你的 PNG 前缀一致">        &quot;customSpritePrefix&quot;: &quot;anim_animal_oilfloater&quot;</span>
+<span class="code-line">      }</span>
+<span class="code-line">    ]</span>
+<span class="code-line">  }</span>
+<span class="code-line">}</span></code></pre>
+</div>
+<p class="hint">包 ID 共用，物种 ID、成年/幼体动画机键各自独立。声音资源与事件的 <code>key</code> 在对应列表内保持唯一，引用处按名字对应。四位住户，一本户口簿。</p>
+</section>
+<section id="sources">
+<h2>七、参考示例</h2>
+<p>本页按官方“整体说明 → 配置示例 → 资源要求 → 参考示例”的结构编写。</p>
+<p><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3791474574" target="_blank" rel="noopener noreferrer"><strong>缺氧动物包 · Yuuka · Steam 创意工坊</strong></a>：包含哈奇、壁虎、田鼠和浮游生物，本文以哈奇为例。</p>
+<h3>官方教程与官方示例模组</h3>
+<ul class="source-list">
+<li><a href="https://ka7deoo0opr.feishu.cn/wiki/ElmCwXsRCi7OPvkOh8JcvXK9nfc" target="_blank" rel="noopener noreferrer">《多洛可小镇》创意工坊模组制作说明</a>：官方教程首页。</li>
+<li><a href="https://ka7deoo0opr.feishu.cn/wiki/KWqewbBLEiRw1Pkcn6lcZpQ7nXg" target="_blank" rel="noopener noreferrer">综合案例一（新增道具）</a>：本文参考的结构、标黄和字段注释形式。</li>
+<li><a href="https://ka7deoo0opr.feishu.cn/wiki/V3mywFHTtiE7kfk9RUVcrrednLb" target="_blank" rel="noopener noreferrer">综合案例一（新增作物）</a>：商店、配方与畜牧喂食等组合配置。</li>
+<li><a href="https://ka7deoo0opr.feishu.cn/wiki/POkcwjhF3iPzmikWRZ2cn8n9ncf" target="_blank" rel="noopener noreferrer">小动物</a>与<a href="https://ka7deoo0opr.feishu.cn/wiki/UdOwwqfOLiFcFMkW5rrchKVUnpd" target="_blank" rel="noopener noreferrer">小动物 ID 对照表</a>：官方图片规范与命名。</li>
+<li><a href="https://ka7deoo0opr.feishu.cn/wiki/GmfKwSHv0i5E9EkaupNcjRdIn4d" target="_blank" rel="noopener noreferrer">查看示例模组</a>：官方示例获取说明。</li>
+<li><a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3705665433" target="_blank" rel="noopener noreferrer">官方“示例模组” · Steam 创意工坊</a>：工坊 ID <code>3705665433</code>。</li>
+</ul>
+<p>官方示例下载后的相对位置：</p>
+<pre class="tree"><code>steamapps/workshop/content/2285550/3705665433/
+└─ Content/
+   ├─ 01 美化模组示例/03 小动物/
+   ├─ 02 基础内容模组示例/06 综合案例一（新增物品）/
+   └─ 03 进阶内容模组示例/06 综合案例一（新增作物）/</code></pre>
+</section>
+<footer class="footer">文件按路径放好，名字互相对上，哈奇就有了自己的户口。接下来，轮到你的美术和脑洞上场。</footer>
+</main>
+</div>
+<div class="toast" id="copy-status" role="status" aria-live="polite"></div>
+<dialog id="manual-copy" aria-labelledby="manual-title"><h3 id="manual-title">复制 JSON</h3><p>内容已选中，按 Ctrl+C 即可复制。</p><textarea readonly aria-label="待复制的纯 JSON"></textarea><form method="dialog"><button>完成</button></form></dialog>
+<script>
+(() => {
+  const status = document.getElementById('copy-status');
+  let statusTimer;
+  function notify(message) {
+    status.textContent = message;
+    status.classList.add('visible');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => status.classList.remove('visible'), 2200);
+  }
+  async function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (_) { /* 使用本地复制方式。 */ }
+    }
+    const active = document.activeElement;
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.style.cssText = 'position:fixed;top:0;left:-9999px;';
+    field.setAttribute('readonly', '');
+    document.body.appendChild(field);
+    field.select();
+    let copied = false;
+    try { copied = document.execCommand('copy'); } catch (_) { /* 显示可选中的完整 JSON。 */ }
+    field.remove();
+    if (active && active.focus) active.focus({ preventScroll: true });
+    return copied;
+  }
+  document.querySelectorAll('[data-copy]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const code = document.getElementById('json-' + button.dataset.copy);
+      const text = JSON.stringify(JSON.parse(code.textContent), null, 2) + '\n';
+      if (await copyText(text)) {
+        notify('已复制 ' + code.dataset.file);
+        button.textContent = '已复制';
+        setTimeout(() => { button.textContent = '复制 JSON'; }, 1800);
+      } else {
+        const dialog = document.getElementById('manual-copy');
+        const field = dialog.querySelector('textarea');
+        field.value = text;
+        dialog.showModal();
+        field.focus();
+        field.select();
+      }
+    });
+  });
+  document.querySelectorAll('[data-expand]').forEach(button => {
+    button.addEventListener('click', () => {
+      const expanded = button.closest('[data-codebox]').classList.toggle('expanded');
+      button.setAttribute('aria-expanded', String(expanded));
+      button.textContent = expanded ? '收起' : '展开';
+    });
+  });
+  const menu = document.getElementById('contents');
+  const compact = matchMedia('(max-width: 720px)');
+  function fitMenu() { menu.open = !compact.matches; }
+  fitMenu();
+  if (compact.addEventListener) compact.addEventListener('change', fitMenu);
+  const navLinks = [...document.querySelectorAll('nav a')];
+  const sections = [...document.querySelectorAll('main section[id], main h3[id]')];
+  function currentSection() {
+    let current = 'overview';
+    for (const section of sections) {
+      if (section.getBoundingClientRect().top <= 130) current = section.id;
+    }
+    navLinks.forEach(link => {
+      const selected = link.getAttribute('href') === '#' + current;
+      link.classList.toggle('active', selected);
+      if (selected) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  let queued = false;
+  addEventListener('scroll', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { currentSection(); queued = false; });
+  }, { passive: true });
+  currentSection();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI一键完成",
+  "author": "Yuuka",
+  "version": "1.1.1",
+  "description": "需要 DTMAPI 0.7.5。\n\n一次操作做完整件事。在 Mod 配置里分别开启，默认全部关闭：\n- 树木、矿石、垃圾、杂草：砍中或敲中一下后，自动接着做到采完。每一下照常消耗体力、照常掉落。\n- 燃料机器、饲料槽：加一次后，自动接着加到满，或者手里的材料用完。\n\n工具不对、工具等级不够时不会触发；体力不够时停在当前进度。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI一键完成",
+    "tchinese": "DTMAPI一鍵完成",
+    "english": "DTMAPI One Action Complete"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n一次操作做完整件事。在 Mod 配置里分别开启，默认全部关闭：\n- 树木、矿石、垃圾、杂草：砍中或敲中一下后，自动接着做到采完。每一下照常消耗体力、照常掉落。\n- 燃料机器、饲料槽：加一次后，自动接着加到满，或者手里的材料用完。\n\n工具不对、工具等级不够时不会触发；体力不够时停在当前进度。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n一次操作完成整件事。在 Mod 設定中分別開啟，預設全部關閉：\n- 樹木、礦石、垃圾、雜草：砍中或敲中一下後，自動接著做到採完。每一下照常消耗體力、照常掉落。\n- 燃料機器、飼料槽：加一次後，自動接著加到滿，或者手上的材料用完。\n\n工具不對、工具等級不夠時不會觸發；體力不夠時停在目前進度。",
+    "english": "Requires DTMAPI 0.7.5.\n\nFinish a whole job in one action. Turn each one on in Mod config; all are off by default:\n- Trees, ore, garbage and weeds: after your first successful hit, it keeps going until the target is cleared. Each hit costs energy and drops loot as usual.\n- Fuel machines and feeders: after you add once, it keeps adding until full or until you run out of material.\n\nNothing happens with the wrong tool or too low a tool level, and it stops where you are if you run out of energy."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

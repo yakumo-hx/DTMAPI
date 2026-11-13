@@ -1,0 +1,357 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using DTMAPI.Abstractions;
+using DTMAPI.Core.Runtime;
+
+namespace DTMAPI.GameBridge.DolocTown
+{
+    public sealed partial class DolocTownGameBridge
+    {
+        private void RegisterGameBridgeFeatureApis(IManifest manifest)
+        {
+            DispatchGameBridgeFeatures("RegisterApis", feature => feature.RegisterApis(manifest));
+        }
+
+        private void PublishGameBridgeFeatureHookStatuses()
+        {
+            foreach (IGameBridgeFeature feature in features)
+            {
+                DispatchGameBridgeFeature(feature, "PublishHookStatuses", item => item.PublishHookStatuses());
+            }
+        }
+
+        private void DispatchGameBridgeFeatures(string operation, Action<IGameBridgeFeature> action)
+        {
+            int count = features.Count;
+            for (int i = 0; i < count; i++)
+                DispatchGameBridgeFeature(features[i], operation, action);
+        }
+
+        private bool DispatchGameBridgeFeature(IGameBridgeFeature feature, string operation, Action<IGameBridgeFeature> action)
+        {
+            string id = "<unknown>";
+            try
+            {
+                id = GetGameBridgeFeatureId(feature);
+                action(feature);
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureSuccess(id, operation);
+                string details = FormatGameBridgeFeatureStatus(status);
+                PublishGameBridgeFeatureStatusIfNeeded(
+                    status,
+                    "ready",
+                    operation,
+                    "Safe feature host dispatch completed " + operation + " for this GameBridge feature. " + details);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                GameBridgeFeatureStatus status = RecordGameBridgeFeatureDispatchFailure(id, operation, ex, out GameBridgeFeatureFailurePublication publication);
+                string details = FormatGameBridgeFeatureStatus(status);
+                PublishGameBridgeFeatureStatusIfNeeded(
+                    status,
+                    "failed",
+                    operation,
+                    operation + " failed: " + FormatGameBridgeExceptionSummary(ex) + ". " + details,
+                    publication.ShouldPublishHookStatus);
+                return false;
+            }
+        }
+
+        private void PublishGameBridgeFeatureStatusIfNeeded(GameBridgeFeatureStatus status, string hookStatus, string operation, string details)
+        {
+            PublishGameBridgeFeatureStatusIfNeeded(status, hookStatus, operation, details, forceHookStatusPublication: false);
+        }
+
+        private void PublishGameBridgeFeatureStatusIfNeeded(GameBridgeFeatureStatus status, string hookStatus, string operation, string details, bool forceHookStatusPublication)
+        {
+            DateTimeOffset now = DateTimeOffset.Now;
+            runtime.Diagnostics.SetFeatureStatus(status.Id, hookStatus, status.LastOperation, status.LastSucceeded, status.FailureCount, status.LastError, FormatGameBridgeFeatureStatus(status));
+            if (!ShouldPublishGameBridgeFeatureStatus(status, hookStatus, operation, now, forceHookStatusPublication))
+                return;
+
+            runtime.SetHookStatus(
+                "Feature." + status.Id,
+                hookStatus,
+                "DTMAPI.GameBridge.DolocTown feature host",
+                details);
+            status.MarkPublished(hookStatus, now);
+        }
+
+        private static bool ShouldPublishGameBridgeFeatureStatus(GameBridgeFeatureStatus status, string hookStatus, string operation, DateTimeOffset now, bool forceHookStatusPublication)
+        {
+            if (!status.HasPublished)
+                return true;
+
+            if (forceHookStatusPublication)
+                return true;
+
+            if (!string.Equals(status.PublishedHookStatus, hookStatus, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (status.PublishedSucceeded != status.LastSucceeded)
+                return true;
+
+            if (!IsHighFrequencyGameBridgeOperation(operation))
+                return true;
+
+            return now - status.LastPublishedAt >= FeatureStatusPublishHeartbeat;
+        }
+
+        private static bool IsHighFrequencyGameBridgeOperation(string operation)
+        {
+            return string.Equals(operation, "Update", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureSuccess(string id, string operation)
+        {
+            GameBridgeFeatureStatus status = GetGameBridgeFeatureStatus(id);
+            bool recovered = status.ConsecutiveFailureCount > 0 || (!status.LastSucceeded && status.FailureCount > 0);
+            status.LastOperation = operation;
+            status.LastSucceeded = true;
+            status.ConsecutiveFailureCount = 0;
+            status.LastError = string.Empty;
+            if (recovered)
+                status.LastRecoveredAtUtc = DateTimeOffset.UtcNow;
+            RecordGameBridgeFeatureRecoverySuccess(id, operation);
+            return status;
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureFailure(string id, string operation, Exception ex)
+        {
+            GameBridgeFeatureStatus status = GetGameBridgeFeatureStatus(id);
+            status.LastOperation = operation;
+            status.LastSucceeded = false;
+            status.FailureCount++;
+            status.ConsecutiveFailureCount++;
+            status.LastError = FormatGameBridgeExceptionSummary(ex);
+            return status;
+        }
+
+        private GameBridgeFeatureStatus RecordGameBridgeFeatureDispatchFailure(string id, string operation, Exception ex, out GameBridgeFeatureFailurePublication publication)
+        {
+            GameBridgeFeatureStatus status = RecordGameBridgeFeatureFailure(id, operation, ex);
+            publication = RecordGameBridgeFeatureFailurePublication(id, operation, ex);
+            string message = "GameBridge feature '" + id + "' failed during " + operation + ".";
+            string errorSummary = FormatGameBridgeExceptionSummary(ex);
+
+            if (publication.RecordDiagnosticsError)
+                runtime.Diagnostics.RecordError("DTMAPI.GameBridge.Feature." + id, message, FormatGameBridgeExceptionDetails(ex));
+
+            if (publication.LogMode == GameBridgeFeatureFailureLogMode.Full)
+                runtime.RuntimeMonitor.Log(message + " " + errorSummary, LogLevel.Error);
+            else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Short)
+                runtime.RuntimeMonitor.Log("Repeated GameBridge feature failure feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " error=" + errorSummary, LogLevel.Warn);
+            else if (publication.LogMode == GameBridgeFeatureFailureLogMode.Summary)
+                runtime.RuntimeMonitor.Log("Throttled GameBridge feature failures feature=" + id + " operation=" + operation + " count=" + publication.Count.ToString(CultureInfo.InvariantCulture) + " lastError=" + errorSummary, LogLevel.Warn);
+
+            return status;
+        }
+
+        private GameBridgeFeatureFailurePublication RecordGameBridgeFeatureFailurePublication(string id, string operation, Exception ex)
+        {
+            string key = GetGameBridgeFeatureFailureKey(id, operation);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (!featureFailures.TryGetValue(key, out GameBridgeFeatureFailureState state))
+            {
+                state = new GameBridgeFeatureFailureState();
+                featureFailures[key] = state;
+            }
+
+            string fingerprint = FormatGameBridgeExceptionFingerprint(ex);
+            bool isNewFingerprint = !string.Equals(state.LastFingerprint, fingerprint, StringComparison.Ordinal);
+
+            state.Count++;
+            state.ConsecutiveSuccessCount = 0;
+            state.LastError = FormatGameBridgeExceptionSummary(ex);
+            state.LastFingerprint = fingerprint;
+            state.LastSeenAtUtc = now;
+
+            if (state.Count == 1 || isNewFingerprint)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(true, GameBridgeFeatureFailureLogMode.Full, state.Count);
+            }
+
+            if (state.Count <= FeatureFailureShortLogLimit)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.Short, state.Count);
+            }
+
+            if (now - state.LastPublishedAtUtc >= FeatureFailureSummaryInterval)
+            {
+                state.LastPublishedAtUtc = now;
+                return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.Summary, state.Count);
+            }
+
+            return new GameBridgeFeatureFailurePublication(false, GameBridgeFeatureFailureLogMode.None, state.Count);
+        }
+
+        private bool RecordGameBridgeFeatureRecoverySuccess(string id, string operation)
+        {
+            string key = GetGameBridgeFeatureFailureKey(id, operation);
+            if (!featureFailures.TryGetValue(key, out GameBridgeFeatureFailureState state))
+                return false;
+
+            state.ConsecutiveSuccessCount++;
+            if (state.ConsecutiveSuccessCount >= FeatureFailureRecoverySuccessThreshold)
+            {
+                featureFailures.Remove(key);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string GetGameBridgeFeatureFailureKey(string id, string operation)
+        {
+            return (string.IsNullOrWhiteSpace(id) ? "<unknown>" : id.Trim()) + "::" + (string.IsNullOrWhiteSpace(operation) ? "<unknown>" : operation.Trim());
+        }
+
+        private static string FormatGameBridgeExceptionSummary(Exception ex)
+        {
+            Exception root = UnwrapGameBridgeException(ex);
+            string rootSummary = root.GetType().Name + ": " + root.Message;
+            return ReferenceEquals(root, ex)
+                ? rootSummary
+                : rootSummary + " (outer " + ex.GetType().Name + ": " + ex.Message + ")";
+        }
+
+        private static string FormatGameBridgeExceptionFingerprint(Exception ex)
+        {
+            Exception root = UnwrapGameBridgeException(ex);
+            string stackHead = string.Empty;
+            string? stack = root.StackTrace;
+            if (!string.IsNullOrWhiteSpace(stack))
+            {
+                string[] lines = stack.Replace("\r\n", "\n").Split('\n');
+                stackHead = lines.Length == 0 ? string.Empty : lines[0].Trim();
+            }
+
+            return root.GetType().FullName + "|" + root.Message + "|" + stackHead;
+        }
+
+        private static string FormatGameBridgeExceptionDetails(Exception ex)
+        {
+            Exception root = UnwrapGameBridgeException(ex);
+            if (ReferenceEquals(root, ex))
+                return ex.ToString();
+
+            return "RootCause: " + root.GetType().FullName + ": " + root.Message + Environment.NewLine +
+                root + Environment.NewLine +
+                "OuterException: " + ex.GetType().FullName + ": " + ex.Message + Environment.NewLine +
+                ex;
+        }
+
+        private static Exception UnwrapGameBridgeException(Exception ex)
+        {
+            while (ex is TargetInvocationException target && target.InnerException != null)
+                ex = target.InnerException;
+            return ex;
+        }
+
+        private GameBridgeFeatureStatus GetGameBridgeFeatureStatus(string id)
+        {
+            if (!featureStatuses.TryGetValue(id, out GameBridgeFeatureStatus status))
+            {
+                status = new GameBridgeFeatureStatus(id);
+                featureStatuses[id] = status;
+            }
+
+            return status;
+        }
+
+        private static string FormatGameBridgeFeatureStatus(GameBridgeFeatureStatus status)
+        {
+            string lastError = string.IsNullOrWhiteSpace(status.LastError) ? "none" : status.LastError;
+            string recoveredAt = status.LastRecoveredAtUtc.HasValue ? status.LastRecoveredAtUtc.Value.ToString("O", CultureInfo.InvariantCulture) : "none";
+            return "Feature status: id=" + status.Id + ", lastOperation=" + status.LastOperation + ", success=" + status.LastSucceeded.ToString(CultureInfo.InvariantCulture) + ", failureCount=" + status.FailureCount.ToString(CultureInfo.InvariantCulture) + ", consecutiveFailureCount=" + status.ConsecutiveFailureCount.ToString(CultureInfo.InvariantCulture) + ", lastRecoveredAt=" + recoveredAt + ", lastError=" + lastError + ".";
+        }
+
+        private static string GetGameBridgeFeatureId(IGameBridgeFeature feature)
+        {
+            string id = feature.Id;
+            if (!string.IsNullOrWhiteSpace(id))
+                return id.Trim();
+
+            return feature.GetType().Name;
+        }
+
+        private sealed class GameBridgeFeatureStatus
+        {
+            internal GameBridgeFeatureStatus(string id)
+            {
+                Id = id;
+            }
+
+            internal string Id { get; }
+
+            internal string LastOperation { get; set; } = string.Empty;
+
+            internal bool LastSucceeded { get; set; }
+
+            internal int FailureCount { get; set; }
+
+            internal int ConsecutiveFailureCount { get; set; }
+
+            internal string LastError { get; set; } = string.Empty;
+
+            internal DateTimeOffset? LastRecoveredAtUtc { get; set; }
+
+            internal bool HasPublished { get; private set; }
+
+            internal string PublishedHookStatus { get; private set; } = string.Empty;
+
+            internal bool PublishedSucceeded { get; private set; }
+
+            internal DateTimeOffset LastPublishedAt { get; private set; } = DateTimeOffset.MinValue;
+
+            internal void MarkPublished(string hookStatus, DateTimeOffset publishedAt)
+            {
+                HasPublished = true;
+                PublishedHookStatus = hookStatus;
+                PublishedSucceeded = LastSucceeded;
+                LastPublishedAt = publishedAt;
+            }
+        }
+
+        private sealed class GameBridgeFeatureFailureState
+        {
+            internal int Count { get; set; }
+            internal int ConsecutiveSuccessCount { get; set; }
+            internal string LastError { get; set; } = string.Empty;
+            internal string LastFingerprint { get; set; } = string.Empty;
+            internal DateTimeOffset LastSeenAtUtc { get; set; }
+            internal DateTimeOffset LastPublishedAtUtc { get; set; }
+        }
+
+        private readonly struct GameBridgeFeatureFailurePublication
+        {
+            internal GameBridgeFeatureFailurePublication(bool recordDiagnosticsError, GameBridgeFeatureFailureLogMode logMode, int count)
+            {
+                RecordDiagnosticsError = recordDiagnosticsError;
+                LogMode = logMode;
+                Count = count;
+            }
+
+            internal bool RecordDiagnosticsError { get; }
+
+            internal GameBridgeFeatureFailureLogMode LogMode { get; }
+
+            internal int Count { get; }
+
+            internal bool ShouldPublishHookStatus => LogMode != GameBridgeFeatureFailureLogMode.None;
+        }
+
+        private enum GameBridgeFeatureFailureLogMode
+        {
+            None,
+            Full,
+            Short,
+            Summary
+        }
+    }
+}

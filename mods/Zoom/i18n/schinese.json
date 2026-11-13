@@ -1,0 +1,17 @@
+{
+  "mod.loaded": "DTMAPI 大视野已加载；按 + / - 调整视野。",
+  "mod.name": "DTMAPI 大视野",
+  "config.section.main": "大视野",
+  "config.maxScale.name": "最大视野",
+  "config.maxScale.tooltip": "最大可见范围倍率，可设为1～10。",
+  "config.step.name": "每次调整",
+  "config.step.tooltip": "每次按键改变的视野倍率。",
+  "config.increaseKey.name": "放大视野键",
+  "config.increaseKey.tooltip": "默认使用主键盘等号或小键盘加号。按住物理Shift默认直接到上限；字符“+”不是另一个按键。",
+  "config.decreaseKey.name": "缩小视野键",
+  "config.decreaseKey.tooltip": "降低可见范围，最小恢复原版。",
+  "config.maximumKey.name": "直接到上限",
+  "config.maximumKey.tooltip": "立即切换到设置的最大视野。",
+  "config.resetKey.name": "恢复原版视野",
+  "config.resetKey.tooltip": "立即回到1倍视野。"
+}

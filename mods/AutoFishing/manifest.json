@@ -1,0 +1,18 @@
+{
+  "UniqueID": "Yuuka.DTMAPI.AutoFishing",
+  "EntryDll": "Content/DTMAPI/Yuuka.DTMAPI.AutoFishing.dll",
+  "EntryType": "Yuuka.DTMAPI.AutoFishing.ModEntry",
+  "Type": "CodeMod",
+  "Dependencies": [
+    {
+      "UniqueID": "DTMAPI.ModConfigMenu",
+      "VersionRange": {
+        "minimumInclusive": "0.5.5",
+        "includePrerelease": false
+      },
+      "Required": true
+    }
+  ],
+  "ManifestVersion": 2,
+  "HarmonyOwner": "Yuuka.DTMAPI.AutoFishing.Native"
+}

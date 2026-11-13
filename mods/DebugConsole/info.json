@@ -1,0 +1,25 @@
+{
+  "name": "Y键控制台",
+  "author": "Yuuka",
+  "version": "1.1.11",
+  "description": "需要 DTMAPI 0.7.5。创意工坊更新后，还要再运行一次 DTMAPI 的 1_install_dtmapi.bat。\n\n进入存档后按 Y 打开 GUI 控制台。\n\n【目录】\n- 物品：游戏里的全部物品，包括 Mod 新增的。可以按分类、按来源筛选，也可以搜索。左键给 1 个，右键给一批。\n- 怪物：在身边召唤怪物。旧城守护者按 1 组召唤（1 个主体加 2 个炮台）。\n- 动物：召唤幼年、成年，或者隐藏产物已满、可以直接采集的成年动物。兼容 Mod 动物。\n右键一批的数量默认 10，可以在 Mod 配置里设为 1～100。\n\n【世界】\n- 时间：推进到下个时段，或者 +1 天、+1 周、+1 月；时间流速 1 倍、4 倍，或自定义倍率（1～20 倍，在 Mod 配置里设）。推进时间太长，当前可能存在卡顿，并非崩溃，请耐心等待，有报错联系作者。\n- 移动速度。\n- 天气：晴、多云、雨、雷雨、大风、酸雨、烈日。\n- 传送：各个交通站点和地标。\n\n【高级】\n- 加金钱；自然、操作、科学、动物四种科技点各加 100；解锁科技树。\n- 上帝模式：生命、体力、精神一直保持满值。\n- 无限燃料：给一份几乎能填满任何设备的燃料（在物品里）。\n- 催熟作物：当前房间里，以你为中心一定范围内种植盆里的作物、树和牧草立刻成熟。半径默认 25 格，可以在 Mod 配置里设为 5～100 格。\n- 删除物品：删掉背包快捷栏里选中的那格物品，删除前会确认，容器也会删除，使用务必小心。\n- 存这里：存档。\n\n【注意】\n- 尽量不要提前传送到还没解锁的地区，可能出问题甚至坏档；误点了就不要保存。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Diagnostic",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "Y键控制台",
+    "tchinese": "Y鍵控制台",
+    "english": "Y Key Console"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。创意工坊更新后，还要再运行一次 DTMAPI 的 1_install_dtmapi.bat。\n\n进入存档后按 Y 打开 GUI 控制台。\n\n【目录】\n- 物品：游戏里的全部物品，包括 Mod 新增的。可以按分类、按来源筛选，也可以搜索。左键给 1 个，右键给一批。\n- 怪物：在身边召唤怪物。旧城守护者按 1 组召唤（1 个主体加 2 个炮台）。\n- 动物：召唤幼年、成年，或者隐藏产物已满、可以直接采集的成年动物。兼容 Mod 动物。\n右键一批的数量默认 10，可以在 Mod 配置里设为 1～100。\n\n【世界】\n- 时间：推进到下个时段，或者 +1 天、+1 周、+1 月；时间流速 1 倍、4 倍，或自定义倍率（1～20 倍，在 Mod 配置里设）。推进时间太长，当前可能存在卡顿，并非崩溃，请耐心等待，有报错联系作者。\n- 移动速度。\n- 天气：晴、多云、雨、雷雨、大风、酸雨、烈日。\n- 传送：各个交通站点和地标。\n\n【高级】\n- 加金钱；自然、操作、科学、动物四种科技点各加 100；解锁科技树。\n- 上帝模式：生命、体力、精神一直保持满值。\n- 无限燃料：给一份几乎能填满任何设备的燃料（在物品里）。\n- 催熟作物：当前房间里，以你为中心一定范围内种植盆里的作物、树和牧草立刻成熟。半径默认 25 格，可以在 Mod 配置里设为 5～100 格。\n- 删除物品：删掉背包快捷栏里选中的那格物品，删除前会确认，容器也会删除，使用务必小心。\n- 存这里：存档。\n\n【注意】\n- 尽量不要提前传送到还没解锁的地区，可能出问题甚至坏档；误点了就不要保存。",
+    "tchinese": "需要 DTMAPI 0.7.5。創意工坊更新後，還要再執行一次 DTMAPI 的 1_install_dtmapi.bat。\n\n進入存檔後按 Y 開啟 GUI 控制台。\n\n【目錄】\n- 物品：遊戲中的全部物品，包括 Mod 新增的。可以依分類、依來源篩選，也可以搜尋。左鍵給 1 個，右鍵給一批。\n- 怪物：在身邊召喚怪物。舊城守護者按 1 組召喚（1 個主體加 2 個砲台）。\n- 動物：召喚幼年、成年，或者隱藏產物已滿、可以直接採集的成年動物。相容 Mod 動物。\n右鍵一批的數量預設 10，可以在 Mod 設定中設為 1～100。\n\n【世界】\n- 時間：推進到下個時段，或者 +1 天、+1 週、+1 月；時間流速 1 倍、4 倍，或自訂倍率（1～20 倍，在 Mod 設定中設定）。推進時間太長時，目前可能會卡頓，並非當機，請耐心等待，有報錯請聯絡作者。\n- 移動速度。\n- 天氣：晴、多雲、雨、雷雨、大風、酸雨、烈日。\n- 傳送：各個交通站點和地標。\n\n【進階】\n- 增加金錢；自然、操作、科學、動物四種科技點各增加 100；解鎖科技樹。\n- 上帝模式：生命、體力、精神一直保持全滿。\n- 無限燃料：給一份幾乎能填滿任何設備的燃料（在物品中）。\n- 催熟作物：目前房間中，以你為中心一定範圍內種植盆中的作物、樹和牧草立刻成熟。半徑預設 25 格，可以在 Mod 設定中設為 5～100 格。\n- 刪除物品：刪除背包快捷欄中選取的那格物品，刪除前會確認，容器也會一併刪除，使用時務必小心。\n- 存這裡：儲存存檔。\n\n【注意】\n- 盡量不要提前傳送到尚未解鎖的地區，可能出問題甚至損壞存檔；誤點了就不要儲存。",
+    "english": "Requires DTMAPI 0.7.5. After the Workshop update, run DTMAPI's 1_install_dtmapi.bat once more.\n\nIn a loaded save, press Y to open the GUI console.\n\n[Catalog]\n- Items: every item in the game, including those added by mods. Filter by category or source, or search. Left-click gives 1, right-click gives a batch.\n- Monsters: spawn monsters next to you. The Old City Guardian spawns as one group (one body plus two turrets).\n- Animals: spawn young or adult animals, or adults whose hidden produce is full and ready to collect. Works with mod animals.\nThe right-click batch size is 10 by default and can be set from 1 to 100 in Mod config.\n\n[World]\n- Time: skip to the next time period, or +1 day, +1 week, +1 month; set time speed to 1x, 4x or a custom rate (1x-20x, set in Mod config). Skipping a long stretch of time may freeze the game for a while. It has not crashed, so please wait; if you see an error, contact the author.\n- Movement speed.\n- Weather: clear, cloudy, rain, thunderstorm, strong wind, acid rain, scorching sun.\n- Teleport: every transit stop and landmark.\n\n[Advanced]\n- Add money; add 100 each of Nature, Operation, Science and Animal tech points; unlock the tech tree.\n- God mode: health, energy and spirit stay full.\n- Infinite fuel: gives a fuel item that can fill almost any machine (find it in Items).\n- Ripen crops: crops, trees and grass in planting basins within a radius around you in the current room become mature instantly. The radius is 25 tiles by default and can be set from 5 to 100 in Mod config.\n- Delete item: deletes the slot selected in your backpack hotbar, after a confirmation. Containers are deleted together with their contents, so be careful.\n- Save here: saves the game.\n\n[Notes]\n- Avoid teleporting to areas you have not unlocked yet; it can cause problems or even corrupt your save. If you click one by mistake, do not save."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

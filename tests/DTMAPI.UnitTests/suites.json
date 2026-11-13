@@ -1,0 +1,1117 @@
+{
+  "schemaVersion": 2,
+  "suites": [
+    {
+      "id": "moresaves",
+      "project": "tests/DTMAPI.MoreSaves.Tests/DTMAPI.MoreSaves.Tests.csproj",
+      "default": [
+        "MoreSavesProductTests.RunAll"
+      ],
+      "focuses": {
+        "moresaves-product": [
+          "MoreSavesProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.MoreSaves.Tests/DTMAPI.MoreSaves.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing moresaves rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/MoreSaves/src/",
+        "mods/MoreSaves/*.json"
+      ]
+    },
+    {
+      "id": "core",
+      "project": "tests/DTMAPI.Core.Tests/DTMAPI.Core.Tests.csproj",
+      "default": [
+        "OfficialPageShowsEachChangeOnce",
+        "LateContentPacksAppendOrderAndRefreshResourcesOnce",
+        "OfficialPageLoadsNewPackagesAndSettlesAgainstRunningInstances",
+        "RuntimeDependencyThreadsAndFailureCleanup",
+        "RetiredPublicApiIsAbsentAndCurrentContractsRemain",
+        "ModResourcesUseBoundedIndependentSnapshotsAndOwnerPaths",
+        "ModuleScopesRetainFailedChildrenAndIsolateSiblings",
+        "BuiltinProviderOriginSurvivesUnavailableComponents",
+        "ContentHostBindingsRequireExplicitVersionedDependencyAndSafeLayout",
+        "ContentHostsIsolatePacksAndRetainFailedActivationCleanup",
+        "ContentHostsRejectMissingVersionAndHandleReentrantClosure",
+        "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+        "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+        "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+        "PackageDependencyPlanOrdersDeclaredRelationships",
+        "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+        "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+        "OwnerTranslationsFormatRefreshAndDetachWithScope",
+        "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+        "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+        "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+        "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+        "PlatformCommandsParseDispatchAndIsolateOwners",
+        "ReflectionUsesExactSignaturesAndPreservesErrors",
+        "ReflectionMetadataUsesTypeIdentityAndBoundedCache",
+        "ReflectionScopeClosesBindingsAndReleasesTargetRoots",
+        "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+        "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+        "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+        "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+        "OwnerDataRejectsBadPathsAndLinkedRoots",
+        "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+        "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+        "GlobalDataMigrationFailureWindowsRetainCommittedBytes",
+        "RuntimeStartsWithEmptyMods",
+        "RuntimePathsDoNotCreateOrAdvertiseLegacyDevelopmentRoot",
+        "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides",
+        "EventDispatchTests.RunAll",
+        "ManifestContractTests.Run",
+        "RuntimeBoundaryTests.RunAll",
+        "RuntimeDiscoveryIgnoresUnconsumedContent",
+        "ContentManifestRegistryBuildsAuthoritativeIndexAndCapabilities",
+        "ContentManifestRegistryReportsManifestDependencyAndDuplicateDiagnostics",
+        "ContentManifestRegistryReportsRegistryDiffs",
+        "RuntimeRotatesLatestLogAndRetainsHistory",
+        "RuntimeApiRegistrationIsAtomicAndDynamicProviderReserved",
+        "RuntimeApiCannotClaimLoadedOrdinaryOwner",
+        "BrokenManifestDoesNotCrashDiscovery",
+        "ManifestDependencyIsRequiredAliasSupportsOptionalDependencies",
+        "DependencyVersionApiVersionAndCircularDependencyDiagnostics",
+        "EntryDllMustRemainInsideModRoot",
+        "EntryPathUsesActualAssemblyRegardlessOfSuffix",
+        "EntryTypeSelectsEntryAndMissingEntryTypeRejectsAmbiguousDll",
+        "MinimumGameVersionWithoutDetectedGameVersionLogsWarning",
+        "DiagnosticsSnapshotApiExposesRuntimeState",
+        "RuntimeReportContextScansLogHeadAndTailForModFailures",
+        "DiagnosticsReportIncludesDebugConsoleLastGiveBreadcrumb",
+        "DiagnosticsServiceMissingCrashDumpWritesReadme",
+        "DiagnosticsServiceCrashDirectoriesWithSameLeafUseDistinctZipEntries",
+        "DiagnosticsServiceCrashDumpKeepsFollowingTextEvidence",
+        "ManagerViewModelMapsDiagnosticsSnapshot",
+        "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport",
+        "HelperModRegistryBindsApiRegistrationToOwner",
+        "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics",
+        "RegistryAndConfigFacadesEnforceOwnerLifetime",
+        "StructuredOwnerKeysDoNotCollideOrOverClean",
+        "OwnerBoundInputTracksAndCleansPerOwner",
+        "InputKeybindParserCanonicalizesAliasesAndChords",
+        "InputScopeGatesSamplingAndDispatch",
+        "InputSuppressionIsButtonScopedWithinFrame",
+        "InputLegacyWrapperUsesKeybindRegistry",
+        "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+        "InputPressedEdgeDispatchesWhenAlreadyReleased",
+        "InputRapidRetapDispatchesSecondPress",
+        "InputKeybindChordUsesPressedEdge",
+        "InputKeybindChordShortTapDispatchesPressedAndReleased",
+        "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+        "InputGenericModifiersMatchEitherPhysicalSide",
+        "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+        "InputRegistrationUpdatePreservesUnchangedHeldState",
+        "InputOwnerCleanupInvalidatesCachedButtons",
+        "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+        "InputHelperSnapshotMethodsSupportKeybindLists",
+        "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+        "InactiveOwnerBoundInputQueriesCannotRecreateLocalWatch",
+        "InputLocalSnapshotWarmPathDoesNotAllocate",
+        "InputRegisteredKeybindWarmPathDoesNotAllocate",
+        "InputAudienceSteadyStateDoesNotAllocate",
+        "ConfigMenuKeybindDefaultResetRestoresDeclaredValue",
+        "ConfigMenuOwnerCleanupReleasesCallbacksHeldByStalePage",
+        "FailedCodeModCleanupRemovesOwnerBoundRuntimeState",
+        "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries",
+        "CleanupParticipantExceptionsAreIsolated",
+        "CleanupParticipantThrowAndSinkFailuresRetryThroughDeactivation",
+        "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+        "CodeModPreAssemblyFailuresRequireRestartToRetry",
+        "FileMonitorSinkFailuresDoNotBlockExplicitOwnerCleanup",
+        "RuntimeLoggingRetainsFullErrorEvidence",
+        "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+        "ModMonitorErrorsBecomeRuntimeDiagnostics",
+        "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+        "EventRemoveIsOwnerBound",
+        "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+        "ConfigJsonEscapesRoundTripWithoutRewriting",
+        "ConfigRecoveryFailuresPreserveOriginalBytes",
+        "ConfigMenuEditsSaveCancelAndDetectConflicts",
+        "ConfigMenuCallbackFailuresRollbackAndStayInspectable",
+        "ConfigMenuPendingPreviewDrivesConditionalVisibility",
+        "DisabledDiscoveredModLocksConfigPage",
+        "OfficialLocalModPackagesRespectOfficialEnablement",
+        "UnverifiedWorkshopAndGameModsCannotOverrideOfficialLocalState",
+        "AuthorFileTreeDigestTests.AuthorFileTreeDigestMatchesFrozenCrossToolVectors",
+        "NativeWorkshopAuthorityAndAuthorSourceModesSelectDeterministically",
+        "DuplicateCodeModSourceIdentityChangeRequiresRestart",
+        "ContentPackSelectionChangesWaitForRestart",
+        "WorkshopSelectionChangesRequireRestartAndPreserveResidentCode",
+        "ReservedRuntimeDependenciesSurviveTitleAndWorkshopRefresh",
+        "ExplicitOwnerDeactivationCascadesRequiredDependentInReverseOrder",
+        "SourceRemovalPreservesResidentProvidersAndDependents",
+        "SourceRefreshInPlaceUpgradeCannotAuthorizeResidentProviderVersion",
+        "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+        "ConfigDialogsPreserveParentsAndReleaseOwnerCallbacks",
+        "ConfigDialogsHandleReentryFailureAndBoundaries",
+        "ConfigRestartRemindersAggregateSuccessfulSaves",
+        "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+        "InputAudienceSnapshotRemainsImmutableForTheFrame",
+        "InputOwnerModalTargetsQueriesAndSettlesRelease",
+        "InputConfigurationUpdateRetainsPressedBindingForRelease",
+        "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+        "Suppress_OneFrame_ClearsAfterUpdate"
+      ],
+      "focuses": {
+        "api-retirement": [
+          "RetiredPublicApiIsAbsentAndCurrentContractsRemain"
+        ],
+        "audio-runtime": [
+          "RuntimeAudioRegistersInternalCapabilityWithoutPlayback"
+        ],
+        "content-host": [
+          "ModuleScopesRetainFailedChildrenAndIsolateSiblings",
+          "BuiltinProviderOriginSurvivesUnavailableComponents",
+          "ModResourcesUseBoundedIndependentSnapshotsAndOwnerPaths",
+          "ContentHostBindingsRequireExplicitVersionedDependencyAndSafeLayout",
+          "ContentHostsIsolatePacksAndRetainFailedActivationCleanup",
+          "ContentHostsRejectMissingVersionAndHandleReentrantClosure"
+        ],
+        "config-correctness": [
+          "ConfigJsonEscapesRoundTripWithoutRewriting",
+          "ConfigRecoveryFailuresPreserveOriginalBytes",
+          "BadConfigJsonIsBackedUpAndDefaultedWithTempFileWrites",
+          "RegistryAndConfigFacadesEnforceOwnerLifetime"
+        ],
+        "config-dialogs": [
+          "ConfigDialogsPreserveParentsAndReleaseOwnerCallbacks",
+          "ConfigDialogsHandleReentryFailureAndBoundaries",
+          "ConfigRestartRemindersAggregateSuccessfulSaves",
+          "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+          "ConfigMenuEditsSaveCancelAndDetectConflicts",
+          "ManagerViewModelMapsDiagnosticsSnapshot"
+        ],
+        "g10-modal-core": [
+          "ModalSessionsUseRealDispatchAndRejectStaleClosure",
+          "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "InputOwnerModalTargetsQueriesAndSettlesRelease",
+          "InputConfigurationUpdateRetainsPressedBindingForRelease",
+          "InputSuppressionPreservesPhysicalCycleAndOwedRelease"
+        ],
+        "platform-package-dependencies": [
+          "PackagePortableIdentityMatchesClrMetadataWithoutTargetExecution",
+          "PackageSemVerUsesFullPrecedenceAndExplicitPrerelease",
+          "PackageDependencyReaderRejectsAmbiguousNewWireFields",
+          "PackageDependencyPlanOrdersDeclaredRelationships"
+        ],
+        "monster-fixed-load-plan": [
+          "ColdFixedPlansIgnoreDisabledOptionalSources",
+          "LegacyColdPlanKeepsRequiredDependencyRejection",
+          "PackagePlanSelectsOfficialReadyCandidates",
+          "LegacyFixedPlanUsesOfficialSourcesAndKeepsLifetime",
+          "LegacyLoadPlanKeepsOptionalCycleAdmission",
+          "DependencyVersionApiVersionAndCircularDependencyDiagnostics"
+        ],
+        "startup-load-binding": [
+          "RuntimeDependencyThreadsAndFailureCleanup",
+          "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+          "CodeModPreAssemblyFailuresRequireRestartToRetry",
+          "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+          "WorkshopSelectionChangesRequireRestartAndPreserveResidentCode"
+        ],
+        "runtime-hash-boundaries": [
+          "CodeModMinimumRuntimeRejectsBeforeAssemblyLoad",
+          "CodeModPreAssemblyFailuresRequireRestartToRetry",
+          "FailedCodeModCleanupRunsAfterPartialEntryFailure",
+          "WorkshopSelectionChangesRequireRestartAndPreserveResidentCode",
+          "ColdFixedPlansIgnoreDisabledOptionalSources",
+          "LegacyColdPlanKeepsRequiredDependencyRejection",
+          "PackagePlanSelectsOfficialReadyCandidates",
+          "LegacyFixedPlanUsesOfficialSourcesAndKeepsLifetime",
+          "LegacyLoadPlanKeepsOptionalCycleAdmission",
+          "DependencyVersionApiVersionAndCircularDependencyDiagnostics"
+        ],
+        "sdk-optional-runtime": [
+          "RuntimeCandidatePriorityUsesVisiblePathsAndReportsOnlyRequestedAmbiguity",
+          "RuntimeProviderVisibilityAndAmbiguityStayRequestScoped",
+          "RuntimeMissingRequesterRetainsNestedCallerDirectory",
+          "RuntimeExplicitEntryIgnoresUnresolvableTypesAndReleasesAfterStop",
+          "RuntimeDeclaredProviderCanExportItsRenamedEntryAssembly",
+          "RuntimeDynamicRequestSelectsOnlyDemandedDll",
+          "RuntimeCandidatesIgnoreUnusedDllsAndBrokenProofs",
+          "RuntimeSelectedBytesStillProtectClrBinding",
+          "RuntimeManifestUsesInfoAndOptionalDependencies",
+          "RuntimeCandidateTransactionEndsWithoutPersistentCertificate",
+          "RuntimeDeferredModulesBindOnlyOnActivationAndDetectResidentConflict"
+        ],
+        "platform-reflection-core": [
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "platform-reflection-public": [
+          "PublicReflectionUsesOptionalServiceAndIndependentOwnerClosure",
+          "ReflectionUsesExactSignaturesAndPreservesErrors",
+          "ReflectionMetadataUsesTypeIdentityAndBoundedCache",
+          "ReflectionScopeClosesBindingsAndReleasesTargetRoots"
+        ],
+        "platform-services-core": [
+          "OptionalServicesEnforceOwnerLifetimeAndCleanupRetry",
+          "OptionalServicesHandleConstructionReentryAndThreadBoundary",
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "platform-data-core": [
+          "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
+          "OwnerDataRejectsBadPathsAndLinkedRoots",
+          "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
+          "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
+          "GlobalDataMigrationFailureWindowsRetainCommittedBytes"
+        ],
+        "platform-settings-core": [
+          "VersionedConfigValidatesBeforeCommitAndMigratesOnlyOnce",
+          "InputDiagnosticsDescribeOwnerFocusSuppressionAndPotentialConflicts",
+          "OwnerTranslationsFormatRefreshAndDetachWithScope",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "platform-runtime-core": [
+          "PlatformContextInvalidatesBeforeCallbacksAndRejectsFailedReadiness",
+          "PlatformSchedulerHonorsCutoffTickFairnessCapacityAndBudget",
+          "PlatformSchedulerCancelsRacesAndCompletesAsynchronously",
+          "PlatformResourcesCloseInReverseOrderAndRetryFailures",
+          "PlatformCommandsParseDispatchAndIsolateOwners"
+        ],
+        "moreequipment-product": [
+          "ModInstanceDisposeRunsBeforeOwnerRootReleaseAndRetries"
+        ],
+        "debugconsole-product": [
+          "TranslationLocaleFallbackFollowsNativeLanguageAndDeveloperOverrides"
+        ],
+        "content-query": [
+          "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics"
+        ],
+        "phase4-api-cleanup": [
+          "HelperSharedAndOwnerBoundServicesEnforceThreadAndStaleSemantics"
+        ],
+        "phase1-core-cleanup": [
+          "InputScopeGatesSamplingAndDispatch",
+          "InputSuppressionIsButtonScopedWithinFrame",
+          "InputLegacyWrapperUsesKeybindRegistry",
+          "InputLegacyTrackedButtonDoesNotDispatchKeybindEvent",
+          "InputPressedEdgeDispatchesWhenAlreadyReleased",
+          "InputRapidRetapDispatchesSecondPress",
+          "InputKeybindChordUsesPressedEdge",
+          "InputKeybindChordShortTapDispatchesPressedAndReleased",
+          "InputKeybindReleaseEdgeDispatchesAndClearsHeldState",
+          "InputGenericModifiersMatchEitherPhysicalSide",
+          "InputOwnerBoundKeybindQueriesAreOwnerScoped",
+          "InputRegistrationUpdatePreservesUnchangedHeldState",
+          "InputOwnerCleanupInvalidatesCachedButtons",
+          "InputLocalSnapshotQueriesSampleNextFrameWithoutRegisteredRoots",
+          "InputLocalSnapshotWarmPathDoesNotAllocate",
+          "InputBlockedReleaseCleanupDoesNotDispatchOrStick",
+          "SaveAndTitleBoundariesPreserveProcessLifetimeOwnerServices",
+          "RuntimeUiBoundariesIsolateInputWithoutStoppingModUpdates",
+          "InputAudienceSnapshotRemainsImmutableForTheFrame",
+          "InputOwnerModalTargetsQueriesAndSettlesRelease",
+          "InputConfigurationUpdateRetainsPressedBindingForRelease",
+          "InputSuppressionPreservesPhysicalCycleAndOwedRelease",
+          "InputAudienceSteadyStateDoesNotAllocate",
+          "Suppress_OneFrame_ClearsAfterUpdate"
+        ],
+        "manager-ui": [
+          "ManagerViewModelMapsDiagnosticsSnapshot",
+          "ManagerRuntimeProviderRefreshesSnapshotAfterReportExport"
+        ],
+        "official-selection": [
+          "OfficialLocalModPackagesRespectOfficialEnablement",
+          "NativeWorkshopAuthorityAndAuthorSourceModesSelectDeterministically",
+          "DuplicateCodeModSourceIdentityChangeRequiresRestart",
+          "ContentPackSelectionChangesWaitForRestart",
+          "WorkshopSelectionChangesRequireRestartAndPreserveResidentCode",
+          "SourceRemovalPreservesResidentProvidersAndDependents",
+          "SourceRefreshInPlaceUpgradeCannotAuthorizeResidentProviderVersion"
+        ],
+        "official-mod-page": [
+          "OfficialPageShowsEachChangeOnce",
+          "OfficialPageLoadsNewPackagesAndSettlesAgainstRunningInstances",
+          "LateContentPacksAppendOrderAndRefreshResourcesOnce",
+          "DuplicateCodeModSourceIdentityChangeRequiresRestart",
+          "ContentPackSelectionChangesWaitForRestart",
+          "WorkshopSelectionChangesRequireRestartAndPreserveResidentCode",
+          "SourceRemovalPreservesResidentProvidersAndDependents",
+          "SourceRefreshInPlaceUpgradeCannotAuthorizeResidentProviderVersion",
+          "ColdFixedPlansIgnoreDisabledOptionalSources",
+          "LegacyColdPlanKeepsRequiredDependencyRejection",
+          "PackagePlanSelectsOfficialReadyCandidates",
+          "LegacyFixedPlanUsesOfficialSourcesAndKeepsLifetime",
+          "DisabledDiscoveredModLocksConfigPage",
+          "ManifestContractTests.Run",
+          "EventDispatchTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Core.Tests/DTMAPI.Core.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing core rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "runtime-integration",
+      "project": "tests/DTMAPI.RuntimeIntegration.Tests/DTMAPI.RuntimeIntegration.Tests.csproj",
+      "default": [
+        "PlatformSdkTargetRuntimeTests.RunAll",
+        "AnimalModuleTests.Run",
+        "HookRetriesUseTheFrameClockAndClosePermanently",
+        "TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart",
+        "NativeTitleEntryPreservesOtherActionsAndExit",
+        "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+        "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp",
+        "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+        "ControllerReconnectRequiresNeutralAndClosesHeldCycles",
+        "ControllerVocabularyPreservesRawAndUnknownBindings",
+        "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+        "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress",
+        "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu",
+        "TitleSettingsEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "TitleSettingsConfigPagerPreservesExplicitNavigation",
+        "TitleSettingsPresentationPreservesOrderAndDrafts",
+        "TitleSettingsDetailsRetainLongDiagnosticText",
+        "GameBridgeOwnerRetainingServicesExposeCleanupBoundary",
+        "SaveSavingParticipantFailureCancelsNativeBoundary",
+        "NativeSaveResultControlsSavedEvent",
+        "BootstrapFrameCallbacksTickAndSampleOnceInEitherOrder",
+        "BootstrapPlayerLoopResumesAfterNativeStops",
+        "BootstrapPlayerLoopReinstallPreservesFrameState",
+        "OfficialModUiWorkshopRefreshCommitsOnlyAfterSuccessfulCloseSave",
+        "NativeWorkshopBridgeUsesCurrentModManagerStateInsteadOfStaleEnablementFile",
+        "NativeWorkshopOptionalInfoFailureRetainsRequiredAuthorityWithoutInventingEnablement",
+        "NativeWorkshopSubscriptionWithoutInstalledRootDoesNotAuthorizeRawDirectory",
+        "WorkshopValidationUsesNativeSourceSelection",
+        "HookCallbackSafeFallbacksReturnFallbacksAndRecordDiagnostics",
+        "HarmonyTargetSignatureSelectsExactOverload",
+        "ItemDisplayNameApiReadsCurrentNativeTitles",
+        "GameBridgeFeatureFailureThrottleRecordsOneDiagnosticsErrorButKeepsFailureCount",
+        "GameBridgeFeatureFailureRecoveryStartsNewDiagnosticsEpisodeAfterStableSuccess",
+        "GameBridgeFeatureExceptionSummaryUnwrapsTargetInvocation",
+        "CropHarvestingUsesNativeMaturityAndCallerLimit"
+      ],
+      "focuses": {
+        "title-presentation": [
+          "TitleSettingsRestartNoticeFollowsSuccessfulSwitchChanges",
+          "TitleSettingsPresentationPreservesOrderAndDrafts",
+          "TitleSettingsDetailsRetainLongDiagnosticText",
+          "TitleSettingsConfigPagerPreservesExplicitNavigation",
+          "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+          "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+          "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu"
+        ],
+        "config-dialogs": [
+          "TitleSettingsRestartNoticeFollowsSuccessfulSwitchChanges",
+          "TitleSettingsPresentationPreservesOrderAndDrafts",
+          "TitleSettingsBoundaryClosesOnlyItsOwnedRuntimeMenu"
+        ],
+        "platform-sdk-targets": [
+          "PlatformSdkTargetRuntimeTests.RunAll"
+        ],
+        "input-latch": [
+          "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+          "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress"
+        ],
+        "frame-drivers": [
+          "BootstrapFrameCallbacksTickAndSampleOnceInEitherOrder",
+          "BootstrapPlayerLoopResumesAfterNativeStops",
+          "BootstrapPlayerLoopReinstallPreservesFrameState"
+        ],
+        "platform-controller": [
+          "TitleSettingsFitsChangingViewportAndDefersEntryUntilRestart",
+          "NativeTitleEntryPreservesOtherActionsAndExit",
+          "RuntimeInputConfigSerializesAndOwnsOnlyItsPage",
+          "MenuNavigationWaitsForNeutralAndRepeatsWithoutCatchingUp",
+          "ConfigFocusGraphReachesControlsAcrossRowsAndColumns",
+          "ControllerReconnectRequiresNeutralAndClosesHeldCycles",
+          "ControllerVocabularyPreservesRawAndUnknownBindings",
+          "InputNativeEdgeLatchRetainsAndConsumesShortTapOnce",
+          "InputNativeEdgeLatchRejectsDuplicateSourcesAndHeldPress"
+        ],
+        "item-display-name": [
+          "ItemDisplayNameApiReadsCurrentNativeTitles"
+        ],
+        "animal-modules": [
+          "AnimalModuleTests.Run"
+        ],
+        "native-save-completion": [
+          "NativeSaveResultControlsSavedEvent"
+        ],
+        "moreequipment-product": [
+          "SaveSavingParticipantFailureCancelsNativeBoundary"
+        ],
+        "title-config-pager": [
+          "TitleSettingsConfigPagerPreservesExplicitNavigation"
+        ],
+        "crop-harvesting": [
+          "CropHarvestingUsesNativeMaturityAndCallerLimit"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.RuntimeIntegration.Tests/DTMAPI.RuntimeIntegration.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing runtime-integration rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "compatibility",
+      "project": "tests/DTMAPI.Compatibility.Tests/DTMAPI.Compatibility.Tests.csproj",
+      "default": [
+        "InactiveOwnerCleanupCanBeRetriedUntilZero"
+      ],
+      "focuses": {
+        "owner-cleanup": [
+          "InactiveOwnerCleanupCanBeRetriedUntilZero"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Compatibility.Tests/DTMAPI.Compatibility.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing compatibility rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "fishbreeding",
+      "project": "tests/DTMAPI.FishBreeding.Tests/DTMAPI.FishBreeding.Tests.csproj",
+      "default": [
+        "FishBreedingProductTests.RunAll"
+      ],
+      "focuses": {
+        "fishbreeding-product": [
+          "FishBreedingProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.FishBreeding.Tests/DTMAPI.FishBreeding.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Fish roe title, fallback and owner callback behavior.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/FishBreedingAssistant/src/",
+        "mods/FishBreedingAssistant/*.json"
+      ]
+    },
+    {
+      "id": "animalhusbandry",
+      "project": "tests/DTMAPI.AnimalHusbandry.Tests/DTMAPI.AnimalHusbandry.Tests.csproj",
+      "default": [
+        "AnimalHusbandryProductTests.RunAll"
+      ],
+      "focuses": {
+        "animalhusbandry-product": [
+          "AnimalHusbandryProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.AnimalHusbandry.Tests/DTMAPI.AnimalHusbandry.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing animalhusbandry rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "autofishing",
+      "project": "tests/DTMAPI.AutoFishing.Tests/DTMAPI.AutoFishing.Tests.csproj",
+      "default": [
+        "RebuildTests.RunAll"
+      ],
+      "focuses": {
+        "autofishing-product": [
+          "RebuildTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.AutoFishing.Tests/DTMAPI.AutoFishing.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing autofishing rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "chestlocator",
+      "project": "tests/DTMAPI.ChestLocator.Tests/DTMAPI.ChestLocator.Tests.csproj",
+      "default": [
+        "ChestLocatorEnhancerProductTests.RunAll"
+      ],
+      "focuses": {
+        "chestlocator-product": [
+          "ChestLocatorEnhancerProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.ChestLocator.Tests/DTMAPI.ChestLocator.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing chestlocator rule and product contracts.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "moreequipment",
+      "project": "tests/DTMAPI.MoreEquipmentSlots.Tests/DTMAPI.MoreEquipmentSlots.Tests.csproj",
+      "default": [
+        "EquipmentPayloadTests.RunAll",
+        "LegacyEquipmentImportTests.RunAll"
+      ],
+      "focuses": {
+        "moreequipment-product": [
+          "EquipmentPayloadTests.RunAll",
+          "LegacyEquipmentImportTests.RunAll"
+        ],
+        "moreequipment-payload": [
+          "EquipmentPayloadTests.RunAll"
+        ],
+        "moreequipment-legacy-import": [
+          "LegacyEquipmentImportTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.MoreEquipmentSlots.Tests/DTMAPI.MoreEquipmentSlots.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "MES native payload and legacy import behavior.",
+      "enabledByDefault": true
+    },
+    {
+      "id": "strongplantinggun",
+      "project": "tests/DTMAPI.StrongPlantingGun.Tests/DTMAPI.StrongPlantingGun.Tests.csproj",
+      "default": [
+        "StrongPlantingGunProductTests.RunAll"
+      ],
+      "focuses": {
+        "strongplantinggun-product": [
+          "StrongPlantingGunProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.StrongPlantingGun.Tests/DTMAPI.StrongPlantingGun.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing strongplantinggun rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/StrongPlantingGun/src/",
+        "mods/StrongPlantingGun/*.json"
+      ]
+    },
+    {
+      "id": "zoom",
+      "project": "tests/DTMAPI.Zoom.Tests/DTMAPI.Zoom.Tests.csproj",
+      "default": [
+        "ZoomProductTests.RunAll",
+        "ZoomProductArchitectureBoundariesRemainOrdinary"
+      ],
+      "focuses": {
+        "zoom-product": [
+          "ZoomProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.Zoom.Tests/DTMAPI.Zoom.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing zoom rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/Zoom/src/",
+        "mods/Zoom/*.json"
+      ]
+    },
+    {
+      "id": "debugconsole",
+      "project": "tests/DTMAPI.DebugConsole.Tests/DTMAPI.DebugConsole.Tests.csproj",
+      "default": [
+        "DebugConsoleSelectedStackDeleteIdentityAndContents",
+        "DebugConsoleSelectedStackDeleteNotificationAndUiLifetime",
+        "DebugConsoleCropCircleAndFamilies",
+        "DebugConsoleCropPartialAndIdentity",
+        "DebugConsoleCatalogCountDispatchAndPartialResults",
+        "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+        "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+        "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+        "DebugConsoleSpawnProductTests.RunAll",
+        "DebugConsoleInventoryProductTests.RunAll",
+        "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+        "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+        "DebugConsoleOneHundredCompatibilitySemantics",
+        "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+        "DebugConsoleHostBindingFollowsOwnerLifetime",
+        "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+        "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+        "DebugConsoleEscapeCloseDrainProtectsNativeOwnerBoundary",
+        "DebugConsoleEventSystemDoesNotChooseInputSystemModuleWhenNotReady",
+        "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath",
+        "MovementDebugLeaseClearsAtSaveBoundariesAndMissingMotionReset",
+        "DebugConsoleHarmonyOwnerFixturePasses",
+        "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+        "DebugConsoleCatalogPagingPreservesQueriesAndSnapshots",
+        "DebugConsoleCatalogSourcesAvoidItemTraversalAndRetry"
+      ],
+      "focuses": {
+        "debugconsole-product": [
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+          "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+          "DebugConsoleMonsterPositionConvertsToExactNativeVector2",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+          "DebugConsoleHarmonyOwnerFixturePasses",
+          "DebugConsoleSaveLoadedRestoresBeforePublishingSession",
+          "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+          "DebugConsoleOneHundredCompatibilitySemantics",
+          "DebugConsoleTitleDestroysUiGraphAndSaveRequiresConfirmation",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath"
+        ],
+        "y-simplification": [
+          "DebugConsoleCatalogPagingPreservesQueriesAndSnapshots",
+          "DebugConsoleCatalogSourcesAvoidItemTraversalAndRetry",
+          "DebugConsoleRawYCloseDelegatesToOwnerKeybind",
+          "DebugConsoleEscapeCloseDrainProtectsNativeOwnerBoundary",
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleResponsiveLayoutKeepsPhysicalTargetsAndStableBreakpoints",
+          "DebugConsoleCatalogCountDispatchAndPartialResults",
+          "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll"
+        ],
+        "y-owner-boundary-diagnostic": [
+          "DebugConsoleFrozenCoreOwnerBoundaryDiagnostic"
+        ],
+        "y-selected-delete": [
+          "DebugConsoleSelectedStackDeleteIdentityAndContents",
+          "DebugConsoleSelectedStackDeleteNotificationAndUiLifetime",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "y-crop-maturity": [
+          "DebugConsoleCropCircleAndFamilies",
+          "DebugConsoleCropPartialAndIdentity",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "y-catalog-count": [
+          "DebugConsoleCatalogCountDispatchAndPartialResults",
+          "DebugConsoleCatalogFailureRetriesWithoutLostRows",
+          "DebugConsoleSpawnProductTests.RunAll",
+          "DebugConsoleInventoryProductTests.RunAll",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet",
+          "DebugConsoleUsesOnlyCellPointerDownRightClickGivePath"
+        ],
+        "y-session-modes": [
+          "DebugConsoleCustomTimeIsBoundedAndIndependent",
+          "DebugConsoleModalIdentityKeepsReentryAndRestoreRetry",
+          "DebugConsoleHarmonyOwnerFixturePasses",
+          "DebugConsoleFinalSpeedMultiplierPreservesNativeBuffState",
+          "DebugConsoleLocalizedContentHasOneNineLanguageKeySet"
+        ],
+        "debugconsole-compatibility-owner": [
+          "DebugConsoleHarmonyOwnerFixturePasses"
+        ],
+        "debugconsole-inventory": [
+          "DebugConsoleInventoryProductTests.RunAll"
+        ]
+      },
+      "dependencies": [
+        "BepInExFixture"
+      ],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.DebugConsole.Tests/DTMAPI.DebugConsole.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8",
+        "BepInExFixture"
+      ],
+      "purpose": "Existing debugconsole rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/DebugConsole/src/",
+        "mods/DebugConsole/*.json"
+      ]
+    },
+    {
+      "id": "source-contracts",
+      "project": "tests/DTMAPI.SourceContracts.Tests/DTMAPI.SourceContracts.Tests.csproj",
+      "default": [
+        "PreviewVersionMetadataIsConsistent"
+      ],
+      "focuses": {
+        "prerelease-step5": [
+          "PreviewVersionMetadataIsConsistent"
+        ],
+        "platform-version-projection": [
+          "PreviewVersionMetadataIsConsistent"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.SourceContracts.Tests/DTMAPI.SourceContracts.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing source-contracts rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/*/manifest.json",
+        "mods/*/info.json",
+        "sdk/schemas/dtmapi-author.schema.json"
+      ]
+    },
+    {
+      "id": "source-arbitration",
+      "project": "tests/DTMAPI.SourceArbitration.Tests/DTMAPI.SourceArbitration.Tests.csproj",
+      "default": [],
+      "focuses": {
+        "official-source-arbitration-once": [
+          "OfficialSourceArbitrationOneOffMatrix"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.SourceArbitration.Tests/DTMAPI.SourceArbitration.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing source-arbitration rule and product contracts.",
+      "enabledByDefault": false
+    },
+    {
+      "id": "actionspeed",
+      "project": "tests/DTMAPI.ActionSpeed.Tests/DTMAPI.ActionSpeed.Tests.csproj",
+      "default": [
+        "RebuildTests.RunAll"
+      ],
+      "focuses": {
+        "actionspeed-product": [
+          "RebuildTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.ActionSpeed.Tests/DTMAPI.ActionSpeed.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Existing actionspeed rule and product contracts.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/ActionSpeed/src/",
+        "mods/ActionSpeed/*.json"
+      ]
+    },
+    {
+      "id": "DTMAPI.MultiPlatformInstaller.Tests",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.MultiPlatformInstaller.Tests/DTMAPI.MultiPlatformInstaller.Tests.csproj",
+      "project": "tests/DTMAPI.MultiPlatformInstaller.Tests/DTMAPI.MultiPlatformInstaller.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "DTMAPI.MultiPlatformInstaller.Tests contract checks.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "oneaction",
+      "project": "tests/DTMAPI.OneActionComplete.Tests/DTMAPI.OneActionComplete.Tests.csproj",
+      "default": [
+        "OneActionProductTests.RunAll"
+      ],
+      "focuses": {
+        "oneaction-product": [
+          "OneActionProductTests.RunAll"
+        ]
+      },
+      "dependencies": [],
+      "runner": "unit-exe",
+      "entry": "tests/DTMAPI.OneActionComplete.Tests/DTMAPI.OneActionComplete.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "purpose": "Fish roe title, fallback and owner callback behavior.",
+      "enabledByDefault": true,
+      "inputs": [
+        "mods/OneActionComplete/src/",
+        "mods/OneActionComplete/*.json"
+      ]
+    },
+    {
+      "id": "audiocontent-public",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.AudioContent.Tests/DTMAPI.AudioContent.Tests.csproj",
+      "project": "tests/DTMAPI.AudioContent.Tests/DTMAPI.AudioContent.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows",
+        "Linux"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Optional content contract and codec behavior without a game.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    },
+    {
+      "id": "sdk-optional-tools",
+      "runner": "existing-exe-focus",
+      "entry": "tests/DTMAPI.AuthorSdk.Tests/DTMAPI.AuthorSdk.Tests.csproj",
+      "project": "tests/DTMAPI.AuthorSdk.Tests/DTMAPI.AuthorSdk.Tests.csproj",
+      "distribution": "public",
+      "platforms": [
+        "Windows"
+      ],
+      "requires": [
+        "DotNet8"
+      ],
+      "arguments": [],
+      "purpose": "Ordinary external build, directory packing, optional deployment and recovery.",
+      "enabledByDefault": true,
+      "default": [],
+      "focuses": {},
+      "dependencies": []
+    }
+  ],
+  "supportingInputs": [
+    {
+      "path": "tests/DTMAPI.UnitTests/DTMAPI.UnitTests.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/AdvancedRuntimeFailureFixture/AdvancedRuntimeFailureFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/AdvancedRuntimeSuccessFixture/AdvancedRuntimeSuccessFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ChestLocatorHarmonyOwnerFixture/ChestLocatorHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DebugConsoleHarmonyOwnerFixture/DebugConsoleHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DebugConsoleNativeFixture/DebugConsoleNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyCollisionA/LegacyCollisionA.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyCollisionB/LegacyCollisionB.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeCodeModFixture/LegacyNativeCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeHelperFixture/LegacyNativeHelperFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/LegacyNativeThrowingCodeModFixture/LegacyNativeThrowingCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/StrongPlantingGunHarmonyOwnerFixture/StrongPlantingGunHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/StrongPlantingGunNativeFixture/StrongPlantingGunNativeFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ZoomHarmonyOwnerFixture/ZoomHarmonyOwnerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Referenced fixture/project or compatibility launcher, not a separately selected test suite."
+    },
+    {
+      "path": "build/test-unit.ps1",
+      "distribution": "public",
+      "purpose": "Metadata-driven suite entry point."
+    },
+    {
+      "path": "tests/DTMAPI.ActionSpeed.Tests/NativeInstallFixture/NativeInstallFixture.csproj",
+      "distribution": "public",
+      "purpose": "Explicit auxiliary test input; not selected by default profiles."
+    },
+    {
+      "path": "tests/DTMAPI.AudioPrepare.UiTests/DTMAPI.AudioPrepare.UiTests.csproj",
+      "distribution": "public",
+      "purpose": "Opt-in published audio UI harness; requires explicit tool, audio input and output paths."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/ConflictingNativeHelperFixture/ConflictingNativeHelperFixture.csproj",
+      "distribution": "public",
+      "purpose": "Synthetic conflicting assembly identity fixture for public dependency-loading tests."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandCallerFixture/DemandCallerFixture.csproj",
+      "distribution": "public",
+      "purpose": "Synthetic caller fixture for demand-driven dependency-loading tests."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/UnusedReferenceFixture/UnusedReferenceFixture.csproj",
+      "distribution": "public",
+      "purpose": "Unused AssemblyRef fixture for public tests that distinguish candidate DLLs from demanded dependencies."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandEntryFixture/DemandEntryFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime demand-loading caller fixture; built with the selected unit project."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/DemandPayloadFixture/DemandPayloadFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime demand-loading payload fixture; built with the selected unit project."
+    },
+    {
+      "path": "tests/DTMAPI.UnitTests/Fixtures/RuntimeAudioFixture/RuntimeAudioFixture.csproj",
+      "distribution": "public",
+      "purpose": "Runtime Audio component fixture used by unit tests."
+    }
+  ]
+}

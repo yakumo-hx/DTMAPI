@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>strongplantinggun</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+
+    <Compile Include="../../mods/StrongPlantingGun/src/StrongPlantingGunConfig.cs" Link="StrongPlantingGun/StrongPlantingGunConfig.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunProductContract.cs" Link="StrongPlantingGun/StrongPlantingGunProductContract.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunHookOwnership.cs" Link="StrongPlantingGun/StrongPlantingGunHookOwnership.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunLogGate.cs" Link="StrongPlantingGun/StrongPlantingGunLogGate.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunReflectionCache.cs" Link="StrongPlantingGun/StrongPlantingGunReflectionCache.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunCleanupTransaction.cs" Link="StrongPlantingGun/StrongPlantingGunCleanupTransaction.cs" />
+    <Compile Include="../../mods/StrongPlantingGun/src/Native/StrongPlantingGunLifecycleSummary.cs" Link="StrongPlantingGun/StrongPlantingGunLifecycleSummary.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/StrongPlantingGunHarmonyOwnerFixture/StrongPlantingGunHarmonyOwnerFixture.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

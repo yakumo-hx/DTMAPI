@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><DtmApiTestSuite>oneaction</DtmApiTestSuite></PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../../mods/OneActionComplete/src/OneActionConfig.cs" Link="Product/OneActionConfig.cs" />
+    <Compile Include="../../mods/OneActionComplete/src/Native/OneActionEngine.cs" Link="Product/OneActionEngine.cs" />
+    <Compile Include="../../mods/OneActionComplete/src/Native/OneActionCallbacks.cs" Link="Product/OneActionCallbacks.cs" />
+    <Compile Include="../../mods/OneActionComplete/src/Native/OneActionNativeRuntime.cs" Link="Product/OneActionNativeRuntime.cs" />
+    <Compile Remove="NativeProbe/**/*.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

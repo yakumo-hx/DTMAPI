@@ -1,0 +1,24 @@
+{
+  "name": "DTMAPI动作加速",
+  "author": "Yuuka",
+  "version": "2.0.1",
+  "description": "需要 DTMAPI 0.7.5。\n\n让日常动作变快。六类动作可以分别开关，各自设置 1～4 倍速度，默认 3 倍：\n- 工具：斧头、镐、镰刀，用水壶浇水。\n- 装水：空瓶装水、水壶补水。\n- 吃喝：吃东西和喝水的动画。\n- 交互：加燃料、加饲料、抚摸动物、挤奶、操作电器。\n- 采集：收获作物、采集物、采树脂。\n- 种植：播种、种树、施肥、铺保护膜、使用种植枪。\n\n还有两个小功能：\n- 自动装水（默认关闭）：站在水里、手拿空瓶时自动一瓶接一瓶地装水，可以选普通或更快的强力档。\n- 右键持续喝水（默认开启）：按住右键连续喝瓶装水时更快。\n\n体力消耗、物品消耗和产出都跟原版一样，只是动作变快。在标题页的 Mod 配置里设置。",
+  "tags": [
+    "Mod",
+    "Gameplay",
+    "Functional",
+    "DTMAPI",
+    "Chinese"
+  ],
+  "localized_name": {
+    "schinese": "DTMAPI动作加速",
+    "tchinese": "DTMAPI動作加速",
+    "english": "DTMAPI Action Speed"
+  },
+  "localized_description": {
+    "schinese": "需要 DTMAPI 0.7.5。\n\n让日常动作变快。六类动作可以分别开关，各自设置 1～4 倍速度，默认 3 倍：\n- 工具：斧头、镐、镰刀，用水壶浇水。\n- 装水：空瓶装水、水壶补水。\n- 吃喝：吃东西和喝水的动画。\n- 交互：加燃料、加饲料、抚摸动物、挤奶、操作电器。\n- 采集：收获作物、采集物、采树脂。\n- 种植：播种、种树、施肥、铺保护膜、使用种植枪。\n\n还有两个小功能：\n- 自动装水（默认关闭）：站在水里、手拿空瓶时自动一瓶接一瓶地装水，可以选普通或更快的强力档。\n- 右键持续喝水（默认开启）：按住右键连续喝瓶装水时更快。\n\n体力消耗、物品消耗和产出都跟原版一样，只是动作变快。在标题页的 Mod 配置里设置。",
+    "tchinese": "需要 DTMAPI 0.7.5。\n\n讓日常動作變快。六類動作可以分別開關，各自設定 1～4 倍速度，預設 3 倍：\n- 工具：斧頭、鎬、鐮刀，用水壺澆水。\n- 裝水：空瓶裝水、水壺補水。\n- 吃喝：吃東西和喝水的動畫。\n- 互動：加燃料、加飼料、撫摸動物、擠奶、操作電器。\n- 採集：收穫作物、採集物、採樹脂。\n- 種植：播種、種樹、施肥、鋪保護膜、使用種植槍。\n\n還有兩個小功能：\n- 自動裝水（預設關閉）：站在水中、手拿空瓶時自動一瓶接一瓶地裝水，可以選擇一般或更快的強力檔。\n- 右鍵持續喝水（預設開啟）：按住右鍵連續喝瓶裝水時更快。\n\n體力消耗、物品消耗和產出都與原版相同，只是動作變快。在標題畫面的 Mod 設定中調整。",
+    "english": "Requires DTMAPI 0.7.5.\n\nSpeeds up everyday actions. Six groups can be turned on separately, each at 1x-4x speed (3x by default):\n- Tools: axe, pickaxe, sickle, and watering with the watering can.\n- Filling water: filling empty bottles and refilling the watering can.\n- Eating and drinking animations.\n- Interactions: adding fuel or feed, petting animals, milking, operating machines.\n- Gathering: harvesting crops, forageables and resin.\n- Planting: sowing, planting trees, fertilizing, laying film, and the planting gun.\n\nTwo extra features:\n- Auto-fill (off by default): while standing in water with an empty bottle in hand, bottles are filled one after another. Choose normal or a faster strong mode.\n- Hold right-click to drink (on by default): drinking bottled water with right-click held goes faster.\n\nEnergy use, item costs and results are the same as the base game; only the actions are faster. Change the settings in Mod config on the title screen."
+  },
+  "MinimumDTMApiVersion": "0.7.5"
+}

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DtmApiTestSuite>core</DtmApiTestSuite>
+  </PropertyGroup>
+  <Import Project="../DTMAPI.UnitTests/Suite.props" />
+  <ItemGroup>
+    <Compile Include="../../sdk/examples/OwnedCleanup/ModEntry.cs" Link="AuthorExamples/OwnedCleanup.cs" />
+    <Compile Include="../../sdk/examples/LegacyConfig/ModEntry.cs" Link="AuthorExamples/LegacyConfig.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeApiFixture.cs" Link="Shared/NativeApiFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeShapeFixture.cs" Link="Shared/NativeShapeFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/NativeConfigurationFixture.cs" Link="Shared/NativeConfigurationFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CodeModPackageFixture.cs" Link="Shared/CodeModPackageFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/SourceAuthorityFixture.cs" Link="Shared/SourceAuthorityFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RuntimeHostFixture.cs" Link="Shared/RuntimeHostFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RepositoryPaths.cs" Link="Shared/RepositoryPaths.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/PersistentRootFixture.cs" Link="Shared/PersistentRootFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/OfficialSourceFixture.cs" Link="Shared/OfficialSourceFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/RetryingOwnerFixture.cs" Link="Shared/RetryingOwnerFixture.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/Assertions.cs" Link="Shared/Assertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/ReflectionAssertions.cs" Link="Shared/ReflectionAssertions.cs" />
+    <Compile Include="../DTMAPI.UnitTests/Shared/CoreOwnerCounts.cs" Link="Shared/CoreOwnerCounts.cs" />
+    <ProjectReference Include="../../src/DTMAPI.Abstractions/DTMAPI.Abstractions.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.Core/DTMAPI.Core.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.ModConfigMenu/DTMAPI.ModConfigMenu.csproj" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/RuntimeCodeModFixture/RuntimeCodeModFixture.csproj" />
+    <ProjectReference Include="../../src/DTMAPI.RuntimeModules/DTMAPI.RuntimeModules.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/LegacyNativeHelperFixture/LegacyNativeHelperFixture.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/DemandEntryFixture/DemandEntryFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/DemandPayloadFixture/DemandPayloadFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/DemandCallerFixture/DemandCallerFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../DTMAPI.UnitTests/Fixtures/ConflictingNativeHelperFixture/ConflictingNativeHelperFixture.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="CopyDemandFixtures" AfterTargets="Build">
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/DemandCallerFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.DemandCallerFixture.dll" DestinationFolder="$(TargetDir)demand-fixtures" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/ConflictingNativeHelperFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.LegacyNativeHelperFixture.dll" DestinationFolder="$(TargetDir)conflicting-fixture" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/DemandEntryFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.DemandEntryFixture.dll" DestinationFolder="$(TargetDir)demand-fixtures" />
+    <Copy SourceFiles="../DTMAPI.UnitTests/Fixtures/DemandPayloadFixture/bin/$(Configuration)/netstandard2.0/DTMAPI.DemandPayloadFixture.dll" DestinationFolder="$(TargetDir)demand-fixtures" />
+  </Target>
+  <ItemGroup>
+    <EmbeddedResource Include="RetiredPublicTypes.txt" LogicalName="RetiredPublicTypes.txt" />
+  </ItemGroup>
+</Project>

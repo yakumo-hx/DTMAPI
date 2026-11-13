@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>DTMAPI.MultiPlatformInstaller.Tests</AssemblyName>
+    <RootNamespace>DTMAPI.MultiPlatformInstaller.Tests</RootNamespace>
+    <!-- 用 dotnet run 执行，通过反射检查自包含安装器。 -->
+    <IsTestProject>false</IsTestProject>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DTMAPI.MultiPlatformInstaller\DTMAPI.MultiPlatformInstaller.csproj" />
+  </ItemGroup>
+</Project>

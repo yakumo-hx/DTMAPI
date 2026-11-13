@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ActionSpeedNativeInstallFixture</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Compile the actual installer and callbacks. Only the native host is a fixture. -->
+    <Compile Include="../../../mods/ActionSpeed/src/Rebuild/NativeActions*.cs" Link="Product/%(Filename)%(Extension)" />
+    <Compile Include="../../../mods/ActionSpeed/src/Rebuild/ActionConfig.cs" Link="Product/ActionConfig.cs" />
+    <Compile Include="../../../mods/ActionSpeed/src/Rebuild/ActionRules.cs" Link="Product/ActionRules.cs" />
+    <Compile Include="../../../mods/ActionSpeed/src/Rebuild/SpeedLease.cs" Link="Product/SpeedLease.cs" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="0Harmony"><HintPath>../../../.tools/bepinex/extract/BepInEx/core/0Harmony.dll</HintPath><Private>true</Private></Reference>
+    <None Include="../../../.tools/bepinex/extract/BepInEx/core/*.dll" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
