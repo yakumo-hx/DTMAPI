@@ -20,7 +20,7 @@ public sealed class ModEntry : DtmMod, IDisposable
             RegisterPage();
             helper.Events.Save.SaveLoaded += OnSaveLoaded;
             helper.Events.GameLoop.ReturnedToTitle += OnTitle;
-            Monitor.Log("ActionSpeed 2.0.0 loaded: six independent action controls; settings registered with DTMAPI Mod Config Menu.", LogLevel.Info);
+            Monitor.Log($"动作加速 {Manifest.Version} 已加载，设置入口在 Mod 配置中。", LogLevel.Info);
         }
         catch { Dispose(); throw; }
     }

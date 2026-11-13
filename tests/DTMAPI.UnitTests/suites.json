@@ -886,7 +886,9 @@
           "RebuildTests.RunAll"
         ]
       },
-      "dependencies": [],
+      "dependencies": [
+        "BepInExFixture"
+      ],
       "runner": "unit-exe",
       "entry": "tests/DTMAPI.ActionSpeed.Tests/DTMAPI.ActionSpeed.Tests.csproj",
       "distribution": "public",
@@ -1076,7 +1078,7 @@
     {
       "path": "tests/DTMAPI.ActionSpeed.Tests/NativeInstallFixture/NativeInstallFixture.csproj",
       "distribution": "public",
-      "purpose": "Explicit auxiliary test input; not selected by default profiles."
+      "purpose": "Windows native callback regression, run by the actionspeed suite."
     },
     {
       "path": "tests/DTMAPI.AudioPrepare.UiTests/DTMAPI.AudioPrepare.UiTests.csproj",

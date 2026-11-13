@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics;
+using System.IO;
+using DTMAPI.Testing;
 using Yuuka.DTMAPI.ActionSpeed;
 
 namespace DTMAPI.UnitTests;
@@ -17,7 +20,23 @@ internal static class RebuildTests
         checks += LifecycleTests.RunAll();
         checks += NativeCallbackTests.RunAll();
         checks += ConfigMigrationTests.RunAll();
+        NativeAnimationCallbacks();
         Console.WriteLine("ActionSpeed rebuild: " + checks + " behavioral assertions passed.");
+    }
+
+    private static void NativeAnimationCallbacks()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Console.WriteLine("ActionSpeed native callback fixture requires Windows/.NET Framework.");
+            return;
+        }
+        string configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+        string executable = Path.Combine(DtmApiTestSession.FindRepositoryRoot(), "tests", "DTMAPI.ActionSpeed.Tests",
+            "NativeInstallFixture", "bin", configuration, "net48", "ActionSpeedNativeInstallFixture.exe");
+        var result = BoundedTestProcess.Run(new ProcessStartInfo(executable));
+        if (result.ExitCode != 0) throw new Exception("ActionSpeed native callbacks failed: " + result.Output + result.Error);
+        Console.WriteLine(result.Output);
     }
 
     private static void CategoriesFollowOperations()

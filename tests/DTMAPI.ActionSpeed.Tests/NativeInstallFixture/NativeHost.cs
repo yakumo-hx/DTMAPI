@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 // DTMAPI-authored signature/dispatch fixture, not game implementation. Nothing
@@ -12,8 +13,11 @@ namespace UnityEngine
 {
     public class Component
     {
-        public T GetComponent<T>() where T : class => null!;
-        public T[] GetComponentsInChildren<T>(bool includeInactive) => Array.Empty<T>();
+        public Animator? AttachedAnimator;
+        public Animator[] ChildAnimators = Array.Empty<Animator>();
+        public T GetComponent<T>() where T : class => (AttachedAnimator as T)!;
+        public T[] GetComponentsInChildren<T>(bool includeInactive) =>
+            new[] { AttachedAnimator }.Concat(ChildAnimators).OfType<T>().ToArray();
     }
     public class Animator : Component { public float speed { get; set; } = 1; }
 }

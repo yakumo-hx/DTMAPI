@@ -108,7 +108,7 @@ internal sealed partial class NativeActions : IDisposable
         RestoreMotion(); clocks.Clear();
         body = nextBody; hat = nextBody.HatRenderer; toolRenderer = nextBody.ToolRenderer;
         Add(nextBody.GetComponent<Animator>());
-        if (toolRenderer != null) Add(toolRenderer.GetComponent<Animator>());
+        if (toolRenderer != null) foreach (var animator in toolRenderer.GetComponentsInChildren<Animator>(true)) Add(animator);
         if (hat != null) foreach (var animator in hat.GetComponentsInChildren<Animator>(true)) Add(animator);
     }
     private void Add(Animator animator) { if (animator != null) clocks.Add(new SpeedLease(new UnityClock(animator))); }
