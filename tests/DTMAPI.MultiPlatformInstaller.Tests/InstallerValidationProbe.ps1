@@ -48,7 +48,7 @@ function New-VersionOnlyProbeInput {
         FixtureOnly = $true; SchemaVersion = $Schema; RuntimeVersion = $Version; InstallerBuildCommit = ''
         RuntimeSource = @{ Kind = 'Candidate'; BuildCommit = ''; SharedFiles = @('fixture-a', 'fixture-b') }
     }
-    Write-DtmApiMultiPlatformInstallerFixtureText -Path (Join-Path $path 'Content/DTMAPIInstaller/tools/collect-logs.ps1') -Text '# fixture only'
+    Write-DtmApiMultiPlatformInstallerFixtureText -Path (Join-Path $path 'Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/assets/branding/dtmapi-icon.png') -Text 'fixture icon'
     Write-DtmApiMultiPlatformInstallerFixtureText -Path (Join-Path $path 'DTMAPI-MultiPlatform-Installer.exe') -Text "non-executable call fixture: $Name"
     return $path
 }
@@ -61,8 +61,8 @@ function Invoke-DtmApiMultiPlatformInstallerHost {
     $releasePath = Join-Path $Package 'Content/DTMAPI/release-manifest.json'
     $release = Get-Content -LiteralPath $releasePath -Raw -Encoding UTF8 | ConvertFrom-Json
     $manifest = Get-Content -LiteralPath (Join-Path $Package 'Content/DTMAPIInstaller/multiplatform-package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    $tool = [IO.File]::ReadAllText((Join-Path $Package 'Content/DTMAPIInstaller/tools/collect-logs.ps1'))
-    $script:Calls.Add([pscustomobject]@{ HostPath = $HostPath; Package = $Package; Action = $Action; Version = $release.DTMAPIVersion; Manifest = $manifest; SharedToolChanged = $tool.Contains('# changed') })
+    $asset = [IO.File]::ReadAllText((Join-Path $Package 'Content/DTMAPIInstaller/Payload/BepInEx/plugins/DTMAPI/assets/branding/dtmapi-icon.png'))
+    $script:Calls.Add([pscustomobject]@{ HostPath = $HostPath; Package = $Package; Action = $Action; Version = $release.DTMAPIVersion; Manifest = $manifest; SharedAssetChanged = $asset.Contains('# changed') })
     if ($script:Calls.Count -eq $script:FailAt) { return [pscustomobject]@{ ExitCode = 89; Text = 'probe-injected host failure' } }
     if ($script:ProbeMode -eq 'provenance') {
         return [pscustomobject]@{ ExitCode = 3; Text = 'DTM-E1201: bounded rejection response' }
@@ -73,12 +73,6 @@ function Invoke-DtmApiMultiPlatformInstallerHost {
     }
     $installed = Join-Path $Game 'DTMAPI/release-manifest.json'
     if ($Action -eq 'install') {
-        if (Test-Path -LiteralPath $installed) {
-            $old = Get-Content -LiteralPath $installed -Raw -Encoding UTF8 | ConvertFrom-Json
-            if ([version]$old.DTMAPIVersion -gt [version]$release.DTMAPIVersion) {
-                return [pscustomobject]@{ ExitCode = 3; Text = 'DTM-E1202: downgrade' }
-            }
-        }
         Copy-Item -LiteralPath $releasePath -Destination $installed -Force
     }
     elseif ($Action -eq 'uninstall') { Remove-Item -LiteralPath $installed -Force }
@@ -214,8 +208,8 @@ try {
     Reset-Probe
     Invoke-TransitionProbe 'current-transition' $current $previous061 $previous070
     $report = $script:DtmApiMultiPlatformVersionTransitionResults.Windows
-    Assert-DtmApiMultiPlatformInstallerTest -Condition ($report.State -eq 'passed' -and $report.CompletedSteps -eq 18 -and $report.CompletedRejections -eq 8 -and $script:Calls.Count -eq 26) -Message 'Current transition returned early or counted unexecuted steps.'
-    Assert-DtmApiMultiPlatformInstallerTest -Condition (($report.Routes.From -join '|') -ceq '0.6.1|0.7.0' -and @($report.Routes | Where-Object { $_.State -ne 'passed' -or $_.To -cne $script:DtmApiReleaseVersion -or $_.CompletedSteps -ne 9 -or $_.CompletedRejections -ne 4 }).Count -eq 0) -Message 'Required predecessor routes did not both complete.'
+    Assert-DtmApiMultiPlatformInstallerTest -Condition ($report.State -eq 'passed' -and $report.CompletedSteps -eq 18 -and $report.CompletedRejections -eq 4 -and $script:Calls.Count -eq 22) -Message 'Current transition returned early or counted unexecuted steps.'
+    Assert-DtmApiMultiPlatformInstallerTest -Condition (($report.Routes.From -join '|') -ceq '0.6.1|0.7.0' -and @($report.Routes | Where-Object { $_.State -ne 'passed' -or $_.To -cne $script:DtmApiReleaseVersion -or $_.CompletedSteps -ne 9 -or $_.CompletedRejections -ne 2 }).Count -eq 0) -Message 'Required predecessor routes did not both complete.'
     $old070Calls = @($script:Calls | Where-Object { $_.Version -eq '0.7.0' })
     Assert-DtmApiMultiPlatformInstallerTest -Condition (@($old070Calls | Where-Object { (Split-Path -Parent $_.HostPath) -cne $_.Package }).Count -eq 0) -Message 'New host was mixed with schema-2 predecessor bytes.'
     $old061Calls = @($script:Calls | Where-Object { $_.Version -eq '0.6.1' })
@@ -226,7 +220,7 @@ try {
 
     Reset-Probe
     Invoke-TransitionProbe 'retained-transition' $previous070 $previous061 ''
-    Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls.Count -eq 13 -and $script:DtmApiMultiPlatformVersionTransitionResults.Windows.CompletedSteps -eq 9) -Message 'Original 0.6.1 -> 0.7.0 flow did not run.'
+    Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls.Count -eq 11 -and $script:DtmApiMultiPlatformVersionTransitionResults.Windows.CompletedSteps -eq 9) -Message 'Original 0.6.1 -> 0.7.0 flow did not run.'
     Reset-Probe
     Invoke-TransitionProbe 'legacy-transition' $previous061 $previous070 $current
     Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls.Count -eq 0 -and $script:DtmApiMultiPlatformVersionTransitionResults.Windows.State -eq 'not-run') -Message 'Legacy package with predecessor arguments falsely claimed PASS.'
@@ -241,7 +235,7 @@ try {
     }
     Write-Host 'PASS each missing predecessor blocks before host calls'
 
-    foreach ($failureAt in @(3, 4, 13, 16)) {
+    foreach ($failureAt in @(3, 4, 11, 14)) {
         Reset-Probe
         $script:FailAt = $failureAt
         Assert-ProbeFailure { Invoke-TransitionProbe "failed-$failureAt" $current $previous061 $previous070 } 'probe-injected host failure'
@@ -267,7 +261,7 @@ try {
     Test-DtmApiMultiPlatformCandidateProvenance -HostKind Windows -HostPath (Join-Path $current 'DTMAPI-MultiPlatform-Installer.exe') -Package $current -TestRoot (Join-Path $root 'provenance')
     $summary = Get-DtmApiMultiPlatformInstallerValidationSummary
     Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls.Count -eq 8 -and $summary.CandidateProvenanceVariantsPerHost.Windows -eq 8 -and $summary.CandidateProvenanceVariantsPerHost.Linux -eq 0 -and $summary.CandidateProvenance[1].State -eq 'not-run') -Message 'Provenance counts did not follow actual calls independently of predecessor parameters.'
-    Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls[0].Manifest.SchemaVersion -eq 3 -and $script:Calls[1].Manifest.RuntimeVersion -eq '0.8.0' -and $script:Calls[2].Manifest.RuntimeSource.Kind -eq 'ObservedPublished' -and $script:Calls[3].Manifest.SourceWorkshopManifestId -eq '918505309011394484' -and $script:Calls[4].Manifest.RuntimeSource.BuildCommit -eq ('0' * 40) -and $script:Calls[5].Manifest.InstallerBuildCommit -eq ('0' * 40) -and @($script:Calls[6].Manifest.RuntimeSource.SharedFiles).Count -eq 1 -and $script:Calls[7].SharedToolChanged) -Message 'Actual provenance mutations did not reach host calls.'
+    Assert-DtmApiMultiPlatformInstallerTest -Condition ($script:Calls[0].Manifest.SchemaVersion -eq 3 -and $script:Calls[1].Manifest.RuntimeVersion -eq '0.8.0' -and $script:Calls[2].Manifest.RuntimeSource.Kind -eq 'ObservedPublished' -and $script:Calls[3].Manifest.SourceWorkshopManifestId -eq '918505309011394484' -and $script:Calls[4].Manifest.RuntimeSource.BuildCommit -eq ('0' * 40) -and $script:Calls[5].Manifest.InstallerBuildCommit -eq ('0' * 40) -and @($script:Calls[6].Manifest.RuntimeSource.SharedFiles).Count -eq 1 -and $script:Calls[7].SharedAssetChanged) -Message 'Actual provenance mutations did not reach host calls.'
     Assert-ProbeFailure { Invoke-TransitionProbe 'missing-after-provenance' $current '' '' } 'lifecycle requires -Previous'
     Assert-DtmApiMultiPlatformInstallerTest -Condition ((Get-DtmApiMultiPlatformInstallerValidationSummary).CandidateProvenanceVariantsPerHost.Windows -eq 8) -Message 'Missing predecessor erased executed provenance coverage.'
     Reset-Probe

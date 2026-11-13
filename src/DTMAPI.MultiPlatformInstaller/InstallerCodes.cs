@@ -7,7 +7,6 @@ internal static class InstallerCodes
     public const string LocalAccess = "DTM-E1102";
     public const string NetworkFallback = "DTM-E1103";
     public const string PackageInvalid = "DTM-E1201";
-    public const string RuntimeConflict = "DTM-E1202";
     public const string TransactionGenesis = "DTM-E1301";
     public const string TransactionBusy = "DTM-E1302";
     public const string TransactionBlocked = "DTM-E1303";

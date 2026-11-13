@@ -121,21 +121,22 @@ namespace DTMAPI.Core.Runtime
         {
             if (moduleCatalog == null) return;
             const string contentPath = "PackData/content.json";
-            string path = OwnerFilePath.Resolve(mod.RootPath, contentPath);
-            if (!File.Exists(path))
-                return;
-            var scope = ownerDependencies.CreateContribution(mod.Manifest.UniqueID, contentPath, () =>
-            {
-                EnsureModOwnerRegistrationAllowed(mod.Manifest.UniqueID);
-            });
+            ContributionScope? scope = null;
             try
             {
+                string path = OwnerFilePath.Resolve(mod.RootPath, contentPath);
+                if (!File.Exists(path))
+                    return;
+                scope = ownerDependencies.CreateContribution(mod.Manifest.UniqueID, contentPath, () =>
+                {
+                    EnsureModOwnerRegistrationAllowed(mod.Manifest.UniqueID);
+                });
                 var owner = new ModuleOwnerContext(this, mod.Manifest, scope.Guard);
                 scope.Activate(() => moduleCatalog.Prepare(owner), activation => activation.Activate());
             }
             catch (Exception ex)
             {
-                scope.Close(); scope.TryClose(out _);
+                scope?.TryClose(out _);
                 Diagnostics.RecordError(mod.Manifest.UniqueID, "Runtime content contribution failed.", ex.GetBaseException().Message);
             }
         }

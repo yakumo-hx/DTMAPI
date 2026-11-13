@@ -65,6 +65,9 @@
         "OptionalServicesHandleConstructionReentryAndThreadBoundary",
         "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
         "OwnerDataRejectsBadPathsAndLinkedRoots",
+        "OwnerDataAllowsLinkedParents",
+        "RuntimeStartsModsBelowLinkedParents",
+        "RuntimeContentPathFailuresAreIsolated",
         "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
         "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
         "GlobalDataMigrationFailureWindowsRetainCommittedBytes",
@@ -173,6 +176,8 @@
           "RuntimeAudioRegistersInternalCapabilityWithoutPlayback"
         ],
         "content-host": [
+          "RuntimeStartsModsBelowLinkedParents",
+          "RuntimeContentPathFailuresAreIsolated",
           "ModuleScopesRetainFailedChildrenAndIsolateSiblings",
           "BuiltinProviderOriginSurvivesUnavailableComponents",
           "ModResourcesUseBoundedIndependentSnapshotsAndOwnerPaths",
@@ -267,6 +272,7 @@
         "platform-data-core": [
           "OwnerFilesAndGlobalDataIsolateOwnersAndRetainAcrossPackageWithdrawal",
           "OwnerDataRejectsBadPathsAndLinkedRoots",
+          "OwnerDataAllowsLinkedParents",
           "GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure",
           "GlobalDataMigrationsPublishOnceAndPreserveOriginalOnFailure",
           "GlobalDataMigrationFailureWindowsRetainCommittedBytes"

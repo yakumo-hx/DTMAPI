@@ -26,8 +26,8 @@ namespace DTMAPI.Core.Services
         internal static string Resolve(string root, string key, bool createParents = false)
         {
             string path = Path.GetFullPath(root);
-            // Ancestors are checked too: a safe relative key must not escape through a linked root.
-            CheckAncestors(path);
+            // 安装目录上方可以是 Proton 盘符映射；只检查根目录及相对路径里的节点。
+            CheckNode(path);
             if (createParents) Directory.CreateDirectory(path);
             foreach (string part in NormalizeKey(key).Split('/'))
             {
@@ -44,14 +44,8 @@ namespace DTMAPI.Core.Services
             if (createParents)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                CheckAncestors(path);
             }
             return path;
-        }
-
-        private static void CheckAncestors(string path)
-        {
-            for (string? cursor = path; cursor != null; cursor = Path.GetDirectoryName(cursor)) CheckNode(cursor);
         }
 
         private static void CheckNode(string path)

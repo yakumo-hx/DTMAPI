@@ -65,14 +65,48 @@ namespace DTMAPI.UnitTests
             {
                 AssertThrows<ArgumentException>(() => reader.ReadText("linked/secret.txt"), "Linked child path must not escape its package.");
                 AssertThrows<ArgumentException>(() => new OwnerFileService(link, () => { }).ReadText("secret.txt"), "Linked package root must also be rejected.");
-                var data = new GlobalDataService("Owner.A", link, () => { });
-                AssertThrows<ArgumentException>(() => data.WriteGlobal("settings", new GlobalProbeData(), 1), "Global root links must be rejected before creating directories.");
+                string global = NewTempGameDir();
+                var data = new GlobalDataService("Owner.A", global, () => { });
+                data.WriteGlobal("settings", new GlobalProbeData(), 1);
+                string ownerRoot = Directory.GetDirectories(global).Single();
+                data.DeleteGlobal("settings", 1);
+                Directory.Delete(ownerRoot);
+                Directory.CreateSymbolicLink(ownerRoot, outside);
+                try
+                {
+                    AssertThrows<ArgumentException>(() => data.WriteGlobal("settings", new GlobalProbeData(), 1), "The owner's global data directory must not redirect writes outside its root.");
+                }
+                finally { Directory.Delete(ownerRoot); }
             }
             finally { Directory.Delete(link); }
             File.WriteAllBytes(Path.Combine(root, "bad.txt"), new byte[] { 0xff, 0xff });
             Assert(reader.ReadText("bad.txt").Status == OwnerDataStatus.Corrupt, "Invalid UTF-8 cannot be silently replaced.");
             using (var held = new FileStream(Path.Combine(root, "Case.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                 Assert(reader.ReadText("Case.txt").Status == OwnerDataStatus.IoError, "A locked package file is an IO failure, not Missing.");
+        }
+
+        private static void OwnerDataAllowsLinkedParents()
+        {
+            string physicalRoot = NewTempGameDir();
+            string linkedParent = Path.Combine(NewTempGameDir(), "mapped-drive");
+            Directory.CreateSymbolicLink(linkedParent, physicalRoot);
+            try
+            {
+                string package = Path.Combine(linkedParent, "workshop", "package");
+                Directory.CreateDirectory(Path.Combine(package, "data"));
+                File.WriteAllText(Path.Combine(package, "data", "settings.json"), "package data");
+                File.WriteAllBytes(Path.Combine(package, "data", "image.bin"), new byte[] { 1, 2, 3 });
+                var reader = new OwnerFileService(package, () => { });
+                var resources = new ModResourceService(package, () => { });
+                Assert(reader.ReadText("data/settings.json").Value == "package data", "Package text remains readable below a linked installation parent.");
+                Assert(resources.ReadBytes("data/image.bin").Value!.SequenceEqual(new byte[] { 1, 2, 3 }), "Package resources remain readable below a linked installation parent.");
+                Assert(reader.ReadText("PackData/content.json").Status == OwnerDataStatus.Missing, "An absent optional file below a linked parent remains Missing.");
+                using var data = new GlobalDataService("Owner.A", Path.Combine(linkedParent, "global"), () => { });
+                Assert(data.WriteGlobal("nested/settings", new GlobalProbeData { Value = 42 }, 1).Status == OwnerDataStatus.Found, "Global data creates its own directories below a linked installation parent.");
+                Assert(data.ReadGlobal<GlobalProbeData>("nested/settings", 1).Value!.Value == 42, "Global data remains readable through the same installation mapping.");
+                Assert(data.DeleteGlobal("nested/settings", 1).Status == OwnerDataStatus.Found, "Global data remains removable through the same installation mapping.");
+            }
+            finally { Directory.Delete(linkedParent); }
         }
 
         private static void GlobalDataPreservesBytesOnCorruptionFutureSchemaAndAtomicFailure()

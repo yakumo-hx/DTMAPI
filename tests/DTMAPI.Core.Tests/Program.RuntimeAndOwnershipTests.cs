@@ -16,6 +16,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml.Linq;
 using DTMAPI.Abstractions;
 using DTMAPI.Core.Diagnostics;
 using DTMAPI.Core.Logging;
@@ -394,8 +395,12 @@ namespace DTMAPI.UnitTests
             try
             {
                 string dir = NewTempGameDir();
-                Assert(DtmApiRuntime.ApiVersion == "0.7.5", "DTMAPI runtime API version should project the 0.7.5 local candidate authority.");
-                Assert(DtmApiRuntime.BinaryVersion == "0.7.5.0", "DTMAPI binary/plugin file version should remain numeric and project the 0.7.5 candidate authority.");
+                XElement version = XDocument.Load(Path.Combine(FindRepositoryRoot(), "build",
+                    "dtmapi-runtime-version.props")).Root!.Element("PropertyGroup")!;
+                Assert(DtmApiRuntime.ApiVersion == version.Element("DtmApiReleaseVersion")!.Value,
+                    "Runtime API version should match the Runtime version property.");
+                Assert(DtmApiRuntime.BinaryVersion == version.Element("DtmApiBinaryFileVersion")!.Value,
+                    "Runtime binary version should match the Runtime file version property.");
                 WriteManifest(dir, "Base", "{ \"Name\": \"Base\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.Base\", \"Type\": \"ContentPack\" }");
                 WriteManifest(dir, "NeedsBase2", "{ \"Name\": \"Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.NeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": true } ] }");
                 WriteManifest(dir, "OptionalNeedsBase2", "{ \"Name\": \"Optional Needs Base 2\", \"Author\": \"DTMAPI\", \"Version\": \"1.0.0\", \"UniqueID\": \"DTMAPI.Tests.OptionalNeedsBase2\", \"Type\": \"ContentPack\", \"Dependencies\": [ { \"UniqueID\": \"DTMAPI.Tests.Base\", \"MinimumVersion\": \"2.0.0\", \"Required\": false } ] }");

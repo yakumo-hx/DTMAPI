@@ -17,7 +17,6 @@ internal static class InstallAction
         using IDisposable mutationLock = platform.AcquireMutationLock(gameDir);
         RuntimeTransaction transaction = new(gameDir);
         transaction.PrepareForInstall();
-        InstallStateAuthority.AssertCompatibleForInstall(package, gameDir);
 
         bool bepInExWasComplete = BepInExInstaller.IsComplete(gameDir);
         if (!bepInExWasComplete)
